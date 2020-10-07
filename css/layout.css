@@ -981,6 +981,9 @@ call-to-action .button {
 #contact form {
   margin-bottom: 30px;
 }
+#contact form .flex {
+  display: flex;
+}
 #contact label {
   font: 15px/24px "opensans-bold", sans-serif;
   margin: 12px 0;
@@ -995,6 +998,8 @@ call-to-action .button {
   padding: 18px 20px;
   color: #eee;
   background: #373233;
+  margin-right: 10px;
+  margin-left: 10px;
   margin-bottom: 42px;
   border: 0;
   outline: none;
@@ -1007,6 +1012,27 @@ call-to-action .button {
 #contact select:focus {
   color: #fff;
   background-color: #11abb0;
+}
+#contact input::placeholder,
+#contact textarea::placeholder,
+#contact select::placeholder {
+  text-transform: uppercase;
+}
+#contact input#input-name {
+  flex: 1;
+}
+#contact input#input-email {
+  flex: 1;
+}
+#contact textarea#input-message {
+  flex: 1;
+}
+#contact button#submit-button {
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin: 0 10px;
+  flex: 1;
+  border-radius: 5px;
 }
 #contact button.submit {
   text-transform: uppercase;
@@ -1158,7 +1184,7 @@ footer .social-links li:first-child {
   -ms-transition: all 0.2s ease-in-out;
   transition: all 0.2s ease-in-out;
 
-  color: #fff;
+  color: #fff;  
   font-size: 21px;
   line-height: 60px;
   border-radius: 100%;
