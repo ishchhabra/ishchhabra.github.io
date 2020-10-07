@@ -13,7 +13,7 @@ export default class ContactUs extends Component {
         </div>
         
         <div className="row">
-          <form className="ten columns">
+          <form className="twelve columns">
             <div class="flex">
               <input id="input-name" type="text" placeholder="name" />
               <input id="input-email" type="text" placeholder="email" />
