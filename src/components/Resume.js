@@ -24,17 +24,7 @@ export default class Resume extends Component {
                           &bull; {item.MonthOfPassing} {item.YearOfPassing}
                         </em>
                       </p>
-                      <p>
-                        {item.Achievements.slice(0, -1).map((achievement) => {
-                          return (
-                            <>
-                              &bull; {achievement}
-                              <br />
-                            </>
-                          );
-                        })}{" "}
-                        &bull; {item.Achievements.slice(-1)}
-                      </p>
+                      <p dangerouslySetInnerHTML={{__html: item.Description}}/>
                     </div>
                   </div>
                 );
@@ -62,7 +52,7 @@ export default class Resume extends Component {
                           &ndash; {item.MonthOfLeaving} {item.YearOfLeaving}
                         </em>
                       </p>
-                      <p>{item.Achievements}</p>
+                      <p dangerouslySetInnerHTML={{__html: item.Achievements}}/>
                     </div>
                   </div>
                 );

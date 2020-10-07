@@ -28,7 +28,7 @@ export default class Header extends Component {
                   Resume
                 </a>
               </li>
-              <li>
+              {/* <li>
                 <a className="smoothscroll" href="#portfolio">
                   Works
                 </a>
@@ -37,7 +37,7 @@ export default class Header extends Component {
                 <a className="smoothscroll" href="#testimonials">
                   Testimonials
                 </a>
-              </li>
+              </li> */}
               <li>
                 <a className="smoothscroll" href="#contact">
                   Contact

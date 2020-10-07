@@ -11,12 +11,20 @@ export default class ContactUs extends Component {
             </p>
           </div>
         </div>
+        
         <div className="row">
-          <aside className="eigth columns footer-widgets">
-            <div className="widget">
-              <h4>Linked in :{resumeData.linkedinId}</h4>
+          <form className="ten columns">
+            <div class="flex">
+              <input id="input-name" type="text" placeholder="name" />
+              <input id="input-email" type="text" placeholder="email" />
             </div>
-          </aside>
+            <div class="flex">
+              <textarea id="input-message" placeholder="write your message..."/>
+            </div>
+            <div class="flex">
+              <button id="submit-button" type="submit">Send Message</button>
+            </div>
+          </form>
         </div>
       </section>
     );

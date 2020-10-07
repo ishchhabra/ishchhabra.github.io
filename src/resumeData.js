@@ -12,21 +12,27 @@ let resumeData = {
     },
     {
       name: "github",
-      url: "http://github.com/ishchhabra",
+      url: "https://github.com/ishchhabra",
       className: "fa fa-github",
     },
   ],
   aboutme:
     "I am currently an honors sophomore majoring in Computer Science at UMass Amherst.",
-  address: "India",
-  website: "http://github.com/ishchhabra",
+  address: "Indore, India",
+  website: "https://github.com/ishchhabra",
   education: [
     {
       UniversityName: "University of Massachusetts Amherst",
       specialization: "Computer Science",
       MonthOfPassing: "May",
       YearOfPassing: "2023",
-      Achievements: ["Dean's List Fall '19", "Dean's List Spring '20"],
+      Description: "\
+      Achievements:<br />\
+      <ul style='list-style-type: disc; padding-left: 15px;'>\
+      <li>Dean's List Fall '19</li>\
+      <li>Dean's List Spring '20</li>\
+      </ul>\
+      "
     },
   ],
   work: [
@@ -37,7 +43,14 @@ let resumeData = {
       YearOfJoining: "2020",
       MonthOfLeaving: "Aug",
       YearOfLeaving: "2020",
-      Achievements: "Some Achievements",
+      Achievements: "\
+      Project <b><a href='https://reachout.cics.umass.edu' target='_blank'>ReachOUT</a></b> <br />\
+      <ul style='list-style-type: disc; padding-left: 15px;'>\
+      <li>Worked in a scrum team to design a web application for appointment scheduling using React.js, Python (AWS Lambda functions), REST API (AWS API Gateway). </li>\
+      <li>Made the app development international friendly by adapting string internationalization and time zone conversion on the frontend. </li>\
+      <li>Eliminated costs while also speeding up the application by optimizing the backend functions to reduce the data transfer between the user and the cloud by a factor of 3+. </li>\
+      </ul>\
+      ",
     },
     {
       CompanyName: "Hungry Stabbers Gaming",
@@ -46,7 +59,16 @@ let resumeData = {
       YearOfJoining: "2017",
       MonthOfLeaving: "Mar",
       YearOfLeaving: "2019",
-      Achievements: "Some Achievements",
+      Achievements: "\
+      <b><font color='red'>Dissolved</font></b> <br />\
+      <ul style='list-style-type: disc; padding-left: 15px;'>\
+      <li>India's #1 Counter-Strike 1.6 gaming community from 2017 to 2019 according to GameTracker.com</li>\
+      <li>Designed and established several Counter-Strike 1.6 game servers hosted on AWS.</li>\
+      <li>Secured the game server by setting up the network firewall using iptables along with automated scripts using AWS SDK.</li>\
+      <li>Developed game mods in a C based scripting language called AMXMODX.</li>\
+      <li>Fostered a fun and friendly gaming environment by resolving conflicts in a community with 2000+ members.</li>\
+      </ul>\
+      ",
     },
   ],
   skillsDescription: "Your skills here",
