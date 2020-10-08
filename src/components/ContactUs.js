@@ -14,15 +14,11 @@ export default class ContactUs extends Component {
         
         <div className="row">
           <form className="twelve columns" action="#" onSubmit={handleFormSubmit}>
-            <div className="flex">
-              <input id="input-name" type="text" name="name" placeholder="name" required />
-              <input id="input-email" type="email" name="email" placeholder="email" required/>
-            </div>
-            <div className="flex">
-              <textarea id="input-message" name="message" placeholder="write your message..." required/>
-            </div>
-            <div className="flex">
-              <button id="submit-button" type="submit">Send Message</button>
+            <div className="input-container">
+            <input id="input-name" type="text" name="name" placeholder="name" required />
+            <input id="input-email" type="email" name="email" placeholder="email" required/>
+            <textarea id="input-message" name="message" placeholder="write your message..." required/>
+            <button id="submit-button" type="submit">Send Message</button>
             </div>
           </form>
         </div>
