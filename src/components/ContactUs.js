@@ -13,15 +13,15 @@ export default class ContactUs extends Component {
         </div>
         
         <div className="row">
-          <form className="twelve columns">
-            <div class="flex">
-              <input id="input-name" type="text" placeholder="name" />
-              <input id="input-email" type="text" placeholder="email" />
+          <form className="twelve columns" action="#" onSubmit={handleFormSubmit}>
+            <div className="flex">
+              <input id="input-name" type="text" name="name" placeholder="name" required />
+              <input id="input-email" type="email" name="email" placeholder="email" required/>
             </div>
-            <div class="flex">
-              <textarea id="input-message" placeholder="write your message..."/>
+            <div className="flex">
+              <textarea id="input-message" name="message" placeholder="write your message..." required/>
             </div>
-            <div class="flex">
+            <div className="flex">
               <button id="submit-button" type="submit">Send Message</button>
             </div>
           </form>
@@ -29,4 +29,24 @@ export default class ContactUs extends Component {
       </section>
     );
   }
+}
+
+function handleFormSubmit(event) {
+  fetch("https://formspree.io/f/maylqdgn", {
+    method: "POST",
+    headers: {
+      "Accept": "application/json"
+    },
+    body: new FormData(event.target)
+  })
+  .then((response) => {
+    if(response.ok) {
+      alert("Messsage sent successfully!");
+      event.target.reset();
+    } else {
+      // Have to decide what to do here...
+    }
+  });
+
+  event.preventDefault();
 }
