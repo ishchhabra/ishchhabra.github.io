@@ -2,7 +2,7 @@ let resumeData = {
   imagebaseurl: "https://ishchhabra.github.io/",
   name: "Ish Chhabra",
   description:
-    "I am an rising junior studying at University of Massachusetts Amherst graduating in Fall 2023.",
+    "I am a rising junior studying at University of Massachusetts Amherst graduating in Fall 2023.",
   linkedinId: "ishchhabra",
   socialLinks: [
     {
@@ -17,7 +17,7 @@ let resumeData = {
     },
   ],
   aboutme:
-    "I am currently an honors sophomore majoring in Computer Science at UMass Amherst.",
+    "I am currently a rising junior majoring in Computer Science at UMass Amherst.",
   address: "Indore, India",
   website: "https://github.com/ishchhabra",
   education: [
