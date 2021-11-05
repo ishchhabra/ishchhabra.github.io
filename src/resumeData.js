@@ -30,6 +30,8 @@ let resumeData = {
       <ul style='list-style-type: disc; padding-left: 15px;'>\
       <li>Dean's List Fall '19</li>\
       <li>Dean's List Spring '20</li>\
+      <li>Dean's List Fall '20</li>\
+      <li>Dean's List Spring '21</li>\
       </ul>\
       ",
     },
