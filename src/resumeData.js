@@ -15,8 +15,8 @@ let resumeData = {
       className: "fa fa-github",
     },
   ],
-  aboutme: "I am currently a rising junior majoring in Computer Science at UMass Amherst.",
-  address: "Indore, India",
+  aboutme: "I do computers.",
+  address: "Amherst, MA",
   website: "https://github.com/ishchhabra",
   education: [
     {
