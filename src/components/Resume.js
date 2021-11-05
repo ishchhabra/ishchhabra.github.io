@@ -24,20 +24,20 @@ export default class Resume extends Component {
                           &bull; {item.MonthOfPassing} {item.YearOfPassing}
                         </em>
                       </p>
-                      <p dangerouslySetInnerHTML={{__html: item.Description}}/>
+                      <p dangerouslySetInnerHTML={{ __html: item.Description }} />
                     </div>
                   </div>
                 );
               })}
           </div>
         </div>
+
         <div className="row work">
           <div className="three columns header-col">
             <h1>
               <span>Work</span>
             </h1>
           </div>
-
           <div className="nine columns main-col">
             {resumeData.work &&
               resumeData.work.map((item) => {
@@ -48,15 +48,26 @@ export default class Resume extends Component {
                       <p className="info">
                         {item.specialization}
                         <em className="date">
-                          &bull; {item.MonthOfJoining} {item.YearOfJoining}{" "}
-                          &ndash; {item.MonthOfLeaving} {item.YearOfLeaving}
+                          &bull; {item.MonthOfJoining} {item.YearOfJoining} &ndash; {item.MonthOfLeaving} {item.YearOfLeaving}
                         </em>
                       </p>
-                      <p dangerouslySetInnerHTML={{__html: item.Achievements}}/>
+                      <p dangerouslySetInnerHTML={{ __html: item.Achievements }} />
                     </div>
                   </div>
                 );
               })}
+          </div>
+
+          <div className="nine columns">
+            <br />
+            <b>
+              <font color="red">
+                To download the resume as PDF{" "}
+                <a href="./IshChhabraResume.pdf" download>
+                  click here.
+                </a>
+              </font>
+            </b>
           </div>
         </div>
 
