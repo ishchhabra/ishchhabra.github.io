@@ -48,7 +48,7 @@ export default class Resume extends Component {
 											<p className="info">
 												{work_experience.title}
 												<em className="date">
-													&bull; {work_experience.monthOfJoining} {work_experience.yearOfJoining} &ndash; {work_experience.MonthOfLeaving} {work_experience.YearOfLeaving}
+													&bull; {work_experience.monthOfJoining} {work_experience.yearOfJoining} &ndash; {work_experience.monthOfLeaving} {work_experience.yearOfLeaving}
 												</em>
 											</p>
 											<p dangerouslySetInnerHTML={{ __html: work_experience.description }} />
