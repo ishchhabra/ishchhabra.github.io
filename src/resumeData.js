@@ -1,31 +1,30 @@
 let resumeData = {
-  imagebaseurl: "https://ishchhabra.github.io/",
-  name: "Ish Chhabra",
-  description: "I am a junior studying at University of Massachusetts Amherst graduating in December 2022.",
-  linkedinId: "ishchhabra",
-  socialLinks: [
-    {
-      name: "linkedin",
-      url: "https://www.linkedin.com/in/ishchhabra/",
-      className: "fa fa-linkedin",
-    },
-    {
-      name: "github",
-      url: "https://github.com/ishchhabra",
-      className: "fa fa-github",
-    },
-  ],
-  aboutme: "I do computers.",
-  address: "Amherst, MA",
-  website: "https://github.com/ishchhabra",
-  education: [
-    {
-      UniversityName: "University of Massachusetts Amherst",
-      specialization: "Computer Science",
-      MonthOfPassing: "May",
-      YearOfPassing: "2023",
-      Description:
-        "\
+	imagebaseurl: "https://ishchhabra.github.io/",
+	name: "Ish Chhabra",
+	description: "I am a junior studying at University of Massachusetts Amherst graduating in December 2022.",
+	linkedinId: "ishchhabra",
+	socialLinks: [
+		{
+			name: "linkedin",
+			url: "https://www.linkedin.com/in/ishchhabra/",
+			className: "fa fa-linkedin",
+		},
+		{
+			name: "github",
+			url: "https://github.com/ishchhabra",
+			className: "fa fa-github",
+		},
+	],
+	aboutme: "I do computers.",
+	address: "Amherst, MA",
+	education: [
+		{
+			universityName: "University of Massachusetts Amherst",
+			major: "Computer Science",
+			graduationMonth: "May",
+			graduationYear: "2023",
+			description:
+				"\
       Achievements:<br />\
       <ul style='list-style-type: disc; padding-left: 15px;'>\
       <li>Dean's List Fall '19</li>\
@@ -34,18 +33,18 @@ let resumeData = {
       <li>Dean's List Spring '21</li>\
       </ul>\
       ",
-    },
-  ],
-  work: [
-    {
-      CompanyName: "Gordian Software",
-      specialization: "Software Developer Intern (Python)",
-      MonthOfJoining: "May",
-      YearOfJoining: "2021",
-      MonthOfLeaving: "Aug",
-      YearOfLeaving: "2021",
-      Achievements:
-        "\
+		},
+	],
+	work: [
+		{
+			companyName: "Gordian Software",
+			title: "Software Developer Intern (Python)",
+			monthOfJoining: "May",
+			yearOfJoining: "2021",
+			monthOfLeaving: "Aug",
+			yearOfLeaving: "2021",
+			description:
+				"\
       <ul style='list-style-type: disc; padding-left: 15px;'>\
       <li>Create software and API to serve clients in the travel industry.</li>\
       <li>Develop tests &ndash; unit testing and regression testing.</li>\
@@ -54,16 +53,16 @@ let resumeData = {
       <li>Develop tools to decrease development time and increase test coverage.</li>\
       </ul>\
       ",
-    },
-    {
-      CompanyName: "CICS, UMass",
-      specialization: "Full Stack Developer (Intern)",
-      MonthOfJoining: "Jun",
-      YearOfJoining: "2020",
-      MonthOfLeaving: "Aug",
-      YearOfLeaving: "2020",
-      Achievements:
-        "\
+		},
+		{
+			companyName: "CICS, UMass",
+			title: "Full Stack Developer (Intern)",
+			monthOfJoining: "Jun",
+			yearOfJoining: "2020",
+			monthOfLeaving: "Aug",
+			yearOfLeaving: "2020",
+			description:
+				"\
       Project <b><a href='https://reachout.cics.umass.edu' target='_blank'>ReachOUT</a></b> <br />\
       <ul style='list-style-type: disc; padding-left: 15px;'>\
       <li>Integrate multiple endpoints of the application with AWS S3.</li>\
@@ -73,16 +72,16 @@ let resumeData = {
       <li>Backend Optimization to reduce data transfer between the client and the host by 3x.</li>\
       </ul>\
       ",
-    },
-    {
-      CompanyName: "Hungry Stabbers Gaming",
-      specialization: "Software Developer/Co-Founder",
-      MonthOfJoining: "Aug",
-      YearOfJoining: "2017",
-      MonthOfLeaving: "Mar",
-      YearOfLeaving: "2019",
-      Achievements:
-        "\
+		},
+		{
+			companyName: "Hungry Stabbers Gaming",
+			title: "Software Developer/Co-Founder",
+			monthOfJoining: "Aug",
+			yearOfJoining: "2017",
+			monthOfLeaving: "Mar",
+			yearOfLeaving: "2019",
+			description:
+				"\
       <b><font color='red'>Dissolved</font></b> <br />\
       <ul style='list-style-type: disc; padding-left: 15px;'>\
       <li>Ranked 1 Counter-Strike gaming community from 2017 to 2019.</li>\
@@ -92,52 +91,52 @@ let resumeData = {
       <li>Foster a fun and friendly gaming environment in a community with 2000+ members</li>\
       </ul>\
       ",
-    },
-  ],
-  skillsDescription: "Your skills here",
-  skills: [
-    {
-      skillname: "HTML5",
-    },
-    {
-      skillname: "CSS",
-    },
-    {
-      skillname: "Reactjs",
-    },
-  ],
-  portfolio: [
-    {
-      name: "project1",
-      description: "mobileapp",
-      imgurl: "images/portfolio/phone.jpg",
-    },
-    {
-      name: "project2",
-      description: "mobileapp",
-      imgurl: "images/portfolio/project.jpg",
-    },
-    {
-      name: "project3",
-      description: "mobileapp",
-      imgurl: "images/portfolio/project2.png",
-    },
-    {
-      name: "project4",
-      description: "mobileapp",
-      imgurl: "images/portfolio/phone.jpg",
-    },
-  ],
-  testimonials: [
-    {
-      description: "This is a sample testimonial",
-      name: "Some technical guy",
-    },
-    {
-      description: "This is a sample testimonial",
-      name: "Some technical guy",
-    },
-  ],
+		},
+	],
+	skillsDescription: "Your skills here",
+	skills: [
+		{
+			skillname: "HTML5",
+		},
+		{
+			skillname: "CSS",
+		},
+		{
+			skillname: "Reactjs",
+		},
+	],
+	portfolio: [
+		{
+			name: "project1",
+			description: "mobileapp",
+			imgurl: "images/portfolio/phone.jpg",
+		},
+		{
+			name: "project2",
+			description: "mobileapp",
+			imgurl: "images/portfolio/project.jpg",
+		},
+		{
+			name: "project3",
+			description: "mobileapp",
+			imgurl: "images/portfolio/project2.png",
+		},
+		{
+			name: "project4",
+			description: "mobileapp",
+			imgurl: "images/portfolio/phone.jpg",
+		},
+	],
+	testimonials: [
+		{
+			description: "This is a sample testimonial",
+			name: "Some technical guy",
+		},
+		{
+			description: "This is a sample testimonial",
+			name: "Some technical guy",
+		},
+	],
 };
 
 export default resumeData;
