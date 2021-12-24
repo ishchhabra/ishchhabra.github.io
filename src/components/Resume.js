@@ -57,18 +57,17 @@ export default class Resume extends Component {
 								);
 							})}
 					</div>
+				</div>
 
-					<div className="nine columns">
-						<br />
-						<b>
-							<font color="red">
-								To download the resume as PDF{" "}
-								<a href="./IshChhabraResume.pdf" download>
-									click here.
-								</a>
-							</font>
-						</b>
-					</div>
+				<div className="row">
+					<b>
+						<font color="red">
+							To download the resume as PDF{" "}
+							<a href="./IshChhabraResume.pdf" download>
+								click here.
+							</a>
+						</font>
+					</b>
 				</div>
 
 				{/* <div className="row skill">
