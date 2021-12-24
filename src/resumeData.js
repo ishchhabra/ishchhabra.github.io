@@ -93,6 +93,26 @@ let resumeData = {
       ",
 		},
 	],
+	projects: [
+		{
+			projectName: "EthiSim (Ethics Simulator)",
+			firstLine: "University of Massachusetts Amherst",
+			startMonth: "Feb",
+			startYear: "2020",
+			endMonth: "May",
+			endYear: "2020",
+			description:
+				"\
+      <ul style='list-style-type: disc; padding-left: 15px;'>\
+      <li>ethisim1.cs.umass.edu</li>\
+      <li>Install, configure, and maintain Apache web server on CentOS 8.</li>\
+      <li>Install and configure Shibboleth Service Provider as a module on Apache to integrate UMass Single Sign-On with the web application.</li>\
+      <li>Integrate SSO with Django endpoints.</li>\
+      <li>Implement reverse proxy to forward requests to multiple applications running inside separate docker containers.</li>\
+      </ul>\
+      ",
+		},
+	],
 	skillsDescription: "Your skills here",
 	skills: [
 		{
