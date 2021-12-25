@@ -1,26 +1,24 @@
 import React, { Component } from "react";
-import Header from "./components/Header";
-import About from "./components/About";
-import Resume from "./components/Resume";
-import Portfolio from "./components/Portfolio";
-import Testimonials from "./components/Testimonials";
-import ContactUs from "./components/ContactUs";
-import Footer from "./components/Footer";
 import resumeData from "./resumeData";
+import ResumeAsPDF from "./pages/ResumeAsPDF";
+import LandingSection from "./pages/LandingSection";
+import AboutSection from "./pages/AboutSection";
+import ResumeSection from "./pages/ResumeSection";
+import ContactFormSection from "./pages/ContactFormSection";
+import FooterSection from "./pages/FooterSection";
+
 class App extends Component {
-  render() {
-    return (
-      <div className="App">
-        <Header resumeData={resumeData} />
-        <About resumeData={resumeData} />
-        <Resume resumeData={resumeData} />
-        {/* <Portfolio resumeData={resumeData} /> */}
-        {/* <Testimonials resumeData={resumeData} /> */}
-        <ContactUs resumeData={resumeData} />
-        <Footer resumeData={resumeData} />
-      </div>
-    );
-  }
+	render() {
+		return (
+			<div className="App">
+				<LandingSection resumeData={resumeData} />
+				<AboutSection resumeData={resumeData} />
+				<ResumeSection resumeData={resumeData} />
+				<ContactFormSection />
+				<FooterSection resumeData={resumeData} />
+			</div>
+		);
+	}
 }
 
 export default App;
