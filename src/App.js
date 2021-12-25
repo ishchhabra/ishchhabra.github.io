@@ -1,11 +1,10 @@
 import React, { Component } from "react";
-import resumeData from "./resumeData";
-import ResumeAsPDF from "./pages/ResumeAsPDF";
-import LandingSection from "./pages/LandingSection";
 import AboutSection from "./pages/AboutSection";
-import ResumeSection from "./pages/ResumeSection";
 import ContactFormSection from "./pages/ContactFormSection";
 import FooterSection from "./pages/FooterSection";
+import LandingSection from "./pages/LandingSection";
+import ResumeSection from "./pages/ResumeSection";
+import resumeData from "./resumeData";
 
 class App extends Component {
 	render() {
