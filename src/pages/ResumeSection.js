@@ -1,5 +1,9 @@
 import React, { Component } from "react";
 import moment from "moment";
+import GordianSoftware from "../works/GordianSoftware";
+import ReachOut from "../works/ReachOut";
+import HungryStabbersGaming from "../works/HungryStabbersGaming";
+import EthiSim from "../projects/EthiSim";
 
 export default class Resume extends Component {
 	render() {
@@ -53,37 +57,9 @@ export default class Resume extends Component {
 						</h1>
 					</div>
 					<div className="nine columns main-col">
-						{resumeData.works &&
-							resumeData.works.map((work) => {
-								return (
-									<div className="row item">
-										<div className="twelve columns">
-											<h3>{work.company}</h3>
-											<p className="info">
-												{work.title}
-												<em className="date">
-													&bull;{" "}
-													{moment()
-														.month(work.monthOfJoining - 1)
-														.year(work.yearOfJoining)
-														.format("MMM YYYY")}{" "}
-													&ndash;{" "}
-													{moment()
-														.month(work.monthOfLeaving - 1)
-														.year(work.yearOfLeaving)
-														.format("MMM YYYY")}
-												</em>
-											</p>
-
-											<ul style={{ listStyleType: "disc", paddingLeft: "15px" }}>
-												{work.bullet_points.map((bullet_point) => (
-													<li dangerouslySetInnerHTML={{ __html: bullet_point }}></li>
-												))}
-											</ul>
-										</div>
-									</div>
-								);
-							})}
+						<GordianSoftware />
+						<ReachOut />
+						<HungryStabbersGaming />
 					</div>
 				</div>
 
@@ -95,33 +71,7 @@ export default class Resume extends Component {
 						</h1>
 					</div>
 					<div className="nine columns main-col">
-						{resumeData.projects &&
-							resumeData.projects.map((project) => {
-								return (
-									<div className="row item">
-										<div className="twelve columns">
-											<h3>{project.name}</h3>
-											<p className="info">
-												{project.firstLine && project.firstLine}
-												<em className="date">
-													&bull;{" "}
-													{moment()
-														.month(project.startMonth - 1)
-														.year(project.startYear)
-														.format("MMM YYYY")}{" "}
-													&ndash; {moment().month(project.endMonth).year(project.endYear).format("MMM YYYY")}
-												</em>
-											</p>
-
-											<ul style={{ listStyleType: "disc", paddingLeft: "15px" }}>
-												{project.bullet_points.map((bullet_point) => (
-													<li>{bullet_point}</li>
-												))}
-											</ul>
-										</div>
-									</div>
-								);
-							})}
+						<EthiSim />
 					</div>
 				</div>
 
