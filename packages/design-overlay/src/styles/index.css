@@ -1,0 +1,23 @@
+/*
+ * =============================
+ *  I2-LABS DESIGN OVERLAY
+ * =============================
+ */
+
+@import "tailwindcss";
+@source "../../";
+
+@import "tw-animate-css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@import "./shadcn.css";
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
