@@ -1,14 +1,14 @@
 import type {
   CapabilityRequest,
   CapabilityType,
-  FetchDetails,
-  StorageDetails,
   ClipboardDetails,
   CookieDetails,
+  FetchDetails,
+  PendingRequest,
   PermissionDecision,
   PermissionRule,
   PermissionState,
-  PendingRequest,
+  StorageDetails,
 } from "./types";
 
 /* ------------------------------------------------------------------ */
@@ -124,13 +124,14 @@ export class CapabilityBroker {
     const pattern = extractPattern(req);
     const existingRule = this.state.rules.find(
       (r) =>
-        r.capability === req.capability &&
-        patternMatches(r.pattern, pattern),
+        r.capability === req.capability && patternMatches(r.pattern, pattern),
     );
 
     if (existingRule) {
       if (existingRule.decision === "deny") {
-        return { error: `Denied by permission rule: ${req.capability} → ${existingRule.pattern}` };
+        return {
+          error: `Denied by permission rule: ${req.capability} → ${existingRule.pattern}`,
+        };
       }
       // allow — execute directly
       return this.execute(req);
@@ -199,11 +200,17 @@ export class CapabilityBroker {
     try {
       switch (req.capability) {
         case "fetch":
-          return { result: await this.executeFetch(req.details as FetchDetails) };
+          return {
+            result: await this.executeFetch(req.details as FetchDetails),
+          };
         case "storage":
           return { result: this.executeStorage(req.details as StorageDetails) };
         case "clipboard":
-          return { result: await this.executeClipboard(req.details as ClipboardDetails) };
+          return {
+            result: await this.executeClipboard(
+              req.details as ClipboardDetails,
+            ),
+          };
         case "cookie":
           return { result: this.executeCookie(req.details as CookieDetails) };
         default:
