@@ -21,6 +21,9 @@ lerna-debug.log*
 .env.*
 !.env.example
 
+# Local package artifacts
+*.tgz
+
 # Editor
 .vscode/*
 !.vscode/extensions.json
@@ -36,3 +39,5 @@ lerna-debug.log*
 
 # OS
 Thumbs.db
+
+.pnpm-store

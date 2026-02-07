@@ -19,9 +19,10 @@ function getRect(el: Element): Rect {
 function getLabel(el: Element): string {
   const tag = el.tagName.toLowerCase();
   const id = el.id ? `#${el.id}` : "";
-  const cls = el.className && typeof el.className === "string"
-    ? "." + el.className.trim().split(/\s+/).slice(0, 2).join(".")
-    : "";
+  const cls =
+    el.className && typeof el.className === "string"
+      ? "." + el.className.trim().split(/\s+/).slice(0, 2).join(".")
+      : "";
   return `${tag}${id}${cls}`;
 }
 

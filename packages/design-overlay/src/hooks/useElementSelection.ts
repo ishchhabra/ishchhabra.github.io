@@ -62,29 +62,26 @@ export function useElementSelection(active: boolean): ElementSelectionResult {
     setHoveredElement(resolved);
   }, []);
 
-  const onClick = useCallback(
-    (e: MouseEvent) => {
-      if (!activeRef.current || isOverlayEvent(e)) return;
-      e.preventDefault();
-      e.stopPropagation();
+  const onClick = useCallback((e: MouseEvent) => {
+    if (!activeRef.current || isOverlayEvent(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
 
-      const stack = document.elementsFromPoint(e.clientX, e.clientY);
-      const target = stack.find((el) => resolveTarget(el) === el && !IGNORED_TAGS.has(el.tagName));
-      const resolved = target ? resolveTarget(target) : null;
-      if (!resolved) return;
+    const stack = document.elementsFromPoint(e.clientX, e.clientY);
+    const target = stack.find((el) => resolveTarget(el) === el && !IGNORED_TAGS.has(el.tagName));
+    const resolved = target ? resolveTarget(target) : null;
+    if (!resolved) return;
 
-      setSelectedElements((prev) => {
-        const already = prev.includes(resolved);
-        if (e.shiftKey) {
-          // Shift+click: toggle element in selection
-          return already ? prev.filter((el) => el !== resolved) : [...prev, resolved];
-        }
-        // Normal click: single-select (or deselect if clicking same element)
-        return already && prev.length === 1 ? [] : [resolved];
-      });
-    },
-    []
-  );
+    setSelectedElements((prev) => {
+      const already = prev.includes(resolved);
+      if (e.shiftKey) {
+        // Shift+click: toggle element in selection
+        return already ? prev.filter((el) => el !== resolved) : [...prev, resolved];
+      }
+      // Normal click: single-select (or deselect if clicking same element)
+      return already && prev.length === 1 ? [] : [resolved];
+    });
+  }, []);
 
   useEffect(() => {
     if (!active) {

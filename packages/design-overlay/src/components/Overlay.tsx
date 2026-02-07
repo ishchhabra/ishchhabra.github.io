@@ -5,10 +5,18 @@ import { SelectionOutlines } from "./SelectionOutlines";
 import { Toolbar } from "./Toolbar";
 
 export interface OverlayProps {
-  className?: string;
+  className?: string | undefined;
+  /** API URL for the AI edit chat endpoint. When provided, natural language edits use the AI SDK. */
+  apiUrl?: string | undefined;
+  /** Ollama model ID (e.g. llama3.2, qwen2.5-coder:7b). Overrides OLLAMA_MODEL env. */
+  model?: string | undefined;
+  /** Ollama base URL (e.g. http://localhost:11434). Overrides OLLAMA_BASE_URL env. */
+  ollamaBaseUrl?: string | undefined;
+  /** Callback when user submits an edit request without apiUrl. */
+  onEditRequest?: ((message: string) => void) | undefined;
 }
 
-export default function Overlay({}: OverlayProps) {
+export default function Overlay({ apiUrl = "/api/chat", model, ollamaBaseUrl, onEditRequest }: OverlayProps) {
   const [active, setActive] = useState(false);
   const { hoveredElement, selectedElements, clearSelection } =
     useElementSelection(active);
@@ -26,6 +34,11 @@ export default function Overlay({}: OverlayProps) {
           onToggle={() => setActive((a) => !a)}
           selectedCount={selectedElements.length}
           onClear={clearSelection}
+          apiUrl={apiUrl}
+          model={model}
+          ollamaBaseUrl={ollamaBaseUrl}
+          onEditRequest={onEditRequest}
+          selectedElements={selectedElements}
         />
       </div>
     </div>

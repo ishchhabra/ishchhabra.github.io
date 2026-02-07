@@ -20,22 +20,13 @@ function App() {
             i2 labs
           </span>
           <nav className="flex gap-8 text-sm">
-            <a
-              href="#"
-              className="text-zinc-400 transition-colors hover:text-white"
-            >
+            <a href="#" className="text-zinc-400 transition-colors hover:text-white">
               About
             </a>
-            <a
-              href="#"
-              className="text-zinc-400 transition-colors hover:text-white"
-            >
+            <a href="#" className="text-zinc-400 transition-colors hover:text-white">
               Projects
             </a>
-            <a
-              href="#"
-              className="text-zinc-400 transition-colors hover:text-white"
-            >
+            <a href="#" className="text-zinc-400 transition-colors hover:text-white">
               Contact
             </a>
           </nav>
@@ -53,8 +44,8 @@ function App() {
             <span className="text-zinc-500">and tooling.</span>
           </h1>
           <p className="max-w-xl text-lg text-zinc-400">
-            Modern web development, refined. We build tools and explore ideas at
-            the edge of what's possible.
+            Modern web development, refined. We build tools and explore ideas at the edge of what's
+            possible.
           </p>
           <div className="mt-12 flex gap-4">
             <a

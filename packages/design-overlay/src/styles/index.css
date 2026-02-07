@@ -13,6 +13,12 @@
 
 @import "./shadcn.css";
 
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

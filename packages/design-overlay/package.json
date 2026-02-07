@@ -2,19 +2,30 @@
   "name": "@i2-labs/design-overlay",
   "version": "1.0.0",
   "description": "Shared overlay components for i2-labs",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "type": "module",
+  "keywords": [],
+  "license": "ISC",
+  "author": "",
   "files": [
     "dist",
     "src"
   ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./styles.css": "./src/styles/index.css"
+    "./styles.css": "./src/styles/index.css",
+    "./server": {
+      "types": "./dist/server/index.d.ts",
+      "default": "./dist/server/index.js"
+    },
+    "./vite": {
+      "types": "./dist/vite.d.ts",
+      "default": "./dist/vite.js"
+    }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json --sourceRoot \"$(pwd)/src\" && tsc-alias -p tsconfig.json",
@@ -29,29 +40,32 @@
     "sync:prepare:demo": "pnpm-sync prepare -l ../../apps/demo/pnpm-lock.yaml -s ../../apps/demo/node_modules/.pnpm"
   },
   "dependencies": {
+    "ai": "^6.0.77",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "dotenv": "^17.2.4",
     "lucide-react": "^0.563.0",
+    "ollama-ai-provider-v2": "^3.0.4",
     "radix-ui": "^1.4.3",
     "tailwind-merge": "^3.4.0",
-    "tw-animate-css": "^1.4.0"
+    "tw-animate-css": "^1.4.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@types/node": "catalog:",
     "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "tailwindcss": "catalog:",
     "tsc-alias": "^1.8.16",
     "tsc-watch": "catalog:",
     "typescript": "catalog:",
-    "@types/react-dom": "catalog:"
+    "vite": "^7.2.4"
   },
-  "keywords": [],
-  "license": "ISC",
-  "author": "",
-  "packageManager": "pnpm@10.14.0",
   "peerDependencies": {
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19"
-  }
+  },
+  "packageManager": "pnpm@10.14.0"
 }

@@ -25,7 +25,7 @@ export function SelectionOutlines({ elements }: SelectionOutlinesProps) {
         elements.map((el) => {
           const r = el.getBoundingClientRect();
           return { left: r.left, top: r.top, width: r.width, height: r.height };
-        })
+        }),
       );
     };
 
