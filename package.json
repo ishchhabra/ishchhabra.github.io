@@ -4,6 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "dev": "pnpm --filter @i2-labs/design-overlay build && pnpm --filter demo dev",
+    "dev:watch": "pnpm --filter @i2-labs/design-overlay build && concurrently -n overlay,demo \"pnpm --filter @i2-labs/design-overlay build:watch\" \"pnpm --filter demo dev\"",
     "test": "echo \"Error: no test specified\" && exit 1",
     "format": "pnpm -r format",
     "format-check": "pnpm -r --parallel format-check",
@@ -15,6 +17,8 @@
   "license": "ISC",
   "packageManager": "pnpm@10.14.0",
   "devDependencies": {
+    "concurrently": "^9.2.1",
+    "pnpm-sync": "^0.3.3",
     "skills": "^1.3.7"
   }
 }

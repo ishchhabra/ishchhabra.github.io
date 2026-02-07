@@ -29,5 +29,10 @@
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
     "vite": "^7.2.4"
+  },
+  "dependenciesMeta": {
+    "@i2-labs/design-overlay": {
+      "injected": true
+    }
   }
 }

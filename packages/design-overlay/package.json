@@ -19,13 +19,14 @@
   "scripts": {
     "build": "tsc -p tsconfig.json --sourceRoot \"$(pwd)/src\" && tsc-alias -p tsconfig.json",
     "build:watch": "tsc-watch -p tsconfig.json --sourceRoot \"$(pwd)/src\" --onSuccess \"pnpm postbuild\"",
-    "postbuild": "tsc-alias -p tsconfig.json && echo 'Build complete'",
-    "prepare": "pnpm build",
+    "postbuild": "tsc-alias -p tsconfig.json && pnpm-sync copy && echo 'Build complete'",
+    "prepare": "pnpm sync:prepare:demo && pnpm build",
     "test": "echo \"Error: no test specified\" && exit 1",
     "format": "oxfmt",
     "format-check": "oxfmt --check",
     "lint": "oxlint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "sync:prepare:demo": "pnpm-sync prepare -l ../../apps/demo/pnpm-lock.yaml -s ../../apps/demo/node_modules/.pnpm"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
