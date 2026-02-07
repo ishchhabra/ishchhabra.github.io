@@ -234,8 +234,71 @@ export function buildSrcdoc(): string {
       '@sandbox/sdk': sdk,
     };
 
+    /* -------------------------------------------------------------- */
+    /*  Error boundary (catches React render errors)                   */
+    /* -------------------------------------------------------------- */
+
+    function SandboxBoundary(props) {
+      React.Component.call(this, props);
+      this.state = { hasError: false };
+    }
+    SandboxBoundary.prototype = Object.create(React.Component.prototype);
+    SandboxBoundary.prototype.constructor = SandboxBoundary;
+    SandboxBoundary.getDerivedStateFromError = function() {
+      return { hasError: true };
+    };
+    SandboxBoundary.prototype.componentDidCatch = function(error) {
+      parent.postMessage({
+        type: 'sandbox:error',
+        error: { message: error.message, stack: error.stack },
+      }, '*');
+    };
+    SandboxBoundary.prototype.render = function() {
+      if (this.state.hasError) return null;
+      return this.props.children;
+    };
+
+    /* -------------------------------------------------------------- */
+    /*  Render reporter (sends sandbox:rendered after React commits)   */
+    /* -------------------------------------------------------------- */
+
+    function RenderReporter(props) {
+      React.useEffect(function() {
+        parent.postMessage({ type: 'sandbox:rendered', success: true }, '*');
+      }, []);
+      return props.children;
+    }
+
+    /* -------------------------------------------------------------- */
+    /*  Global error handlers (catch anything React misses)            */
+    /* -------------------------------------------------------------- */
+
+    window.addEventListener('error', function(e) {
+      parent.postMessage({
+        type: 'sandbox:error',
+        error: {
+          message: e.message || String(e),
+          stack: e.error ? e.error.stack : '',
+        },
+      }, '*');
+    });
+
+    window.addEventListener('unhandledrejection', function(e) {
+      var msg = e.reason ? (e.reason.message || String(e.reason)) : 'Unhandled promise rejection';
+      var stack = e.reason && e.reason.stack ? e.reason.stack : '';
+      parent.postMessage({
+        type: 'sandbox:error',
+        error: { message: msg, stack: stack },
+      }, '*');
+    });
+
+    /* -------------------------------------------------------------- */
+    /*  Render engine                                                  */
+    /* -------------------------------------------------------------- */
+
     var currentRoot = null;
     var currentComponent = null;
+    var renderGeneration = 0;
 
     function run(code, props) {
       var transformed = Babel.transform(code, {
@@ -262,7 +325,19 @@ export function buildSrcdoc(): string {
         currentRoot = ReactDOM.createRoot(document.getElementById('root'));
       }
       currentComponent = Component;
-      currentRoot.render(React.createElement(Component, props));
+      renderGeneration++;
+
+      // Wrap in error boundary + render reporter.
+      // key={renderGeneration} remounts on each run() so:
+      //   - SandboxBoundary resets its error state
+      //   - RenderReporter fires useEffect once after React commits
+      currentRoot.render(
+        React.createElement(SandboxBoundary, { key: renderGeneration },
+          React.createElement(RenderReporter, { key: renderGeneration },
+            React.createElement(Component, props)
+          )
+        )
+      );
     }
 
     /* -------------------------------------------------------------- */
@@ -277,11 +352,18 @@ export function buildSrcdoc(): string {
       try {
         if (e.data.type === 'sandbox:render') {
           run(e.data.code, e.data.props || {});
-          parent.postMessage({ type: 'sandbox:rendered', success: true }, '*');
+          // sandbox:rendered is sent by RenderReporter after React commits
         }
         if (e.data.type === 'sandbox:update-props') {
           if (currentComponent && currentRoot) {
-            currentRoot.render(React.createElement(currentComponent, e.data.props));
+            // Reuse same renderGeneration — RenderReporter stays mounted, no duplicate message
+            currentRoot.render(
+              React.createElement(SandboxBoundary, { key: renderGeneration },
+                React.createElement(RenderReporter, { key: renderGeneration },
+                  React.createElement(currentComponent, e.data.props)
+                )
+              )
+            );
           }
         }
         if (e.data.type === 'sandbox:capability-response') {

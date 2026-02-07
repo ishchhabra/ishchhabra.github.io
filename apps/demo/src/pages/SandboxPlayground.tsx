@@ -1,5 +1,33 @@
 import { Sandbox } from "@i2-labs/sandbox";
-import { useCallback, useEffect, useState } from "react";
+import type { ReactNode } from "react";
+import { Component, useCallback, useEffect, useRef, useState } from "react";
+
+const AUTO_RUN_DEBOUNCE_MS = 500;
+
+class SandboxErrorBoundary extends Component<
+  { children: ReactNode; onError: (error: Error) => void; fallback: ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  override state = { hasError: false, error: null as Error | null };
+
+  static getDerivedStateFromError(error: Error): {
+    hasError: boolean;
+    error: Error | null;
+  } {
+    return { hasError: true, error };
+  }
+
+  override componentDidCatch(error: Error) {
+    this.props.onError(error);
+  }
+
+  override render() {
+    if (this.state.hasError && this.state.error) {
+      return this.props.fallback;
+    }
+    return this.props.children;
+  }
+}
 
 const EXAMPLES: Array<{
   label: string;
@@ -296,15 +324,17 @@ export function SandboxPlayground() {
   const [code, setCode] = useState(EXAMPLES[0]!.code);
   const [executedCode, setExecutedCode] = useState(EXAMPLES[0]!.code);
   const [activeExample, setActiveExample] = useState(0);
-  const [runKey, setRunKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [rendered, setRendered] = useState(false);
 
-  const handleRun = useCallback(() => {
+  // Bumping remountKey destroys the error boundary + Sandbox iframe and creates fresh ones.
+  const [remountKey, setRemountKey] = useState(0);
+
+  const handleRetry = useCallback(() => {
     setError(null);
     setRendered(false);
     setExecutedCode(code);
-    setRunKey((k) => k + 1);
+    setRemountKey((k) => k + 1);
   }, [code]);
 
   const handleError = useCallback((err: Error) => {
@@ -321,22 +351,32 @@ export function SandboxPlayground() {
     setActiveExample(index);
     setCode(example.code);
     setError(null);
-    setRendered(false);
     setExecutedCode(example.code);
-    setRunKey((k) => k + 1);
+    setRendered(false);
   }, []);
 
-  // Cmd/Ctrl+Enter to run
+  // Debounced auto-run when code changes
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const executedCodeRef = useRef(executedCode);
+  executedCodeRef.current = executedCode;
+
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-        e.preventDefault();
-        handleRun();
+    if (!code.trim()) return;
+    debounceRef.current = setTimeout(() => {
+      debounceRef.current = null;
+      // Skip if already run (e.g. from loadExample)
+      if (code === executedCodeRef.current) return;
+      setError(null);
+      setRendered(false);
+      setExecutedCode(code);
+    }, AUTO_RUN_DEBOUNCE_MS);
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
       }
     };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [handleRun]);
+  }, [code]);
 
   return (
     <main className="relative mx-auto max-w-7xl px-6 py-8">
@@ -410,26 +450,10 @@ export function SandboxPlayground() {
                 editor.tsx
               </span>
             </div>
-            <button
-              type="button"
-              onClick={handleRun}
-              className="flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-emerald-500"
-            >
-              <svg
-                width="10"
-                height="10"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <path d="M8 5v14l11-7z" />
-              </svg>
-              Run
-              <kbd className="ml-1 rounded bg-emerald-700/60 px-1 py-0.5 text-[10px] text-emerald-200">
-                ⌘↵
-              </kbd>
-            </button>
+            <span className="text-[10px] text-zinc-600">auto-run</span>
           </div>
           <textarea
+            aria-label="Sandbox code editor"
             value={code}
             onChange={(e) => setCode(e.target.value)}
             spellCheck={false}
@@ -468,23 +492,63 @@ export function SandboxPlayground() {
                   Live
                 </span>
               ) : (
-                <span className="text-xs text-zinc-600">Waiting...</span>
+                <span className="text-xs text-zinc-600">Updating…</span>
               )}
             </div>
           </div>
-          <div className="flex-1 bg-white">
-            <Sandbox
-              key={runKey}
-              props={{ message: "Live in an iframe" }}
-              capabilities={{
-                capabilities: ["fetch", "storage", "clipboard", "cookie"],
-              }}
+          <div className="relative flex-1 bg-white">
+            {error && (
+              <div
+                className="absolute inset-0 z-10 flex flex-col gap-3 overflow-auto bg-red-50/95 p-4"
+                style={{ fontFamily: "var(--font-mono)" }}
+              >
+                <div className="flex items-center gap-2 text-red-700">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M15 9l-6 6M9 9l6 6" />
+                  </svg>
+                  <span className="text-sm font-semibold">Sandbox error</span>
+                </div>
+                <pre className="flex-1 overflow-auto rounded bg-red-100/80 p-3 text-xs text-red-900">
+                  {error}
+                </pre>
+                <button
+                  type="button"
+                  onClick={handleRetry}
+                  className="self-start rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-500"
+                >
+                  Try again
+                </button>
+              </div>
+            )}
+            <SandboxErrorBoundary
+              key={remountKey}
               onError={handleError}
-              onRender={handleRender}
-              style={{ width: "100%", height: "100%", minHeight: 0 }}
+              fallback={
+                <div className="flex h-full items-center justify-center p-6 text-sm text-red-600">
+                  Component crashed — check the error above
+                </div>
+              }
             >
-              {executedCode}
-            </Sandbox>
+              <Sandbox
+                props={{ message: "Live in an iframe" }}
+                capabilities={{
+                  capabilities: ["fetch", "storage", "clipboard", "cookie"],
+                }}
+                onError={handleError}
+                onRender={handleRender}
+                style={{ width: "100%", height: "100%", minHeight: 0 }}
+              >
+                {executedCode}
+              </Sandbox>
+            </SandboxErrorBoundary>
           </div>
         </div>
       </div>
