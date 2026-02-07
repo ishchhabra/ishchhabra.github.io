@@ -3,7 +3,7 @@
 /* ------------------------------------------------------------------ */
 
 /** Built-in capability types the sandbox can request. */
-export type CapabilityType = "fetch" | "storage" | "clipboard";
+export type CapabilityType = "fetch" | "storage" | "clipboard" | "cookie";
 
 /** A capability request coming from the sandbox via postMessage. */
 export interface CapabilityRequest {
@@ -12,7 +12,7 @@ export interface CapabilityRequest {
   /** Which capability is being requested. */
   capability: CapabilityType;
   /** Capability-specific details. */
-  details: FetchDetails | StorageDetails | ClipboardDetails;
+  details: FetchDetails | StorageDetails | ClipboardDetails | CookieDetails;
 }
 
 export interface FetchDetails {
@@ -31,6 +31,11 @@ export interface StorageDetails {
 export interface ClipboardDetails {
   operation: "read" | "write";
   text?: string;
+}
+
+export interface CookieDetails {
+  operation: "read" | "write";
+  value?: string;
 }
 
 /* ------------------------------------------------------------------ */

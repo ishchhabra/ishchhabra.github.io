@@ -3,7 +3,7 @@
  *
  * Security model:
  * - CSP blocks all direct network/resource access (defense in depth)
- * - fetch, XMLHttpRequest, navigator.sendBeacon are monkey-patched
+ * - fetch, XMLHttpRequest, navigator.sendBeacon, document.cookie are monkey-patched
  *   to route through the host's capability broker via postMessage
  * - The broker prompts the user for permission (allow once/always, deny once/always)
  * - If approved, the HOST performs the fetch and returns the result
@@ -134,6 +134,40 @@ export function buildSrcdoc(): string {
     }
 
     /* -------------------------------------------------------------- */
+    /*  Monkey-patch document.cookie                                   */
+    /*  Reads and writes go through the capability broker.             */
+    /*  Uses a local cache for sync getter; writes are async.           */
+    /* -------------------------------------------------------------- */
+
+    var cookieCache = '';
+    var cookieReadPending = false;
+
+    Object.defineProperty(document, 'cookie', {
+      get: function() {
+        if (!cookieReadPending) {
+          cookieReadPending = true;
+          requestCapability('cookie', { operation: 'read' }).then(function(r) {
+            cookieCache = (r && r.value) || '';
+          }).catch(function() {});
+        }
+        return cookieCache;
+      },
+      set: function(value) {
+        var val = typeof value === 'string' ? value : String(value);
+        requestCapability('cookie', { operation: 'write', value: val })
+          .then(function() {
+            return requestCapability('cookie', { operation: 'read' });
+          })
+          .then(function(r) {
+            cookieCache = (r && r.value) || '';
+          })
+          .catch(function() {});
+      },
+      configurable: true,
+      enumerable: true,
+    });
+
+    /* -------------------------------------------------------------- */
     /*  SDK object (also available as global for direct use)           */
     /* -------------------------------------------------------------- */
 
@@ -159,6 +193,25 @@ export function buildSrcdoc(): string {
         },
         write: function(text) {
           return requestCapability('clipboard', { operation: 'write', text: text });
+        },
+      },
+      cookie: {
+        get: function() {
+          return requestCapability('cookie', { operation: 'read' }).then(function(r) {
+            cookieCache = (r && r.value) || '';
+            return cookieCache;
+          });
+        },
+        set: function(value) {
+          var val = typeof value === 'string' ? value : String(value);
+          return requestCapability('cookie', { operation: 'write', value: val })
+            .then(function() {
+              return requestCapability('cookie', { operation: 'read' });
+            })
+            .then(function(r) {
+              cookieCache = (r && r.value) || '';
+              return cookieCache;
+            });
         },
       },
     };

@@ -27,6 +27,12 @@ const CAPABILITY_META: Record<
     bgColor: "rgba(245,158,11,0.12)",
     icon: "M19 2h-4.18C14.4.84 13.3 0 12 0c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 18H5V4h2v3h10V4h2v16z",
   },
+  cookie: {
+    label: "Cookie Access",
+    color: "#10b981",
+    bgColor: "rgba(16,185,129,0.12)",
+    icon: "M4 6h18V4H2v13H0v3h14v-3H4V6zm20 2h-8v12h8V8zm-2 9h-4v-7h4v7z",
+  },
 };
 
 function decide(request: PendingRequest, decision: PermissionDecision) {

@@ -1,5 +1,5 @@
 import { Sandbox } from "@i2-labs/sandbox";
-import { useState, useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 const EXAMPLES: Array<{
   label: string;
@@ -133,55 +133,111 @@ export default function App() {
   },
   {
     label: "document.cookie",
-    description: "Cookie access — isolated origin",
-    tag: "blocked",
-    code: `export default function App() {
-  let cookies;
-  try {
-    cookies = document.cookie || '(empty)';
-  } catch (err) {
-    cookies = 'ERROR: ' + err.message;
-  }
+    description: "Cookie access — prompts for permission",
+    tag: "prompt",
+    code: `import { useState, useEffect } from 'react';
 
-  let storage;
-  try {
-    localStorage.setItem('test', 'hello');
-    storage = localStorage.getItem('test');
-  } catch (err) {
-    storage = 'BLOCKED: ' + err.message;
-  }
+export default function App() {
+  const [cookies, setCookies] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    sandbox.cookie.get().then(setCookies).catch(() => setCookies('(error)')).finally(() => setLoading(false));
+  }, []);
+
+  const handleSet = () => {
+    const value = 'test=' + Date.now() + '; path=/';
+    sandbox.cookie.set(value).then(setCookies).catch(() => setCookies('(error)'));
+  };
 
   return (
     <div style={{ padding: 32, fontFamily: 'system-ui' }}>
-      <h2 style={{ fontSize: 20, marginBottom: 16 }}>Storage & cookies test</h2>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <div style={{
-          padding: 16, borderRadius: 8,
-          background: '#f0fdf4', border: '1px solid #86efac',
-          color: '#166534', fontSize: 14,
-        }}>
-          <strong>document.cookie:</strong> {cookies}
-          <div style={{ fontSize: 12, marginTop: 4, color: '#15803d' }}>
-            Sandbox has an opaque origin — no cookies from the host are visible.
-          </div>
-        </div>
-        <div style={{
-          padding: 16, borderRadius: 8,
-          background: storage?.startsWith('BLOCKED') ? '#fef2f2' : '#f0fdf4',
-          border: storage?.startsWith('BLOCKED')
-            ? '1px solid #fca5a5'
-            : '1px solid #86efac',
-          color: storage?.startsWith('BLOCKED') ? '#991b1b' : '#166534',
-          fontSize: 14,
-        }}>
-          <strong>localStorage:</strong> {storage}
-          <div style={{ fontSize: 12, marginTop: 4, opacity: 0.8 }}>
-            {storage?.startsWith('BLOCKED')
-              ? 'Sandboxed iframes without allow-same-origin cannot access localStorage.'
-              : 'Storage is ephemeral and isolated to this sandbox instance.'}
-          </div>
-        </div>
+      <h2 style={{ fontSize: 20, marginBottom: 16 }}>document.cookie</h2>
+      <p style={{ fontSize: 13, color: '#888', marginBottom: 16 }}>
+        Cookie access goes through the capability broker. You'll be prompted for permission.
+      </p>
+      <div style={{
+        padding: 16, borderRadius: 8,
+        background: loading ? '#f8fafc' : '#f0fdf4',
+        border: loading ? '1px solid #e2e8f0' : '1px solid #86efac',
+        color: loading ? '#475569' : '#166534',
+        fontSize: 14,
+      }}>
+        <strong>document.cookie:</strong> {loading ? 'Loading...' : (cookies || '(empty)')}
       </div>
+      <button
+        onClick={handleSet}
+        style={{
+          marginTop: 12,
+          padding: '8px 16px',
+          background: '#10b981',
+          color: 'white',
+          border: 'none',
+          borderRadius: 8,
+          cursor: 'pointer',
+          fontSize: 13,
+          fontWeight: 500,
+        }}
+      >
+        Set cookie
+      </button>
+    </div>
+  );
+}
+`,
+  },
+  {
+    label: "sandbox.storage",
+    description: "Key-value storage — prompts for permission",
+    tag: "prompt",
+    code: `import { useState, useEffect } from 'react';
+
+export default function App() {
+  const [value, setValue] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    sandbox.storage.get('demo').then((res) => {
+      setValue(res?.value ?? '(empty)');
+    }).catch(() => setValue('(error)')).finally(() => setLoading(false));
+  }, []);
+
+  const handleSet = () => {
+    const v = 'Saved at ' + new Date().toLocaleTimeString();
+    sandbox.storage.set('demo', v).then(() => setValue(v)).catch(() => setValue('(error)'));
+  };
+
+  return (
+    <div style={{ padding: 32, fontFamily: 'system-ui' }}>
+      <h2 style={{ fontSize: 20, marginBottom: 16 }}>sandbox.storage</h2>
+      <p style={{ fontSize: 13, color: '#888', marginBottom: 16 }}>
+        Key-value storage via the capability broker. Isolated from host localStorage.
+      </p>
+      <div style={{
+        padding: 16, borderRadius: 8,
+        background: loading ? '#f8fafc' : '#f0fdf4',
+        border: loading ? '1px solid #e2e8f0' : '1px solid #86efac',
+        color: loading ? '#475569' : '#166534',
+        fontSize: 14,
+      }}>
+        <strong>value:</strong> {loading ? 'Loading...' : value}
+      </div>
+      <button
+        onClick={handleSet}
+        style={{
+          marginTop: 12,
+          padding: '8px 16px',
+          background: '#a855f7',
+          color: 'white',
+          border: 'none',
+          borderRadius: 8,
+          cursor: 'pointer',
+          fontSize: 13,
+          fontWeight: 500,
+        }}
+      >
+        Save value
+      </button>
     </div>
   );
 }
@@ -259,19 +315,16 @@ export function SandboxPlayground() {
     setRendered(true);
   }, []);
 
-  const loadExample = useCallback(
-    (index: number) => {
-      const example = EXAMPLES[index];
-      if (!example) return;
-      setActiveExample(index);
-      setCode(example.code);
-      setError(null);
-      setRendered(false);
-      setExecutedCode(example.code);
-      setRunKey((k) => k + 1);
-    },
-    [],
-  );
+  const loadExample = useCallback((index: number) => {
+    const example = EXAMPLES[index];
+    if (!example) return;
+    setActiveExample(index);
+    setCode(example.code);
+    setError(null);
+    setRendered(false);
+    setExecutedCode(example.code);
+    setRunKey((k) => k + 1);
+  }, []);
 
   // Cmd/Ctrl+Enter to run
   useEffect(() => {
@@ -424,7 +477,7 @@ export function SandboxPlayground() {
               key={runKey}
               props={{ message: "Live in an iframe" }}
               capabilities={{
-                capabilities: ["fetch", "storage", "clipboard"],
+                capabilities: ["fetch", "storage", "clipboard", "cookie"],
               }}
               onError={handleError}
               onRender={handleRender}

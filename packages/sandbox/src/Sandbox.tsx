@@ -29,7 +29,7 @@ export interface SandboxProps {
  * Renders AI/user-provided React code in a secure iframe with CSP isolation.
  * Pass the code string as children.
  *
- * When sandbox code requests a capability (fetch, storage, clipboard),
+ * When sandbox code requests a capability (fetch, storage, clipboard, cookie),
  * the user is prompted for permission (allow once, allow always, deny once, deny always).
  */
 export function Sandbox({

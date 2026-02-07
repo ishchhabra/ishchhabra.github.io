@@ -4,6 +4,7 @@ import type {
   FetchDetails,
   StorageDetails,
   ClipboardDetails,
+  CookieDetails,
   PermissionDecision,
   PermissionRule,
   PermissionState,
@@ -31,6 +32,10 @@ export function summarizeRequest(req: CapabilityRequest): string {
       const d = req.details as ClipboardDetails;
       return d.operation === "read" ? "Read clipboard" : "Write to clipboard";
     }
+    case "cookie": {
+      const d = req.details as CookieDetails;
+      return d.operation === "read" ? "Read cookies" : "Write cookie";
+    }
     default:
       return `Unknown capability: ${req.capability}`;
   }
@@ -55,6 +60,13 @@ function extractPattern(req: CapabilityRequest): string {
     case "clipboard": {
       const d = req.details as ClipboardDetails;
       return d.operation;
+    }
+    case "cookie": {
+      const d = req.details as CookieDetails;
+      if (d.operation === "read") return "read";
+      // Extract cookie name from "name=value; path=/; ..."
+      const name = (d.value ?? "").split(";")[0]?.split("=")[0]?.trim() || "*";
+      return name;
     }
     default:
       return "*";
@@ -192,6 +204,8 @@ export class CapabilityBroker {
           return { result: this.executeStorage(req.details as StorageDetails) };
         case "clipboard":
           return { result: await this.executeClipboard(req.details as ClipboardDetails) };
+        case "cookie":
+          return { result: this.executeCookie(req.details as CookieDetails) };
         default:
           return { error: `Unknown capability: ${req.capability}` };
       }
@@ -245,6 +259,23 @@ export class CapabilityBroker {
     }
     const text = await navigator.clipboard.readText();
     return { text };
+  }
+
+  /** Sandbox cookie store (host-side, namespaced); mirrors document.cookie semantics. */
+  private static cookieStore = new Map<string, string>();
+
+  private executeCookie(details: CookieDetails) {
+    const store = CapabilityBroker.cookieStore;
+    if (details.operation === "read") {
+      const value = [...store.values()].join("; ");
+      return { value };
+    }
+    // Write: "name=value; path=/; max-age=3600" → store by name
+    const assign = (details.value ?? "").trim();
+    if (!assign) return { success: true };
+    const name = assign.split(";")[0]?.split("=")[0]?.trim();
+    if (name) store.set(name, assign);
+    return { success: true };
   }
 
   /** Get current rules (for debugging / display). */
