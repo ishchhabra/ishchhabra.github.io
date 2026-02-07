@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "pnpm --filter @i2-labs/design-overlay build && pnpm --filter demo dev",
-    "dev:watch": "pnpm --filter @i2-labs/design-overlay build && concurrently -n overlay,demo \"pnpm --filter @i2-labs/design-overlay build:watch\" \"pnpm --filter demo dev\"",
+    "dev": "pnpm --filter @i2-labs/design-overlay build && pnpm --filter @i2-labs/sandbox build && pnpm --filter demo dev",
+    "dev:watch": "pnpm --filter @i2-labs/design-overlay build && pnpm --filter @i2-labs/sandbox build && concurrently -n overlay,sandbox,demo \"pnpm --filter @i2-labs/design-overlay build:watch\" \"pnpm --filter @i2-labs/sandbox build:watch\" \"pnpm --filter demo dev\"",
     "test": "echo \"Error: no test specified\" && exit 1",
     "format": "pnpm -r format",
     "format-check": "pnpm -r --parallel format-check",

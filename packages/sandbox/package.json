@@ -1,0 +1,49 @@
+{
+  "name": "@i2-labs/sandbox",
+  "version": "1.0.0",
+  "description": "Secure sandboxed React rendering for AI-generated UI",
+  "keywords": ["react", "sandbox", "security", "ai"],
+  "license": "ISC",
+  "author": "",
+  "files": ["dist", "src"],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json --sourceRoot \"$(pwd)/src\" && tsc-alias -p tsconfig.json",
+    "build:watch": "tsc-watch -p tsconfig.json --sourceRoot \"$(pwd)/src\" --onSuccess \"pnpm postbuild\"",
+    "postbuild": "tsc-alias -p tsconfig.json && pnpm-sync copy && echo 'Build complete'",
+    "prepare": "pnpm build",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "format": "oxfmt",
+    "format-check": "oxfmt --check",
+    "lint": "oxlint",
+    "type-check": "tsc --noEmit",
+    "sync:prepare:demo": "pnpm-sync prepare -l ../../apps/demo/pnpm-lock.yaml -s ../../apps/demo/node_modules/.pnpm"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "pnpm-sync": "^0.3.3",
+    "tsc-alias": "^1.8.16",
+    "tsc-watch": "catalog:",
+    "typescript": "catalog:"
+  },
+  "peerDependencies": {
+    "react": "^18 || ^19",
+    "react-dom": "^18 || ^19"
+  },
+  "packageManager": "pnpm@10.14.0"
+}
