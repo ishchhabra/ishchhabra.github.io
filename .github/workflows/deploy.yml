@@ -31,7 +31,7 @@ jobs:
           cache: "pnpm"
 
       - name: Install dependencies
-        run: pnpm install --filter demo...
+        run: pnpm install -w --filter demo...
 
       - name: Build
         run: pnpm --filter demo build
