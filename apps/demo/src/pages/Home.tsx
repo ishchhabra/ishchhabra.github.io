@@ -5,7 +5,7 @@ const labProjects = [
     title: "React Sandbox",
     description:
       "Secure, sandboxed React rendering for AI-generated UI. CSP isolation, full hooks, zero host DOM access.",
-    href: "/projects/sandbox",
+    href: "/lab/sandbox",
     tag: "Experiment",
     accent: "emerald" as const,
   },
@@ -13,7 +13,7 @@ const labProjects = [
     title: "Design Overlay",
     description:
       "Point at any element, describe what you want in natural language, watch it change. AI-powered visual editing.",
-    href: "/projects/design-overlay",
+    href: "/lab/design-overlay",
     tag: "Experiment",
     accent: "blue" as const,
   },
