@@ -48,10 +48,10 @@ function IconButton({
         color: active ? "#fff" : "rgba(161,161,170,1)",
       }}
       onMouseEnter={(e) => {
-        if (!active) (e.currentTarget.style.background = "rgba(255,255,255,0.1)");
+        if (!active) e.currentTarget.style.background = "rgba(255,255,255,0.1)";
       }}
       onMouseLeave={(e) => {
-        if (!active) (e.currentTarget.style.background = "transparent");
+        if (!active) e.currentTarget.style.background = "transparent";
       }}
     >
       {children}
@@ -86,7 +86,11 @@ export function Toolbar({
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-        <IconButton onClick={onToggle} title={active ? "Exit select mode" : "Enter select mode"} active={active}>
+        <IconButton
+          onClick={onToggle}
+          title={active ? "Exit select mode" : "Enter select mode"}
+          active={active}
+        >
           <MousePointerClick size={16} />
         </IconButton>
 

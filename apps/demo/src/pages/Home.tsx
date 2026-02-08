@@ -31,8 +31,7 @@ const labProjects = [
 const writing = [
   {
     title: "Setting up a pnpm monorepo from scratch",
-    description:
-      "Workspaces, shared configs, build order, and the gotchas nobody warns you about.",
+    description: "Workspaces, shared configs, build order, and the gotchas nobody warns you about.",
     href: "#",
     date: "Coming soon",
   },
@@ -44,11 +43,9 @@ const tagStyles: Record<string, string> = {
 };
 
 const accentGradients: Record<string, string> = {
-  emerald:
-    "from-emerald-500/10 via-transparent to-transparent group-hover:from-emerald-500/15",
+  emerald: "from-emerald-500/10 via-transparent to-transparent group-hover:from-emerald-500/15",
   blue: "from-blue-500/10 via-transparent to-transparent group-hover:from-blue-500/15",
-  violet:
-    "from-violet-500/10 via-transparent to-transparent group-hover:from-violet-500/15",
+  violet: "from-violet-500/10 via-transparent to-transparent group-hover:from-violet-500/15",
 };
 
 function LabCard({ project }: { project: (typeof labProjects)[number] }) {
@@ -73,9 +70,7 @@ function LabCard({ project }: { project: (typeof labProjects)[number] }) {
             {project.tag}
           </span>
         </div>
-        <p className="mb-5 flex-1 text-sm leading-relaxed text-zinc-400">
-          {project.description}
-        </p>
+        <p className="mb-5 flex-1 text-sm leading-relaxed text-zinc-400">{project.description}</p>
         <span className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-500 transition-colors duration-300 group-hover:text-white">
           {isExternal ? "View on GitHub" : "Try it"}
           <svg
@@ -186,16 +181,10 @@ export function Home() {
               className="-mx-3 flex items-baseline justify-between gap-8 rounded-lg px-3 py-3"
             >
               <div className="min-w-0">
-                <div className="text-sm font-medium text-zinc-300">
-                  {post.title}
-                </div>
-                <div className="text-[13px] text-zinc-500">
-                  {post.description}
-                </div>
+                <div className="text-sm font-medium text-zinc-300">{post.title}</div>
+                <div className="text-[13px] text-zinc-500">{post.description}</div>
               </div>
-              <span className="shrink-0 text-[11px] tabular-nums text-zinc-600">
-                {post.date}
-              </span>
+              <span className="shrink-0 text-[11px] tabular-nums text-zinc-600">{post.date}</span>
             </div>
           ))}
         </div>

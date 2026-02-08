@@ -57,7 +57,9 @@ export const domReadTool = tool({
   description: `Inspect an element. The page structure and element context are already provided in the system prompt. Use this to think about what to do before calling dom_write or dom_insert.`,
   inputSchema: z.object({
     selector: z.string().describe("CSS selector to inspect"),
-    path: z.string().describe("What to read (e.g. text, html, style, style.color, attr.href, classes)"),
+    path: z
+      .string()
+      .describe("What to read (e.g. text, html, style, style.color, attr.href, classes)"),
   }),
   execute: async (input) => ({
     ...input,

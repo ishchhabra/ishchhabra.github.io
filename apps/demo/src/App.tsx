@@ -10,10 +10,7 @@ function App() {
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
         <Route path="/projects/sandbox" element={<SandboxPlayground />} />
-        <Route
-          path="/projects/design-overlay"
-          element={<DesignOverlayDemo />}
-        />
+        <Route path="/projects/design-overlay" element={<DesignOverlayDemo />} />
       </Route>
     </Routes>
   );

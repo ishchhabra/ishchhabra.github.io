@@ -58,9 +58,7 @@ function detectTheme(doc: Document | null): "dark" | "light" {
     const channels = bg.match(/\d+/g);
     if (channels && channels.length >= 3) {
       const luminance =
-        0.299 * Number(channels[0]) +
-        0.587 * Number(channels[1]) +
-        0.114 * Number(channels[2]);
+        0.299 * Number(channels[0]) + 0.587 * Number(channels[1]) + 0.114 * Number(channels[2]);
       if (luminance < 128) return "dark";
     }
   } catch {
@@ -116,12 +114,9 @@ export function serializePageContext(root: Document | Element = document): PageC
 
   walk(el, 0);
 
-  const structure = lines.length > 0
-    ? lines.join("\n")
-    : `<${el.tagName.toLowerCase()}>`;
+  const structure = lines.length > 0 ? lines.join("\n") : `<${el.tagName.toLowerCase()}>`;
 
-  const pageTitle =
-    doc?.title || el.querySelector("h1")?.textContent?.trim().slice(0, 80) || "";
+  const pageTitle = doc?.title || el.querySelector("h1")?.textContent?.trim().slice(0, 80) || "";
 
   const h1 = el.querySelector("h1");
   const firstP = el.querySelector("main p, article p, .content p, p");

@@ -28,12 +28,7 @@ body {
 }
 
 .accent-line {
-  background: linear-gradient(
-    90deg,
-    #3b82f6,
-    #8b5cf6,
-    #3b82f6
-  );
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6, #3b82f6);
   background-size: 200% 100%;
   animation: accent-shimmer 4s ease-in-out infinite;
 }

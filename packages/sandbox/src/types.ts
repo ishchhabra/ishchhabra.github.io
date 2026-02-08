@@ -43,11 +43,7 @@ export interface CookieDetails {
 /* ------------------------------------------------------------------ */
 
 /** What the user decided for a capability request. */
-export type PermissionDecision =
-  | "allow-once"
-  | "allow-always"
-  | "deny-once"
-  | "deny-always";
+export type PermissionDecision = "allow-once" | "allow-always" | "deny-once" | "deny-always";
 
 /** A persisted permission rule. Created when user picks allow-always or deny-always. */
 export interface PermissionRule {

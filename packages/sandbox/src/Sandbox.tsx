@@ -2,11 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { buildSrcdoc } from "./srcdoc";
 import { CapabilityBroker } from "./broker";
 import { PermissionPrompt } from "./PermissionPrompt";
-import type {
-  CapabilityConfig,
-  CapabilityRequest,
-  PendingRequest,
-} from "./types";
+import type { CapabilityConfig, CapabilityRequest, PendingRequest } from "./types";
 
 export interface SandboxProps {
   /** Props to pass to the sandboxed component. */
@@ -43,9 +39,7 @@ export function Sandbox({
 }: SandboxProps & { children: string }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [ready, setReady] = useState(false);
-  const [pendingPrompt, setPendingPrompt] = useState<PendingRequest | null>(
-    null,
-  );
+  const [pendingPrompt, setPendingPrompt] = useState<PendingRequest | null>(null);
   const propsRef = useRef(sandboxProps);
   propsRef.current = sandboxProps;
 

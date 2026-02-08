@@ -13,9 +13,9 @@ export function DesignOverlayDemo() {
             Design Overlay
           </h1>
           <p className="mb-6 max-w-2xl text-lg leading-relaxed text-zinc-400">
-            A development tool that lets you select any element on the page and
-            edit it with AI — directly in the browser. No switching between code
-            and preview. Point, describe what you want, and watch it change.
+            A development tool that lets you select any element on the page and edit it with AI —
+            directly in the browser. No switching between code and preview. Point, describe what you
+            want, and watch it change.
           </p>
 
           <div className="rounded-xl border border-white/5 bg-white/2 p-6">
@@ -45,8 +45,7 @@ export function DesignOverlayDemo() {
                     </svg>
                     cursor
                   </span>{" "}
-                  toggle at the bottom center of the screen to activate the
-                  overlay.
+                  toggle at the bottom center of the screen to activate the overlay.
                 </span>
               </li>
               <li className="flex gap-3">
@@ -54,8 +53,8 @@ export function DesignOverlayDemo() {
                   2
                 </span>
                 <span>
-                  Hover over any element — you'll see a blue outline highlighting
-                  it. Click to select.
+                  Hover over any element — you'll see a blue outline highlighting it. Click to
+                  select.
                 </span>
               </li>
               <li className="flex gap-3">
@@ -63,8 +62,8 @@ export function DesignOverlayDemo() {
                   3
                 </span>
                 <span>
-                  Describe what you want to change in natural language. The AI
-                  edits the element's styles and content in real time.
+                  Describe what you want to change in natural language. The AI edits the element's
+                  styles and content in real time.
                 </span>
               </li>
             </ol>
@@ -89,38 +88,31 @@ export function DesignOverlayDemo() {
             The quick brown fox
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-zinc-400">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
-            eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim
-            ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-            aliquip ex ea commodo consequat. Duis aute irure dolor in
-            reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-            pariatur.
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor
+            incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+            exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure
+            dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
           </p>
           <p className="mb-6 text-sm leading-relaxed text-zinc-400">
-            Excepteur sint occaecat cupidatat non proident, sunt in culpa qui
-            officia deserunt mollit anim id est laborum. Sed ut perspiciatis
-            unde omnis iste natus error sit voluptatem accusantium doloremque
-            laudantium, totam rem aperiam.
+            Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
+            mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit
+            voluptatem accusantium doloremque laudantium, totam rem aperiam.
           </p>
         </article>
 
         <div className="mb-10 grid gap-4 sm:grid-cols-2">
           <div className="rounded-xl border border-white/5 bg-white/2 p-6">
-            <h3 className="mb-2 text-base font-semibold text-white">
-              Card one
-            </h3>
+            <h3 className="mb-2 text-base font-semibold text-white">Card one</h3>
             <p className="text-sm leading-relaxed text-zinc-400">
-              This is a sample card. Select it with the overlay and ask the AI
-              to change its background, text, layout — anything.
+              This is a sample card. Select it with the overlay and ask the AI to change its
+              background, text, layout — anything.
             </p>
           </div>
           <div className="rounded-xl border border-white/5 bg-white/2 p-6">
-            <h3 className="mb-2 text-base font-semibold text-white">
-              Card two
-            </h3>
+            <h3 className="mb-2 text-base font-semibold text-white">Card two</h3>
             <p className="text-sm leading-relaxed text-zinc-400">
-              Another sample card. Try asking the AI to make this one stand out,
-              add a border color, or restyle the typography.
+              Another sample card. Try asking the AI to make this one stand out, add a border color,
+              or restyle the typography.
             </p>
           </div>
         </div>

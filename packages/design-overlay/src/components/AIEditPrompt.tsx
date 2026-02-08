@@ -184,7 +184,16 @@ export function AIEditPrompt({
       }
       setIsLoading(false);
     }
-  }, [apiUrl, model, ollamaBaseUrl, input, isLoading, selectedElements, onEditRequest, processStream]);
+  }, [
+    apiUrl,
+    model,
+    ollamaBaseUrl,
+    input,
+    isLoading,
+    selectedElements,
+    onEditRequest,
+    processStream,
+  ]);
 
   // -- Render -----------------------------------------------------------------
 
@@ -226,10 +235,7 @@ export function AIEditPrompt({
             backgroundColor: "rgba(39,39,42,0.8)",
           }}
         >
-          <Sparkles
-            size={14}
-            style={{ color: "rgba(161,161,170,0.8)", flexShrink: 0 }}
-          />
+          <Sparkles size={14} style={{ color: "rgba(161,161,170,0.8)", flexShrink: 0 }} />
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}

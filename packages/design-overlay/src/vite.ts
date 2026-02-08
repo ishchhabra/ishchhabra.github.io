@@ -24,42 +24,46 @@ export function designOverlayApiPlugin(): Plugin {
     },
 
     configureServer(server: ViteDevServer) {
-      server.middlewares.use(async (req: IncomingMessage, res: ServerResponse, next: () => void) => {
-        if (req.url?.split("?")[0] !== "/api/chat" || req.method !== "POST") {
-          return next();
-        }
-
-        try {
-          const body = await readBody(req);
-          const request = new Request("http://localhost/api/chat", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body,
-          });
-
-          const mod = await import("@i2-labs/design-overlay/server");
-          const handleChatRequest = mod.handleChatRequest as (req: Request) => Promise<Response>;
-          const response = await handleChatRequest(request);
-
-          res.statusCode = response.status;
-          response.headers.forEach((v, k) => res.setHeader(k, v));
-
-          if (response.body) {
-            await pipeReadableStream(response.body, res);
-          } else {
-            res.end();
+      server.middlewares.use(
+        async (req: IncomingMessage, res: ServerResponse, next: () => void) => {
+          if (req.url?.split("?")[0] !== "/api/chat" || req.method !== "POST") {
+            return next();
           }
-        } catch (err) {
-          console.error("[design-overlay] Chat API error:", err);
-          if (!res.headersSent) {
-            res.statusCode = 500;
-            res.setHeader("Content-Type", "application/json");
-            res.end(JSON.stringify({
-              error: err instanceof Error ? err.message : "Internal server error",
-            }));
+
+          try {
+            const body = await readBody(req);
+            const request = new Request("http://localhost/api/chat", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body,
+            });
+
+            const mod = await import("@i2-labs/design-overlay/server");
+            const handleChatRequest = mod.handleChatRequest as (req: Request) => Promise<Response>;
+            const response = await handleChatRequest(request);
+
+            res.statusCode = response.status;
+            response.headers.forEach((v, k) => res.setHeader(k, v));
+
+            if (response.body) {
+              await pipeReadableStream(response.body, res);
+            } else {
+              res.end();
+            }
+          } catch (err) {
+            console.error("[design-overlay] Chat API error:", err);
+            if (!res.headersSent) {
+              res.statusCode = 500;
+              res.setHeader("Content-Type", "application/json");
+              res.end(
+                JSON.stringify({
+                  error: err instanceof Error ? err.message : "Internal server error",
+                }),
+              );
+            }
           }
-        }
-      });
+        },
+      );
     },
   };
 }
@@ -79,10 +83,7 @@ function readBody(req: IncomingMessage): Promise<string> {
 }
 
 /** Pipe a web ReadableStream into a Node.js ServerResponse. */
-async function pipeReadableStream(
-  stream: ReadableStream,
-  res: ServerResponse,
-): Promise<void> {
+async function pipeReadableStream(stream: ReadableStream, res: ServerResponse): Promise<void> {
   const reader = stream.getReader();
   try {
     while (true) {

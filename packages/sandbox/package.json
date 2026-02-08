@@ -2,10 +2,18 @@
   "name": "@i2-labs/sandbox",
   "version": "1.0.0",
   "description": "Secure sandboxed React rendering for AI-generated UI",
-  "keywords": ["react", "sandbox", "security", "ai"],
+  "keywords": [
+    "ai",
+    "react",
+    "sandbox",
+    "security"
+  ],
   "license": "ISC",
   "author": "",
-  "files": ["dist", "src"],
+  "files": [
+    "dist",
+    "src"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -34,9 +42,9 @@
     "@types/react-dom": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
+    "pnpm-sync": "^0.3.3",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "pnpm-sync": "^0.3.3",
     "tsc-alias": "^1.8.16",
     "tsc-watch": "catalog:",
     "typescript": "catalog:"

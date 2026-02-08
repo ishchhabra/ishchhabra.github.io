@@ -110,9 +110,7 @@ export class CapabilityBroker {
   }
 
   /** Handle a capability request from the sandbox. Returns the result or error. */
-  async handleRequest(
-    req: CapabilityRequest,
-  ): Promise<{ result?: unknown; error?: string }> {
+  async handleRequest(req: CapabilityRequest): Promise<{ result?: unknown; error?: string }> {
     // 1. Check if the capability is enabled at all
     if (!this.enabledCapabilities.has(req.capability)) {
       return {
@@ -123,8 +121,7 @@ export class CapabilityBroker {
     // 2. Check persisted rules
     const pattern = extractPattern(req);
     const existingRule = this.state.rules.find(
-      (r) =>
-        r.capability === req.capability && patternMatches(r.pattern, pattern),
+      (r) => r.capability === req.capability && patternMatches(r.pattern, pattern),
     );
 
     if (existingRule) {
@@ -143,10 +140,7 @@ export class CapabilityBroker {
   }
 
   /** Prompt the user and wait for their decision. */
-  private promptUser(
-    req: CapabilityRequest,
-    _pattern: string,
-  ): Promise<PermissionDecision> {
+  private promptUser(req: CapabilityRequest, _pattern: string): Promise<PermissionDecision> {
     return new Promise<PermissionDecision>((resolve) => {
       const pending: PendingRequest = {
         id: req.id,
@@ -194,9 +188,7 @@ export class CapabilityBroker {
   }
 
   /** Execute the capability on behalf of the sandbox. */
-  private async execute(
-    req: CapabilityRequest,
-  ): Promise<{ result?: unknown; error?: string }> {
+  private async execute(req: CapabilityRequest): Promise<{ result?: unknown; error?: string }> {
     try {
       switch (req.capability) {
         case "fetch":
@@ -207,9 +199,7 @@ export class CapabilityBroker {
           return { result: this.executeStorage(req.details as StorageDetails) };
         case "clipboard":
           return {
-            result: await this.executeClipboard(
-              req.details as ClipboardDetails,
-            ),
+            result: await this.executeClipboard(req.details as ClipboardDetails),
           };
         case "cookie":
           return { result: this.executeCookie(req.details as CookieDetails) };

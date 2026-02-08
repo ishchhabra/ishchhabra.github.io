@@ -99,7 +99,16 @@ function resolveInsertTarget(
 
 type ElementOp = Extract<
   EditOperation,
-  { type: "set-style" | "add-class" | "remove-class" | "set-attribute" | "remove-attribute" | "set-text-content" | "set-inner-html" }
+  {
+    type:
+      | "set-style"
+      | "add-class"
+      | "remove-class"
+      | "set-attribute"
+      | "remove-attribute"
+      | "set-text-content"
+      | "set-inner-html";
+  }
 >;
 
 function applyElementOperation(el: Element, op: ElementOp): void {
@@ -161,11 +170,7 @@ function applyPathWrite(el: Element, path: string, value: string): void {
 }
 
 /** Insert HTML relative to a target element and return refs for undo. */
-function insertHTML(
-  target: Element,
-  position: InsertPosition,
-  html: string,
-): InsertedNodeRef[] {
+function insertHTML(target: Element, position: InsertPosition, html: string): InsertedNodeRef[] {
   const template = document.createElement("template");
   template.innerHTML = html;
   const fragment = template.content;
@@ -216,7 +221,12 @@ export interface EditEngineResult {
   /** Apply a path-based write to all elements matching a CSS selector. */
   applyDomWrite: (selector: string, path: string, value: string, description?: string) => void;
   /** Insert HTML relative to the first element matching a CSS selector. */
-  applyDomInsert: (targetSelector: string, position: InsertPosition, html: string, description?: string) => void;
+  applyDomInsert: (
+    targetSelector: string,
+    position: InsertPosition,
+    html: string,
+    description?: string,
+  ) => void;
   /** Undo the last edit. Returns true if an edit was undone. */
   undo: () => boolean;
   /** Number of undoable edits in history. */
@@ -305,7 +315,12 @@ export function useEditEngine(): EditEngineResult {
   // -- applyDomInsert: HTML insertion (AI tool interface) ---------------------
 
   const applyDomInsert = useCallback(
-    (targetSelector: string, position: InsertPosition, html: string, description = "dom_insert") => {
+    (
+      targetSelector: string,
+      position: InsertPosition,
+      html: string,
+      description = "dom_insert",
+    ) => {
       const target = querySelectorFiltered(targetSelector)[0];
       if (!target) return;
 

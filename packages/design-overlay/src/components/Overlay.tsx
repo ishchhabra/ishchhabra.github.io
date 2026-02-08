@@ -16,10 +16,14 @@ export interface OverlayProps {
   onEditRequest?: ((message: string) => void) | undefined;
 }
 
-export default function Overlay({ apiUrl = "/api/chat", model, ollamaBaseUrl, onEditRequest }: OverlayProps) {
+export default function Overlay({
+  apiUrl = "/api/chat",
+  model,
+  ollamaBaseUrl,
+  onEditRequest,
+}: OverlayProps) {
   const [active, setActive] = useState(false);
-  const { hoveredElement, selectedElements, clearSelection } =
-    useElementSelection(active);
+  const { hoveredElement, selectedElements, clearSelection } = useElementSelection(active);
 
   return (
     <div data-i2-overlay className="fixed inset-0 z-[9999] pointer-events-none">

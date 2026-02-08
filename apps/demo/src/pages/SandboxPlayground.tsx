@@ -388,9 +388,8 @@ export function SandboxPlayground() {
           React Sandbox
         </h1>
         <p className="max-w-2xl text-sm text-zinc-400">
-          Write React code and run it in an isolated iframe. CSP-enforced — no
-          network access, no host DOM access. Full React with hooks and
-          interactivity.
+          Write React code and run it in an isolated iframe. CSP-enforced — no network access, no
+          host DOM access. Full React with hooks and interactivity.
         </p>
       </div>
 
@@ -425,9 +424,7 @@ export function SandboxPlayground() {
               >
                 {example.label}
               </div>
-              <div className="text-[11px] text-zinc-500">
-                {example.description}
-              </div>
+              <div className="text-[11px] text-zinc-500">{example.description}</div>
             </div>
           </button>
         ))}
@@ -443,10 +440,7 @@ export function SandboxPlayground() {
                 <div className="h-2.5 w-2.5 rounded-full bg-white/10" />
                 <div className="h-2.5 w-2.5 rounded-full bg-white/10" />
               </div>
-              <span
-                className="text-xs text-zinc-500"
-                style={{ fontFamily: "var(--font-mono)" }}
-              >
+              <span className="text-xs text-zinc-500" style={{ fontFamily: "var(--font-mono)" }}>
                 editor.tsx
               </span>
             </div>
@@ -474,18 +468,13 @@ export function SandboxPlayground() {
                 <div className="h-2.5 w-2.5 rounded-full bg-white/10" />
                 <div className="h-2.5 w-2.5 rounded-full bg-white/10" />
               </div>
-              <span
-                className="text-xs text-zinc-500"
-                style={{ fontFamily: "var(--font-mono)" }}
-              >
+              <span className="text-xs text-zinc-500" style={{ fontFamily: "var(--font-mono)" }}>
                 preview
               </span>
             </div>
             <div className="flex items-center gap-2">
               {error ? (
-                <span className="max-w-[240px] truncate text-xs text-red-400">
-                  {error}
-                </span>
+                <span className="max-w-[240px] truncate text-xs text-red-400">{error}</span>
               ) : rendered ? (
                 <span className="flex items-center gap-1 text-xs text-emerald-500">
                   <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />

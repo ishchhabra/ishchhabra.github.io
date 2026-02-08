@@ -59,8 +59,7 @@ export function PermissionPrompt({ request }: PermissionPromptProps) {
         background: "rgba(0,0,0,0.6)",
         backdropFilter: "blur(8px)",
         WebkitBackdropFilter: "blur(8px)",
-        fontFamily:
-          "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         animation: "sandboxFadeIn 0.15s ease-out",
       }}
     >
@@ -161,8 +160,7 @@ export function PermissionPrompt({ request }: PermissionPromptProps) {
               border: "1px solid rgba(255,255,255,0.06)",
               borderRadius: 10,
               padding: "12px 16px",
-              fontFamily:
-                "'JetBrains Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', monospace",
+              fontFamily: "'JetBrains Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', monospace",
               fontSize: 13,
               color: "#e4e4e7",
               wordBreak: "break-all",

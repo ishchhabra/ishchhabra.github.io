@@ -41,10 +41,7 @@ interface PageContext {
 // System prompt
 // ---------------------------------------------------------------------------
 
-function buildSystemPrompt(
-  elements: ElementContext[],
-  pageContext?: PageContext | null,
-): string {
+function buildSystemPrompt(elements: ElementContext[], pageContext?: PageContext | null): string {
   const parts: string[] = [];
 
   // Core instructions
@@ -71,7 +68,9 @@ function buildSystemPrompt(
       const sel = el.id ? `#${el.id}` : el.classes.length ? `.${el.classes[0]}` : el.tagName;
       return `[${el.index}] <${el.tagName}> ${sel} — "${el.textContent.slice(0, 80)}"`;
     });
-    parts.push(`\n## Selected Elements\nTarget with \`[data-i2-selected]\`:\n${descriptions.join("\n")}`);
+    parts.push(
+      `\n## Selected Elements\nTarget with \`[data-i2-selected]\`:\n${descriptions.join("\n")}`,
+    );
   }
 
   // Page structure context
@@ -106,10 +105,14 @@ ${pageContext.structure}
 \`\`\``);
 
     if (pageContext.sampleSectionHTML) {
-      parts.push(`\n## Sample Section HTML (match this style when adding content)\n\`\`\`html\n${pageContext.sampleSectionHTML}\n\`\`\``);
+      parts.push(
+        `\n## Sample Section HTML (match this style when adding content)\n\`\`\`html\n${pageContext.sampleSectionHTML}\n\`\`\``,
+      );
     }
   } else if (elements.length === 0) {
-    parts.push("\nNo element or page context available. Ask the user to select elements or try again.");
+    parts.push(
+      "\nNo element or page context available. Ask the user to select elements or try again.",
+    );
   }
 
   return parts.join("\n");
@@ -137,10 +140,10 @@ export async function handleChatRequest(req: Request): Promise<Response> {
     } = body;
 
     if (!Array.isArray(messages) || messages.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "messages array is required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "messages array is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const elements = Array.isArray(elementContext) ? elementContext : [];
