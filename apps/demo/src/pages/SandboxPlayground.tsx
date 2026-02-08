@@ -385,7 +385,7 @@ export function SandboxPlayground() {
           className="mb-2 text-3xl font-bold tracking-tight text-white"
           style={{ fontFamily: "var(--font-display)" }}
         >
-          Sandbox
+          React Sandbox
         </h1>
         <p className="max-w-2xl text-sm text-zinc-400">
           Write React code and run it in an isolated iframe. CSP-enforced — no

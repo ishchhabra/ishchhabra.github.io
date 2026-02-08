@@ -6,6 +6,34 @@
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   font-family: var(--font-body);
+}
+
+/* Subtle shimmer for the hero accent line */
+@keyframes accent-shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.accent-line {
+  background: linear-gradient(
+    90deg,
+    #3b82f6,
+    #8b5cf6,
+    #3b82f6
+  );
+  background-size: 200% 100%;
+  animation: accent-shimmer 4s ease-in-out infinite;
 }
