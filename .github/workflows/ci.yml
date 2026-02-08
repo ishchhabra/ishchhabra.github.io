@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: package.json
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run Format Check
+        run: pnpm run format-check
+
+      - name: Run Lint
+        run: pnpm run lint
+
+      - name: Run Type Check
+        run: pnpm run type-check
