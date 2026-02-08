@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "format": "oxfmt",
     "format-check": "oxfmt --check",
-    "lint": "oxlint",
+    "lint": "oxlint --max-warnings=0",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {

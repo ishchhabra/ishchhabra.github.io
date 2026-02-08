@@ -35,7 +35,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "format": "oxfmt",
     "format-check": "oxfmt --check",
-    "lint": "oxlint",
+    "lint": "oxlint --max-warnings=0",
     "type-check": "tsc --noEmit",
     "sync:prepare:demo": "pnpm-sync prepare -l ../../apps/demo/pnpm-lock.yaml -s ../../apps/demo/node_modules/.pnpm"
   },
