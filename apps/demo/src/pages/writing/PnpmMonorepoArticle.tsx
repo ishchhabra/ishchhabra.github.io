@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Page } from "../../components/Page";
 import {
   A,
   Callout,
@@ -47,10 +48,10 @@ export function PnpmMonorepoArticle() {
   return (
     <>
       <ScrollProgress />
-      <main className="relative">
-        {/* Hero + content in one container for aligned left edges */}
-        <div className="mx-auto max-w-7xl px-6">
-          <header className="max-w-4xl pt-16 pb-8 sm:pt-24">
+      <Page.Main>
+        <Page.Hero>
+          {/* Hero + content in one container for aligned left edges */}
+          <header className="max-w-4xl pb-8">
             <Link
               to="/writing"
               className="mb-8 inline-flex items-center gap-1.5 text-[12px] text-zinc-600 transition-colors hover:text-zinc-400"
@@ -90,7 +91,7 @@ export function PnpmMonorepoArticle() {
           </header>
 
           {/* Content grid: article + sidebar ToC */}
-          <div className="flex gap-10 pt-8 pb-24">
+          <div className="flex gap-10 pt-8">
             <article className="min-w-0 max-w-4xl flex-1">
               {/* ============================================================ */}
               {/*  THE BUG                                                     */}
@@ -619,8 +620,8 @@ pnpm --filter @packages/ui build`}</CodeBlock>
             {/* Sidebar: Table of Contents */}
             <TableOfContents items={tocItems} />
           </div>
-        </div>
-      </main>
+        </Page.Hero>
+      </Page.Main>
     </>
   );
 }

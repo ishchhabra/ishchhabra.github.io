@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Page } from "../components/Page";
 
 const articles = [
   {
@@ -13,8 +14,8 @@ const articles = [
 
 export function Writing() {
   return (
-    <main className="relative">
-      <div className="mx-auto max-w-7xl px-6 pt-20 pb-24 sm:pt-28">
+    <Page.Main>
+      <Page.Hero>
         <div className="max-w-3xl">
           <div className="accent-line mb-6 h-px w-12" />
           <h1
@@ -59,7 +60,7 @@ export function Writing() {
             </Link>
           ))}
         </div>
-      </div>
-    </main>
+      </Page.Hero>
+    </Page.Main>
   );
 }

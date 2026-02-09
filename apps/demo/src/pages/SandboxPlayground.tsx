@@ -1,5 +1,6 @@
 import { Sandbox } from "@i2-labs/sandbox";
 import type { ReactNode } from "react";
+import { Page } from "../components/Page";
 import { Component, useCallback, useEffect, useRef, useState } from "react";
 
 const AUTO_RUN_DEBOUNCE_MS = 500;
@@ -379,7 +380,7 @@ export function SandboxPlayground() {
   }, [code]);
 
   return (
-    <main className="relative mx-auto max-w-7xl px-6 py-8">
+    <Page.Main>
       <div className="mb-6">
         <h1
           className="mb-2 text-3xl font-bold tracking-tight text-white"
@@ -541,6 +542,6 @@ export function SandboxPlayground() {
           </div>
         </div>
       </div>
-    </main>
+    </Page.Main>
   );
 }

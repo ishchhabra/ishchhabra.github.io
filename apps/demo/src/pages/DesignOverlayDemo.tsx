@@ -1,9 +1,10 @@
 import { Overlay } from "@i2-labs/design-overlay";
+import { Page } from "../components/Page";
 
 export function DesignOverlayDemo() {
   return (
     <>
-      <main className="relative mx-auto max-w-7xl px-6 py-10">
+      <Page.Main>
         {/* Hero explanation */}
         <div className="mb-12">
           <h1
@@ -137,7 +138,7 @@ export function DesignOverlayDemo() {
             Blue button
           </button>
         </div>
-      </main>
+      </Page.Main>
 
       <Overlay />
     </>
