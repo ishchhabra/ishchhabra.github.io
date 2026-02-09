@@ -81,7 +81,7 @@ function LabDropdown() {
       </Link>
       {open && (
         <div
-          className="absolute left-0 top-full z-50 mt-1 min-w-[180px] rounded-lg border border-white/10 bg-zinc-900/95 py-2 shadow-xl backdrop-blur-sm"
+          className="absolute left-0 top-full z-50 -mt-px min-w-[180px] rounded-lg border border-white/10 bg-zinc-900/95 py-2 shadow-xl backdrop-blur-sm"
           role="menu"
         >
           {labItems.map((item) => (
