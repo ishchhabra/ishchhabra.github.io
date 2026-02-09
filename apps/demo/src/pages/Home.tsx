@@ -52,8 +52,7 @@ const accentGradients: Record<string, string> = {
 
 function LabCard({ project }: { project: (typeof labProjects)[number] }) {
   const isExternal = "external" in project;
-  const isTransitioningToProject =
-    !isExternal && useViewTransitionState(project.href as string);
+  const isTransitioningToProject = !isExternal && useViewTransitionState(project.href as string);
   const labSlug = !isExternal ? (project.href as string).replace("/lab/", "") : null;
   const titleTransitionName = labSlug ? `lab-${labSlug}-title` : undefined;
   const descTransitionName = labSlug ? `lab-${labSlug}-description` : undefined;
@@ -69,9 +68,10 @@ function LabCard({ project }: { project: (typeof labProjects)[number] }) {
             className="text-lg font-semibold text-white"
             style={{
               fontFamily: "var(--font-display)",
-              ...(isTransitioningToProject && titleTransitionName && {
-                viewTransitionName: titleTransitionName,
-              }),
+              ...(isTransitioningToProject &&
+                titleTransitionName && {
+                  viewTransitionName: titleTransitionName,
+                }),
             }}
           >
             {project.title}
@@ -198,9 +198,7 @@ export function Home() {
                 <div className="min-w-0">
                   <div
                     className="text-sm font-medium text-zinc-300 transition-colors group-hover:text-white"
-                    style={
-                      isTransitioningToArticle ? { viewTransitionName: "article-title" } : {}
-                    }
+                    style={isTransitioningToArticle ? { viewTransitionName: "article-title" } : {}}
                   >
                     {post.title}
                   </div>

@@ -382,11 +382,7 @@ export function SandboxPlayground() {
   return (
     <Page.Main>
       <div className="mb-6">
-        <Page.Hero
-          title="React Sandbox"
-          accentLine={false}
-          viewTransitionName="lab-sandbox-title"
-        >
+        <Page.Hero title="React Sandbox" accentLine={false} viewTransitionName="lab-sandbox-title">
           <p
             className="max-w-2xl text-sm text-zinc-400"
             style={{ viewTransitionName: "lab-sandbox-description" }}

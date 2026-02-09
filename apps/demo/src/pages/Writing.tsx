@@ -46,7 +46,9 @@ export function Writing() {
                   className="text-lg font-semibold text-zinc-200 transition-colors group-hover:text-white"
                   style={{
                     fontFamily: "var(--font-display)",
-                    ...(shouldAnimateTitle && { viewTransitionName: "article-title" }),
+                    ...(shouldAnimateTitle && {
+                      viewTransitionName: "article-title",
+                    }),
                   }}
                 >
                   {post.title}
@@ -58,7 +60,9 @@ export function Writing() {
               </div>
               <p
                 className="text-sm leading-relaxed text-zinc-500"
-                style={shouldAnimateDescription ? { viewTransitionName: "article-description" } : {}}
+                style={
+                  shouldAnimateDescription ? { viewTransitionName: "article-description" } : {}
+                }
               >
                 {post.description}
               </p>
