@@ -105,7 +105,7 @@ export function Header() {
         <nav className="flex items-center gap-6 text-[13px]">
           <NavLinkContent to="/" label="Home" end />
           <LabDropdown />
-          <NavLinkContent to="/#writing" label="Writing" end={false} />
+          <NavLinkContent to="/writing" label="Writing" end={false} />
         </nav>
       </div>
     </header>

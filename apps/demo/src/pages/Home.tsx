@@ -30,10 +30,11 @@ const labProjects = [
 
 const writing = [
   {
-    title: "Setting up a pnpm monorepo from scratch",
-    description: "Workspaces, shared configs, build order, and the gotchas nobody warns you about.",
-    href: "#",
-    date: "Coming soon",
+    title: "Building a Monorepo That Actually Scales",
+    description:
+      "Per-package isolation with pnpm — independent lockfiles, correct peer dependency resolution, and a setup that survives a fresh CI clone.",
+    href: "/writing/pnpm-monorepo-scales",
+    date: "Feb 2026",
   },
 ];
 
@@ -173,19 +174,28 @@ export function Home() {
             Writing
           </h2>
           <div className="h-px flex-1 bg-white/5" />
+          <Link
+            to="/writing"
+            className="text-[11px] text-zinc-600 transition-colors hover:text-white"
+          >
+            View all
+          </Link>
         </div>
         <div className="flex flex-col">
           {writing.map((post) => (
-            <div
+            <Link
               key={post.title}
-              className="-mx-3 flex items-baseline justify-between gap-8 rounded-lg px-3 py-3"
+              to={post.href}
+              className="group -mx-3 flex items-baseline justify-between gap-8 rounded-lg px-3 py-3 transition-colors hover:bg-white/2"
             >
               <div className="min-w-0">
-                <div className="text-sm font-medium text-zinc-300">{post.title}</div>
+                <div className="text-sm font-medium text-zinc-300 transition-colors group-hover:text-white">
+                  {post.title}
+                </div>
                 <div className="text-[13px] text-zinc-500">{post.description}</div>
               </div>
               <span className="shrink-0 text-[11px] tabular-nums text-zinc-600">{post.date}</span>
-            </div>
+            </Link>
           ))}
         </div>
       </section>
