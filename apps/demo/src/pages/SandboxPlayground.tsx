@@ -382,16 +382,12 @@ export function SandboxPlayground() {
   return (
     <Page.Main>
       <div className="mb-6">
-        <h1
-          className="mb-2 text-3xl font-bold tracking-tight text-white"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
-          React Sandbox
-        </h1>
-        <p className="max-w-2xl text-sm text-zinc-400">
-          Write React code and run it in an isolated iframe. CSP-enforced — no network access, no
-          host DOM access. Full React with hooks and interactivity.
-        </p>
+        <Page.Hero title="React Sandbox" accentLine={false}>
+          <p className="max-w-2xl text-sm text-zinc-400">
+            Write React code and run it in an isolated iframe. CSP-enforced — no network access, no
+            host DOM access. Full React with hooks and interactivity.
+          </p>
+        </Page.Hero>
       </div>
 
       {/* Examples row */}

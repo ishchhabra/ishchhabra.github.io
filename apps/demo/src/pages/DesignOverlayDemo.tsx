@@ -7,17 +7,13 @@ export function DesignOverlayDemo() {
       <Page.Main>
         {/* Hero explanation */}
         <div className="mb-12">
-          <h1
-            className="mb-4 text-3xl font-bold tracking-tight text-white"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            Design Overlay
-          </h1>
-          <p className="mb-6 max-w-2xl text-lg leading-relaxed text-zinc-400">
-            A development tool that lets you select any element on the page and edit it with AI —
-            directly in the browser. No switching between code and preview. Point, describe what you
-            want, and watch it change.
-          </p>
+          <Page.Hero title="Design Overlay" accentLine={false}>
+            <p className="mb-6 max-w-2xl text-lg leading-relaxed text-zinc-400">
+              A development tool that lets you select any element on the page and edit it with AI —
+              directly in the browser. No switching between code and preview. Point, describe what
+              you want, and watch it change.
+            </p>
+          </Page.Hero>
 
           <div className="rounded-xl border border-white/5 bg-white/2 p-6">
             <h2

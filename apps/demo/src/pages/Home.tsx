@@ -117,34 +117,29 @@ export function Home() {
     <Page.Main variant="hero">
       {/* Hero */}
       <section className="pb-16">
-        <div className="accent-line mb-6 h-px w-12" />
-        <h1
-          className="mb-3 text-4xl font-bold tracking-tight text-white sm:text-5xl"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
-          Ish Chhabra
-        </h1>
-        <p className="text-lg text-zinc-500">
-          I do computers. Currently building at{" "}
-          <a
-            href="https://kniru.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-zinc-400 underline decoration-zinc-700 underline-offset-2 transition-colors hover:text-white hover:decoration-white/30"
-          >
-            Kniru
-          </a>{" "}
-          and{" "}
-          <a
-            href="https://clap.gg"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-zinc-400 underline decoration-zinc-700 underline-offset-2 transition-colors hover:text-white hover:decoration-white/30"
-          >
-            Clap
-          </a>
-          .
-        </p>
+        <Page.Hero title="Ish Chhabra">
+          <p className="text-lg text-zinc-500">
+            I do computers. Currently building at{" "}
+            <a
+              href="https://kniru.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-zinc-400 underline decoration-zinc-700 underline-offset-2 transition-colors hover:text-white hover:decoration-white/30"
+            >
+              Kniru
+            </a>{" "}
+            and{" "}
+            <a
+              href="https://clap.gg"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-zinc-400 underline decoration-zinc-700 underline-offset-2 transition-colors hover:text-white hover:decoration-white/30"
+            >
+              Clap
+            </a>
+            .
+          </p>
+        </Page.Hero>
       </section>
 
       {/* i2 labs */}

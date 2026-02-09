@@ -16,14 +16,9 @@ export function Writing() {
   return (
     <Page.Main variant="hero">
       <div className="max-w-3xl">
-        <div className="accent-line mb-6 h-px w-12" />
-        <h1
-          className="mb-3 text-4xl font-bold tracking-tight text-white sm:text-5xl"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
-          Writing
-        </h1>
-        <p className="mb-14 text-lg text-zinc-500">Things I wish someone had explained to me.</p>
+        <Page.Hero title="Writing">
+          <p className="mb-14 text-lg text-zinc-500">Things I wish someone had explained to me.</p>
+        </Page.Hero>
       </div>
 
       <div className="flex max-w-3xl flex-col gap-1">

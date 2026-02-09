@@ -68,25 +68,20 @@ export function PnpmMonorepoArticle() {
             </svg>
             Writing
           </Link>
-          <div className="accent-line mb-6 h-px w-12" />
-          <h1
-            className="mb-4 text-3xl font-bold tracking-tight text-white sm:text-[42px] sm:leading-[1.15]"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            Building a Monorepo That Actually Scales
-          </h1>
-          <p className="mb-6 text-lg leading-relaxed text-zinc-500">
-            A practical guide to pnpm monorepos with true package isolation.
-          </p>
-          <div className="flex items-center gap-4 text-[12px] text-zinc-600">
-            <span>Ish Chhabra</span>
-            <span className="h-3 w-px bg-zinc-800" />
-            <span>Feb 9, 2026</span>
-            <span className="h-3 w-px bg-zinc-800" />
-            <span>20 min read</span>
-            <span className="h-3 w-px bg-zinc-800" />
-            <span>Written with AI</span>
-          </div>
+          <Page.Hero title="Building a Monorepo That Actually Scales">
+            <p className="mb-6 text-lg leading-relaxed text-zinc-500">
+              A practical guide to pnpm monorepos with true package isolation.
+            </p>
+            <div className="flex items-center gap-4 text-[12px] text-zinc-600">
+              <span>Ish Chhabra</span>
+              <span className="h-3 w-px bg-zinc-800" />
+              <span>Feb 9, 2026</span>
+              <span className="h-3 w-px bg-zinc-800" />
+              <span>20 min read</span>
+              <span className="h-3 w-px bg-zinc-800" />
+              <span>Written with AI</span>
+            </div>
+          </Page.Hero>
         </header>
 
         {/* Content grid: article + sidebar ToC */}
