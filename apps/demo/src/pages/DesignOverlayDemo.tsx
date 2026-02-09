@@ -3,7 +3,7 @@ import { Overlay } from "@i2-labs/design-overlay";
 export function DesignOverlayDemo() {
   return (
     <>
-      <main className="relative mx-auto max-w-4xl px-6 py-10">
+      <main className="relative mx-auto max-w-7xl px-6 py-10">
         {/* Hero explanation */}
         <div className="mb-12">
           <h1
