@@ -611,7 +611,7 @@ pnpm --filter @packages/ui build`}</CodeBlock>
                 <p className="text-[13px] text-zinc-600">
                   Found an issue?{" "}
                   <A href="https://github.com/ishchhabra/ishchhabra.github.io">Open a PR</A> or{" "}
-                  <A href="mailto:ish@ishchhabra.com">send me an email</A>.
+                  <A href="mailto:ishchhabra12@gmail.com">send me an email</A>.
                 </p>
               </div>
             </article>

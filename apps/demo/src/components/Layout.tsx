@@ -31,7 +31,7 @@ function Footer() {
             </svg>
           </a>
           <a
-            href="mailto:ish@ishchhabra.com"
+            href="mailto:ishchhabra12@gmail.com"
             className="text-zinc-600 transition-colors hover:text-white"
             aria-label="Email"
           >
