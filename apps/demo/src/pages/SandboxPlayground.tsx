@@ -382,8 +382,15 @@ export function SandboxPlayground() {
   return (
     <Page.Main>
       <div className="mb-6">
-        <Page.Hero title="React Sandbox" accentLine={false}>
-          <p className="max-w-2xl text-sm text-zinc-400">
+        <Page.Hero
+          title="React Sandbox"
+          accentLine={false}
+          viewTransitionName="lab-sandbox-title"
+        >
+          <p
+            className="max-w-2xl text-sm text-zinc-400"
+            style={{ viewTransitionName: "lab-sandbox-description" }}
+          >
             Write React code and run it in an isolated iframe. CSP-enforced — no network access, no
             host DOM access. Full React with hooks and interactivity.
           </p>

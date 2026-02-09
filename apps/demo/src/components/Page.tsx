@@ -28,14 +28,22 @@ interface PageHeroProps {
   title: string;
   /** Show accent line above title */
   accentLine?: boolean;
+  /** Optional view-transition-name for shared element transitions */
+  viewTransitionName?: string;
   children?: ReactNode;
 }
 
-function PageHero({ title, accentLine = true, children }: PageHeroProps) {
+function PageHero({ title, accentLine = true, viewTransitionName, children }: PageHeroProps) {
   return (
     <div>
       {accentLine && <div className="accent-line mb-6 h-px w-12" />}
-      <h1 className={pageHeroTitleClasses} style={{ fontFamily: "var(--font-display)" }}>
+      <h1
+        className={pageHeroTitleClasses}
+        style={{
+          fontFamily: "var(--font-display)",
+          ...(viewTransitionName && { viewTransitionName }),
+        }}
+      >
         {title}
       </h1>
       {children}

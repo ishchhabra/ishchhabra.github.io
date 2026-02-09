@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Page } from "../../components/Page";
 import {
   A,
@@ -45,6 +45,9 @@ const tocItems = [
 ];
 
 export function PnpmMonorepoArticle() {
+  const { pathname } = useLocation();
+  const slug = pathname.split("/").pop() ?? "pnpm-monorepo-scales";
+
   return (
     <>
       <ScrollProgress />
@@ -53,6 +56,8 @@ export function PnpmMonorepoArticle() {
         <header className="max-w-4xl pb-8">
           <Link
             to="/writing"
+            state={{ fromArticle: slug }}
+            viewTransition
             className="mb-8 inline-flex items-center gap-1.5 text-[12px] text-zinc-600 transition-colors hover:text-zinc-400"
           >
             <svg
@@ -68,8 +73,14 @@ export function PnpmMonorepoArticle() {
             </svg>
             Writing
           </Link>
-          <Page.Hero title="Building a Monorepo That Actually Scales">
-            <p className="mb-6 text-lg leading-relaxed text-zinc-500">
+          <Page.Hero
+            title="Building a Monorepo That Actually Scales"
+            viewTransitionName="article-title"
+          >
+            <p
+              className="mb-6 text-lg leading-relaxed text-zinc-500"
+              style={{ viewTransitionName: "article-description" }}
+            >
               A practical guide to pnpm monorepos with true package isolation.
             </p>
             <div className="flex items-center gap-4 text-[12px] text-zinc-600">

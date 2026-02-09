@@ -6,7 +6,17 @@ const labItems = [
   { to: "/lab/design-overlay", label: "Design Overlay" },
 ] as const;
 
-function NavLinkContent({ to, label, end }: { to: string; label: string; end: boolean }) {
+function NavLinkContent({
+  to,
+  label,
+  end,
+  viewTransition,
+}: {
+  to: string;
+  label: string;
+  end: boolean;
+  viewTransition?: boolean;
+}) {
   const location = useLocation();
   const isHash = to.startsWith("/#");
   const targetHash = to.slice(1);
@@ -27,6 +37,7 @@ function NavLinkContent({ to, label, end }: { to: string; label: string; end: bo
     <NavLink
       to={to}
       end={end}
+      {...(viewTransition && { viewTransition: true })}
       className={({ isActive: navActive }) => (navActive ? activeClass : inactiveClass)}
     >
       {label}
@@ -51,6 +62,7 @@ function LabDropdown() {
     >
       <Link
         to="/#lab"
+        viewTransition
         className={`inline-flex items-center gap-1 ${isLabActive ? activeClass : inactiveClass}`}
       >
         Lab
@@ -76,6 +88,7 @@ function LabDropdown() {
             <Link
               key={item.to}
               to={item.to}
+              viewTransition
               role="menuitem"
               className={`block px-4 py-2 text-[13px] transition-colors hover:bg-white/5 hover:text-white ${
                 location.pathname === item.to ? "text-white" : "text-zinc-400"
@@ -97,15 +110,16 @@ export function Header() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
         <Link
           to="/"
+          viewTransition
           className="text-[15px] font-semibold tracking-tight text-white"
           style={{ fontFamily: "var(--font-display)" }}
         >
           ish
         </Link>
         <nav className="flex items-center gap-6 text-[13px]">
-          <NavLinkContent to="/" label="Home" end />
+          <NavLinkContent to="/" label="Home" end viewTransition />
           <LabDropdown />
-          <NavLinkContent to="/writing" label="Writing" end={false} />
+          <NavLinkContent to="/writing" label="Writing" end={false} viewTransition />
         </nav>
       </div>
     </header>

@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useViewTransitionState } from "react-router-dom";
 import { Page } from "../components/Page";
 
 const labProjects = [
@@ -52,6 +52,11 @@ const accentGradients: Record<string, string> = {
 
 function LabCard({ project }: { project: (typeof labProjects)[number] }) {
   const isExternal = "external" in project;
+  const isTransitioningToProject =
+    !isExternal && useViewTransitionState(project.href as string);
+  const labSlug = !isExternal ? (project.href as string).replace("/lab/", "") : null;
+  const titleTransitionName = labSlug ? `lab-${labSlug}-title` : undefined;
+  const descTransitionName = labSlug ? `lab-${labSlug}-description` : undefined;
 
   const inner = (
     <>
@@ -62,7 +67,12 @@ function LabCard({ project }: { project: (typeof labProjects)[number] }) {
         <div className="mb-3 flex items-center gap-2.5">
           <h3
             className="text-lg font-semibold text-white"
-            style={{ fontFamily: "var(--font-display)" }}
+            style={{
+              fontFamily: "var(--font-display)",
+              ...(isTransitioningToProject && titleTransitionName && {
+                viewTransitionName: titleTransitionName,
+              }),
+            }}
           >
             {project.title}
           </h3>
@@ -72,7 +82,16 @@ function LabCard({ project }: { project: (typeof labProjects)[number] }) {
             {project.tag}
           </span>
         </div>
-        <p className="mb-5 flex-1 text-sm leading-relaxed text-zinc-400">{project.description}</p>
+        <p
+          className="mb-5 flex-1 text-sm leading-relaxed text-zinc-400"
+          style={
+            isTransitioningToProject && descTransitionName
+              ? { viewTransitionName: descTransitionName }
+              : {}
+          }
+        >
+          {project.description}
+        </p>
         <span className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-500 transition-colors duration-300 group-hover:text-white">
           {isExternal ? "View on GitHub" : "Try it"}
           <svg
@@ -106,7 +125,7 @@ function LabCard({ project }: { project: (typeof labProjects)[number] }) {
     );
   }
   return (
-    <Link to={project.href} className={cls}>
+    <Link to={project.href} viewTransition className={cls}>
       {inner}
     </Link>
   );
@@ -159,6 +178,7 @@ export function Home() {
           action={
             <Link
               to="/writing"
+              viewTransition
               className="text-[11px] text-zinc-600 transition-colors hover:text-white"
             >
               View all
@@ -166,21 +186,37 @@ export function Home() {
           }
         />
         <div className="flex flex-col">
-          {writing.map((post) => (
-            <Link
-              key={post.title}
-              to={post.href}
-              className="group -mx-3 flex items-baseline justify-between gap-8 rounded-lg px-3 py-3 transition-colors hover:bg-white/2"
-            >
-              <div className="min-w-0">
-                <div className="text-sm font-medium text-zinc-300 transition-colors group-hover:text-white">
-                  {post.title}
+          {writing.map((post) => {
+            const isTransitioningToArticle = useViewTransitionState(post.href);
+            return (
+              <Link
+                key={post.title}
+                to={post.href}
+                viewTransition
+                className="group -mx-3 flex items-baseline justify-between gap-8 rounded-lg px-3 py-3 transition-colors hover:bg-white/2"
+              >
+                <div className="min-w-0">
+                  <div
+                    className="text-sm font-medium text-zinc-300 transition-colors group-hover:text-white"
+                    style={
+                      isTransitioningToArticle ? { viewTransitionName: "article-title" } : {}
+                    }
+                  >
+                    {post.title}
+                  </div>
+                  <div
+                    className="text-[13px] text-zinc-500"
+                    style={
+                      isTransitioningToArticle ? { viewTransitionName: "article-description" } : {}
+                    }
+                  >
+                    {post.description}
+                  </div>
                 </div>
-                <div className="text-[13px] text-zinc-500">{post.description}</div>
-              </div>
-              <span className="shrink-0 text-[11px] tabular-nums text-zinc-600">{post.date}</span>
-            </Link>
-          ))}
+                <span className="shrink-0 text-[11px] tabular-nums text-zinc-600">{post.date}</span>
+              </Link>
+            );
+          })}
         </div>
       </section>
     </Page.Main>

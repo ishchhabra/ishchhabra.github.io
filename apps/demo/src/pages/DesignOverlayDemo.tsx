@@ -7,8 +7,15 @@ export function DesignOverlayDemo() {
       <Page.Main>
         {/* Hero explanation */}
         <div className="mb-12">
-          <Page.Hero title="Design Overlay" accentLine={false}>
-            <p className="mb-6 max-w-2xl text-lg leading-relaxed text-zinc-400">
+          <Page.Hero
+            title="Design Overlay"
+            accentLine={false}
+            viewTransitionName="lab-design-overlay-title"
+          >
+            <p
+              className="mb-6 max-w-2xl text-lg leading-relaxed text-zinc-400"
+              style={{ viewTransitionName: "lab-design-overlay-description" }}
+            >
               A development tool that lets you select any element on the page and edit it with AI —
               directly in the browser. No switching between code and preview. Point, describe what
               you want, and watch it change.
