@@ -114,94 +114,92 @@ function LabCard({ project }: { project: (typeof labProjects)[number] }) {
 
 export function Home() {
   return (
-    <Page.Main>
-      <Page.Hero>
-        {/* Hero */}
-        <section className="pb-16">
-          <div className="accent-line mb-6 h-px w-12" />
-          <h1
-            className="mb-3 text-4xl font-bold tracking-tight text-white sm:text-5xl"
-            style={{ fontFamily: "var(--font-display)" }}
+    <Page.Main variant="hero">
+      {/* Hero */}
+      <section className="pb-16">
+        <div className="accent-line mb-6 h-px w-12" />
+        <h1
+          className="mb-3 text-4xl font-bold tracking-tight text-white sm:text-5xl"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
+          Ish Chhabra
+        </h1>
+        <p className="text-lg text-zinc-500">
+          I do computers. Currently building at{" "}
+          <a
+            href="https://kniru.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-zinc-400 underline decoration-zinc-700 underline-offset-2 transition-colors hover:text-white hover:decoration-white/30"
           >
-            Ish Chhabra
-          </h1>
-          <p className="text-lg text-zinc-500">
-            I do computers. Currently building at{" "}
-            <a
-              href="https://kniru.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-zinc-400 underline decoration-zinc-700 underline-offset-2 transition-colors hover:text-white hover:decoration-white/30"
-            >
-              Kniru
-            </a>{" "}
-            and{" "}
-            <a
-              href="https://clap.gg"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-zinc-400 underline decoration-zinc-700 underline-offset-2 transition-colors hover:text-white hover:decoration-white/30"
-            >
-              Clap
-            </a>
-            .
-          </p>
-        </section>
+            Kniru
+          </a>{" "}
+          and{" "}
+          <a
+            href="https://clap.gg"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-zinc-400 underline decoration-zinc-700 underline-offset-2 transition-colors hover:text-white hover:decoration-white/30"
+          >
+            Clap
+          </a>
+          .
+        </p>
+      </section>
 
-        {/* i2 labs */}
-        <section id="lab" className="pb-16">
-          <div className="mb-6 flex items-baseline gap-3">
-            <h2
-              className="text-xs font-medium tracking-widest text-zinc-500 uppercase"
-              style={{ letterSpacing: "0.15em" }}
-            >
-              i2 labs
-            </h2>
-            <div className="h-px flex-1 bg-white/5" />
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {labProjects.map((p) => (
-              <LabCard key={p.title} project={p} />
-            ))}
-          </div>
-        </section>
+      {/* i2 labs */}
+      <section id="lab" className="pb-16">
+        <div className="mb-6 flex items-baseline gap-3">
+          <h2
+            className="text-xs font-medium tracking-widest text-zinc-500 uppercase"
+            style={{ letterSpacing: "0.15em" }}
+          >
+            i2 labs
+          </h2>
+          <div className="h-px flex-1 bg-white/5" />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {labProjects.map((p) => (
+            <LabCard key={p.title} project={p} />
+          ))}
+        </div>
+      </section>
 
-        {/* Writing */}
-        <section id="writing" className="pb-20">
-          <div className="mb-6 flex items-baseline gap-3">
-            <h2
-              className="text-xs font-medium tracking-widest text-zinc-500 uppercase"
-              style={{ letterSpacing: "0.15em" }}
-            >
-              Writing
-            </h2>
-            <div className="h-px flex-1 bg-white/5" />
+      {/* Writing */}
+      <section id="writing" className="pb-20">
+        <div className="mb-6 flex items-baseline gap-3">
+          <h2
+            className="text-xs font-medium tracking-widest text-zinc-500 uppercase"
+            style={{ letterSpacing: "0.15em" }}
+          >
+            Writing
+          </h2>
+          <div className="h-px flex-1 bg-white/5" />
+          <Link
+            to="/writing"
+            className="text-[11px] text-zinc-600 transition-colors hover:text-white"
+          >
+            View all
+          </Link>
+        </div>
+        <div className="flex flex-col">
+          {writing.map((post) => (
             <Link
-              to="/writing"
-              className="text-[11px] text-zinc-600 transition-colors hover:text-white"
+              key={post.title}
+              to={post.href}
+              className="group -mx-3 flex items-baseline justify-between gap-8 rounded-lg px-3 py-3 transition-colors hover:bg-white/2"
             >
-              View all
-            </Link>
-          </div>
-          <div className="flex flex-col">
-            {writing.map((post) => (
-              <Link
-                key={post.title}
-                to={post.href}
-                className="group -mx-3 flex items-baseline justify-between gap-8 rounded-lg px-3 py-3 transition-colors hover:bg-white/2"
-              >
-                <div className="min-w-0">
-                  <div className="text-sm font-medium text-zinc-300 transition-colors group-hover:text-white">
-                    {post.title}
-                  </div>
-                  <div className="text-[13px] text-zinc-500">{post.description}</div>
+              <div className="min-w-0">
+                <div className="text-sm font-medium text-zinc-300 transition-colors group-hover:text-white">
+                  {post.title}
                 </div>
-                <span className="shrink-0 text-[11px] tabular-nums text-zinc-600">{post.date}</span>
-              </Link>
-            ))}
-          </div>
-        </section>
-      </Page.Hero>
+                <div className="text-[13px] text-zinc-500">{post.description}</div>
+              </div>
+              <span className="shrink-0 text-[11px] tabular-nums text-zinc-600">{post.date}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
     </Page.Main>
   );
 }

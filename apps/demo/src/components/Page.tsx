@@ -1,19 +1,26 @@
+import { cva, type VariantProps } from "class-variance-authority";
 import type { ReactNode } from "react";
 
-/** Page shell: relative mx-auto max-w-7xl px-6 py-10 */
-function PageMain({ children }: { children: ReactNode }) {
-  return <main className="relative mx-auto max-w-7xl px-6 py-10">{children}</main>;
+const pageMainVariants = cva("relative mx-auto max-w-7xl px-6", {
+  variants: {
+    variant: {
+      default: "py-10",
+      hero: "pt-20 pb-24 sm:pt-28",
+    },
+  },
+  defaultVariants: {
+    variant: "default",
+  },
+});
+
+interface PageMainProps extends VariantProps<typeof pageMainVariants> {
+  children: ReactNode;
 }
 
-/**
- * Optional inner wrapper for hero layouts. Use inside PageMain.
- * Adds pt-20 pb-24 sm:pt-28, cancels PageMain's padding via negative margins.
- */
-function PageHero({ children }: { children: ReactNode }) {
-  return <div className="-mb-10 -mt-10 pt-20 pb-24 sm:pt-28">{children}</div>;
+function PageMain({ children, variant = "default" }: PageMainProps) {
+  return <main className={pageMainVariants({ variant })}>{children}</main>;
 }
 
 export const Page = {
   Main: PageMain,
-  Hero: PageHero,
 };

@@ -15,6 +15,7 @@
   "dependencies": {
     "@i2-labs/design-overlay": "workspace:*",
     "@i2-labs/sandbox": "workspace:*",
+    "class-variance-authority": "^0.7.1",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-router-dom": "^7.6.2",
