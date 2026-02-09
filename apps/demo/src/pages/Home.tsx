@@ -144,15 +144,7 @@ export function Home() {
 
       {/* i2 labs */}
       <section id="lab" className="pb-16">
-        <div className="mb-6 flex items-baseline gap-3">
-          <h2
-            className="text-xs font-medium tracking-widest text-zinc-500 uppercase"
-            style={{ letterSpacing: "0.15em" }}
-          >
-            i2 labs
-          </h2>
-          <div className="h-px flex-1 bg-white/5" />
-        </div>
+        <Page.SectionHeader title="i2 labs" />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {labProjects.map((p) => (
             <LabCard key={p.title} project={p} />
@@ -162,21 +154,17 @@ export function Home() {
 
       {/* Writing */}
       <section id="writing" className="pb-20">
-        <div className="mb-6 flex items-baseline gap-3">
-          <h2
-            className="text-xs font-medium tracking-widest text-zinc-500 uppercase"
-            style={{ letterSpacing: "0.15em" }}
-          >
-            Writing
-          </h2>
-          <div className="h-px flex-1 bg-white/5" />
-          <Link
-            to="/writing"
-            className="text-[11px] text-zinc-600 transition-colors hover:text-white"
-          >
-            View all
-          </Link>
-        </div>
+        <Page.SectionHeader
+          title="Writing"
+          action={
+            <Link
+              to="/writing"
+              className="text-[11px] text-zinc-600 transition-colors hover:text-white"
+            >
+              View all
+            </Link>
+          }
+        />
         <div className="flex flex-col">
           {writing.map((post) => (
             <Link

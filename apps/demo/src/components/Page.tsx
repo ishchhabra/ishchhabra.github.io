@@ -43,7 +43,29 @@ function PageHero({ title, accentLine = true, children }: PageHeroProps) {
   );
 }
 
+interface SectionHeaderProps {
+  title: string;
+  /** Optional action (e.g. "View all" link) rendered after the divider */
+  action?: ReactNode;
+}
+
+function SectionHeader({ title, action }: SectionHeaderProps) {
+  return (
+    <div className="mb-6 flex items-baseline gap-3">
+      <h2
+        className="text-xs font-medium tracking-widest text-zinc-500 uppercase"
+        style={{ letterSpacing: "0.15em" }}
+      >
+        {title}
+      </h2>
+      <div className="h-px flex-1 bg-white/5" />
+      {action}
+    </div>
+  );
+}
+
 export const Page = {
   Main: PageMain,
   Hero: PageHero,
+  SectionHeader: SectionHeader,
 };
