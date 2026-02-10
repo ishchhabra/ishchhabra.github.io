@@ -36,13 +36,10 @@ jobs:
       - name: Build
         run: pnpm --filter demo build
 
-      - name: SPA routing fix
-        run: cp apps/demo/dist/index.html apps/demo/dist/404.html
-
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: apps/demo/dist
+          path: apps/demo/dist/client
 
   deploy:
     needs: build
