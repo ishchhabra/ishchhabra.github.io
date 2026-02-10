@@ -56,10 +56,7 @@ export const WEBSITE_JSON_LD = {
     "@type": "Person",
     name: SITE_TITLE,
     url: SITE_BASE_URL,
-    sameAs: [
-      "https://github.com/ishchhabra",
-      "https://linkedin.com/in/ishchhabra",
-    ],
+    sameAs: ["https://github.com/ishchhabra", "https://linkedin.com/in/ishchhabra"],
   },
 };
 
