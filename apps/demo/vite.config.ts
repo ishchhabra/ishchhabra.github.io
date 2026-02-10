@@ -25,6 +25,7 @@ export default defineConfig(async () => {
       tsConfigPaths(),
       tanstackStart({
         prerender: { enabled: true },
+        sitemap: { enabled: true, host: "https://ishchhabra.github.io" },
       }),
       react(),
       tailwindcss(),

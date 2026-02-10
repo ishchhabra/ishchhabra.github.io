@@ -132,7 +132,7 @@ export function Home() {
       <section className="pb-16">
         <Page.Hero title="Ish Chhabra">
           <p className="text-lg text-zinc-500">
-            I do computers. Currently building at{" "}
+            I do computers. Currently building{" "}
             <a
               href="https://kniru.com"
               target="_blank"
