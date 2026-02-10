@@ -1,7 +1,7 @@
 export function Footer() {
   return (
     <footer
-      className="relative border-t border-white/5"
+      className="relative border-t border-zinc-200 dark:border-white/5"
       style={{ viewTransitionName: "site-footer" }}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
@@ -11,7 +11,7 @@ export function Footer() {
             href="https://github.com/ishchhabra"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-zinc-600 transition-colors hover:text-white"
+            className="text-zinc-600 transition-colors hover:text-zinc-900 dark:hover:text-white"
             aria-label="GitHub"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -22,7 +22,7 @@ export function Footer() {
             href="https://linkedin.com/in/ishchhabra"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-zinc-600 transition-colors hover:text-white"
+            className="text-zinc-600 transition-colors hover:text-zinc-900 dark:hover:text-white"
             aria-label="LinkedIn"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -31,7 +31,7 @@ export function Footer() {
           </a>
           <a
             href="mailto:ishchhabra12@gmail.com"
-            className="text-zinc-600 transition-colors hover:text-white"
+            className="text-zinc-600 transition-colors hover:text-zinc-900 dark:hover:text-white"
             aria-label="Email"
           >
             <svg

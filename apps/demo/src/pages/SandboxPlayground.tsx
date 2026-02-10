@@ -384,7 +384,7 @@ export function SandboxPlayground() {
       <div className="mb-6">
         <Page.Hero title="React Sandbox" accentLine={false} viewTransitionName="lab-sandbox-title">
           <p
-            className="max-w-2xl text-sm text-zinc-400"
+            className="max-w-2xl text-sm text-zinc-600 dark:text-zinc-400"
             style={{ viewTransitionName: "lab-sandbox-description" }}
           >
             Write React code and run it in an isolated iframe. CSP-enforced — no network access, no
@@ -402,8 +402,8 @@ export function SandboxPlayground() {
             onClick={() => loadExample(i)}
             className={`group flex items-center gap-2 rounded-lg border px-3 py-2 text-left transition-all ${
               activeExample === i
-                ? "border-white/15 bg-white/5"
-                : "border-white/5 bg-transparent hover:border-white/10 hover:bg-white/2"
+                ? "border-zinc-300 bg-zinc-100 dark:border-white/15 dark:bg-white/5"
+                : "border-zinc-200 bg-transparent hover:border-zinc-300 hover:bg-zinc-50 dark:border-white/5 dark:hover:border-white/10 dark:hover:bg-white/2"
             }`}
           >
             <span
@@ -418,13 +418,17 @@ export function SandboxPlayground() {
             <div>
               <div
                 className={`text-xs font-medium ${
-                  activeExample === i ? "text-white" : "text-zinc-300"
+                  activeExample === i
+                    ? "text-zinc-900 dark:text-white"
+                    : "text-zinc-600 dark:text-zinc-300"
                 }`}
                 style={{ fontFamily: "var(--font-mono)" }}
               >
                 {example.label}
               </div>
-              <div className="text-[11px] text-zinc-500">{example.description}</div>
+              <div className="text-[11px] text-zinc-500 dark:text-zinc-500">
+                {example.description}
+              </div>
             </div>
           </button>
         ))}
@@ -432,19 +436,22 @@ export function SandboxPlayground() {
 
       <div className="grid h-[520px] gap-5 lg:grid-cols-2">
         {/* Code panel */}
-        <div className="flex flex-col overflow-hidden rounded-xl border border-white/8 bg-zinc-900/60">
-          <div className="flex items-center justify-between border-b border-white/5 px-4 py-2.5">
+        <div className="flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-white/8 dark:bg-zinc-900/60">
+          <div className="flex items-center justify-between border-b border-zinc-200 bg-zinc-50 px-4 py-2.5 dark:border-white/5 dark:bg-white/[0.02]">
             <div className="flex items-center gap-3">
               <div className="flex gap-1.5">
-                <div className="h-2.5 w-2.5 rounded-full bg-white/10" />
-                <div className="h-2.5 w-2.5 rounded-full bg-white/10" />
-                <div className="h-2.5 w-2.5 rounded-full bg-white/10" />
+                <div className="h-2.5 w-2.5 rounded-full bg-zinc-400 dark:bg-white/10" />
+                <div className="h-2.5 w-2.5 rounded-full bg-zinc-400 dark:bg-white/10" />
+                <div className="h-2.5 w-2.5 rounded-full bg-zinc-400 dark:bg-white/10" />
               </div>
-              <span className="text-xs text-zinc-500" style={{ fontFamily: "var(--font-mono)" }}>
+              <span
+                className="text-xs text-zinc-500 dark:text-zinc-500"
+                style={{ fontFamily: "var(--font-mono)" }}
+              >
                 editor.tsx
               </span>
             </div>
-            <span className="text-[10px] text-zinc-600">auto-run</span>
+            <span className="text-[10px] text-zinc-500 dark:text-zinc-600">auto-run</span>
           </div>
           <textarea
             aria-label="Sandbox code editor"
@@ -453,22 +460,25 @@ export function SandboxPlayground() {
             spellCheck={false}
             autoCapitalize="off"
             autoCorrect="off"
-            className="flex-1 resize-none bg-transparent px-4 py-3 text-[13px] leading-[1.7] text-zinc-200 placeholder-zinc-600 outline-none"
+            className="flex-1 resize-none bg-transparent px-4 py-3 text-[13px] leading-[1.7] text-zinc-800 placeholder-zinc-500 outline-none dark:text-zinc-200 dark:placeholder-zinc-600"
             style={{ fontFamily: "var(--font-mono)" }}
             placeholder="export default function App() { ... }"
           />
         </div>
 
         {/* Preview panel */}
-        <div className="flex flex-col overflow-hidden rounded-xl border border-white/8 bg-zinc-900/60">
-          <div className="flex items-center justify-between border-b border-white/5 px-4 py-2.5">
+        <div className="flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-white/8 dark:bg-zinc-900/60">
+          <div className="flex items-center justify-between border-b border-zinc-200 bg-zinc-50 px-4 py-2.5 dark:border-white/5 dark:bg-white/[0.02]">
             <div className="flex items-center gap-3">
               <div className="flex gap-1.5">
-                <div className="h-2.5 w-2.5 rounded-full bg-white/10" />
-                <div className="h-2.5 w-2.5 rounded-full bg-white/10" />
-                <div className="h-2.5 w-2.5 rounded-full bg-white/10" />
+                <div className="h-2.5 w-2.5 rounded-full bg-zinc-400 dark:bg-white/10" />
+                <div className="h-2.5 w-2.5 rounded-full bg-zinc-400 dark:bg-white/10" />
+                <div className="h-2.5 w-2.5 rounded-full bg-zinc-400 dark:bg-white/10" />
               </div>
-              <span className="text-xs text-zinc-500" style={{ fontFamily: "var(--font-mono)" }}>
+              <span
+                className="text-xs text-zinc-500 dark:text-zinc-500"
+                style={{ fontFamily: "var(--font-mono)" }}
+              >
                 preview
               </span>
             </div>
@@ -481,7 +491,7 @@ export function SandboxPlayground() {
                   Live
                 </span>
               ) : (
-                <span className="text-xs text-zinc-600">Updating…</span>
+                <span className="text-xs text-zinc-500 dark:text-zinc-600">Updating…</span>
               )}
             </div>
           </div>

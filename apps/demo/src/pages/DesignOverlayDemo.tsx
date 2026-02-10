@@ -13,7 +13,7 @@ export function DesignOverlayDemo() {
             viewTransitionName="lab-design-overlay-title"
           >
             <p
-              className="mb-6 max-w-2xl text-lg leading-relaxed text-zinc-400"
+              className="mb-6 max-w-2xl text-lg leading-relaxed text-zinc-600 dark:text-zinc-400"
               style={{ viewTransitionName: "lab-design-overlay-description" }}
             >
               A development tool that lets you select any element on the page and edit it with AI —
@@ -22,21 +22,21 @@ export function DesignOverlayDemo() {
             </p>
           </Page.Hero>
 
-          <div className="rounded-xl border border-white/5 bg-white/2 p-6">
+          <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-6 dark:border-white/5 dark:bg-white/2">
             <h2
-              className="mb-4 text-base font-semibold text-white"
+              className="mb-4 text-base font-semibold text-zinc-900 dark:text-white"
               style={{ fontFamily: "var(--font-display)" }}
             >
               How to use it
             </h2>
-            <ol className="space-y-3 text-sm leading-relaxed text-zinc-400">
+            <ol className="space-y-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
               <li className="flex gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/5 text-xs font-medium text-zinc-300">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xs font-medium text-zinc-700 dark:bg-white/5 dark:text-zinc-300">
                   1
                 </span>
                 <span>
                   Click the{" "}
-                  <span className="inline-flex items-center gap-1 rounded bg-white/5 px-1.5 py-0.5 font-medium text-zinc-300">
+                  <span className="inline-flex items-center gap-1 rounded bg-zinc-200 px-1.5 py-0.5 font-medium text-zinc-700 dark:bg-white/5 dark:text-zinc-300">
                     <svg
                       width="12"
                       height="12"
@@ -53,7 +53,7 @@ export function DesignOverlayDemo() {
                 </span>
               </li>
               <li className="flex gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/5 text-xs font-medium text-zinc-300">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xs font-medium text-zinc-700 dark:bg-white/5 dark:text-zinc-300">
                   2
                 </span>
                 <span>
@@ -62,7 +62,7 @@ export function DesignOverlayDemo() {
                 </span>
               </li>
               <li className="flex gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/5 text-xs font-medium text-zinc-300">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xs font-medium text-zinc-700 dark:bg-white/5 dark:text-zinc-300">
                   3
                 </span>
                 <span>
@@ -76,28 +76,28 @@ export function DesignOverlayDemo() {
 
         {/* Divider */}
         <div className="mb-10 flex items-center gap-4">
-          <div className="h-px flex-1 bg-white/5" />
-          <span className="text-xs font-medium tracking-widest text-zinc-600 uppercase">
+          <div className="h-px flex-1 bg-zinc-200 dark:bg-white/5" />
+          <span className="text-xs font-medium tracking-widest text-zinc-500 uppercase dark:text-zinc-600">
             Demo content below — try editing it
           </span>
-          <div className="h-px flex-1 bg-white/5" />
+          <div className="h-px flex-1 bg-zinc-200 dark:bg-white/5" />
         </div>
 
         {/* Sample content for the overlay to interact with */}
         <article className="mb-10">
           <h2
-            className="mb-4 text-2xl font-bold text-white"
+            className="mb-4 text-2xl font-bold text-zinc-900 dark:text-white"
             style={{ fontFamily: "var(--font-display)" }}
           >
             The quick brown fox
           </h2>
-          <p className="mb-4 text-sm leading-relaxed text-zinc-400">
+          <p className="mb-4 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor
             incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
             exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure
             dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
           </p>
-          <p className="mb-6 text-sm leading-relaxed text-zinc-400">
+          <p className="mb-6 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
             Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
             mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit
             voluptatem accusantium doloremque laudantium, totam rem aperiam.
@@ -105,16 +105,16 @@ export function DesignOverlayDemo() {
         </article>
 
         <div className="mb-10 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-xl border border-white/5 bg-white/2 p-6">
-            <h3 className="mb-2 text-base font-semibold text-white">Card one</h3>
-            <p className="text-sm leading-relaxed text-zinc-400">
+          <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-6 dark:border-white/5 dark:bg-white/2">
+            <h3 className="mb-2 text-base font-semibold text-zinc-900 dark:text-white">Card one</h3>
+            <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
               This is a sample card. Select it with the overlay and ask the AI to change its
               background, text, layout — anything.
             </p>
           </div>
-          <div className="rounded-xl border border-white/5 bg-white/2 p-6">
-            <h3 className="mb-2 text-base font-semibold text-white">Card two</h3>
-            <p className="text-sm leading-relaxed text-zinc-400">
+          <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-6 dark:border-white/5 dark:bg-white/2">
+            <h3 className="mb-2 text-base font-semibold text-zinc-900 dark:text-white">Card two</h3>
+            <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
               Another sample card. Try asking the AI to make this one stand out, add a border color,
               or restyle the typography.
             </p>
@@ -130,7 +130,7 @@ export function DesignOverlayDemo() {
           </button>
           <button
             type="button"
-            className="rounded-lg border border-white/10 px-5 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:border-white/20 hover:text-white"
+            className="rounded-lg border border-zinc-300 px-5 py-2.5 text-sm font-medium text-zinc-600 transition-colors hover:border-zinc-400 hover:text-zinc-900 dark:border-white/10 dark:text-zinc-300 dark:hover:border-white/20 dark:hover:text-white"
           >
             Another button
           </button>

@@ -1,7 +1,16 @@
+import { useTheme } from "../../../contexts/ThemeContext";
+import { diagramPalette } from "./diagramColors";
+
 /**
  * SVG illustration: Monorepo structure — apps consuming shared packages.
+ *
+ * Box borders use the neutral `border` color. Color comes from section labels
+ * and text (blue = apps, purple = packages).
  */
 export function MonorepoStructureDiagram() {
+  const { theme } = useTheme();
+  const c = diagramPalette[theme];
+
   return (
     <div className="my-8 flex justify-center">
       <svg
@@ -10,7 +19,7 @@ export function MonorepoStructureDiagram() {
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <rect width="600" height="260" rx="16" fill="#0d1117" />
+        <rect width="600" height="260" rx="16" fill={c.canvas} />
 
         {/* Root */}
         <rect
@@ -19,12 +28,11 @@ export function MonorepoStructureDiagram() {
           width="160"
           height="40"
           rx="8"
-          fill="#1a1a2e"
-          stroke="#6366f1"
+          fill={c.card}
+          stroke={c.border}
           strokeWidth="1"
-          strokeOpacity="0.3"
         />
-        <text x="300" y="45" textAnchor="middle" fill="#a5b4fc" fontSize="12" fontWeight="600">
+        <text x="300" y="45" textAnchor="middle" fill={c.heading} fontSize="12" fontWeight="600">
           my-monorepo/
         </text>
 
@@ -35,19 +43,18 @@ export function MonorepoStructureDiagram() {
           width="240"
           height="130"
           rx="10"
-          fill="#0f172a"
-          stroke="#3b82f6"
+          fill={c.cardAlt}
+          stroke={c.border}
           strokeWidth="1"
-          strokeOpacity="0.15"
         />
         <text
           x="50"
           y="120"
-          fill="#3b82f6"
+          fill={c.blue}
           fontSize="10"
           fontWeight="600"
           letterSpacing="0.1em"
-          opacity="0.6"
+          opacity="0.8"
         >
           APPS
         </text>
@@ -58,12 +65,11 @@ export function MonorepoStructureDiagram() {
           width="95"
           height="36"
           rx="6"
-          fill="#1e293b"
-          stroke="#3b82f6"
+          fill={c.card}
+          stroke={c.border}
           strokeWidth="1"
-          strokeOpacity="0.2"
         />
-        <text x="97" y="154" textAnchor="middle" fill="#93c5fd" fontSize="10" fontWeight="500">
+        <text x="97" y="154" textAnchor="middle" fill={c.blue} fontSize="10" fontWeight="500">
           web-app
         </text>
 
@@ -73,12 +79,11 @@ export function MonorepoStructureDiagram() {
           width="95"
           height="36"
           rx="6"
-          fill="#1e293b"
-          stroke="#3b82f6"
+          fill={c.card}
+          stroke={c.border}
           strokeWidth="1"
-          strokeOpacity="0.2"
         />
-        <text x="202" y="154" textAnchor="middle" fill="#93c5fd" fontSize="10" fontWeight="500">
+        <text x="202" y="154" textAnchor="middle" fill={c.blue} fontSize="10" fontWeight="500">
           admin
         </text>
 
@@ -88,12 +93,11 @@ export function MonorepoStructureDiagram() {
           width="95"
           height="36"
           rx="6"
-          fill="#1e293b"
-          stroke="#3b82f6"
+          fill={c.card}
+          stroke={c.border}
           strokeWidth="1"
-          strokeOpacity="0.2"
         />
-        <text x="97" y="200" textAnchor="middle" fill="#93c5fd" fontSize="10" fontWeight="500">
+        <text x="97" y="200" textAnchor="middle" fill={c.blue} fontSize="10" fontWeight="500">
           mobile
         </text>
 
@@ -104,19 +108,18 @@ export function MonorepoStructureDiagram() {
           width="240"
           height="130"
           rx="10"
-          fill="#0f172a"
-          stroke="#a78bfa"
+          fill={c.cardAlt}
+          stroke={c.border}
           strokeWidth="1"
-          strokeOpacity="0.15"
         />
         <text
           x="350"
           y="120"
-          fill="#a78bfa"
+          fill={c.purple}
           fontSize="10"
           fontWeight="600"
           letterSpacing="0.1em"
-          opacity="0.6"
+          opacity="0.8"
         >
           PACKAGES
         </text>
@@ -127,12 +130,11 @@ export function MonorepoStructureDiagram() {
           width="95"
           height="36"
           rx="6"
-          fill="#1e293b"
-          stroke="#a78bfa"
+          fill={c.card}
+          stroke={c.border}
           strokeWidth="1"
-          strokeOpacity="0.2"
         />
-        <text x="397" y="154" textAnchor="middle" fill="#c4b5fd" fontSize="10" fontWeight="500">
+        <text x="397" y="154" textAnchor="middle" fill={c.purple} fontSize="10" fontWeight="500">
           ui
         </text>
 
@@ -142,12 +144,11 @@ export function MonorepoStructureDiagram() {
           width="95"
           height="36"
           rx="6"
-          fill="#1e293b"
-          stroke="#a78bfa"
+          fill={c.card}
+          stroke={c.border}
           strokeWidth="1"
-          strokeOpacity="0.2"
         />
-        <text x="502" y="154" textAnchor="middle" fill="#c4b5fd" fontSize="10" fontWeight="500">
+        <text x="502" y="154" textAnchor="middle" fill={c.purple} fontSize="10" fontWeight="500">
           shared
         </text>
 
@@ -157,34 +158,17 @@ export function MonorepoStructureDiagram() {
           width="95"
           height="36"
           rx="6"
-          fill="#1e293b"
-          stroke="#a78bfa"
+          fill={c.card}
+          stroke={c.border}
           strokeWidth="1"
-          strokeOpacity="0.2"
         />
-        <text x="397" y="200" textAnchor="middle" fill="#c4b5fd" fontSize="10" fontWeight="500">
+        <text x="397" y="200" textAnchor="middle" fill={c.purple} fontSize="10" fontWeight="500">
           config
         </text>
 
         {/* Connection lines */}
-        <line
-          x1="250"
-          y1="60"
-          x2="150"
-          y2="100"
-          stroke="#3b82f6"
-          strokeWidth="1"
-          strokeOpacity="0.2"
-        />
-        <line
-          x1="350"
-          y1="60"
-          x2="450"
-          y2="100"
-          stroke="#a78bfa"
-          strokeWidth="1"
-          strokeOpacity="0.2"
-        />
+        <line x1="250" y1="60" x2="150" y2="100" stroke={c.border} strokeWidth="1" />
+        <line x1="350" y1="60" x2="450" y2="100" stroke={c.border} strokeWidth="1" />
 
         {/* Dependency arrows: apps → packages */}
         <line
@@ -192,10 +176,10 @@ export function MonorepoStructureDiagram() {
           y1="150"
           x2="350"
           y2="150"
-          stroke="#22d3ee"
+          stroke={c.arrow}
           strokeWidth="1"
           strokeDasharray="4 3"
-          strokeOpacity="0.3"
+          strokeOpacity="0.4"
         />
       </svg>
     </div>

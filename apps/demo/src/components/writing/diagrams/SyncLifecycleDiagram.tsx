@@ -8,11 +8,17 @@
  *    (used after Problem 2: pnpm-sync)
  */
 
+import { useTheme } from "../../../contexts/ThemeContext";
+import { diagramPalette } from "./diagramColors";
+
 /* ------------------------------------------------------------------ */
 /*  Before / After                                                     */
 /* ------------------------------------------------------------------ */
 
 export function SyncBeforeAfterDiagram() {
+  const { theme } = useTheme();
+  const c = diagramPalette[theme];
+
   const w = 640;
   const h = 220;
   const colW = 210;
@@ -38,7 +44,7 @@ export function SyncBeforeAfterDiagram() {
       <text
         x={x}
         y={y}
-        fill={missing ? "#f87171" : "#94a3b8"}
+        fill={missing ? c.red : c.body}
         fontSize="11"
         fontFamily="monospace"
         textDecoration={missing ? "line-through" : undefined}
@@ -56,26 +62,26 @@ export function SyncBeforeAfterDiagram() {
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <rect width={w} height={h} rx="16" fill="#0d1117" />
+        <rect width={w} height={h} rx="16" fill={c.canvas} />
 
         {/* Left: After install */}
         <text
           x={leftX + colW / 2}
           y="30"
           textAnchor="middle"
-          fill="#f59e0b"
+          fill={c.orange}
           fontSize="11"
           fontWeight="600"
           letterSpacing="0.05em"
         >
           AFTER INSTALL
         </text>
-        <rect x={leftX} y="42" width={colW} height="1" fill="#f59e0b" fillOpacity="0.2" />
+        <rect x={leftX} y="42" width={colW} height="1" fill={c.orange} fillOpacity="0.2" />
 
         <text
           x={leftX + 8}
           y={treeY}
-          fill="#e2e8f0"
+          fill={c.heading}
           fontSize="11"
           fontFamily="monospace"
           fontWeight="600"
@@ -91,9 +97,9 @@ export function SyncBeforeAfterDiagram() {
           width={colW}
           height="28"
           rx="6"
-          fill="#451a03"
+          fill={c.warnBg}
           fillOpacity="0.4"
-          stroke="#f59e0b"
+          stroke={c.warnBorder}
           strokeWidth="1"
           strokeOpacity="0.25"
         />
@@ -101,7 +107,7 @@ export function SyncBeforeAfterDiagram() {
           x={leftX + colW / 2}
           y={treeY + 82}
           textAnchor="middle"
-          fill="#fbbf24"
+          fill={c.warnText}
           fontSize="10"
           fontWeight="500"
         >
@@ -121,13 +127,13 @@ export function SyncBeforeAfterDiagram() {
                 y1={arrowY}
                 x2={x2 - 6}
                 y2={arrowY}
-                stroke="#64748b"
+                stroke={c.arrow}
                 strokeWidth="1.5"
                 strokeDasharray="4 3"
               />
               <path
                 d={`M${x2 - 8} ${arrowY - 4} L${x2} ${arrowY} L${x2 - 8} ${arrowY + 4}`}
-                stroke="#64748b"
+                stroke={c.arrow}
                 strokeWidth="1.5"
                 fill="none"
               />
@@ -135,7 +141,7 @@ export function SyncBeforeAfterDiagram() {
                 x={mid}
                 y={arrowY - 10}
                 textAnchor="middle"
-                fill="#94a3b8"
+                fill={c.body}
                 fontSize="9"
                 fontWeight="500"
               >
@@ -150,19 +156,19 @@ export function SyncBeforeAfterDiagram() {
           x={rightX + colW / 2}
           y="30"
           textAnchor="middle"
-          fill="#22c55e"
+          fill={c.green}
           fontSize="11"
           fontWeight="600"
           letterSpacing="0.05em"
         >
           AFTER PREPARE
         </text>
-        <rect x={rightX} y="42" width={colW} height="1" fill="#22c55e" fillOpacity="0.2" />
+        <rect x={rightX} y="42" width={colW} height="1" fill={c.green} fillOpacity="0.2" />
 
         <text
           x={rightX + 8}
           y={treeY}
-          fill="#e2e8f0"
+          fill={c.heading}
           fontSize="11"
           fontFamily="monospace"
           fontWeight="600"
@@ -180,9 +186,9 @@ export function SyncBeforeAfterDiagram() {
           width={colW}
           height="28"
           rx="6"
-          fill="#052e16"
+          fill={c.successBg}
           fillOpacity="0.4"
-          stroke="#22c55e"
+          stroke={c.successBorder}
           strokeWidth="1"
           strokeOpacity="0.25"
         />
@@ -190,7 +196,7 @@ export function SyncBeforeAfterDiagram() {
           x={rightX + colW / 2}
           y={treeY + 118}
           textAnchor="middle"
-          fill="#4ade80"
+          fill={c.successText}
           fontSize="10"
           fontWeight="500"
         >
@@ -206,17 +212,20 @@ export function SyncBeforeAfterDiagram() {
 /* ------------------------------------------------------------------ */
 
 export function SyncLifecycleDiagram() {
+  const { theme } = useTheme();
+  const c = diagramPalette[theme];
+
   const steps = [
     {
       n: "1",
       label: "pnpm install",
       sub: "Resolves deps, creates injected copies",
-      color: "#3b82f6",
+      color: c.blue,
     },
-    { n: "2", label: "prepare", sub: "Runs automatically on install", color: "#8b5cf6" },
-    { n: "3", label: "sync:prepare", sub: "Writes .pnpm-sync.json config", color: "#8b5cf6" },
-    { n: "4", label: "build (tsc)", sub: "Creates dist/", color: "#8b5cf6" },
-    { n: "5", label: "postbuild", sub: "pnpm-sync copy → syncs to consumers", color: "#22c55e" },
+    { n: "2", label: "prepare", sub: "Runs automatically on install", color: c.purple },
+    { n: "3", label: "sync:prepare", sub: "Writes .pnpm-sync.json config", color: c.purple },
+    { n: "4", label: "build (tsc)", sub: "Creates dist/", color: c.purple },
+    { n: "5", label: "postbuild", sub: "pnpm-sync copy → syncs to consumers", color: c.green },
   ];
 
   const stepH = 52;
@@ -233,14 +242,14 @@ export function SyncLifecycleDiagram() {
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <rect width="480" height={totalH} rx="16" fill="#0d1117" />
+        <rect width="480" height={totalH} rx="16" fill={c.canvas} />
 
         {/* Title */}
         <text
           x="240"
           y="30"
           textAnchor="middle"
-          fill="#94a3b8"
+          fill={c.body}
           fontSize="11"
           fontWeight="600"
           letterSpacing="0.1em"
@@ -249,7 +258,7 @@ export function SyncLifecycleDiagram() {
         </text>
 
         {/* Vertical line */}
-        <line x1="60" y1={startY} x2="60" y2={lastStepY + 14} stroke="#1e293b" strokeWidth="2" />
+        <line x1="60" y1={startY} x2="60" y2={lastStepY + 14} stroke={c.border} strokeWidth="2" />
 
         {/* Bracket spanning steps 2–5 (prepare chain) */}
         <line
@@ -257,7 +266,7 @@ export function SyncLifecycleDiagram() {
           y1={startY + 1 * stepH + 4}
           x2="36"
           y2={lastStepY + 24}
-          stroke="#8b5cf6"
+          stroke={c.purple}
           strokeWidth="1.5"
           strokeOpacity="0.35"
         />
@@ -266,7 +275,7 @@ export function SyncLifecycleDiagram() {
           y1={startY + 1 * stepH + 4}
           x2="42"
           y2={startY + 1 * stepH + 4}
-          stroke="#8b5cf6"
+          stroke={c.purple}
           strokeWidth="1.5"
           strokeOpacity="0.35"
         />
@@ -275,7 +284,7 @@ export function SyncLifecycleDiagram() {
           y1={lastStepY + 24}
           x2="42"
           y2={lastStepY + 24}
-          stroke="#8b5cf6"
+          stroke={c.purple}
           strokeWidth="1.5"
           strokeOpacity="0.35"
         />
@@ -304,10 +313,10 @@ export function SyncLifecycleDiagram() {
               >
                 {step.n}
               </text>
-              <text x="90" y={y + 12} fill="#e2e8f0" fontSize="13" fontWeight="600">
+              <text x="90" y={y + 12} fill={c.heading} fontSize="13" fontWeight="600">
                 {step.label}
               </text>
-              <text x="90" y={y + 28} fill="#64748b" fontSize="11">
+              <text x="90" y={y + 28} fill={c.caption} fontSize="11">
                 {step.sub}
               </text>
             </g>
@@ -321,9 +330,9 @@ export function SyncLifecycleDiagram() {
           width="360"
           height="32"
           rx="8"
-          fill="#052e16"
+          fill={c.successBg}
           fillOpacity="0.4"
-          stroke="#22c55e"
+          stroke={c.successBorder}
           strokeWidth="1"
           strokeOpacity="0.3"
         />
@@ -331,7 +340,7 @@ export function SyncLifecycleDiagram() {
           x="240"
           y={resultY + 20}
           textAnchor="middle"
-          fill="#4ade80"
+          fill={c.successText}
           fontSize="11"
           fontWeight="600"
         >

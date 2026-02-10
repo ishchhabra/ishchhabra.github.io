@@ -64,7 +64,7 @@ function LabCard({ project }: { project: (typeof labProjects)[number] }) {
       <div className="relative flex h-full flex-col">
         <div className="mb-3 flex items-center gap-2.5">
           <h3
-            className="text-lg font-semibold text-white"
+            className="text-lg font-semibold text-zinc-900 dark:text-white"
             style={{
               fontFamily: "var(--font-display)",
               ...(titleTransitionName && {
@@ -81,12 +81,12 @@ function LabCard({ project }: { project: (typeof labProjects)[number] }) {
           </span>
         </div>
         <p
-          className="mb-5 flex-1 text-sm leading-relaxed text-zinc-400"
+          className="mb-5 flex-1 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400"
           style={descTransitionName ? { viewTransitionName: descTransitionName } : {}}
         >
           {project.description}
         </p>
-        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-500 transition-colors duration-300 group-hover:text-white">
+        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-500 transition-colors duration-300 group-hover:text-zinc-900 dark:group-hover:text-white">
           {isExternal ? "View on GitHub" : "Try it"}
           <svg
             width="12"
@@ -109,7 +109,7 @@ function LabCard({ project }: { project: (typeof labProjects)[number] }) {
   );
 
   const cls =
-    "group relative overflow-hidden rounded-2xl border border-white/5 bg-white/2 p-7 transition-all duration-300 hover:border-white/10 hover:bg-white/4";
+    "group relative overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50/80 p-7 transition-all duration-300 hover:border-zinc-300 hover:bg-zinc-100/80 dark:border-white/5 dark:bg-white/2 dark:hover:border-white/10 dark:hover:bg-white/4";
 
   if (isExternal) {
     return (
@@ -131,13 +131,13 @@ export function Home() {
       {/* Hero */}
       <section className="pb-16">
         <Page.Hero title="Ish Chhabra">
-          <p className="text-lg text-zinc-500">
+          <p className="text-lg text-zinc-600 dark:text-zinc-500">
             I do computers. Currently building{" "}
             <a
               href="https://kniru.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-zinc-400 underline decoration-zinc-700 underline-offset-2 transition-colors hover:text-white hover:decoration-white/30"
+              className="text-zinc-500 underline decoration-zinc-400 underline-offset-2 transition-colors hover:text-zinc-900 hover:decoration-zinc-600 dark:text-zinc-400 dark:decoration-zinc-700 dark:hover:text-white dark:hover:decoration-white/30"
             >
               Kniru
             </a>{" "}
@@ -146,7 +146,7 @@ export function Home() {
               href="https://clap.gg"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-zinc-400 underline decoration-zinc-700 underline-offset-2 transition-colors hover:text-white hover:decoration-white/30"
+              className="text-zinc-500 underline decoration-zinc-400 underline-offset-2 transition-colors hover:text-zinc-900 hover:decoration-zinc-600 dark:text-zinc-400 dark:decoration-zinc-700 dark:hover:text-white dark:hover:decoration-white/30"
             >
               Clap
             </a>
@@ -172,7 +172,7 @@ export function Home() {
           action={
             <Link
               to="/writing"
-              className="text-[11px] text-zinc-600 transition-colors hover:text-white"
+              className="text-[11px] text-zinc-600 transition-colors hover:text-zinc-900 dark:hover:text-white"
             >
               View all
             </Link>
@@ -183,11 +183,11 @@ export function Home() {
             <Link
               key={post.title}
               to={post.href}
-              className="group -mx-3 flex items-baseline justify-between gap-8 rounded-lg px-3 py-3 transition-colors hover:bg-white/2"
+              className="group -mx-3 flex items-baseline justify-between gap-8 rounded-lg px-3 py-3 transition-colors hover:bg-zinc-100 dark:hover:bg-white/2"
             >
               <div className="min-w-0">
                 <div
-                  className="text-sm font-medium text-zinc-300 transition-colors group-hover:text-white"
+                  className="text-sm font-medium text-zinc-700 transition-colors group-hover:text-zinc-900 dark:text-zinc-300 dark:group-hover:text-white"
                   style={{ viewTransitionName: "article-title" }}
                 >
                   {post.title}
@@ -199,7 +199,9 @@ export function Home() {
                   {post.description}
                 </div>
               </div>
-              <span className="shrink-0 text-[11px] tabular-nums text-zinc-600">{post.date}</span>
+              <span className="shrink-0 text-[11px] tabular-nums text-zinc-500 dark:text-zinc-600">
+                {post.date}
+              </span>
             </Link>
           ))}
         </div>

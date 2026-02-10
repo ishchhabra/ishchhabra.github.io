@@ -43,6 +43,13 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Design overlay bar (theme-aware so it matches page light/dark) */
+  --overlay-bar-bg: oklch(1 0 0 / 0.96);
+  --overlay-bar-border: oklch(0.922 0 0);
+  --overlay-bar-divider: oklch(0.922 0 0);
+  --overlay-bar-muted: oklch(0.556 0 0);
+  --overlay-bar-shadow: 0 8px 32px oklch(0.205 0 0 / 0.15);
 }
 
 .dark {
@@ -85,6 +92,13 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.269 0 0);
   --sidebar-ring: oklch(0.439 0 0);
+
+  /* Design overlay bar (dark) */
+  --overlay-bar-bg: oklch(0.145 0 0 / 0.96);
+  --overlay-bar-border: oklch(0.269 0 0);
+  --overlay-bar-divider: oklch(0.269 0 0);
+  --overlay-bar-muted: oklch(0.708 0 0);
+  --overlay-bar-shadow: 0 8px 32px oklch(0 0 0 / 0.4);
 }
 
 @theme inline {

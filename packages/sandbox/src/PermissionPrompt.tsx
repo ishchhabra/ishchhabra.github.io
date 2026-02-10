@@ -39,12 +39,52 @@ function decide(request: PendingRequest, decision: PermissionDecision) {
   request.resolve(decision);
 }
 
+const LIGHT_STYLES = {
+  overlayBg: "rgba(0,0,0,0.35)",
+  cardBg: "#ffffff",
+  cardBorder: "1px solid rgba(0,0,0,0.08)",
+  cardShadow:
+    "0 0 0 1px rgba(0,0,0,0.04), 0 24px 48px -12px rgba(0,0,0,0.15), 0 0 80px -20px rgba(0,0,0,0.08)",
+  titleColor: "#18181b",
+  subtitleColor: "#71717a",
+  detailBg: "rgba(0,0,0,0.04)",
+  detailBorder: "1px solid rgba(0,0,0,0.06)",
+  detailColor: "#3f3f46",
+  dividerBg: "rgba(0,0,0,0.06)",
+  denyBtnBorder: "1px solid rgba(0,0,0,0.1)",
+  denyBtnBg: "rgba(0,0,0,0.04)",
+  denyBtnColor: "#52525b",
+  hintColor: "#71717a",
+} as const;
+
+const DARK_STYLES = {
+  overlayBg: "rgba(0,0,0,0.6)",
+  cardBg: "#111113",
+  cardBorder: "1px solid rgba(255,255,255,0.06)",
+  cardShadow:
+    "0 0 0 1px rgba(0,0,0,0.3), 0 24px 48px -12px rgba(0,0,0,0.6), 0 0 80px -20px rgba(0,0,0,0.4)",
+  titleColor: "#fafafa",
+  subtitleColor: "#71717a",
+  detailBg: "rgba(255,255,255,0.03)",
+  detailBorder: "1px solid rgba(255,255,255,0.06)",
+  detailColor: "#e4e4e7",
+  dividerBg: "rgba(255,255,255,0.05)",
+  denyBtnBorder: "1px solid rgba(255,255,255,0.08)",
+  denyBtnBg: "rgba(255,255,255,0.04)",
+  denyBtnColor: "#a1a1aa",
+  hintColor: "#52525b",
+} as const;
+
 /**
  * Permission prompt — overlays when the sandbox requests a capability.
  * Inspired by Claude Code / terminal permission UIs.
+ * Respects host page theme via document.documentElement.classList.contains('dark').
  */
 export function PermissionPrompt({ request }: PermissionPromptProps) {
   const meta = CAPABILITY_META[request.capability] ?? CAPABILITY_META["fetch"]!;
+  const isDark =
+    typeof document !== "undefined" && document.documentElement.classList.contains("dark");
+  const s = isDark ? DARK_STYLES : LIGHT_STYLES;
 
   return (
     <div
@@ -56,7 +96,7 @@ export function PermissionPrompt({ request }: PermissionPromptProps) {
         alignItems: "center",
         justifyContent: "center",
         padding: 24,
-        background: "rgba(0,0,0,0.6)",
+        background: s.overlayBg,
         backdropFilter: "blur(8px)",
         WebkitBackdropFilter: "blur(8px)",
         fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
@@ -93,12 +133,11 @@ export function PermissionPrompt({ request }: PermissionPromptProps) {
         style={{
           width: "100%",
           maxWidth: 420,
-          background: "#111113",
-          border: "1px solid rgba(255,255,255,0.06)",
+          background: s.cardBg,
+          border: s.cardBorder,
           borderRadius: 14,
           overflow: "hidden",
-          boxShadow:
-            "0 0 0 1px rgba(0,0,0,0.3), 0 24px 48px -12px rgba(0,0,0,0.6), 0 0 80px -20px rgba(0,0,0,0.4)",
+          boxShadow: s.cardShadow,
           animation: "sandboxSlideUp 0.2s ease-out",
         }}
       >
@@ -138,7 +177,7 @@ export function PermissionPrompt({ request }: PermissionPromptProps) {
           <div>
             <div
               style={{
-                color: "#fafafa",
+                color: s.titleColor,
                 fontSize: 15,
                 fontWeight: 600,
                 letterSpacing: "-0.01em",
@@ -146,7 +185,7 @@ export function PermissionPrompt({ request }: PermissionPromptProps) {
             >
               {meta.label}
             </div>
-            <div style={{ color: "#71717a", fontSize: 12, marginTop: 1 }}>
+            <div style={{ color: s.subtitleColor, fontSize: 12, marginTop: 1 }}>
               Sandbox is requesting permission
             </div>
           </div>
@@ -156,13 +195,13 @@ export function PermissionPrompt({ request }: PermissionPromptProps) {
         <div style={{ padding: "0 22px 18px" }}>
           <div
             style={{
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(255,255,255,0.06)",
+              background: s.detailBg,
+              border: s.detailBorder,
               borderRadius: 10,
               padding: "12px 16px",
               fontFamily: "'JetBrains Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', monospace",
               fontSize: 13,
-              color: "#e4e4e7",
+              color: s.detailColor,
               wordBreak: "break-all",
               lineHeight: 1.5,
               letterSpacing: "-0.01em",
@@ -176,7 +215,7 @@ export function PermissionPrompt({ request }: PermissionPromptProps) {
         <div
           style={{
             height: 1,
-            background: "rgba(255,255,255,0.05)",
+            background: s.dividerBg,
             margin: "0 22px",
           }}
         />
@@ -241,9 +280,9 @@ export function PermissionPrompt({ request }: PermissionPromptProps) {
                 flex: 1,
                 padding: "9px 0",
                 borderRadius: 8,
-                border: "1px solid rgba(255,255,255,0.08)",
-                background: "rgba(255,255,255,0.04)",
-                color: "#a1a1aa",
+                border: s.denyBtnBorder,
+                background: s.denyBtnBg,
+                color: s.denyBtnColor,
                 fontSize: 12,
                 fontWeight: 600,
                 cursor: "pointer",
@@ -281,7 +320,7 @@ export function PermissionPrompt({ request }: PermissionPromptProps) {
             textAlign: "center",
           }}
         >
-          <span style={{ fontSize: 11, color: "#52525b", letterSpacing: "0.02em" }}>
+          <span style={{ fontSize: 11, color: s.hintColor, letterSpacing: "0.02em" }}>
             This decision applies to this sandbox session only
           </span>
         </div>

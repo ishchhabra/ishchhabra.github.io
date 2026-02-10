@@ -21,6 +21,17 @@ export default defineConfig(async () => {
     .filter((name): name is string => typeof name === "string");
 
   return {
+    resolve: {
+      // use-sync-external-store/shim is CJS (default export only); deps use named import.
+      // React 18+ has useSyncExternalStore. Alias only the base shim (exact match) so
+      // use-sync-external-store/shim/with-selector.js still resolves to the real package.
+      alias: [
+        {
+          find: /^use-sync-external-store\/shim$/,
+          replacement: "react",
+        },
+      ],
+    },
     plugins: [
       tsConfigPaths(),
       tanstackStart({

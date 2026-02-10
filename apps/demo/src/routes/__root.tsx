@@ -2,6 +2,7 @@
 import { createRootRoute, HeadContent, Outlet, Scripts, useLocation } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useEffect } from "react";
+import { ThemeProvider } from "../contexts/ThemeContext";
 import { Footer } from "../components/Footer";
 import { Header } from "../components/Header";
 import appCss from "../index.css?url";
@@ -11,6 +12,23 @@ import {
   createWebsiteSchemaScript,
   SITE_TITLE,
 } from "../lib/seo";
+
+const THEME_STORAGE_KEY = "theme";
+
+/** Runs before first paint so there’s no theme flash. Sets .dark and .theme-ready on html. */
+function createThemeInitScript() {
+  return {
+    type: "text/javascript" as const,
+    children: `(function(){var t=localStorage.getItem("${THEME_STORAGE_KEY}");document.documentElement.classList.toggle("dark",t!=="light");document.documentElement.classList.add("theme-ready");})();`,
+  };
+}
+
+/** Hide body until theme script has run (no white/dark flash). */
+function createThemeCloakStyle() {
+  return {
+    children: "html:not(.theme-ready) body{visibility:hidden}",
+  };
+}
 
 export const Route = createRootRoute({
   head: () => {
@@ -28,7 +46,8 @@ export const Route = createRootRoute({
         ...base.meta,
         { property: "og:type", content: "website" },
       ],
-      scripts: [createWebsiteSchemaScript()],
+      styles: [createThemeCloakStyle()],
+      scripts: [createThemeInitScript(), createWebsiteSchemaScript()],
       links: [
         ...(base.links ?? []),
         { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
@@ -52,16 +71,18 @@ export const Route = createRootRoute({
 function RootComponent() {
   return (
     <RootDocument>
-      <LayoutShell>
-        <Outlet />
-      </LayoutShell>
+      <ThemeProvider>
+        <LayoutShell>
+          <Outlet />
+        </LayoutShell>
+      </ThemeProvider>
     </RootDocument>
   );
 }
 
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
@@ -81,12 +102,12 @@ function LayoutShell({ children }: { children: ReactNode }) {
   }, [pathname]);
 
   return (
-    <div className="relative flex min-h-svh flex-col bg-zinc-950">
+    <div className="relative flex min-h-svh flex-col bg-white dark:bg-zinc-950">
       <div
-        className="pointer-events-none fixed inset-0 opacity-30"
+        className="pointer-events-none fixed inset-0 opacity-0 dark:opacity-30"
         style={{
           background:
-            "radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59, 130, 246, 0.12), transparent), radial-gradient(ellipse 60% 40% at 100% 100%, rgba(139, 92, 246, 0.06), transparent)",
+            "radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59, 130, 246, 0.08), transparent), radial-gradient(ellipse 60% 40% at 100% 100%, rgba(139, 92, 246, 0.04), transparent)",
         }}
       />
 

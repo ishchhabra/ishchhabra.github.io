@@ -231,11 +231,11 @@ export function AIEditPrompt({
             gap: 4,
             padding: "2px 6px",
             borderRadius: 8,
-            border: "1px solid rgba(255,255,255,0.1)",
-            backgroundColor: "rgba(39,39,42,0.8)",
+            border: "1px solid var(--overlay-bar-border)",
+            backgroundColor: "var(--input)",
           }}
         >
-          <Sparkles size={14} style={{ color: "rgba(161,161,170,0.8)", flexShrink: 0 }} />
+          <Sparkles size={14} style={{ color: "var(--overlay-bar-muted)", flexShrink: 0 }} />
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -249,8 +249,8 @@ export function AIEditPrompt({
               hasSelection ? placeholder : "e.g. make all buttons white, add a section..."
             }
             disabled={isLoading}
-            className="h-7 border-0 bg-transparent px-2 text-sm placeholder:text-zinc-500 focus-visible:ring-0 focus-visible:ring-offset-0"
-            style={{ fontSize: 12, color: "rgb(255,255,255)" }}
+            className="h-7 border-0 bg-transparent px-2 text-sm placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
+            style={{ fontSize: 12, color: "var(--foreground)" }}
           />
         </div>
 
@@ -260,15 +260,15 @@ export function AIEditPrompt({
           onClick={handleSend}
           disabled={!input.trim() || isLoading}
           title="Send"
-          style={{ width: 28, height: 28, color: "rgb(161,161,170)" }}
+          style={{ width: 28, height: 28, color: "var(--overlay-bar-muted)" }}
         >
           {isLoading ? (
             <span
               style={{
                 width: 14,
                 height: 14,
-                border: "2px solid rgba(161,161,170,0.3)",
-                borderTopColor: "rgb(161,161,170)",
+                border: "2px solid var(--overlay-bar-muted)",
+                borderTopColor: "var(--foreground)",
                 borderRadius: "50%",
                 animation: "spin 0.8s linear infinite",
               }}
@@ -284,7 +284,7 @@ export function AIEditPrompt({
             variant="ghost"
             onClick={() => undo()}
             title="Undo last edit"
-            style={{ width: 28, height: 28, color: "rgb(161,161,170)" }}
+            style={{ width: 28, height: 28, color: "var(--overlay-bar-muted)" }}
           >
             <Undo2 size={14} />
           </Button>

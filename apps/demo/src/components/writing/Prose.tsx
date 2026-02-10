@@ -23,12 +23,12 @@ export function H2({ id, children }: { id: string; children: ReactNode }) {
   return (
     <h2
       id={id}
-      className="group mb-4 scroll-mt-24 text-2xl font-bold tracking-tight text-white sm:text-3xl"
+      className="group mb-4 scroll-mt-24 text-2xl font-bold tracking-tight text-zinc-900 dark:text-white sm:text-3xl"
       style={{ fontFamily: "var(--font-display)" }}
     >
       <a href={`#${id}`} className="no-underline hover:no-underline">
         {children}
-        <span className="ml-2 text-zinc-700 opacity-0 transition-opacity group-hover:opacity-100">
+        <span className="ml-2 text-zinc-500 opacity-0 transition-opacity group-hover:opacity-100 dark:text-zinc-700">
           #
         </span>
       </a>
@@ -40,12 +40,12 @@ export function H3({ id, children }: { id: string; children: ReactNode }) {
   return (
     <h3
       id={id}
-      className="group mb-3 mt-10 scroll-mt-24 text-xl font-semibold tracking-tight text-white"
+      className="group mb-3 mt-10 scroll-mt-24 text-xl font-semibold tracking-tight text-zinc-900 dark:text-white"
       style={{ fontFamily: "var(--font-display)" }}
     >
       <a href={`#${id}`} className="no-underline hover:no-underline">
         {children}
-        <span className="ml-2 text-zinc-700 opacity-0 transition-opacity group-hover:opacity-100">
+        <span className="ml-2 text-zinc-500 opacity-0 transition-opacity group-hover:opacity-100 dark:text-zinc-700">
           #
         </span>
       </a>
@@ -57,7 +57,7 @@ export function H3({ id, children }: { id: string; children: ReactNode }) {
 /*  Paragraph                                                          */
 /* ------------------------------------------------------------------ */
 export function P({ children }: { children: ReactNode }) {
-  return <p className="mb-5 leading-[1.8] text-zinc-400">{children}</p>;
+  return <p className="mb-5 leading-[1.8] text-zinc-600 dark:text-zinc-400">{children}</p>;
 }
 
 /* ------------------------------------------------------------------ */
@@ -66,7 +66,7 @@ export function P({ children }: { children: ReactNode }) {
 export function Code({ children }: { children: ReactNode }) {
   return (
     <code
-      className="rounded bg-white/5 px-1.5 py-0.5 text-[0.85em] text-zinc-300"
+      className="rounded bg-zinc-200 px-1.5 py-0.5 text-[0.85em] text-zinc-700 dark:bg-white/5 dark:text-zinc-300"
       style={{ fontFamily: "var(--font-mono)" }}
     >
       {children}
@@ -99,7 +99,7 @@ export function CodeBlock({
     <button
       type="button"
       onClick={handleCopy}
-      className="rounded-md p-1 text-zinc-600 transition-colors hover:text-zinc-300"
+      className="rounded-md p-1 text-zinc-500 transition-colors hover:text-zinc-700 dark:text-zinc-600 dark:hover:text-zinc-300"
       aria-label="Copy code"
     >
       {copied ? (
@@ -132,9 +132,9 @@ export function CodeBlock({
   );
 
   return (
-    <div className="group relative my-6 overflow-hidden rounded-xl border border-white/5 bg-[#0d1117]">
+    <div className="group relative my-6 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100 dark:border-white/5 dark:bg-[#0d1117]">
       {filename ? (
-        <div className="flex items-center gap-2 border-b border-white/5 px-4 py-2">
+        <div className="flex items-center gap-2 border-b border-zinc-200 px-4 py-2 dark:border-white/5">
           <svg
             width="12"
             height="12"
@@ -142,18 +142,21 @@ export function CodeBlock({
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
-            className="text-zinc-600"
+            className="text-zinc-500 dark:text-zinc-600"
             aria-hidden
           >
             <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
             <polyline points="14 2 14 8 20 8" />
           </svg>
-          <span className="text-[11px] text-zinc-500" style={{ fontFamily: "var(--font-mono)" }}>
+          <span
+            className="text-[11px] text-zinc-600 dark:text-zinc-500"
+            style={{ fontFamily: "var(--font-mono)" }}
+          >
             {filename}
           </span>
           <span className="ml-auto flex items-center gap-2">
             {language && (
-              <span className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-zinc-600">
+              <span className="rounded bg-zinc-200 px-1.5 py-0.5 text-[10px] text-zinc-600 dark:bg-white/5">
                 {language}
               </span>
             )}
@@ -165,7 +168,7 @@ export function CodeBlock({
           {copyButton}
         </div>
       )}
-      <pre className="overflow-x-auto p-4 text-[13px] leading-relaxed text-zinc-300">
+      <pre className="overflow-x-auto p-4 text-[13px] leading-relaxed text-zinc-700 dark:text-zinc-300">
         <code style={{ fontFamily: "var(--font-mono)" }}>{children}</code>
       </pre>
     </div>
@@ -218,7 +221,7 @@ export function Callout({
           {s.label}
         </span>
       </div>
-      <div className="text-sm leading-relaxed text-zinc-400">{children}</div>
+      <div className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">{children}</div>
     </div>
   );
 }
@@ -227,11 +230,15 @@ export function Callout({
 /*  Ordered / Unordered lists                                          */
 /* ------------------------------------------------------------------ */
 export function UL({ children }: { children: ReactNode }) {
-  return <ul className="mb-5 space-y-2 pl-5 text-zinc-400">{children}</ul>;
+  return <ul className="mb-5 space-y-2 pl-5 text-zinc-600 dark:text-zinc-400">{children}</ul>;
 }
 
 export function OL({ children }: { children: ReactNode }) {
-  return <ol className="mb-5 list-decimal space-y-2 pl-5 text-zinc-400">{children}</ol>;
+  return (
+    <ol className="mb-5 list-decimal space-y-2 pl-5 text-zinc-600 dark:text-zinc-400">
+      {children}
+    </ol>
+  );
 }
 
 export function LI({ children }: { children: ReactNode }) {
@@ -247,14 +254,14 @@ export function LI({ children }: { children: ReactNode }) {
 /* ------------------------------------------------------------------ */
 export function Table({ headers, rows }: { headers: string[]; rows: (string | ReactNode)[][] }) {
   return (
-    <div className="my-6 overflow-x-auto rounded-xl border border-white/5">
+    <div className="my-6 overflow-x-auto rounded-xl border border-zinc-200 dark:border-white/5">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-white/5 bg-white/2">
+          <tr className="border-b border-zinc-200 bg-zinc-100 dark:border-white/5 dark:bg-white/2">
             {headers.map((h) => (
               <th
                 key={h}
-                className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-zinc-400 uppercase"
+                className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-zinc-600 uppercase dark:text-zinc-400"
               >
                 {h}
               </th>
@@ -263,9 +270,9 @@ export function Table({ headers, rows }: { headers: string[]; rows: (string | Re
         </thead>
         <tbody>
           {rows.map((row, i) => (
-            <tr key={i} className="border-b border-white/3 last:border-0">
+            <tr key={i} className="border-b border-zinc-100 last:border-0 dark:border-white/3">
               {row.map((cell, j) => (
-                <td key={j} className="px-4 py-3 text-zinc-400">
+                <td key={j} className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
                   {cell}
                 </td>
               ))}
@@ -281,14 +288,14 @@ export function Table({ headers, rows }: { headers: string[]; rows: (string | Re
 /*  Horizontal rule / section divider                                  */
 /* ------------------------------------------------------------------ */
 export function Divider() {
-  return <hr className="my-12 border-0 border-t border-white/5" />;
+  return <hr className="my-12 border-0 border-t border-zinc-200 dark:border-white/5" />;
 }
 
 /* ------------------------------------------------------------------ */
 /*  Strong / emphasis helpers                                          */
 /* ------------------------------------------------------------------ */
 export function Strong({ children }: { children: ReactNode }) {
-  return <strong className="font-semibold text-zinc-200">{children}</strong>;
+  return <strong className="font-semibold text-zinc-800 dark:text-zinc-200">{children}</strong>;
 }
 
 export function A({ href, children }: { href: string; children: ReactNode }) {
@@ -296,7 +303,7 @@ export function A({ href, children }: { href: string; children: ReactNode }) {
   return (
     <a
       href={href}
-      className="text-blue-400 underline decoration-blue-400/30 underline-offset-2 transition-colors hover:text-blue-300 hover:decoration-blue-300/50"
+      className="text-blue-600 underline decoration-blue-400/40 underline-offset-2 transition-colors hover:text-blue-700 hover:decoration-blue-500/50 dark:text-blue-400 dark:decoration-blue-400/30 dark:hover:text-blue-300 dark:hover:decoration-blue-300/50"
       {...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
     >
       {children}
@@ -318,11 +325,11 @@ export function Collapsible({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="my-6 overflow-hidden rounded-xl border border-white/5">
+    <div className="my-6 overflow-hidden rounded-xl border border-zinc-200 dark:border-white/5">
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center gap-3 px-5 py-4 text-left transition-colors hover:bg-white/2"
+        className="flex w-full items-center gap-3 px-5 py-4 text-left transition-colors hover:bg-zinc-100 dark:hover:bg-white/2"
       >
         <svg
           width="12"
@@ -336,9 +343,13 @@ export function Collapsible({
         >
           <path d="M9 18l6-6-6-6" />
         </svg>
-        <span className="text-sm font-semibold text-zinc-200">{title}</span>
+        <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{title}</span>
       </button>
-      {open && <div className="border-t border-white/5 px-5 pt-4 pb-5">{children}</div>}
+      {open && (
+        <div className="border-t border-zinc-200 px-5 pt-4 pb-5 dark:border-white/5">
+          {children}
+        </div>
+      )}
     </div>
   );
 }

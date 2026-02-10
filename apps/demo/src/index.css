@@ -1,5 +1,8 @@
 @import "@i2-labs/design-overlay/styles.css";
 
+/* Class-based dark mode: add .dark on html to enable dark: variants */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --font-display: "Syne", system-ui, sans-serif;
   --font-body: "DM Sans", system-ui, sans-serif;
@@ -28,9 +31,13 @@ body {
 }
 
 .accent-line {
-  background: linear-gradient(90deg, #3b82f6, #8b5cf6, #3b82f6);
+  background: linear-gradient(90deg, #94a3b8, #64748b, #94a3b8);
   background-size: 200% 100%;
   animation: accent-shimmer 4s ease-in-out infinite;
+}
+
+.dark .accent-line {
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6, #3b82f6);
 }
 
 /* View Transitions API: smoother cross-fade between pages */

@@ -22,7 +22,7 @@ function PageMain({ children, variant = "default" }: PageMainProps) {
 }
 
 const pageHeroTitleClasses =
-  "mb-4 text-3xl font-bold tracking-tight text-white sm:text-[42px] sm:leading-[1.15]";
+  "mb-4 text-3xl font-bold tracking-tight text-zinc-900 dark:text-white sm:text-[42px] sm:leading-[1.15]";
 
 interface PageHeroProps {
   title: string;
@@ -52,21 +52,23 @@ function PageHero({ title, accentLine = true, viewTransitionName, children }: Pa
 }
 
 interface SectionHeaderProps {
-  title: string;
+  /** Title as string (auto-uppercased) or ReactNode for custom rendering (e.g. to distinguish "I" from "1") */
+  title: string | ReactNode;
   /** Optional action (e.g. "View all" link) rendered after the divider */
   action?: ReactNode;
 }
 
 function SectionHeader({ title, action }: SectionHeaderProps) {
+  const isStringTitle = typeof title === "string";
   return (
     <div className="mb-6 flex items-baseline gap-3">
       <h2
-        className="text-xs font-medium tracking-widest text-zinc-500 uppercase"
+        className={`text-xs font-medium tracking-widest text-zinc-500 ${isStringTitle ? "uppercase" : ""}`}
         style={{ letterSpacing: "0.15em" }}
       >
         {title}
       </h2>
-      <div className="h-px flex-1 bg-white/5" />
+      <div className="h-px flex-1 bg-zinc-200 dark:bg-white/5" />
       {action}
     </div>
   );

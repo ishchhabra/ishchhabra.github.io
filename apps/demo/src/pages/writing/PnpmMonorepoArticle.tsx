@@ -53,7 +53,7 @@ export function PnpmMonorepoArticle() {
         <header className="max-w-4xl pb-8">
           <Link
             to="/writing"
-            className="mb-8 inline-flex items-center gap-1.5 text-[12px] text-zinc-600 transition-colors hover:text-zinc-400"
+            className="mb-8 inline-flex items-center gap-1.5 text-[12px] text-zinc-500 transition-colors hover:text-zinc-700 dark:text-zinc-600 dark:hover:text-zinc-400"
           >
             <svg
               width="14"
@@ -73,18 +73,18 @@ export function PnpmMonorepoArticle() {
             viewTransitionName="article-title"
           >
             <p
-              className="mb-6 text-lg leading-relaxed text-zinc-500"
+              className="mb-6 text-lg leading-relaxed text-zinc-600 dark:text-zinc-500"
               style={{ viewTransitionName: "article-description" }}
             >
               A practical guide to pnpm monorepos with true package isolation.
             </p>
-            <div className="flex items-center gap-4 text-[12px] text-zinc-600">
+            <div className="flex items-center gap-4 text-[12px] text-zinc-500 dark:text-zinc-600">
               <span>Ish Chhabra</span>
-              <span className="h-3 w-px bg-zinc-800" />
+              <span className="h-3 w-px bg-zinc-300 dark:bg-zinc-800" />
               <span>Feb 9, 2026</span>
-              <span className="h-3 w-px bg-zinc-800" />
+              <span className="h-3 w-px bg-zinc-300 dark:bg-zinc-800" />
               <span>20 min read</span>
-              <span className="h-3 w-px bg-zinc-800" />
+              <span className="h-3 w-px bg-zinc-300 dark:bg-zinc-800" />
               <span>Written with AI</span>
             </div>
           </Page.Hero>
@@ -602,11 +602,11 @@ pnpm --filter @packages/ui build`}</CodeBlock>
               </LI>
             </UL>
 
-            <div className="mt-16 rounded-xl border border-white/5 bg-white/2 p-8 text-center">
-              <p className="mb-2 text-sm text-zinc-400">
+            <div className="mt-16 rounded-xl border border-zinc-200 bg-zinc-50 p-8 text-center dark:border-white/5 dark:bg-white/2">
+              <p className="mb-2 text-sm text-zinc-600 dark:text-zinc-400">
                 That's all. Hope this saves you the hours of debugging that I went through.
               </p>
-              <p className="text-[13px] text-zinc-600">
+              <p className="text-[13px] text-zinc-500 dark:text-zinc-600">
                 Found an issue?{" "}
                 <A href="https://github.com/ishchhabra/ishchhabra.github.io">Open a PR</A> or{" "}
                 <A href="mailto:ishchhabra12@gmail.com">send me an email</A>.

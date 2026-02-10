@@ -45,10 +45,10 @@ function IconButton({
         cursor: "pointer",
         transition: "background 150ms",
         background: active ? "rgb(5,150,105)" : "transparent",
-        color: active ? "#fff" : "rgba(161,161,170,1)",
+        color: active ? "#fff" : "var(--overlay-bar-muted)",
       }}
       onMouseEnter={(e) => {
-        if (!active) e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+        if (!active) e.currentTarget.style.background = "var(--accent)";
       }}
       onMouseLeave={(e) => {
         if (!active) e.currentTarget.style.background = "transparent";
@@ -79,10 +79,10 @@ export function Toolbar({
         gap: 8,
         padding: "4px 6px",
         borderRadius: 10,
-        border: "1px solid rgba(255,255,255,0.12)",
-        backgroundColor: "rgba(24,24,27,0.96)",
+        border: "1px solid var(--overlay-bar-border)",
+        backgroundColor: "var(--overlay-bar-bg)",
         backdropFilter: "blur(12px)",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+        boxShadow: "var(--overlay-bar-shadow)",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -123,7 +123,7 @@ export function Toolbar({
             style={{
               width: 1,
               height: 20,
-              background: "rgba(255,255,255,0.12)",
+              background: "var(--overlay-bar-divider)",
               borderRadius: 1,
             }}
           />

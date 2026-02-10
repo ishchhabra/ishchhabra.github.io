@@ -35,7 +35,7 @@ export function TableOfContents({ items }: { items: TocItem[] }) {
         <span className="mb-3 block text-[10px] font-semibold tracking-widest text-zinc-600 uppercase">
           On this page
         </span>
-        <ul className="space-y-1.5 border-l border-white/5">
+        <ul className="space-y-1.5 border-l border-zinc-200 dark:border-white/5">
           {items.map((item) => {
             const isActive = activeId === item.id;
             return (
@@ -46,8 +46,8 @@ export function TableOfContents({ items }: { items: TocItem[] }) {
                     item.indent ? "pl-6" : "pl-4"
                   } ${
                     isActive
-                      ? "border-blue-500 text-zinc-200"
-                      : "border-transparent text-zinc-600 hover:text-zinc-400"
+                      ? "border-blue-500 text-zinc-800 dark:text-zinc-200"
+                      : "border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-600 dark:hover:text-zinc-400"
                   }`}
                 >
                   {item.label}
