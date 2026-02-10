@@ -1,0 +1,19 @@
+# Ish Chhabra
+
+> I do computers. Currently building Kniru and Clap.
+
+## Site
+
+- Home: https://ishchhabra.github.io/
+- Writing: https://ishchhabra.github.io/writing
+- Lab (experiments): https://ishchhabra.github.io/lab/sandbox, https://ishchhabra.github.io/lab/design-overlay
+
+## Writing
+
+- Building a Monorepo That Actually Scales: https://ishchhabra.github.io/writing/pnpm-monorepo-scales
+
+## Contact
+
+- GitHub: https://github.com/ishchhabra
+- LinkedIn: https://linkedin.com/in/ishchhabra
+- Email: ishchhabra12@gmail.com
