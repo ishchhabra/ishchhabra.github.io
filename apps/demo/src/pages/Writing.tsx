@@ -1,16 +1,47 @@
 import { Link } from "@tanstack/react-router";
 import { Page } from "../components/Page";
 
-const articles = [
+export type Article = {
+  slug: string;
+  title: string;
+  description: string;
+  dateShort: string;
+  date: string;
+  dateISO: string;
+  readTime: string;
+  tags: string[];
+};
+
+export const ARTICLES: Article[] = [
   {
     slug: "pnpm-monorepo-scales",
     title: "Building a Monorepo That Actually Scales",
     description: "A practical guide to pnpm monorepos with true package isolation.",
+    dateShort: "Feb 2026",
     date: "Feb 9, 2026",
+    dateISO: "2026-02-09",
     readTime: "20 min read",
     tags: ["pnpm", "monorepo", "typescript"],
   },
 ];
+
+const bySlug = new Map(ARTICLES.map((a) => [a.slug, a]));
+
+export function getArticle(slug: string): Article | undefined {
+  return bySlug.get(slug);
+}
+
+/** For home page: latest articles with href and card-friendly date */
+export function getWritingPreview(
+  limit = 5
+): Array<{ title: string; description: string; href: string; date: string }> {
+  return ARTICLES.slice(0, limit).map((a) => ({
+    title: a.title,
+    description: a.description,
+    href: `/writing/${a.slug}`,
+    date: a.dateShort,
+  }));
+}
 
 export function Writing() {
   return (
@@ -24,7 +55,7 @@ export function Writing() {
       </div>
 
       <div className="flex max-w-3xl flex-col gap-1">
-        {articles.map((post) => {
+        {ARTICLES.map((post) => {
           const articleHref = `/writing/${post.slug}`;
 
           return (

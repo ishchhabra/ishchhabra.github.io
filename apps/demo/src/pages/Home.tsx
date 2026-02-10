@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Page } from "../components/Page";
+import { getWritingPreview } from "./Writing";
 
 const labProjects = [
   {
@@ -29,15 +30,7 @@ const labProjects = [
   },
 ];
 
-const writing = [
-  {
-    title: "Building a Monorepo That Actually Scales",
-    description:
-      "Per-package isolation with pnpm — independent lockfiles, correct peer dependency resolution, and a setup that survives a fresh CI clone.",
-    href: "/writing/pnpm-monorepo-scales",
-    date: "Feb 2026",
-  },
-];
+const writing = getWritingPreview();
 
 const tagStyles: Record<string, string> = {
   Experiment: "bg-blue-500/15 text-blue-400 border-blue-500/20",

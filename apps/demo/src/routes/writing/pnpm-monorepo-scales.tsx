@@ -1,19 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { getArticle } from "../../pages/Writing";
 import { createPageMeta, SITE_BASE_URL } from "../../lib/seo";
 import { PnpmMonorepoArticle } from "../../pages/writing/PnpmMonorepoArticle";
 
-const ARTICLE_TITLE = "Building a Monorepo That Actually Scales | Ish Chhabra";
-const ARTICLE_HEADLINE = "Building a Monorepo That Actually Scales";
-const ARTICLE_DESCRIPTION = "A practical guide to pnpm monorepos with true package isolation.";
-const ARTICLE_PATH = "/writing/pnpm-monorepo-scales";
-const ARTICLE_DATE = "2026-02-09";
+const slug = "pnpm-monorepo-scales";
+const article = getArticle(slug)!;
+const articlePath = `/writing/${slug}`;
 
 export const Route = createFileRoute("/writing/pnpm-monorepo-scales")({
   head: () => {
     const base = createPageMeta({
-      title: ARTICLE_TITLE,
-      description: ARTICLE_DESCRIPTION,
-      path: ARTICLE_PATH,
+      title: `${article.title} | Ish Chhabra`,
+      description: article.description,
+      path: articlePath,
     });
     return {
       ...base,
@@ -23,7 +22,7 @@ export const Route = createFileRoute("/writing/pnpm-monorepo-scales")({
         { name: "author", content: "Ish Chhabra" },
         {
           property: "article:published_time",
-          content: "2026-02-09",
+          content: article.dateISO,
         },
       ],
       scripts: [
@@ -32,11 +31,11 @@ export const Route = createFileRoute("/writing/pnpm-monorepo-scales")({
           children: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "Article",
-            headline: ARTICLE_HEADLINE,
-            description: ARTICLE_DESCRIPTION,
+            headline: article.title,
+            description: article.description,
             author: { "@type": "Person", name: "Ish Chhabra" },
-            datePublished: ARTICLE_DATE,
-            url: `${SITE_BASE_URL}${ARTICLE_PATH}`,
+            datePublished: article.dateISO,
+            url: `${SITE_BASE_URL}${articlePath}`,
           }),
         },
       ],
