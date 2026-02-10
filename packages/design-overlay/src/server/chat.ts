@@ -1,6 +1,6 @@
 import { convertToModelMessages, stepCountIs, streamText, type UIMessage } from "ai";
 import { createOllama } from "ollama-ai-provider-v2";
-import { domWriteTool, domInsertTool, domReadTool } from "./dom-tools.js";
+import { domWriteTool, domInsertTool, domReadTool } from "./dom-tools";
 
 // ---------------------------------------------------------------------------
 // Configuration
