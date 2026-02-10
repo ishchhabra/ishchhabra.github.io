@@ -12,8 +12,8 @@ export function NodeResolutionDiagram() {
   const steps = [
     {
       n: "1",
-      label: "Your app imports @packages/shared",
-      sub: "Symlink resolves to packages/shared/dist/",
+      label: "Your app imports @packages/ui",
+      sub: "Symlink resolves to packages/ui/dist/",
       color: c.blue,
     },
     {
@@ -25,12 +25,12 @@ export function NodeResolutionDiagram() {
     {
       n: "3",
       label: "Node resolves from the symlink target",
-      sub: "Starting directory: packages/shared/ (not apps/my-app/)",
+      sub: "Starting directory: packages/ui/ (not apps/my-app/)",
       color: c.purple,
     },
     {
       n: "4",
-      label: "Walks up: packages/shared/node_modules/X",
+      label: "Walks up: packages/ui/node_modules/X",
       sub: "Found! This is X @ 1.0 — the package's devDependency",
       color: c.orange,
     },
@@ -175,7 +175,7 @@ export function InjectedDiagram() {
           strokeWidth="1"
         />
         <text x="140" y="183" textAnchor="middle" fill={c.purple} fontSize="10" fontWeight="500">
-          @packages/shared (copy)
+          @packages/ui (copy)
         </text>
         <text x="140" y="197" textAnchor="middle" fill={c.caption} fontSize="9">
           hard-linked into app
@@ -229,7 +229,7 @@ export function InjectedDiagram() {
           strokeWidth="1"
         />
         <text x="580" y="183" textAnchor="middle" fill={c.purple} fontSize="10" fontWeight="500">
-          @packages/shared (copy)
+          @packages/ui (copy)
         </text>
         <text x="580" y="197" textAnchor="middle" fill={c.caption} fontSize="9">
           hard-linked into app

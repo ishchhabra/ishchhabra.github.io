@@ -2,7 +2,7 @@ import { useTheme } from "../../../contexts/ThemeContext";
 import { diagramPalette } from "./diagramColors";
 
 /**
- * SVG illustration: Monorepo structure — apps consuming shared packages.
+ * SVG illustration: Simple monorepo structure — one app consuming one shared package.
  *
  * Box borders use the neutral `border` color. Color comes from section labels
  * and text (blue = apps, purple = packages).
@@ -14,25 +14,25 @@ export function MonorepoStructureDiagram() {
   return (
     <div className="my-8 flex justify-center">
       <svg
-        viewBox="0 0 600 260"
-        className="w-full max-w-xl"
+        viewBox="0 0 440 200"
+        className="w-full max-w-md"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <rect width="600" height="260" rx="16" fill={c.canvas} />
+        <rect width="440" height="200" rx="16" fill={c.canvas} />
 
         {/* Root */}
         <rect
-          x="220"
+          x="150"
           y="20"
-          width="160"
+          width="140"
           height="40"
           rx="8"
           fill={c.card}
           stroke={c.border}
           strokeWidth="1"
         />
-        <text x="300" y="45" textAnchor="middle" fill={c.heading} fontSize="12" fontWeight="600">
+        <text x="220" y="45" textAnchor="middle" fill={c.heading} fontSize="12" fontWeight="600">
           my-monorepo/
         </text>
 
@@ -40,8 +40,8 @@ export function MonorepoStructureDiagram() {
         <rect
           x="30"
           y="100"
-          width="240"
-          height="130"
+          width="160"
+          height="80"
           rx="10"
           fill={c.cardAlt}
           stroke={c.border}
@@ -62,58 +62,30 @@ export function MonorepoStructureDiagram() {
         <rect
           x="50"
           y="132"
-          width="95"
+          width="120"
           height="36"
           rx="6"
           fill={c.card}
           stroke={c.border}
           strokeWidth="1"
         />
-        <text x="97" y="154" textAnchor="middle" fill={c.blue} fontSize="10" fontWeight="500">
-          web-app
-        </text>
-
-        <rect
-          x="155"
-          y="132"
-          width="95"
-          height="36"
-          rx="6"
-          fill={c.card}
-          stroke={c.border}
-          strokeWidth="1"
-        />
-        <text x="202" y="154" textAnchor="middle" fill={c.blue} fontSize="10" fontWeight="500">
-          admin
-        </text>
-
-        <rect
-          x="50"
-          y="178"
-          width="95"
-          height="36"
-          rx="6"
-          fill={c.card}
-          stroke={c.border}
-          strokeWidth="1"
-        />
-        <text x="97" y="200" textAnchor="middle" fill={c.blue} fontSize="10" fontWeight="500">
-          mobile
+        <text x="110" y="154" textAnchor="middle" fill={c.blue} fontSize="10" fontWeight="500">
+          my-app
         </text>
 
         {/* Packages group */}
         <rect
-          x="330"
+          x="250"
           y="100"
-          width="240"
-          height="130"
+          width="160"
+          height="80"
           rx="10"
           fill={c.cardAlt}
           stroke={c.border}
           strokeWidth="1"
         />
         <text
-          x="350"
+          x="270"
           y="120"
           fill={c.purple}
           fontSize="10"
@@ -125,56 +97,28 @@ export function MonorepoStructureDiagram() {
         </text>
 
         <rect
-          x="350"
+          x="270"
           y="132"
-          width="95"
+          width="120"
           height="36"
           rx="6"
           fill={c.card}
           stroke={c.border}
           strokeWidth="1"
         />
-        <text x="397" y="154" textAnchor="middle" fill={c.purple} fontSize="10" fontWeight="500">
+        <text x="330" y="154" textAnchor="middle" fill={c.purple} fontSize="10" fontWeight="500">
           ui
         </text>
 
-        <rect
-          x="455"
-          y="132"
-          width="95"
-          height="36"
-          rx="6"
-          fill={c.card}
-          stroke={c.border}
-          strokeWidth="1"
-        />
-        <text x="502" y="154" textAnchor="middle" fill={c.purple} fontSize="10" fontWeight="500">
-          shared
-        </text>
+        {/* Connection lines: root → groups */}
+        <line x1="185" y1="60" x2="110" y2="100" stroke={c.border} strokeWidth="1" />
+        <line x1="255" y1="60" x2="330" y2="100" stroke={c.border} strokeWidth="1" />
 
-        <rect
-          x="350"
-          y="178"
-          width="95"
-          height="36"
-          rx="6"
-          fill={c.card}
-          stroke={c.border}
-          strokeWidth="1"
-        />
-        <text x="397" y="200" textAnchor="middle" fill={c.purple} fontSize="10" fontWeight="500">
-          config
-        </text>
-
-        {/* Connection lines */}
-        <line x1="250" y1="60" x2="150" y2="100" stroke={c.border} strokeWidth="1" />
-        <line x1="350" y1="60" x2="450" y2="100" stroke={c.border} strokeWidth="1" />
-
-        {/* Dependency arrows: apps → packages */}
+        {/* Dependency arrow: app → package */}
         <line
-          x1="155"
+          x1="170"
           y1="150"
-          x2="350"
+          x2="270"
           y2="150"
           stroke={c.arrow}
           strokeWidth="1"

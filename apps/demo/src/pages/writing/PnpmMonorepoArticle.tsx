@@ -27,6 +27,7 @@ import {
   SyncBeforeAfterDiagram,
   SyncLifecycleDiagram,
 } from "../../components/writing/diagrams/SyncLifecycleDiagram";
+import { MonorepoStructureDiagram } from "../../components/writing/diagrams/MonorepoStructureDiagram";
 
 const tocItems = [
   { id: "the-bug", label: "The problem with shared packages" },
@@ -105,6 +106,8 @@ export function PnpmMonorepoArticle() {
               workspace packages, <Code>pnpm install</Code>. Everything should just work.
             </P>
 
+            <MonorepoStructureDiagram />
+
             <P>
               The shared package declares a <Code>peerDependency</Code> on React (or any library
               with internal state). It also has React in <Code>devDependencies</Code> for local
@@ -126,18 +129,18 @@ of the body of a function component.`}</CodeBlock>
 
             <P>
               When pnpm installs a workspace package, it creates a symlink from your app's{" "}
-              <Code>node_modules/@packages/shared</Code> pointing to <Code>packages/shared/</Code>.
-              When code inside that package runs <Code>require("react")</Code>, Node resolves from
-              the <Strong>symlink target</Strong> — the package's directory on disk — not from the
+              <Code>node_modules/@packages/ui</Code> pointing to <Code>packages/ui/</Code>. When
+              code inside that package runs <Code>require("react")</Code>, Node resolves from the{" "}
+              <Strong>symlink target</Strong> — the package's directory on disk — not from the
               consuming app's directory.
             </P>
 
             <NodeResolutionDiagram />
 
             <P>
-              Node walks up from <Code>packages/shared/dist/</Code>, finds{" "}
-              <Code>packages/shared/node_modules/react</Code> (the devDependency), and stops. It
-              never reaches <Code>apps/my-app/node_modules/react</Code>. Even if both are the{" "}
+              Node walks up from <Code>packages/ui/dist/</Code>, finds{" "}
+              <Code>packages/ui/node_modules/react</Code> (the devDependency), and stops. It never
+              reaches <Code>apps/my-app/node_modules/react</Code>. Even if both are the{" "}
               <Strong>exact same version</Strong>, your app loads its own copy separately. Two
               Reacts in memory, two dispatchers, two Context trees.
             </P>
@@ -229,14 +232,14 @@ of the body of a function component.`}</CodeBlock>
             </P>
 
             <P>
-              Instead of creating a symlink to <Code>packages/shared/</Code>, pnpm creates a{" "}
+              Instead of creating a symlink to <Code>packages/ui/</Code>, pnpm creates a{" "}
               <Strong>hard-linked copy</Strong> of each file inside the consumer's{" "}
               <Code>node_modules</Code>. When the shared code runs <Code>require("react")</Code>,
               Node resolves from the consumer's directory tree — and finds the consumer's React. Not
               the package's.
             </P>
 
-            <CodeBlock filename="apps/web-app/package.json" language="json">{`{
+            <CodeBlock filename="apps/my-app/package.json" language="json">{`{
   "dependencies": {
     "react": "^18",
     "@packages/ui": "workspace:*"
@@ -432,8 +435,8 @@ module.exports = function getLodashVersion() {
     "postbuild": "pnpm-sync copy",
     "prepare": "pnpm sync:prepare && pnpm build",
     "build:watch": "tsc-watch --onSuccess \\"pnpm postbuild\\"",
-    "sync:prepare": "pnpm sync:prepare:web-app",
-    "sync:prepare:web-app": "pnpm-sync prepare -l ../../apps/web-app/pnpm-lock.yaml -s ../../apps/web-app/node_modules/.pnpm"
+    "sync:prepare": "pnpm sync:prepare:my-app",
+    "sync:prepare:my-app": "pnpm-sync prepare -l ../../apps/my-app/pnpm-lock.yaml -s ../../apps/my-app/node_modules/.pnpm"
   },
   "peerDependencies": { "react": "^18 || ^19" },
   "devDependencies": {
