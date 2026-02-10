@@ -8,8 +8,7 @@ export const SITE_BASE_URL = "https://ishchhabra.github.io";
 
 export const SITE_TITLE = "Ish Chhabra";
 
-export const DEFAULT_DESCRIPTION =
-  "I do computers. Currently building Kniru and Clap.";
+export const DEFAULT_DESCRIPTION = "I do computers. Currently building Kniru and Clap.";
 
 /** Build head { title, meta, links? } from title, description, optional path for canonical. */
 export function createPageMeta({
@@ -32,7 +31,12 @@ export function createPageMeta({
   ];
   const links =
     path !== undefined
-      ? [{ rel: "canonical" as const, href: `${SITE_BASE_URL}${path.startsWith("/") ? path : `/${path}`}` }]
+      ? [
+          {
+            rel: "canonical" as const,
+            href: `${SITE_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`,
+          },
+        ]
       : undefined;
   return {
     meta,

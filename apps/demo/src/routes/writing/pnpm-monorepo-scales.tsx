@@ -4,8 +4,7 @@ import { PnpmMonorepoArticle } from "../../pages/writing/PnpmMonorepoArticle";
 
 const ARTICLE_TITLE = "Building a Monorepo That Actually Scales | Ish Chhabra";
 const ARTICLE_HEADLINE = "Building a Monorepo That Actually Scales";
-const ARTICLE_DESCRIPTION =
-  "A practical guide to pnpm monorepos with true package isolation.";
+const ARTICLE_DESCRIPTION = "A practical guide to pnpm monorepos with true package isolation.";
 const ARTICLE_PATH = "/writing/pnpm-monorepo-scales";
 const ARTICLE_DATE = "2026-02-09";
 
@@ -18,10 +17,7 @@ export const Route = createFileRoute("/writing/pnpm-monorepo-scales")({
     });
     return {
       ...base,
-      meta: [
-        ...base.meta,
-        { property: "og:type", content: "article" },
-      ],
+      meta: [...base.meta, { property: "og:type", content: "article" }],
       scripts: [
         {
           type: "application/ld+json",
