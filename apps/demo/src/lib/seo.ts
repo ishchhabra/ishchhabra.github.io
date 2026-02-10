@@ -44,3 +44,29 @@ export function createPageMeta({
     ...(links && { links }),
   };
 }
+
+/** WebSite + Person schema for LLMO/site-wide context. */
+export const WEBSITE_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: SITE_TITLE,
+  url: SITE_BASE_URL,
+  description: DEFAULT_DESCRIPTION,
+  author: {
+    "@type": "Person",
+    name: SITE_TITLE,
+    url: SITE_BASE_URL,
+    sameAs: [
+      "https://github.com/ishchhabra",
+      "https://linkedin.com/in/ishchhabra",
+    ],
+  },
+};
+
+/** Script element for WebSite JSON-LD (use in root head.scripts). */
+export function createWebsiteSchemaScript() {
+  return {
+    type: "application/ld+json" as const,
+    children: JSON.stringify(WEBSITE_JSON_LD),
+  };
+}

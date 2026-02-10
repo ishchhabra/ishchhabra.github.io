@@ -17,7 +17,15 @@ export const Route = createFileRoute("/writing/pnpm-monorepo-scales")({
     });
     return {
       ...base,
-      meta: [...base.meta, { property: "og:type", content: "article" }],
+      meta: [
+        ...base.meta,
+        { property: "og:type", content: "article" },
+        { name: "author", content: "Ish Chhabra" },
+        {
+          property: "article:published_time",
+          content: "2026-02-09",
+        },
+      ],
       scripts: [
         {
           type: "application/ld+json",

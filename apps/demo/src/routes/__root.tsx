@@ -5,7 +5,12 @@ import { useEffect } from "react";
 import { Footer } from "../components/Footer";
 import { Header } from "../components/Header";
 import appCss from "../index.css?url";
-import { createPageMeta, DEFAULT_DESCRIPTION, SITE_TITLE } from "../lib/seo";
+import {
+  createPageMeta,
+  DEFAULT_DESCRIPTION,
+  createWebsiteSchemaScript,
+  SITE_TITLE,
+} from "../lib/seo";
 
 export const Route = createRootRoute({
   head: () => {
@@ -23,6 +28,7 @@ export const Route = createRootRoute({
         ...base.meta,
         { property: "og:type", content: "website" },
       ],
+      scripts: [createWebsiteSchemaScript()],
       links: [
         ...(base.links ?? []),
         { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
