@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { Page } from "../../components/Page";
 import {
   A,
@@ -45,9 +45,6 @@ const tocItems = [
 ];
 
 export function PnpmMonorepoArticle() {
-  const { pathname } = useLocation();
-  const slug = pathname.split("/").pop() ?? "pnpm-monorepo-scales";
-
   return (
     <>
       <ScrollProgress />
@@ -56,8 +53,6 @@ export function PnpmMonorepoArticle() {
         <header className="max-w-4xl pb-8">
           <Link
             to="/writing"
-            state={{ fromArticle: slug }}
-            viewTransition
             className="mb-8 inline-flex items-center gap-1.5 text-[12px] text-zinc-600 transition-colors hover:text-zinc-400"
           >
             <svg

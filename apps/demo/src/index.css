@@ -42,6 +42,14 @@ body {
   animation: view-transition-fade-in 0.3s ease-in forwards;
 }
 
+/* Header & footer stay static during page transitions */
+::view-transition-old(header),
+::view-transition-new(header),
+::view-transition-old(site-footer),
+::view-transition-new(site-footer) {
+  animation: none;
+}
+
 @keyframes view-transition-fade-out {
   from {
     opacity: 1;

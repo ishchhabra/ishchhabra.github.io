@@ -1,4 +1,4 @@
-import { Link, useLocation, useViewTransitionState } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { Page } from "../components/Page";
 
 const articles = [
@@ -13,8 +13,6 @@ const articles = [
 ];
 
 export function Writing() {
-  const location = useLocation();
-
   return (
     <Page.Main variant="hero">
       <div className="max-w-3xl">
@@ -26,19 +24,11 @@ export function Writing() {
       <div className="flex max-w-3xl flex-col gap-1">
         {articles.map((post) => {
           const articleHref = `/writing/${post.slug}`;
-          const isTransitioningToArticle = useViewTransitionState(articleHref);
-          const isTransitioningToList =
-            useViewTransitionState("/writing") &&
-            (location.state as { fromArticle?: string } | null)?.fromArticle === post.slug;
-
-          const shouldAnimateTitle = isTransitioningToArticle || isTransitioningToList;
-          const shouldAnimateDescription = isTransitioningToArticle || isTransitioningToList;
 
           return (
             <Link
               key={post.slug}
               to={articleHref}
-              viewTransition
               className="group flex flex-col gap-1 rounded-xl border border-transparent px-5 py-5 transition-colors hover:bg-white/2"
             >
               <div className="flex items-baseline justify-between gap-4">
@@ -46,9 +36,7 @@ export function Writing() {
                   className="text-lg font-semibold text-zinc-200 transition-colors group-hover:text-white"
                   style={{
                     fontFamily: "var(--font-display)",
-                    ...(shouldAnimateTitle && {
-                      viewTransitionName: "article-title",
-                    }),
+                    viewTransitionName: "article-title",
                   }}
                 >
                   {post.title}
@@ -60,9 +48,7 @@ export function Writing() {
               </div>
               <p
                 className="text-sm leading-relaxed text-zinc-500"
-                style={
-                  shouldAnimateDescription ? { viewTransitionName: "article-description" } : {}
-                }
+                style={{ viewTransitionName: "article-description" }}
               >
                 {post.description}
               </p>

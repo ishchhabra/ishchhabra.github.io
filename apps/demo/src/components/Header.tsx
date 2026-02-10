@@ -1,47 +1,38 @@
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { Link, useLocation } from "@tanstack/react-router";
 import { useState } from "react";
 
 const labItems = [
-  { to: "/lab/sandbox", label: "React Sandbox" },
-  { to: "/lab/design-overlay", label: "Design Overlay" },
-] as const;
+  { to: "/lab/sandbox" as const, label: "React Sandbox" },
+  { to: "/lab/design-overlay" as const, label: "Design Overlay" },
+];
 
-function NavLinkContent({
-  to,
-  label,
-  end,
-  viewTransition,
-}: {
-  to: string;
-  label: string;
-  end: boolean;
-  viewTransition?: boolean;
-}) {
+function NavLinkContent({ to, label, exact }: { to: string; label: string; exact: boolean }) {
   const location = useLocation();
   const isHash = to.startsWith("/#");
   const targetHash = to.slice(1);
-  const isActive = isHash ? location.pathname === "/" && location.hash === targetHash : undefined;
 
   const activeClass = "text-white";
   const inactiveClass = "text-zinc-500 transition-colors hover:text-white";
 
   if (isHash) {
+    const isActive = location.pathname === "/" && location.hash === targetHash;
     return (
-      <Link to={to} className={isActive ? activeClass : inactiveClass}>
+      <Link
+        to="/"
+        hash={targetHash.replace("#", "")}
+        className={isActive ? activeClass : inactiveClass}
+      >
         {label}
       </Link>
     );
   }
 
+  const isActive = exact ? location.pathname === to : location.pathname.startsWith(to);
+
   return (
-    <NavLink
-      to={to}
-      end={end}
-      {...(viewTransition && { viewTransition: true })}
-      className={({ isActive: navActive }) => (navActive ? activeClass : inactiveClass)}
-    >
+    <Link to={to} className={isActive ? activeClass : inactiveClass}>
       {label}
-    </NavLink>
+    </Link>
   );
 }
 
@@ -61,8 +52,8 @@ function LabDropdown() {
       onMouseLeave={() => setOpen(false)}
     >
       <Link
-        to="/#lab"
-        viewTransition
+        to="/"
+        hash="lab"
         className={`inline-flex items-center gap-1 ${isLabActive ? activeClass : inactiveClass}`}
       >
         Lab
@@ -88,7 +79,6 @@ function LabDropdown() {
             <Link
               key={item.to}
               to={item.to}
-              viewTransition
               role="menuitem"
               className={`block px-4 py-2 text-[13px] transition-colors hover:bg-white/5 hover:text-white ${
                 location.pathname === item.to ? "text-white" : "text-zinc-400"
@@ -106,20 +96,19 @@ function LabDropdown() {
 
 export function Header() {
   return (
-    <header className="relative border-b border-white/5">
+    <header className="relative border-b border-white/5" style={{ viewTransitionName: "header" }}>
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
         <Link
           to="/"
-          viewTransition
           className="text-[15px] font-semibold tracking-tight text-white"
           style={{ fontFamily: "var(--font-display)" }}
         >
           ish
         </Link>
         <nav className="flex items-center gap-6 text-[13px]">
-          <NavLinkContent to="/" label="Home" end viewTransition />
+          <NavLinkContent to="/" label="Home" exact />
           <LabDropdown />
-          <NavLinkContent to="/writing" label="Writing" end={false} viewTransition />
+          <NavLinkContent to="/writing" label="Writing" exact={false} />
         </nav>
       </div>
     </header>

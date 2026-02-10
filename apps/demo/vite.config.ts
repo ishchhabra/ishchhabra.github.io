@@ -1,13 +1,47 @@
 import { designOverlayApiPlugin } from "@i2-labs/design-overlay/vite";
+import { findWorkspacePackagesNoCheck } from "@pnpm/find-workspace-packages";
 import tailwindcss from "@tailwindcss/vite";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
+import tsConfigPaths from "vite-tsconfig-paths";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const workspaceRoot = path.resolve(__dirname, "../..");
 
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [react(), tailwindcss(), designOverlayApiPlugin()],
-  optimizeDeps: {
-    // Don't pre-bundle workspace packages — always use latest build
-    exclude: ["@i2-labs/sandbox"],
-  },
+export default defineConfig(async () => {
+  const workspacePackages = await findWorkspacePackagesNoCheck(workspaceRoot);
+  const selfDir = path.resolve(__dirname);
+  const workspacePackageNames = workspacePackages
+    .filter((p) => path.resolve(p.dir) !== selfDir)
+    .map((p) => p.manifest.name)
+    .filter((name): name is string => typeof name === "string");
+
+  return {
+    plugins: [
+      tsConfigPaths(),
+      tanstackStart({
+        prerender: { enabled: true },
+      }),
+      react(),
+      tailwindcss(),
+      designOverlayApiPlugin(),
+    ],
+    optimizeDeps: {
+      // Injected workspace packages are still in node_modules (copy), so Vite
+      // would pre-bundle them. Exclude so we use their built dist (pnpm-sync)
+      // and see package changes without restarting dev. See: vite.dev/guide/dep-pre-bundling
+      exclude: workspacePackageNames,
+    },
+    // Bundle workspace packages in SSR so Node doesn't have to resolve their
+    // extensionless ESM imports (tsc emits "./Overlay" not "./Overlay.js").
+    // TODO: Prefer fixing at package level with tsconfig "rewriteRelativeImportExtensions"
+    // (TS 5.7+) and .ts/.tsx in source imports so dist is Node ESM-ready; then remove noExternal.
+    ssr: {
+      noExternal: workspacePackageNames,
+    },
+  };
 });

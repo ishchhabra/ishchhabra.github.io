@@ -1,10 +1,9 @@
-import { useEffect } from "react";
-import { Outlet, useLocation } from "react-router-dom";
-import { Header } from "./Header";
-
-function Footer() {
+export function Footer() {
   return (
-    <footer className="relative border-t border-white/5">
+    <footer
+      className="relative border-t border-white/5"
+      style={{ viewTransitionName: "site-footer" }}
+    >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
         <span className="text-[11px] text-zinc-600">Ish Chhabra</span>
         <div className="flex items-center gap-3.5">
@@ -53,31 +52,5 @@ function Footer() {
         </div>
       </div>
     </footer>
-  );
-}
-
-export function Layout() {
-  const { pathname } = useLocation();
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [pathname]);
-
-  return (
-    <div className="relative flex min-h-svh flex-col bg-zinc-950">
-      <div
-        className="pointer-events-none fixed inset-0 opacity-30"
-        style={{
-          background:
-            "radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59, 130, 246, 0.12), transparent), radial-gradient(ellipse 60% 40% at 100% 100%, rgba(139, 92, 246, 0.06), transparent)",
-        }}
-      />
-
-      <Header />
-      <div className="relative flex-1">
-        <Outlet />
-      </div>
-      <Footer />
-    </div>
   );
 }
