@@ -4,6 +4,7 @@
  */
 
 import { useState, type ReactNode } from "react";
+import { Surface } from "../Surface";
 
 /* ------------------------------------------------------------------ */
 /*  Section heading                                                    */
@@ -132,7 +133,7 @@ export function CodeBlock({
   );
 
   return (
-    <div className="group relative my-6 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100 dark:border-white/5 dark:bg-[#0d1117]">
+    <Surface variant="code" className="group relative my-6 overflow-hidden">
       {filename ? (
         <div className="flex items-center gap-2 border-b border-zinc-200 px-4 py-2 dark:border-white/5">
           <svg
@@ -171,7 +172,7 @@ export function CodeBlock({
       <pre className="overflow-x-auto p-4 text-[13px] leading-relaxed text-zinc-700 dark:text-zinc-300">
         <code style={{ fontFamily: "var(--font-mono)" }}>{children}</code>
       </pre>
-    </div>
+    </Surface>
   );
 }
 
@@ -254,7 +255,7 @@ export function LI({ children }: { children: ReactNode }) {
 /* ------------------------------------------------------------------ */
 export function Table({ headers, rows }: { headers: string[]; rows: (string | ReactNode)[][] }) {
   return (
-    <div className="my-6 overflow-x-auto rounded-xl border border-zinc-200 dark:border-white/5">
+    <Surface variant="outline" className="my-6 overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-zinc-200 bg-zinc-100 dark:border-white/5 dark:bg-white/2">
@@ -280,7 +281,7 @@ export function Table({ headers, rows }: { headers: string[]; rows: (string | Re
           ))}
         </tbody>
       </table>
-    </div>
+    </Surface>
   );
 }
 
@@ -325,7 +326,7 @@ export function Collapsible({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="my-6 overflow-hidden rounded-xl border border-zinc-200 dark:border-white/5">
+    <Surface variant="outline" className="my-6 overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen(!open)}
@@ -350,6 +351,6 @@ export function Collapsible({
           {children}
         </div>
       )}
-    </div>
+    </Surface>
   );
 }

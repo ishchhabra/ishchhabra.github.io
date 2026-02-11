@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Page } from "../../components/Page";
+import { Surface } from "../../components/Surface";
 import {
   A,
   Callout,
@@ -605,7 +606,7 @@ pnpm --filter @packages/ui build`}</CodeBlock>
               </LI>
             </UL>
 
-            <div className="mt-16 rounded-xl border border-zinc-200 bg-zinc-50 p-8 text-center dark:border-white/5 dark:bg-white/2">
+            <Surface className="mt-16 p-8 text-center">
               <p className="mb-2 text-sm text-zinc-600 dark:text-zinc-400">
                 That's all. Hope this saves you the hours of debugging that I went through.
               </p>
@@ -614,7 +615,7 @@ pnpm --filter @packages/ui build`}</CodeBlock>
                 <A href="https://github.com/ishchhabra/ishchhabra.github.io">Open a PR</A> or{" "}
                 <A href="mailto:ishchhabra12@gmail.com">send me an email</A>.
               </p>
-            </div>
+            </Surface>
           </article>
 
           {/* Sidebar: Table of Contents */}

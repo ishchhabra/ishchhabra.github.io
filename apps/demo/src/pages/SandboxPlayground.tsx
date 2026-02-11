@@ -1,6 +1,7 @@
 import { Sandbox } from "@i2-labs/sandbox";
 import type { ReactNode } from "react";
 import { Page } from "../components/Page";
+import { Surface } from "../components/Surface";
 import { Component, useCallback, useEffect, useRef, useState } from "react";
 
 const AUTO_RUN_DEBOUNCE_MS = 500;
@@ -436,7 +437,7 @@ export function SandboxPlayground() {
 
       <div className="grid h-[520px] gap-5 lg:grid-cols-2">
         {/* Code panel */}
-        <div className="flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-white/8 dark:bg-zinc-900/60">
+        <Surface variant="panel">
           <div className="flex items-center justify-between border-b border-zinc-200 bg-zinc-50 px-4 py-2.5 dark:border-white/5 dark:bg-white/[0.02]">
             <div className="flex items-center gap-3">
               <div className="flex gap-1.5">
@@ -464,10 +465,10 @@ export function SandboxPlayground() {
             style={{ fontFamily: "var(--font-mono)" }}
             placeholder="export default function App() { ... }"
           />
-        </div>
+        </Surface>
 
         {/* Preview panel */}
-        <div className="flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-white/8 dark:bg-zinc-900/60">
+        <Surface variant="panel">
           <div className="flex items-center justify-between border-b border-zinc-200 bg-zinc-50 px-4 py-2.5 dark:border-white/5 dark:bg-white/[0.02]">
             <div className="flex items-center gap-3">
               <div className="flex gap-1.5">
@@ -549,7 +550,7 @@ export function SandboxPlayground() {
               </Sandbox>
             </SandboxErrorBoundary>
           </div>
-        </div>
+        </Surface>
       </div>
     </Page.Main>
   );

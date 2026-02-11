@@ -1,5 +1,6 @@
 import { Overlay } from "@i2-labs/design-overlay";
 import { Page } from "../components/Page";
+import { Surface } from "../components/Surface";
 
 export function DesignOverlayDemo() {
   return (
@@ -22,7 +23,7 @@ export function DesignOverlayDemo() {
             </p>
           </Page.Hero>
 
-          <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-6 dark:border-white/5 dark:bg-white/2">
+          <Surface className="p-6">
             <h2
               className="mb-4 text-base font-semibold text-zinc-900 dark:text-white"
               style={{ fontFamily: "var(--font-display)" }}
@@ -71,7 +72,7 @@ export function DesignOverlayDemo() {
                 </span>
               </li>
             </ol>
-          </div>
+          </Surface>
         </div>
 
         {/* Divider */}
@@ -105,20 +106,20 @@ export function DesignOverlayDemo() {
         </article>
 
         <div className="mb-10 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-6 dark:border-white/5 dark:bg-white/2">
+          <Surface className="p-6">
             <h3 className="mb-2 text-base font-semibold text-zinc-900 dark:text-white">Card one</h3>
             <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
               This is a sample card. Select it with the overlay and ask the AI to change its
               background, text, layout — anything.
             </p>
-          </div>
-          <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-6 dark:border-white/5 dark:bg-white/2">
+          </Surface>
+          <Surface className="p-6">
             <h3 className="mb-2 text-base font-semibold text-zinc-900 dark:text-white">Card two</h3>
             <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
               Another sample card. Try asking the AI to make this one stand out, add a border color,
               or restyle the typography.
             </p>
-          </div>
+          </Surface>
         </div>
 
         <div className="flex gap-3">
