@@ -5,7 +5,9 @@ export function getRouter() {
   const router = createRouter({
     routeTree,
     scrollRestoration: true,
-    defaultViewTransition: true,
+    defaultViewTransition: {
+      types: (info) => (info.pathChanged ? ["page"] : false),
+    },
   });
 
   return router;
