@@ -1,5 +1,5 @@
-import { Link } from "@tanstack/react-router";
 import { Page } from "../components/Page";
+import { ArticleCard } from "../components/writing/ArticleCard";
 
 export type Article = {
   slug: string;
@@ -59,37 +59,35 @@ export function Writing() {
           const articleHref = `/writing/${post.slug}`;
 
           return (
-            <Link
+            <ArticleCard.Link
               key={post.slug}
               to={articleHref}
               className="group flex flex-col gap-1 rounded-xl border border-transparent px-5 py-5 transition-colors hover:bg-zinc-100 dark:hover:bg-white/2"
             >
               <div className="flex items-baseline justify-between gap-4">
-                <h2
+                <ArticleCard.Title
+                  as="h2"
                   className="text-lg font-semibold text-zinc-700 transition-colors group-hover:text-zinc-900 dark:text-zinc-200 dark:group-hover:text-white"
-                  style={{
-                    fontFamily: "var(--font-display)",
-                    viewTransitionName: "article-title",
-                  }}
+                  style={{ fontFamily: "var(--font-display)" }}
                 >
                   {post.title}
-                </h2>
-                <div className="flex shrink-0 items-center gap-3">
+                </ArticleCard.Title>
+                <ArticleCard.Meta className="flex shrink-0 items-center gap-3">
                   <span className="text-[11px] tabular-nums text-zinc-500 dark:text-zinc-600">
                     {post.readTime}
                   </span>
                   <span className="text-[11px] tabular-nums text-zinc-500 dark:text-zinc-600">
                     {post.date}
                   </span>
-                </div>
+                </ArticleCard.Meta>
               </div>
-              <p
+              <ArticleCard.Description
+                as="p"
                 className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-500"
-                style={{ viewTransitionName: "article-description" }}
               >
                 {post.description}
-              </p>
-              <div className="mt-2 flex gap-2">
+              </ArticleCard.Description>
+              <ArticleCard.Tags className="mt-2 flex gap-2">
                 {post.tags.map((tag) => (
                   <span
                     key={tag}
@@ -98,8 +96,8 @@ export function Writing() {
                     {tag}
                   </span>
                 ))}
-              </div>
-            </Link>
+              </ArticleCard.Tags>
+            </ArticleCard.Link>
           );
         })}
       </div>

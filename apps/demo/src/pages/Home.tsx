@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Page } from "../components/Page";
+import { ArticleCard } from "../components/writing/ArticleCard";
 import { getWritingPreview } from "./Writing";
 
 const labProjects = [
@@ -179,29 +180,26 @@ export function Home() {
         />
         <div className="flex flex-col">
           {writing.map((post) => (
-            <Link
+            <ArticleCard.Link
               key={post.title}
               to={post.href}
               className="group -mx-3 flex items-baseline justify-between gap-8 rounded-lg px-3 py-3 transition-colors hover:bg-zinc-100 dark:hover:bg-white/2"
             >
               <div className="min-w-0">
-                <div
+                <ArticleCard.Title
+                  as="h3"
                   className="text-sm font-medium text-zinc-700 transition-colors group-hover:text-zinc-900 dark:text-zinc-300 dark:group-hover:text-white"
-                  style={{ viewTransitionName: "article-title" }}
                 >
                   {post.title}
-                </div>
-                <div
-                  className="text-[13px] text-zinc-500"
-                  style={{ viewTransitionName: "article-description" }}
-                >
+                </ArticleCard.Title>
+                <ArticleCard.Description as="div" className="text-[13px] text-zinc-500">
                   {post.description}
-                </div>
+                </ArticleCard.Description>
               </div>
               <span className="shrink-0 text-[11px] tabular-nums text-zinc-500 dark:text-zinc-600">
                 {post.date}
               </span>
-            </Link>
+            </ArticleCard.Link>
           ))}
         </div>
       </section>
