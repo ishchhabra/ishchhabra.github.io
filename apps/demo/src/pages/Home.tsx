@@ -150,7 +150,13 @@ export function Home() {
 
       {/* i2 labs */}
       <section id="lab" className="pb-16">
-        <Page.SectionHeader title={<><span className="lowercase">i2</span> <span className="uppercase">labs</span></>} />
+        <Page.SectionHeader
+          title={
+            <>
+              <span className="lowercase">i2</span> <span className="uppercase">labs</span>
+            </>
+          }
+        />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {labProjects.map((p) => (
             <LabCard key={p.title} project={p} />

@@ -33,7 +33,7 @@ export function getArticle(slug: string): Article | undefined {
 
 /** For home page: latest articles with href and card-friendly date */
 export function getWritingPreview(
-  limit = 5
+  limit = 5,
 ): Array<{ title: string; description: string; href: string; date: string }> {
   return ARTICLES.slice(0, limit).map((a) => ({
     title: a.title,
