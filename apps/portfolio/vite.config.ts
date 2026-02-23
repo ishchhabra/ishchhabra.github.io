@@ -39,7 +39,7 @@ export default defineConfig(async () => {
         prerender: { enabled: true },
         sitemap: { enabled: true, host: "https://ishchhabra.github.io" },
       }),
-      nitro(),
+      nitro({ preset: "vercel" }),
       react(),
       tailwindcss(),
       designOverlayApiPlugin(),
