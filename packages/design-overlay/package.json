@@ -1,7 +1,7 @@
 {
-  "name": "@i2-labs/design-overlay",
+  "name": "@ish/design-overlay",
   "version": "1.0.0",
-  "description": "Shared overlay components for i2-labs",
+  "description": "Shared overlay components for @ish",
   "keywords": [],
   "license": "ISC",
   "author": "",
@@ -31,13 +31,13 @@
     "build": "tsc -p tsconfig.json --sourceRoot \"$(pwd)/src\" && tsc-alias -p tsconfig.json",
     "build:watch": "tsc-watch -p tsconfig.json --sourceRoot \"$(pwd)/src\" --onSuccess \"pnpm postbuild\"",
     "postbuild": "tsc-alias -p tsconfig.json && pnpm-sync copy && echo 'Build complete'",
-    "prepare": "pnpm sync:prepare:demo && pnpm build",
+    "prepare": "pnpm sync:prepare:portfolio && pnpm build",
     "test": "echo \"Error: no test specified\" && exit 1",
     "format": "oxfmt",
     "format-check": "oxfmt --check",
     "lint": "oxlint --max-warnings=0",
     "type-check": "tsc --noEmit",
-    "sync:prepare:demo": "pnpm-sync prepare -l ../../apps/demo/pnpm-lock.yaml -s ../../apps/demo/node_modules/.pnpm"
+    "sync:prepare:portfolio": "pnpm-sync prepare -l ../../apps/portfolio/pnpm-lock.yaml -s ../../apps/portfolio/node_modules/.pnpm"
   },
   "dependencies": {
     "ai": "^6.0.77",

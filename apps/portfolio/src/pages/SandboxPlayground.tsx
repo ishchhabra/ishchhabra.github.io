@@ -1,8 +1,8 @@
-import { Sandbox } from "@i2-labs/sandbox";
+import { Sandbox } from "@ish/sandbox";
 import type { ReactNode } from "react";
+import { Component, useCallback, useEffect, useRef, useState } from "react";
 import { Page } from "../components/Page";
 import { Surface } from "../components/Surface";
-import { Component, useCallback, useEffect, useRef, useState } from "react";
 
 const AUTO_RUN_DEBOUNCE_MS = 500;
 

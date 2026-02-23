@@ -1,6 +1,6 @@
+import type { IncomingMessage, ServerResponse } from "http";
 import path from "path";
 import type { Plugin, ViteDevServer } from "vite";
-import type { IncomingMessage, ServerResponse } from "http";
 
 /**
  * Vite plugin that adds the design-overlay `/api/chat` endpoint.
@@ -38,7 +38,7 @@ export function designOverlayApiPlugin(): Plugin {
               body,
             });
 
-            const mod = await import("@i2-labs/design-overlay/server");
+            const mod = await import("@ish/design-overlay/server");
             const handleChatRequest = mod.handleChatRequest as (req: Request) => Promise<Response>;
             const response = await handleChatRequest(request);
 

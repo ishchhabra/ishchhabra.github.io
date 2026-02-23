@@ -1,5 +1,5 @@
 {
-  "name": "@i2-labs/demo",
+  "name": "@ish/portfolio",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -13,8 +13,8 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@i2-labs/design-overlay": "workspace:*",
-    "@i2-labs/sandbox": "workspace:*",
+    "@ish/design-overlay": "workspace:*",
+    "@ish/sandbox": "workspace:*",
     "@tanstack/react-router": "^1.159.5",
     "@tanstack/react-start": "^1.159.5",
     "class-variance-authority": "^0.7.1",
@@ -38,10 +38,10 @@
     "vite-tsconfig-paths": "^6.1.0"
   },
   "dependenciesMeta": {
-    "@i2-labs/design-overlay": {
+    "@ish/design-overlay": {
       "injected": true
     },
-    "@i2-labs/sandbox": {
+    "@ish/sandbox": {
       "injected": true
     }
   }

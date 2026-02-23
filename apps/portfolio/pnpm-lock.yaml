@@ -42,10 +42,10 @@ importers:
 
   .:
     dependencies:
-      '@i2-labs/design-overlay':
+      '@ish/design-overlay':
         specifier: workspace:*
         version: file:../../packages/design-overlay(@types/react-dom@19.2.3(@types/react@19.2.13))(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@i2-labs/sandbox':
+      '@ish/sandbox':
         specifier: workspace:*
         version: file:../../packages/sandbox(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@tanstack/react-router':
@@ -70,9 +70,9 @@ importers:
         specifier: ^1.0.6
         version: 1.0.6
     dependenciesMeta:
-      '@i2-labs/design-overlay':
+      '@ish/design-overlay':
         injected: true
-      '@i2-labs/sandbox':
+      '@ish/sandbox':
         injected: true
     devDependencies:
       '@pnpm/find-workspace-packages':
@@ -404,13 +404,13 @@ packages:
     resolution: {integrity: sha512-7bQW+gkKa2kKZPeJf6+c6gFK9ARxQfn+FKy9ScTBppyKRWH2KzsmweXUoklqeEiHiNVWaeP5csIdsNq6w7QhzA==}
     engines: {node: '>=12.20'}
 
-  '@i2-labs/design-overlay@file:../../packages/design-overlay':
+  '@ish/design-overlay@file:../../packages/design-overlay':
     resolution: {directory: ../../packages/design-overlay, type: directory}
     peerDependencies:
       react: ^18 || ^19
       react-dom: ^18 || ^19
 
-  '@i2-labs/sandbox@file:../../packages/sandbox':
+  '@ish/sandbox@file:../../packages/sandbox':
     resolution: {directory: ../../packages/sandbox, type: directory}
     peerDependencies:
       react: ^18 || ^19
@@ -3154,7 +3154,7 @@ snapshots:
 
   '@gwhitney/detect-indent@7.0.1': {}
 
-  '@i2-labs/design-overlay@file:../../packages/design-overlay(@types/react-dom@19.2.3(@types/react@19.2.13))(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
+  '@ish/design-overlay@file:../../packages/design-overlay(@types/react-dom@19.2.3(@types/react@19.2.13))(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:
       ai: 6.0.77(zod@4.3.6)
       class-variance-authority: 0.7.1
@@ -3172,7 +3172,7 @@ snapshots:
       - '@types/react'
       - '@types/react-dom'
 
-  '@i2-labs/sandbox@file:../../packages/sandbox(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
+  '@ish/sandbox@file:../../packages/sandbox(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)

@@ -1,5 +1,5 @@
 {
-  "name": "@i2-labs/sandbox",
+  "name": "@ish/sandbox",
   "version": "1.0.0",
   "description": "Secure sandboxed React rendering for AI-generated UI",
   "keywords": [
@@ -33,7 +33,7 @@
     "format-check": "oxfmt --check",
     "lint": "oxlint --max-warnings=0",
     "type-check": "tsc --noEmit",
-    "sync:prepare:demo": "pnpm-sync prepare -l ../../apps/demo/pnpm-lock.yaml -s ../../apps/demo/node_modules/.pnpm"
+    "sync:prepare:portfolio": "pnpm-sync prepare -l ../../apps/portfolio/pnpm-lock.yaml -s ../../apps/portfolio/node_modules/.pnpm"
   },
   "dependencies": {},
   "devDependencies": {

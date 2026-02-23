@@ -1,4 +1,4 @@
-import { designOverlayApiPlugin } from "@i2-labs/design-overlay/vite";
+import { designOverlayApiPlugin } from "@ish/design-overlay/vite";
 import { findWorkspacePackagesNoCheck } from "@pnpm/find-workspace-packages";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";

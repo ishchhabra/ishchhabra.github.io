@@ -1,4 +1,4 @@
-import { Overlay } from "@i2-labs/design-overlay";
+import { Overlay } from "@ish/design-overlay";
 import { Page } from "../components/Page";
 import { Surface } from "../components/Surface";
 

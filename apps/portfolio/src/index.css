@@ -1,4 +1,4 @@
-@import "@i2-labs/design-overlay/styles.css";
+@import "@ish/design-overlay/styles.css";
 
 /* Class-based dark mode: add .dark on html to enable dark: variants */
 @custom-variant dark (&:where(.dark, .dark *));
