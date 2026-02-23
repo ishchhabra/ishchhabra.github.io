@@ -36,10 +36,10 @@ export default defineConfig(async () => {
     plugins: [
       tsConfigPaths(),
       tanstackStart({
-        prerender: { enabled: true },
+        prerender: { enabled: false },
         sitemap: { enabled: true, host: "https://ishchhabra.com" },
       }),
-      nitro({ preset: "vercel" }),
+      nitro(),
       react(),
       tailwindcss(),
       designOverlayApiPlugin(),
