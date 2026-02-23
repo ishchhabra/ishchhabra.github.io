@@ -4,13 +4,13 @@
 
 ## Site
 
-- Home: https://ishchhabra.github.io/
-- Writing: https://ishchhabra.github.io/writing
-- Lab (experiments): https://ishchhabra.github.io/lab/sandbox, https://ishchhabra.github.io/lab/design-overlay
+- Home: https://ishchhabra.com/
+- Writing: https://ishchhabra.com/writing
+- Lab (experiments): https://ishchhabra.com/lab/sandbox, https://ishchhabra.com/lab/design-overlay
 
 ## Writing
 
-- Building a Monorepo That Actually Scales: https://ishchhabra.github.io/writing/pnpm-monorepo-scales
+- Building a Monorepo That Actually Scales: https://ishchhabra.com/writing/pnpm-monorepo-scales
 
 ## Contact
 

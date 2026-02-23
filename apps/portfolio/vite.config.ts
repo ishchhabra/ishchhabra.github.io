@@ -37,7 +37,7 @@ export default defineConfig(async () => {
       tsConfigPaths(),
       tanstackStart({
         prerender: { enabled: true },
-        sitemap: { enabled: true, host: "https://ishchhabra.github.io" },
+        sitemap: { enabled: true, host: "https://ishchhabra.com" },
       }),
       nitro({ preset: "vercel" }),
       react(),

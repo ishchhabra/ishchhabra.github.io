@@ -4,7 +4,7 @@
  */
 
 /** Production site URL for canonicals and JSON-LD. */
-export const SITE_BASE_URL = "https://ishchhabra.github.io";
+export const SITE_BASE_URL = "https://ishchhabra.com";
 
 export const SITE_TITLE = "Ish Chhabra";
 

@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://ishchhabra.github.io/sitemap.xml
+Sitemap: https://ishchhabra.com/sitemap.xml
