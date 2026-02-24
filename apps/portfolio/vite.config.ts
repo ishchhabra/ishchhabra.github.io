@@ -1,4 +1,3 @@
-
 import { findWorkspacePackagesNoCheck } from "@pnpm/find-workspace-packages";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
@@ -36,8 +35,11 @@ export default defineConfig(async () => {
     plugins: [
       tsConfigPaths(),
       tanstackStart({
-        prerender: { enabled: process.env['NITRO_PRESET'] !== "vercel" },
-        sitemap: { enabled: process.env['NITRO_PRESET'] !== "vercel", host: "https://ishchhabra.com" },
+        prerender: { enabled: process.env["NITRO_PRESET"] !== "vercel" },
+        sitemap: {
+          enabled: process.env["NITRO_PRESET"] !== "vercel",
+          host: "https://ishchhabra.com",
+        },
       }),
       nitro({
         ...(process.env["VERCEL"] === "1" && {
@@ -48,7 +50,6 @@ export default defineConfig(async () => {
       }),
       react(),
       tailwindcss(),
-
     ],
     optimizeDeps: {
       // Injected workspace packages are still in node_modules (copy), so Vite
