@@ -68,20 +68,29 @@ export function AIEditPrompt({
         config,
         {
           dom_write: {
-            description: "Modify existing elements. Path format: style.<property> | text | html | attr.<name> | class.<name> | -class.<name>",
+            description:
+              "Modify existing elements. Path format: style.<property> | text | html | attr.<name> | class.<name> | -class.<name>",
             parameters: {
               type: "object",
               properties: {
                 selector: { type: "string" },
                 path: { type: "string" },
-                value: { type: "string" }
+                value: { type: "string" },
               },
-              required: ["selector", "path", "value"]
+              required: ["selector", "path", "value"],
             },
-            execute: async ({ selector, path, value }: { selector: string; path: string; value: string }) => {
+            execute: async ({
+              selector,
+              path,
+              value,
+            }: {
+              selector: string;
+              path: string;
+              value: string;
+            }) => {
               applyDomWrite(selector, path, value);
               return `Successfully wrote path ${path} to selector ${selector}`;
-            }
+            },
           },
           dom_insert: {
             description: "Insert new HTML. Position: before | after | prepend | append",
@@ -90,32 +99,40 @@ export function AIEditPrompt({
               properties: {
                 targetSelector: { type: "string" },
                 position: { type: "string", enum: ["before", "after", "prepend", "append"] },
-                html: { type: "string" }
+                html: { type: "string" },
               },
-              required: ["targetSelector", "position", "html"]
+              required: ["targetSelector", "position", "html"],
             },
-            execute: async ({ targetSelector, position, html }: { targetSelector: string; position: string; html: string }) => {
+            execute: async ({
+              targetSelector,
+              position,
+              html,
+            }: {
+              targetSelector: string;
+              position: string;
+              html: string;
+            }) => {
               applyDomInsert(targetSelector, position as InsertPosition, html);
               return `Successfully inserted html ${position} ${targetSelector}`;
-            }
+            },
           },
           dom_read: {
-            description: "Inspect an element. (Context is already provided to you) Read is limited.",
+            description:
+              "Inspect an element. (Context is already provided to you) Read is limited.",
             parameters: {
               type: "object",
               properties: {
                 selector: { type: "string" },
-                path: { type: "string" }
+                path: { type: "string" },
               },
-              required: ["selector", "path"]
+              required: ["selector", "path"],
             },
-            execute: async () => { 
-                return "Client side dom_read not fully supported. Look at the initial element context provided in your prompt."; 
-            }
-          }
-        }
+            execute: async () => {
+              return "Client side dom_read not fully supported. Look at the initial element context provided in your prompt.";
+            },
+          },
+        },
       );
-
     } catch (err) {
       setError(err instanceof Error ? err.message : "AI generation failed");
     } finally {
@@ -128,15 +145,7 @@ export function AIEditPrompt({
       }
       setIsLoading(false);
     }
-  }, [
-    config,
-    input,
-    isLoading,
-    selectedElements,
-    onEditRequest,
-    applyDomWrite,
-    applyDomInsert
-  ]);
+  }, [config, input, isLoading, selectedElements, onEditRequest, applyDomWrite, applyDomInsert]);
 
   const hasSelection = selectedElements.length > 0;
 

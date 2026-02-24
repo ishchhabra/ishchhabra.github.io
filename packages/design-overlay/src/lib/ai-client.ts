@@ -4,7 +4,10 @@ import type { ElementContext, PageContext } from "./edit-types";
 // System prompt
 // ---------------------------------------------------------------------------
 
-export function buildSystemPrompt(elements: ElementContext[], pageContext?: PageContext | null): string {
+export function buildSystemPrompt(
+  elements: ElementContext[],
+  pageContext?: PageContext | null,
+): string {
   const parts: string[] = [];
 
   parts.push(`You are a UI design assistant that edits web pages through DOM tools.
@@ -24,7 +27,9 @@ export function buildSystemPrompt(elements: ElementContext[], pageContext?: Page
       const sel = el.id ? `#${el.id}` : el.classes.length ? `.${el.classes[0]}` : el.tagName;
       return `[${el.index}] <${el.tagName}> ${sel} — "${el.textContent.slice(0, 80)}"`;
     });
-    parts.push(`\n## Selected Elements\nTarget with \`[data-i2-selected]\`:\n${descriptions.join("\n")}`);
+    parts.push(
+      `\n## Selected Elements\nTarget with \`[data-i2-selected]\`:\n${descriptions.join("\n")}`,
+    );
   }
 
   if (pageContext) {
@@ -57,7 +62,9 @@ ${pageContext.structure}
 \`\`\``);
 
     if (pageContext.sampleSectionHTML) {
-      parts.push(`\n## Sample Section HTML (match this style when adding content)\n\`\`\`html\n${pageContext.sampleSectionHTML}\n\`\`\``);
+      parts.push(
+        `\n## Sample Section HTML (match this style when adding content)\n\`\`\`html\n${pageContext.sampleSectionHTML}\n\`\`\``,
+      );
     }
   } else if (elements.length === 0) {
     parts.push("\nNo element or page context available. Ask the user to select elements.");
@@ -92,7 +99,7 @@ export async function runLocalChat(
   elementContext: ElementContext[],
   pageContext: PageContext | null,
   config: LocalAIConfig,
-  tools: Record<string, ToolDefinition>
+  tools: Record<string, ToolDefinition>,
 ) {
   const url = `${config.baseUrl.replace(/\/?$/, "")}/api/chat`;
 

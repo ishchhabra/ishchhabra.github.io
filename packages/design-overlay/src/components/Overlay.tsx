@@ -11,17 +11,17 @@ export interface OverlayProps {
   onEditRequest?: ((message: string) => void) | undefined;
 }
 
-export default function Overlay({
-  onEditRequest,
-}: OverlayProps) {
+export default function Overlay({ onEditRequest }: OverlayProps) {
   const [active, setActive] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [config, setConfig] = useState<LocalAIConfig>({
     baseUrl: "http://localhost:11434",
     model: "llama3.2",
   });
-  
-  const { hoveredElement, selectedElements, clearSelection } = useElementSelection(active && !settingsOpen);
+
+  const { hoveredElement, selectedElements, clearSelection } = useElementSelection(
+    active && !settingsOpen,
+  );
 
   useEffect(() => {
     try {
@@ -45,12 +45,12 @@ export default function Overlay({
     <div data-i2-overlay className="fixed inset-0 z-[9999] pointer-events-none">
       {active && <HoverOutline element={hoveredElement} />}
       <SelectionOutlines elements={selectedElements} />
-      
-      <SettingsModal 
-        open={settingsOpen} 
-        onOpenChange={setSettingsOpen} 
-        config={config} 
-        onConfigChange={handleConfigChange} 
+
+      <SettingsModal
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        config={config}
+        onConfigChange={handleConfigChange}
       />
 
       <div
