@@ -36,7 +36,7 @@ export default defineConfig(async () => {
     plugins: [
       tsConfigPaths(),
       tanstackStart({
-        prerender: { enabled: false },
+        prerender: { enabled: true },
         sitemap: { enabled: true, host: "https://ishchhabra.com" },
       }),
       nitro(),
