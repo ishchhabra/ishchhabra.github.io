@@ -39,7 +39,13 @@ export default defineConfig(async () => {
         prerender: { enabled: process.env['NITRO_PRESET'] !== "vercel" },
         sitemap: { enabled: process.env['NITRO_PRESET'] !== "vercel", host: "https://ishchhabra.com" },
       }),
-      nitro(),
+      nitro({
+        ...(process.env["VERCEL"] === "1" && {
+          output: {
+            dir: path.resolve(__dirname, ".vercel/output"),
+          },
+        }),
+      }),
       react(),
       tailwindcss(),
 
