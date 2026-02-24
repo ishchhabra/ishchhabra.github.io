@@ -45,6 +45,7 @@ export default defineConfig(async () => {
         ...(process.env["VERCEL"] === "1" && {
           output: {
             dir: path.resolve(__dirname, ".vercel/output"),
+            publicDir: path.resolve(__dirname, ".vercel/output/static"),
           },
         }),
       }),
