@@ -10,6 +10,7 @@ lerna-debug.log*
 node_modules
 dist
 .output
+.vercel
 *.tsbuildinfo
 dist-ssr
 *.local

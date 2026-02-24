@@ -36,8 +36,8 @@ export default defineConfig(async () => {
     plugins: [
       tsConfigPaths(),
       tanstackStart({
-        prerender: { enabled: true },
-        sitemap: { enabled: true, host: "https://ishchhabra.com" },
+        prerender: { enabled: process.env['NITRO_PRESET'] !== "vercel" },
+        sitemap: { enabled: process.env['NITRO_PRESET'] !== "vercel", host: "https://ishchhabra.com" },
       }),
       nitro(),
       react(),
