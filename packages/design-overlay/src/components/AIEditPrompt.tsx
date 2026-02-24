@@ -1,77 +1,23 @@
+import { useEditEngine } from "@/hooks/useEditEngine";
+import { runLocalChat, type LocalMessage } from "@/lib/ai-client";
+import type { InsertPosition } from "@/lib/edit-types";
+import { serializeElements, serializePageContext } from "@/lib/edit-types";
 import { Send, Sparkles, Undo2 } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
-import { serializeElements, serializePageContext } from "@/lib/edit-types";
-import type { InsertPosition } from "@/lib/edit-types";
-import { useEditEngine } from "@/hooks/useEditEngine";
+import type { LocalAIConfig } from "./SettingsModal";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 
 export interface AIEditPromptProps {
-  /** API URL for the chat endpoint. When provided, streams tool calls and applies edits. */
-  apiUrl?: string | undefined;
-  /** Ollama model ID (e.g. llama3.2). Passed to API. */
-  model?: string | undefined;
-  /** Ollama base URL (e.g. http://localhost:11434). Passed to API. */
-  ollamaBaseUrl?: string | undefined;
-  /** Callback when user submits without apiUrl (e.g. for custom handling). */
+  config: LocalAIConfig;
   onEditRequest?: ((message: string) => void) | undefined;
-  /** Placeholder text for the input. */
   placeholder?: string | undefined;
-  /** Whether the prompt is in compact/toolbar mode. */
   compact?: boolean | undefined;
-  /** Currently selected DOM elements. */
   selectedElements?: Element[] | undefined;
 }
 
-interface UserMessage {
-  id: string;
-  role: "user";
-  parts: Array<{ type: "text"; text: string }>;
-}
-
-// ---------------------------------------------------------------------------
-// SSE stream processing
-// ---------------------------------------------------------------------------
-
-/**
- * Parse SSE lines from a ReadableStream and invoke `onEvent` for each parsed
- * JSON payload. Handles buffering across chunk boundaries.
- */
-async function consumeSSEStream(
-  reader: ReadableStreamDefaultReader<Uint8Array>,
-  onEvent: (event: Record<string, unknown>) => void,
-): Promise<void> {
-  const decoder = new TextDecoder();
-  let buffer = "";
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-
-    const lines = buffer.split("\n");
-    buffer = lines.pop() ?? "";
-
-    for (const line of lines) {
-      const data = line.replace(/^data:\s*/, "").trim();
-      if (!data || data === "[DONE]") continue;
-      try {
-        onEvent(JSON.parse(data) as Record<string, unknown>);
-      } catch {
-        // Skip malformed SSE payloads
-      }
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
-
 export function AIEditPrompt({
-  apiUrl,
-  model,
-  ollamaBaseUrl,
+  config,
   onEditRequest,
   placeholder = "Ask for edits...",
   compact = true,
@@ -82,52 +28,19 @@ export function AIEditPrompt({
   const [error, setError] = useState<string | null>(null);
 
   const { applyDomWrite, applyDomInsert, undo, undoCount } = useEditEngine();
-  const messagesRef = useRef<UserMessage[]>([]);
-
-  // -- Stream handler: dispatch tool results to the edit engine ---------------
-
-  const processStream = useCallback(
-    async (reader: ReadableStreamDefaultReader<Uint8Array>) => {
-      await consumeSSEStream(reader, (event) => {
-        // tool-input-available has toolName + input; tool-output-available lacks toolName.
-        // Since our server tools echo input as output, we apply from tool-input-available.
-        if (event["type"] === "tool-input-available" && event["toolName"] && event["input"]) {
-          const input = event["input"] as Record<string, unknown>;
-
-          switch (event["toolName"]) {
-            case "dom_write":
-              applyDomWrite(
-                String(input["selector"] ?? ""),
-                String(input["path"] ?? ""),
-                String(input["value"] ?? ""),
-              );
-              break;
-            case "dom_insert":
-              applyDomInsert(
-                String(input["targetSelector"] ?? ""),
-                String(input["position"] ?? "append") as InsertPosition,
-                String(input["html"] ?? ""),
-              );
-              break;
-          }
-        } else if (event["type"] === "error") {
-          setError(String(event["errorText"] ?? "Unknown error"));
-        }
-      });
-    },
-    [applyDomWrite, applyDomInsert],
-  );
-
-  // -- Send handler -----------------------------------------------------------
+  const messagesRef = useRef<LocalMessage[]>([]);
 
   const handleSend = useCallback(async () => {
     const text = input.trim();
     if (!text || isLoading) return;
 
-    // Simple mode — no API, just callback
-    if (!apiUrl) {
-      onEditRequest?.(text);
-      setInput("");
+    if (!config.baseUrl || !config.model) {
+      if (onEditRequest) {
+        onEditRequest(text);
+        setInput("");
+      } else {
+        setError("Local API config is missing.");
+      }
       return;
     }
 
@@ -135,15 +48,12 @@ export function AIEditPrompt({
     setError(null);
     setInput("");
 
-    // Accumulate user messages for multi-turn context
-    const userMsg: UserMessage = {
-      id: crypto.randomUUID(),
+    const userMsg: LocalMessage = {
       role: "user",
-      parts: [{ type: "text", text }],
+      content: text,
     };
     messagesRef.current = [...messagesRef.current, userMsg];
 
-    // Temporarily mark selected elements so the AI can target them via [data-i2-selected]
     const marked: Element[] = [];
     for (const el of selectedElements) {
       el.setAttribute("data-i2-selected", "true");
@@ -151,51 +61,82 @@ export function AIEditPrompt({
     }
 
     try {
-      const res = await fetch(apiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: messagesRef.current,
-          elementContext: serializeElements(selectedElements),
-          pageContext: serializePageContext(),
-          ...(model != null && { model }),
-          ...(ollamaBaseUrl != null && { ollamaBaseUrl }),
-        }),
-      });
-      if (!res.ok) {
-        const errText = await res.text();
-        setError(errText.slice(0, 200));
-        return;
-      }
+      await runLocalChat(
+        messagesRef.current,
+        serializeElements(selectedElements),
+        serializePageContext(),
+        config,
+        {
+          dom_write: {
+            description: "Modify existing elements. Path format: style.<property> | text | html | attr.<name> | class.<name> | -class.<name>",
+            parameters: {
+              type: "object",
+              properties: {
+                selector: { type: "string" },
+                path: { type: "string" },
+                value: { type: "string" }
+              },
+              required: ["selector", "path", "value"]
+            },
+            execute: async ({ selector, path, value }: { selector: string; path: string; value: string }) => {
+              applyDomWrite(selector, path, value);
+              return `Successfully wrote path ${path} to selector ${selector}`;
+            }
+          },
+          dom_insert: {
+            description: "Insert new HTML. Position: before | after | prepend | append",
+            parameters: {
+              type: "object",
+              properties: {
+                targetSelector: { type: "string" },
+                position: { type: "string", enum: ["before", "after", "prepend", "append"] },
+                html: { type: "string" }
+              },
+              required: ["targetSelector", "position", "html"]
+            },
+            execute: async ({ targetSelector, position, html }: { targetSelector: string; position: string; html: string }) => {
+              applyDomInsert(targetSelector, position as InsertPosition, html);
+              return `Successfully inserted html ${position} ${targetSelector}`;
+            }
+          },
+          dom_read: {
+            description: "Inspect an element. (Context is already provided to you) Read is limited.",
+            parameters: {
+              type: "object",
+              properties: {
+                selector: { type: "string" },
+                path: { type: "string" }
+              },
+              required: ["selector", "path"]
+            },
+            execute: async () => { 
+                return "Client side dom_read not fully supported. Look at the initial element context provided in your prompt."; 
+            }
+          }
+        }
+      );
 
-      const reader = res.body?.getReader();
-      if (reader) {
-        await processStream(reader);
-      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Request failed");
+      setError(err instanceof Error ? err.message : "AI generation failed");
     } finally {
       for (const el of marked) {
         try {
           el.removeAttribute("data-i2-selected");
         } catch {
-          // Element may have been removed from the DOM
+          // Element may have been removed
         }
       }
       setIsLoading(false);
     }
   }, [
-    apiUrl,
-    model,
-    ollamaBaseUrl,
+    config,
     input,
     isLoading,
     selectedElements,
     onEditRequest,
-    processStream,
+    applyDomWrite,
+    applyDomInsert
   ]);
-
-  // -- Render -----------------------------------------------------------------
 
   const hasSelection = selectedElements.length > 0;
 
@@ -259,7 +200,7 @@ export function AIEditPrompt({
           variant="ghost"
           onClick={handleSend}
           disabled={!input.trim() || isLoading}
-          title="Send"
+          title="Send Local AI Request"
           style={{ width: 28, height: 28, color: "var(--overlay-bar-muted)" }}
         >
           {isLoading ? (

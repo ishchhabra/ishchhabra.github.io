@@ -1,4 +1,4 @@
-import { designOverlayApiPlugin } from "@ish/design-overlay/vite";
+
 import { findWorkspacePackagesNoCheck } from "@pnpm/find-workspace-packages";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
@@ -42,7 +42,7 @@ export default defineConfig(async () => {
       nitro(),
       react(),
       tailwindcss(),
-      designOverlayApiPlugin(),
+
     ],
     optimizeDeps: {
       // Injected workspace packages are still in node_modules (copy), so Vite

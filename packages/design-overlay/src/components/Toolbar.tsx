@@ -1,18 +1,15 @@
-import { MousePointerClick, Trash2 } from "lucide-react";
+import { MousePointerClick, Settings2, Trash2 } from "lucide-react";
 import { AIEditPrompt } from "./AIEditPrompt";
+import type { LocalAIConfig } from "./SettingsModal";
 
 export interface ToolbarProps {
   active: boolean;
   onToggle: () => void;
   selectedCount: number;
   onClear: () => void;
-  /** API URL for the AI edit chat endpoint. When provided, natural language edits use the AI SDK. */
-  apiUrl?: string | undefined;
-  /** Ollama model ID (e.g. llama3.2). Passed to API. */
-  model?: string | undefined;
-  /** Ollama base URL (e.g. http://localhost:11434). Passed to API. */
-  ollamaBaseUrl?: string | undefined;
-  /** Callback when user submits an edit request without apiUrl. */
+  config: LocalAIConfig;
+  onOpenSettings: () => void;
+  /** Callback when user submits an edit request without local SDK. */
   onEditRequest?: ((message: string) => void) | undefined;
   /** Currently selected DOM elements (needed by the AI edit prompt). */
   selectedElements?: Element[] | undefined;
@@ -64,9 +61,8 @@ export function Toolbar({
   onToggle,
   selectedCount,
   onClear,
-  apiUrl,
-  model,
-  ollamaBaseUrl,
+  config,
+  onOpenSettings,
   onEditRequest,
   selectedElements,
 }: ToolbarProps) {
@@ -128,13 +124,22 @@ export function Toolbar({
             }}
           />
           <AIEditPrompt
-            apiUrl={apiUrl}
-            model={model}
-            ollamaBaseUrl={ollamaBaseUrl}
+            config={config}
             onEditRequest={onEditRequest}
             selectedElements={selectedElements ?? []}
             placeholder="Ask for edits..."
           />
+          <span
+            style={{
+              width: 1,
+              height: 20,
+              background: "var(--overlay-bar-divider)",
+              borderRadius: 1,
+            }}
+          />
+          <IconButton onClick={onOpenSettings} title="Local Settings">
+            <Settings2 size={16} />
+          </IconButton>
         </>
       )}
     </div>
