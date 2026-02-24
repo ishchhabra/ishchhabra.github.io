@@ -21,25 +21,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v5
-        with:
-          node-version-file: package.json
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install -w --filter demo...
-
-      - name: Build
-        run: pnpm --filter demo build
-
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: apps/demo/dist/client
+          path: github-pages-redirect
 
   deploy:
     needs: build

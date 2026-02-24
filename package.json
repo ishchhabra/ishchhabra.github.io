@@ -7,8 +7,8 @@
     "dev": "pnpm --filter @ish/design-overlay build && pnpm --filter @ish/sandbox build && pnpm --filter portfolio dev",
     "dev:watch": "pnpm --filter @ish/design-overlay build && pnpm --filter @ish/sandbox build && concurrently -n overlay,sandbox,portfolio \"pnpm --filter @ish/design-overlay build:watch\" \"pnpm --filter @ish/sandbox build:watch\" \"pnpm --filter portfolio dev\"",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "format": "pnpm -r format",
-    "format-check": "pnpm -r --parallel format-check",
+    "format": "pnpm -r format && pnpm exec oxfmt github-pages-redirect",
+    "format-check": "pnpm -r --parallel format-check && pnpm exec oxfmt --check github-pages-redirect",
     "lint": "pnpm -r --parallel lint",
     "type-check": "pnpm -r --parallel type-check"
   },
@@ -21,6 +21,7 @@
   "packageManager": "pnpm@10.14.0",
   "devDependencies": {
     "concurrently": "^9.2.1",
+    "oxfmt": "catalog:",
     "pnpm-sync": "^0.3.3",
     "skills": "^1.3.7"
   }
