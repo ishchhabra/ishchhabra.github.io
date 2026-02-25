@@ -8,8 +8,7 @@ export const SITE_BASE_URL = "https://ishchhabra.com";
 
 export const SITE_TITLE = "Ish Chhabra";
 
-export const DEFAULT_DESCRIPTION =
-  "I do computers. Currently building Kniru and Clap.";
+export const DEFAULT_DESCRIPTION = "I do computers. Currently building Kniru and Clap.";
 
 /** Build head { meta, links? } from title, description, optional path for canonical. */
 export function createPageMeta({
@@ -58,10 +57,7 @@ export const WEBSITE_JSON_LD = {
     "@type": "Person",
     name: SITE_TITLE,
     url: SITE_BASE_URL,
-    sameAs: [
-      "https://github.com/ishchhabra",
-      "https://linkedin.com/in/ishchhabra",
-    ],
+    sameAs: ["https://github.com/ishchhabra", "https://linkedin.com/in/ishchhabra"],
   },
 };
 
