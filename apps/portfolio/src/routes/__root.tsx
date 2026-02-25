@@ -35,7 +35,8 @@ export const Route = createRootRoute({
     const base = createPageMeta({
       title: SITE_TITLE,
       description: DEFAULT_DESCRIPTION,
-      path: "/",
+      // Do not set path/canonical here — each leaf route sets its own canonical.
+      // Otherwise root + child merge produces two canonical tags.
     });
 
     return {
