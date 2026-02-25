@@ -8,9 +8,10 @@ export const SITE_BASE_URL = "https://ishchhabra.com";
 
 export const SITE_TITLE = "Ish Chhabra";
 
-export const DEFAULT_DESCRIPTION = "I do computers. Currently building Kniru and Clap.";
+export const DEFAULT_DESCRIPTION =
+  "I do computers. Currently building Kniru and Clap.";
 
-/** Build head { title, meta, links? } from title, description, optional path for canonical. */
+/** Build head { meta, links? } from title, description, optional path for canonical. */
 export function createPageMeta({
   title,
   description,
@@ -22,6 +23,7 @@ export function createPageMeta({
   path?: string;
 }) {
   const meta = [
+    { name: "title", content: title },
     { name: "description", content: description },
     { property: "og:title", content: title },
     { property: "og:description", content: description },
@@ -40,7 +42,6 @@ export function createPageMeta({
       : undefined;
   return {
     meta,
-    title,
     ...(links && { links }),
   };
 }
@@ -56,7 +57,10 @@ export const WEBSITE_JSON_LD = {
     "@type": "Person",
     name: SITE_TITLE,
     url: SITE_BASE_URL,
-    sameAs: ["https://github.com/ishchhabra", "https://linkedin.com/in/ishchhabra"],
+    sameAs: [
+      "https://github.com/ishchhabra",
+      "https://linkedin.com/in/ishchhabra",
+    ],
   },
 };
 
