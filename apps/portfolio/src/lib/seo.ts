@@ -23,6 +23,7 @@ export function createPageMeta({
   path?: string;
 }) {
   const meta = [
+    { title },
     { name: "title", content: title },
     { name: "description", content: description },
     { property: "og:title", content: title },
