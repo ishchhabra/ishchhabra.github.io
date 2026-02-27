@@ -28,8 +28,7 @@ jobs:
       - name: Run Format Check
         run: pnpm run format-check
 
+      # No separate type-check step: lint uses oxlint --type-aware --type-check,
+      # which reports TypeScript errors. Run `pnpm type-check` locally if needed.
       - name: Run Lint
         run: pnpm run lint
-
-      - name: Run Type Check
-        run: pnpm run type-check
