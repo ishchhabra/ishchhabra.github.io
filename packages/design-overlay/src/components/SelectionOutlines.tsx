@@ -15,10 +15,7 @@ export function SelectionOutlines({ elements }: SelectionOutlinesProps) {
   const [rects, setRects] = useState<Rect[]>([]);
 
   useEffect(() => {
-    if (elements.length === 0) {
-      setRects([]);
-      return;
-    }
+    if (elements.length === 0) return;
 
     const update = () => {
       setRects(
@@ -45,11 +42,12 @@ export function SelectionOutlines({ elements }: SelectionOutlinesProps) {
     };
   }, [elements]);
 
-  if (rects.length === 0) return null;
+  const displayRects = elements.length === 0 ? [] : rects;
+  if (displayRects.length === 0) return null;
 
   return (
     <div data-i2-overlay className="pointer-events-none fixed inset-0 z-[9998]">
-      {rects.map((r, i) => (
+      {displayRects.map((r, i) => (
         <div
           key={i}
           style={{

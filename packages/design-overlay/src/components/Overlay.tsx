@@ -1,5 +1,5 @@
 import { useElementSelection } from "@/hooks/useElementSelection";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { HoverOutline } from "./HoverOutline";
 import { SelectionOutlines } from "./SelectionOutlines";
 import { SettingsModal, type LocalAIConfig } from "./SettingsModal";
@@ -14,23 +14,19 @@ export interface OverlayProps {
 export default function Overlay({ onEditRequest }: OverlayProps) {
   const [active, setActive] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [config, setConfig] = useState<LocalAIConfig>({
-    baseUrl: "http://localhost:11434",
-    model: "llama3.2",
+  const [config, setConfig] = useState<LocalAIConfig>(() => {
+    try {
+      const stored = localStorage.getItem("ish_design_overlay_config");
+      if (stored) return JSON.parse(stored) as LocalAIConfig;
+    } catch {
+      // ignore
+    }
+    return { baseUrl: "http://localhost:11434", model: "llama3.2" };
   });
 
   const { hoveredElement, selectedElements, clearSelection } = useElementSelection(
     active && !settingsOpen,
   );
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("ish_design_overlay_config");
-      if (stored) setConfig(JSON.parse(stored));
-    } catch {
-      // ignore
-    }
-  }, []);
 
   const handleConfigChange = (newConfig: LocalAIConfig) => {
     setConfig(newConfig);

@@ -42,7 +42,10 @@ export function useElementSelection(active: boolean): ElementSelectionResult {
   const [hoveredElement, setHoveredElement] = useState<Element | null>(null);
   const [selectedElements, setSelectedElements] = useState<Element[]>([]);
   const activeRef = useRef(active);
-  activeRef.current = active;
+
+  useEffect(() => {
+    activeRef.current = active;
+  }, [active]);
 
   // --- hover tracking via native events (works through the capture layer) ---
   const isOverlayEvent = (e: Event): boolean => {
@@ -85,8 +88,6 @@ export function useElementSelection(active: boolean): ElementSelectionResult {
 
   useEffect(() => {
     if (!active) {
-      setHoveredElement(null);
-      setSelectedElements([]);
       document.body.style.userSelect = "";
       return;
     }
@@ -108,5 +109,9 @@ export function useElementSelection(active: boolean): ElementSelectionResult {
     setSelectedElements([]);
   }, []);
 
+  // When inactive, derive empty so we never setState in the effect above.
+  if (!active) {
+    return { hoveredElement: null, selectedElements: [], clearSelection: () => {} };
+  }
   return { hoveredElement, selectedElements, clearSelection };
 }

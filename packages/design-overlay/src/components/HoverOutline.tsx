@@ -31,34 +31,35 @@ export function HoverOutline({ element }: HoverOutlineProps) {
   const [label, setLabel] = useState("");
 
   useEffect(() => {
-    if (!element) {
-      setRect(null);
-      return;
-    }
-    setRect(getRect(element));
-    setLabel(getLabel(element));
+    if (!element) return;
 
-    const update = () => setRect(getRect(element));
-    const raf = () => requestAnimationFrame(update);
-    window.addEventListener("scroll", raf, { capture: true });
+    const update = () => {
+      setRect(getRect(element));
+      setLabel(getLabel(element));
+    };
+    const onScroll = () => requestAnimationFrame(update);
+    requestAnimationFrame(update);
+    window.addEventListener("scroll", onScroll, { capture: true });
     window.addEventListener("resize", update);
     return () => {
-      window.removeEventListener("scroll", raf, { capture: true });
+      window.removeEventListener("scroll", onScroll, { capture: true });
       window.removeEventListener("resize", update);
     };
   }, [element]);
 
-  if (!rect) return null;
+  const displayRect = element ? rect : null;
+  const displayLabel = element ? label : "";
+  if (!displayRect) return null;
 
   return (
     <div data-i2-overlay className="pointer-events-none fixed inset-0 z-[9998]">
       <div
         style={{
           position: "absolute",
-          left: rect.left,
-          top: rect.top,
-          width: rect.width,
-          height: rect.height,
+          left: displayRect.left,
+          top: displayRect.top,
+          width: displayRect.width,
+          height: displayRect.height,
           border: "1.5px solid rgba(99,102,241,0.7)",
           background: "rgba(99,102,241,0.06)",
           borderRadius: 2,
@@ -68,8 +69,8 @@ export function HoverOutline({ element }: HoverOutlineProps) {
       <div
         style={{
           position: "absolute",
-          left: rect.left,
-          top: Math.max(0, rect.top - 20),
+          left: displayRect.left,
+          top: Math.max(0, displayRect.top - 20),
           fontSize: 10,
           fontFamily: "ui-monospace, monospace",
           fontWeight: 500,
@@ -82,7 +83,7 @@ export function HoverOutline({ element }: HoverOutlineProps) {
           pointerEvents: "none",
         }}
       >
-        {label}
+        {displayLabel}
       </div>
     </div>
   );
