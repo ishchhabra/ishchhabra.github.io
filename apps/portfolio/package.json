@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "format": "oxfmt",
     "format-check": "oxfmt --check",
-    "lint": "oxlint --max-warnings=0",
+    "lint": "oxlint --max-warnings=0 --type-aware --type-check",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
@@ -32,8 +32,12 @@
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "^5.1.1",
     "@whatwg-node/server": "^0.10.18",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "eslint-plugin-react-compiler": "19.1.0-rc.2",
+    "eslint-plugin-react-hooks": "^7.0.0",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
     "vite": "^7.2.4",
