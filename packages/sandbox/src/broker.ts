@@ -37,7 +37,7 @@ export function summarizeRequest(req: CapabilityRequest): string {
       return d.operation === "read" ? "Read cookies" : "Write cookie";
     }
     default:
-      return `Unknown capability: ${req.capability}`;
+      return `Unknown capability: ${String(req.capability)}`;
   }
 }
 
@@ -204,7 +204,7 @@ export class CapabilityBroker {
         case "cookie":
           return { result: this.executeCookie(req.details as CookieDetails) };
         default:
-          return { error: `Unknown capability: ${req.capability}` };
+          return { error: `Unknown capability: ${String(req.capability)}` };
       }
     } catch (err) {
       return { error: err instanceof Error ? err.message : String(err) };

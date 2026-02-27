@@ -41,13 +41,13 @@ export function Sandbox({
   const [ready, setReady] = useState(false);
   const [pendingPrompt, setPendingPrompt] = useState<PendingRequest | null>(null);
   const propsRef = useRef(sandboxProps);
-  propsRef.current = sandboxProps;
-
-  const srcdoc = buildSrcdoc();
-
-  // Create broker once
   const brokerRef = useRef<CapabilityBroker | null>(null);
-  if (!brokerRef.current) {
+
+  useEffect(() => {
+    propsRef.current = sandboxProps;
+  }, [sandboxProps]);
+
+  useEffect(() => {
     brokerRef.current = new CapabilityBroker(
       capConfig?.capabilities ?? [],
       capConfig?.permissions ?? [],
@@ -56,7 +56,12 @@ export function Sandbox({
         onPromptResolved: () => setPendingPrompt(null),
       },
     );
-  }
+    return () => {
+      brokerRef.current = null;
+    };
+  }, [capConfig?.capabilities, capConfig?.permissions]);
+
+  const srcdoc = buildSrcdoc();
 
   // Handle messages from the sandbox
   const handleMessage = useCallback(

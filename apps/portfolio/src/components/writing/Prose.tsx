@@ -90,7 +90,7 @@ export function CodeBlock({
   const [copied, setCopied] = useState(false);
 
   function handleCopy() {
-    navigator.clipboard.writeText(children).then(() => {
+    void navigator.clipboard.writeText(children).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });

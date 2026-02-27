@@ -12,6 +12,41 @@ import { useTheme } from "../../../contexts/ThemeContext";
 import { diagramPalette } from "./diagramColors";
 
 /* ------------------------------------------------------------------ */
+/*  Shared: file tree entry (declared outside render for static-components) */
+/* ------------------------------------------------------------------ */
+
+function FileEntry({
+  x,
+  y,
+  label,
+  dimmed,
+  missing,
+}: {
+  x: number;
+  y: number;
+  label: string;
+  dimmed?: boolean;
+  missing?: boolean;
+}) {
+  const { theme } = useTheme();
+  const c = diagramPalette[theme];
+  return (
+    <g opacity={dimmed ? 0.3 : 1}>
+      <text
+        x={x}
+        y={y}
+        fill={missing ? c.red : c.body}
+        fontSize="11"
+        fontFamily="monospace"
+        textDecoration={missing ? "line-through" : undefined}
+      >
+        {label}
+      </text>
+    </g>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Before / After                                                     */
 /* ------------------------------------------------------------------ */
 
@@ -26,33 +61,6 @@ export function SyncBeforeAfterDiagram() {
   const leftX = (w - colW * 2 - gap) / 2;
   const rightX = leftX + colW + gap;
   const treeY = 70;
-
-  const FileEntry = ({
-    x,
-    y,
-    label,
-    dimmed,
-    missing,
-  }: {
-    x: number;
-    y: number;
-    label: string;
-    dimmed?: boolean;
-    missing?: boolean;
-  }) => (
-    <g opacity={dimmed ? 0.3 : 1}>
-      <text
-        x={x}
-        y={y}
-        fill={missing ? c.red : c.body}
-        fontSize="11"
-        fontFamily="monospace"
-        textDecoration={missing ? "line-through" : undefined}
-      >
-        {label}
-      </text>
-    </g>
-  );
 
   return (
     <div className="my-8 flex justify-center">

@@ -360,7 +360,10 @@ export function SandboxPlayground() {
   // Debounced auto-run when code changes
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const executedCodeRef = useRef(executedCode);
-  executedCodeRef.current = executedCode;
+
+  useEffect(() => {
+    executedCodeRef.current = executedCode;
+  }, [executedCode]);
 
   useEffect(() => {
     if (!code.trim()) return;

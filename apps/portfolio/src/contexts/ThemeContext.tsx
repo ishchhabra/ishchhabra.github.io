@@ -25,13 +25,11 @@ const ThemeContext = createContext<{
 } | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("dark");
+  const [theme, setThemeState] = useState<Theme>(() => getStoredTheme());
 
   useLayoutEffect(() => {
-    const stored = getStoredTheme();
-    document.documentElement.classList.toggle("dark", stored === "dark");
-    setThemeState(stored);
-  }, []);
+    document.documentElement.classList.toggle("dark", theme === "dark");
+  }, [theme]);
 
   const setTheme = useCallback((next: Theme) => {
     setThemeState(next);
