@@ -26,7 +26,7 @@ export function useTheme() {
 
   const toggleTheme = () => {
     const nextTheme: Theme = theme === "dark" ? "light" : "dark";
-    setThemeServerFn({ data: nextTheme }).then(() => router.invalidate());
+    void setThemeServerFn({ data: nextTheme }).then(() => router.invalidate());
   };
 
   return { theme, toggleTheme };
