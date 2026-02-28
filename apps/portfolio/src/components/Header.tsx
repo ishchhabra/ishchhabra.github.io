@@ -1,6 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useState } from "react";
-import { useTheme } from "../contexts/ThemeContext";
+import { useTheme } from "../lib/theme";
 
 const labItems = [
   { to: "/lab/sandbox" as const, label: "React Sandbox" },

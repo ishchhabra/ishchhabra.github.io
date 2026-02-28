@@ -2,35 +2,19 @@
 import { createRootRoute, HeadContent, Outlet, Scripts, useLocation } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useEffect } from "react";
-import { ThemeProvider } from "../contexts/ThemeContext";
 import { Footer } from "../components/Footer";
 import { Header } from "../components/Header";
 import appCss from "../index.css?url";
 import {
   createPageMeta,
-  DEFAULT_DESCRIPTION,
   createWebsiteSchemaScript,
+  DEFAULT_DESCRIPTION,
   SITE_TITLE,
 } from "../lib/seo";
-
-const THEME_STORAGE_KEY = "theme";
-
-/** Runs before first paint so there’s no theme flash. Sets .dark and .theme-ready on html. */
-function createThemeInitScript() {
-  return {
-    type: "text/javascript" as const,
-    children: `(function(){var t=localStorage.getItem("${THEME_STORAGE_KEY}");document.documentElement.classList.toggle("dark",t!=="light");document.documentElement.classList.add("theme-ready");})();`,
-  };
-}
-
-/** Hide body until theme script has run (no white/dark flash). */
-function createThemeCloakStyle() {
-  return {
-    children: "html:not(.theme-ready) body{visibility:hidden}",
-  };
-}
+import { getThemeServerFn } from "../lib/theme";
 
 export const Route = createRootRoute({
+  beforeLoad: async () => ({ theme: await getThemeServerFn() }),
   head: () => {
     const base = createPageMeta({
       title: SITE_TITLE,
@@ -46,8 +30,7 @@ export const Route = createRootRoute({
         ...base.meta,
         { property: "og:type", content: "website" },
       ],
-      styles: [createThemeCloakStyle()],
-      scripts: [createThemeInitScript(), createWebsiteSchemaScript()],
+      scripts: [createWebsiteSchemaScript()],
       links: [
         ...(base.links ?? []),
         { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
@@ -71,18 +54,18 @@ export const Route = createRootRoute({
 function RootComponent() {
   return (
     <RootDocument>
-      <ThemeProvider>
-        <LayoutShell>
-          <Outlet />
-        </LayoutShell>
-      </ThemeProvider>
+      <LayoutShell>
+        <Outlet />
+      </LayoutShell>
     </RootDocument>
   );
 }
 
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
+  const { theme } = Route.useRouteContext();
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html className={theme} lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>

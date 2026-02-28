@@ -1,4 +1,4 @@
-import { useTheme } from "../../../contexts/ThemeContext";
+import { useTheme } from "../../../lib/theme";
 import { diagramPalette } from "./diagramColors";
 
 /**
