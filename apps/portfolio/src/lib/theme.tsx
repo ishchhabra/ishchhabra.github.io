@@ -6,6 +6,7 @@ import {
   createContext,
   startTransition,
   useContext,
+  useEffect,
   useOptimistic,
   useRef,
 } from "react";
@@ -52,9 +53,9 @@ export function ThemeProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [theme, setOptimisticTheme] = useOptimistic(serverTheme);
   const requestRef = useRef(0);
 
-  if (typeof window !== "undefined") {
+  useEffect(() => {
     setThemeForClientNav(serverTheme);
-  }
+  }, [serverTheme]);
 
   const toggleTheme = () => {
     const nextTheme: Theme = theme === "dark" ? "light" : "dark";
