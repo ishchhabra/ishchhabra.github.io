@@ -13,7 +13,7 @@ import {
   DEFAULT_DESCRIPTION,
   SITE_TITLE,
 } from "../lib/seo";
-import { getThemeServerFn } from "../lib/theme";
+import { getThemeServerFn, ThemeProvider, useTheme } from "../lib/theme";
 
 export const Route = createRootRoute({
   beforeLoad: async () => ({ theme: await getThemeServerFn() }),
@@ -55,16 +55,18 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   return (
-    <RootDocument>
-      <LayoutShell>
-        <Outlet />
-      </LayoutShell>
-    </RootDocument>
+    <ThemeProvider>
+      <RootDocument>
+        <LayoutShell>
+          <Outlet />
+        </LayoutShell>
+      </RootDocument>
+    </ThemeProvider>
   );
 }
 
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
-  const { theme } = Route.useRouteContext();
+  const { theme } = useTheme();
 
   return (
     <html className={theme} lang="en" suppressHydrationWarning>
