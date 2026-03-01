@@ -9,12 +9,19 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WritingIndexRouteImport } from './routes/writing/index'
 import { Route as WritingPnpmMonorepoScalesRouteImport } from './routes/writing/pnpm-monorepo-scales'
 import { Route as LabSandboxRouteImport } from './routes/lab/sandbox'
 import { Route as LabDesignOverlayRouteImport } from './routes/lab/design-overlay'
+import { Route as ApiAuthSplatRouteImport } from './routes/api.auth.$'
 
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -41,63 +48,89 @@ const LabDesignOverlayRoute = LabDesignOverlayRouteImport.update({
   path: '/lab/design-overlay',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
+  id: '/api/auth/$',
+  path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/lab/design-overlay': typeof LabDesignOverlayRoute
   '/lab/sandbox': typeof LabSandboxRoute
   '/writing/pnpm-monorepo-scales': typeof WritingPnpmMonorepoScalesRoute
   '/writing/': typeof WritingIndexRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/lab/design-overlay': typeof LabDesignOverlayRoute
   '/lab/sandbox': typeof LabSandboxRoute
   '/writing/pnpm-monorepo-scales': typeof WritingPnpmMonorepoScalesRoute
   '/writing': typeof WritingIndexRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/lab/design-overlay': typeof LabDesignOverlayRoute
   '/lab/sandbox': typeof LabSandboxRoute
   '/writing/pnpm-monorepo-scales': typeof WritingPnpmMonorepoScalesRoute
   '/writing/': typeof WritingIndexRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/login'
     | '/lab/design-overlay'
     | '/lab/sandbox'
     | '/writing/pnpm-monorepo-scales'
     | '/writing/'
+    | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/login'
     | '/lab/design-overlay'
     | '/lab/sandbox'
     | '/writing/pnpm-monorepo-scales'
     | '/writing'
+    | '/api/auth/$'
   id:
     | '__root__'
     | '/'
+    | '/login'
     | '/lab/design-overlay'
     | '/lab/sandbox'
     | '/writing/pnpm-monorepo-scales'
     | '/writing/'
+    | '/api/auth/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LoginRoute: typeof LoginRoute
   LabDesignOverlayRoute: typeof LabDesignOverlayRoute
   LabSandboxRoute: typeof LabSandboxRoute
   WritingPnpmMonorepoScalesRoute: typeof WritingPnpmMonorepoScalesRoute
   WritingIndexRoute: typeof WritingIndexRoute
+  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -133,15 +166,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LabDesignOverlayRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/auth/$': {
+      id: '/api/auth/$'
+      path: '/api/auth/$'
+      fullPath: '/api/auth/$'
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LoginRoute: LoginRoute,
   LabDesignOverlayRoute: LabDesignOverlayRoute,
   LabSandboxRoute: LabSandboxRoute,
   WritingPnpmMonorepoScalesRoute: WritingPnpmMonorepoScalesRoute,
   WritingIndexRoute: WritingIndexRoute,
+  ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
