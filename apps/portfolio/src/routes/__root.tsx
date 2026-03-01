@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 
 import { createRootRoute, HeadContent, Outlet, Scripts, useLocation } from "@tanstack/react-router";
+import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import type { ReactNode } from "react";
 import { useEffect } from "react";
@@ -82,6 +83,7 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
       <body>
         {children}
         <Scripts />
+        <Analytics />
         <SpeedInsights />
       </body>
     </html>
