@@ -13,10 +13,16 @@ import {
   DEFAULT_DESCRIPTION,
   SITE_TITLE,
 } from "../lib/seo";
-import { getThemeServerFn, ThemeProvider, useTheme } from "../lib/theme";
+import { getThemeForClientNav, getThemeServerFn, ThemeProvider, useTheme } from "../lib/theme";
 
 export const Route = createRootRoute({
-  beforeLoad: async () => ({ theme: await getThemeServerFn() }),
+  beforeLoad: async () => {
+    if (typeof window === "undefined") {
+      return { theme: await getThemeServerFn() };
+    }
+
+    return { theme: getThemeForClientNav() };
+  },
   head: () => {
     const base = createPageMeta({
       title: SITE_TITLE,

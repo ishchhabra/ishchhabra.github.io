@@ -16,7 +16,18 @@ const storageKey = "theme";
 const themeSchema = z.enum(["light", "dark"]);
 export type Theme = z.infer<typeof themeSchema>;
 
-export const getThemeServerFn = createServerFn().handler((): Theme => {
+// Client-only cache so root beforeLoad can return theme without calling the server on nav
+let clientThemeCache: Theme = "dark";
+
+export function getThemeForClientNav(): Theme {
+  return clientThemeCache;
+}
+
+export function setThemeForClientNav(theme: Theme): void {
+  clientThemeCache = theme;
+}
+
+export const getThemeServerFn = createServerFn().handler(async (): Promise<Theme> => {
   const raw = getCookie(storageKey) ?? "dark";
   const result = themeSchema.safeParse(raw);
   return result.success ? result.data : "dark";
@@ -41,9 +52,14 @@ export function ThemeProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [theme, setOptimisticTheme] = useOptimistic(serverTheme);
   const requestRef = useRef(0);
 
+  if (typeof window !== "undefined") {
+    setThemeForClientNav(serverTheme);
+  }
+
   const toggleTheme = () => {
     const nextTheme: Theme = theme === "dark" ? "light" : "dark";
     const requestId = ++requestRef.current;
+    setThemeForClientNav(nextTheme);
 
     startTransition(async () => {
       setOptimisticTheme(nextTheme);
