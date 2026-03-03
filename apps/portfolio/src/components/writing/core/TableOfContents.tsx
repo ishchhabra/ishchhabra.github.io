@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 interface TocItem {
@@ -10,23 +11,21 @@ export function TableOfContents({ items }: { items: TocItem[] }) {
   const [activeId, setActiveId] = useState<string>("");
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setActiveId(entry.target.id);
-          }
+    function onScroll() {
+      const cutoff = window.innerHeight * 0.2;
+      let current = "";
+      for (const item of items) {
+        const el = document.getElementById(item.id);
+        if (el && el.getBoundingClientRect().top <= cutoff) {
+          current = item.id;
         }
-      },
-      { rootMargin: "-80px 0px -60% 0px", threshold: 0 },
-    );
-
-    for (const item of items) {
-      const el = document.getElementById(item.id);
-      if (el) observer.observe(el);
+      }
+      setActiveId(current);
     }
 
-    return () => observer.disconnect();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
   }, [items]);
 
   return (
@@ -40,8 +39,9 @@ export function TableOfContents({ items }: { items: TocItem[] }) {
             const isActive = activeId === item.id;
             return (
               <li key={item.id}>
-                <a
-                  href={`#${item.id}`}
+                <Link
+                  to="."
+                  hash={item.id}
                   className={`block border-l-2 py-1 text-[12px] leading-snug transition-colors ${
                     item.indent ? "pl-6" : "pl-4"
                   } ${
@@ -51,7 +51,7 @@ export function TableOfContents({ items }: { items: TocItem[] }) {
                   }`}
                 >
                   {item.label}
-                </a>
+                </Link>
               </li>
             );
           })}
