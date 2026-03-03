@@ -1,7 +1,20 @@
 import { Link } from "@tanstack/react-router";
 import { Page } from "../components/Page";
-import { ArticleCard } from "../components/writing/ArticleCard";
-import { getWritingPreview } from "./Writing";
+import { ArticleCard } from "../components/writing/core/ArticleCard";
+import { ARTICLES } from "../lib/articles";
+
+/** Latest articles for home page preview: slug, title, description, href, date. */
+function getWritingPreview(
+  limit = 5,
+): Array<{ slug: string; title: string; description: string; href: string; date: string }> {
+  return ARTICLES.slice(0, limit).map((a) => ({
+    slug: a.slug,
+    title: a.title,
+    description: a.description,
+    href: `/writing/${a.slug}`,
+    date: a.dateShort,
+  }));
+}
 
 const labProjects = [
   {
@@ -31,7 +44,7 @@ const labProjects = [
   },
 ];
 
-const writing = getWritingPreview();
+const writingPreview = getWritingPreview();
 
 const tagStyles: Record<string, string> = {
   Experiment: "bg-blue-500/15 text-blue-400 border-blue-500/20",
@@ -179,7 +192,7 @@ export function Home() {
           }
         />
         <div className="flex flex-col">
-          {writing.map((post) => (
+          {writingPreview.map((post) => (
             <ArticleCard.Link
               key={post.title}
               to={post.href}
@@ -189,12 +202,13 @@ export function Home() {
                 <ArticleCard.Title
                   as="h3"
                   className="text-sm font-medium text-zinc-700 transition-colors group-hover:text-zinc-900 dark:text-zinc-300 dark:group-hover:text-white"
-                >
-                  {post.title}
-                </ArticleCard.Title>
-                <ArticleCard.Description as="div" className="text-[13px] text-zinc-500">
-                  {post.description}
-                </ArticleCard.Description>
+                  slug={post.slug}
+                />
+                <ArticleCard.Description
+                  as="div"
+                  className="text-[13px] text-zinc-500"
+                  slug={post.slug}
+                />
               </div>
               <span className="shrink-0 text-[11px] tabular-nums text-zinc-500 dark:text-zinc-600">
                 {post.date}

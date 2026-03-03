@@ -22,30 +22,34 @@ function PageMain({ children, variant = "default" }: PageMainProps) {
 }
 
 const pageHeroTitleClasses =
-  "mb-4 text-3xl font-bold tracking-tight text-zinc-900 dark:text-white sm:text-[42px] sm:leading-[1.15]";
+  "mb-4 text-3xl font-bold tracking-tight text-zinc-900 dark:text-white sm:text-[42px] sm:leading-[1.15] [font-family:var(--font-display)]";
 
 interface PageHeroProps {
-  title: string;
+  /** Title as string (renders in default h1) or ReactNode (e.g. ArticleCard.Title as="h1"; wrapper div applies hero styles) */
+  title: string | ReactNode;
   /** Show accent line above title */
   accentLine?: boolean;
-  /** Optional view-transition-name for shared element transitions */
+  /** Optional view-transition-name when title is a string */
   viewTransitionName?: string;
   children?: ReactNode;
 }
 
 function PageHero({ title, accentLine = true, viewTransitionName, children }: PageHeroProps) {
-  return (
-    <div>
-      {accentLine && <div className="accent-line mb-6 h-px w-12" />}
+  const titleElement =
+    typeof title === "string" ? (
       <h1
         className={pageHeroTitleClasses}
-        style={{
-          fontFamily: "var(--font-display)",
-          ...(viewTransitionName && { viewTransitionName }),
-        }}
+        style={viewTransitionName ? { viewTransitionName } : undefined}
       >
         {title}
       </h1>
+    ) : (
+      <div className={`${pageHeroTitleClasses} [&>h1]:m-0`}>{title}</div>
+    );
+  return (
+    <div>
+      {accentLine && <div className="accent-line mb-6 h-px w-12" />}
+      {titleElement}
       {children}
     </div>
   );

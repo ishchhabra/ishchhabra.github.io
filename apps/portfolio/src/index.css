@@ -3,10 +3,66 @@
 /* Class-based dark mode: add .dark on html to enable dark: variants */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Preview demo (e.g. in iframe): force dark styles when inside .dark so iframe respects ThemeShell */
+.dark .preview-nav-bar {
+  border-color: rgb(255 255 255 / 0.05);
+}
+.dark .preview-nav-bar button:not([disabled]) {
+  color: rgb(113 113 122);
+}
+.dark .preview-nav-bar button:not([disabled]):hover {
+  color: rgb(228 228 231);
+}
+.dark .preview-nav-bar .bg-zinc-200 {
+  background-color: rgb(255 255 255 / 0.1);
+  color: white;
+}
+.dark .preview-theme-toggle {
+  color: rgb(113 113 122);
+}
+.dark .preview-theme-toggle:hover {
+  color: rgb(228 228 231);
+}
+.dark .preview-status-bar.bg-amber-50 {
+  background-color: rgb(69 26 26 / 0.6);
+  color: rgb(253 230 138);
+}
+.dark .preview-status-bar.bg-emerald-50 {
+  background-color: rgb(6 78 59 / 0.8);
+  color: rgb(209 250 229);
+}
+
 :root {
   --font-display: "Syne", system-ui, sans-serif;
   --font-body: "DM Sans", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* sugar-high syntax highlighting — light */
+  --sh-class: #2d5e9d;
+  --sh-identifier: #354150;
+  --sh-sign: #8996a3;
+  --sh-property: #0550ae;
+  --sh-entity: #249a97;
+  --sh-jsxliterals: #6266d1;
+  --sh-string: #00a99a;
+  --sh-keyword: #f47067;
+  --sh-comment: #a19595;
+  --sh-number: #0550ae;
+  --sh-null: #7c8694;
+}
+
+.dark {
+  --sh-class: #4c97f8;
+  --sh-identifier: #b4c2d0;
+  --sh-sign: #8996a3;
+  --sh-property: #7db2f9;
+  --sh-entity: #5cc9c5;
+  --sh-jsxliterals: #9fa1fe;
+  --sh-string: #0fa295;
+  --sh-keyword: #f47067;
+  --sh-comment: #575962;
+  --sh-number: #6cb6ff;
+  --sh-null: #7c8694;
 }
 
 html {
@@ -41,6 +97,14 @@ body {
 }
 
 /* View Transitions API: smoother cross-fade between pages */
+
+/* Default for all named groups (shared-element morph timing); root and header/footer override below */
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: 0.4s;
+  animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
 ::view-transition-old(root) {
   animation: view-transition-fade-out 0.3s ease-out forwards;
 }
@@ -73,26 +137,4 @@ body {
   to {
     opacity: 1;
   }
-}
-
-/* Shared elements: article title & description morph between list and detail */
-::view-transition-old(article-title),
-::view-transition-new(article-title),
-::view-transition-old(article-description),
-::view-transition-new(article-description) {
-  animation-duration: 0.4s;
-  animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-/* Shared elements: lab project title & description (Home → lab pages) */
-::view-transition-old(lab-sandbox-title),
-::view-transition-new(lab-sandbox-title),
-::view-transition-old(lab-sandbox-description),
-::view-transition-new(lab-sandbox-description),
-::view-transition-old(lab-design-overlay-title),
-::view-transition-new(lab-design-overlay-title),
-::view-transition-old(lab-design-overlay-description),
-::view-transition-new(lab-design-overlay-description) {
-  animation-duration: 0.4s;
-  animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
 }

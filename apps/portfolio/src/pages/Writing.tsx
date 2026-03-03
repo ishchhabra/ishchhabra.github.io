@@ -1,47 +1,9 @@
 import { Page } from "../components/Page";
-import { ArticleCard } from "../components/writing/ArticleCard";
+import { ArticleCard } from "../components/writing/core/ArticleCard";
+import { ARTICLES } from "../lib/articles";
 
-export type Article = {
-  slug: string;
-  title: string;
-  description: string;
-  dateShort: string;
-  date: string;
-  dateISO: string;
-  readTime: string;
-  tags: string[];
-};
-
-export const ARTICLES: Article[] = [
-  {
-    slug: "pnpm-monorepo-scales",
-    title: "Building a Monorepo That Actually Scales",
-    description: "A practical guide to pnpm monorepos with true package isolation.",
-    dateShort: "Feb 2026",
-    date: "Feb 9, 2026",
-    dateISO: "2026-02-09",
-    readTime: "20 min read",
-    tags: ["pnpm", "monorepo", "typescript"],
-  },
-];
-
-const bySlug = new Map(ARTICLES.map((a) => [a.slug, a]));
-
-export function getArticle(slug: string): Article | undefined {
-  return bySlug.get(slug);
-}
-
-/** For home page: latest articles with href and card-friendly date */
-export function getWritingPreview(
-  limit = 5,
-): Array<{ title: string; description: string; href: string; date: string }> {
-  return ARTICLES.slice(0, limit).map((a) => ({
-    title: a.title,
-    description: a.description,
-    href: `/writing/${a.slug}`,
-    date: a.dateShort,
-  }));
-}
+export { getArticleBySlug } from "../lib/articles";
+export type { Article } from "../lib/articles";
 
 export function Writing() {
   return (
@@ -67,11 +29,9 @@ export function Writing() {
               <div className="flex items-baseline justify-between gap-4">
                 <ArticleCard.Title
                   as="h2"
-                  className="text-lg font-semibold text-zinc-700 transition-colors group-hover:text-zinc-900 dark:text-zinc-200 dark:group-hover:text-white"
-                  style={{ fontFamily: "var(--font-display)" }}
-                >
-                  {post.title}
-                </ArticleCard.Title>
+                  className="text-lg font-semibold text-zinc-700 transition-colors group-hover:text-zinc-900 dark:text-zinc-200 dark:group-hover:text-white [font-family:var(--font-display)]"
+                  slug={post.slug}
+                />
                 <ArticleCard.Meta className="flex shrink-0 items-center gap-3">
                   <span className="text-[11px] tabular-nums text-zinc-500 dark:text-zinc-600">
                     {post.readTime}
@@ -84,9 +44,8 @@ export function Writing() {
               <ArticleCard.Description
                 as="p"
                 className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-500"
-              >
-                {post.description}
-              </ArticleCard.Description>
+                slug={post.slug}
+              />
               <ArticleCard.Tags className="mt-2 flex gap-2">
                 {post.tags.map((tag) => (
                   <span

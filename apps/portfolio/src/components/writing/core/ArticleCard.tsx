@@ -1,8 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-
-const ARTICLE_TITLE_TRANSITION = "article-title";
-const ARTICLE_DESC_TRANSITION = "article-description";
+import { getArticleBySlug } from "../../../lib/articles";
 
 function ArticleCardLink({
   to,
@@ -23,20 +21,20 @@ function ArticleCardLink({
 function ArticleCardTitle({
   as: Component = "div",
   className,
-  style,
-  children,
+  slug,
 }: {
-  as?: "div" | "h2" | "h3";
+  as?: "div" | "h1" | "h2" | "h3";
   className?: string;
-  style?: React.CSSProperties;
-  children: ReactNode;
+  slug: string;
 }) {
+  const article = getArticleBySlug(slug);
+  if (!article) {
+    return null;
+  }
+
   return (
-    <Component
-      className={className}
-      style={{ ...style, viewTransitionName: ARTICLE_TITLE_TRANSITION }}
-    >
-      {children}
+    <Component className={className} style={{ viewTransitionName: `article-title-${slug}` }}>
+      {article.title}
     </Component>
   );
 }
@@ -44,20 +42,20 @@ function ArticleCardTitle({
 function ArticleCardDescription({
   as: Component = "div",
   className,
-  style,
-  children,
+  slug,
 }: {
   as?: "div" | "p";
   className?: string;
-  style?: React.CSSProperties;
-  children: ReactNode;
+  slug: string;
 }) {
+  const article = getArticleBySlug(slug);
+  if (!article) {
+    return null;
+  }
+
   return (
-    <Component
-      className={className}
-      style={{ ...style, viewTransitionName: ARTICLE_DESC_TRANSITION }}
-    >
-      {children}
+    <Component className={className} style={{ viewTransitionName: `article-description-${slug}` }}>
+      {article.description}
     </Component>
   );
 }

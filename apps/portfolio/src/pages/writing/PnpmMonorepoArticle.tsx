@@ -1,6 +1,6 @@
-import { Link } from "@tanstack/react-router";
 import { Page } from "../../components/Page";
 import { Surface } from "../../components/Surface";
+import { Article } from "../../components/writing/core/Article";
 import {
   A,
   Callout,
@@ -17,18 +17,18 @@ import {
   Strong,
   Table,
   UL,
-} from "../../components/writing/Prose";
-import { ScrollProgress } from "../../components/writing/ScrollProgress";
-import { TableOfContents } from "../../components/writing/TableOfContents";
+} from "../../components/writing/core/Prose";
+import { ScrollProgress } from "../../components/writing/core/ScrollProgress";
+import { TableOfContents } from "../../components/writing/core/TableOfContents";
+import { MonorepoStructureDiagram } from "../../components/writing/pnpm-monorepo/MonorepoStructureDiagram";
 import {
   InjectedDiagram,
   NodeResolutionDiagram,
-} from "../../components/writing/diagrams/SymlinkDiagram";
+} from "../../components/writing/pnpm-monorepo/SymlinkDiagram";
 import {
   SyncBeforeAfterDiagram,
   SyncLifecycleDiagram,
-} from "../../components/writing/diagrams/SyncLifecycleDiagram";
-import { MonorepoStructureDiagram } from "../../components/writing/diagrams/MonorepoStructureDiagram";
+} from "../../components/writing/pnpm-monorepo/SyncLifecycleDiagram";
 
 const tocItems = [
   { id: "the-bug", label: "The problem with shared packages" },
@@ -51,46 +51,7 @@ export function PnpmMonorepoArticle() {
     <>
       <ScrollProgress />
       <Page.Main variant="hero">
-        {/* Hero + content in one container for aligned left edges */}
-        <header className="max-w-4xl pb-8">
-          <Link
-            to="/writing"
-            className="mb-8 inline-flex items-center gap-1.5 text-[12px] text-zinc-500 transition-colors hover:text-zinc-700 dark:text-zinc-600 dark:hover:text-zinc-400"
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              aria-hidden
-            >
-              <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
-            Writing
-          </Link>
-          <Page.Hero
-            title="Building a Monorepo That Actually Scales"
-            viewTransitionName="article-title"
-          >
-            <p
-              className="mb-6 text-lg leading-relaxed text-zinc-600 dark:text-zinc-500"
-              style={{ viewTransitionName: "article-description" }}
-            >
-              A practical guide to pnpm monorepos with true package isolation.
-            </p>
-            <div className="flex items-center gap-4 text-[12px] text-zinc-500 dark:text-zinc-600">
-              <span>Ish Chhabra</span>
-              <span className="h-3 w-px bg-zinc-300 dark:bg-zinc-800" />
-              <span>Feb 9, 2026</span>
-              <span className="h-3 w-px bg-zinc-300 dark:bg-zinc-800" />
-              <span>20 min read</span>
-              <span className="h-3 w-px bg-zinc-300 dark:bg-zinc-800" />
-              <span>Written with AI</span>
-            </div>
-          </Page.Hero>
-        </header>
+        <Article.Header slug="pnpm-monorepo-scales" writtenWithAI />
 
         {/* Content grid: article + sidebar ToC */}
         <div className="flex gap-10 pt-8">

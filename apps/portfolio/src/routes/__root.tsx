@@ -60,7 +60,38 @@ export const Route = createRootRoute({
   component: RootComponent,
 });
 
+/** Path prefix for standalone demo routes (bare layout, no Header/Footer). */
+const DEMO_ROUTE_PREFIX = "/demos/";
+
+/** Minimal document for demo route so iframe can show only the demo (no Header/Footer). */
+function BareDocument({ children }: Readonly<{ children: ReactNode }>) {
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <HeadContent />
+      </head>
+      <body>
+        {children}
+        <Scripts />
+        <Analytics />
+        <SpeedInsights />
+      </body>
+    </html>
+  );
+}
+
 function RootComponent() {
+  const { pathname } = useLocation();
+  const isDemoRoute = pathname.startsWith(DEMO_ROUTE_PREFIX);
+
+  if (isDemoRoute) {
+    return (
+      <BareDocument>
+        <Outlet />
+      </BareDocument>
+    );
+  }
+
   return (
     <ThemeProvider>
       <RootDocument>

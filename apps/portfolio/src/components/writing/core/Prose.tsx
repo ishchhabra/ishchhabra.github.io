@@ -3,8 +3,9 @@
  * Designed for long-form technical content with a dark theme.
  */
 
-import { useState, type ReactNode } from "react";
-import { Surface } from "../Surface";
+import { highlight } from "sugar-high";
+import { useMemo, useState, type ReactNode } from "react";
+import { Surface } from "../../Surface";
 
 /* ------------------------------------------------------------------ */
 /*  Section heading                                                    */
@@ -76,27 +77,20 @@ export function Code({ children }: { children: ReactNode }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Code block with filename and optional highlight                    */
+/*  Shared helpers                                                     */
 /* ------------------------------------------------------------------ */
-export function CodeBlock({
-  filename,
-  language,
-  children,
-}: {
-  filename?: string;
-  language?: string;
-  children: string;
-}) {
+
+function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
 
   function handleCopy() {
-    void navigator.clipboard.writeText(children).then(() => {
+    void navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
   }
 
-  const copyButton = (
+  return (
     <button
       type="button"
       onClick={handleCopy}
@@ -131,47 +125,174 @@ export function CodeBlock({
       )}
     </button>
   );
+}
 
+function FileHeader({
+  filename,
+  language,
+  copyText,
+}: {
+  filename: string;
+  language?: string | undefined;
+  copyText: string;
+}) {
+  return (
+    <div className="flex items-center gap-2 border-b border-zinc-200 px-4 py-2 dark:border-white/5">
+      <svg
+        width="12"
+        height="12"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="text-zinc-500 dark:text-zinc-600"
+        aria-hidden
+      >
+        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+        <polyline points="14 2 14 8 20 8" />
+      </svg>
+      <span
+        className="text-[11px] text-zinc-600 dark:text-zinc-500"
+        style={{ fontFamily: "var(--font-mono)" }}
+      >
+        {filename}
+      </span>
+      <span className="ml-auto flex items-center gap-2">
+        {language && (
+          <span className="rounded bg-zinc-200 px-1.5 py-0.5 text-[10px] text-zinc-600 dark:bg-white/5">
+            {language}
+          </span>
+        )}
+        <CopyButton text={copyText} />
+      </span>
+    </div>
+  );
+}
+
+function HighlightedCode({ code, diff }: { code: string; diff?: boolean }) {
+  const html = useMemo(() => highlight(code), [code]);
+
+  const lines = code.split("\n");
+  const lineHtmls = lines.map((line) => {
+    const isDiffLine = line.startsWith("+") || line.startsWith("-");
+    const toHighlight = isDiffLine ? line.slice(1) : line;
+    return highlight(toHighlight);
+  });
+
+  if (!diff) {
+    return (
+      <pre className="overflow-x-auto p-4 text-[13px] leading-relaxed">
+        <code
+          style={{ fontFamily: "var(--font-mono)" }}
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      </pre>
+    );
+  }
+
+  return (
+    <pre className="overflow-x-auto py-4 text-[13px] leading-relaxed">
+      <code style={{ fontFamily: "var(--font-mono)" }}>
+        {lines.map((raw, i) => {
+          const isAdd = raw.startsWith("+");
+          const isRemove = raw.startsWith("-");
+          const lineClass = isAdd
+            ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+            : isRemove
+              ? "bg-red-500/10 text-red-700 dark:text-red-400 line-through decoration-red-400/30"
+              : "";
+
+          if (isAdd || isRemove) {
+            return (
+              <div key={i} className={`px-4 ${lineClass}`}>
+                <span
+                  className={`mr-2 select-none font-semibold ${isAdd ? "text-emerald-500" : "text-red-500"}`}
+                >
+                  {raw[0]}
+                </span>
+                <span dangerouslySetInnerHTML={{ __html: lineHtmls[i] ?? "" }} />
+              </div>
+            );
+          }
+
+          return (
+            <div key={i} className={`px-4 ${lineClass}`}>
+              <span dangerouslySetInnerHTML={{ __html: lineHtmls[i] || "&nbsp;" }} />
+            </div>
+          );
+        })}
+      </code>
+    </pre>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Code block with filename and syntax highlighting                   */
+/* ------------------------------------------------------------------ */
+export function CodeBlock({
+  filename,
+  language,
+  children,
+}: {
+  filename?: string;
+  language?: string;
+  children: string;
+}) {
   return (
     <Surface variant="code" className="group relative my-6 overflow-hidden">
       {filename ? (
-        <div className="flex items-center gap-2 border-b border-zinc-200 px-4 py-2 dark:border-white/5">
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            className="text-zinc-500 dark:text-zinc-600"
-            aria-hidden
-          >
-            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-            <polyline points="14 2 14 8 20 8" />
-          </svg>
-          <span
-            className="text-[11px] text-zinc-600 dark:text-zinc-500"
-            style={{ fontFamily: "var(--font-mono)" }}
-          >
-            {filename}
-          </span>
-          <span className="ml-auto flex items-center gap-2">
-            {language && (
-              <span className="rounded bg-zinc-200 px-1.5 py-0.5 text-[10px] text-zinc-600 dark:bg-white/5">
-                {language}
-              </span>
-            )}
-            {copyButton}
-          </span>
-        </div>
+        <FileHeader filename={filename} language={language} copyText={children} />
       ) : (
         <div className="absolute top-2.5 right-3 opacity-0 transition-opacity group-hover:opacity-100">
-          {copyButton}
+          <CopyButton text={children} />
         </div>
       )}
-      <pre className="overflow-x-auto p-4 text-[13px] leading-relaxed text-zinc-700 dark:text-zinc-300">
-        <code style={{ fontFamily: "var(--font-mono)" }}>{children}</code>
-      </pre>
+      <HighlightedCode code={children} />
+    </Surface>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Expandable code block: preview (optionally diff) + full toggle     */
+/* ------------------------------------------------------------------ */
+export function ExpandableCodeBlock({
+  filename,
+  language,
+  preview,
+  full,
+  diff = false,
+}: {
+  filename?: string;
+  language?: string;
+  preview: string;
+  full: string;
+  diff?: boolean;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <Surface variant="code" className="group relative my-6 overflow-hidden">
+      {filename && <FileHeader filename={filename} language={language} copyText={full} />}
+      <HighlightedCode code={expanded ? full : preview} diff={!expanded && diff} />
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        className="flex w-full items-center justify-center gap-1.5 border-t border-zinc-200/80 py-2 text-[11px] text-zinc-500 transition-colors hover:bg-zinc-200/30 hover:text-zinc-700 dark:border-white/5 dark:text-zinc-600 dark:hover:bg-white/3 dark:hover:text-zinc-300"
+      >
+        <svg
+          width="10"
+          height="10"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          className={`transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+          aria-hidden
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+        {expanded ? "Show relevant code" : "Show full file"}
+      </button>
     </Surface>
   );
 }

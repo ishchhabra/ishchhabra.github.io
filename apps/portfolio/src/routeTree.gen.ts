@@ -12,10 +12,19 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WritingIndexRouteImport } from './routes/writing/index'
+import { Route as WritingSsrThemingRouteImport } from './routes/writing/ssr-theming'
 import { Route as WritingPnpmMonorepoScalesRouteImport } from './routes/writing/pnpm-monorepo-scales'
 import { Route as LabSandboxRouteImport } from './routes/lab/sandbox'
 import { Route as LabDesignOverlayRouteImport } from './routes/lab/design-overlay'
+import { Route as DemosSsrThemingSimpleLocalStorageRouteImport } from './routes/demos/ssr-theming/simple-local-storage'
+import { Route as DemosSsrThemingSimpleCookieRouteImport } from './routes/demos/ssr-theming/simple-cookie'
 import { Route as ApiAuthSplatRouteImport } from './routes/api.auth.$'
+import { Route as DemosSsrThemingCookieOptimisticClientCacheRouteRouteImport } from './routes/demos/ssr-theming/cookie-optimistic-client-cache/route'
+import { Route as DemosSsrThemingCookieOptimisticRouteRouteImport } from './routes/demos/ssr-theming/cookie-optimistic/route'
+import { Route as DemosSsrThemingCookieOptimisticIndexRouteImport } from './routes/demos/ssr-theming/cookie-optimistic/index'
+import { Route as DemosSsrThemingCookieOptimisticClientCacheIndexRouteImport } from './routes/demos/ssr-theming/cookie-optimistic-client-cache/index'
+import { Route as DemosSsrThemingCookieOptimisticAboutRouteImport } from './routes/demos/ssr-theming/cookie-optimistic/about'
+import { Route as DemosSsrThemingCookieOptimisticClientCacheAboutRouteImport } from './routes/demos/ssr-theming/cookie-optimistic-client-cache/about'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -30,6 +39,11 @@ const IndexRoute = IndexRouteImport.update({
 const WritingIndexRoute = WritingIndexRouteImport.update({
   id: '/writing/',
   path: '/writing/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WritingSsrThemingRoute = WritingSsrThemingRouteImport.update({
+  id: '/writing/ssr-theming',
+  path: '/writing/ssr-theming',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WritingPnpmMonorepoScalesRoute =
@@ -48,11 +62,59 @@ const LabDesignOverlayRoute = LabDesignOverlayRouteImport.update({
   path: '/lab/design-overlay',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DemosSsrThemingSimpleLocalStorageRoute =
+  DemosSsrThemingSimpleLocalStorageRouteImport.update({
+    id: '/demos/ssr-theming/simple-local-storage',
+    path: '/demos/ssr-theming/simple-local-storage',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DemosSsrThemingSimpleCookieRoute =
+  DemosSsrThemingSimpleCookieRouteImport.update({
+    id: '/demos/ssr-theming/simple-cookie',
+    path: '/demos/ssr-theming/simple-cookie',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DemosSsrThemingCookieOptimisticClientCacheRouteRoute =
+  DemosSsrThemingCookieOptimisticClientCacheRouteRouteImport.update({
+    id: '/demos/ssr-theming/cookie-optimistic-client-cache',
+    path: '/demos/ssr-theming/cookie-optimistic-client-cache',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DemosSsrThemingCookieOptimisticRouteRoute =
+  DemosSsrThemingCookieOptimisticRouteRouteImport.update({
+    id: '/demos/ssr-theming/cookie-optimistic',
+    path: '/demos/ssr-theming/cookie-optimistic',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DemosSsrThemingCookieOptimisticIndexRoute =
+  DemosSsrThemingCookieOptimisticIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => DemosSsrThemingCookieOptimisticRouteRoute,
+  } as any)
+const DemosSsrThemingCookieOptimisticClientCacheIndexRoute =
+  DemosSsrThemingCookieOptimisticClientCacheIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => DemosSsrThemingCookieOptimisticClientCacheRouteRoute,
+  } as any)
+const DemosSsrThemingCookieOptimisticAboutRoute =
+  DemosSsrThemingCookieOptimisticAboutRouteImport.update({
+    id: '/about',
+    path: '/about',
+    getParentRoute: () => DemosSsrThemingCookieOptimisticRouteRoute,
+  } as any)
+const DemosSsrThemingCookieOptimisticClientCacheAboutRoute =
+  DemosSsrThemingCookieOptimisticClientCacheAboutRouteImport.update({
+    id: '/about',
+    path: '/about',
+    getParentRoute: () => DemosSsrThemingCookieOptimisticClientCacheRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -60,8 +122,17 @@ export interface FileRoutesByFullPath {
   '/lab/design-overlay': typeof LabDesignOverlayRoute
   '/lab/sandbox': typeof LabSandboxRoute
   '/writing/pnpm-monorepo-scales': typeof WritingPnpmMonorepoScalesRoute
+  '/writing/ssr-theming': typeof WritingSsrThemingRoute
   '/writing/': typeof WritingIndexRoute
+  '/demos/ssr-theming/cookie-optimistic': typeof DemosSsrThemingCookieOptimisticRouteRouteWithChildren
+  '/demos/ssr-theming/cookie-optimistic-client-cache': typeof DemosSsrThemingCookieOptimisticClientCacheRouteRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/demos/ssr-theming/simple-cookie': typeof DemosSsrThemingSimpleCookieRoute
+  '/demos/ssr-theming/simple-local-storage': typeof DemosSsrThemingSimpleLocalStorageRoute
+  '/demos/ssr-theming/cookie-optimistic-client-cache/about': typeof DemosSsrThemingCookieOptimisticClientCacheAboutRoute
+  '/demos/ssr-theming/cookie-optimistic/about': typeof DemosSsrThemingCookieOptimisticAboutRoute
+  '/demos/ssr-theming/cookie-optimistic-client-cache/': typeof DemosSsrThemingCookieOptimisticClientCacheIndexRoute
+  '/demos/ssr-theming/cookie-optimistic/': typeof DemosSsrThemingCookieOptimisticIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -69,8 +140,15 @@ export interface FileRoutesByTo {
   '/lab/design-overlay': typeof LabDesignOverlayRoute
   '/lab/sandbox': typeof LabSandboxRoute
   '/writing/pnpm-monorepo-scales': typeof WritingPnpmMonorepoScalesRoute
+  '/writing/ssr-theming': typeof WritingSsrThemingRoute
   '/writing': typeof WritingIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/demos/ssr-theming/simple-cookie': typeof DemosSsrThemingSimpleCookieRoute
+  '/demos/ssr-theming/simple-local-storage': typeof DemosSsrThemingSimpleLocalStorageRoute
+  '/demos/ssr-theming/cookie-optimistic-client-cache/about': typeof DemosSsrThemingCookieOptimisticClientCacheAboutRoute
+  '/demos/ssr-theming/cookie-optimistic/about': typeof DemosSsrThemingCookieOptimisticAboutRoute
+  '/demos/ssr-theming/cookie-optimistic-client-cache': typeof DemosSsrThemingCookieOptimisticClientCacheIndexRoute
+  '/demos/ssr-theming/cookie-optimistic': typeof DemosSsrThemingCookieOptimisticIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -79,8 +157,17 @@ export interface FileRoutesById {
   '/lab/design-overlay': typeof LabDesignOverlayRoute
   '/lab/sandbox': typeof LabSandboxRoute
   '/writing/pnpm-monorepo-scales': typeof WritingPnpmMonorepoScalesRoute
+  '/writing/ssr-theming': typeof WritingSsrThemingRoute
   '/writing/': typeof WritingIndexRoute
+  '/demos/ssr-theming/cookie-optimistic': typeof DemosSsrThemingCookieOptimisticRouteRouteWithChildren
+  '/demos/ssr-theming/cookie-optimistic-client-cache': typeof DemosSsrThemingCookieOptimisticClientCacheRouteRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/demos/ssr-theming/simple-cookie': typeof DemosSsrThemingSimpleCookieRoute
+  '/demos/ssr-theming/simple-local-storage': typeof DemosSsrThemingSimpleLocalStorageRoute
+  '/demos/ssr-theming/cookie-optimistic-client-cache/about': typeof DemosSsrThemingCookieOptimisticClientCacheAboutRoute
+  '/demos/ssr-theming/cookie-optimistic/about': typeof DemosSsrThemingCookieOptimisticAboutRoute
+  '/demos/ssr-theming/cookie-optimistic-client-cache/': typeof DemosSsrThemingCookieOptimisticClientCacheIndexRoute
+  '/demos/ssr-theming/cookie-optimistic/': typeof DemosSsrThemingCookieOptimisticIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -90,8 +177,17 @@ export interface FileRouteTypes {
     | '/lab/design-overlay'
     | '/lab/sandbox'
     | '/writing/pnpm-monorepo-scales'
+    | '/writing/ssr-theming'
     | '/writing/'
+    | '/demos/ssr-theming/cookie-optimistic'
+    | '/demos/ssr-theming/cookie-optimistic-client-cache'
     | '/api/auth/$'
+    | '/demos/ssr-theming/simple-cookie'
+    | '/demos/ssr-theming/simple-local-storage'
+    | '/demos/ssr-theming/cookie-optimistic-client-cache/about'
+    | '/demos/ssr-theming/cookie-optimistic/about'
+    | '/demos/ssr-theming/cookie-optimistic-client-cache/'
+    | '/demos/ssr-theming/cookie-optimistic/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -99,8 +195,15 @@ export interface FileRouteTypes {
     | '/lab/design-overlay'
     | '/lab/sandbox'
     | '/writing/pnpm-monorepo-scales'
+    | '/writing/ssr-theming'
     | '/writing'
     | '/api/auth/$'
+    | '/demos/ssr-theming/simple-cookie'
+    | '/demos/ssr-theming/simple-local-storage'
+    | '/demos/ssr-theming/cookie-optimistic-client-cache/about'
+    | '/demos/ssr-theming/cookie-optimistic/about'
+    | '/demos/ssr-theming/cookie-optimistic-client-cache'
+    | '/demos/ssr-theming/cookie-optimistic'
   id:
     | '__root__'
     | '/'
@@ -108,8 +211,17 @@ export interface FileRouteTypes {
     | '/lab/design-overlay'
     | '/lab/sandbox'
     | '/writing/pnpm-monorepo-scales'
+    | '/writing/ssr-theming'
     | '/writing/'
+    | '/demos/ssr-theming/cookie-optimistic'
+    | '/demos/ssr-theming/cookie-optimistic-client-cache'
     | '/api/auth/$'
+    | '/demos/ssr-theming/simple-cookie'
+    | '/demos/ssr-theming/simple-local-storage'
+    | '/demos/ssr-theming/cookie-optimistic-client-cache/about'
+    | '/demos/ssr-theming/cookie-optimistic/about'
+    | '/demos/ssr-theming/cookie-optimistic-client-cache/'
+    | '/demos/ssr-theming/cookie-optimistic/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -118,8 +230,13 @@ export interface RootRouteChildren {
   LabDesignOverlayRoute: typeof LabDesignOverlayRoute
   LabSandboxRoute: typeof LabSandboxRoute
   WritingPnpmMonorepoScalesRoute: typeof WritingPnpmMonorepoScalesRoute
+  WritingSsrThemingRoute: typeof WritingSsrThemingRoute
   WritingIndexRoute: typeof WritingIndexRoute
+  DemosSsrThemingCookieOptimisticRouteRoute: typeof DemosSsrThemingCookieOptimisticRouteRouteWithChildren
+  DemosSsrThemingCookieOptimisticClientCacheRouteRoute: typeof DemosSsrThemingCookieOptimisticClientCacheRouteRouteWithChildren
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  DemosSsrThemingSimpleCookieRoute: typeof DemosSsrThemingSimpleCookieRoute
+  DemosSsrThemingSimpleLocalStorageRoute: typeof DemosSsrThemingSimpleLocalStorageRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -145,6 +262,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WritingIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/writing/ssr-theming': {
+      id: '/writing/ssr-theming'
+      path: '/writing/ssr-theming'
+      fullPath: '/writing/ssr-theming'
+      preLoaderRoute: typeof WritingSsrThemingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/writing/pnpm-monorepo-scales': {
       id: '/writing/pnpm-monorepo-scales'
       path: '/writing/pnpm-monorepo-scales'
@@ -166,6 +290,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LabDesignOverlayRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/demos/ssr-theming/simple-local-storage': {
+      id: '/demos/ssr-theming/simple-local-storage'
+      path: '/demos/ssr-theming/simple-local-storage'
+      fullPath: '/demos/ssr-theming/simple-local-storage'
+      preLoaderRoute: typeof DemosSsrThemingSimpleLocalStorageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demos/ssr-theming/simple-cookie': {
+      id: '/demos/ssr-theming/simple-cookie'
+      path: '/demos/ssr-theming/simple-cookie'
+      fullPath: '/demos/ssr-theming/simple-cookie'
+      preLoaderRoute: typeof DemosSsrThemingSimpleCookieRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -173,8 +311,86 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/demos/ssr-theming/cookie-optimistic-client-cache': {
+      id: '/demos/ssr-theming/cookie-optimistic-client-cache'
+      path: '/demos/ssr-theming/cookie-optimistic-client-cache'
+      fullPath: '/demos/ssr-theming/cookie-optimistic-client-cache'
+      preLoaderRoute: typeof DemosSsrThemingCookieOptimisticClientCacheRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demos/ssr-theming/cookie-optimistic': {
+      id: '/demos/ssr-theming/cookie-optimistic'
+      path: '/demos/ssr-theming/cookie-optimistic'
+      fullPath: '/demos/ssr-theming/cookie-optimistic'
+      preLoaderRoute: typeof DemosSsrThemingCookieOptimisticRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demos/ssr-theming/cookie-optimistic/': {
+      id: '/demos/ssr-theming/cookie-optimistic/'
+      path: '/'
+      fullPath: '/demos/ssr-theming/cookie-optimistic/'
+      preLoaderRoute: typeof DemosSsrThemingCookieOptimisticIndexRouteImport
+      parentRoute: typeof DemosSsrThemingCookieOptimisticRouteRoute
+    }
+    '/demos/ssr-theming/cookie-optimistic-client-cache/': {
+      id: '/demos/ssr-theming/cookie-optimistic-client-cache/'
+      path: '/'
+      fullPath: '/demos/ssr-theming/cookie-optimistic-client-cache/'
+      preLoaderRoute: typeof DemosSsrThemingCookieOptimisticClientCacheIndexRouteImport
+      parentRoute: typeof DemosSsrThemingCookieOptimisticClientCacheRouteRoute
+    }
+    '/demos/ssr-theming/cookie-optimistic/about': {
+      id: '/demos/ssr-theming/cookie-optimistic/about'
+      path: '/about'
+      fullPath: '/demos/ssr-theming/cookie-optimistic/about'
+      preLoaderRoute: typeof DemosSsrThemingCookieOptimisticAboutRouteImport
+      parentRoute: typeof DemosSsrThemingCookieOptimisticRouteRoute
+    }
+    '/demos/ssr-theming/cookie-optimistic-client-cache/about': {
+      id: '/demos/ssr-theming/cookie-optimistic-client-cache/about'
+      path: '/about'
+      fullPath: '/demos/ssr-theming/cookie-optimistic-client-cache/about'
+      preLoaderRoute: typeof DemosSsrThemingCookieOptimisticClientCacheAboutRouteImport
+      parentRoute: typeof DemosSsrThemingCookieOptimisticClientCacheRouteRoute
+    }
   }
 }
+
+interface DemosSsrThemingCookieOptimisticRouteRouteChildren {
+  DemosSsrThemingCookieOptimisticAboutRoute: typeof DemosSsrThemingCookieOptimisticAboutRoute
+  DemosSsrThemingCookieOptimisticIndexRoute: typeof DemosSsrThemingCookieOptimisticIndexRoute
+}
+
+const DemosSsrThemingCookieOptimisticRouteRouteChildren: DemosSsrThemingCookieOptimisticRouteRouteChildren =
+  {
+    DemosSsrThemingCookieOptimisticAboutRoute:
+      DemosSsrThemingCookieOptimisticAboutRoute,
+    DemosSsrThemingCookieOptimisticIndexRoute:
+      DemosSsrThemingCookieOptimisticIndexRoute,
+  }
+
+const DemosSsrThemingCookieOptimisticRouteRouteWithChildren =
+  DemosSsrThemingCookieOptimisticRouteRoute._addFileChildren(
+    DemosSsrThemingCookieOptimisticRouteRouteChildren,
+  )
+
+interface DemosSsrThemingCookieOptimisticClientCacheRouteRouteChildren {
+  DemosSsrThemingCookieOptimisticClientCacheAboutRoute: typeof DemosSsrThemingCookieOptimisticClientCacheAboutRoute
+  DemosSsrThemingCookieOptimisticClientCacheIndexRoute: typeof DemosSsrThemingCookieOptimisticClientCacheIndexRoute
+}
+
+const DemosSsrThemingCookieOptimisticClientCacheRouteRouteChildren: DemosSsrThemingCookieOptimisticClientCacheRouteRouteChildren =
+  {
+    DemosSsrThemingCookieOptimisticClientCacheAboutRoute:
+      DemosSsrThemingCookieOptimisticClientCacheAboutRoute,
+    DemosSsrThemingCookieOptimisticClientCacheIndexRoute:
+      DemosSsrThemingCookieOptimisticClientCacheIndexRoute,
+  }
+
+const DemosSsrThemingCookieOptimisticClientCacheRouteRouteWithChildren =
+  DemosSsrThemingCookieOptimisticClientCacheRouteRoute._addFileChildren(
+    DemosSsrThemingCookieOptimisticClientCacheRouteRouteChildren,
+  )
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -182,8 +398,16 @@ const rootRouteChildren: RootRouteChildren = {
   LabDesignOverlayRoute: LabDesignOverlayRoute,
   LabSandboxRoute: LabSandboxRoute,
   WritingPnpmMonorepoScalesRoute: WritingPnpmMonorepoScalesRoute,
+  WritingSsrThemingRoute: WritingSsrThemingRoute,
   WritingIndexRoute: WritingIndexRoute,
+  DemosSsrThemingCookieOptimisticRouteRoute:
+    DemosSsrThemingCookieOptimisticRouteRouteWithChildren,
+  DemosSsrThemingCookieOptimisticClientCacheRouteRoute:
+    DemosSsrThemingCookieOptimisticClientCacheRouteRouteWithChildren,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  DemosSsrThemingSimpleCookieRoute: DemosSsrThemingSimpleCookieRoute,
+  DemosSsrThemingSimpleLocalStorageRoute:
+    DemosSsrThemingSimpleLocalStorageRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
