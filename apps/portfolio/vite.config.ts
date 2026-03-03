@@ -69,5 +69,21 @@ export default defineConfig(async () => {
     ssr: {
       noExternal: workspacePackageNames,
     },
+    // TanStack Start virtual modules and server-only Node modules are not available
+    // in the worker build context. Externalize them so the worker bundle doesn't fail.
+    worker: {
+      format: "es",
+      rollupOptions: {
+        external: [
+          /^tanstack-start-manifest:/,
+          /^tanstack-start-injected-head-scripts:/,
+          /^@tanstack\/react-start/,
+          /^@tanstack\/start-/,
+          "node:async_hooks",
+          "node:stream",
+          "node:stream/web",
+        ],
+      },
+    },
   };
 });
