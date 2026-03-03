@@ -3,7 +3,7 @@
  * Designed for long-form technical content with a dark theme.
  */
 
-import { highlight } from "sugar-high";
+import { highlightCode } from "../../../lib/shiki";
 import { useMemo, useState, type ReactNode } from "react";
 import { Surface } from "../../Surface";
 
@@ -169,14 +169,14 @@ function FileHeader({
   );
 }
 
-function HighlightedCode({ code, diff }: { code: string; diff?: boolean }) {
-  const html = useMemo(() => highlight(code), [code]);
+function HighlightedCode({ code, diff, lang }: { code: string; diff?: boolean | undefined; lang?: string | undefined }) {
+  const html = useMemo(() => highlightCode(code, lang), [code, lang]);
 
   const lines = code.split("\n");
   const lineHtmls = lines.map((line) => {
     const isDiffLine = line.startsWith("+") || line.startsWith("-");
     const toHighlight = isDiffLine ? line.slice(1) : line;
-    return highlight(toHighlight);
+    return highlightCode(toHighlight, lang);
   });
 
   if (!diff) {
@@ -247,7 +247,7 @@ export function CodeBlock({
           <CopyButton text={children} />
         </div>
       )}
-      <HighlightedCode code={children} />
+      <HighlightedCode code={children} lang={language} />
     </Surface>
   );
 }
@@ -273,7 +273,7 @@ export function ExpandableCodeBlock({
   return (
     <Surface variant="code" className="group relative my-6 overflow-hidden">
       {filename && <FileHeader filename={filename} language={language} copyText={full} />}
-      <HighlightedCode code={expanded ? full : preview} diff={!expanded && diff} />
+      <HighlightedCode code={expanded ? full : preview} diff={!expanded && diff} lang={language} />
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}

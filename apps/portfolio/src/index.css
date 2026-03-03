@@ -37,32 +37,30 @@
   --font-body: "DM Sans", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
-  /* sugar-high syntax highlighting — light */
-  --sh-class: #2d5e9d;
-  --sh-identifier: #354150;
-  --sh-sign: #8996a3;
-  --sh-property: #0550ae;
-  --sh-entity: #249a97;
-  --sh-jsxliterals: #6266d1;
-  --sh-string: #00a99a;
-  --sh-keyword: #f47067;
-  --sh-comment: #a19595;
-  --sh-number: #0550ae;
-  --sh-null: #7c8694;
+  /* shiki css-variables theme — light */
+  --shiki-foreground: #354150;
+  --shiki-token-constant: #2d5e9d;
+  --shiki-token-string: #00a99a;
+  --shiki-token-comment: #a19595;
+  --shiki-token-keyword: #f47067;
+  --shiki-token-parameter: #354150;
+  --shiki-token-function: #0550ae;
+  --shiki-token-string-expression: #00a99a;
+  --shiki-token-punctuation: #8996a3;
+  --shiki-token-link: #249a97;
 }
 
 .dark {
-  --sh-class: #4c97f8;
-  --sh-identifier: #b4c2d0;
-  --sh-sign: #8996a3;
-  --sh-property: #7db2f9;
-  --sh-entity: #5cc9c5;
-  --sh-jsxliterals: #9fa1fe;
-  --sh-string: #0fa295;
-  --sh-keyword: #f47067;
-  --sh-comment: #575962;
-  --sh-number: #6cb6ff;
-  --sh-null: #7c8694;
+  --shiki-foreground: #b4c2d0;
+  --shiki-token-constant: #4c97f8;
+  --shiki-token-string: #0fa295;
+  --shiki-token-comment: #575962;
+  --shiki-token-keyword: #f47067;
+  --shiki-token-parameter: #b4c2d0;
+  --shiki-token-function: #7db2f9;
+  --shiki-token-string-expression: #0fa295;
+  --shiki-token-punctuation: #8996a3;
+  --shiki-token-link: #5cc9c5;
 }
 
 html {
