@@ -5,14 +5,14 @@ import react from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { defineConfig } from "vite";
+import { type UserConfig, defineConfig } from "vite";
 import tsConfigPaths from "vite-tsconfig-paths";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = path.resolve(__dirname, "../..");
 
 // https://vite.dev/config/
-export default defineConfig(async () => {
+export default defineConfig(async (): Promise<UserConfig> => {
   const workspacePackages = await findWorkspacePackagesNoCheck(workspaceRoot);
   const selfDir = path.resolve(__dirname);
   const workspacePackageNames = workspacePackages
