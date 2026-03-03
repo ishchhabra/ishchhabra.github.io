@@ -169,7 +169,15 @@ function FileHeader({
   );
 }
 
-function HighlightedCode({ code, diff, lang }: { code: string; diff?: boolean | undefined; lang?: string | undefined }) {
+function HighlightedCode({
+  code,
+  diff,
+  lang,
+}: {
+  code: string;
+  diff?: boolean | undefined;
+  lang?: string | undefined;
+}) {
   const html = useMemo(() => highlightCode(code, lang), [code, lang]);
 
   const lines = code.split("\n");
@@ -217,6 +225,10 @@ function HighlightedCode({ code, diff, lang }: { code: string; diff?: boolean | 
 
           return (
             <div key={i} className={`px-4 ${lineClass}`}>
+              {/* Invisible prefix to align with +/- diff lines */}
+              <span className="mr-2 inline-block w-[1ch] select-none" aria-hidden>
+                {" "}
+              </span>
               <span dangerouslySetInnerHTML={{ __html: lineHtmls[i] || "&nbsp;" }} />
             </div>
           );

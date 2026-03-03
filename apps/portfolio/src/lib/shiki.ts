@@ -1,10 +1,10 @@
-import { createHighlighterCoreSync, createCssVariablesTheme } from "shiki/core";
+import { createCssVariablesTheme, createHighlighterCoreSync } from "shiki/core";
 import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
-import tsx from "shiki/langs/tsx.mjs";
-import typescript from "shiki/langs/typescript.mjs";
 import javascript from "shiki/langs/javascript.mjs";
 import json from "shiki/langs/json.mjs";
 import shellscript from "shiki/langs/shellscript.mjs";
+import tsx from "shiki/langs/tsx.mjs";
+import typescript from "shiki/langs/typescript.mjs";
 
 const cssVarsTheme = createCssVariablesTheme({
   name: "css-variables",
@@ -24,17 +24,31 @@ const langAliases: Record<string, string> = {
   js: "javascript",
 };
 
-export function highlightCode(code: string, lang?: string): string {
+function resolveLang(lang?: string): string {
   const resolved = lang ? (langAliases[lang] ?? lang) : "tsx";
-  const loadedLangs = highlighter.getLoadedLanguages();
+  return highlighter.getLoadedLanguages().includes(resolved) ? resolved : "plaintext";
+}
 
-  const language = loadedLangs.includes(resolved) ? resolved : "plaintext";
+function tokensToHtml(tokens: { content: string; color?: string }[]): string {
+  return tokens
+    .map((t) => {
+      const escaped = t.content.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      return t.color ? `<span style="color:${t.color}">${escaped}</span>` : escaped;
+    })
+    .join("");
+}
 
-  const html = highlighter.codeToHtml(code, {
+/**
+ * Highlight code and return flat inline HTML (colored spans only, no wrappers).
+ * Drop-in replacement for sugar-high's `highlight()`.
+ */
+export function highlightCode(code: string, lang?: string): string {
+  const language = resolveLang(lang);
+
+  const { tokens } = highlighter.codeToTokens(code, {
     lang: language,
     theme: "css-variables",
   });
 
-  // Strip outer <pre><code>...</code></pre> wrapper since HighlightedCode provides its own
-  return html.replace(/^<pre[^>]*><code[^>]*>/, "").replace(/<\/code><\/pre>$/, "");
+  return tokens.map((line) => tokensToHtml(line)).join("\n");
 }
