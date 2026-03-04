@@ -71,7 +71,7 @@ function ArticleFooter({ message }: { message?: string }) {
       {message && <p className="mb-2 text-sm text-zinc-600 dark:text-zinc-400">{message}</p>}
       <p className="text-[13px] text-zinc-500 dark:text-zinc-600">
         Found an issue? <A href="https://github.com/ishchhabra/ishchhabra.github.io">Open a PR</A>{" "}
-        or <A href="mailto:ishchhabra12@gmail.com">send me an email</A>.
+        or <A href="mailto:hello@ishchhabra.com">send me an email</A>.
       </p>
     </Surface>
   );
