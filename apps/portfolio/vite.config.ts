@@ -38,7 +38,7 @@ export default defineConfig(async (): Promise<UserConfig> => {
         prerender: { enabled: process.env["NITRO_PRESET"] !== "vercel" },
         sitemap: {
           enabled: process.env["NITRO_PRESET"] !== "vercel",
-          host: "https://ishchhabra.com",
+          host: process.env["VITE_SITE_URL"] as string,
         },
       }),
       nitro({

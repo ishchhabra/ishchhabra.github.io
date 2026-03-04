@@ -3,8 +3,8 @@
  * Single source of truth to avoid duplicating meta across routes.
  */
 
-/** Production site URL for canonicals and JSON-LD. */
-export const SITE_BASE_URL = "https://ishchhabra.com";
+/** Site URL for canonicals and JSON-LD. Set via VITE_SITE_URL env var. */
+export const SITE_BASE_URL = import.meta.env["VITE_SITE_URL"] as string;
 
 export const SITE_TITLE = "Ish Chhabra";
 
