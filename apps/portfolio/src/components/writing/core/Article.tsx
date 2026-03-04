@@ -65,10 +65,12 @@ export function ArticleHeader({
   );
 }
 
-function ArticleFooter({ message }: { message?: string }) {
+function ArticleFooter() {
   return (
     <Surface className="mt-16 p-8 text-center">
-      {message && <p className="mb-2 text-sm text-zinc-600 dark:text-zinc-400">{message}</p>}
+      <p className="mb-2 text-sm text-zinc-600 dark:text-zinc-400">
+        That's all. Hope this saves you the hours of debugging that I went through.
+      </p>
       <p className="text-[13px] text-zinc-500 dark:text-zinc-600">
         Found an issue? <A href="https://github.com/ishchhabra/ishchhabra.github.io">Open a PR</A>{" "}
         or <A href="mailto:hello@ishchhabra.com">send me an email</A>.

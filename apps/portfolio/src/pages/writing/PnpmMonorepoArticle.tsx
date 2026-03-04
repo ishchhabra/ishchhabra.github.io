@@ -566,7 +566,7 @@ pnpm --filter @packages/ui build`}</CodeBlock>
               </LI>
             </UL>
 
-            <Article.Footer message="That's all. Hope this saves you the hours of debugging that I went through." />
+            <Article.Footer />
           </article>
 
           {/* Sidebar: Table of Contents */}
