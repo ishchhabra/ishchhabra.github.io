@@ -1,7 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { Page } from "../../Page";
 import { getArticleBySlug } from "../../../lib/articles";
+import { Page } from "../../Page";
+import { Surface } from "../../Surface";
 import { ArticleCard } from "./ArticleCard";
+import { A } from "./Prose";
 
 const separator = <span className="h-3 w-px bg-zinc-300 dark:bg-zinc-800" aria-hidden />;
 
@@ -63,6 +65,19 @@ export function ArticleHeader({
   );
 }
 
+function ArticleFooter({ message }: { message?: string }) {
+  return (
+    <Surface className="mt-16 p-8 text-center">
+      {message && <p className="mb-2 text-sm text-zinc-600 dark:text-zinc-400">{message}</p>}
+      <p className="text-[13px] text-zinc-500 dark:text-zinc-600">
+        Found an issue? <A href="https://github.com/ishchhabra/ishchhabra.github.io">Open a PR</A>{" "}
+        or <A href="mailto:ishchhabra12@gmail.com">send me an email</A>.
+      </p>
+    </Surface>
+  );
+}
+
 export const Article = {
   Header: ArticleHeader,
+  Footer: ArticleFooter,
 };

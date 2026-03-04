@@ -761,13 +761,7 @@ export const Route = createRootRoute({
               </LI>
             </UL>
 
-            <div className="mt-16 rounded-xl border border-zinc-200 bg-zinc-50 p-8 text-center dark:border-white/5 dark:bg-white/2">
-              <p className="text-[13px] text-zinc-500 dark:text-zinc-600">
-                Found an issue?{" "}
-                <A href="https://github.com/ishchhabra/ishchhabra.github.io">Open a PR</A> or{" "}
-                <A href="mailto:ishchhabra12@gmail.com">send me an email</A>.
-              </p>
-            </div>
+            <Article.Footer />
           </article>
 
           <TableOfContents items={tocItems} />

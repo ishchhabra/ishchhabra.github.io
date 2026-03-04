@@ -1,5 +1,4 @@
 import { Page } from "../../components/Page";
-import { Surface } from "../../components/Surface";
 import { Article } from "../../components/writing/core/Article";
 import {
   A,
@@ -567,16 +566,7 @@ pnpm --filter @packages/ui build`}</CodeBlock>
               </LI>
             </UL>
 
-            <Surface className="mt-16 p-8 text-center">
-              <p className="mb-2 text-sm text-zinc-600 dark:text-zinc-400">
-                That's all. Hope this saves you the hours of debugging that I went through.
-              </p>
-              <p className="text-[13px] text-zinc-500 dark:text-zinc-600">
-                Found an issue?{" "}
-                <A href="https://github.com/ishchhabra/ishchhabra.github.io">Open a PR</A> or{" "}
-                <A href="mailto:ishchhabra12@gmail.com">send me an email</A>.
-              </p>
-            </Surface>
+            <Article.Footer message="That's all. Hope this saves you the hours of debugging that I went through." />
           </article>
 
           {/* Sidebar: Table of Contents */}
