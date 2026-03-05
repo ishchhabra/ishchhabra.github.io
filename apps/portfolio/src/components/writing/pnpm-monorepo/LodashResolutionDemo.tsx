@@ -295,7 +295,7 @@ export function LodashResolutionDemo() {
   const { theme } = useTheme();
   const v = VS[theme];
 
-  const wsRef = useRef<ReturnType<typeof createWorkspace> | null>(null);
+  const [ws, setWs] = useState<ReturnType<typeof createWorkspace> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeWs, setActiveWs] = useState<Workspace>("symlink");
@@ -313,10 +313,10 @@ export function LodashResolutionDemo() {
     fetchExampleFiles()
       .then((files) => {
         if (cancelled) return;
-        const ws = createWorkspace({ cwd: "/" });
-        populateWorkspace(ws.volume, ROOT.symlink, "symlink", files.symlink);
-        populateWorkspace(ws.volume, ROOT.injected, "injected", files.injected);
-        wsRef.current = ws;
+        const workspace = createWorkspace({ cwd: "/" });
+        populateWorkspace(workspace.volume, ROOT.symlink, "symlink", files.symlink);
+        populateWorkspace(workspace.volume, ROOT.injected, "injected", files.injected);
+        setWs(workspace);
         setTreeVersion((v) => v + 1);
         setLoading(false);
       })
@@ -332,21 +332,18 @@ export function LodashResolutionDemo() {
   }, []);
 
   const trees = useMemo(() => {
-    const ws = wsRef.current;
     if (!ws) return { symlink: [], injected: [] };
     return {
       symlink: buildTree(ws.volume, ROOT.symlink),
       injected: buildTree(ws.volume, ROOT.injected),
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [treeVersion]);
+  }, [ws, treeVersion]);
 
   const tree = trees[activeWs];
 
   const defaultFile = `${ROOT[activeWs]}/packages/example-lib/index.js`;
 
   const highlightedFile = useMemo(() => {
-    const ws = wsRef.current;
     if (!ws) return null;
     const file = selectedFile ?? defaultFile;
     try {
@@ -363,7 +360,7 @@ export function LodashResolutionDemo() {
     } catch {
       return null;
     }
-  }, [selectedFile, defaultFile, treeVersion]);
+  }, [ws, selectedFile, defaultFile, treeVersion]);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -375,27 +372,29 @@ export function LodashResolutionDemo() {
     setSelectedFile(null);
   }, []);
 
-  const executeCode = useCallback((code: string, ws: Workspace): HistoryEntry => {
-    const workspace = wsRef.current;
-    if (!workspace) return { input: code, output: "Not loaded yet", isError: true, workspace: ws };
-    workspace.engine.clearCache();
-    try {
-      const res = workspace.execute(`module.exports = (${code})`, `${APP_CWD[ws]}/__repl__.js`);
-      return {
-        input: code,
-        output: formatValue((res as { exports: unknown }).exports),
-        isError: false,
-        workspace: ws,
-      };
-    } catch (err: unknown) {
-      return {
-        input: code,
-        output: err instanceof Error ? err.message : String(err),
-        isError: true,
-        workspace: ws,
-      };
-    }
-  }, []);
+  const executeCode = useCallback(
+    (code: string, wsType: Workspace): HistoryEntry => {
+      if (!ws) return { input: code, output: "Not loaded yet", isError: true, workspace: wsType };
+      ws.engine.clearCache();
+      try {
+        const res = ws.execute(`module.exports = (${code})`, `${APP_CWD[wsType]}/__repl__.js`);
+        return {
+          input: code,
+          output: formatValue((res as { exports: unknown }).exports),
+          isError: false,
+          workspace: wsType,
+        };
+      } catch (err: unknown) {
+        return {
+          input: code,
+          output: err instanceof Error ? err.message : String(err),
+          isError: true,
+          workspace: wsType,
+        };
+      }
+    },
+    [ws],
+  );
 
   const runCode = useCallback(
     (code: string) => {
@@ -981,12 +980,14 @@ function formatValue(val: unknown): string {
   if (typeof val === "string") return `"${val}"`;
   if (val === undefined) return "undefined";
   if (val === null) return "null";
+  if (typeof val === "number" || typeof val === "boolean" || typeof val === "bigint")
+    return String(val);
   if (typeof val === "object") {
     try {
       return JSON.stringify(val, null, 2);
     } catch {
-      return String(val);
+      return "[object]";
     }
   }
-  return String(val);
+  return "[unknown]";
 }
