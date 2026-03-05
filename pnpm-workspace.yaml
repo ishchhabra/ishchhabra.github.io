@@ -18,5 +18,7 @@ catalog:
   tsc-watch: ^7.2.0
   typescript: ^5.7.0
 
+allowUnusedPatches: true
+
 patchedDependencies:
   '@scelar/nodepod@1.0.2': patches/@scelar__nodepod.patch
