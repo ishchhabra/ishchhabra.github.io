@@ -53,8 +53,8 @@ const tocItems = [
     indent: true,
   },
   { id: "storing-it-in-cookies", label: "Storing it in cookies", indent: true },
-  { id: "slow-toggle", label: "Why is the toggle slow?" },
-  { id: "slow-navigation", label: "Why is navigation slow?" },
+  { id: "why-is-the-toggle-slow", label: "Why is the toggle slow?" },
+  { id: "why-is-navigation-slow", label: "Why is navigation slow?" },
   { id: "full-implementation", label: "Full implementation" },
   { id: "references", label: "References" },
 ];
@@ -292,7 +292,7 @@ export function useTheme(): ThemeContextValue {
 
             {/* ── SLOW TOGGLE ──────────────────────────────── */}
 
-            <H2 id="slow-toggle">Why is the toggle slow?</H2>
+            <H2 id="why-is-the-toggle-slow">Why is the toggle slow?</H2>
 
             <P>
               If you tried toggling in the demo above, you likely noticed that it's not instant.
@@ -431,7 +431,7 @@ export function useTheme(): ThemeContextValue {
 
             {/* ── SLOW NAVIGATION ──────────────────────────── */}
 
-            <H2 id="slow-navigation">Why is navigation slow?</H2>
+            <H2 id="why-is-navigation-slow">Why is navigation slow?</H2>
 
             <P>
               In the demo above, the toggle is instant. But click between Home and About — every
