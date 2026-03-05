@@ -41,6 +41,11 @@ catalogs:
       specifier: ^5.7.0
       version: 5.9.3
 
+patchedDependencies:
+  '@scelar/nodepod@1.0.2':
+    hash: 1ee07bb54ad2cb5fca236e9d607f187d1e47e13870d29c6c525cb5634b4fb625
+    path: ../../patches/@scelar__nodepod.patch
+
 importers:
 
   .:
@@ -110,7 +115,7 @@ importers:
         version: 6.0.9(@pnpm/logger@5.2.0)
       '@scelar/nodepod':
         specifier: ^1.0.2
-        version: 1.0.2
+        version: 1.0.2(patch_hash=1ee07bb54ad2cb5fca236e9d607f187d1e47e13870d29c6c525cb5634b4fb625)
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.1.18(vite@7.3.1(@types/node@22.19.9)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
@@ -6966,7 +6971,7 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.57.1':
     optional: true
 
-  '@scelar/nodepod@1.0.2':
+  '@scelar/nodepod@1.0.2(patch_hash=1ee07bb54ad2cb5fca236e9d607f187d1e47e13870d29c6c525cb5634b4fb625)':
     dependencies:
       acorn: 8.16.0
       acorn-jsx: 5.3.2(acorn@8.16.0)

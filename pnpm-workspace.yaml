@@ -19,4 +19,4 @@ catalog:
   typescript: ^5.7.0
 
 patchedDependencies:
-  '@scelar/nodepod': patches/@scelar__nodepod.patch
+  '@scelar/nodepod@1.0.2': patches/@scelar__nodepod.patch
