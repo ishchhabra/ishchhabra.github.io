@@ -1,0 +1,12 @@
+{
+  "name": "my-app",
+  "dependencies": {
+    "example-lib": "workspace:*",
+    "lodash": "4.17.21"
+  },
+  "dependenciesMeta": {
+    "example-lib": {
+      "injected": true
+    }
+  }
+}

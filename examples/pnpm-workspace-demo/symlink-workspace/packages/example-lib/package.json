@@ -1,0 +1,10 @@
+{
+  "name": "example-lib",
+  "main": "index.js",
+  "peerDependencies": {
+    "lodash": "*"
+  },
+  "devDependencies": {
+    "lodash": "4.17.20"
+  }
+}
