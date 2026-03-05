@@ -494,15 +494,11 @@ export function LodashResolutionDemo() {
       <div
         className="w-full max-w-3xl overflow-hidden rounded-lg shadow-xl"
         style={{
-          fontFamily:
-            '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         }}
       >
         {/* ── Title bar ─────────────────────────── */}
-        <div
-          className="flex items-center"
-          style={{ height: 30, backgroundColor: v.titleBarBg }}
-        >
+        <div className="flex items-center" style={{ height: 30, backgroundColor: v.titleBarBg }}>
           <div className="flex items-center gap-2 px-3">
             <div className="h-3 w-3 rounded-full" style={{ backgroundColor: "#ff5f57" }} />
             <div className="h-3 w-3 rounded-full" style={{ backgroundColor: "#febc2e" }} />
@@ -554,21 +550,50 @@ export function LodashResolutionDemo() {
               style={{ width: 40, height: 40, borderLeft: "2px solid #fff" }}
             >
               {/* codicon: files — two overlapping pages */}
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={v.textBright} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={v.textBright}
+                strokeWidth="1.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
                 <polyline points="14 2 14 8 20 8" />
               </svg>
             </div>
             {/* Search */}
             <div className="flex items-center justify-center" style={{ width: 40, height: 40 }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={v.textDim} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={v.textDim}
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ opacity: 0.5 }}
+              >
                 <circle cx="11" cy="11" r="7" />
                 <line x1="16" y1="16" x2="22" y2="22" />
               </svg>
             </div>
             {/* Source Control */}
             <div className="flex items-center justify-center" style={{ width: 40, height: 40 }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={v.textDim} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={v.textDim}
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ opacity: 0.5 }}
+              >
                 <circle cx="6" cy="6" r="3" />
                 <circle cx="6" cy="18" r="3" />
                 <circle cx="18" cy="12" r="3" />
@@ -627,7 +652,11 @@ export function LodashResolutionDemo() {
                   fontSize: 13,
                 }}
               >
-                <span style={{ color: fileIconColor(currentFileName), fontSize: 11, fontWeight: 700 }}>{fileIconLabel(currentFileName)}</span>
+                <span
+                  style={{ color: fileIconColor(currentFileName), fontSize: 11, fontWeight: 700 }}
+                >
+                  {fileIconLabel(currentFileName)}
+                </span>
                 {currentFileName}
                 <span style={{ color: v.textDim, fontSize: 15, marginLeft: 6 }}>&times;</span>
               </div>
@@ -649,10 +678,7 @@ export function LodashResolutionDemo() {
             </div>
 
             {/* Source code */}
-            <div
-              className="flex-1 overflow-auto p-3"
-              style={{ backgroundColor: v.bg }}
-            >
+            <div className="flex-1 overflow-auto p-3" style={{ backgroundColor: v.bg }}>
               {highlightedFile ? (
                 <pre
                   className="whitespace-pre-wrap font-mono text-[11.5px] leading-[1.65]"
@@ -682,10 +708,7 @@ export function LodashResolutionDemo() {
             }}
           >
             <div className="flex items-center gap-3">
-              <span
-                className="text-[11px] font-medium uppercase"
-                style={{ color: v.textBright }}
-              >
+              <span className="text-[11px] font-medium uppercase" style={{ color: v.textBright }}>
                 Terminal
               </span>
             </div>
