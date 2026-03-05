@@ -34,6 +34,7 @@
   },
   "devDependencies": {
     "@pnpm/find-workspace-packages": "^6.0.9",
+    "@scelar/nodepod": "^1.0.2",
     "@tailwindcss/vite": "catalog:",
     "@types/node": "catalog:",
     "@types/pg": "^8.18.0",

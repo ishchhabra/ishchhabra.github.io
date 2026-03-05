@@ -22,8 +22,9 @@ export const ARTICLES: Article[] = [
   },
   {
     slug: "pnpm-monorepo",
-    title: "Building a Monorepo That Actually Scales",
-    description: "A practical guide to pnpm monorepos with true package isolation.",
+    title: "How to build a pnpm monorepo, the right way",
+    description:
+      "A practical guide to building a pnpm monorepo with isolated dependencies and a smooth development experience.",
     dateShort: "Feb 2026",
     date: "Feb 9, 2026",
     dateISO: "2026-02-09",

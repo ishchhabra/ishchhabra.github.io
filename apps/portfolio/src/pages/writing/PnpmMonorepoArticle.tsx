@@ -19,27 +19,39 @@ import {
 } from "../../components/writing/core/Prose";
 import { ScrollProgress } from "../../components/writing/core/ScrollProgress";
 import { TableOfContents } from "../../components/writing/core/TableOfContents";
-import { MonorepoStructureDiagram } from "../../components/writing/pnpm-monorepo/MonorepoStructureDiagram";
-import {
-  InjectedDiagram,
-  NodeResolutionDiagram,
-} from "../../components/writing/pnpm-monorepo/SymlinkDiagram";
+import { LodashResolutionDemo } from "../../components/writing/pnpm-monorepo/LodashResolutionDemo";
+import { ResolutionPathDiagram } from "../../components/writing/pnpm-monorepo/ResolutionPathDiagram";
+import { InjectedDiagram } from "../../components/writing/pnpm-monorepo/SymlinkDiagram";
 import {
   SyncBeforeAfterDiagram,
   SyncLifecycleDiagram,
 } from "../../components/writing/pnpm-monorepo/SyncLifecycleDiagram";
 
 const tocItems = [
-  { id: "the-bug", label: "The problem with shared packages" },
-  { id: "node-resolution", label: "How Node resolves imports", indent: true },
-  { id: "two-apps", label: "With two apps, it gets worse", indent: true },
-  { id: "why-isolation", label: "Why isolation matters" },
-  { id: "injected-deps", label: "Injected dependencies" },
-  { id: "proving-it", label: "Proving it with a test", indent: true },
-  { id: "making-it-work", label: "Making it work in practice" },
-  { id: "rebuild-sync", label: "prepare", indent: true },
-  { id: "hard-link-sync", label: "pnpm-sync & watch", indent: true },
-  { id: "cmd-click", label: "Cmd+Click to source", indent: true },
+  { id: "how-to-set-up-a-pnpm-workspace", label: "How to set up a pnpm workspace" },
+  {
+    id: "why-two-copies-how-node-resolves-imports",
+    label: "Why two copies? How Node resolves imports",
+    indent: true,
+  },
+  { id: "with-two-apps-it-gets-worse", label: "With two apps, it gets worse", indent: true },
+  { id: "injected-dependencies", label: "Injected dependencies" },
+  { id: "making-it-work-in-practice", label: "Making it work in practice" },
+  {
+    id: "problem-1-manual-builds-on-a-fresh-clone",
+    label: "Problem 1: Manual builds on a fresh clone",
+    indent: true,
+  },
+  {
+    id: "problem-2-changes-dont-propagate",
+    label: "Problem 2: Changes don't propagate",
+    indent: true,
+  },
+  {
+    id: "problem-3-cmdclick-opens-dts-not-source",
+    label: "Problem 3: Cmd+Click opens .d.ts, not source",
+    indent: true,
+  },
   { id: "why-not-bun", label: "Why not Bun?" },
   { id: "troubleshooting", label: "Troubleshooting" },
   { id: "references", label: "References" },
@@ -55,30 +67,68 @@ export function PnpmMonorepoArticle() {
         {/* Content grid: article + sidebar ToC */}
         <div className="flex gap-10 pt-8">
           <article className="min-w-0 max-w-4xl flex-1">
-            {/* ============================================================ */}
-            {/*  THE BUG                                                     */}
-            {/* ============================================================ */}
-            <SectionLabel>The story</SectionLabel>
-            <H2 id="the-bug">The problem with shared packages</H2>
-
             <P>
-              You're building an app. It grows. You extract shared code into a workspace package — a
-              design system, some utilities, a data layer. <Code>pnpm-workspace.yaml</Code>,
-              workspace packages, <Code>pnpm install</Code>. Everything should just work.
+              At some point every growing application ends up with code that needs to be shared
+              across surfaces. Maybe you started with a web app and then needed to build a mobile
+              app alongside it, and suddenly a whole layer of shared logic &mdash; the design
+              system, the business logic, the API layer &mdash; needs to live somewhere both can
+              reach. When that happens, you have two options: extract the shared code into a
+              separate repository, or set up a monorepo.
             </P>
 
-            <MonorepoStructureDiagram />
-
             <P>
-              The shared package declares a <Code>peerDependency</Code> on React (or any library
-              with internal state). It also has React in <Code>devDependencies</Code> for local
-              type-checking. Your app has React in <Code>dependencies</Code>. You run the app:
+              With separate repositories, iterating on shared code becomes a slow, multi-step
+              process: make a change, propagate it to every consumer, and then test to see if it
+              actually works. What should be a quick tweak becomes an afternoon.
             </P>
 
-            <CodeBlock language="error">{`Invariant Violation: Invalid hook call. Hooks can only be called inside
-of the body of a function component.`}</CodeBlock>
+            <P>
+              A monorepo solves this by keeping shared packages and their consumers in the same
+              place. Changes to shared code are immediately visible to every consumer, making it
+              easier to iterate and test. For this guide, we'll be using pnpm workspaces, which
+              supports hard-linking dependencies (more on that later).
+            </P>
 
-            <CodeBlock language="error">{`Error: No QueryClient set, use QueryClientProvider to set one`}</CodeBlock>
+            <H2 id="how-to-set-up-a-pnpm-workspace">How to set up a pnpm workspace</H2>
+
+            <P>
+              A pnpm workspace is defined by a <Code>pnpm-workspace.yaml</Code> at the root that
+              tells pnpm where to find your packages:
+            </P>
+
+            <CodeBlock filename="pnpm-workspace.yaml" language="yaml">{`packages:
+  - "apps/*"
+  - "packages/*"`}</CodeBlock>
+
+            <CodeBlock language="bash">{`my-monorepo/
+├── pnpm-workspace.yaml
+├── apps/
+│   └── my-app/
+│       └── package.json      # depends on @packages/ui
+└── packages/
+    └── ui/
+        ├── package.json      # peerDependency on react
+        └── src/`}</CodeBlock>
+
+            <P>
+              Run <Code>pnpm install</Code> and pnpm symlinks your workspace packages together. It
+              feels like everything should just work &mdash; and for simple cases, it does. But add
+              a library like React &mdash; one that assumes only one copy of itself exists in memory
+              &mdash; and:
+            </P>
+
+            <Callout type="danger">
+              <span className="font-medium">
+                Invariant Violation: Invalid hook call. Hooks can only be called inside of the body
+                of a function component.
+              </span>
+            </Callout>
+
+            <Callout type="danger">
+              <span className="font-medium">
+                Error: No QueryClient set, use QueryClientProvider to set one
+              </span>
+            </Callout>
 
             <P>
               The first error is React saying "I found two copies of myself." The second is TanStack
@@ -86,25 +136,18 @@ of the body of a function component.`}</CodeBlock>
               different React instance's Context tree.
             </P>
 
-            <H3 id="node-resolution">How Node resolves imports</H3>
+            <H3 id="why-two-copies-how-node-resolves-imports">
+              Why two copies? How Node resolves imports
+            </H3>
 
             <P>
-              When pnpm installs a workspace package, it creates a symlink from your app's{" "}
-              <Code>node_modules/@packages/ui</Code> pointing to <Code>packages/ui/</Code>. When
-              code inside that package runs <Code>require("react")</Code>, Node resolves from the{" "}
-              <Strong>symlink target</Strong> — the package's directory on disk — not from the
-              consuming app's directory.
+              When pnpm installs a workspace package, it symlinks{" "}
+              <Code>node_modules/@packages/ui</Code> → <Code>packages/ui/</Code>. When that package
+              runs <Code>require("react")</Code>, Node resolves from the{" "}
+              <Strong>symlink target</Strong> — not from the consuming app:
             </P>
 
-            <NodeResolutionDiagram />
-
-            <P>
-              Node walks up from <Code>packages/ui/dist/</Code>, finds{" "}
-              <Code>packages/ui/node_modules/react</Code> (the devDependency), and stops. It never
-              reaches <Code>apps/my-app/node_modules/react</Code>. Even if both are the{" "}
-              <Strong>exact same version</Strong>, your app loads its own copy separately. Two
-              Reacts in memory, two dispatchers, two Context trees.
-            </P>
+            <ResolutionPathDiagram />
 
             <Callout type="note">
               Any library with module-level state breaks when duplicated: React (hook dispatcher,
@@ -112,7 +155,7 @@ of the body of a function component.`}</CodeBlock>
               loading it twice creates two invisible parallel universes that can't communicate.
             </Callout>
 
-            <H3 id="two-apps">With two apps, it gets worse</H3>
+            <H3 id="with-two-apps-it-gets-worse">With two apps, it gets worse</H3>
 
             <P>
               With one app, both copies might be the same version — duplicate state, but at least
@@ -125,69 +168,14 @@ of the body of a function component.`}</CodeBlock>
             <Divider />
 
             {/* ============================================================ */}
-            {/*  WHY ISOLATION MATTERS                                       */}
-            {/* ============================================================ */}
-            <SectionLabel>The why</SectionLabel>
-            <H2 id="why-isolation">Why isolation matters</H2>
-
-            <P>
-              Tools like Nx{" "}
-              <A href="https://nx.dev/concepts/decisions/dependency-management">recommend</A>{" "}
-              keeping all packages on the same version of every dependency. That works when one
-              person (or a small team) owns the entire repo. On a larger project with multiple
-              teams, it creates a coordination problem: upgrading React 18 → 19 becomes an
-              all-or-nothing migration that blocks every team until every app is ready.
-            </P>
-
-            <P>
-              Setting <Code>shared-workspace-lockfile=false</Code> in <Code>.npmrc</Code> gives each
-              package its own <Code>pnpm-lock.yaml</Code>. This is the foundation that makes
-              everything else possible:
-            </P>
-
-            <UL>
-              <LI>
-                <Strong>No cross-team merge conflicts.</Strong> A single shared lockfile changes
-                every time any team adds or updates a dependency. On an active repo, that means
-                constant lockfile conflicts in PRs. Per-package lockfiles scope changes — updating a
-                dependency in one package only touches that package's lockfile. Other teams' PRs are
-                unaffected.
-              </LI>
-              <LI>
-                <Strong>Easier review.</Strong> A lockfile diff scoped to one package is
-                straightforward to review. A diff in a shared lockfile that spans 50 packages is
-                not.
-              </LI>
-              <LI>
-                <Strong>Gradual migration.</Strong> One app can move to React 19 while others stay
-                on 18. Migrate one consumer at a time, test it, ship it, move on. No big-bang
-                upgrades.
-              </LI>
-              <LI>
-                <Strong>Independent tooling.</Strong> Team A upgrades ESLint 8 → 9 without waiting
-                for Team B. Each package evolves on its own schedule. Consumers import from{" "}
-                <Code>dist/</Code>, so internal tooling changes don't ripple outward.
-              </LI>
-            </UL>
-
-            <P>
-              The peer resolution problem from the previous section is solved separately with{" "}
-              <Strong>injected dependencies</Strong> — covered next. Per-package lockfiles give you
-              the independence; injected deps give you correct resolution. Together, they make the
-              monorepo behave as if each package were published to npm and installed separately.
-            </P>
-
-            <Divider />
-
-            {/* ============================================================ */}
             {/*  INJECTED DEPENDENCIES                                       */}
             {/* ============================================================ */}
             <SectionLabel>The fix</SectionLabel>
-            <H2 id="injected-deps">Injected dependencies</H2>
+            <H2 id="injected-dependencies">Injected dependencies</H2>
 
             <P>
-              The resolution bug happens because Node walks from the symlink target. To fix it, we
-              need the shared package's code to resolve from the <Strong>consumer's</Strong>{" "}
+              The resolution problem happens because Node walks from the symlink target. To fix it,
+              we need the shared package's code to resolve from the <Strong>consumer's</Strong>{" "}
               <Code>node_modules</Code> instead. pnpm has a flag for exactly this:{" "}
               <Code>dependenciesMeta.injected: true</Code>.
             </P>
@@ -217,6 +205,16 @@ of the body of a function component.`}</CodeBlock>
               gets React 18. App B gets React 19. One shared package, correct resolution everywhere.
             </P>
 
+            <P>
+              The demo below runs a real workspace in-browser. A shared package returns whichever
+              lodash version gets resolved at runtime — the package pins <Code>4.17.20</Code>,
+              consumers have <Code>4.17.21</Code>.
+            </P>
+
+            <P>Try it: switch between the symlink and injected tabs, then click "Compare both".</P>
+
+            <LodashResolutionDemo />
+
             <Collapsible title="What about bundler resolution?" defaultOpen={false}>
               <P>
                 Another approach: configure the app's bundler so peer deps resolve from the app's{" "}
@@ -227,54 +225,12 @@ of the body of a function component.`}</CodeBlock>
                 The problem: <Strong>each consumer has to make the change</Strong>. That means
                 maintenance overhead — every app that uses the shared package must configure its
                 bundler to resolve React from the app's <Code>node_modules</Code>. And each consumer
-                might use a different bundler: Next.js uses Webpack/Turbopack, Vite uses Rollup,
-                React Native uses Metro. Each has its own config format and setup. With pnpm
-                injected, there's no bundler config needed — it works at the package manager level,
-                regardless of what each consumer uses.
+                might use a different bundler: Next.js uses Webpack/Turbopack, Vite uses
+                esbuild/Rollup, React Native uses Metro. Each has its own config format and
+                resolution rules. With pnpm injected, there's no bundler config needed — it works at
+                the package manager level, regardless of what each consumer uses.
               </P>
             </Collapsible>
-
-            <H3 id="proving-it">Proving it with a test</H3>
-
-            <P>
-              Here's a minimal test from a{" "}
-              <A href="https://github.com/ishchhabra/pnpm-workspace-example">test repo</A> that
-              proves the behavior:
-            </P>
-
-            <CodeBlock
-              filename="packages/example-lib/index.js"
-              language="js"
-            >{`// Returns whichever version of lodash gets resolved at runtime
-module.exports = function getLodashVersion() {
-  return require("lodash/package.json").version;
-};`}</CodeBlock>
-
-            <CodeBlock filename="packages/example-lib/package.json" language="json">{`{
-  "name": "example-lib",
-  "main": "index.js",
-  "peerDependencies": { "lodash": "*" },
-  "devDependencies": { "lodash": "4.17.20" }
-}`}</CodeBlock>
-
-            <P>
-              Two consumers — both have lodash <Code>4.17.21</Code>. One uses default symlinks, one
-              uses injected:
-            </P>
-
-            <Table
-              headers={["Consumer", "Resolved version"]}
-              rows={[
-                [
-                  "Symlink (default)",
-                  <span className="text-red-400">4.17.20 — package's devDep</span>,
-                ],
-                [
-                  "Hardlink (injected dependency)",
-                  <span className="text-emerald-400">4.17.21 — consumer's version ✓</span>,
-                ],
-              ]}
-            />
 
             <Divider />
 
@@ -282,14 +238,16 @@ module.exports = function getLodashVersion() {
             {/*  MAKING IT WORK                                              */}
             {/* ============================================================ */}
             <SectionLabel>DX</SectionLabel>
-            <H2 id="making-it-work">Making it work in practice</H2>
+            <H2 id="making-it-work-in-practice">Making it work in practice</H2>
 
             <P>
               Injected dependencies fix the resolution problem, but they introduce DX challenges.
               Let's solve them one by one.
             </P>
 
-            <H3 id="rebuild-sync">Problem 1: Manual builds on a fresh clone</H3>
+            <H3 id="problem-1-manual-builds-on-a-fresh-clone">
+              Problem 1: Manual builds on a fresh clone
+            </H3>
 
             <P>
               You clone the repo, run <Code>pnpm install</Code>, start the app — and it fails.{" "}
@@ -319,7 +277,7 @@ module.exports = function getLodashVersion() {
 
             <SyncBeforeAfterDiagram />
 
-            <H3 id="hard-link-sync">Problem 2: Changes don't propagate</H3>
+            <H3 id="problem-2-changes-dont-propagate">Problem 2: Changes don't propagate</H3>
 
             <P>
               You change a component in the shared package. Nothing happens in the consuming app.
@@ -413,7 +371,9 @@ module.exports = function getLodashVersion() {
               each pointing to its consumer's lockfile and store path.
             </Callout>
 
-            <H3 id="cmd-click">Problem 3: Cmd+Click opens .d.ts, not source</H3>
+            <H3 id="problem-3-cmdclick-opens-dts-not-source">
+              Problem 3: Cmd+Click opens .d.ts, not source
+            </H3>
 
             <P>
               Since consumers import from <Code>dist/</Code>, Cmd+Click in VSCode opens{" "}
@@ -422,6 +382,15 @@ module.exports = function getLodashVersion() {
               our approach lets each package own its build tooling. The tradeoff is that we need
               declaration maps to get good navigation.
             </P>
+
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="my-4 w-full rounded-lg border border-neutral-200 dark:border-neutral-800"
+              src="/videos/cmd-click-before.mp4"
+            />
 
             <P>
               Enable <Code>declarationMap: true</Code> in the package's tsconfig:
@@ -463,6 +432,17 @@ module.exports = function getLodashVersion() {
               file. Add this flag to both your <Code>build</Code> and <Code>build:watch</Code>{" "}
               scripts.
             </P>
+
+            <P>With the fix, Cmd+Click now opens the actual source:</P>
+
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="my-4 w-full rounded-lg border border-neutral-200 dark:border-neutral-800"
+              src="/videos/cmd-click-after.mp4"
+            />
 
             <Divider />
 
