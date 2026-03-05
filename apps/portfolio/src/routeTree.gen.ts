@@ -13,7 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WritingIndexRouteImport } from './routes/writing/index'
 import { Route as WritingSsrThemingRouteImport } from './routes/writing/ssr-theming'
-import { Route as WritingPnpmMonorepoScalesRouteImport } from './routes/writing/pnpm-monorepo-scales'
+import { Route as WritingPnpmMonorepoRouteImport } from './routes/writing/pnpm-monorepo'
 import { Route as LabSandboxRouteImport } from './routes/lab/sandbox'
 import { Route as LabDesignOverlayRouteImport } from './routes/lab/design-overlay'
 import { Route as DemosSsrThemingSimpleLocalStorageRouteImport } from './routes/demos/ssr-theming/simple-local-storage'
@@ -46,12 +46,11 @@ const WritingSsrThemingRoute = WritingSsrThemingRouteImport.update({
   path: '/writing/ssr-theming',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WritingPnpmMonorepoScalesRoute =
-  WritingPnpmMonorepoScalesRouteImport.update({
-    id: '/writing/pnpm-monorepo-scales',
-    path: '/writing/pnpm-monorepo-scales',
-    getParentRoute: () => rootRouteImport,
-  } as any)
+const WritingPnpmMonorepoRoute = WritingPnpmMonorepoRouteImport.update({
+  id: '/writing/pnpm-monorepo',
+  path: '/writing/pnpm-monorepo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LabSandboxRoute = LabSandboxRouteImport.update({
   id: '/lab/sandbox',
   path: '/lab/sandbox',
@@ -121,7 +120,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/lab/design-overlay': typeof LabDesignOverlayRoute
   '/lab/sandbox': typeof LabSandboxRoute
-  '/writing/pnpm-monorepo-scales': typeof WritingPnpmMonorepoScalesRoute
+  '/writing/pnpm-monorepo': typeof WritingPnpmMonorepoRoute
   '/writing/ssr-theming': typeof WritingSsrThemingRoute
   '/writing/': typeof WritingIndexRoute
   '/demos/ssr-theming/cookie-optimistic': typeof DemosSsrThemingCookieOptimisticRouteRouteWithChildren
@@ -139,7 +138,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/lab/design-overlay': typeof LabDesignOverlayRoute
   '/lab/sandbox': typeof LabSandboxRoute
-  '/writing/pnpm-monorepo-scales': typeof WritingPnpmMonorepoScalesRoute
+  '/writing/pnpm-monorepo': typeof WritingPnpmMonorepoRoute
   '/writing/ssr-theming': typeof WritingSsrThemingRoute
   '/writing': typeof WritingIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -156,7 +155,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/lab/design-overlay': typeof LabDesignOverlayRoute
   '/lab/sandbox': typeof LabSandboxRoute
-  '/writing/pnpm-monorepo-scales': typeof WritingPnpmMonorepoScalesRoute
+  '/writing/pnpm-monorepo': typeof WritingPnpmMonorepoRoute
   '/writing/ssr-theming': typeof WritingSsrThemingRoute
   '/writing/': typeof WritingIndexRoute
   '/demos/ssr-theming/cookie-optimistic': typeof DemosSsrThemingCookieOptimisticRouteRouteWithChildren
@@ -176,7 +175,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/lab/design-overlay'
     | '/lab/sandbox'
-    | '/writing/pnpm-monorepo-scales'
+    | '/writing/pnpm-monorepo'
     | '/writing/ssr-theming'
     | '/writing/'
     | '/demos/ssr-theming/cookie-optimistic'
@@ -194,7 +193,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/lab/design-overlay'
     | '/lab/sandbox'
-    | '/writing/pnpm-monorepo-scales'
+    | '/writing/pnpm-monorepo'
     | '/writing/ssr-theming'
     | '/writing'
     | '/api/auth/$'
@@ -210,7 +209,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/lab/design-overlay'
     | '/lab/sandbox'
-    | '/writing/pnpm-monorepo-scales'
+    | '/writing/pnpm-monorepo'
     | '/writing/ssr-theming'
     | '/writing/'
     | '/demos/ssr-theming/cookie-optimistic'
@@ -229,7 +228,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   LabDesignOverlayRoute: typeof LabDesignOverlayRoute
   LabSandboxRoute: typeof LabSandboxRoute
-  WritingPnpmMonorepoScalesRoute: typeof WritingPnpmMonorepoScalesRoute
+  WritingPnpmMonorepoRoute: typeof WritingPnpmMonorepoRoute
   WritingSsrThemingRoute: typeof WritingSsrThemingRoute
   WritingIndexRoute: typeof WritingIndexRoute
   DemosSsrThemingCookieOptimisticRouteRoute: typeof DemosSsrThemingCookieOptimisticRouteRouteWithChildren
@@ -269,11 +268,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WritingSsrThemingRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/writing/pnpm-monorepo-scales': {
-      id: '/writing/pnpm-monorepo-scales'
-      path: '/writing/pnpm-monorepo-scales'
-      fullPath: '/writing/pnpm-monorepo-scales'
-      preLoaderRoute: typeof WritingPnpmMonorepoScalesRouteImport
+    '/writing/pnpm-monorepo': {
+      id: '/writing/pnpm-monorepo'
+      path: '/writing/pnpm-monorepo'
+      fullPath: '/writing/pnpm-monorepo'
+      preLoaderRoute: typeof WritingPnpmMonorepoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lab/sandbox': {
@@ -397,7 +396,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   LabDesignOverlayRoute: LabDesignOverlayRoute,
   LabSandboxRoute: LabSandboxRoute,
-  WritingPnpmMonorepoScalesRoute: WritingPnpmMonorepoScalesRoute,
+  WritingPnpmMonorepoRoute: WritingPnpmMonorepoRoute,
   WritingSsrThemingRoute: WritingSsrThemingRoute,
   WritingIndexRoute: WritingIndexRoute,
   DemosSsrThemingCookieOptimisticRouteRoute:

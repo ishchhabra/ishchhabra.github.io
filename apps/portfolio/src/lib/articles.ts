@@ -21,7 +21,7 @@ export const ARTICLES: Article[] = [
     tags: ["TanStack Start", "React", "theme"],
   },
   {
-    slug: "pnpm-monorepo-scales",
+    slug: "pnpm-monorepo",
     title: "Building a Monorepo That Actually Scales",
     description: "A practical guide to pnpm monorepos with true package isolation.",
     dateShort: "Feb 2026",

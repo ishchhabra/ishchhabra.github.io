@@ -11,7 +11,7 @@
 ## Writing
 
 - How to add theming to an SSR app (TanStack Start): https://ishchhabra.com/writing/ssr-theming
-- Building a Monorepo That Actually Scales: https://ishchhabra.com/writing/pnpm-monorepo-scales
+- Building a Monorepo That Actually Scales: https://ishchhabra.com/writing/pnpm-monorepo
 
 ## Contact
 

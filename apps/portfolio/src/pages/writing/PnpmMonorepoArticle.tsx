@@ -50,7 +50,7 @@ export function PnpmMonorepoArticle() {
     <>
       <ScrollProgress />
       <Page.Main variant="hero">
-        <Article.Header slug="pnpm-monorepo-scales" writtenWithAI />
+        <Article.Header slug="pnpm-monorepo" writtenWithAI />
 
         {/* Content grid: article + sidebar ToC */}
         <div className="flex gap-10 pt-8">
