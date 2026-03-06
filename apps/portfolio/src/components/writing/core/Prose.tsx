@@ -315,7 +315,29 @@ export function ExpandableCodeBlock({
   full: string;
   diff?: boolean;
 }) {
+  const mode = useRenderMode();
   const [expanded, setExpanded] = useState(false);
+
+  if (mode === "rss") {
+    return (
+      <>
+        {filename && (
+          <p>
+            <strong>{filename}</strong>
+          </p>
+        )}
+        <pre>
+          <code>{preview}</code>
+        </pre>
+        <details>
+          <summary>Show full file</summary>
+          <pre>
+            <code>{full}</code>
+          </pre>
+        </details>
+      </>
+    );
+  }
 
   return (
     <Surface variant="code" className="group relative my-6 overflow-hidden">
