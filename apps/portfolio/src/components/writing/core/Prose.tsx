@@ -612,3 +612,33 @@ export function Collapsible({
     </Surface>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/*  Troubleshooting item — Collapsible on web, list item in markdown   */
+/* ------------------------------------------------------------------ */
+export function TroubleshootingItem({ title, children }: { title: string; children: ReactNode }) {
+  const mode = useRenderMode();
+
+  if (mode === "rss") {
+    return (
+      <li>
+        <p>
+          <strong>{title}</strong>
+        </p>
+        {children}
+      </li>
+    );
+  }
+
+  return <Collapsible title={title}>{children}</Collapsible>;
+}
+
+export function TroubleshootingList({ children }: { children: ReactNode }) {
+  const mode = useRenderMode();
+
+  if (mode === "rss") {
+    return <ul>{children}</ul>;
+  }
+
+  return <>{children}</>;
+}

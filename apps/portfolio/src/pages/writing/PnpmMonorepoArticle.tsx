@@ -15,6 +15,8 @@ import {
   SectionLabel,
   Strong,
   Table,
+  TroubleshootingItem,
+  TroubleshootingList,
   UL,
   Video,
 } from "../../components/writing/core/Prose";
@@ -483,18 +485,20 @@ export function PnpmMonorepoArticle() {
       <SectionLabel>Debugging</SectionLabel>
       <H2 id="troubleshooting">Troubleshooting</H2>
 
-      <Collapsible title="Missing .d.ts files after pnpm install">
-        <P>
-          <Strong>Error:</Strong> "Could not find a declaration file for module '@packages/ui'"
-        </P>
-        <P>
-          <Strong>Why:</Strong> Stale <Code>tsconfig.tsbuildinfo</Code>. The incremental build cache
-          can cause tsc to skip recompilation or use outdated information, leading to missing or
-          incorrect <Code>.d.ts</Code> files.
-        </P>
-        <CodeBlock filename="terminal" language="bash">{`rm packages/ui/tsconfig.tsbuildinfo
+      <TroubleshootingList>
+        <TroubleshootingItem title="Missing .d.ts files after pnpm install">
+          <P>
+            <Strong>Error:</Strong> "Could not find a declaration file for module '@packages/ui'"
+          </P>
+          <P>
+            <Strong>Why:</Strong> Stale <Code>tsconfig.tsbuildinfo</Code>. The incremental build
+            cache can cause tsc to skip recompilation or use outdated information, leading to
+            missing or incorrect <Code>.d.ts</Code> files.
+          </P>
+          <CodeBlock filename="terminal" language="bash">{`rm packages/ui/tsconfig.tsbuildinfo
 pnpm --filter @packages/ui build`}</CodeBlock>
-      </Collapsible>
+        </TroubleshootingItem>
+      </TroubleshootingList>
 
       <Divider />
 
