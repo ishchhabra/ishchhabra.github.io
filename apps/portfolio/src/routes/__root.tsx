@@ -42,6 +42,7 @@ export const Route = createRootRoute({
       scripts: [createWebsiteSchemaScript()],
       links: [
         ...(base.links ?? []),
+        { rel: "alternate", type: "application/rss+xml", title: SITE_TITLE, href: "/api/feed" },
         { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
         { rel: "preconnect", href: "https://fonts.googleapis.com" },
         {

@@ -16,6 +16,7 @@ import { Route as WritingSsrThemingRouteImport } from './routes/writing/ssr-them
 import { Route as WritingPnpmMonorepoRouteImport } from './routes/writing/pnpm-monorepo'
 import { Route as LabSandboxRouteImport } from './routes/lab/sandbox'
 import { Route as LabDesignOverlayRouteImport } from './routes/lab/design-overlay'
+import { Route as ApiFeedRouteImport } from './routes/api.feed'
 import { Route as DemosSsrThemingSimpleLocalStorageRouteImport } from './routes/demos/ssr-theming/simple-local-storage'
 import { Route as DemosSsrThemingSimpleCookieRouteImport } from './routes/demos/ssr-theming/simple-cookie'
 import { Route as ApiAuthSplatRouteImport } from './routes/api.auth.$'
@@ -59,6 +60,11 @@ const LabSandboxRoute = LabSandboxRouteImport.update({
 const LabDesignOverlayRoute = LabDesignOverlayRouteImport.update({
   id: '/lab/design-overlay',
   path: '/lab/design-overlay',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFeedRoute = ApiFeedRouteImport.update({
+  id: '/api/feed',
+  path: '/api/feed',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemosSsrThemingSimpleLocalStorageRoute =
@@ -118,6 +124,7 @@ const DemosSsrThemingCookieOptimisticClientCacheAboutRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/api/feed': typeof ApiFeedRoute
   '/lab/design-overlay': typeof LabDesignOverlayRoute
   '/lab/sandbox': typeof LabSandboxRoute
   '/writing/pnpm-monorepo': typeof WritingPnpmMonorepoRoute
@@ -136,6 +143,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/api/feed': typeof ApiFeedRoute
   '/lab/design-overlay': typeof LabDesignOverlayRoute
   '/lab/sandbox': typeof LabSandboxRoute
   '/writing/pnpm-monorepo': typeof WritingPnpmMonorepoRoute
@@ -153,6 +161,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/api/feed': typeof ApiFeedRoute
   '/lab/design-overlay': typeof LabDesignOverlayRoute
   '/lab/sandbox': typeof LabSandboxRoute
   '/writing/pnpm-monorepo': typeof WritingPnpmMonorepoRoute
@@ -173,6 +182,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/api/feed'
     | '/lab/design-overlay'
     | '/lab/sandbox'
     | '/writing/pnpm-monorepo'
@@ -191,6 +201,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/api/feed'
     | '/lab/design-overlay'
     | '/lab/sandbox'
     | '/writing/pnpm-monorepo'
@@ -207,6 +218,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/login'
+    | '/api/feed'
     | '/lab/design-overlay'
     | '/lab/sandbox'
     | '/writing/pnpm-monorepo'
@@ -226,6 +238,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
+  ApiFeedRoute: typeof ApiFeedRoute
   LabDesignOverlayRoute: typeof LabDesignOverlayRoute
   LabSandboxRoute: typeof LabSandboxRoute
   WritingPnpmMonorepoRoute: typeof WritingPnpmMonorepoRoute
@@ -287,6 +300,13 @@ declare module '@tanstack/react-router' {
       path: '/lab/design-overlay'
       fullPath: '/lab/design-overlay'
       preLoaderRoute: typeof LabDesignOverlayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/feed': {
+      id: '/api/feed'
+      path: '/api/feed'
+      fullPath: '/api/feed'
+      preLoaderRoute: typeof ApiFeedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demos/ssr-theming/simple-local-storage': {
@@ -394,6 +414,7 @@ const DemosSsrThemingCookieOptimisticClientCacheRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
+  ApiFeedRoute: ApiFeedRoute,
   LabDesignOverlayRoute: LabDesignOverlayRoute,
   LabSandboxRoute: LabSandboxRoute,
   WritingPnpmMonorepoRoute: WritingPnpmMonorepoRoute,
