@@ -48,9 +48,6 @@ export default defineConfig(async (): Promise<UserConfig> => {
             publicDir: path.resolve(__dirname, ".vercel/output/static"),
           },
         }),
-        rollupConfig: {
-          external: ["@resvg/resvg-js"],
-        },
       }),
       react({
         babel: {
@@ -63,7 +60,7 @@ export default defineConfig(async (): Promise<UserConfig> => {
       // Injected workspace packages are still in node_modules (copy), so Vite
       // would pre-bundle them. Exclude so we use their built dist (pnpm-sync)
       // and see package changes without restarting dev. See: vite.dev/guide/dep-pre-bundling
-      exclude: [...workspacePackageNames, "@resvg/resvg-js", "satori"],
+      exclude: workspacePackageNames,
     },
     // Bundle workspace packages in SSR so Node doesn't have to resolve their
     // extensionless ESM imports (tsc emits "./Overlay" not "./Overlay.js").
@@ -71,7 +68,6 @@ export default defineConfig(async (): Promise<UserConfig> => {
     // (TS 5.7+) and .ts/.tsx in source imports so dist is Node ESM-ready; then remove noExternal.
     ssr: {
       noExternal: workspacePackageNames,
-      external: ["@resvg/resvg-js"],
     },
     // TanStack Start virtual modules and server-only Node modules are not available
     // in the worker build context. Externalize them so the worker bundle doesn't fail.

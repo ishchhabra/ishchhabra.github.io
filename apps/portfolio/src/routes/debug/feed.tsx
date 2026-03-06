@@ -15,7 +15,9 @@ function FeedPreview() {
   return (
     <RenderModeProvider mode="rss">
       <StaticThemeProvider>
-        <div style={{ maxWidth: 800, margin: "0 auto", padding: "40px 20px", fontFamily: "system-ui" }}>
+        <div
+          style={{ maxWidth: 800, margin: "0 auto", padding: "40px 20px", fontFamily: "system-ui" }}
+        >
           <h1 style={{ fontSize: 24, marginBottom: 8 }}>RSS Feed Preview</h1>
           <p style={{ color: "#666", marginBottom: 40 }}>
             This is how articles render in the RSS feed.

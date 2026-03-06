@@ -1,11 +1,11 @@
 /**
  * Diagram renderers for OG image generation.
  *
- * SVG-based diagrams: rendered via renderToStaticMarkup → extract <svg> → resvg → PNG
- * HTML-based diagrams (ResolutionPathDiagram): rendered via Satori → resvg → PNG
+ * SVG-based diagrams: rendered via renderToStaticMarkup → extract <svg> → data URI → @vercel/og
+ * HTML-based diagrams (ResolutionPathDiagram): direct Satori JSX → @vercel/og
  */
 
-import type { ReactNode } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { InjectedDiagram } from "../components/writing/pnpm-monorepo/SymlinkDiagram";
 import { NodeResolutionDiagram } from "../components/writing/pnpm-monorepo/SymlinkDiagram";
@@ -35,7 +35,7 @@ function renderSvgComponent(Component: () => ReactNode): string {
 
 const c = diagramPalette.light;
 
-function ResolutionPathDiagramOG(): ReactNode {
+function ResolutionPathDiagramOG(): ReactElement {
   const treeStyle = {
     display: "flex",
     fontFamily: "monospace",
@@ -212,7 +212,7 @@ function ResolutionPathDiagramOG(): ReactNode {
 
 type DiagramRenderer =
   | { type: "svg-component"; component: () => ReactNode }
-  | { type: "satori"; component: () => ReactNode; width: number; height: number };
+  | { type: "satori"; component: () => ReactElement; width: number; height: number };
 
 export const OG_DIAGRAMS: Record<string, DiagramRenderer> = {
   "resolution-path": {
