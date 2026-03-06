@@ -353,24 +353,28 @@ const calloutStyles = {
     bg: "bg-blue-500/5",
     icon: "text-blue-400",
     label: "Note",
+    emoji: "📝",
   },
   warning: {
     border: "border-amber-500/20",
     bg: "bg-amber-500/5",
     icon: "text-amber-400",
     label: "Warning",
+    emoji: "⚠️",
   },
   tip: {
     border: "border-emerald-500/20",
     bg: "bg-emerald-500/5",
     icon: "text-emerald-400",
     label: "Tip",
+    emoji: "💡",
   },
   danger: {
     border: "border-red-500/20",
     bg: "bg-red-500/5",
     icon: "text-red-400",
     label: "Danger",
+    emoji: "🚨",
   },
 };
 
@@ -388,8 +392,11 @@ export function Callout({
     return (
       <blockquote>
         <p>
-          <strong>{s.label}:</strong> {children}
+          <strong>
+            {s.emoji} {s.label}
+          </strong>
         </p>
+        <p>{children}</p>
       </blockquote>
     );
   }
