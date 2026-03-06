@@ -329,12 +329,6 @@ export function ExpandableCodeBlock({
         <pre>
           <code>{preview}</code>
         </pre>
-        <details>
-          <summary>Show full file</summary>
-          <pre>
-            <code>{full}</code>
-          </pre>
-        </details>
       </>
     );
   }
