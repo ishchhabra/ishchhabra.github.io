@@ -3,15 +3,20 @@
  * Designed for long-form technical content with a dark theme.
  */
 
-import { highlightCode } from "../../../lib/shiki";
 import { useMemo, useState, type ReactNode } from "react";
-import { InteractiveOnly } from "../../../lib/render-mode";
+import { InteractiveOnly, useRenderMode } from "../../../lib/render-mode";
+import { highlightCode } from "../../../lib/shiki";
 import { Surface } from "../../Surface";
 
 /* ------------------------------------------------------------------ */
 /*  Section heading                                                    */
 /* ------------------------------------------------------------------ */
 export function SectionLabel({ children }: { children: ReactNode }) {
+  const mode = useRenderMode();
+  if (mode === "rss") {
+    return null;
+  }
+
   return (
     <div className="mb-2 flex items-center gap-3">
       <div className="h-px w-5 bg-blue-500/60" />
@@ -141,6 +146,15 @@ function FileHeader({
   language?: string | undefined;
   copyText: string;
 }) {
+  const mode = useRenderMode();
+  if (mode === "rss") {
+    return (
+      <p>
+        <strong>{filename}</strong>
+      </p>
+    );
+  }
+
   return (
     <div className="flex items-center gap-2 border-b border-zinc-200 px-4 py-2 dark:border-white/5">
       <svg
@@ -255,6 +269,22 @@ export function CodeBlock({
   language?: string;
   children: string;
 }) {
+  const mode = useRenderMode();
+  if (mode === "rss") {
+    return (
+      <>
+        {filename && (
+          <p>
+            <strong>{filename}</strong>
+          </p>
+        )}
+        <pre>
+          <code>{children}</code>
+        </pre>
+      </>
+    );
+  }
+
   return (
     <Surface variant="code" className="group relative my-6 overflow-hidden">
       {filename ? (
@@ -351,7 +381,19 @@ export function Callout({
   type?: keyof typeof calloutStyles;
   children: ReactNode;
 }) {
+  const mode = useRenderMode();
   const s = calloutStyles[type];
+
+  if (mode === "rss") {
+    return (
+      <blockquote>
+        <p>
+          <strong>{s.label}:</strong> {children}
+        </p>
+      </blockquote>
+    );
+  }
+
   return (
     <div className={`my-6 rounded-xl border ${s.border} ${s.bg} p-5`}>
       <div className="mb-2 flex items-center gap-2">
