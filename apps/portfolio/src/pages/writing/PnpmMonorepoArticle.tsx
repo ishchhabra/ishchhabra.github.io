@@ -5,6 +5,7 @@ import {
   Code,
   CodeBlock,
   Collapsible,
+  Diagram,
   Divider,
   H2,
   H3,
@@ -15,7 +16,9 @@ import {
   Strong,
   Table,
   UL,
+  Video,
 } from "../../components/writing/core/Prose";
+import { InteractiveOnly } from "../../lib/render-mode";
 import { LodashResolutionDemo } from "../../components/writing/pnpm-monorepo/LodashResolutionDemo";
 import { ResolutionPathDiagram } from "../../components/writing/pnpm-monorepo/ResolutionPathDiagram";
 import { InjectedDiagram } from "../../components/writing/pnpm-monorepo/SymlinkDiagram";
@@ -134,7 +137,12 @@ export function PnpmMonorepoArticle() {
         resolves from the <Strong>symlink target</Strong> — not from the consuming app:
       </P>
 
-      <ResolutionPathDiagram />
+      <Diagram
+        name="resolution-path"
+        alt="How Node resolves require('react') from a symlinked workspace package"
+      >
+        <ResolutionPathDiagram />
+      </Diagram>
 
       <Callout type="note">
         Any library with module-level state breaks when duplicated: React (hook dispatcher,
@@ -184,7 +192,12 @@ export function PnpmMonorepoArticle() {
   }
 }`}</CodeBlock>
 
-      <InjectedDiagram />
+      <Diagram
+        name="injected-deps"
+        alt="Each app gets its own hard-linked copy of the shared package, resolving dependencies correctly"
+      >
+        <InjectedDiagram />
+      </Diagram>
 
       <P>
         Each consumer gets its own copy. Each copy resolves from the consumer's tree. App A gets
@@ -199,7 +212,9 @@ export function PnpmMonorepoArticle() {
 
       <P>Try it: switch between the symlink and injected tabs, then click "Compare both".</P>
 
-      <LodashResolutionDemo />
+      <InteractiveOnly>
+        <LodashResolutionDemo />
+      </InteractiveOnly>
 
       <Collapsible title="What about bundler resolution?" defaultOpen={false}>
         <P>
@@ -260,7 +275,12 @@ export function PnpmMonorepoArticle() {
         <Code>dist/</Code> exists, consumers can import.
       </P>
 
-      <SyncBeforeAfterDiagram />
+      <Diagram
+        name="sync-before-after"
+        alt="Before install: dist/ doesn't exist. After prepare: dist/ built automatically"
+      >
+        <SyncBeforeAfterDiagram />
+      </Diagram>
 
       <H3 id="problem-2-changes-dont-propagate">Problem 2: Changes don't propagate</H3>
 
@@ -306,7 +326,12 @@ export function PnpmMonorepoArticle() {
         syncs output to consumers. One command and everything is ready.
       </P>
 
-      <SyncLifecycleDiagram />
+      <Diagram
+        name="sync-lifecycle"
+        alt="Fresh clone lifecycle: pnpm install → prepare → sync:prepare → build → postbuild → consumers have built output"
+      >
+        <SyncLifecycleDiagram />
+      </Diagram>
 
       <P>
         During development, we want <Code>pnpm-sync copy</Code> to run after every successful
@@ -366,14 +391,7 @@ export function PnpmMonorepoArticle() {
         maps to get good navigation.
       </P>
 
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="my-4 w-full rounded-lg border border-neutral-200 dark:border-neutral-800"
-        src="/videos/cmd-click-before.mp4"
-      />
+      <Video src="/videos/cmd-click-before.mp4" />
 
       <P>
         Enable <Code>declarationMap: true</Code> in the package's tsconfig:
@@ -416,14 +434,7 @@ export function PnpmMonorepoArticle() {
 
       <P>With the fix, Cmd+Click now opens the actual source:</P>
 
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="my-4 w-full rounded-lg border border-neutral-200 dark:border-neutral-800"
-        src="/videos/cmd-click-after.mp4"
-      />
+      <Video src="/videos/cmd-click-after.mp4" />
 
       <Divider />
 

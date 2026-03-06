@@ -5,6 +5,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { InteractiveOnly, useRenderMode } from "../../../lib/render-mode";
+import { SITE_BASE_URL } from "../../../lib/seo";
 import { highlightCode } from "../../../lib/shiki";
 import { Surface } from "../../Surface";
 
@@ -518,6 +519,47 @@ export function A({ href, children }: { href: string; children: ReactNode }) {
 /* ------------------------------------------------------------------ */
 /*  Collapsible / details section                                      */
 /* ------------------------------------------------------------------ */
+/* ------------------------------------------------------------------ */
+/*  Diagram — interactive children or OG image in RSS                  */
+/* ------------------------------------------------------------------ */
+export function Diagram({
+  name,
+  alt,
+  children,
+}: {
+  name: string;
+  alt: string;
+  children: ReactNode;
+}) {
+  const mode = useRenderMode();
+  if (mode === "rss") {
+    return <img src={`${SITE_BASE_URL}/og/diagrams/${name}`} alt={alt} />;
+  }
+
+  return children;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Video — renders <video> interactively, link in RSS                 */
+/* ------------------------------------------------------------------ */
+export function Video({ src }: { src: string }) {
+  const mode = useRenderMode();
+  const resolvedSrc = mode === "rss" ? `${SITE_BASE_URL}${src}` : src;
+  return (
+    <video
+      autoPlay
+      loop
+      muted
+      playsInline
+      className="my-4 w-full rounded-lg border border-neutral-200 dark:border-neutral-800"
+      src={resolvedSrc}
+    />
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Collapsible / details section                                      */
+/* ------------------------------------------------------------------ */
 export function Collapsible({
   title,
   children,
@@ -527,7 +569,20 @@ export function Collapsible({
   children: ReactNode;
   defaultOpen?: boolean;
 }) {
+  const mode = useRenderMode();
   const [open, setOpen] = useState(defaultOpen);
+
+  if (mode === "rss") {
+    return (
+      <blockquote>
+        <p>
+          <strong>{title}</strong>
+        </p>
+        {children}
+      </blockquote>
+    );
+  }
+
   return (
     <Surface variant="outline" className="my-6 overflow-hidden">
       <button
