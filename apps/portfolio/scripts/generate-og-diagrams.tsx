@@ -14,9 +14,17 @@ const jetBrainsMonoRegularPath = path.resolve(
   import.meta.dirname,
   "../assets/fonts/JetBrainsMono-Regular.ttf",
 );
-const jetBrainsMonoBoldPath = path.resolve(import.meta.dirname, "../assets/fonts/JetBrainsMono-Bold.ttf");
+const jetBrainsMonoBoldPath = path.resolve(
+  import.meta.dirname,
+  "../assets/fonts/JetBrainsMono-Bold.ttf",
+);
 
-const resvgFontFiles = [dmSansRegularPath, dmSansBoldPath, jetBrainsMonoRegularPath, jetBrainsMonoBoldPath];
+const resvgFontFiles = [
+  dmSansRegularPath,
+  dmSansBoldPath,
+  jetBrainsMonoRegularPath,
+  jetBrainsMonoBoldPath,
+];
 
 async function main() {
   await mkdir(outputDir, { recursive: true });
@@ -41,7 +49,9 @@ async function removeStalePngs() {
 
   await Promise.all(
     existingEntries
-      .filter((entry) => entry.isFile() && entry.name.endsWith(".png") && !expectedNames.has(entry.name))
+      .filter(
+        (entry) => entry.isFile() && entry.name.endsWith(".png") && !expectedNames.has(entry.name),
+      )
       .map((entry) => rm(path.join(outputDir, entry.name))),
   );
 }
@@ -55,8 +65,18 @@ async function loadOgFonts() {
   ]);
 
   return [
-    { name: "DM Sans", data: toArrayBuffer(sansRegular), style: "normal" as const, weight: 400 as const },
-    { name: "DM Sans", data: toArrayBuffer(sansBold), style: "normal" as const, weight: 700 as const },
+    {
+      name: "DM Sans",
+      data: toArrayBuffer(sansRegular),
+      style: "normal" as const,
+      weight: 400 as const,
+    },
+    {
+      name: "DM Sans",
+      data: toArrayBuffer(sansBold),
+      style: "normal" as const,
+      weight: 700 as const,
+    },
     {
       name: "JetBrains Mono",
       data: toArrayBuffer(monoRegular),
