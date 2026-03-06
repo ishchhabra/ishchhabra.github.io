@@ -125,6 +125,9 @@ importers:
       turndown:
         specifier: ^7.2.2
         version: 7.2.2
+      turndown-plugin-gfm:
+        specifier: ^1.0.2
+        version: 1.0.2
       tw-animate-css:
         specifier: ^1.4.0
         version: 1.4.0
@@ -203,14 +206,6 @@ importers:
       vite-tsconfig-paths:
         specifier: ^6.1.0
         version: 6.1.0(typescript@5.9.3)(vite@7.3.1(@types/node@22.19.9)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
-
-  ../..: {}
-
-  ../../packages/design-overlay: {}
-
-  ../../packages/sandbox: {}
-
-  ../../packages/videos: {}
 
 packages:
 
@@ -5176,6 +5171,9 @@ packages:
     resolution: {integrity: sha512-5C1sg4USs1lfG0GFb2RLXsdpXqBSEhAaA/0kPL01wxzpMqLILNxIxIOKiILz+cdg/pLnOUxFYOR5yhHU666wbw==}
     engines: {node: '>=18.0.0'}
     hasBin: true
+
+  turndown-plugin-gfm@1.0.2:
+    resolution: {integrity: sha512-vwz9tfvF7XN/jE0dGoBei3FXWuvll78ohzCZQuOb+ZjWrs3a0XhQVomJEb2Qh4VHTPNRO4GPZh0V7VRbiWwkRg==}
 
   turndown@7.2.2:
     resolution: {integrity: sha512-1F7db8BiExOKxjSMU2b7if62D/XOyQyZbPKq/nUwopfgnHlqXHqQ0lvfUTeUIr1lZJzOPFn43dODyMSIfvWRKQ==}
@@ -10547,6 +10545,8 @@ snapshots:
       get-tsconfig: 4.13.6
     optionalDependencies:
       fsevents: 2.3.3
+
+  turndown-plugin-gfm@1.0.2: {}
 
   turndown@7.2.2:
     dependencies:

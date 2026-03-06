@@ -1,4 +1,6 @@
 import TurndownService from "turndown";
+// @ts-expect-error - no types for turndown-plugin-gfm
+import { gfm } from "turndown-plugin-gfm";
 import { renderArticleToHtml } from "./article-renderer";
 
 function createTurndown(): TurndownService {
@@ -7,6 +9,9 @@ function createTurndown(): TurndownService {
     codeBlockStyle: "fenced",
     bulletListMarker: "-",
   });
+
+  // GFM plugin adds table, strikethrough, and task list support
+  td.use(gfm);
 
   // Fenced code blocks with language from class="language-{lang}" on <code>
   td.addRule("fencedCodeWithLang", {
