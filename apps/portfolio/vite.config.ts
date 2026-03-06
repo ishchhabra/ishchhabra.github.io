@@ -48,6 +48,9 @@ export default defineConfig(async (): Promise<UserConfig> => {
             publicDir: path.resolve(__dirname, ".vercel/output/static"),
           },
         }),
+        rollupConfig: {
+          external: ["@resvg/resvg-js"],
+        },
       }),
       react({
         babel: {
