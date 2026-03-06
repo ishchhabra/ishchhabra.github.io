@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { getArticleBySlug } from "../../../lib/articles";
+import { useRenderMode } from "../../../lib/render-mode";
 import { Page } from "../../Page";
 import { Surface } from "../../Surface";
 import { ArticleCard } from "./ArticleCard";
@@ -111,6 +112,9 @@ function ArticleLayout({
   tocItems: TocItem[];
   children: ReactNode;
 }) {
+  const mode = useRenderMode();
+  if (mode === "rss") return <article>{children}</article>;
+
   return (
     <ArticleRoot>
       <ArticleHeader slug={slug} writtenWithAI={writtenWithAI} />
