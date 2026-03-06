@@ -5,6 +5,7 @@
 
 import { highlightCode } from "../../../lib/shiki";
 import { useMemo, useState, type ReactNode } from "react";
+import { InteractiveOnly } from "../../../lib/render-mode";
 import { Surface } from "../../Surface";
 
 /* ------------------------------------------------------------------ */
@@ -30,9 +31,11 @@ export function H2({ id, children }: { id: string; children: ReactNode }) {
     >
       <a href={`#${id}`} className="no-underline hover:no-underline">
         {children}
-        <span className="ml-2 text-zinc-500 opacity-0 transition-opacity group-hover:opacity-100 dark:text-zinc-700">
-          #
-        </span>
+        <InteractiveOnly>
+          <span className="ml-2 text-zinc-500 opacity-0 transition-opacity group-hover:opacity-100 dark:text-zinc-700">
+            #
+          </span>
+        </InteractiveOnly>
       </a>
     </h2>
   );
@@ -47,9 +50,11 @@ export function H3({ id, children }: { id: string; children: ReactNode }) {
     >
       <a href={`#${id}`} className="no-underline hover:no-underline">
         {children}
-        <span className="ml-2 text-zinc-500 opacity-0 transition-opacity group-hover:opacity-100 dark:text-zinc-700">
-          #
-        </span>
+        <InteractiveOnly>
+          <span className="ml-2 text-zinc-500 opacity-0 transition-opacity group-hover:opacity-100 dark:text-zinc-700">
+            #
+          </span>
+        </InteractiveOnly>
       </a>
     </h3>
   );

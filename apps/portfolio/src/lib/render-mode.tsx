@@ -11,3 +11,12 @@ export function RenderModeProvider({ mode, children }: { mode: RenderMode; child
 export function useRenderMode(): RenderMode {
   return useContext(RenderModeContext);
 }
+
+export function InteractiveOnly({ children }: { children: ReactNode }) {
+  const mode = useRenderMode();
+  if (mode !== "interactive") {
+    return null;
+  }
+
+  return children;
+}
