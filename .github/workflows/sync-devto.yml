@@ -34,4 +34,4 @@ jobs:
         run: pnpm --filter portfolio sync-to-devto
         env:
           DEVTO_API_KEY: ${{ secrets.DEVTO_API_KEY }}
-          VITE_SITE_URL: "https://ishchhabra.com"
+          VITE_SITE_URL: "https://www.ishchhabra.com"
