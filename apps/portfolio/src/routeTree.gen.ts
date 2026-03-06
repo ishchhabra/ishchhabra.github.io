@@ -18,7 +18,6 @@ import { Route as WritingPnpmMonorepoRouteImport } from './routes/writing/pnpm-m
 import { Route as LabSandboxRouteImport } from './routes/lab/sandbox'
 import { Route as LabDesignOverlayRouteImport } from './routes/lab/design-overlay'
 import { Route as DebugFeedRouteImport } from './routes/debug/feed'
-import { Route as OgDiagramsNameRouteImport } from './routes/og/diagrams/$name'
 import { Route as DemosSsrThemingSimpleLocalStorageRouteImport } from './routes/demos/ssr-theming/simple-local-storage'
 import { Route as DemosSsrThemingSimpleCookieRouteImport } from './routes/demos/ssr-theming/simple-cookie'
 import { Route as ApiAuthSplatRouteImport } from './routes/api.auth.$'
@@ -72,11 +71,6 @@ const LabDesignOverlayRoute = LabDesignOverlayRouteImport.update({
 const DebugFeedRoute = DebugFeedRouteImport.update({
   id: '/debug/feed',
   path: '/debug/feed',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OgDiagramsNameRoute = OgDiagramsNameRouteImport.update({
-  id: '/og/diagrams/$name',
-  path: '/og/diagrams/$name',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemosSsrThemingSimpleLocalStorageRoute =
@@ -148,7 +142,6 @@ export interface FileRoutesByFullPath {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/demos/ssr-theming/simple-cookie': typeof DemosSsrThemingSimpleCookieRoute
   '/demos/ssr-theming/simple-local-storage': typeof DemosSsrThemingSimpleLocalStorageRoute
-  '/og/diagrams/$name': typeof OgDiagramsNameRoute
   '/demos/ssr-theming/cookie-optimistic-client-cache/about': typeof DemosSsrThemingCookieOptimisticClientCacheAboutRoute
   '/demos/ssr-theming/cookie-optimistic/about': typeof DemosSsrThemingCookieOptimisticAboutRoute
   '/demos/ssr-theming/cookie-optimistic-client-cache/': typeof DemosSsrThemingCookieOptimisticClientCacheIndexRoute
@@ -167,7 +160,6 @@ export interface FileRoutesByTo {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/demos/ssr-theming/simple-cookie': typeof DemosSsrThemingSimpleCookieRoute
   '/demos/ssr-theming/simple-local-storage': typeof DemosSsrThemingSimpleLocalStorageRoute
-  '/og/diagrams/$name': typeof OgDiagramsNameRoute
   '/demos/ssr-theming/cookie-optimistic-client-cache/about': typeof DemosSsrThemingCookieOptimisticClientCacheAboutRoute
   '/demos/ssr-theming/cookie-optimistic/about': typeof DemosSsrThemingCookieOptimisticAboutRoute
   '/demos/ssr-theming/cookie-optimistic-client-cache': typeof DemosSsrThemingCookieOptimisticClientCacheIndexRoute
@@ -189,7 +181,6 @@ export interface FileRoutesById {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/demos/ssr-theming/simple-cookie': typeof DemosSsrThemingSimpleCookieRoute
   '/demos/ssr-theming/simple-local-storage': typeof DemosSsrThemingSimpleLocalStorageRoute
-  '/og/diagrams/$name': typeof OgDiagramsNameRoute
   '/demos/ssr-theming/cookie-optimistic-client-cache/about': typeof DemosSsrThemingCookieOptimisticClientCacheAboutRoute
   '/demos/ssr-theming/cookie-optimistic/about': typeof DemosSsrThemingCookieOptimisticAboutRoute
   '/demos/ssr-theming/cookie-optimistic-client-cache/': typeof DemosSsrThemingCookieOptimisticClientCacheIndexRoute
@@ -212,7 +203,6 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/demos/ssr-theming/simple-cookie'
     | '/demos/ssr-theming/simple-local-storage'
-    | '/og/diagrams/$name'
     | '/demos/ssr-theming/cookie-optimistic-client-cache/about'
     | '/demos/ssr-theming/cookie-optimistic/about'
     | '/demos/ssr-theming/cookie-optimistic-client-cache/'
@@ -231,7 +221,6 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/demos/ssr-theming/simple-cookie'
     | '/demos/ssr-theming/simple-local-storage'
-    | '/og/diagrams/$name'
     | '/demos/ssr-theming/cookie-optimistic-client-cache/about'
     | '/demos/ssr-theming/cookie-optimistic/about'
     | '/demos/ssr-theming/cookie-optimistic-client-cache'
@@ -252,7 +241,6 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/demos/ssr-theming/simple-cookie'
     | '/demos/ssr-theming/simple-local-storage'
-    | '/og/diagrams/$name'
     | '/demos/ssr-theming/cookie-optimistic-client-cache/about'
     | '/demos/ssr-theming/cookie-optimistic/about'
     | '/demos/ssr-theming/cookie-optimistic-client-cache/'
@@ -274,7 +262,6 @@ export interface RootRouteChildren {
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   DemosSsrThemingSimpleCookieRoute: typeof DemosSsrThemingSimpleCookieRoute
   DemosSsrThemingSimpleLocalStorageRoute: typeof DemosSsrThemingSimpleLocalStorageRoute
-  OgDiagramsNameRoute: typeof OgDiagramsNameRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -340,13 +327,6 @@ declare module '@tanstack/react-router' {
       path: '/debug/feed'
       fullPath: '/debug/feed'
       preLoaderRoute: typeof DebugFeedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/og/diagrams/$name': {
-      id: '/og/diagrams/$name'
-      path: '/og/diagrams/$name'
-      fullPath: '/og/diagrams/$name'
-      preLoaderRoute: typeof OgDiagramsNameRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demos/ssr-theming/simple-local-storage': {
@@ -469,7 +449,6 @@ const rootRouteChildren: RootRouteChildren = {
   DemosSsrThemingSimpleCookieRoute: DemosSsrThemingSimpleCookieRoute,
   DemosSsrThemingSimpleLocalStorageRoute:
     DemosSsrThemingSimpleLocalStorageRoute,
-  OgDiagramsNameRoute: OgDiagramsNameRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

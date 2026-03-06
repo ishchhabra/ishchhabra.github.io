@@ -533,7 +533,7 @@ export function Diagram({
 }) {
   const mode = useRenderMode();
   if (mode === "rss") {
-    return <img src={`${SITE_BASE_URL}/og/diagrams/${name}`} alt={alt} />;
+    return <img src={`${SITE_BASE_URL}/og/diagrams/${name}.png`} alt={alt} />;
   }
 
   return children;

@@ -5,6 +5,7 @@ node_modules
 dist
 dist-ssr
 *.tsbuildinfo
+apps/portfolio/public/og/diagrams/*.png
 
 # Logs
 logs

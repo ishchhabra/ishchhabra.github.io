@@ -4,8 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite dev",
-    "build": "vite build",
+    "generate:og-diagrams": "tsx scripts/generate-og-diagrams.tsx",
+    "dev": "pnpm generate:og-diagrams && vite dev",
+    "build": "pnpm generate:og-diagrams && vite build",
+    "build:vercel": "bash scripts/vercel-build.sh",
     "preview": "vite preview",
     "format": "oxfmt",
     "format-check": "oxfmt --check",
@@ -15,10 +17,12 @@
   },
   "dependencies": {
     "@fontsource/noto-sans": "^5.2.10",
+    "@fontsource/noto-sans-mono": "^5.2.10",
     "@iframe-resizer/child": "^5.5.9",
     "@iframe-resizer/react": "^5.5.9",
     "@ish/design-overlay": "workspace:*",
     "@ish/sandbox": "workspace:*",
+    "@resvg/resvg-js": "^2.6.2",
     "@tailwindcss/typography": "^0.5.19",
     "@tanstack/react-router": "^1.162.8",
     "@tanstack/react-start": "^1.162.8",
@@ -59,6 +63,7 @@
     "oxlint": "catalog:",
     "oxlint-tsgolint": "catalog:",
     "tailwindcss": "catalog:",
+    "tsx": "^4.21.0",
     "typescript": "catalog:",
     "vite": "^7.2.4",
     "vite-tsconfig-paths": "^6.1.0"

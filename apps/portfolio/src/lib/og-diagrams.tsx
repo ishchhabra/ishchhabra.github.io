@@ -1,8 +1,8 @@
 /**
  * Diagram renderers for OG image generation.
  *
- * SVG diagrams: renderToStaticMarkup → extract <svg> → served as image/svg+xml
- * HTML diagrams (ResolutionPathDiagram): Satori-compatible JSX → @vercel/og
+ * SVG diagrams: renderToStaticMarkup → rasterized to PNG at build time
+ * HTML diagrams: Satori-compatible JSX → PNG at build time via @vercel/og
  */
 
 import type { ReactElement, ReactNode } from "react";
