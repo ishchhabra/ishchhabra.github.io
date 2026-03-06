@@ -22,7 +22,7 @@ function renderArticleToHtml(slug: string): string {
 
   return renderToStaticMarkup(
     <RenderModeProvider mode="rss">
-      <StaticThemeProvider>
+      <StaticThemeProvider theme="light">
         <Component />
       </StaticThemeProvider>
     </RenderModeProvider>,

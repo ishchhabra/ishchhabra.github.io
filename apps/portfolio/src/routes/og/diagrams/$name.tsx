@@ -2,38 +2,31 @@ import { ImageResponse } from "@vercel/og";
 import { createFileRoute } from "@tanstack/react-router";
 import { OG_DIAGRAMS, renderSvgComponent } from "../../../lib/og-diagrams";
 
-function renderDiagramResponse(name: string): ImageResponse {
-  const diagram = OG_DIAGRAMS[name];
-  if (!diagram) {
-    throw new Error(`Unknown diagram: ${name}`);
-  }
-
-  if (diagram.type === "svg-component") {
-    const svg = renderSvgComponent(diagram.component);
-    const dataUri = `data:image/svg+xml,${encodeURIComponent(svg)}`;
-    return new ImageResponse(<img src={dataUri} width="100%" height="100%" />, {
-      width: 1200,
-      height: 800,
-    });
-  }
-
-  return new ImageResponse(diagram.component(), {
-    width: diagram.width,
-    height: diagram.height,
-  });
-}
-
 export const Route = createFileRoute("/og/diagrams/$name")({
   server: {
     handlers: {
       GET: ({ params }) => {
         const { name } = params;
+        const diagram = OG_DIAGRAMS[name];
 
-        if (!OG_DIAGRAMS[name]) {
+        if (!diagram) {
           return new Response("Not found", { status: 404 });
         }
 
-        const response = renderDiagramResponse(name);
+        if (diagram.type === "svg") {
+          const svg = renderSvgComponent(diagram.component);
+          return new Response(svg, {
+            headers: {
+              "Content-Type": "image/svg+xml",
+              "Cache-Control": "public, max-age=31536000, immutable",
+            },
+          });
+        }
+
+        const response = new ImageResponse(diagram.component(), {
+          width: diagram.width,
+          height: diagram.height,
+        });
         response.headers.set("Cache-Control", "public, max-age=31536000, immutable");
         return response;
       },
