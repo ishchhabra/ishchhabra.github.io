@@ -1,4 +1,3 @@
-import { Page } from "../../components/Page";
 import { Article } from "../../components/writing/core/Article";
 import {
   A,
@@ -17,8 +16,6 @@ import {
   Table,
   UL,
 } from "../../components/writing/core/Prose";
-import { ScrollProgress } from "../../components/writing/core/ScrollProgress";
-import { TableOfContents } from "../../components/writing/core/TableOfContents";
 import { LodashResolutionDemo } from "../../components/writing/pnpm-monorepo/LodashResolutionDemo";
 import { ResolutionPathDiagram } from "../../components/writing/pnpm-monorepo/ResolutionPathDiagram";
 import { InjectedDiagram } from "../../components/writing/pnpm-monorepo/SymlinkDiagram";
@@ -59,14 +56,7 @@ const tocItems = [
 
 export function PnpmMonorepoArticle() {
   return (
-    <>
-      <ScrollProgress />
-      <Page.Main variant="hero">
-        <Article.Header slug="pnpm-monorepo" writtenWithAI />
-
-        {/* Content grid: article + sidebar ToC */}
-        <div className="flex gap-10 pt-8">
-          <article className="min-w-0 max-w-4xl flex-1">
+    <Article.Layout slug="pnpm-monorepo" writtenWithAI tocItems={tocItems}>
             <P>
               At some point every growing application ends up with code that needs to be shared
               across surfaces. Maybe you started with a web app and then needed to build a mobile
@@ -546,13 +536,6 @@ pnpm --filter @packages/ui build`}</CodeBlock>
               </LI>
             </UL>
 
-            <Article.Footer />
-          </article>
-
-          {/* Sidebar: Table of Contents */}
-          <TableOfContents items={tocItems} />
-        </div>
-      </Page.Main>
-    </>
+    </Article.Layout>
   );
 }

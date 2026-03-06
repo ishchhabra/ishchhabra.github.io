@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
-interface TocItem {
+export interface TocItem {
   id: string;
   label: string;
   indent?: boolean;

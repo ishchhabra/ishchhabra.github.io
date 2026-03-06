@@ -1,6 +1,5 @@
 import IframeResizer from "@iframe-resizer/react";
 import { useState } from "react";
-import { Page } from "../../components/Page";
 import { Article } from "../../components/writing/core/Article";
 import { Preview } from "../../components/writing/core/Preview";
 import {
@@ -18,8 +17,6 @@ import {
   Strong,
   UL,
 } from "../../components/writing/core/Prose";
-import { ScrollProgress } from "../../components/writing/core/ScrollProgress";
-import { TableOfContents } from "../../components/writing/core/TableOfContents";
 
 const DEMO_ROUTE_SIMPLE_LOCAL_STORAGE = "/demos/ssr-theming/simple-local-storage";
 const DEMO_ROUTE_SIMPLE_COOKIE = "/demos/ssr-theming/simple-cookie";
@@ -61,13 +58,7 @@ const tocItems = [
 
 export function SsrThemingArticle() {
   return (
-    <>
-      <ScrollProgress />
-      <Page.Main variant="hero">
-        <Article.Header slug="ssr-theming" writtenWithAI />
-
-        <div className="flex gap-10 pt-8">
-          <article className="min-w-0 max-w-4xl flex-1">
+    <Article.Layout slug="ssr-theming" writtenWithAI tocItems={tocItems}>
             {/* ── PERSISTING THE THEME ──────────────────────── */}
 
             <SectionLabel>The problem</SectionLabel>
@@ -761,12 +752,6 @@ export const Route = createRootRoute({
               </LI>
             </UL>
 
-            <Article.Footer />
-          </article>
-
-          <TableOfContents items={tocItems} />
-        </div>
-      </Page.Main>
-    </>
+    </Article.Layout>
   );
 }

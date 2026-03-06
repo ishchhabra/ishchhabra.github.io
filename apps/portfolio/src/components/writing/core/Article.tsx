@@ -1,9 +1,12 @@
 import { Link } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 import { getArticleBySlug } from "../../../lib/articles";
 import { Page } from "../../Page";
 import { Surface } from "../../Surface";
 import { ArticleCard } from "./ArticleCard";
 import { A } from "./Prose";
+import { ScrollProgress } from "./ScrollProgress";
+import { type TocItem, TableOfContents } from "./TableOfContents";
 
 const separator = <span className="h-3 w-px bg-zinc-300 dark:bg-zinc-800" aria-hidden />;
 
@@ -79,7 +82,50 @@ function ArticleFooter() {
   );
 }
 
+function ArticleRoot({ children }: { children: ReactNode }) {
+  return (
+    <>
+      <ScrollProgress />
+      <Page.Main variant="hero">{children}</Page.Main>
+    </>
+  );
+}
+
+function ArticleContent({ tocItems, children }: { tocItems: TocItem[]; children: ReactNode }) {
+  return (
+    <div className="flex gap-10 pt-8">
+      <article className="min-w-0 max-w-4xl flex-1">{children}</article>
+      <TableOfContents items={tocItems} />
+    </div>
+  );
+}
+
+function ArticleLayout({
+  slug,
+  writtenWithAI = false,
+  tocItems,
+  children,
+}: {
+  slug: string;
+  writtenWithAI?: boolean;
+  tocItems: TocItem[];
+  children: ReactNode;
+}) {
+  return (
+    <ArticleRoot>
+      <ArticleHeader slug={slug} writtenWithAI={writtenWithAI} />
+      <ArticleContent tocItems={tocItems}>
+        {children}
+        <ArticleFooter />
+      </ArticleContent>
+    </ArticleRoot>
+  );
+}
+
 export const Article = {
+  Root: ArticleRoot,
   Header: ArticleHeader,
+  Content: ArticleContent,
   Footer: ArticleFooter,
+  Layout: ArticleLayout,
 };
