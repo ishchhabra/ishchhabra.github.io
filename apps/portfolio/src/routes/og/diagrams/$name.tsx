@@ -1,6 +1,9 @@
-import { ImageResponse } from "@vercel/og";
 import { createFileRoute } from "@tanstack/react-router";
-import { OG_DIAGRAMS, renderSvgComponent } from "../../../lib/og-diagrams";
+import { ImageResponse } from "@vercel/og";
+import type { ReactNode } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { OG_DIAGRAMS } from "../../../lib/og-diagrams";
+import { StaticThemeProvider } from "../../../lib/theme";
 
 export const Route = createFileRoute("/og/diagrams/$name")({
   server: {
@@ -13,24 +16,17 @@ export const Route = createFileRoute("/og/diagrams/$name")({
           return new Response("Not found", { status: 404 });
         }
 
+        const DiagramComponent = diagram.component;
+
         if (diagram.type === "svg") {
-          const svg = renderSvgComponent(diagram.component);
-          const vb = svg.match(/viewBox="0 0 (\d+) ([\d.]+)"/);
-          const width = vb ? Number(vb[1]) : 560;
-          const height = vb ? Math.ceil(Number(vb[2])) : 400;
-          const dataUri = `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
-          const response = new ImageResponse(
-            <img src={dataUri} width={width} height={height} />,
-            { width, height },
+          return createPngResponse(
+            <ComponentWrapper>
+              <DiagramComponent />
+            </ComponentWrapper>,
           );
-          response.headers.set(
-            "Cache-Control",
-            "public, max-age=31536000, immutable",
-          );
-          return response;
         }
 
-        const response = new ImageResponse(diagram.component(), {
+        const response = new ImageResponse(<DiagramComponent />, {
           width: diagram.width,
           height: diagram.height,
         });
@@ -40,3 +36,42 @@ export const Route = createFileRoute("/og/diagrams/$name")({
     },
   },
 });
+
+function ComponentWrapper({ children }: { children: ReactNode }) {
+  return <StaticThemeProvider theme="light">{children}</StaticThemeProvider>;
+}
+
+function createPngResponse(children: ReactNode) {
+  const markup = renderToStaticMarkup(children);
+  const svg = markup.match(/<svg[\s\S]*<\/svg>/)?.[0];
+
+  if (!svg) {
+    return new Response("Failed to render PNG", { status: 500 });
+  }
+
+  const svgDataUri = `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+  const response = new ImageResponse(
+    <div
+      style={{
+        display: "flex",
+        width: "100%",
+        height: "100%",
+        background: "white",
+      }}
+    >
+      <img
+        src={svgDataUri}
+        alt=""
+        width="560"
+        height="350"
+        style={{ width: "100%", height: "100%" }}
+      />
+    </div>,
+    {
+      width: 560,
+      height: 350,
+    },
+  );
+  response.headers.set("Cache-Control", "public, max-age=31536000, immutable");
+  return response;
+}

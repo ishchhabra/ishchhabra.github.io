@@ -6,7 +6,6 @@
  */
 
 import type { ReactElement, ReactNode } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
 import {
   InjectedDiagram,
   NodeResolutionDiagram,
@@ -16,32 +15,6 @@ import {
   SyncLifecycleDiagram,
 } from "../components/writing/pnpm-monorepo/SyncLifecycleDiagram";
 import { diagramPalette } from "../components/writing/pnpm-monorepo/diagramColors";
-import { StaticThemeProvider } from "./theme";
-
-export function renderSvgComponent(Component: () => ReactNode): string {
-  const html = renderToStaticMarkup(
-    <StaticThemeProvider theme="light">
-      <Component />
-    </StaticThemeProvider>,
-  );
-  const match = html.match(/<svg[\s\S]*<\/svg>/);
-  if (!match) {
-    throw new Error("No SVG found in rendered output");
-  }
-  let svg = match[0];
-
-  // Remove the background <rect> (first rect child) for transparent background
-  svg = svg.replace(/<rect width="[^"]*" height="[^"]*" rx="16" fill="[^"]*"><\/rect>/, "");
-
-  // Ensure explicit width/height from viewBox so <img> tags size correctly
-  const svgTag = svg.match(/^<svg[^>]*>/)?.[0] ?? "";
-  const vb = svgTag.match(/viewBox="0 0 (\d+) ([\d.]+)"/);
-  if (vb && !svgTag.includes('width="')) {
-    svg = svg.replace(/^<svg/, `<svg width="${vb[1]}" height="${vb[2]}"`);
-  }
-
-  return svg;
-}
 
 /* ------------------------------------------------------------------ */
 /*  ResolutionPathDiagram — Satori version (CSS borders, no Unicode)  */

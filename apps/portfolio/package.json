@@ -14,6 +14,7 @@
     "sync-to-devto": "pnpm dlx vite-node --config scripts/vite.scripts.config.ts scripts/sync-to-devto.ts"
   },
   "dependencies": {
+    "@fontsource/noto-sans": "^5.2.10",
     "@iframe-resizer/child": "^5.5.9",
     "@iframe-resizer/react": "^5.5.9",
     "@ish/design-overlay": "workspace:*",
