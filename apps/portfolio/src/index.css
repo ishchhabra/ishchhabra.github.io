@@ -1,4 +1,5 @@
 @import "@ish/design-overlay/styles.css";
+@plugin "@tailwindcss/typography";
 
 /* Class-based dark mode: add .dark on html to enable dark: variants */
 @custom-variant dark (&:where(.dark, .dark *));

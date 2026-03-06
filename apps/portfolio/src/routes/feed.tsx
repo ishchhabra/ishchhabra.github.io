@@ -1,33 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Feed } from "feed";
-import type { ComponentType } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
 import { ARTICLES } from "../lib/articles";
-import { RenderModeProvider } from "../lib/render-mode";
+import { renderArticleToHtml } from "../lib/article-renderer";
 import { DEFAULT_DESCRIPTION, SITE_BASE_URL, SITE_TITLE } from "../lib/seo";
-import { StaticThemeProvider } from "../lib/theme";
-import { PnpmMonorepoArticle } from "../pages/writing/PnpmMonorepoArticle";
-import { SsrThemingArticle } from "../pages/writing/SsrThemingArticle";
-
-const ARTICLE_COMPONENTS: Record<string, ComponentType> = {
-  "pnpm-monorepo": PnpmMonorepoArticle,
-  "ssr-theming": SsrThemingArticle,
-};
-
-function renderArticleToHtml(slug: string): string {
-  const Component = ARTICLE_COMPONENTS[slug];
-  if (!Component) {
-    throw new Error(`Article component not found for slug: ${slug}`);
-  }
-
-  return renderToStaticMarkup(
-    <RenderModeProvider mode="rss">
-      <StaticThemeProvider theme="light">
-        <Component />
-      </StaticThemeProvider>
-    </RenderModeProvider>,
-  );
-}
 
 function generateFeed(): string {
   const feed = new Feed({
