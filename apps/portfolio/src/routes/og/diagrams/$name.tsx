@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
+import path from "node:path";
 import { createFileRoute } from "@tanstack/react-router";
 import { ImageResponse } from "@vercel/og";
 import type { ReactNode } from "react";
@@ -8,26 +9,37 @@ import { OG_DIAGRAMS } from "../../../lib/og-diagrams";
 import { StaticThemeProvider } from "../../../lib/theme";
 
 const require = createRequire(import.meta.url);
-const notoSansRegularPath = require.resolve("@fontsource/noto-sans/files/noto-sans-latin-400-normal.woff");
-const notoSansBoldPath = require.resolve("@fontsource/noto-sans/files/noto-sans-latin-700-normal.woff");
 
-const ogFontsPromise = Promise.all([
-  readFile(notoSansRegularPath),
-  readFile(notoSansBoldPath),
-]).then(([regular, bold]) => [
-  {
-    name: "Noto Sans",
-    data: toArrayBuffer(regular),
-    style: "normal" as const,
-    weight: 400 as const,
-  },
-  {
-    name: "Noto Sans",
-    data: toArrayBuffer(bold),
-    style: "normal" as const,
-    weight: 700 as const,
-  },
-]);
+function loadOgFonts(): Promise<
+  { name: string; data: ArrayBuffer; style: "normal"; weight: 400 | 700 }[]
+> {
+  try {
+    const notoSansDir = path.dirname(require.resolve("@fontsource/noto-sans/package.json"));
+    const notoSansRegularPath = path.join(notoSansDir, "files", "noto-sans-latin-400-normal.woff");
+    const notoSansBoldPath = path.join(notoSansDir, "files", "noto-sans-latin-700-normal.woff");
+    return Promise.all([
+      readFile(notoSansRegularPath),
+      readFile(notoSansBoldPath),
+    ]).then(([regular, bold]) => [
+      {
+        name: "Noto Sans",
+        data: toArrayBuffer(regular),
+        style: "normal" as const,
+        weight: 400 as const,
+      },
+      {
+        name: "Noto Sans",
+        data: toArrayBuffer(bold),
+        style: "normal" as const,
+        weight: 700 as const,
+      },
+    ]);
+  } catch {
+    return Promise.resolve([]);
+  }
+}
+
+const ogFontsPromise = loadOgFonts();
 
 export const Route = createFileRoute("/og/diagrams/$name")({
   server: {
@@ -55,7 +67,7 @@ export const Route = createFileRoute("/og/diagrams/$name")({
         const response = new ImageResponse(<DiagramComponent />, {
           width: diagram.width,
           height: diagram.height,
-          fonts,
+          ...(fonts.length > 0 && { fonts }),
         });
         response.headers.set("Cache-Control", "public, max-age=31536000, immutable");
         return response;
@@ -102,7 +114,7 @@ function createPngResponse(
     {
       width: dimensions.width,
       height: dimensions.height,
-      fonts,
+      ...(fonts.length > 0 && { fonts }),
     },
   );
   response.headers.set("Cache-Control", "public, max-age=31536000, immutable");
