@@ -1,5 +1,3 @@
-import IframeResizer from "@iframe-resizer/react";
-import { useState } from "react";
 import { Article } from "../../components/writing/core/Article";
 import { Preview } from "../../components/writing/core/Preview";
 import {
@@ -23,21 +21,6 @@ const DEMO_ROUTE_SIMPLE_COOKIE = "/demos/ssr-theming/simple-cookie";
 const DEMO_ROUTE_COOKIE_OPTIMISTIC = "/demos/ssr-theming/cookie-optimistic";
 const DEMO_ROUTE_COOKIE_OPTIMISTIC_CLIENT_CACHE =
   "/demos/ssr-theming/cookie-optimistic-client-cache";
-
-function DemoEmbed({ url, title }: { url: string; title: string }) {
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
-  return (
-    <Preview.BrowserChrome url={url} onRefresh={() => setRefreshTrigger((t) => t + 1)}>
-      <IframeResizer
-        key={refreshTrigger}
-        className="w-full"
-        license="GPLv3"
-        src={url}
-        title={title}
-      />
-    </Preview.BrowserChrome>
-  );
-}
 
 const tocItems = [
   {
@@ -175,7 +158,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
       <P>Try it: switch to dark mode, then refresh the page.</P>
 
-      <DemoEmbed url={DEMO_ROUTE_SIMPLE_LOCAL_STORAGE} title="Simple localStorage theme demo" />
+      <Preview.Demo url={DEMO_ROUTE_SIMPLE_LOCAL_STORAGE} title="Simple localStorage theme demo" />
 
       <P>
         If you refreshed, you likely saw the page flash light for a moment before switching to dark.
@@ -271,7 +254,7 @@ export function useTheme(): ThemeContextValue {
         no flash.
       </P>
 
-      <DemoEmbed url={DEMO_ROUTE_SIMPLE_COOKIE} title="Simple cookie theme demo" />
+      <Preview.Demo url={DEMO_ROUTE_SIMPLE_COOKIE} title="Simple cookie theme demo" />
 
       <Divider />
 
@@ -407,7 +390,7 @@ export function useTheme(): ThemeContextValue {
 
       <P>Try it: the toggle should feel instant.</P>
 
-      <DemoEmbed url={DEMO_ROUTE_COOKIE_OPTIMISTIC} title="Cookie optimistic theme demo" />
+      <Preview.Demo url={DEMO_ROUTE_COOKIE_OPTIMISTIC} title="Cookie optimistic theme demo" />
 
       <P>But there's another problem. Try navigating.</P>
 
@@ -594,7 +577,7 @@ export function useTheme(): ThemeContextValue {
         between Home and About and compare with the previous demo (cookie-optimistic).
       </P>
 
-      <DemoEmbed
+      <Preview.Demo
         url={DEMO_ROUTE_COOKIE_OPTIMISTIC_CLIENT_CACHE}
         title="Cookie optimistic + client cache (instant nav)"
       />

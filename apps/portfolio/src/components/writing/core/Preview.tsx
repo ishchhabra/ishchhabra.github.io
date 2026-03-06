@@ -3,7 +3,11 @@
  * Compound component: Preview.BrowserChrome, Preview.NavBar, etc.
  */
 
+import IframeResizer from "@iframe-resizer/react";
 import { Link } from "@tanstack/react-router";
+import { useState } from "react";
+import { useRenderMode } from "../../../lib/render-mode";
+import { SITE_BASE_URL } from "../../../lib/seo";
 
 export const SERVER_DELAY_MS = 1000;
 
@@ -224,8 +228,34 @@ function StatusBar({
   );
 }
 
+function Demo({ url, title }: { url: string; title: string }) {
+  const mode = useRenderMode();
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  if (mode === "rss") {
+    return (
+      <p>
+        <a href={`${SITE_BASE_URL}${url}`}>▶ Try the interactive demo</a>
+      </p>
+    );
+  }
+
+  return (
+    <BrowserChrome url={url} onRefresh={() => setRefreshTrigger((t) => t + 1)}>
+      <IframeResizer
+        key={refreshTrigger}
+        className="w-full"
+        license="GPLv3"
+        src={url}
+        title={title}
+      />
+    </BrowserChrome>
+  );
+}
+
 export const Preview = {
   BrowserChrome,
+  Demo,
   NavBar,
   ThemeToggle,
   ThemeShell,
