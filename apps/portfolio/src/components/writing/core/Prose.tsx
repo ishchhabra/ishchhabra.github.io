@@ -279,9 +279,11 @@ export function CodeBlock({
             <strong>{filename}</strong>
           </p>
         )}
-        <pre>
-          <code className={language ? `language-${language}` : undefined}>{children}</code>
-        </pre>
+        <div className={language ? `highlight-${language}` : undefined}>
+          <pre>
+            <code>{children}</code>
+          </pre>
+        </div>
       </>
     );
   }
@@ -327,9 +329,11 @@ export function ExpandableCodeBlock({
             <strong>{filename}</strong>
           </p>
         )}
-        <pre>
-          <code className={language ? `language-${language}` : undefined}>{preview}</code>
-        </pre>
+        <div className={language ? `highlight-${language}` : undefined}>
+          <pre>
+            <code>{preview}</code>
+          </pre>
+        </div>
       </>
     );
   }
