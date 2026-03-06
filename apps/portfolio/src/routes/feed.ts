@@ -11,7 +11,7 @@ function generateFeed(): string {
 		link: SITE_BASE_URL,
 		language: "en",
 		feedLinks: {
-			rss: `${SITE_BASE_URL}/api/feed`,
+			rss: `${SITE_BASE_URL}/feed`,
 		},
 		copyright: "",
 		author: {
@@ -33,7 +33,7 @@ function generateFeed(): string {
 	return feed.rss2();
 }
 
-export const Route = createFileRoute("/api/feed")({
+export const Route = createFileRoute("/feed")({
 	server: {
 		handlers: {
 			GET: () => {
