@@ -2,6 +2,7 @@ import TurndownService from "turndown";
 // @ts-expect-error - no types for turndown-plugin-gfm
 import { gfm } from "turndown-plugin-gfm";
 import { renderArticleToHtml } from "./article-renderer";
+import { SITE_BASE_URL } from "./seo";
 
 function createTurndown(): TurndownService {
   const td = new TurndownService({
@@ -38,5 +39,13 @@ function createTurndown(): TurndownService {
 export function renderArticleToMarkdown(slug: string): string {
   const html = renderArticleToHtml(slug);
   const td = createTurndown();
-  return td.turndown(html);
+  const body = td.turndown(html);
+
+  const footer = [
+    "---",
+    "",
+    `*Originally published on [ishchhabra.com](${SITE_BASE_URL}/writing/${slug}). Follow me there for more.*`,
+  ].join("\n");
+
+  return `${body}\n\n${footer}`;
 }
