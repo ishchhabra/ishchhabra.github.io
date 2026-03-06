@@ -280,7 +280,7 @@ export function CodeBlock({
           </p>
         )}
         <pre>
-          <code>{children}</code>
+          <code className={language ? `language-${language}` : undefined}>{children}</code>
         </pre>
       </>
     );
@@ -328,7 +328,7 @@ export function ExpandableCodeBlock({
           </p>
         )}
         <pre>
-          <code>{preview}</code>
+          <code className={language ? `language-${language}` : undefined}>{preview}</code>
         </pre>
       </>
     );
