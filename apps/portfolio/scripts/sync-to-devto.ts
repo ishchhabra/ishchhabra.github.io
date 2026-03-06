@@ -153,7 +153,9 @@ async function main() {
     (a) => a.canonical_url?.startsWith(SITE_BASE_URL) && !localCanonicals.has(a.canonical_url),
   );
   if (orphaned.length > 0) {
-    console.log(`\n⚠ ${orphaned.length} orphaned article(s) on Dev.to (no matching local article):`);
+    console.log(
+      `\n⚠ ${orphaned.length} orphaned article(s) on Dev.to (no matching local article):`,
+    );
     for (const a of orphaned) {
       console.log(`  - "${a.title}" (${a.url})`);
     }

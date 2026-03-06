@@ -58,7 +58,7 @@ function FeedDebug() {
             type="button"
             onClick={() => {
               setTab(t);
-              if (t !== "rss" && !markdown) loadMarkdown();
+              if (t !== "rss" && !markdown) void loadMarkdown();
             }}
             className={`px-3 py-1.5 text-sm capitalize ${
               tab === t
