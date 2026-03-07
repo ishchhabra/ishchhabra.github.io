@@ -31,6 +31,25 @@ function createTurndown(): TurndownService {
     },
   });
 
+  // Turndown merges adjacent <blockquote> elements into one markdown
+  // blockquote. Override the rule to append an HTML comment separator when
+  // the next sibling is also a blockquote, which breaks the merge.
+  td.addRule("blockquote", {
+    filter: "blockquote",
+    replacement(content, node) {
+      const trimmed = content.replace(/^\n+|\n+$/g, "");
+      const quoted = trimmed
+        .split("\n")
+        .map((line) => `> ${line}`)
+        .join("\n");
+
+      const next = (node as HTMLElement).nextElementSibling;
+      const separator = next?.tagName === "BLOCKQUOTE" ? "\n\n<!-- -->\n" : "";
+
+      return `\n\n${quoted}${separator}\n\n`;
+    },
+  });
+
   td.keep(["video"]);
 
   return td;
