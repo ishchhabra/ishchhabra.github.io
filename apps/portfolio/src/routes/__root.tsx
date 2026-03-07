@@ -8,6 +8,7 @@ import { useEffect } from "react";
 import { Footer } from "../components/Footer";
 import { Header } from "../components/Header";
 import appCss from "../index.css?url";
+import { PostHogProvider } from "../lib/posthog";
 import {
   createPageMeta,
   createWebsiteSchemaScript,
@@ -85,22 +86,22 @@ function RootComponent() {
   const { pathname } = useLocation();
   const isDemoRoute = pathname.startsWith(DEMO_ROUTE_PREFIX);
 
-  if (isDemoRoute) {
-    return (
-      <BareDocument>
-        <Outlet />
-      </BareDocument>
-    );
-  }
-
   return (
-    <ThemeProvider>
-      <RootDocument>
-        <LayoutShell>
+    <PostHogProvider>
+      {isDemoRoute ? (
+        <BareDocument>
           <Outlet />
-        </LayoutShell>
-      </RootDocument>
-    </ThemeProvider>
+        </BareDocument>
+      ) : (
+        <ThemeProvider>
+          <RootDocument>
+            <LayoutShell>
+              <Outlet />
+            </LayoutShell>
+          </RootDocument>
+        </ThemeProvider>
+      )}
+    </PostHogProvider>
   );
 }
 
