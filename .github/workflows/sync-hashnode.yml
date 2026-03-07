@@ -1,0 +1,38 @@
+name: Sync articles to Hashnode
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/portfolio/src/pages/writing/**"
+      - "apps/portfolio/src/lib/articles.ts"
+      - "apps/portfolio/src/lib/article-renderer.tsx"
+      - "apps/portfolio/src/lib/article-markdown.ts"
+      - "apps/portfolio/src/components/writing/**"
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: package.json
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Sync to Hashnode
+        run: pnpm --filter portfolio sync-to-hashnode
+        env:
+          HASHNODE_PAT: ${{ secrets.HASHNODE_PAT }}
+          HASHNODE_PUBLICATION_ID: ${{ secrets.HASHNODE_PUBLICATION_ID }}
+          VITE_SITE_URL: "https://www.ishchhabra.com"
