@@ -20,7 +20,6 @@ import {
   UL,
   Video,
 } from "../../components/writing/core/Prose";
-import { InteractiveOnly } from "../../lib/render-mode";
 import { LodashResolutionDemo } from "../../components/writing/pnpm-monorepo/LodashResolutionDemo";
 import { ResolutionPathDiagram } from "../../components/writing/pnpm-monorepo/ResolutionPathDiagram";
 import { InjectedDiagram } from "../../components/writing/pnpm-monorepo/SymlinkDiagram";
@@ -28,6 +27,7 @@ import {
   SyncBeforeAfterDiagram,
   SyncLifecycleDiagram,
 } from "../../components/writing/pnpm-monorepo/SyncLifecycleDiagram";
+import { InteractiveOnly } from "../../lib/render-mode";
 
 const tocItems = [
   { id: "how-to-set-up-a-pnpm-workspace", label: "How to set up a pnpm workspace" },
@@ -50,8 +50,13 @@ const tocItems = [
     indent: true,
   },
   {
-    id: "problem-3-cmdclick-opens-dts-not-source",
-    label: "Problem 3: Cmd+Click opens .d.ts, not source",
+    id: "problem-3-dev-server-doesnt-hot-reload",
+    label: "Problem 3: Dev server doesn't hot reload",
+    indent: true,
+  },
+  {
+    id: "problem-4-cmdclick-opens-dts-not-source",
+    label: "Problem 4: Cmd+Click opens .d.ts, not source",
     indent: true,
   },
   { id: "why-not-bun", label: "Why not Bun?" },
@@ -287,11 +292,11 @@ export function PnpmMonorepoArticle() {
       <H3 id="problem-2-changes-dont-propagate">Problem 2: Changes don't propagate</H3>
 
       <P>
-        You change a component in the shared package. Nothing happens in the consuming app. With
-        injected deps, consumers get a <Strong>hard-linked copy</Strong> of <Code>dist/</Code>{" "}
-        created at install time. When <Code>tsc</Code> rebuilds, it writes new files with new inodes
-        — but the consumer's hard links still point to the old ones. The consumer doesn't see the
-        new build.
+        You make a change to a component in the shared package, save the file, and nothing happens
+        in the consuming app. With injected deps, consumers get a <Strong>hard-linked copy</Strong>{" "}
+        of <Code>dist/</Code> created at install time. When <Code>tsc</Code> rebuilds, it writes new
+        files with new inodes — but the consumer's hard links still point to the old ones. The
+        consumer doesn't see the new build.
       </P>
 
       <P>
@@ -381,8 +386,86 @@ export function PnpmMonorepoArticle() {
         pointing to its consumer's lockfile and store path.
       </Callout>
 
-      <H3 id="problem-3-cmdclick-opens-dts-not-source">
-        Problem 3: Cmd+Click opens .d.ts, not source
+      <H3 id="problem-3-dev-server-doesnt-hot-reload">Problem 3: Dev server doesn't hot reload</H3>
+
+      <P>
+        At this point, if you inspect <Code>node_modules</Code>, the updated files are there, yet
+        the dev server still shows the old version and the only way to see your changes is to
+        restart it every time. By default, most bundlers ignore changes to <Code>node_modules</Code>{" "}
+        entirely, so the files change on disk but nobody's watching.
+      </P>
+
+      <Collapsible title="Vite" defaultOpen={true}>
+        <P>
+          Vite pre-bundles everything in <Code>node_modules</Code> by default, including your
+          workspace packages. So even after <Code>pnpm-sync copy</Code> updates the files, Vite
+          keeps serving its cached version. Exclude them from pre-bundling so Vite reads their{" "}
+          <Code>dist/</Code> directly. You can use{" "}
+          <A href="https://www.npmjs.com/package/@pnpm/find-workspace-packages">
+            @pnpm/find-workspace-packages
+          </A>{" "}
+          to discover them dynamically:
+        </P>
+        <CodeBlock
+          filename="vite.config.ts"
+          language="typescript"
+        >{`import { findWorkspacePackagesNoCheck } from "@pnpm/find-workspace-packages";
+
+const workspaceRoot = path.resolve(__dirname, "../..");
+
+export default defineConfig(async () => {
+  const workspacePackages = await findWorkspacePackagesNoCheck(workspaceRoot);
+  const workspacePackageNames = workspacePackages
+    .filter((p) => path.resolve(p.dir) !== path.resolve(__dirname))
+    .map((p) => p.manifest.name)
+    .filter((name): name is string => typeof name === "string");
+
+  return {
+    optimizeDeps: {
+      // Skip pre-bundling for workspace packages so Vite picks up
+      // changes from pnpm-sync without restarting the dev server.
+      exclude: workspacePackageNames,
+    },
+  };
+});`}</CodeBlock>
+      </Collapsible>
+
+      <Collapsible title="Webpack" defaultOpen={false}>
+        <P>
+          Webpack's file watcher ignores all of <Code>node_modules</Code> by default. To pick up
+          changes in workspace packages, you need to carve out an exception:
+        </P>
+        <CodeBlock
+          filename="webpack.config.mjs"
+          language="javascript"
+        >{`import { findWorkspacePackagesNoCheck } from "@pnpm/find-workspace-packages";
+
+const workspaceRoot = path.resolve(__dirname, "../..");
+
+export default async () => {
+  const workspacePackages = await findWorkspacePackagesNoCheck(workspaceRoot);
+  const workspacePackageNames = workspacePackages
+    .filter((p) => path.resolve(p.dir) !== path.resolve(__dirname))
+    .map((p) => p.manifest.name)
+    .filter((name) => typeof name === "string");
+
+  const pattern = workspacePackageNames.join("|").replace(/\\//g, "\\\\/");
+
+  return {
+    watchOptions: {
+      ignored: new RegExp("node_modules/(?!" + pattern + ")"),
+    },
+    snapshot: {
+      managedPaths: [
+        new RegExp("^(.+?[\\\\/]node_modules[\\\\/])(?!" + pattern + ")"),
+      ],
+    },
+  };
+};`}</CodeBlock>
+      </Collapsible>
+
+      <H3 id="problem-4-cmdclick-opens-dts-not-source">
+        Problem 4: Cmd+Click opens .d.ts, not source
       </H3>
 
       <P>
