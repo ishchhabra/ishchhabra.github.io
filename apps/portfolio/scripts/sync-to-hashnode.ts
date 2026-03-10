@@ -204,7 +204,7 @@ async function main() {
         markdown,
         canonicalUrl,
         tags,
-        publishedAt: article.dateISO,
+        publishedAt: `${article.dateISO}T00:00:00.000Z`,
       });
       console.log(`  -> draft id: ${result.id}\n`);
       created++;
@@ -230,7 +230,7 @@ async function main() {
       title: article.title,
       markdown,
       tags,
-      publishedAt: article.dateISO,
+      publishedAt: `${article.dateISO}T00:00:00.000Z`,
     });
     console.log(`  -> ${result.url}\n`);
     updated++;
