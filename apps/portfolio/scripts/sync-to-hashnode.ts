@@ -101,6 +101,7 @@ async function createDraft(
     markdown: string;
     canonicalUrl: string;
     tags: { slug: string; name: string }[];
+    publishedAt: string;
   },
 ): Promise<{ id: string }> {
   const data = await gql<CreateDraftResponse>(
@@ -117,6 +118,7 @@ async function createDraft(
         contentMarkdown: article.markdown,
         originalArticleURL: article.canonicalUrl,
         tags: article.tags,
+        publishedAt: article.publishedAt,
       },
     },
   );
@@ -130,7 +132,12 @@ interface UpdatePostResponse {
 async function updatePost(
   token: string,
   postId: string,
-  article: { title: string; markdown: string; tags: { slug: string; name: string }[] },
+  article: {
+    title: string;
+    markdown: string;
+    tags: { slug: string; name: string }[];
+    publishedAt: string;
+  },
 ): Promise<{ id: string; url: string }> {
   const data = await gql<UpdatePostResponse>(
     token,
@@ -145,6 +152,7 @@ async function updatePost(
         title: article.title,
         contentMarkdown: article.markdown,
         tags: article.tags,
+        publishedAt: article.publishedAt,
       },
     },
   );
@@ -182,7 +190,7 @@ async function main() {
   for (const article of ARTICLES) {
     const canonicalUrl = `${SITE_BASE_URL}/writing/${article.slug}`;
     const markdown = renderArticleToMarkdown(article.slug);
-    const tags = sanitizeTags(article.tags);
+    const tags = sanitizeTags(article.tags.hashnode ?? article.tags.default);
     const existing = byTitle.get(article.title);
 
     if (!existing) {
@@ -192,6 +200,7 @@ async function main() {
         markdown,
         canonicalUrl,
         tags,
+        publishedAt: article.dateISO,
       });
       console.log(`  -> draft id: ${result.id}\n`);
       created++;
@@ -210,6 +219,7 @@ async function main() {
       title: article.title,
       markdown,
       tags,
+      publishedAt: article.dateISO,
     });
     console.log(`  -> ${result.url}\n`);
     updated++;

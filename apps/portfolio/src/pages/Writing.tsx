@@ -47,7 +47,7 @@ export function Writing() {
                 slug={post.slug}
               />
               <ArticleCard.Tags className="mt-2 flex gap-2">
-                {post.tags.map((tag) => (
+                {post.tags.default.map((tag) => (
                   <span
                     key={tag}
                     className="rounded-full bg-zinc-200 px-2 py-0.5 text-[10px] font-medium text-zinc-500 dark:bg-white/5"

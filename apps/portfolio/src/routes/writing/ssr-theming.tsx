@@ -21,7 +21,7 @@ export const Route = createFileRoute("/writing/ssr-theming")({
         { property: "og:type", content: "article" },
         { name: "author", content: "Ish Chhabra" },
         { property: "article:published_time", content: article.dateISO },
-        { name: "keywords", content: article.tags.join(", ") },
+        { name: "keywords", content: article.tags.default.join(", ") },
       ],
       scripts: [
         {
@@ -39,7 +39,7 @@ export const Route = createFileRoute("/writing/ssr-theming")({
             datePublished: article.dateISO,
             dateModified: article.dateISO,
             url: `${SITE_BASE_URL}${articlePath}`,
-            keywords: article.tags,
+            keywords: article.tags.default,
             proficiencyLevel: "Expert",
           }),
         },

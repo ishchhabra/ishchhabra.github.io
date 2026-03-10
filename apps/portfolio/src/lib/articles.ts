@@ -6,7 +6,14 @@ export type Article = {
   date: string;
   dateISO: string;
   readTime: string;
-  tags: string[];
+  tags: {
+    /** Tags displayed on the main website. */
+    default: string[];
+    /** Tags optimized for dev.to discoverability (max 4). Falls back to `default` if omitted. */
+    devTo?: string[];
+    /** Tags optimized for Hashnode discoverability (max 5). Falls back to `default` if omitted. */
+    hashnode?: string[];
+  };
 };
 
 export const ARTICLES: Article[] = [
@@ -18,7 +25,10 @@ export const ARTICLES: Article[] = [
     date: "Mar 3, 2026",
     dateISO: "2026-03-03",
     readTime: "14 min read",
-    tags: ["TanStack Start", "React", "theme"],
+    tags: {
+      default: ["TanStack Start", "React", "theme"],
+      devTo: ["react", "webdev", "ssr", "tanstackstart"],
+    },
   },
   {
     slug: "pnpm-monorepo",
@@ -29,7 +39,10 @@ export const ARTICLES: Article[] = [
     date: "Feb 9, 2026",
     dateISO: "2026-02-09",
     readTime: "20 min read",
-    tags: ["pnpm", "monorepo", "typescript"],
+    tags: {
+      default: ["pnpm", "monorepo", "typescript"],
+      devTo: ["javascript", "node", "pnpm", "monorepo"],
+    },
   },
 ];
 

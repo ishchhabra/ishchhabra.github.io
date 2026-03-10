@@ -24,6 +24,7 @@ export const Route = createFileRoute("/writing/pnpm-monorepo")({
           property: "article:published_time",
           content: article.dateISO,
         },
+        { name: "keywords", content: article.tags.default.join(", ") },
       ],
       scripts: [
         {

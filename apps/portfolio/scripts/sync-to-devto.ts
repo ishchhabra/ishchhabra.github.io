@@ -122,7 +122,7 @@ async function main() {
         title: article.title,
         markdown,
         canonicalUrl,
-        tags: article.tags,
+        tags: article.tags.devTo ?? article.tags.default,
       });
       console.log(`  → ${result.url}\n`);
       created++;
@@ -141,7 +141,7 @@ async function main() {
     const result = await updateArticle(apiKey, existing.id, {
       title: article.title,
       markdown,
-      tags: article.tags,
+      tags: article.tags.devTo ?? article.tags.default,
     });
     console.log(`  → ${result.url}\n`);
     updated++;
