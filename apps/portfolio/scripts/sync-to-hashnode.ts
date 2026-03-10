@@ -31,6 +31,8 @@ interface HashnodePost {
   slug: string;
   url: string;
   content: { markdown: string };
+  tags: { slug: string }[];
+  publishedAt: string;
 }
 
 interface PublicationPostsResponse {
@@ -59,6 +61,8 @@ async function fetchAllPosts(token: string, publicationId: string): Promise<Hash
                 slug
                 url
                 content { markdown }
+                tags { slug }
+                publishedAt
               }
             }
             pageInfo { hasNextPage endCursor }
@@ -208,7 +212,14 @@ async function main() {
     }
 
     const remoteMarkdown = existing.content.markdown;
-    if (remoteMarkdown.trim() === markdown.trim()) {
+    const localTagSlugs = tags.map((t) => t.slug).sort();
+    const remoteTagSlugs = existing.tags.map((t) => t.slug).sort();
+    const bodyMatch = remoteMarkdown.trim() === markdown.trim();
+    const tagsMatch =
+      localTagSlugs.length === remoteTagSlugs.length &&
+      localTagSlugs.every((s, i) => s === remoteTagSlugs[i]);
+    const dateMatch = existing.publishedAt.startsWith(article.dateISO);
+    if (bodyMatch && tagsMatch && dateMatch) {
       console.log(`[SKIP]   "${article.title}" (unchanged)`);
       skipped++;
       continue;

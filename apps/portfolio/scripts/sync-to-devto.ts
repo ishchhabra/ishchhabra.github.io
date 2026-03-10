@@ -20,6 +20,7 @@ interface DevtoArticle {
   canonical_url: string | null;
   body_markdown: string;
   title: string;
+  tag_list: string[];
 }
 
 async function fetchMyArticles(apiKey: string): Promise<DevtoArticle[]> {
@@ -131,7 +132,12 @@ async function main() {
 
     // Fetch full body to compare (the list endpoint may not include it)
     const remoteBody = existing.body_markdown ?? (await fetchArticleBody(apiKey, existing.id));
-    if (remoteBody.trim() === markdown.trim()) {
+    const localTags = sanitizeTags(article.tags.devTo ?? article.tags.default);
+    const remoteTags = existing.tag_list.map((t) => t.toLowerCase());
+    const bodyMatch = remoteBody.trim() === markdown.trim();
+    const tagsMatch =
+      localTags.length === remoteTags.length && localTags.every((t) => remoteTags.includes(t));
+    if (bodyMatch && tagsMatch) {
       console.log(`[SKIP]   "${article.title}" (unchanged)`);
       skipped++;
       continue;
