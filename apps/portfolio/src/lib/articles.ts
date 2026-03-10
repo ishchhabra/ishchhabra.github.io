@@ -28,6 +28,7 @@ export const ARTICLES: Article[] = [
     tags: {
       default: ["TanStack Start", "React", "theme"],
       devTo: ["react", "webdev", "ssr", "tanstackstart"],
+      hashnode: ["reactjs", "javascript", "web-development", "tutorial"],
     },
   },
   {
@@ -42,6 +43,7 @@ export const ARTICLES: Article[] = [
     tags: {
       default: ["pnpm", "monorepo", "typescript"],
       devTo: ["javascript", "node", "pnpm", "monorepo"],
+      hashnode: ["javascript", "nodejs", "typescript", "web-development", "tutorial"],
     },
   },
 ];
