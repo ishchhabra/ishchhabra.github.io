@@ -9,6 +9,7 @@ on:
       - "apps/portfolio/src/lib/article-renderer.tsx"
       - "apps/portfolio/src/lib/article-markdown.ts"
       - "apps/portfolio/src/components/writing/**"
+      - "apps/portfolio/scripts/sync-to-hashnode.ts"
   workflow_dispatch:
 
 jobs:
