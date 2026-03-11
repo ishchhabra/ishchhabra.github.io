@@ -146,7 +146,13 @@ function getFolderName(path: string): string {
  * Actually compiles the input, reads/creates expected output, formats both,
  * and does the jest `expect(...)`.
  */
-const oxfmtBin = resolve(dirname(fileURLToPath(import.meta.url)), "..", "node_modules", ".bin", "oxfmt");
+const oxfmtBin = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "node_modules",
+  ".bin",
+  "oxfmt",
+);
 
 function formatWithOxfmt(code: string): string {
   return execFileSync(oxfmtBin, ["--stdin-filepath", "file.js"], {
