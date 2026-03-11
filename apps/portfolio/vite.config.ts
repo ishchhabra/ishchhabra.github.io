@@ -42,6 +42,10 @@ export default defineConfig(async (): Promise<UserConfig> => {
         },
       }),
       nitro({
+        routeRules: {
+          "/ingest/static/**": { proxy: "https://us-assets.i.posthog.com/static/**" },
+          "/ingest/**": { proxy: "https://us.i.posthog.com/**" },
+        },
         ...(process.env["VERCEL"] === "1" && {
           output: {
             dir: path.resolve(__dirname, ".vercel/output"),
