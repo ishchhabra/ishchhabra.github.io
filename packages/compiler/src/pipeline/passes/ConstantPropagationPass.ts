@@ -50,10 +50,7 @@ export class ConstantPropagationPass extends BaseOptimizationPass {
     private readonly moduleUnit: ModuleIR,
     private readonly projectUnit: ProjectUnit,
     private readonly ssa: SSA,
-    private readonly context: Map<
-      string,
-      Map<string, Map<IdentifierId, TPrimitiveValue>>
-    >,
+    private readonly context: Map<string, Map<string, Map<IdentifierId, TPrimitiveValue>>>,
   ) {
     super(functionIR);
 
@@ -181,16 +178,8 @@ export class ConstantPropagationPass extends BaseOptimizationPass {
     }
 
     phiBlock.instructions = phiBlock.instructions.map((instr) => {
-      if (
-        instr instanceof LoadPhiInstruction &&
-        phi.place.id === instr.value.id
-      ) {
-        return new LoadLocalInstruction(
-          instr.id,
-          instr.place,
-          instr.nodePath,
-          singleOperandPlace,
-        );
+      if (instr instanceof LoadPhiInstruction && phi.place.id === instr.value.id) {
+        return new LoadLocalInstruction(instr.id, instr.place, instr.nodePath, singleOperandPlace);
       }
       return instr;
     });
@@ -241,9 +230,7 @@ export class ConstantPropagationPass extends BaseOptimizationPass {
     return null;
   }
 
-  private evaluateBinaryExpressionInstruction(
-    instruction: BinaryExpressionInstruction,
-  ) {
+  private evaluateBinaryExpressionInstruction(instruction: BinaryExpressionInstruction) {
     if (
       !this.constants.has(instruction.left.identifier.id) ||
       !this.constants.has(instruction.right.identifier.id)
@@ -320,17 +307,10 @@ export class ConstantPropagationPass extends BaseOptimizationPass {
     }
 
     this.constants.set(instruction.place.identifier.id, result);
-    return new LiteralInstruction(
-      instruction.id,
-      instruction.place,
-      instruction.nodePath,
-      result,
-    );
+    return new LiteralInstruction(instruction.id, instruction.place, instruction.nodePath, result);
   }
 
-  private evaluateUnaryExpressionInstruction(
-    instruction: UnaryExpressionInstruction,
-  ) {
+  private evaluateUnaryExpressionInstruction(instruction: UnaryExpressionInstruction) {
     if (!this.constants.has(instruction.argument.identifier.id)) {
       return undefined;
     }
@@ -355,17 +335,10 @@ export class ConstantPropagationPass extends BaseOptimizationPass {
     }
 
     this.constants.set(instruction.place.identifier.id, result);
-    return new LiteralInstruction(
-      instruction.id,
-      instruction.place,
-      instruction.nodePath,
-      result,
-    );
+    return new LiteralInstruction(instruction.id, instruction.place, instruction.nodePath, result);
   }
 
-  private evaluateLogicalExpressionInstruction(
-    instruction: LogicalExpressionInstruction,
-  ) {
+  private evaluateLogicalExpressionInstruction(instruction: LogicalExpressionInstruction) {
     if (
       !this.constants.has(instruction.left.identifier.id) ||
       !this.constants.has(instruction.right.identifier.id)
@@ -391,12 +364,7 @@ export class ConstantPropagationPass extends BaseOptimizationPass {
     }
 
     this.constants.set(instruction.place.identifier.id, result);
-    return new LiteralInstruction(
-      instruction.id,
-      instruction.place,
-      instruction.nodePath,
-      result,
-    );
+    return new LiteralInstruction(instruction.id, instruction.place, instruction.nodePath, result);
   }
 
   private evaluateStoreLocalInstruction(instruction: StoreLocalInstruction) {
@@ -430,17 +398,10 @@ export class ConstantPropagationPass extends BaseOptimizationPass {
 
     const value = this.constants.get(instruction.value.identifier.id);
     this.constants.set(instruction.place.identifier.id, value);
-    return new LiteralInstruction(
-      instruction.id,
-      instruction.place,
-      instruction.nodePath,
-      value,
-    );
+    return new LiteralInstruction(instruction.id, instruction.place, instruction.nodePath, value);
   }
 
-  private evaluateExportSpecifierInstruction(
-    instruction: ExportSpecifierInstruction,
-  ) {
+  private evaluateExportSpecifierInstruction(instruction: ExportSpecifierInstruction) {
     if (this.constants.has(instruction.place.identifier.id)) {
       return undefined;
     }
@@ -531,11 +492,6 @@ export class ConstantPropagationPass extends BaseOptimizationPass {
 
     const value = constantsForSource.get(identifierId);
     this.constants.set(instruction.place.identifier.id, value);
-    return new LiteralInstruction(
-      instruction.id,
-      instruction.place,
-      instruction.nodePath,
-      value,
-    );
+    return new LiteralInstruction(instruction.id, instruction.place, instruction.nodePath, value);
   }
 }

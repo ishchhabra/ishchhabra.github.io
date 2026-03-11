@@ -39,9 +39,6 @@ export class ExportNamedDeclarationInstruction extends ModuleInstruction {
   }
 
   getReadPlaces(): Place[] {
-    return [
-      ...this.specifiers,
-      ...(this.declaration ? [this.declaration] : []),
-    ];
+    return [...this.specifiers, ...(this.declaration ? [this.declaration] : [])];
   }
 }

@@ -1,10 +1,7 @@
 import { NodePath } from "@babel/core";
 import * as t from "@babel/types";
 import { Environment } from "../../environment";
-import {
-  BindingIdentifierInstruction,
-  ObjectPropertyInstruction,
-} from "../../ir";
+import { BindingIdentifierInstruction, ObjectPropertyInstruction } from "../../ir";
 import { buildNode } from "./buildNode";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
@@ -38,12 +35,7 @@ export function buildObjectProperty(
   }
 
   const valuePath = nodePath.get("value");
-  const valuePlace = buildNode(
-    valuePath,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-  );
+  const valuePlace = buildNode(valuePath, functionBuilder, moduleBuilder, environment);
   if (valuePlace === undefined || Array.isArray(valuePlace)) {
     throw new Error(`Object property value must be a single place`);
   }

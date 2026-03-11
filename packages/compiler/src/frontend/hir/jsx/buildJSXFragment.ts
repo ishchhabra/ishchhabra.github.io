@@ -19,10 +19,7 @@ export function buildJSXFragment(
     moduleBuilder,
     environment,
   );
-  if (
-    openingFragmentPlace === undefined ||
-    Array.isArray(openingFragmentPlace)
-  ) {
+  if (openingFragmentPlace === undefined || Array.isArray(openingFragmentPlace)) {
     throw new Error("JSXFragment: openingFragment should be a single place");
   }
 
@@ -33,10 +30,7 @@ export function buildJSXFragment(
     moduleBuilder,
     environment,
   );
-  if (
-    closingFragmentPlace === undefined ||
-    Array.isArray(closingFragmentPlace)
-  ) {
+  if (closingFragmentPlace === undefined || Array.isArray(closingFragmentPlace)) {
     throw new Error("JSXFragment: closingFragment should be a single place");
   }
 

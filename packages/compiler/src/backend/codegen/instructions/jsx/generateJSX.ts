@@ -13,10 +13,7 @@ import { generateJSXFragmentInstruction } from "./generateJSXFragment";
 import { generateJSXOpeningElementInstruction } from "./generateJSXOpeningElement";
 import { generateJSXTextInstruction } from "./generateJSXText";
 
-export function generateJSXInstruction(
-  instruction: JSXInstruction,
-  generator: CodeGenerator,
-) {
+export function generateJSXInstruction(instruction: JSXInstruction, generator: CodeGenerator) {
   if (instruction instanceof JSXElementInstruction) {
     return generateJSXElementInstruction(instruction, generator);
   } else if (instruction instanceof JSXFragmentInstruction) {

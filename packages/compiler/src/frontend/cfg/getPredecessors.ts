@@ -9,10 +9,7 @@ export function getPredecessors(blocks: Map<BlockId, BasicBlock>) {
     predecessors.set(blockId, new Set());
   }
 
-  const processBlock = (
-    blockId: BlockId,
-    prevBlock: BasicBlock | undefined,
-  ) => {
+  const processBlock = (blockId: BlockId, prevBlock: BasicBlock | undefined) => {
     const block = blocks.get(blockId);
     if (block === undefined) {
       return;

@@ -11,11 +11,7 @@ import TestStream from "test262-stream";
 import { compile } from "../compile";
 
 program
-  .option(
-    "-d, --dir <directory>",
-    "Test262 directory",
-    join(process.cwd(), "test262"),
-  )
+  .option("-d, --dir <directory>", "Test262 directory", join(process.cwd(), "test262"))
   .option("-t, --timeout <ms>", "Test timeout in milliseconds", 2000)
   .option("-f, --filter <pattern>", "Filter tests by pattern")
   .option("-v, --verbose", "Show verbose output")
@@ -27,14 +23,8 @@ const test262Dir = options.dir;
 const testTimeout = parseInt(options.timeout, 10);
 const testFilter = options.filter ? new RegExp(options.filter) : null;
 
-const harnessAssertCode = readFileSync(
-  join(test262Dir, "harness", "assert.js"),
-  "utf-8",
-);
-const harnessStaCode = readFileSync(
-  join(test262Dir, "harness", "sta.js"),
-  "utf-8",
-);
+const harnessAssertCode = readFileSync(join(test262Dir, "harness", "assert.js"), "utf-8");
+const harnessStaCode = readFileSync(join(test262Dir, "harness", "sta.js"), "utf-8");
 
 let passed = 0;
 let failed = 0;
@@ -57,17 +47,13 @@ const updateStatus = () => {
   const stats = [
     `${chalk.green(`${figures.tick} Passed:`)} ${passed}`,
     `${chalk.red(`${figures.cross} Failed:`)} ${failed}`,
-    testFilter
-      ? `${chalk.yellow(`${figures.arrowRight} Skipped:`)} ${skipped}`
-      : "",
+    testFilter ? `${chalk.yellow(`${figures.arrowRight} Skipped:`)} ${skipped}` : "",
     `${chalk.blue(`${figures.bullet} Time:`)} ${elapsed}s`,
   ]
     .filter(Boolean)
     .join("\n");
 
-  spinner.text = currentTest
-    ? `Running: ${currentTest}`
-    : "Processing tests...";
+  spinner.text = currentTest ? `Running: ${currentTest}` : "Processing tests...";
 
   logUpdate(`
 ${boxen(stats, {

@@ -1,12 +1,7 @@
 import { NodePath } from "@babel/traverse";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
-import {
-  BasicBlock,
-  BranchTerminal,
-  createInstructionId,
-  JumpTerminal,
-} from "../../../ir";
+import { BasicBlock, BranchTerminal, createInstructionId, JumpTerminal } from "../../../ir";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -18,12 +13,7 @@ export function buildIfStatement(
   environment: Environment,
 ) {
   const testPath = nodePath.get("test");
-  const testPlace = buildNode(
-    testPath,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-  );
+  const testPlace = buildNode(testPath, functionBuilder, moduleBuilder, environment);
   if (testPlace === undefined || Array.isArray(testPlace)) {
     throw new Error("If statement test must be a single place");
   }

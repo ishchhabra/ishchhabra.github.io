@@ -7,11 +7,7 @@ import {
   makeBlockId,
   makeInstructionId,
 } from "./ir";
-import {
-  FunctionIR,
-  FunctionIRId,
-  makeFunctionIRId,
-} from "./ir/core/FunctionIR";
+import { FunctionIR, FunctionIRId, makeFunctionIRId } from "./ir/core/FunctionIR";
 import {
   DeclarationId,
   Identifier,
@@ -22,9 +18,7 @@ import {
 import { makePlaceId, Place, PlaceId } from "./ir/core/Place";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type OmitFirst<T extends unknown[]> = T extends [any, ...infer Rest]
-  ? Rest
-  : never;
+type OmitFirst<T extends unknown[]> = T extends [any, ...infer Rest] ? Rest : never;
 
 export class Environment {
   public readonly identifiers: Map<IdentifierId, Identifier> = new Map();
@@ -44,10 +38,7 @@ export class Environment {
    * or scope effectively creates a new “version” of that declaration, captured by
    * a distinct `Place`. This structure keeps track of those versions over time.
    */
-  declToPlaces: Map<
-    DeclarationId,
-    Array<{ blockId: BlockId; placeId: PlaceId }>
-  > = new Map();
+  declToPlaces: Map<DeclarationId, Array<{ blockId: BlockId; placeId: PlaceId }>> = new Map();
 
   /**
    * Maps each `DeclarationId` to the `InstructionId` of the IR instruction responsible
@@ -74,11 +65,7 @@ export class Environment {
 
     const identifierId = makeIdentifierId(this.nextIdentifierId++);
     const version = this.declToPlaces.get(declarationId)?.length ?? 0;
-    const identifier = new Identifier(
-      identifierId,
-      `${version}`,
-      declarationId,
-    );
+    const identifier = new Identifier(identifierId, `${version}`, declarationId);
     this.identifiers.set(identifierId, identifier);
     return identifier;
   }
@@ -115,11 +102,7 @@ export class Environment {
     return functionIR;
   }
 
-  public registerDeclaration(
-    declarationId: DeclarationId,
-    blockId: BlockId,
-    placeId: PlaceId,
-  ) {
+  public registerDeclaration(declarationId: DeclarationId, blockId: BlockId, placeId: PlaceId) {
     const placeIds = this.declToPlaces.get(declarationId) ?? [];
     placeIds.push({ blockId, placeId });
     this.declToPlaces.set(declarationId, placeIds);
@@ -136,16 +119,11 @@ export class Environment {
   ) {
     const declarations_ = castArray(declarations);
     declarations_.forEach((declaration) => {
-      this.declToDeclInstr.set(
-        declaration.identifier.declarationId,
-        instruction.id,
-      );
+      this.declToDeclInstr.set(declaration.identifier.declarationId, instruction.id);
     });
   }
 
-  public getDeclarationInstruction(
-    declarationId: DeclarationId,
-  ): InstructionId | undefined {
+  public getDeclarationInstruction(declarationId: DeclarationId): InstructionId | undefined {
     return this.declToDeclInstr.get(declarationId);
   }
 }

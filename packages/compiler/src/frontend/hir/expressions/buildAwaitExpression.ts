@@ -13,12 +13,7 @@ export function buildAwaitExpression(
   environment: Environment,
 ) {
   const argumentPath = nodePath.get("argument");
-  const argumentPlace = buildNode(
-    argumentPath,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-  );
+  const argumentPlace = buildNode(argumentPath, functionBuilder, moduleBuilder, environment);
   if (argumentPlace === undefined || Array.isArray(argumentPlace)) {
     throw new Error("Await expression argument must be a single place");
   }

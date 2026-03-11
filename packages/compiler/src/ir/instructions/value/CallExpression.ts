@@ -14,9 +14,7 @@ export class CallExpressionInstruction extends ValueInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath:
-      | NodePath<t.CallExpression | t.OptionalCallExpression>
-      | undefined,
+    public readonly nodePath: NodePath<t.CallExpression | t.OptionalCallExpression> | undefined,
     public readonly callee: Place,
     // Using args instead of arguments since arguments is a reserved word
     public readonly args: Place[],

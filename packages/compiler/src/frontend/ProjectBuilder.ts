@@ -55,11 +55,7 @@ export class ProjectBuilder {
       // node_modules are skipped for now because third-party packages
       // often use syntax and patterns not yet supported by the compiler.
       // This filter can be removed once we have broader language coverage.
-      if (
-        !source.startsWith("/") ||
-        !existsSync(source) ||
-        source.includes("/node_modules/")
-      ) {
+      if (!source.startsWith("/") || !existsSync(source) || source.includes("/node_modules/")) {
         continue;
       }
 
@@ -76,11 +72,7 @@ export class ProjectBuilder {
     return result;
   }
 
-  private visitPostOrder(
-    moduleIR: ModuleIR,
-    visited: Set<string>,
-    result: string[],
-  ) {
+  private visitPostOrder(moduleIR: ModuleIR, visited: Set<string>, result: string[]) {
     if (visited.has(moduleIR.path)) {
       return;
     }

@@ -8,17 +8,13 @@ export function generateTaggedTemplateExpressionInstruction(
 ): t.Expression {
   const tag = generator.places.get(instruction.tag.id);
   if (!tag) {
-    throw new Error(
-      `Place not found for tagged template tag: ${instruction.tag.id}`,
-    );
+    throw new Error(`Place not found for tagged template tag: ${instruction.tag.id}`);
   }
   t.assertExpression(tag);
 
   const quasi = generator.places.get(instruction.quasi.id);
   if (!quasi) {
-    throw new Error(
-      `Place not found for tagged template quasi: ${instruction.quasi.id}`,
-    );
+    throw new Error(`Place not found for tagged template quasi: ${instruction.quasi.id}`);
   }
   t.assertTemplateLiteral(quasi);
 

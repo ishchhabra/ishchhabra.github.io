@@ -20,12 +20,7 @@ export function buildWhileStatement(
   functionBuilder.blocks.set(testBlock.id, testBlock);
 
   functionBuilder.currentBlock = testBlock;
-  const testPlace = buildNode(
-    testPath,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-  );
+  const testPlace = buildNode(testPath, functionBuilder, moduleBuilder, environment);
   if (testPlace === undefined || Array.isArray(testPlace)) {
     throw new Error("While statement test must be a single place");
   }

@@ -20,13 +20,7 @@ export interface FileResult {
 }
 
 export function compileProject(options: ProjectCompilerOptions): FileResult[] {
-  const {
-    srcDir,
-    outDir,
-    exclude = [],
-    excludeContentPatterns = [],
-    ...compilerOptions
-  } = options;
+  const { srcDir, outDir, exclude = [], excludeContentPatterns = [], ...compilerOptions } = options;
 
   const resolvedSrc = resolve(srcDir);
   const resolvedOut = resolve(outDir);
@@ -98,9 +92,7 @@ export function compileProject(options: ProjectCompilerOptions): FileResult[] {
       }
     }
   }
-  const rootEntryPaths = [...allSourcePaths].filter(
-    (p) => !importedSourcePaths.has(p),
-  );
+  const rootEntryPaths = [...allSourcePaths].filter((p) => !importedSourcePaths.has(p));
 
   // Run the pipeline once on the entire project
   const parsedOptions = CompilerOptionsSchema.parse(compilerOptions);

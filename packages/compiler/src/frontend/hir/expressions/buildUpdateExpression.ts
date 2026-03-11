@@ -27,22 +27,15 @@ export function buildUpdateExpression(
     throw new Error(`Unsupported argument type: ${argumentPath.type}`);
   }
 
-  const declarationId = functionBuilder.getDeclarationId(
-    argumentPath.node.name,
-    nodePath,
-  );
+  const declarationId = functionBuilder.getDeclarationId(argumentPath.node.name, nodePath);
   if (declarationId === undefined) {
-    throw new Error(
-      `Variable accessed before declaration: ${argumentPath.node.name}`,
-    );
+    throw new Error(`Variable accessed before declaration: ${argumentPath.node.name}`);
   }
 
   const latestDeclaration = environment.getLatestDeclaration(declarationId)!;
   const originalPlace = environment.places.get(latestDeclaration.placeId);
   if (originalPlace === undefined) {
-    throw new Error(
-      `Unable to find the place for ${argumentPath.node.name} (${declarationId})`,
-    );
+    throw new Error(`Unable to find the place for ${argumentPath.node.name} (${declarationId})`);
   }
 
   const lvalIdentifier = environment.createIdentifier(declarationId);
@@ -55,10 +48,7 @@ export function buildUpdateExpression(
     argumentPath.node,
     rightLiteral,
   );
-  const binaryExpressionPath = createSyntheticBinaryPath(
-    nodePath,
-    binaryExpression,
-  );
+  const binaryExpressionPath = createSyntheticBinaryPath(nodePath, binaryExpression);
 
   const valuePlace = buildBinaryExpression(
     binaryExpressionPath,
@@ -81,11 +71,7 @@ export function buildUpdateExpression(
     "const",
   );
   functionBuilder.addInstruction(instruction);
-  environment.registerDeclaration(
-    declarationId,
-    functionBuilder.currentBlock.id,
-    lvalPlace.id,
-  );
+  environment.registerDeclaration(declarationId, functionBuilder.currentBlock.id, lvalPlace.id);
   return nodePath.node.prefix ? valuePlace : originalPlace;
 }
 

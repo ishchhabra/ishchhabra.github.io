@@ -15,12 +15,7 @@ export function buildPattern(
   switch (nodePath.type) {
     case "ArrayPattern":
       nodePath.assertArrayPattern();
-      return buildArrayPattern(
-        nodePath,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
+      return buildArrayPattern(nodePath, functionBuilder, moduleBuilder, environment);
     default:
       throw new Error(`Unsupported pattern type: ${nodePath.type}`);
   }

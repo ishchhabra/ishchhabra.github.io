@@ -25,15 +25,9 @@ export function buildMemberExpression(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  const optional =
-    nodePath.isOptionalMemberExpression() && nodePath.node.optional;
+  const optional = nodePath.isOptionalMemberExpression() && nodePath.node.optional;
   const objectPath = nodePath.get("object");
-  const objectPlace = buildNode(
-    objectPath,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-  );
+  const objectPlace = buildNode(objectPath, functionBuilder, moduleBuilder, environment);
   if (objectPlace === undefined || Array.isArray(objectPlace)) {
     throw new Error("Member expression object must be a single place");
   }
@@ -41,8 +35,7 @@ export function buildMemberExpression(
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
 
-  const propertyPath: NodePath<t.MemberExpression["property"]> =
-    nodePath.get("property");
+  const propertyPath: NodePath<t.MemberExpression["property"]> = nodePath.get("property");
   propertyPath.assertExpression();
   if (isStaticMemberAccess(nodePath)) {
     const propertyName = getStaticPropertyName(propertyPath);
@@ -57,12 +50,7 @@ export function buildMemberExpression(
     functionBuilder.addInstruction(instruction);
     return place;
   } else {
-    const propertyPlace = buildNode(
-      propertyPath,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
+    const propertyPlace = buildNode(propertyPath, functionBuilder, moduleBuilder, environment);
     if (propertyPlace === undefined || Array.isArray(propertyPlace)) {
       throw new Error("Member expression property must be a single place");
     }
@@ -98,12 +86,7 @@ export function buildMemberExpressionUpdate(
 ): Place {
   // 1. Build the object expression
   const objectPath = memberPath.get("object");
-  const objectPlace = buildNode(
-    objectPath,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-  );
+  const objectPlace = buildNode(objectPath, functionBuilder, moduleBuilder, environment);
   if (objectPlace === undefined || Array.isArray(objectPlace)) {
     throw new Error("Update expression object must be a single place");
   }
@@ -112,8 +95,7 @@ export function buildMemberExpressionUpdate(
   const loadIdentifier = environment.createIdentifier();
   const loadPlace = environment.createPlace(loadIdentifier);
 
-  const propertyPath: NodePath<t.MemberExpression["property"]> =
-    memberPath.get("property");
+  const propertyPath: NodePath<t.MemberExpression["property"]> = memberPath.get("property");
   propertyPath.assertExpression();
 
   const isStatic = isStaticMemberAccess(memberPath);
@@ -136,10 +118,7 @@ export function buildMemberExpressionUpdate(
       moduleBuilder,
       environment,
     ) as Place;
-    if (
-      dynamicPropertyPlace === undefined ||
-      Array.isArray(dynamicPropertyPlace)
-    ) {
+    if (dynamicPropertyPlace === undefined || Array.isArray(dynamicPropertyPlace)) {
       throw new Error("Update expression property must be a single place");
     }
     const loadInstruction = environment.createInstruction(
@@ -164,9 +143,7 @@ export function buildMemberExpressionUpdate(
       oldValBinding.name,
     ),
   );
-  const oldValStorePlace = environment.createPlace(
-    environment.createIdentifier(),
-  );
+  const oldValStorePlace = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
     environment.createInstruction(
       StoreLocalInstruction,
@@ -177,9 +154,7 @@ export function buildMemberExpressionUpdate(
       "const",
     ),
   );
-  const oldValLoadPlace = environment.createPlace(
-    environment.createIdentifier(),
-  );
+  const oldValLoadPlace = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
     environment.createInstruction(
       LoadLocalInstruction,
@@ -192,12 +167,7 @@ export function buildMemberExpressionUpdate(
   // 4. Create literal 1
   const oneIdentifier = environment.createIdentifier();
   const onePlace = environment.createPlace(oneIdentifier);
-  const oneInstruction = environment.createInstruction(
-    LiteralInstruction,
-    onePlace,
-    updatePath,
-    1,
-  );
+  const oneInstruction = environment.createInstruction(LiteralInstruction, onePlace, updatePath, 1);
   functionBuilder.addInstruction(oneInstruction);
 
   // 5. Compute value +/- 1

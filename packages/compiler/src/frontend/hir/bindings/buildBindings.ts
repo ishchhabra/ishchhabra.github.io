@@ -12,20 +12,10 @@ export function buildBindings(
 ) {
   bindingsPath.traverse({
     FunctionDeclaration: (path: NodePath<t.FunctionDeclaration>) => {
-      buildFunctionDeclarationBindings(
-        bindingsPath,
-        path,
-        functionBuilder,
-        environment,
-      );
+      buildFunctionDeclarationBindings(bindingsPath, path, functionBuilder, environment);
     },
     VariableDeclaration: (path: NodePath<t.VariableDeclaration>) => {
-      buildVariableDeclarationBindings(
-        bindingsPath,
-        path,
-        functionBuilder,
-        environment,
-      );
+      buildVariableDeclarationBindings(bindingsPath, path, functionBuilder, environment);
     },
   });
 }

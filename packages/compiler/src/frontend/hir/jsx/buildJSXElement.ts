@@ -13,12 +13,7 @@ export function buildJSXElement(
   environment: Environment,
 ): Place | undefined {
   const openingElementPath = nodePath.get("openingElement");
-  const openingElement = buildNode(
-    openingElementPath,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-  );
+  const openingElement = buildNode(openingElementPath, functionBuilder, moduleBuilder, environment);
   if (openingElement === undefined || Array.isArray(openingElement)) {
     throw new Error("JSXElement opening element should be a single place");
   }
@@ -26,12 +21,7 @@ export function buildJSXElement(
   let closingElement;
   const closingElementPath = nodePath.get("closingElement");
   if (closingElementPath.hasNode()) {
-    closingElement = buildNode(
-      closingElementPath,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
+    closingElement = buildNode(closingElementPath, functionBuilder, moduleBuilder, environment);
   }
   if (Array.isArray(closingElement)) {
     throw new Error("JSXElement closing element should be a single place");

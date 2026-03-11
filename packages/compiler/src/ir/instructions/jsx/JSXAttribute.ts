@@ -41,9 +41,7 @@ export class JSXAttributeInstruction extends JSXInstruction {
       this.place,
       this.nodePath,
       this.name,
-      this.value
-        ? (values.get(this.value.identifier) ?? this.value)
-        : undefined,
+      this.value ? (values.get(this.value.identifier) ?? this.value) : undefined,
     );
   }
 

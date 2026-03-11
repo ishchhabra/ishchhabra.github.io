@@ -34,22 +34,15 @@ export function buildFunctionDeclaration(
     throw new Error("Invalid function declaration");
   }
 
-  const declarationId = functionBuilder.getDeclarationId(
-    functionName.node.name,
-    nodePath,
-  );
+  const declarationId = functionBuilder.getDeclarationId(functionName.node.name, nodePath);
   if (declarationId === undefined) {
-    throw new Error(
-      `Function accessed before declaration: ${functionName.node.name}`,
-    );
+    throw new Error(`Function accessed before declaration: ${functionName.node.name}`);
   }
 
   const latestDeclaration = environment.getLatestDeclaration(declarationId)!;
   const functionPlace = environment.places.get(latestDeclaration.placeId)!;
   if (functionPlace === undefined) {
-    throw new Error(
-      `Unable to find the place for ${functionName.node.name} (${declarationId})`,
-    );
+    throw new Error(`Unable to find the place for ${functionName.node.name} (${declarationId})`);
   }
 
   const instruction = environment.createInstruction(

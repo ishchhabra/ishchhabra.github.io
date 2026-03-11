@@ -13,23 +13,13 @@ export function buildTaggedTemplateExpression(
   environment: Environment,
 ) {
   const tagPath = nodePath.get("tag");
-  const tagPlace = buildNode(
-    tagPath,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-  );
+  const tagPlace = buildNode(tagPath, functionBuilder, moduleBuilder, environment);
   if (tagPlace === undefined || Array.isArray(tagPlace)) {
     throw new Error("Tagged template tag must be a single place");
   }
 
   const quasiPath = nodePath.get("quasi");
-  const quasiPlace = buildNode(
-    quasiPath,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-  );
+  const quasiPlace = buildNode(quasiPath, functionBuilder, moduleBuilder, environment);
   if (quasiPlace === undefined || Array.isArray(quasiPlace)) {
     throw new Error("Tagged template quasi must be a single place");
   }

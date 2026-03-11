@@ -92,9 +92,7 @@ export class UnusedExportEliminationPass {
             // Remove ExportFromInstruction if all its specifiers are unused,
             // or filter out individual unused specifiers.
             if (instr instanceof ExportFromInstruction) {
-              instr.specifiers = instr.specifiers.filter(
-                (s) => !unusedExportNames.has(s.exported),
-              );
+              instr.specifiers = instr.specifiers.filter((s) => !unusedExportNames.has(s.exported));
               return instr.specifiers.length > 0;
             }
 

@@ -4,11 +4,7 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from "fs";
 import { merge } from "lodash-es";
 import { dirname, join, relative } from "path";
 import * as prettier from "prettier";
-import {
-  compile,
-  CompilerOptions,
-  CompilerOptionsSchema,
-} from "../src/compile";
+import { compile, CompilerOptions, CompilerOptionsSchema } from "../src/compile";
 
 /**
  * Represents a single fixture file pair:
@@ -37,9 +33,7 @@ interface TreeNode {
 function safeReadJson(filePath: string): CompilerOptions | undefined {
   if (!existsSync(filePath)) return undefined;
   try {
-    return CompilerOptionsSchema.parse(
-      JSON.parse(readFileSync(filePath, "utf-8")),
-    );
+    return CompilerOptionsSchema.parse(JSON.parse(readFileSync(filePath, "utf-8")));
   } catch {
     return undefined;
   }
@@ -151,11 +145,7 @@ function getFolderName(path: string): string {
  * Actually compiles the input, reads/creates expected output, formats both,
  * and does the jest `expect(...)`.
  */
-async function runCompileTest(
-  input: string,
-  output: string,
-  options: CompilerOptions,
-) {
+async function runCompileTest(input: string, output: string, options: CompilerOptions) {
   const actualCode = compile(input, options);
 
   const formattedActual = await prettier.format(actualCode, {
@@ -163,10 +153,7 @@ async function runCompileTest(
   });
 
   const outputExists = existsSync(output);
-  if (
-    !outputExists &&
-    expect.getState().snapshotState._updateSnapshot == "new"
-  ) {
+  if (!outputExists && expect.getState().snapshotState._updateSnapshot == "new") {
     writeFileSync(output, formattedActual, "utf8");
     console.info(`[INFO] Created missing fixture file at: ${output}`);
   }
@@ -199,11 +186,7 @@ function addTestSuites(
     const { input, output } = fixtures[0];
     test(nodeName ?? getFolderName(input), async () => {
       // Load merged options for this fixture's directory
-      const localOptions = loadOptionsChain(
-        rootDir!,
-        dirname(input),
-        baseOptions,
-      );
+      const localOptions = loadOptionsChain(rootDir!, dirname(input), baseOptions);
       await runCompileTest(input, output, localOptions);
     });
     return;
@@ -215,48 +198,28 @@ function addTestSuites(
       // Add tests for each fixture in this directory
       for (const { input, output } of fixtures) {
         test(getFolderName(input), async () => {
-          const localOptions = loadOptionsChain(
-            rootDir!,
-            dirname(input),
-            baseOptions,
-          );
+          const localOptions = loadOptionsChain(rootDir!, dirname(input), baseOptions);
           await runCompileTest(input, output, localOptions);
         });
       }
       // Recurse for subdirectories
       for (const subDir of subDirs) {
         const nextDir = join(currentDir ?? "", subDir);
-        addTestSuites(
-          tree[subDir] as TreeNode,
-          baseOptions,
-          subDir,
-          rootDir,
-          nextDir,
-        );
+        addTestSuites(tree[subDir] as TreeNode, baseOptions, subDir, rootDir, nextDir);
       }
     });
   } else {
     // Top-level root: no named describe
     for (const { input, output } of fixtures) {
       test(getFolderName(input), async () => {
-        const localOptions = loadOptionsChain(
-          rootDir!,
-          dirname(input),
-          baseOptions,
-        );
+        const localOptions = loadOptionsChain(rootDir!, dirname(input), baseOptions);
         await runCompileTest(input, output, localOptions);
       });
     }
     // Recurse on subdirectories
     for (const subDir of subDirs) {
       const nextDir = join(currentDir ?? "", subDir);
-      addTestSuites(
-        tree[subDir] as TreeNode,
-        baseOptions,
-        subDir,
-        rootDir,
-        nextDir,
-      );
+      addTestSuites(tree[subDir] as TreeNode, baseOptions, subDir, rootDir, nextDir);
     }
   }
 }

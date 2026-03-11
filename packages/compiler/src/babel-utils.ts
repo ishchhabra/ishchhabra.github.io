@@ -45,12 +45,8 @@ export function assertJSXChild(
   | t.JSXElement
   | t.JSXFragment {}
 
-export function toIdentifierOrStringLiteral(
-  name: string,
-): t.Identifier | t.StringLiteral {
-  return t.isValidIdentifier(name) || isKeyword(name)
-    ? t.identifier(name)
-    : t.stringLiteral(name);
+export function toIdentifierOrStringLiteral(name: string): t.Identifier | t.StringLiteral {
+  return t.isValidIdentifier(name) || isKeyword(name) ? t.identifier(name) : t.stringLiteral(name);
 }
 
 /**

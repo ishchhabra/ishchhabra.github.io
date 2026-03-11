@@ -1,34 +1,30 @@
 {
   "name": "@i2-labs/compiler",
   "description": "JavaScript ahead-of-time compiler",
-  "main": "dist/cli.js",
+  "keywords": [],
+  "author": "Ish Chhabra",
   "type": "module",
+  "main": "dist/cli.js",
   "scripts": {
     "build": "rollup -c",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest",
     "test:update": "pnpm test -- --updateSnapshot",
-    "posttest:update": "pnpm format .",
     "lint": "eslint --flag unstable_config_lookup_from_file . --max-warnings=0",
-    "format": "prettier --write",
-    "format-check": "prettier --check",
+    "format": "oxfmt",
+    "format-check": "oxfmt --check",
     "type-check": "tsc --noEmit"
-  },
-  "keywords": [],
-  "author": "Ishan Chhabra",
-  "engines": {
-    "node": ">=22"
   },
   "dependencies": {
     "@babel/core": "^7.28.4",
     "@babel/generator": "^7.28.3",
     "@babel/helper-validator-identifier": "^7.28.5",
     "@babel/parser": "^7.28.4",
+    "@babel/preset-typescript": "^7.28.5",
     "@babel/traverse": "^7.28.4",
     "@babel/types": "^7.28.4",
     "babel-plugin-tester": "^11.0.4",
     "glob": "^13.0.6",
     "lodash-es": "^4.17.21",
-    "@babel/preset-typescript": "^7.28.5",
     "zod": "^3.25.76"
   },
   "devDependencies": {
@@ -53,12 +49,15 @@
     "jest": "^29.7.0",
     "log-update": "^6.1.0",
     "ora": "^8.2.0",
-    "prettier": "^3.6.2",
+    "oxfmt": "catalog:",
     "rollup": "^4.52.5",
     "test262-stream": "^1.4.0",
     "ts-jest": "^29.4.5",
     "ts-node": "^10.9.2",
     "tslib": "^2.8.1",
     "typescript": "catalog:"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

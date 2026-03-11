@@ -17,12 +17,7 @@ export class LoadPhiInstruction extends MemoryInstruction {
   public clone(environment: Environment): LoadPhiInstruction {
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    return environment.createInstruction(
-      LoadPhiInstruction,
-      place,
-      this.nodePath,
-      this.value,
-    );
+    return environment.createInstruction(LoadPhiInstruction, place, this.nodePath, this.value);
   }
 
   rewrite(values: Map<Identifier, Place>): LoadPhiInstruction {

@@ -18,9 +18,7 @@ export function generateObjectPropertyInstruction(
 
   t.assertExpression(key);
   if (!(t.isExpression(value) || t.isPatternLike(value))) {
-    throw new Error(
-      `Value ${instruction.value.id} is not an expression or pattern`,
-    );
+    throw new Error(`Value ${instruction.value.id} is not an expression or pattern`);
   }
 
   const node = t.objectProperty(key, value);

@@ -50,9 +50,7 @@ export function getDominators(
         for (const predecessor of [...preds].slice(1)) {
           const predecessorDominators = dominators.get(predecessor)!;
           newDominators = new Set(
-            [...newDominators].filter((dominator) =>
-              predecessorDominators.has(dominator),
-            ),
+            [...newDominators].filter((dominator) => predecessorDominators.has(dominator)),
           );
         }
         // Add self to the dominators.

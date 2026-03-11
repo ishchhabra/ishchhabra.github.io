@@ -12,31 +12,20 @@ export function buildCallExpression(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
-  const optional =
-    expressionPath.isOptionalCallExpression() && expressionPath.node.optional;
+  const optional = expressionPath.isOptionalCallExpression() && expressionPath.node.optional;
   const calleePath = expressionPath.get("callee");
   if (!calleePath.isExpression()) {
     throw new Error(`Unsupported callee type: ${calleePath.type}`);
   }
 
-  const calleePlace = buildNode(
-    calleePath,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-  );
+  const calleePlace = buildNode(calleePath, functionBuilder, moduleBuilder, environment);
   if (calleePlace === undefined || Array.isArray(calleePlace)) {
     throw new Error("Call expression callee must be a single place");
   }
 
   const argumentsPath = expressionPath.get("arguments");
   const argumentPlaces = argumentsPath.map((argumentPath) => {
-    const argumentPlace = buildNode(
-      argumentPath,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
+    const argumentPlace = buildNode(argumentPath, functionBuilder, moduleBuilder, environment);
     if (argumentPlace === undefined || Array.isArray(argumentPlace)) {
       throw new Error("Call expression argument must be a single place");
     }

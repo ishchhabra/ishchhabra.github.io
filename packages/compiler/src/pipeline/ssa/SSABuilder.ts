@@ -43,8 +43,7 @@ export class SSABuilder {
     const phis = new Set<Phi>();
     const functionBlockIds = new Set(this.functionIR.blocks.keys());
 
-    for (const [declarationId, placeIds] of this.moduleIR.environment
-      .declToPlaces) {
+    for (const [declarationId, placeIds] of this.moduleIR.environment.declToPlaces) {
       // Only consider definitions in blocks belonging to this function,
       // since declToPlaces is shared across all functions in the module.
       const definitionBlocks = placeIds
@@ -54,12 +53,7 @@ export class SSABuilder {
         continue;
       }
 
-      this.insertPhiNodesForDeclaration(
-        declarationId,
-        placeIds,
-        definitionBlocks,
-        phis,
-      );
+      this.insertPhiNodesForDeclaration(declarationId, placeIds, definitionBlocks, phis);
     }
 
     return phis;
@@ -119,9 +113,7 @@ export class SSABuilder {
         continue;
       }
 
-      const places = this.moduleIR.environment.declToPlaces.get(
-        phi.declarationId,
-      );
+      const places = this.moduleIR.environment.declToPlaces.get(phi.declarationId);
       if (!places) {
         continue;
       }
@@ -151,10 +143,7 @@ export class SSABuilder {
   private rewritePhiReferences(phis: Set<Phi>): void {
     for (const phi of phis) {
       const rewriteMap = new Map(
-        Array.from(phi.operands.values()).map((place) => [
-          place.identifier,
-          phi.place,
-        ]),
+        Array.from(phi.operands.values()).map((place) => [place.identifier, phi.place]),
       );
 
       for (const [blockId, block] of this.functionIR.blocks) {
@@ -174,18 +163,9 @@ export class SSABuilder {
     }
   }
 
-  private rewriteTerminal(
-    terminal: BaseTerminal,
-    values: Map<Identifier, Place>,
-  ): BaseTerminal {
-    if (
-      terminal instanceof ReturnTerminal &&
-      values.has(terminal.value.identifier)
-    ) {
-      return new ReturnTerminal(
-        terminal.id,
-        values.get(terminal.value.identifier)!,
-      );
+  private rewriteTerminal(terminal: BaseTerminal, values: Map<Identifier, Place>): BaseTerminal {
+    if (terminal instanceof ReturnTerminal && values.has(terminal.value.identifier)) {
+      return new ReturnTerminal(terminal.id, values.get(terminal.value.identifier)!);
     }
 
     return terminal;
@@ -195,10 +175,7 @@ export class SSABuilder {
     instruction: T,
     values: Map<Identifier, Place>,
   ): T | LoadPhiInstruction {
-    if (
-      instruction instanceof LoadLocalInstruction &&
-      values.has(instruction.value.identifier)
-    ) {
+    if (instruction instanceof LoadLocalInstruction && values.has(instruction.value.identifier)) {
       return new LoadPhiInstruction(
         instruction.id,
         instruction.place,

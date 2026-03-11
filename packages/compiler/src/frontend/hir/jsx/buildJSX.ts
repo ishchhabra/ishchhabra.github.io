@@ -18,20 +18,10 @@ export function buildJSX(
   switch (nodePath.type) {
     case "JSXElement":
       nodePath.assertJSXElement();
-      return buildJSXElement(
-        nodePath,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
+      return buildJSXElement(nodePath, functionBuilder, moduleBuilder, environment);
     case "JSXFragment":
       nodePath.assertJSXFragment();
-      return buildJSXFragment(
-        nodePath,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
+      return buildJSXFragment(nodePath, functionBuilder, moduleBuilder, environment);
     case "JSXText":
       nodePath.assertJSXText();
       return buildJSXText(nodePath, functionBuilder, environment);

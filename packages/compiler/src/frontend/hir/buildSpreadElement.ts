@@ -13,12 +13,7 @@ export function buildSpreadElement(
   environment: Environment,
 ): Place {
   const argumentPath = nodePath.get("argument");
-  const argumentPlace = buildNode(
-    argumentPath,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-  );
+  const argumentPlace = buildNode(argumentPath, functionBuilder, moduleBuilder, environment);
   if (argumentPlace === undefined || Array.isArray(argumentPlace)) {
     throw new Error("Spread element argument must be a single place");
   }

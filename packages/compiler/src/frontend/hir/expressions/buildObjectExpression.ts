@@ -14,12 +14,7 @@ export function buildObjectExpression(
 ) {
   const propertiesPath = nodePath.get("properties");
   const propertyPlaces = propertiesPath.map((propertyPath) => {
-    const propertyPlace = buildNode(
-      propertyPath,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
+    const propertyPlace = buildNode(propertyPath, functionBuilder, moduleBuilder, environment);
     if (propertyPlace === undefined || Array.isArray(propertyPlace)) {
       throw new Error("Object expression property must be a single place");
     }

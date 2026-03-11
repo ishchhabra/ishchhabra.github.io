@@ -41,18 +41,12 @@ export function generateInstruction(
     return [];
   } else if (instruction instanceof DeclarationInstruction) {
     const statement = generateDeclarationInstruction(instruction, generator);
-    if (
-      instruction instanceof FunctionDeclarationInstruction &&
-      !instruction.emit
-    ) {
+    if (instruction instanceof FunctionDeclarationInstruction && !instruction.emit) {
       return [];
     }
     return [statement];
   } else if (instruction instanceof ExpressionStatementInstruction) {
-    const statement = generateExpressionStatementInstruction(
-      instruction,
-      generator,
-    );
+    const statement = generateExpressionStatementInstruction(instruction, generator);
     if (statement === undefined) {
       return [];
     }
@@ -96,7 +90,5 @@ export function generateInstruction(
     return [];
   }
 
-  throw new Error(
-    `Unsupported instruction type: ${instruction.constructor.name}`,
-  );
+  throw new Error(`Unsupported instruction type: ${instruction.constructor.name}`);
 }

@@ -84,9 +84,7 @@ export class RedundantCopyEliminationPass extends BaseOptimizationPass {
       } else if (instr instanceof CopyInstruction) {
         // If there's a pending write to the same declId, remove it.
         if (lastWriteIndexForDecl.has(instr.lval.identifier.declarationId)) {
-          const oldIndex = lastWriteIndexForDecl.get(
-            instr.lval.identifier.declarationId,
-          )!;
+          const oldIndex = lastWriteIndexForDecl.get(instr.lval.identifier.declarationId)!;
           const lastInstr = instrs[oldIndex];
           instrs.splice(oldIndex, 1);
           if (lastInstr instanceof StoreLocalInstruction) {

@@ -32,11 +32,7 @@ export function buildFunctionDeclarationBindings(
 
   // Rename the variable name in the scope to the temporary place.
   bindingsPath.scope.rename(functionName.node.name, identifier.name);
-  functionBuilder.registerDeclarationName(
-    identifier.name,
-    identifier.declarationId,
-    bindingsPath,
-  );
+  functionBuilder.registerDeclarationName(identifier.name, identifier.declarationId, bindingsPath);
 
   const place = environment.createPlace(identifier);
   environment.registerDeclaration(

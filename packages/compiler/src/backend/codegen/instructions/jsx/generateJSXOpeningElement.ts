@@ -35,11 +35,7 @@ export function generateJSXOpeningElementInstruction(
     return t.jsxSpreadAttribute(attrNode);
   });
 
-  const node = t.jsxOpeningElement(
-    tagName,
-    attributes,
-    instruction.selfClosing,
-  );
+  const node = t.jsxOpeningElement(tagName, attributes, instruction.selfClosing);
   generator.places.set(instruction.place.id, node);
   return node;
 }
@@ -56,9 +52,7 @@ function parseJSXTagName(
   // Handle member expressions (e.g., "Foo.Bar.Baz")
   if (tag.includes(".")) {
     const parts = tag.split(".");
-    let result: t.JSXIdentifier | t.JSXMemberExpression = t.jsxIdentifier(
-      parts[0],
-    );
+    let result: t.JSXIdentifier | t.JSXMemberExpression = t.jsxIdentifier(parts[0]);
     for (let i = 1; i < parts.length; i++) {
       result = t.jsxMemberExpression(result, t.jsxIdentifier(parts[i]));
     }

@@ -14,12 +14,7 @@ export function buildArrayPattern(
 ): Place {
   const elementPaths = nodePath.get("elements");
   const elementPlaces = elementPaths.map((elementPath) => {
-    const elementPlace = buildNode(
-      elementPath,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
+    const elementPlace = buildNode(elementPath, functionBuilder, moduleBuilder, environment);
     if (elementPlace === undefined || Array.isArray(elementPlace)) {
       throw new Error("Array pattern element must be a single place");
     }

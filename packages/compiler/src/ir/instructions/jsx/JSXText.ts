@@ -23,12 +23,7 @@ export class JSXTextInstruction extends JSXInstruction {
   public clone(environment: Environment): JSXTextInstruction {
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    return environment.createInstruction(
-      JSXTextInstruction,
-      place,
-      this.nodePath,
-      this.value,
-    );
+    return environment.createInstruction(JSXTextInstruction, place, this.nodePath, this.value);
   }
 
   rewrite(): BaseInstruction {

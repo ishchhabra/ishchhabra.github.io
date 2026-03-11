@@ -16,9 +16,7 @@ export function generateExportDefaultDeclarationInstruction(
     !t.isClassDeclaration(declaration) &&
     !t.isExpression(declaration)
   ) {
-    throw new Error(
-      `Unsupported export default declaration type: ${declaration?.type}`,
-    );
+    throw new Error(`Unsupported export default declaration type: ${declaration?.type}`);
   }
 
   return t.exportDefaultDeclaration(declaration);

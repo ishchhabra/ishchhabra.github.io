@@ -13,12 +13,7 @@ export function buildExportDefaultDeclaration(
   environment: Environment,
 ) {
   const declarationPath = nodePath.get("declaration");
-  const declarationPlace = buildNode(
-    declarationPath,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-  );
+  const declarationPlace = buildNode(declarationPath, functionBuilder, moduleBuilder, environment);
   if (declarationPlace === undefined || Array.isArray(declarationPlace)) {
     throw new Error("Export default declaration must be a single place");
   }

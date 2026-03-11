@@ -46,7 +46,5 @@ export function generateMemoryInstruction(
     return generateStoreDynamicPropertyInstruction(instruction, generator);
   }
 
-  throw new Error(
-    `Unsupported memory instruction: ${instruction.constructor.name}`,
-  );
+  throw new Error(`Unsupported memory instruction: ${instruction.constructor.name}`);
 }

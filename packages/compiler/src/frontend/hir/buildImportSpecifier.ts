@@ -40,17 +40,13 @@ export function buildImportSpecifier(
 }
 
 function getLocalName(
-  nodePath: NodePath<
-    t.ImportSpecifier | t.ImportDefaultSpecifier | t.ImportNamespaceSpecifier
-  >,
+  nodePath: NodePath<t.ImportSpecifier | t.ImportDefaultSpecifier | t.ImportNamespaceSpecifier>,
 ) {
   return nodePath.node.local.name;
 }
 
 function getImportedName(
-  nodePath: NodePath<
-    t.ImportSpecifier | t.ImportDefaultSpecifier | t.ImportNamespaceSpecifier
-  >,
+  nodePath: NodePath<t.ImportSpecifier | t.ImportDefaultSpecifier | t.ImportNamespaceSpecifier>,
 ) {
   const node = nodePath.node;
   if (t.isImportDefaultSpecifier(node)) {

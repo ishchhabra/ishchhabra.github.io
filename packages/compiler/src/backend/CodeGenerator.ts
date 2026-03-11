@@ -7,16 +7,14 @@ import { ModuleIR } from "../ir/core/ModuleIR";
 import { generateFunction } from "./codegen/generateFunction";
 import { generateBindingIdentifierInstruction } from "./codegen/instructions/generateBindingIdentifier";
 
-const generate = (_generate as unknown as { default: typeof _generate })
-  .default;
+const generate = (_generate as unknown as { default: typeof _generate }).default;
 
 /**
  * Generates the code from the IR.
  */
 export class CodeGenerator {
   public readonly places: Map<PlaceId, t.Node | null> = new Map();
-  public readonly blockToStatements: Map<BlockId, Array<t.Statement>> =
-    new Map();
+  public readonly blockToStatements: Map<BlockId, Array<t.Statement>> = new Map();
   public generatedBlocks: Set<BlockId> = new Set();
 
   constructor(

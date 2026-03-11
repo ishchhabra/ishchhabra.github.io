@@ -156,16 +156,10 @@ export class ExportDeclarationMergingPass extends BaseOptimizationPass {
     bi: BindingIdentifierInstruction,
   ): StoreLocalInstruction | FunctionDeclarationInstruction | undefined {
     for (const instr of instrs) {
-      if (
-        instr instanceof StoreLocalInstruction &&
-        instr.lval.id === bi.place.id
-      ) {
+      if (instr instanceof StoreLocalInstruction && instr.lval.id === bi.place.id) {
         return instr;
       }
-      if (
-        instr instanceof FunctionDeclarationInstruction &&
-        instr.identifier.id === bi.place.id
-      ) {
+      if (instr instanceof FunctionDeclarationInstruction && instr.identifier.id === bi.place.id) {
         return instr;
       }
     }

@@ -21,9 +21,7 @@ export class LateOptimizer {
   public run(): LateOptimizerResult {
     let blocks = this.functionIR.blocks;
     if (this.options.enableLoadStoreForwardingPass) {
-      const loadStoreForwardingResult = new LoadStoreForwardingPass(
-        this.functionIR,
-      ).run();
+      const loadStoreForwardingResult = new LoadStoreForwardingPass(this.functionIR).run();
       blocks = loadStoreForwardingResult.blocks;
     }
 
@@ -35,9 +33,7 @@ export class LateOptimizer {
     }
 
     if (this.options.enableLateCopyPropagationPass) {
-      const lateCopyPropagationResult = new LateCopyPropagationPass(
-        this.functionIR,
-      ).run();
+      const lateCopyPropagationResult = new LateCopyPropagationPass(this.functionIR).run();
       blocks = lateCopyPropagationResult.blocks;
     }
 

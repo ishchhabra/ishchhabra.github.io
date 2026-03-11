@@ -21,9 +21,7 @@ export function generateBackEdge(
     return generateBranchBackEdge(terminal, functionIR, generator);
   }
 
-  throw new Error(
-    `Unsupported back edge on block ${blockId} (${terminal.constructor.name})`,
-  );
+  throw new Error(`Unsupported back edge on block ${blockId} (${terminal.constructor.name})`);
 }
 
 /**
@@ -38,16 +36,9 @@ function generateJumpBackEdge(
   functionIR: FunctionIR,
   generator: CodeGenerator,
 ): Array<t.Statement> {
-  const bodyInstructions = generateBasicBlock(
-    terminal.target,
-    functionIR,
-    generator,
-  );
+  const bodyInstructions = generateBasicBlock(terminal.target, functionIR, generator);
 
-  const node = t.whileStatement(
-    t.booleanLiteral(true),
-    t.blockStatement(bodyInstructions),
-  );
+  const node = t.whileStatement(t.booleanLiteral(true), t.blockStatement(bodyInstructions));
   return [node];
 }
 
@@ -63,16 +54,8 @@ function generateBranchBackEdge(
 
   t.assertExpression(test);
 
-  const bodyInstructions = generateBasicBlock(
-    terminal.consequent,
-    functionIR,
-    generator,
-  );
-  const exitInstructions = generateBasicBlock(
-    terminal.fallthrough,
-    functionIR,
-    generator,
-  );
+  const bodyInstructions = generateBasicBlock(terminal.consequent, functionIR, generator);
+  const exitInstructions = generateBasicBlock(terminal.fallthrough, functionIR, generator);
 
   const node = t.whileStatement(test, t.blockStatement(bodyInstructions));
   return [node, ...exitInstructions];

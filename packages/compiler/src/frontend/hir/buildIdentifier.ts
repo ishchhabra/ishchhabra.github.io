@@ -77,12 +77,7 @@ function buildReferencedIdentifier(
   const place = environment.createPlace(identifier);
 
   if (declarationId === undefined) {
-    const instruction = environment.createInstruction(
-      LoadGlobalInstruction,
-      place,
-      nodePath,
-      name,
-    );
+    const instruction = environment.createInstruction(LoadGlobalInstruction, place, nodePath, name);
     builder.addInstruction(instruction);
   } else {
     const declarationId = builder.getDeclarationId(name, nodePath);
@@ -93,9 +88,7 @@ function buildReferencedIdentifier(
     const latestDeclaration = environment.getLatestDeclaration(declarationId);
     const declarationPlace = environment.places.get(latestDeclaration.placeId);
     if (declarationPlace === undefined) {
-      throw new Error(
-        `Unable to find the place for ${name} (${declarationId})`,
-      );
+      throw new Error(`Unable to find the place for ${name} (${declarationId})`);
     }
 
     const instruction = environment.createInstruction(

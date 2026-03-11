@@ -52,11 +52,7 @@ export class Pipeline {
           functionIR.blocks = optimizerResult.blocks;
         }
 
-        new SSAEliminator(
-          functionIR,
-          moduleIR,
-          ssaBuilderResult.phis,
-        ).eliminate();
+        new SSAEliminator(functionIR, moduleIR, ssaBuilderResult.phis).eliminate();
 
         if (this.options.enableLateOptimizer) {
           const lateOptimizerResult = new LateOptimizer(

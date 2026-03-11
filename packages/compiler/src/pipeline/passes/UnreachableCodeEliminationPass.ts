@@ -1,9 +1,6 @@
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { getPredecessors } from "../../frontend/cfg/getPredecessors";
-import {
-  BaseOptimizationPass,
-  OptimizationResult,
-} from "../late-optimizer/OptimizationPass";
+import { BaseOptimizationPass, OptimizationResult } from "../late-optimizer/OptimizationPass";
 
 /**
  * Removes instructions from unreachable blocks.

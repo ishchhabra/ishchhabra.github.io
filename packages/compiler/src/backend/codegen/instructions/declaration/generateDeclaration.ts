@@ -1,8 +1,5 @@
 import * as t from "@babel/types";
-import {
-  DeclarationInstruction,
-  FunctionDeclarationInstruction,
-} from "../../../../ir";
+import { DeclarationInstruction, FunctionDeclarationInstruction } from "../../../../ir";
 import { CodeGenerator } from "../../../CodeGenerator";
 import { generateFunctionDeclarationInstruction } from "./generateFunctionDeclaration";
 
@@ -14,7 +11,5 @@ export function generateDeclarationInstruction(
     return generateFunctionDeclarationInstruction(instruction, generator);
   }
 
-  throw new Error(
-    `Unsupported declaration type: ${instruction.constructor.name}`,
-  );
+  throw new Error(`Unsupported declaration type: ${instruction.constructor.name}`);
 }

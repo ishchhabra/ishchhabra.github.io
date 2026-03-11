@@ -36,98 +36,43 @@ export function buildExpression(
   switch (nodePath.type) {
     case "AwaitExpression":
       nodePath.assertAwaitExpression();
-      return buildAwaitExpression(
-        nodePath,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
+      return buildAwaitExpression(nodePath, functionBuilder, moduleBuilder, environment);
     case "AssignmentExpression":
       nodePath.assertAssignmentExpression();
-      return buildAssignmentExpression(
-        nodePath,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
+      return buildAssignmentExpression(nodePath, functionBuilder, moduleBuilder, environment);
     case "ArrayExpression":
       nodePath.assertArrayExpression();
-      return buildArrayExpression(
-        nodePath,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
+      return buildArrayExpression(nodePath, functionBuilder, moduleBuilder, environment);
     case "ArrowFunctionExpression":
       nodePath.assertArrowFunctionExpression();
-      return buildArrowFunctionExpression(
-        nodePath,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
+      return buildArrowFunctionExpression(nodePath, functionBuilder, moduleBuilder, environment);
     case "BigIntLiteral":
       nodePath.assertBigIntLiteral();
       return buildLiteral(nodePath, functionBuilder, environment);
     case "BinaryExpression":
       nodePath.assertBinaryExpression();
-      return buildBinaryExpression(
-        nodePath,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
+      return buildBinaryExpression(nodePath, functionBuilder, moduleBuilder, environment);
     case "BooleanLiteral":
       nodePath.assertBooleanLiteral();
       return buildLiteral(nodePath, functionBuilder, environment);
     case "CallExpression":
       nodePath.assertCallExpression();
-      return buildCallExpression(
-        nodePath,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
+      return buildCallExpression(nodePath, functionBuilder, moduleBuilder, environment);
     case "ConditionalExpression":
       nodePath.assertConditionalExpression();
-      return buildConditionalExpression(
-        nodePath,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
+      return buildConditionalExpression(nodePath, functionBuilder, moduleBuilder, environment);
     case "FunctionExpression":
       nodePath.assertFunctionExpression();
-      return buildFunctionExpression(
-        nodePath,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
+      return buildFunctionExpression(nodePath, functionBuilder, moduleBuilder, environment);
     case "LogicalExpression":
       nodePath.assertLogicalExpression();
-      return buildLogicalExpression(
-        nodePath,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
+      return buildLogicalExpression(nodePath, functionBuilder, moduleBuilder, environment);
     case "MemberExpression":
       nodePath.assertMemberExpression();
-      return buildMemberExpression(
-        nodePath,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
+      return buildMemberExpression(nodePath, functionBuilder, moduleBuilder, environment);
     case "NewExpression":
       nodePath.assertNewExpression();
-      return buildNewExpression(
-        nodePath,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
+      return buildNewExpression(nodePath, functionBuilder, moduleBuilder, environment);
     case "NullLiteral":
       nodePath.assertNullLiteral();
       return buildLiteral(nodePath, functionBuilder, environment);
@@ -136,85 +81,40 @@ export function buildExpression(
       return buildLiteral(nodePath, functionBuilder, environment);
     case "OptionalCallExpression":
       nodePath.assertOptionalCallExpression();
-      return buildCallExpression(
-        nodePath,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
+      return buildCallExpression(nodePath, functionBuilder, moduleBuilder, environment);
     case "OptionalMemberExpression":
       nodePath.assertOptionalMemberExpression();
-      return buildMemberExpression(
-        nodePath,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
+      return buildMemberExpression(nodePath, functionBuilder, moduleBuilder, environment);
     case "RegExpLiteral":
       nodePath.assertRegExpLiteral();
       return buildRegExpLiteral(nodePath, functionBuilder, environment);
     case "ObjectExpression":
       nodePath.assertObjectExpression();
-      return buildObjectExpression(
-        nodePath,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
+      return buildObjectExpression(nodePath, functionBuilder, moduleBuilder, environment);
     case "SequenceExpression":
       nodePath.assertSequenceExpression();
-      return buildSequenceExpression(
-        nodePath,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
+      return buildSequenceExpression(nodePath, functionBuilder, moduleBuilder, environment);
     case "StringLiteral":
       nodePath.assertStringLiteral();
       return buildLiteral(nodePath, functionBuilder, environment);
     case "TemplateLiteral":
       nodePath.assertTemplateLiteral();
-      return buildTemplateLiteral(
-        nodePath,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
+      return buildTemplateLiteral(nodePath, functionBuilder, moduleBuilder, environment);
     case "ThisExpression":
       nodePath.assertThisExpression();
       return buildThisExpression(nodePath, functionBuilder, environment);
     case "TaggedTemplateExpression":
       nodePath.assertTaggedTemplateExpression();
-      return buildTaggedTemplateExpression(
-        nodePath,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
+      return buildTaggedTemplateExpression(nodePath, functionBuilder, moduleBuilder, environment);
     case "UnaryExpression":
       nodePath.assertUnaryExpression();
-      return buildUnaryExpression(
-        nodePath,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
+      return buildUnaryExpression(nodePath, functionBuilder, moduleBuilder, environment);
     case "UpdateExpression":
       nodePath.assertUpdateExpression();
-      return buildUpdateExpression(
-        nodePath,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
+      return buildUpdateExpression(nodePath, functionBuilder, moduleBuilder, environment);
     case "YieldExpression":
       nodePath.assertYieldExpression();
-      return buildYieldExpression(
-        nodePath,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
+      return buildYieldExpression(nodePath, functionBuilder, moduleBuilder, environment);
     default:
       return buildUnsupportedNode(nodePath, functionBuilder, environment);
   }

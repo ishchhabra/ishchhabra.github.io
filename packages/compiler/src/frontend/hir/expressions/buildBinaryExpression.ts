@@ -14,23 +14,13 @@ export function buildBinaryExpression(
 ) {
   const leftPath: NodePath<t.PrivateName | t.Expression> = nodePath.get("left");
   leftPath.assertExpression();
-  const leftPlace = buildNode(
-    leftPath,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-  );
+  const leftPlace = buildNode(leftPath, functionBuilder, moduleBuilder, environment);
   if (leftPlace === undefined || Array.isArray(leftPlace)) {
     throw new Error("Binary expression left must be a single place");
   }
 
   const rightPath = nodePath.get("right");
-  const rightPlace = buildNode(
-    rightPath,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-  );
+  const rightPlace = buildNode(rightPath, functionBuilder, moduleBuilder, environment);
   if (rightPlace === undefined || Array.isArray(rightPlace)) {
     throw new Error("Binary expression right must be a single place");
   }

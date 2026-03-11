@@ -1,10 +1,5 @@
 import * as t from "@babel/types";
-import {
-  BaseTerminal,
-  BranchTerminal,
-  JumpTerminal,
-  ReturnTerminal,
-} from "../../../ir";
+import { BaseTerminal, BranchTerminal, JumpTerminal, ReturnTerminal } from "../../../ir";
 import { FunctionIR } from "../../../ir/core/FunctionIR";
 import { CodeGenerator } from "../../CodeGenerator";
 import { generateBranchTerminal } from "./generateBranch";

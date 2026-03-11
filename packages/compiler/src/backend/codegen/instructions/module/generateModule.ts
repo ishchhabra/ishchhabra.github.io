@@ -39,7 +39,5 @@ export function generateModuleInstruction(
     return generateImportSpecifierInstruction(instruction, generator);
   }
 
-  throw new Error(
-    `Unsupported module instruction: ${instruction.constructor.name}`,
-  );
+  throw new Error(`Unsupported module instruction: ${instruction.constructor.name}`);
 }

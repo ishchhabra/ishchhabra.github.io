@@ -16,12 +16,7 @@ export function buildExportNamedDeclaration(
 ) {
   // Re-exports: export { x, y } from './mod'
   if (nodePath.node.source) {
-    return buildExportFrom(
-      nodePath,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
+    return buildExportFrom(nodePath, functionBuilder, moduleBuilder, environment);
   }
 
   const declarationPath = nodePath.get("declaration");
@@ -29,12 +24,7 @@ export function buildExportNamedDeclaration(
 
   // An export can have either declaration or specifiers, but not both.
   if (declarationPath.hasNode()) {
-    let declarationPlace = buildNode(
-      declarationPath,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    )!;
+    let declarationPlace = buildNode(declarationPath, functionBuilder, moduleBuilder, environment)!;
     if (Array.isArray(declarationPlace)) {
       // TODO: Iterate over all declaration places to split them into multiple instructions.
       // Example:
@@ -71,10 +61,7 @@ export function buildExportNamedDeclaration(
         moduleBuilder,
         environment,
       );
-      if (
-        exportSpecifierPlace === undefined ||
-        Array.isArray(exportSpecifierPlace)
-      ) {
+      if (exportSpecifierPlace === undefined || Array.isArray(exportSpecifierPlace)) {
         throw new Error(`Export specifier must be a single place`);
       }
       return exportSpecifierPlace;

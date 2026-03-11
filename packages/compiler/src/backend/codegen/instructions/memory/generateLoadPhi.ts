@@ -6,9 +6,7 @@ export function generateLoadPhiInstruction(
   instruction: LoadPhiInstruction,
   generator: CodeGenerator,
 ): t.Expression {
-  console.warn(
-    `Generating LoadPhiInstruction for ${instruction.value.identifier.name}`,
-  );
+  console.warn(`Generating LoadPhiInstruction for ${instruction.value.identifier.name}`);
   const node = t.identifier(instruction.value.identifier.name);
   generator.places.set(instruction.place.id, node);
   return node;

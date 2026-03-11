@@ -10,10 +10,7 @@ export function generateFunctionDeclarationInstruction(
   const idNode = generator.places.get(instruction.place.id)!;
   t.assertIdentifier(idNode);
 
-  const { params, statements } = generateFunction(
-    instruction.functionIR,
-    generator,
-  );
+  const { params, statements } = generateFunction(instruction.functionIR, generator);
   const node = t.functionDeclaration(
     idNode,
     params,

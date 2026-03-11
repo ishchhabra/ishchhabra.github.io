@@ -7,10 +7,7 @@ export function generateArrowFunctionExpressionInstruction(
   instruction: ArrowFunctionExpressionInstruction,
   generator: CodeGenerator,
 ): t.ArrowFunctionExpression {
-  const { params, statements } = generateFunction(
-    instruction.functionIR,
-    generator,
-  );
+  const { params, statements } = generateFunction(instruction.functionIR, generator);
 
   let body: t.BlockStatement | t.Expression = t.blockStatement(statements);
   if (instruction.expression) {
@@ -35,9 +32,7 @@ export function generateArrowFunctionExpressionInstruction(
  * Try to extract a single expression from the generated statements
  * that can be used as an arrow function expression body.
  */
-function extractExpressionBody(
-  statements: t.Statement[],
-): t.Expression | undefined {
+function extractExpressionBody(statements: t.Statement[]): t.Expression | undefined {
   if (statements.length !== 1) return undefined;
 
   const stmt = statements[0];

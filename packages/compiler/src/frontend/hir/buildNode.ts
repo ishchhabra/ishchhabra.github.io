@@ -33,21 +33,11 @@ export function buildNode(
   }
 
   if (nodePath.isObjectMethod()) {
-    return buildObjectMethod(
-      nodePath,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
+    return buildObjectMethod(nodePath, functionBuilder, moduleBuilder, environment);
   }
 
   if (nodePath.isObjectProperty()) {
-    return buildObjectProperty(
-      nodePath,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
+    return buildObjectProperty(nodePath, functionBuilder, moduleBuilder, environment);
   }
 
   if (nodePath.isJSX()) {
@@ -55,30 +45,15 @@ export function buildNode(
   }
 
   if (nodePath.isExpression()) {
-    return buildExpression(
-      nodePath,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
+    return buildExpression(nodePath, functionBuilder, moduleBuilder, environment);
   }
 
   if (nodePath.isStatement()) {
-    return buildStatement(
-      nodePath,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
+    return buildStatement(nodePath, functionBuilder, moduleBuilder, environment);
   }
 
   if (nodePath.isSpreadElement()) {
-    return buildSpreadElement(
-      nodePath,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
+    return buildSpreadElement(nodePath, functionBuilder, moduleBuilder, environment);
   }
 
   if (nodePath.isPattern()) {
@@ -86,21 +61,12 @@ export function buildNode(
   }
 
   if (nodePath.isExportSpecifier()) {
-    return buildExportSpecifier(
-      nodePath,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
+    return buildExportSpecifier(nodePath, functionBuilder, moduleBuilder, environment);
   }
 
   return buildUnsupportedNode(nodePath, functionBuilder, environment);
 }
 
-function assertNull<T extends t.Node>(
-  path: NodePath<T | null>,
-): asserts path is NodePath<null> {}
+function assertNull<T extends t.Node>(path: NodePath<T | null>): asserts path is NodePath<null> {}
 
-function assertNonNull<T extends t.Node>(
-  path: NodePath<T | null>,
-): asserts path is NodePath<T> {}
+function assertNonNull<T extends t.Node>(path: NodePath<T | null>): asserts path is NodePath<T> {}

@@ -1,10 +1,7 @@
 import { BlockId } from "../ir";
 import { FunctionIR } from "../ir/core/FunctionIR";
 import { ModuleIR } from "../ir/core/ModuleIR";
-import {
-  BaseOptimizationPass,
-  OptimizationResult,
-} from "./late-optimizer/OptimizationPass";
+import { BaseOptimizationPass, OptimizationResult } from "./late-optimizer/OptimizationPass";
 
 /**
  * A pass that merges consecutive blocks where the CFG is linear:
@@ -50,11 +47,7 @@ export class MergeConsecutiveBlocksPass extends BaseOptimizationPass {
       // Skip if predecessor doesn't have exactly one successor, or
       // if the single successor is not the current block.
       const successorsSet = this.functionIR.successors.get(predecessorId);
-      if (
-        !successorsSet ||
-        successorsSet.size !== 1 ||
-        !successorsSet.has(blockId)
-      ) {
+      if (!successorsSet || successorsSet.size !== 1 || !successorsSet.has(blockId)) {
         continue;
       }
 
@@ -77,10 +70,7 @@ export class MergeConsecutiveBlocksPass extends BaseOptimizationPass {
    * @param predecessorId The block that will absorb `successorId`.
    * @param successorId The block being merged into `predecessorId`.
    */
-  private mergeBlockIntoPredecessor(
-    predecessorId: BlockId,
-    successorId: BlockId,
-  ): void {
+  private mergeBlockIntoPredecessor(predecessorId: BlockId, successorId: BlockId): void {
     const predBlock = this.functionIR.blocks.get(predecessorId)!;
     const succBlock = this.functionIR.blocks.get(successorId)!;
 

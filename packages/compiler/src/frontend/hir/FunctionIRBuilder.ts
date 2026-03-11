@@ -21,12 +21,8 @@ export class FunctionIRBuilder {
   public readonly header: BaseInstruction[] = [];
 
   constructor(
-    public readonly paramPaths: NodePath<
-      t.Identifier | t.RestElement | t.Pattern
-    >[],
-    public readonly bodyPath: NodePath<
-      t.Program | t.BlockStatement | t.Expression
-    >,
+    public readonly paramPaths: NodePath<t.Identifier | t.RestElement | t.Pattern>[],
+    public readonly bodyPath: NodePath<t.Program | t.BlockStatement | t.Expression>,
     public readonly environment: Environment,
     public readonly moduleBuilder: ModuleIRBuilder,
   ) {
@@ -47,12 +43,7 @@ export class FunctionIRBuilder {
     const functionId = makeFunctionIRId(this.environment.nextFunctionId++);
 
     if (this.bodyPath.isExpression()) {
-      const resultPlace = buildNode(
-        this.bodyPath,
-        this,
-        this.moduleBuilder,
-        this.environment,
-      );
+      const resultPlace = buildNode(this.bodyPath, this, this.moduleBuilder, this.environment);
       if (resultPlace !== undefined && !Array.isArray(resultPlace)) {
         // Add an explicit ReturnTerminal so the codegen knows what value
         // the expression body produces, even when the IR has multiple
@@ -74,12 +65,7 @@ export class FunctionIRBuilder {
       }
     }
 
-    const functionIR = new FunctionIR(
-      functionId,
-      this.header,
-      params,
-      this.blocks,
-    );
+    const functionIR = new FunctionIR(functionId, this.header, params, this.blocks);
     this.moduleBuilder.functions.set(functionIR.id, functionIR);
     return functionIR;
   }
@@ -97,10 +83,7 @@ export class FunctionIRBuilder {
     nodePath.scope.setData(name, declarationId);
   }
 
-  public getDeclarationId(
-    name: string,
-    nodePath: NodePath<t.Node>,
-  ): DeclarationId | undefined {
+  public getDeclarationId(name: string, nodePath: NodePath<t.Node>): DeclarationId | undefined {
     return nodePath.scope.getData(name);
   }
 }

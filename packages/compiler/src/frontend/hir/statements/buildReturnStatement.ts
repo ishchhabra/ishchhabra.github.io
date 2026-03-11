@@ -17,12 +17,7 @@ export function buildReturnStatement(
     return;
   }
 
-  const valuePlace = buildNode(
-    argument,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-  );
+  const valuePlace = buildNode(argument, functionBuilder, moduleBuilder, environment);
   if (valuePlace === undefined || Array.isArray(valuePlace)) {
     throw new Error("Return statement argument must be a single place");
   }

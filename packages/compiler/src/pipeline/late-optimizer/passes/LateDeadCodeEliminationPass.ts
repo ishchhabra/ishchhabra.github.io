@@ -46,19 +46,14 @@ export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
           changed = true;
         }
       } catch {
-        console.warn(
-          `Skipping dead code elimination for block ${blockId} due to error`,
-        );
+        console.warn(`Skipping dead code elimination for block ${blockId} due to error`);
       }
     }
 
     return { changed };
   }
 
-  private eliminateDeadCodeInBlock(
-    block: BasicBlock,
-    usedPlaceIds: Set<IdentifierId>,
-  ): boolean {
+  private eliminateDeadCodeInBlock(block: BasicBlock, usedPlaceIds: Set<IdentifierId>): boolean {
     const instrs = block.instructions;
     const newInstrs: BaseInstruction[] = [];
     let changed = false;

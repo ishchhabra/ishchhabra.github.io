@@ -21,15 +21,14 @@ export function buildFunctionParams(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place[] {
-  return paramPaths.map(
-    (paramPath: NodePath<t.Identifier | t.RestElement | t.Pattern>) =>
-      buildFunctionParam(
-        paramPath as NodePath<t.LVal>,
-        bodyPath,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      ),
+  return paramPaths.map((paramPath: NodePath<t.Identifier | t.RestElement | t.Pattern>) =>
+    buildFunctionParam(
+      paramPath as NodePath<t.LVal>,
+      bodyPath,
+      functionBuilder,
+      moduleBuilder,
+      environment,
+    ),
   );
 }
 
@@ -41,12 +40,7 @@ function buildFunctionParam(
   environment: Environment,
 ): Place {
   if (paramPath.isIdentifier()) {
-    return buildFunctionIdentifierParam(
-      paramPath,
-      bodyPath,
-      functionBuilder,
-      environment,
-    );
+    return buildFunctionIdentifierParam(paramPath, bodyPath, functionBuilder, environment);
   } else if (paramPath.isArrayPattern()) {
     return buildFunctionArrayPatternParam(
       paramPath,
@@ -104,16 +98,8 @@ function buildFunctionIdentifierParam(
   const declarationId = identifier.declarationId;
   functionBuilder.registerDeclarationName(name, declarationId, bodyPath);
   bodyPath.scope.rename(name, identifier.name);
-  functionBuilder.registerDeclarationName(
-    identifier.name,
-    declarationId,
-    bodyPath,
-  );
-  environment.registerDeclaration(
-    declarationId,
-    functionBuilder.currentBlock.id,
-    place.id,
-  );
+  functionBuilder.registerDeclarationName(identifier.name, declarationId, bodyPath);
+  environment.registerDeclaration(declarationId, functionBuilder.currentBlock.id, place.id);
   return place;
 }
 
@@ -126,13 +112,7 @@ function buildFunctionArrayPatternParam(
 ): Place {
   const elements = paramPath.get("elements");
   const places = elements.map((elementPath) => {
-    if (
-      !(
-        elementPath.isIdentifier() ||
-        elementPath.isRestElement() ||
-        elementPath.isPattern()
-      )
-    ) {
+    if (!(elementPath.isIdentifier() || elementPath.isRestElement() || elementPath.isPattern())) {
       throw new Error(`Unsupported element type: ${elementPath.node!.type}`);
     }
 
@@ -279,17 +259,11 @@ function buildFunctionAssignmentPatternParam(
   // from the block into the header.
   const insertPoint = functionBuilder.currentBlock.instructions.length;
   const rightPath = paramPath.get("right");
-  const rightPlace = buildNode(
-    rightPath,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-  );
+  const rightPlace = buildNode(rightPath, functionBuilder, moduleBuilder, environment);
   if (rightPlace === undefined || Array.isArray(rightPlace)) {
     throw new Error("Default value must be a single expression");
   }
-  const defaultValueInstructions =
-    functionBuilder.currentBlock.instructions.splice(insertPoint);
+  const defaultValueInstructions = functionBuilder.currentBlock.instructions.splice(insertPoint);
   functionBuilder.header.push(...defaultValueInstructions);
 
   const identifier = environment.createIdentifier();

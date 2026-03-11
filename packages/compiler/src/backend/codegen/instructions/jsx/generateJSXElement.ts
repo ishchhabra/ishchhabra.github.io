@@ -23,12 +23,7 @@ export function generateJSXElementInstruction(
   });
 
   const selfClosing = closingElement === null;
-  const node = t.jsxElement(
-    openingElement,
-    closingElement,
-    children,
-    selfClosing,
-  );
+  const node = t.jsxElement(openingElement, closingElement, children, selfClosing);
   generator.places.set(instruction.place.id, node);
   return node;
 }

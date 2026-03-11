@@ -44,9 +44,7 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
     const placeToInstr = new Map<PlaceId, BaseInstruction>();
 
     for (const block of this.functionIR.blocks.values()) {
-      if (
-        this.propagateInBlock(block, copyMap, valueForwardMap, placeToInstr)
-      ) {
+      if (this.propagateInBlock(block, copyMap, valueForwardMap, placeToInstr)) {
         changed = true;
       }
     }
@@ -72,10 +70,7 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
 
       if (instr instanceof StoreLocalInstruction) {
         // Propagate copies through StoreLocal values (e.g., `let $phi = $0_0` → `let $phi = 5`)
-        const valueReplacement = this.resolve(
-          copyMap,
-          instr.value.identifier.id,
-        );
+        const valueReplacement = this.resolve(copyMap, instr.value.identifier.id);
         if (valueReplacement && valueReplacement !== instr.value) {
           const rewriteMap = new Map<Identifier, Place>([
             [instr.value.identifier, valueReplacement],
@@ -130,9 +125,7 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
       if (instr instanceof LoadLocalInstruction) {
         const replacement = this.resolve(copyMap, instr.value.identifier.id);
         if (replacement && replacement !== instr.value) {
-          const rewriteMap = new Map<Identifier, Place>([
-            [instr.value.identifier, replacement],
-          ]);
+          const rewriteMap = new Map<Identifier, Place>([[instr.value.identifier, replacement]]);
           const rewritten = instr.rewrite(rewriteMap);
           block.instructions[i] = rewritten;
           placeToInstr.set(rewritten.place.id, rewritten);
@@ -148,17 +141,12 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
           const entry = valueForwardMap.get(instr.value.identifier.id);
           // Only forward if no previous CopyInstruction in this block has
           // modified any variable the expression depends on
-          if (
-            entry &&
-            !this.hasOverlap(entry.readBindingIds, modifiedByPrevCopy)
-          ) {
+          if (entry && !this.hasOverlap(entry.readBindingIds, modifiedByPrevCopy)) {
             replacement = entry.place;
           }
         }
         if (replacement && replacement !== instr.value) {
-          const rewriteMap = new Map<Identifier, Place>([
-            [instr.value.identifier, replacement],
-          ]);
+          const rewriteMap = new Map<Identifier, Place>([[instr.value.identifier, replacement]]);
           const rewritten = instr.rewrite(rewriteMap);
           block.instructions[i] = rewritten;
           changed = true;
@@ -184,10 +172,7 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
    * Follow the copy chain to find the ultimate source.
    * E.g., if a = b, b = c, then resolve(a) = c.
    */
-  private resolve(
-    copyMap: Map<IdentifierId, Place>,
-    id: IdentifierId,
-  ): Place | undefined {
+  private resolve(copyMap: Map<IdentifierId, Place>, id: IdentifierId): Place | undefined {
     const visited = new Set<IdentifierId>();
     let current = id;
     let result: Place | undefined;

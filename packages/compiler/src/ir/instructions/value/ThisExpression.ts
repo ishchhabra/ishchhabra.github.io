@@ -16,11 +16,7 @@ export class ThisExpressionInstruction extends ValueInstruction {
   public clone(environment: Environment): ThisExpressionInstruction {
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    return environment.createInstruction(
-      ThisExpressionInstruction,
-      place,
-      this.nodePath,
-    );
+    return environment.createInstruction(ThisExpressionInstruction, place, this.nodePath);
   }
 
   rewrite(): BaseInstruction {

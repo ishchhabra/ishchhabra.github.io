@@ -38,9 +38,7 @@ export class FunctionExpressionInstruction extends ValueInstruction {
       this.id,
       this.place,
       this.nodePath,
-      this.identifier
-        ? (values.get(this.identifier.identifier) ?? this.identifier)
-        : null,
+      this.identifier ? (values.get(this.identifier.identifier) ?? this.identifier) : null,
       this.functionIR,
       this.generator,
       this.async,

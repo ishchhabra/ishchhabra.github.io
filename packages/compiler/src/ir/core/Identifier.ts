@@ -9,10 +9,7 @@ export function makeIdentifierId(id: number): IdentifierId {
   return id as IdentifierId;
 }
 
-export function makeIdentifierName(
-  declarationId: DeclarationId,
-  version: number,
-): string {
+export function makeIdentifierName(declarationId: DeclarationId, version: number): string {
   return `$${declarationId}_${version}`;
 }
 

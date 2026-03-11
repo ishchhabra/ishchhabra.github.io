@@ -14,12 +14,7 @@ export function buildSequenceExpression(
 ) {
   const expressionPaths = nodePath.get("expressions");
   const expressionPlaces = expressionPaths.map((exprPath) => {
-    const exprPlace = buildNode(
-      exprPath,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
+    const exprPlace = buildNode(exprPath, functionBuilder, moduleBuilder, environment);
     if (exprPlace === undefined || Array.isArray(exprPlace)) {
       throw new Error("Sequence expression element must be a single place");
     }

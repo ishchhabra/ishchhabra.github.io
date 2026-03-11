@@ -21,28 +21,13 @@ export function generateLoadStaticPropertyInstruction(
   if (inOptionalChain) {
     if (isNumeric(instruction.property)) {
       const property = t.numericLiteral(Number(instruction.property));
-      node = t.optionalMemberExpression(
-        object,
-        property,
-        true,
-        instruction.optional,
-      );
+      node = t.optionalMemberExpression(object, property, true, instruction.optional);
     } else if (t.isValidIdentifier(instruction.property, true)) {
       const property = t.identifier(instruction.property);
-      node = t.optionalMemberExpression(
-        object,
-        property,
-        false,
-        instruction.optional,
-      );
+      node = t.optionalMemberExpression(object, property, false, instruction.optional);
     } else {
       const property = t.valueToNode(instruction.property) as t.Expression;
-      node = t.optionalMemberExpression(
-        object,
-        property,
-        true,
-        instruction.optional,
-      );
+      node = t.optionalMemberExpression(object, property, true, instruction.optional);
     }
   } else if (isNumeric(instruction.property)) {
     const property = t.numericLiteral(Number(instruction.property));

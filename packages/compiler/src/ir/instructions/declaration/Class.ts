@@ -1,11 +1,7 @@
 import { NodePath } from "@babel/traverse";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
-import {
-  BaseInstruction,
-  DeclarationInstruction,
-  InstructionId,
-} from "../../base";
+import { BaseInstruction, DeclarationInstruction, InstructionId } from "../../base";
 import { Identifier, Place } from "../../core";
 
 export class ClassDeclarationInstruction extends DeclarationInstruction {

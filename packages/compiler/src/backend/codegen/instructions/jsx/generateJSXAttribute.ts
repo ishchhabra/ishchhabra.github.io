@@ -12,9 +12,7 @@ export function generateJSXAttributeInstruction(
   if (instruction.value !== undefined) {
     const valueNode = generator.places.get(instruction.value.id);
     if (!valueNode) {
-      throw new Error(
-        `Place not found for JSX attribute value: ${instruction.value.id}`,
-      );
+      throw new Error(`Place not found for JSX attribute value: ${instruction.value.id}`);
     }
     if (t.isStringLiteral(valueNode)) {
       value = valueNode;
@@ -36,9 +34,7 @@ export function generateJSXAttributeInstruction(
   return node;
 }
 
-function parseJSXAttributeName(
-  name: string,
-): t.JSXIdentifier | t.JSXNamespacedName {
+function parseJSXAttributeName(name: string): t.JSXIdentifier | t.JSXNamespacedName {
   if (name.includes(":")) {
     const [ns, local] = name.split(":");
     return t.jsxNamespacedName(t.jsxIdentifier(ns), t.jsxIdentifier(local));

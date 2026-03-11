@@ -44,9 +44,7 @@ export class JSXOpeningElementInstruction extends JSXInstruction {
       this.place,
       this.nodePath,
       this.tag,
-      this.tagPlace
-        ? (values.get(this.tagPlace.identifier) ?? this.tagPlace)
-        : undefined,
+      this.tagPlace ? (values.get(this.tagPlace.identifier) ?? this.tagPlace) : undefined,
       this.attributes.map((attr) => values.get(attr.identifier) ?? attr),
       this.selfClosing,
     );

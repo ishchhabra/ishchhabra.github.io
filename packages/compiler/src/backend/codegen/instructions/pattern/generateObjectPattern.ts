@@ -13,9 +13,7 @@ export function generateObjectPatternInstruction(
     }
 
     if (!t.isObjectProperty(node) && !t.isRestElement(node)) {
-      throw new Error(
-        `Expected ObjectProperty or RestElement but got ${node?.type}`,
-      );
+      throw new Error(`Expected ObjectProperty or RestElement but got ${node?.type}`);
     }
     return node;
   });

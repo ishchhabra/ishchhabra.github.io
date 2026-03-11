@@ -8,9 +8,7 @@ export function generateAwaitExpressionInstruction(
 ): t.Expression {
   const argument = generator.places.get(instruction.argument.id);
   if (!argument) {
-    throw new Error(
-      `Place not found for await argument: ${instruction.argument.id}`,
-    );
+    throw new Error(`Place not found for await argument: ${instruction.argument.id}`);
   }
   t.assertExpression(argument);
 

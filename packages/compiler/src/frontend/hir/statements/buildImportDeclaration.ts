@@ -15,28 +15,20 @@ export function buildImportDeclaration(
 ) {
   const sourcePath = nodePath.get("source");
   const sourceValue = sourcePath.node.value;
-  const resolvedSourceValue = resolveModulePath(
-    sourceValue,
-    moduleBuilder.path,
-  );
+  const resolvedSourceValue = resolveModulePath(sourceValue, moduleBuilder.path);
 
   const specifiersPath = nodePath.get("specifiers");
   const specifierPlaces = specifiersPath.map((specifierPath) => {
     const importSpecifierPlace = buildImportSpecifier(
       specifierPath as NodePath<
-        | t.ImportSpecifier
-        | t.ImportDefaultSpecifier
-        | t.ImportNamespaceSpecifier
+        t.ImportSpecifier | t.ImportDefaultSpecifier | t.ImportNamespaceSpecifier
       >,
       nodePath,
       functionBuilder,
       moduleBuilder,
       environment,
     );
-    if (
-      importSpecifierPlace === undefined ||
-      Array.isArray(importSpecifierPlace)
-    ) {
+    if (importSpecifierPlace === undefined || Array.isArray(importSpecifierPlace)) {
       throw new Error(`Import specifier must be a single place`);
     }
     return importSpecifierPlace;

@@ -32,9 +32,7 @@ export class YieldExpressionInstruction extends ValueInstruction {
       this.id,
       this.place,
       this.nodePath,
-      this.argument
-        ? (values.get(this.argument.identifier) ?? this.argument)
-        : undefined,
+      this.argument ? (values.get(this.argument.identifier) ?? this.argument) : undefined,
       this.delegate,
     );
   }

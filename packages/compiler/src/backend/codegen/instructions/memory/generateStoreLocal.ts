@@ -17,9 +17,7 @@ export function generateStoreLocalInstruction(
   const value = generator.places.get(instruction.value.id);
   t.assertExpression(value);
 
-  const node = t.variableDeclaration(instruction.type, [
-    t.variableDeclarator(lval, value),
-  ]);
+  const node = t.variableDeclaration(instruction.type, [t.variableDeclarator(lval, value)]);
   generator.places.set(instruction.place.id, node);
   return node;
 }

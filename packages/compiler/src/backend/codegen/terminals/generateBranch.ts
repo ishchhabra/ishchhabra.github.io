@@ -28,11 +28,7 @@ export function generateBranchTerminal(
 
   // Now generate fallthrough — branches have defined all phi operands.
   generator.generatedBlocks.delete(terminal.fallthrough);
-  const fallthrough = generateBlock(
-    terminal.fallthrough,
-    functionIR,
-    generator,
-  );
+  const fallthrough = generateBlock(terminal.fallthrough, functionIR, generator);
 
   const node = t.ifStatement(
     test,

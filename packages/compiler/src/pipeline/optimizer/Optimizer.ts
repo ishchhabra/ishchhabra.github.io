@@ -53,8 +53,9 @@ export class Optimizer {
       }
 
       if (this.options.enableUnreachableCodeEliminationPass) {
-        const unreachableCodeEliminationResult =
-          new UnreachableCodeEliminationPass(this.functionIR).run();
+        const unreachableCodeEliminationResult = new UnreachableCodeEliminationPass(
+          this.functionIR,
+        ).run();
         changed ||= unreachableCodeEliminationResult.changed;
         blocks = unreachableCodeEliminationResult.blocks;
       }

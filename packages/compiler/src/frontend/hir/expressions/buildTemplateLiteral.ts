@@ -17,16 +17,9 @@ export function buildTemplateLiteral(
   const expressionPaths = nodePath.get("expressions");
   const expressionPlaces = expressionPaths.map((exprPath) => {
     if (!exprPath.isExpression()) {
-      throw new Error(
-        `Unsupported template literal expression type: ${exprPath.type}`,
-      );
+      throw new Error(`Unsupported template literal expression type: ${exprPath.type}`);
     }
-    const exprPlace = buildNode(
-      exprPath,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
+    const exprPlace = buildNode(exprPath, functionBuilder, moduleBuilder, environment);
     if (exprPlace === undefined || Array.isArray(exprPlace)) {
       throw new Error("Template literal expression must be a single place");
     }

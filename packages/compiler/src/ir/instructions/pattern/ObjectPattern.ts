@@ -1,12 +1,6 @@
 import { NodePath } from "@babel/core";
 import * as t from "@babel/types";
-import {
-  BaseInstruction,
-  Identifier,
-  InstructionId,
-  PatternInstruction,
-  Place,
-} from "../..";
+import { BaseInstruction, Identifier, InstructionId, PatternInstruction, Place } from "../..";
 import { Environment } from "../../../environment";
 
 /**
@@ -41,9 +35,7 @@ export class ObjectPatternInstruction extends PatternInstruction {
       this.id,
       this.place,
       this.nodePath,
-      this.properties.map(
-        (property) => values.get(property.identifier) ?? property,
-      ),
+      this.properties.map((property) => values.get(property.identifier) ?? property),
     );
   }
 

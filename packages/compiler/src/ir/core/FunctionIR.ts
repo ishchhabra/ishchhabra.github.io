@@ -72,15 +72,8 @@ export class FunctionIR {
     this.successors = getSuccessors(this.predecessors);
     this.dominators = getDominators(this.predecessors, this.entryBlockId);
     this.immediateDominators = getImmediateDominators(this.dominators);
-    this.dominanceFrontier = getDominanceFrontier(
-      this.predecessors,
-      this.immediateDominators,
-    );
-    this.backEdges = getBackEdges(
-      this.blocks,
-      this.dominators,
-      this.predecessors,
-    );
+    this.dominanceFrontier = getDominanceFrontier(this.predecessors, this.immediateDominators);
+    this.backEdges = getBackEdges(this.blocks, this.dominators, this.predecessors);
   }
 
   public recomputeCFG() {

@@ -11,8 +11,7 @@ import { FunctionIRBuilder } from "./FunctionIRBuilder";
 
 const require = createRequire(import.meta.url);
 
-const traverse = (_traverse as unknown as { default: typeof _traverse })
-  .default;
+const traverse = (_traverse as unknown as { default: typeof _traverse }).default;
 
 export class ModuleIRBuilder {
   public readonly globals: Map<string, ModuleGlobal> = new Map();
@@ -73,12 +72,7 @@ export class ModuleIRBuilder {
       throw new Error("Program path not found");
     }
 
-    const functionIR = new FunctionIRBuilder(
-      [],
-      programPath,
-      this.environment,
-      this,
-    ).build();
+    const functionIR = new FunctionIRBuilder([], programPath, this.environment, this).build();
     this.functions.set(functionIR.id, functionIR);
 
     return {

@@ -7,10 +7,7 @@ import { createRequire } from "module";
  * Strategy: use require.resolve() to find the package, then check if a .mjs
  * sibling exists (common dual-publish pattern: index.js + index.mjs).
  */
-export function resolveModulePath(
-  importPath: string,
-  fromPath: string,
-): string {
+export function resolveModulePath(importPath: string, fromPath: string): string {
   try {
     const require = createRequire(fromPath);
     const resolved = require.resolve(importPath);

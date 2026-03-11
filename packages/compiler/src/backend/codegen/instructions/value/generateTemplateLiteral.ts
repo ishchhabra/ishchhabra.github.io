@@ -9,9 +9,7 @@ export function generateTemplateLiteralInstruction(
   const expressions = instruction.expressions.map((expr) => {
     const node = generator.places.get(expr.id);
     if (!node) {
-      throw new Error(
-        `Place not found for template literal expression: ${expr.id}`,
-      );
+      throw new Error(`Place not found for template literal expression: ${expr.id}`);
     }
     t.assertExpression(node);
     return node;

@@ -48,14 +48,8 @@ program
   .description("Compile all files in a directory")
   .argument("<src>", "Source directory")
   .argument("<out>", "Output directory")
-  .option(
-    "--exclude <patterns...>",
-    "Regex patterns for files to skip (copy as-is)",
-  )
-  .option(
-    "--exclude-content <patterns...>",
-    "Skip files containing these strings (copy as-is)",
-  )
+  .option("--exclude <patterns...>", "Regex patterns for files to skip (copy as-is)")
+  .option("--exclude-content <patterns...>", "Skip files containing these strings (copy as-is)")
   .action((src, out, options) => {
     const exclude = (options.exclude || []).map((p: string) => new RegExp(p));
     const excludeContentPatterns: string[] = options.excludeContent || [];
@@ -85,9 +79,7 @@ program
       }
     }
 
-    console.log(
-      `\nDone: ${compiled} compiled, ${copied} copied, ${skipped} skipped`,
-    );
+    console.log(`\nDone: ${compiled} compiled, ${copied} copied, ${skipped} skipped`);
   });
 
 program.parse();

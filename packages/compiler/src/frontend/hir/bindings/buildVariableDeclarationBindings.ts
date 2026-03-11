@@ -9,14 +9,9 @@ export function buildVariableDeclarationBindings(
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
-  const isHoistable =
-    bindingsPath.isFunctionDeclaration() && nodePath.node.kind === "var";
+  const isHoistable = bindingsPath.isFunctionDeclaration() && nodePath.node.kind === "var";
   const parentPath = nodePath.parentPath;
-  if (
-    !parentPath.isExportDeclaration() &&
-    parentPath !== bindingsPath &&
-    !isHoistable
-  ) {
+  if (!parentPath.isExportDeclaration() && parentPath !== bindingsPath && !isHoistable) {
     return;
   }
 
@@ -36,57 +31,27 @@ function buildLValBindings(
   switch (nodePath.type) {
     case "Identifier":
       nodePath.assertIdentifier();
-      buildIdentifierBindings(
-        bindingsPath,
-        nodePath,
-        functionBuilder,
-        environment,
-      );
+      buildIdentifierBindings(bindingsPath, nodePath, functionBuilder, environment);
       break;
     case "ArrayPattern":
       nodePath.assertArrayPattern();
-      buildArrayPatternBindings(
-        bindingsPath,
-        nodePath,
-        functionBuilder,
-        environment,
-      );
+      buildArrayPatternBindings(bindingsPath, nodePath, functionBuilder, environment);
       break;
     case "AssignmentPattern":
       nodePath.assertAssignmentPattern();
-      buildAssignmentPatternBindings(
-        bindingsPath,
-        nodePath,
-        functionBuilder,
-        environment,
-      );
+      buildAssignmentPatternBindings(bindingsPath, nodePath, functionBuilder, environment);
       break;
     case "ObjectPattern":
       nodePath.assertObjectPattern();
-      buildObjectPatternBindings(
-        bindingsPath,
-        nodePath,
-        functionBuilder,
-        environment,
-      );
+      buildObjectPatternBindings(bindingsPath, nodePath, functionBuilder, environment);
       break;
     case "ObjectProperty":
       nodePath.assertObjectProperty();
-      buildObjectPropertyBindings(
-        bindingsPath,
-        nodePath,
-        functionBuilder,
-        environment,
-      );
+      buildObjectPropertyBindings(bindingsPath, nodePath, functionBuilder, environment);
       break;
     case "RestElement":
       nodePath.assertRestElement();
-      buildRestElementBindings(
-        bindingsPath,
-        nodePath,
-        functionBuilder,
-        environment,
-      );
+      buildRestElementBindings(bindingsPath, nodePath, functionBuilder, environment);
       break;
     default:
       throw new Error(`Unsupported LVal type: ${nodePath.type}`);
@@ -108,11 +73,7 @@ function buildIdentifierBindings(
 
   // Rename the variable name in the scope to the temporary place.
   bindingsPath.scope.rename(nodePath.node.name, identifier.name);
-  functionBuilder.registerDeclarationName(
-    identifier.name,
-    identifier.declarationId,
-    bindingsPath,
-  );
+  functionBuilder.registerDeclarationName(identifier.name, identifier.declarationId, bindingsPath);
 
   const place = environment.createPlace(identifier);
   environment.registerDeclaration(
@@ -128,8 +89,7 @@ function buildArrayPatternBindings(
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
-  const elementsPath: NodePath<t.ArrayPattern["elements"][number]>[] =
-    nodePath.get("elements");
+  const elementsPath: NodePath<t.ArrayPattern["elements"][number]>[] = nodePath.get("elements");
   for (const elementPath of elementsPath) {
     if (!elementPath.hasNode()) {
       continue;

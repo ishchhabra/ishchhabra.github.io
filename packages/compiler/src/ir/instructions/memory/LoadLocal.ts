@@ -24,12 +24,7 @@ export class LoadLocalInstruction extends MemoryInstruction {
   public clone(environment: Environment): LoadLocalInstruction {
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    return environment.createInstruction(
-      LoadLocalInstruction,
-      place,
-      this.nodePath,
-      this.value,
-    );
+    return environment.createInstruction(LoadLocalInstruction, place, this.nodePath, this.value);
   }
 
   rewrite(values: Map<Identifier, Place>): BaseInstruction {
@@ -39,12 +34,7 @@ export class LoadLocalInstruction extends MemoryInstruction {
       return this;
     }
 
-    return new LoadLocalInstruction(
-      this.id,
-      this.place,
-      this.nodePath,
-      rewrittenTarget,
-    );
+    return new LoadLocalInstruction(this.id, this.place, this.nodePath, rewrittenTarget);
   }
 
   getReadPlaces(): Place[] {

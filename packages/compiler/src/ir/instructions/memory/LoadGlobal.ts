@@ -23,12 +23,7 @@ export class LoadGlobalInstruction extends MemoryInstruction {
   public clone(environment: Environment): LoadGlobalInstruction {
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    return environment.createInstruction(
-      LoadGlobalInstruction,
-      place,
-      this.nodePath,
-      this.name,
-    );
+    return environment.createInstruction(LoadGlobalInstruction, place, this.nodePath, this.name);
   }
 
   rewrite(): BaseInstruction {

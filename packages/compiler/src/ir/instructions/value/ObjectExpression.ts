@@ -36,9 +36,7 @@ export class ObjectExpressionInstruction extends ValueInstruction {
       this.id,
       this.place,
       this.nodePath,
-      this.properties.map(
-        (property) => values.get(property.identifier) ?? property,
-      ),
+      this.properties.map((property) => values.get(property.identifier) ?? property),
     );
   }
 

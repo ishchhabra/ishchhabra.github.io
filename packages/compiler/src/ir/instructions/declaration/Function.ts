@@ -1,11 +1,7 @@
 import { NodePath } from "@babel/core";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
-import {
-  BaseInstruction,
-  DeclarationInstruction,
-  InstructionId,
-} from "../../base";
+import { BaseInstruction, DeclarationInstruction, InstructionId } from "../../base";
 import { Identifier, Place } from "../../core";
 import { FunctionIR } from "../../core/FunctionIR";
 

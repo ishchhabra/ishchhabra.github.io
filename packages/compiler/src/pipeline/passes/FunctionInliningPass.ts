@@ -58,10 +58,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
           continue;
         }
 
-        const calleeIR = this.callGraph.resolveFunctionFromCallExpression(
-          this.moduleIR,
-          instr,
-        );
+        const calleeIR = this.callGraph.resolveFunctionFromCallExpression(this.moduleIR, instr);
         if (calleeIR === undefined) {
           continue;
         }
@@ -81,12 +78,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
           continue;
         }
 
-        this.inlineFunctionIR(
-          index,
-          block,
-          functionIR,
-          this.moduleIR.environment,
-        );
+        this.inlineFunctionIR(index, block, functionIR, this.moduleIR.environment);
       }
     }
 
@@ -135,8 +127,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
       visited.add(current);
       stack.add(current);
 
-      const neighbors =
-        this.callGraph.calls.get(modulePath)?.get(current) ?? new Set();
+      const neighbors = this.callGraph.calls.get(modulePath)?.get(current) ?? new Set();
       for (const neighbor of neighbors) {
         if (dfs(neighbor.functionIRId)) {
           return true;
@@ -169,26 +160,17 @@ export class FunctionInliningPass extends BaseOptimizationPass {
 
     const rewriteMap = new Map<Identifier, Place>();
     const instrs: BaseInstruction[] = [];
-    this.inlineFunctionParams(
-      funcIR,
-      callExpressionInstr,
-      environment,
-      instrs,
-      rewriteMap,
-    );
+    this.inlineFunctionParams(funcIR, callExpressionInstr, environment, instrs, rewriteMap);
 
     const block = funcIR.blocks.values().next().value!;
     for (const instr of block.instructions) {
       const clonedInstr = instr.clone(environment);
       rewriteMap.set(instr.place.identifier, clonedInstr.place);
-      instrs.push(
-        clonedInstr.rewrite(rewriteMap, { rewriteDefinitions: true }),
-      );
+      instrs.push(clonedInstr.rewrite(rewriteMap, { rewriteDefinitions: true }));
     }
 
     if (block.terminal instanceof ReturnTerminal) {
-      callExpressionBlock.instructions[index] =
-        callExpressionInstr.rewrite(rewriteMap);
+      callExpressionBlock.instructions[index] = callExpressionInstr.rewrite(rewriteMap);
     }
 
     let returnPlace: Place;
@@ -197,9 +179,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
       const rewritten = rewriteMap.get(oldReturnId);
 
       if (!rewritten) {
-        throw new Error(
-          "Could not find a rewritten place for the function's return value",
-        );
+        throw new Error("Could not find a rewritten place for the function's return value");
       }
       returnPlace = rewritten;
     } else {
@@ -220,11 +200,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     const retRewriteMap = new Map<Identifier, Place>();
     retRewriteMap.set(callExpressionInstr.place.identifier, returnPlace);
 
-    for (
-      let i = index + instrs.length;
-      i < callExpressionBlock.instructions.length;
-      i++
-    ) {
+    for (let i = index + instrs.length; i < callExpressionBlock.instructions.length; i++) {
       const oldInstr = callExpressionBlock.instructions[i];
       callExpressionBlock.instructions[i] = oldInstr.rewrite(retRewriteMap);
     }
@@ -232,8 +208,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     // Also update the block's terminal if it references the old call place
     if (
       callExpressionBlock.terminal instanceof ReturnTerminal &&
-      callExpressionBlock.terminal.value.identifier ===
-        callExpressionInstr.place.identifier
+      callExpressionBlock.terminal.value.identifier === callExpressionInstr.place.identifier
     ) {
       callExpressionBlock.terminal = new ReturnTerminal(
         callExpressionBlock.terminal.id,
@@ -264,9 +239,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     }
 
     const leftArrayPatternIdentifier = environment.createIdentifier();
-    const leftArrayPatternPlace = environment.createPlace(
-      leftArrayPatternIdentifier,
-    );
+    const leftArrayPatternPlace = environment.createPlace(leftArrayPatternIdentifier);
     const leftArrayPattern = environment.createInstruction(
       ArrayPatternInstruction,
       leftArrayPatternPlace,
@@ -281,9 +254,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     }
 
     const rightArrayPatternIdentifier = environment.createIdentifier();
-    const rightArrayPatternPlace = environment.createPlace(
-      rightArrayPatternIdentifier,
-    );
+    const rightArrayPatternPlace = environment.createPlace(rightArrayPatternIdentifier);
     const rightArrayPattern = environment.createInstruction(
       ArrayExpressionInstruction,
       rightArrayPatternPlace,

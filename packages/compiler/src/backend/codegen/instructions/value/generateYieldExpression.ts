@@ -10,9 +10,7 @@ export function generateYieldExpressionInstruction(
   if (instruction.argument) {
     const argNode = generator.places.get(instruction.argument.id);
     if (!argNode) {
-      throw new Error(
-        `Place not found for yield argument: ${instruction.argument.id}`,
-      );
+      throw new Error(`Place not found for yield argument: ${instruction.argument.id}`);
     }
     t.assertExpression(argNode);
     argument = argNode;

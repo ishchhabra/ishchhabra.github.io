@@ -32,12 +32,7 @@ export function buildForStatement(
     if (initPath.isExpression()) {
       // Build expression inits (e.g. `for (i = 0; ...)`) directly since
       // the statement builder expects a Statement node.
-      buildExpressionAsStatement(
-        initPath,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
+      buildExpressionAsStatement(initPath, functionBuilder, moduleBuilder, environment);
     } else {
       initPath.assertStatement();
       buildBindings(nodePath, functionBuilder, environment);
@@ -58,12 +53,7 @@ export function buildForStatement(
   testPath.assertExpression();
 
   functionBuilder.currentBlock = testBlock;
-  const testPlace = buildNode(
-    testPath,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-  );
+  const testPlace = buildNode(testPath, functionBuilder, moduleBuilder, environment);
   if (testPlace === undefined || Array.isArray(testPlace)) {
     throw new Error("For statement test place must be a single place");
   }
@@ -80,12 +70,7 @@ export function buildForStatement(
   // Build the update inside body block.
   const updatePath: NodePath<t.ForStatement["update"]> = nodePath.get("update");
   if (updatePath.hasNode()) {
-    buildExpressionAsStatement(
-      updatePath,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
+    buildExpressionAsStatement(updatePath, functionBuilder, moduleBuilder, environment);
   }
 
   const bodyBlockTerminus = functionBuilder.currentBlock;
@@ -131,20 +116,16 @@ function buildExpressionAsStatement(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  const expressionPlace = buildNode(
-    expressionPath,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-  );
+  const expressionPlace = buildNode(expressionPath, functionBuilder, moduleBuilder, environment);
   if (expressionPlace === undefined || Array.isArray(expressionPlace)) {
     throw new Error("Expression place is undefined");
   }
 
   // Assignments already emit a StoreLocalInstruction; wrapping in
   // ExpressionStatementInstruction would duplicate the declaration in codegen.
-  const expressionInstruction =
-    functionBuilder.environment.placeToInstruction.get(expressionPlace.id);
+  const expressionInstruction = functionBuilder.environment.placeToInstruction.get(
+    expressionPlace.id,
+  );
   if (expressionInstruction instanceof StoreLocalInstruction) {
     return expressionPlace;
   }

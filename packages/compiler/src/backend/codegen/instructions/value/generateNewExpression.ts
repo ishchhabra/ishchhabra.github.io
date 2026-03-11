@@ -8,18 +8,14 @@ export function generateNewExpressionInstruction(
 ): t.Expression {
   const callee = generator.places.get(instruction.callee.id);
   if (!callee) {
-    throw new Error(
-      `Place not found for new expression callee: ${instruction.callee.id}`,
-    );
+    throw new Error(`Place not found for new expression callee: ${instruction.callee.id}`);
   }
   t.assertExpression(callee);
 
   const args = instruction.args.map((argument) => {
     const node = generator.places.get(argument.id);
     if (!node) {
-      throw new Error(
-        `Place not found for new expression argument: ${argument.id}`,
-      );
+      throw new Error(`Place not found for new expression argument: ${argument.id}`);
     }
     t.assertExpression(node);
     return node;

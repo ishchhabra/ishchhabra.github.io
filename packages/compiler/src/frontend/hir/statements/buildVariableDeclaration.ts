@@ -26,19 +26,17 @@ export function buildVariableDeclaration(
   const declarations = nodePath.get("declarations");
   const declarationPlaces = declarations.map((declaration) => {
     const id = declaration.get("id") as NodePath<t.LVal>;
-    const { place: lvalPlace, identifiers: lvalIdentifiers } =
-      buildVariableDeclaratorLVal(
-        id,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
+    const { place: lvalPlace, identifiers: lvalIdentifiers } = buildVariableDeclaratorLVal(
+      id,
+      functionBuilder,
+      moduleBuilder,
+      environment,
+    );
     if (lvalPlace === undefined || Array.isArray(lvalPlace)) {
       throw new Error("Lval place must be a single place");
     }
 
-    const init: NodePath<t.Expression | null | undefined> =
-      declaration.get("init");
+    const init: NodePath<t.Expression | null | undefined> = declaration.get("init");
     let valuePlace: Place | Place[] | undefined;
     if (!init.hasNode()) {
       init.replaceWith(t.identifier("undefined"));
@@ -71,9 +69,7 @@ export function buildVariableDeclaration(
       // entry block), but the actual StoreLocal may end up in a later block (e.g.,
       // after an if-statement). Without this update, SSA phi operands won't find
       // the definition in the correct predecessor block.
-      const declPlaces = environment.declToPlaces.get(
-        lvalIdentifier.identifier.declarationId,
-      );
+      const declPlaces = environment.declToPlaces.get(lvalIdentifier.identifier.declarationId);
       if (declPlaces) {
         const entry = declPlaces.find((p) => p.placeId === lvalIdentifier.id);
         if (entry) {
@@ -95,11 +91,7 @@ function buildVariableDeclaratorLVal(
   environment: Environment,
 ): { place: Place; identifiers: Place[] } {
   if (nodePath.isIdentifier()) {
-    return buildIdentifierVariableDeclaratorLVal(
-      nodePath,
-      functionBuilder,
-      environment,
-    );
+    return buildIdentifierVariableDeclaratorLVal(nodePath, functionBuilder, environment);
   } else if (nodePath.isArrayPattern()) {
     return buildArrayPatternVariableDeclaratorLVal(
       nodePath,
@@ -166,13 +158,12 @@ function buildArrayPatternVariableDeclaratorLVal(
       }
 
       elementPath.assertLVal();
-      const { place, identifiers: elementIdentifiers } =
-        buildVariableDeclaratorLVal(
-          elementPath,
-          functionBuilder,
-          moduleBuilder,
-          environment,
-        );
+      const { place, identifiers: elementIdentifiers } = buildVariableDeclaratorLVal(
+        elementPath,
+        functionBuilder,
+        moduleBuilder,
+        environment,
+      );
       identifiers.push(...elementIdentifiers);
       return place;
     },
@@ -201,8 +192,7 @@ function buildObjectPatternVariableDeclaratorLVal(
   const propertyPaths = nodePath.get("properties");
   const propertyPlaces = propertyPaths.map((propertyPath) => {
     if (propertyPath.isObjectProperty()) {
-      const keyPath: NodePath<t.ObjectProperty["key"]> =
-        propertyPath.get("key");
+      const keyPath: NodePath<t.ObjectProperty["key"]> = propertyPath.get("key");
       keyPath.assertIdentifier();
 
       const keyPlace = buildObjectPropertyKeyVariableDeclaratorLVal(
@@ -214,16 +204,14 @@ function buildObjectPatternVariableDeclaratorLVal(
         throw new Error("Object pattern key must be a single place");
       }
 
-      const valuePath: NodePath<t.ObjectProperty["value"]> =
-        propertyPath.get("value");
+      const valuePath: NodePath<t.ObjectProperty["value"]> = propertyPath.get("value");
       valuePath.assertLVal();
-      const { place: valuePlace, identifiers: valueIdentifiers } =
-        buildVariableDeclaratorLVal(
-          valuePath,
-          functionBuilder,
-          moduleBuilder,
-          environment,
-        );
+      const { place: valuePlace, identifiers: valueIdentifiers } = buildVariableDeclaratorLVal(
+        valuePath,
+        functionBuilder,
+        moduleBuilder,
+        environment,
+      );
       identifiers.push(...valueIdentifiers);
 
       const identifier = environment.createIdentifier();
@@ -244,12 +232,7 @@ function buildObjectPatternVariableDeclaratorLVal(
     if (propertyPath.isRestElement()) {
       const argumentPath = propertyPath.get("argument");
       const { place: argumentPlace, identifiers: argumentIdentifiers } =
-        buildVariableDeclaratorLVal(
-          argumentPath,
-          functionBuilder,
-          moduleBuilder,
-          environment,
-        );
+        buildVariableDeclaratorLVal(argumentPath, functionBuilder, moduleBuilder, environment);
       identifiers.push(...argumentIdentifiers);
 
       const identifier = environment.createIdentifier();
@@ -305,21 +288,15 @@ function buildAssignmentPatternVariableDeclaratorLVal(
   environment: Environment,
 ): { place: Place; identifiers: Place[] } {
   const leftPath = nodePath.get("left");
-  const { place: leftPlace, identifiers: leftIdentifiers } =
-    buildVariableDeclaratorLVal(
-      leftPath,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
-
-  const rightPath = nodePath.get("right");
-  const rightPlace = buildNode(
-    rightPath,
+  const { place: leftPlace, identifiers: leftIdentifiers } = buildVariableDeclaratorLVal(
+    leftPath,
     functionBuilder,
     moduleBuilder,
     environment,
   );
+
+  const rightPath = nodePath.get("right");
+  const rightPlace = buildNode(rightPath, functionBuilder, moduleBuilder, environment);
   if (rightPlace === undefined || Array.isArray(rightPlace)) {
     throw new Error("Right place must be a single place");
   }
@@ -344,13 +321,12 @@ function buildRestElementVariableDeclaratorLVal(
   environment: Environment,
 ): { place: Place; identifiers: Place[] } {
   const argumentPath = nodePath.get("argument");
-  const { place: argumentPlace, identifiers: argumentIdentifiers } =
-    buildVariableDeclaratorLVal(
-      argumentPath,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
+  const { place: argumentPlace, identifiers: argumentIdentifiers } = buildVariableDeclaratorLVal(
+    argumentPath,
+    functionBuilder,
+    moduleBuilder,
+    environment,
+  );
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);

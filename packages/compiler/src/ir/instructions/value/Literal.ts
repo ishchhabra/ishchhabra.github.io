@@ -4,14 +4,7 @@ import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
 import { Place } from "../../core";
 
-export type TPrimitiveValue =
-  | string
-  | number
-  | boolean
-  | null
-  | undefined
-  | bigint
-  | symbol;
+export type TPrimitiveValue = string | number | boolean | null | undefined | bigint | symbol;
 
 /**
  * Represents a literal value.
@@ -34,12 +27,7 @@ export class LiteralInstruction extends ValueInstruction {
   public clone(environment: Environment): LiteralInstruction {
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    return environment.createInstruction(
-      LiteralInstruction,
-      place,
-      this.nodePath,
-      this.value,
-    );
+    return environment.createInstruction(LiteralInstruction, place, this.nodePath, this.value);
   }
 
   rewrite(): BaseInstruction {

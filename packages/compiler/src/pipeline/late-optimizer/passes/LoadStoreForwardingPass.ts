@@ -94,8 +94,7 @@ export class LoadStoreForwardingPass extends BaseOptimizationPass {
       if (
         instr1 instanceof StoreLocalInstruction &&
         instr2 instanceof LoadLocalInstruction &&
-        (instr3 instanceof CopyInstruction ||
-          instr3 instanceof StoreLocalInstruction)
+        (instr3 instanceof CopyInstruction || instr3 instanceof StoreLocalInstruction)
       ) {
         // Check for the pattern: temp = X; tmpLoad = temp; final = tmpLoad
         const tempId = instr1.lval.identifier.id;
@@ -170,10 +169,7 @@ function isNeutral(instr: BaseInstruction): boolean {
  * Finds the next non-neutral instruction index, starting at `startIndex`.
  * Returns -1 if none is found.
  */
-function findNextMeaningful(
-  instrs: BaseInstruction[],
-  startIndex: number,
-): number {
+function findNextMeaningful(instrs: BaseInstruction[], startIndex: number): number {
   for (let j = startIndex; j < instrs.length; j++) {
     if (!isNeutral(instrs[j])) {
       return j;

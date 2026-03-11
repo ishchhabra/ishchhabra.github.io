@@ -36,12 +36,7 @@ export function buildConditionalExpression(
   environment: Environment,
 ): Place {
   const testPath = nodePath.get("test");
-  const testPlace = buildNode(
-    testPath,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-  );
+  const testPlace = buildNode(testPath, functionBuilder, moduleBuilder, environment);
   if (testPlace === undefined || Array.isArray(testPlace)) {
     throw new Error("Conditional expression test must be a single place");
   }
@@ -50,11 +45,7 @@ export function buildConditionalExpression(
   // When lowering a conditional expression to an if statement, we need to
   // create a temporary identifier to store the result of the conditional
   // expression in case it is used as value somewhere (ex: in a StoreLocal).
-  const resultPlace = buildTemporaryIdentifier(
-    nodePath,
-    functionBuilder,
-    environment,
-  );
+  const resultPlace = buildTemporaryIdentifier(nodePath, functionBuilder, environment);
 
   // Create the join block.
   const joinBlock = environment.createBlock();
@@ -66,13 +57,7 @@ export function buildConditionalExpression(
   functionBuilder.blocks.set(consequentBlock.id, consequentBlock);
 
   functionBuilder.currentBlock = consequentBlock;
-  buildBranchExpression(
-    consequentPath,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-    resultPlace,
-  );
+  buildBranchExpression(consequentPath, functionBuilder, moduleBuilder, environment, resultPlace);
 
   // After building the consequent block, we need to set the terminal
   // from the last block to the join block.
@@ -87,13 +72,7 @@ export function buildConditionalExpression(
   functionBuilder.blocks.set(alternateBlock.id, alternateBlock);
 
   functionBuilder.currentBlock = alternateBlock;
-  buildBranchExpression(
-    alternatePath,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-    resultPlace,
-  );
+  buildBranchExpression(alternatePath, functionBuilder, moduleBuilder, environment, resultPlace);
 
   // After building the alternate block, we need to set the terminal
   // from the last block to the join block.
@@ -113,9 +92,7 @@ export function buildConditionalExpression(
 
   functionBuilder.currentBlock = joinBlock;
 
-  const { placeId } = environment.getLatestDeclaration(
-    resultPlace.identifier.declarationId,
-  );
+  const { placeId } = environment.getLatestDeclaration(resultPlace.identifier.declarationId);
   return environment.places.get(placeId)!;
 }
 
@@ -145,22 +122,13 @@ function buildTemporaryIdentifier(
     bindingPlace.id,
   );
 
-  const resultValueIdentifier = environment.createIdentifier(
-    bindingIdentifier.declarationId,
-  );
+  const resultValueIdentifier = environment.createIdentifier(bindingIdentifier.declarationId);
   const resultValuePlace = environment.createPlace(resultValueIdentifier);
   functionBuilder.addInstruction(
-    environment.createInstruction(
-      LiteralInstruction,
-      resultValuePlace,
-      nodePath,
-      undefined,
-    ),
+    environment.createInstruction(LiteralInstruction, resultValuePlace, nodePath, undefined),
   );
 
-  const resultIdentifier = environment.createIdentifier(
-    bindingIdentifier.declarationId,
-  );
+  const resultIdentifier = environment.createIdentifier(bindingIdentifier.declarationId);
   const resultPlace = environment.createPlace(resultIdentifier);
   functionBuilder.addInstruction(
     environment.createInstruction(
@@ -183,19 +151,12 @@ function buildBranchExpression(
   environment: Environment,
   resultPlace: Place,
 ) {
-  const place = buildNode(
-    nodePath,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-  );
+  const place = buildNode(nodePath, functionBuilder, moduleBuilder, environment);
   if (place === undefined || Array.isArray(place)) {
     throw new Error("Conditional expression consequent must be a single place");
   }
 
-  const lvalIdentifier = environment.createIdentifier(
-    resultPlace.identifier.declarationId,
-  );
+  const lvalIdentifier = environment.createIdentifier(resultPlace.identifier.declarationId);
   const lvalPlace = environment.createPlace(lvalIdentifier);
   const lvalInstruction = environment.createInstruction(
     BindingIdentifierInstruction,
@@ -210,9 +171,7 @@ function buildBranchExpression(
     lvalPlace.id,
   );
 
-  const storeIdentifier = environment.createIdentifier(
-    lvalIdentifier.declarationId,
-  );
+  const storeIdentifier = environment.createIdentifier(lvalIdentifier.declarationId);
   const storePlace = environment.createPlace(storeIdentifier);
   const storeInstruction = environment.createInstruction(
     StoreLocalInstruction,

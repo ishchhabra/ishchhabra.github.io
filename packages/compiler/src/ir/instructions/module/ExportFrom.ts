@@ -29,13 +29,9 @@ export class ExportFromInstruction extends ModuleInstruction {
   public clone(environment: Environment): ExportFromInstruction {
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    return environment.createInstruction(
-      ExportFromInstruction,
-      place,
-      this.nodePath,
-      this.source,
-      [...this.specifiers],
-    );
+    return environment.createInstruction(ExportFromInstruction, place, this.nodePath, this.source, [
+      ...this.specifiers,
+    ]);
   }
 
   rewrite(): BaseInstruction {

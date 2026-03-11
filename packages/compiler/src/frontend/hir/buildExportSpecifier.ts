@@ -16,15 +16,10 @@ export function buildExportSpecifier(
 
   const declarationId = functionBuilder.getDeclarationId(localName, nodePath);
   if (declarationId === undefined) {
-    throw new Error(
-      `Export specifier local '${localName}': no declaration id found`,
-    );
+    throw new Error(`Export specifier local '${localName}': no declaration id found`);
   }
-  const declarationInstructionId =
-    environment.getDeclarationInstruction(declarationId)!;
-  const declarationInstruction = environment.instructions.get(
-    declarationInstructionId,
-  )!;
+  const declarationInstructionId = environment.getDeclarationInstruction(declarationId)!;
+  const declarationInstruction = environment.instructions.get(declarationInstructionId)!;
 
   // Use the declaration's binding place directly so that ExportSpecifier
   // holds a read-reference to it, preventing DCE from removing the declaration.
@@ -33,15 +28,11 @@ export function buildExportSpecifier(
   // StoreLocal's lval is the pattern place, not the individual binding place.
   const latestDeclaration = environment.getLatestDeclaration(declarationId);
   if (latestDeclaration === undefined) {
-    throw new Error(
-      `Export specifier local '${localName}': no declaration place found`,
-    );
+    throw new Error(`Export specifier local '${localName}': no declaration place found`);
   }
   const localPlace = environment.places.get(latestDeclaration.placeId);
   if (localPlace === undefined) {
-    throw new Error(
-      `Export specifier local '${localName}': binding place not found`,
-    );
+    throw new Error(`Export specifier local '${localName}': binding place not found`);
   }
 
   const identifier = environment.createIdentifier();

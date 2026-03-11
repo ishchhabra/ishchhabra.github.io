@@ -53,9 +53,7 @@ export class StoreLocalInstruction extends MemoryInstruction {
       this.id,
       this.place,
       this.nodePath,
-      rewriteDefinitions
-        ? (values.get(this.lval.identifier) ?? this.lval)
-        : this.lval,
+      rewriteDefinitions ? (values.get(this.lval.identifier) ?? this.lval) : this.lval,
       values.get(this.value.identifier) ?? this.value,
       this.type,
     );

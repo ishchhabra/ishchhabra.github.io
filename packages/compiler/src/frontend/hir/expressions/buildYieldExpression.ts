@@ -15,12 +15,7 @@ export function buildYieldExpression(
   const argumentPath = nodePath.get("argument");
   let argumentPlace;
   if (argumentPath.hasNode()) {
-    argumentPlace = buildNode(
-      argumentPath,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
+    argumentPlace = buildNode(argumentPath, functionBuilder, moduleBuilder, environment);
     if (argumentPlace === undefined || Array.isArray(argumentPlace)) {
       throw new Error("Yield expression argument must be a single place");
     }

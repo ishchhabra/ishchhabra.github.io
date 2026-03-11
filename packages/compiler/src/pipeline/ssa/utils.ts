@@ -1,10 +1,5 @@
 import { Environment } from "../../environment";
-import {
-  DeclarationId,
-  Identifier,
-  makeDeclarationId,
-  makeIdentifierId,
-} from "../../ir";
+import { DeclarationId, Identifier, makeDeclarationId, makeIdentifierId } from "../../ir";
 
 export function createPhiIdentifier(
   environment: Environment,

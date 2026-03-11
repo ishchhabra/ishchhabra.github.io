@@ -39,8 +39,7 @@ export class CallGraph {
    *   DeclarationId => FunctionIRId
    * representing which function declares each variable ID.
    */
-  private readonly declarations: Map<string, Map<DeclarationId, FunctionIRId>> =
-    new Map();
+  private readonly declarations: Map<string, Map<DeclarationId, FunctionIRId>> = new Map();
 
   constructor(private readonly projectUnit: ProjectUnit) {
     // Initialize empty maps for each module.
@@ -76,10 +75,7 @@ export class CallGraph {
           if (!(instr instanceof FunctionDeclarationInstruction)) {
             continue;
           }
-          moduleDecls.set(
-            instr.identifier.identifier.declarationId,
-            instr.functionIR.id,
-          );
+          moduleDecls.set(instr.identifier.identifier.declarationId, instr.functionIR.id);
         }
       }
     }
@@ -112,27 +108,17 @@ export class CallGraph {
             continue;
           }
 
-          const calleeIR = this.resolveFunctionFromCallExpression(
-            moduleIR,
-            instr,
-          );
+          const calleeIR = this.resolveFunctionFromCallExpression(moduleIR, instr);
           if (calleeIR === undefined) {
             continue;
           }
 
-          const calleeInstruction = moduleIR.environment.placeToInstruction.get(
-            instr.callee.id,
-          );
+          const calleeInstruction = moduleIR.environment.placeToInstruction.get(instr.callee.id);
           if (calleeInstruction === undefined) {
             continue;
           }
 
-          this.addCall(
-            moduleIR.path,
-            funcIR.id,
-            calleeIR.modulePath,
-            calleeIR.functionIRId,
-          );
+          this.addCall(moduleIR.path, funcIR.id, calleeIR.modulePath, calleeIR.functionIRId);
         }
       }
     }
@@ -153,18 +139,14 @@ export class CallGraph {
     if (!forwardMap.has(callerId)) {
       forwardMap.set(callerId, new Set());
     }
-    forwardMap
-      .get(callerId)!
-      .add({ modulePath: calleeModulePath, functionIRId: calleeId });
+    forwardMap.get(callerId)!.add({ modulePath: calleeModulePath, functionIRId: calleeId });
 
     // 2) Reverse edge
     const reverseMap = this.callers.get(calleeModulePath)!;
     if (!reverseMap.has(calleeId)) {
       reverseMap.set(calleeId, new Set());
     }
-    reverseMap
-      .get(calleeId)!
-      .add({ modulePath: callerModulePath, functionIRId: callerId });
+    reverseMap.get(calleeId)!.add({ modulePath: callerModulePath, functionIRId: callerId });
   }
 
   /**
@@ -188,9 +170,7 @@ export class CallGraph {
     }
 
     const name = calleePath.node.name;
-    const loadInstr = moduleIR.environment.placeToInstruction.get(
-      callExpression.callee.id,
-    );
+    const loadInstr = moduleIR.environment.placeToInstruction.get(callExpression.callee.id);
 
     if (loadInstr instanceof LoadGlobalInstruction) {
       const global = moduleIR.globals.get(name);
