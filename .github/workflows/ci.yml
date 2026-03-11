@@ -32,3 +32,9 @@ jobs:
       # which reports TypeScript errors. Run `pnpm type-check` locally if needed.
       - name: Run Lint
         run: pnpm run lint
+
+      - name: Build Compiler
+        run: pnpm --filter @i2-labs/compiler build
+
+      - name: Test Compiler
+        run: pnpm --filter @i2-labs/compiler test
