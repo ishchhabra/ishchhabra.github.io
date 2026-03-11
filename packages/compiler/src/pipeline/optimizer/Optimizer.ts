@@ -22,7 +22,7 @@ export class Optimizer {
     private readonly ssa: SSA,
     private readonly projectUnit: ProjectUnit,
     private readonly options: CompilerOptions,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // oxlint-disable-next-line typescript/no-explicit-any
     private readonly context: Map<string, any>,
   ) {}
 

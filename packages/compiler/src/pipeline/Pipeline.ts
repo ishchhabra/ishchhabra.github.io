@@ -28,7 +28,7 @@ export class Pipeline {
       new UnusedExportEliminationPass(this.projectUnit, entryModules).run();
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // oxlint-disable-next-line typescript/no-explicit-any
     const context = new Map<string, any>();
     const callGraph = new CallGraph(this.projectUnit);
     for (const moduleName of this.projectUnit.postOrder.toReversed()) {

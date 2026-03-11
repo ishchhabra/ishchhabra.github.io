@@ -25,8 +25,8 @@ export function generateAssignmentPatternInstruction(
 }
 
 function assertAssignmentPatternLeft(
-  node: t.Node | null,
-): asserts node is
+  _node: t.Node | null,
+): asserts _node is
   | t.Identifier
   | t.ObjectPattern
   | t.ArrayPattern

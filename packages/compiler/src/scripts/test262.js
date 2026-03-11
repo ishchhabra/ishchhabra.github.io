@@ -67,7 +67,7 @@ ${boxen(stats, {
   `);
 };
 
-stream.on("data", ({ file, contents }) => {
+stream.on("data", ({ file, contents: _contents }) => {
   if (testFilter && !testFilter.test(file)) {
     skipped++;
     return;

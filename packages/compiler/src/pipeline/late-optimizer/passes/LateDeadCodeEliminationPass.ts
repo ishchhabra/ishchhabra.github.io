@@ -34,7 +34,7 @@ export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
 
     // Process blocks in post order
     // TODO: Fix this type assertion by adding postOrder to ModuleUnit
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // oxlint-disable-next-line typescript/no-explicit-any
     for (const blockId of (this.functionIR as any).postOrder) {
       const block = this.functionIR.blocks.get(blockId);
       if (!block) {

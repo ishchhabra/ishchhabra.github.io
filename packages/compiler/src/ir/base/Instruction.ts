@@ -60,7 +60,7 @@ export abstract class BaseInstruction {
 
   public toString(): string {
     return JSON.stringify({
-      ...this,
+      ...this, // oxlint-disable-line typescript/no-misused-spread
       kind: this.constructor.name,
       nodePath: undefined,
     });

@@ -67,6 +67,6 @@ export function buildNode(
   return buildUnsupportedNode(nodePath, functionBuilder, environment);
 }
 
-function assertNull<T extends t.Node>(path: NodePath<T | null>): asserts path is NodePath<null> {}
+function assertNull<T extends t.Node>(_path: NodePath<T | null>): asserts _path is NodePath<null> {}
 
-function assertNonNull<T extends t.Node>(path: NodePath<T | null>): asserts path is NodePath<T> {}
+function assertNonNull<T extends t.Node>(_path: NodePath<T | null>): asserts _path is NodePath<T> {}

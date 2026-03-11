@@ -1,9 +1,10 @@
 // testFixtures.ts
 
+import { execFileSync } from "child_process";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "fs";
 import { merge } from "lodash-es";
-import { dirname, join, relative } from "path";
-import * as prettier from "prettier";
+import { dirname, join, relative, resolve } from "path";
+import { fileURLToPath } from "url";
 import { compile, CompilerOptions, CompilerOptionsSchema } from "../src/compile";
 
 /**
@@ -145,23 +146,28 @@ function getFolderName(path: string): string {
  * Actually compiles the input, reads/creates expected output, formats both,
  * and does the jest `expect(...)`.
  */
-async function runCompileTest(input: string, output: string, options: CompilerOptions) {
+const oxfmtBin = resolve(dirname(fileURLToPath(import.meta.url)), "..", "node_modules", ".bin", "oxfmt");
+
+function formatWithOxfmt(code: string): string {
+  return execFileSync(oxfmtBin, ["--stdin-filepath", "file.js"], {
+    input: code,
+    encoding: "utf-8",
+  }).trim();
+}
+
+function runCompileTest(input: string, output: string, options: CompilerOptions) {
   const actualCode = compile(input, options);
 
-  const formattedActual = await prettier.format(actualCode, {
-    parser: "babel",
-  });
+  const formattedActual = formatWithOxfmt(actualCode);
 
   const outputExists = existsSync(output);
   if (!outputExists && expect.getState().snapshotState._updateSnapshot == "new") {
-    writeFileSync(output, formattedActual, "utf8");
+    writeFileSync(output, formattedActual + "\n", "utf8");
     console.info(`[INFO] Created missing fixture file at: ${output}`);
   }
 
   const expectedCode = readFileSync(output, "utf-8").trim();
-  const formattedExpected = await prettier.format(expectedCode, {
-    parser: "babel",
-  });
+  const formattedExpected = formatWithOxfmt(expectedCode);
 
   expect(formattedActual).toBe(formattedExpected);
 }
@@ -184,10 +190,10 @@ function addTestSuites(
   // If exactly one fixture and no subdirectories, single test
   if (subDirs.length === 0 && fixtures.length === 1) {
     const { input, output } = fixtures[0];
-    test(nodeName ?? getFolderName(input), async () => {
+    test(nodeName ?? getFolderName(input), () => {
       // Load merged options for this fixture's directory
       const localOptions = loadOptionsChain(rootDir!, dirname(input), baseOptions);
-      await runCompileTest(input, output, localOptions);
+      runCompileTest(input, output, localOptions);
     });
     return;
   }
@@ -197,9 +203,9 @@ function addTestSuites(
     describe(nodeName, () => {
       // Add tests for each fixture in this directory
       for (const { input, output } of fixtures) {
-        test(getFolderName(input), async () => {
+        test(getFolderName(input), () => {
           const localOptions = loadOptionsChain(rootDir!, dirname(input), baseOptions);
-          await runCompileTest(input, output, localOptions);
+          runCompileTest(input, output, localOptions);
         });
       }
       // Recurse for subdirectories
@@ -213,7 +219,7 @@ function addTestSuites(
     for (const { input, output } of fixtures) {
       test(getFolderName(input), async () => {
         const localOptions = loadOptionsChain(rootDir!, dirname(input), baseOptions);
-        await runCompileTest(input, output, localOptions);
+        runCompileTest(input, output, localOptions);
       });
     }
     // Recurse on subdirectories

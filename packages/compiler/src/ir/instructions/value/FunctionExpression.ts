@@ -46,7 +46,7 @@ export class FunctionExpressionInstruction extends ValueInstruction {
   }
 
   public getReadPlaces(): Place[] {
-    return [...(this.identifier ? [this.identifier] : [])];
+    return this.identifier ? [this.identifier] : [];
   }
 
   public get isPure(): boolean {

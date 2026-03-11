@@ -17,7 +17,7 @@ import {
 } from "./ir/core/Identifier";
 import { makePlaceId, Place, PlaceId } from "./ir/core/Place";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// oxlint-disable-next-line typescript/no-explicit-any
 type OmitFirst<T extends unknown[]> = T extends [any, ...infer Rest] ? Rest : never;
 
 export class Environment {
@@ -77,7 +77,7 @@ export class Environment {
     return place;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // oxlint-disable-next-line typescript/no-explicit-any
   public createInstruction<C extends new (...args: any[]) => any>(
     Class: C,
     ...args: OmitFirst<ConstructorParameters<C>>
