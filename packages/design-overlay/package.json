@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Shared overlay components for @ish",
   "keywords": [],
-  "license": "ISC",
   "author": "",
   "files": [
     "dist",

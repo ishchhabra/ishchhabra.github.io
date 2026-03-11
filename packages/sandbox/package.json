@@ -8,7 +8,6 @@
     "sandbox",
     "security"
   ],
-  "license": "ISC",
   "author": "",
   "files": [
     "dist",
