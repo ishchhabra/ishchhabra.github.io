@@ -1,0 +1,18 @@
+export { AwaitExpressionInstruction } from "./AwaitExpression";
+export { ArrayExpressionInstruction } from "./ArrayExpression";
+export { BinaryExpressionInstruction } from "./BinaryExpression";
+export { CallExpressionInstruction } from "./CallExpression";
+export { HoleInstruction } from "./Hole";
+export { LiteralInstruction, type TPrimitiveValue } from "./Literal";
+export { LogicalExpressionInstruction } from "./LogicalExpression";
+export { NewExpressionInstruction } from "./NewExpression";
+export { ObjectExpressionInstruction } from "./ObjectExpression";
+export { RegExpLiteralInstruction } from "./RegExpLiteral";
+export { ObjectMethodInstruction } from "./ObjectMethod";
+export { ObjectPropertyInstruction } from "./ObjectProperty";
+export { SequenceExpressionInstruction } from "./SequenceExpression";
+export { TaggedTemplateExpressionInstruction } from "./TaggedTemplateExpression";
+export { TemplateLiteralInstruction } from "./TemplateLiteral";
+export { ThisExpressionInstruction } from "./ThisExpression";
+export { UnaryExpressionInstruction } from "./UnaryExpression";
+export { YieldExpressionInstruction } from "./YieldExpression";

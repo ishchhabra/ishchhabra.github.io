@@ -1,0 +1,6 @@
+{
+  "enableOptimizer": true,
+  "enableConstantPropagationPass": false,
+  "enableFunctionInliningPass": false,
+  "enableLateOptimizer": false
+}

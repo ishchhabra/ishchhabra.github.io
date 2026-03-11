@@ -1,0 +1,76 @@
+import { CompilerOptions } from "../../compile";
+import { ProjectUnit } from "../../frontend/ProjectBuilder";
+import { BasicBlock, BlockId } from "../../ir";
+import { FunctionIR } from "../../ir/core/FunctionIR";
+import { ModuleIR } from "../../ir/core/ModuleIR";
+import { CallGraph } from "../analysis/CallGraph";
+import { AlgebraicSimplificationPass } from "../passes/AlgebraicSimplificationPass";
+import { ConstantPropagationPass } from "../passes/ConstantPropagationPass";
+import { FunctionInliningPass } from "../passes/FunctionInliningPass";
+import { UnreachableCodeEliminationPass } from "../passes/UnreachableCodeEliminationPass";
+import { SSA } from "../ssa/SSABuilder";
+
+interface OptimizerResult {
+  blocks: Map<BlockId, BasicBlock>;
+}
+
+export class Optimizer {
+  constructor(
+    private readonly functionIR: FunctionIR,
+    private readonly moduleIR: ModuleIR,
+    private readonly callGraph: CallGraph,
+    private readonly ssa: SSA,
+    private readonly projectUnit: ProjectUnit,
+    private readonly options: CompilerOptions,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    private readonly context: Map<string, any>,
+  ) {}
+
+  public run(): OptimizerResult {
+    let changed = true;
+
+    let blocks = this.functionIR.blocks;
+    while (changed) {
+      changed = false;
+      if (this.options.enableConstantPropagationPass) {
+        const constantPropagationResult = new ConstantPropagationPass(
+          this.functionIR,
+          this.moduleIR,
+          this.projectUnit,
+          this.ssa,
+          this.context,
+        ).run();
+        changed ||= constantPropagationResult.changed;
+        blocks = constantPropagationResult.blocks;
+      }
+
+      if (this.options.enableAlgebraicSimplificationPass) {
+        const algebraicSimplificationResult = new AlgebraicSimplificationPass(
+          this.functionIR,
+        ).run();
+        changed ||= algebraicSimplificationResult.changed;
+        blocks = algebraicSimplificationResult.blocks;
+      }
+
+      if (this.options.enableUnreachableCodeEliminationPass) {
+        const unreachableCodeEliminationResult =
+          new UnreachableCodeEliminationPass(this.functionIR).run();
+        changed ||= unreachableCodeEliminationResult.changed;
+        blocks = unreachableCodeEliminationResult.blocks;
+      }
+
+      if (this.options.enableFunctionInliningPass) {
+        const functionInliningResult = new FunctionInliningPass(
+          this.functionIR,
+          this.moduleIR,
+          this.callGraph,
+          this.projectUnit,
+        ).run();
+        changed ||= functionInliningResult.changed;
+        blocks = functionInliningResult.blocks;
+      }
+    }
+
+    return { blocks };
+  }
+}

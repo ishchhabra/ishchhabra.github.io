@@ -1,0 +1,44 @@
+import { z } from "zod";
+import { CodeGenerator } from "./backend/CodeGenerator";
+import { ProjectBuilder } from "./frontend/ProjectBuilder";
+import { Pipeline } from "./pipeline/Pipeline";
+
+export const CompilerOptionsSchema = z.object({
+  /** Whether to enable the optimizer */
+  enableOptimizer: z.boolean().default(true),
+  /** Whether to enable the constant propagation pass */
+  enableConstantPropagationPass: z.boolean().default(true),
+  /** Whether to enable the algebraic simplification pass */
+  enableAlgebraicSimplificationPass: z.boolean().default(true),
+  /** Whether to enable the function inlining pass */
+  enableFunctionInliningPass: z.boolean().default(true),
+  /** Whether to enable the unused export elimination pass */
+  enableUnusedExportEliminationPass: z.boolean().default(true),
+  /** Whether to enable the unreachable code elimination pass */
+  enableUnreachableCodeEliminationPass: z.boolean().default(true),
+
+  /** Whether to enable the late optimizer */
+  enableLateOptimizer: z.boolean().default(true),
+  /** Whether to enable the load store forwarding pass */
+  enableLoadStoreForwardingPass: z.boolean().default(true),
+  /** Whether to enable the redundant store elimination pass */
+  enableRedundantCopyEliminationPass: z.boolean().default(true),
+  /** Whether to enable the late copy propagation pass */
+  enableLateCopyPropagationPass: z.boolean().default(true),
+  /** Whether to enable the late dead code elimination pass */
+  enableLateDeadCodeEliminationPass: z.boolean().default(true),
+  /** Whether to enable the export declaration merging pass */
+  enableExportDeclarationMergingPass: z.boolean().default(true),
+});
+
+export type CompilerOptions = z.infer<typeof CompilerOptionsSchema>;
+
+export function compile(
+  entryPoint: string,
+  options: CompilerOptions = CompilerOptionsSchema.parse({}),
+) {
+  const projectUnit = new ProjectBuilder().build(entryPoint);
+  new Pipeline(projectUnit, options).run();
+  const code = new CodeGenerator(entryPoint, projectUnit).generate();
+  return code;
+}
