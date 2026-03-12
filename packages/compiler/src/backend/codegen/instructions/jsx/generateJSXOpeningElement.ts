@@ -12,6 +12,8 @@ export function generateJSXOpeningElementInstruction(
     const resolved = generator.places.get(instruction.tagPlace.id);
     if (resolved && t.isIdentifier(resolved)) {
       tagName = parseJSXTagName(resolved.name);
+    } else if (resolved && t.isFunctionDeclaration(resolved) && resolved.id) {
+      tagName = parseJSXTagName(resolved.id.name);
     } else {
       tagName = parseJSXTagName(instruction.tag);
     }

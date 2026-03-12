@@ -5,6 +5,7 @@ import { JSXElementInstruction, Place } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildNode } from "../buildNode";
+import { buildJSXOpeningElement } from "./buildJSXOpeningElement";
 
 export function buildJSXElement(
   nodePath: NodePath<t.JSXElement>,
@@ -13,10 +14,12 @@ export function buildJSXElement(
   environment: Environment,
 ): Place | undefined {
   const openingElementPath = nodePath.get("openingElement");
-  const openingElement = buildNode(openingElementPath, functionBuilder, moduleBuilder, environment);
-  if (openingElement === undefined || Array.isArray(openingElement)) {
-    throw new Error("JSXElement opening element should be a single place");
-  }
+  const openingElement = buildJSXOpeningElement(
+    openingElementPath,
+    functionBuilder,
+    moduleBuilder,
+    environment,
+  );
 
   let closingElement;
   const closingElementPath = nodePath.get("closingElement");
