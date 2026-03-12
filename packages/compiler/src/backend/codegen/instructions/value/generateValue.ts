@@ -3,6 +3,7 @@ import {
   ArrayExpressionInstruction,
   BinaryExpressionInstruction,
   CallExpressionInstruction,
+  ConditionalExpressionInstruction,
   HoleInstruction,
   LiteralInstruction,
   LogicalExpressionInstruction,
@@ -28,6 +29,7 @@ import { generateAwaitExpressionInstruction } from "./generateAwaitExpression";
 import { generateArrowFunctionExpressionInstruction } from "./generateArrowFunctionExpression";
 import { generateBinaryExpressionInstruction } from "./generateBinaryExpression";
 import { generateCallExpression } from "./generateCallExpression";
+import { generateConditionalExpressionInstruction } from "./generateConditionalExpression";
 import { generateFunctionExpressionInstruction } from "./generateFunctionExpression";
 import { generateHoleInstruction } from "./generateHole";
 import { generateLiteralInstruction } from "./generateLiteral";
@@ -60,6 +62,8 @@ export function generateValueInstruction(
     return generateBinaryExpressionInstruction(instruction, generator);
   } else if (instruction instanceof CallExpressionInstruction) {
     return generateCallExpression(instruction, generator);
+  } else if (instruction instanceof ConditionalExpressionInstruction) {
+    return generateConditionalExpressionInstruction(instruction, generator);
   } else if (instruction instanceof FunctionExpressionInstruction) {
     return generateFunctionExpressionInstruction(instruction, generator);
   } else if (instruction instanceof HoleInstruction) {

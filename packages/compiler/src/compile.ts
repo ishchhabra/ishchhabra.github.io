@@ -19,6 +19,8 @@ export const CompilerOptionsSchema = z.object({
 
   /** Whether to enable the late optimizer */
   enableLateOptimizer: z.boolean().default(true),
+  /** Whether to enable the phi to ternary pass */
+  enablePhiToTernaryPass: z.boolean().default(true),
   /** Whether to enable the load store forwarding pass */
   enableLoadStoreForwardingPass: z.boolean().default(true),
   /** Whether to enable the redundant store elimination pass */

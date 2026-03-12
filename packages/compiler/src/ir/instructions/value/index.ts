@@ -2,6 +2,7 @@ export { AwaitExpressionInstruction } from "./AwaitExpression";
 export { ArrayExpressionInstruction } from "./ArrayExpression";
 export { BinaryExpressionInstruction } from "./BinaryExpression";
 export { CallExpressionInstruction } from "./CallExpression";
+export { ConditionalExpressionInstruction } from "./ConditionalExpression";
 export { HoleInstruction } from "./Hole";
 export { LiteralInstruction, type TPrimitiveValue } from "./Literal";
 export { LogicalExpressionInstruction } from "./LogicalExpression";
