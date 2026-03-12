@@ -1,6 +1,7 @@
 import {
   BasicBlock,
   BindingIdentifierInstruction,
+  ExportDefaultDeclarationInstruction,
   ExportNamedDeclarationInstruction,
   FunctionDeclarationInstruction,
   StoreLocalInstruction,
@@ -106,30 +107,40 @@ export class ExportDeclarationMergingPass extends BaseOptimizationPass {
       // (e.g. `export { a, b }`) would need each specifier handled separately.
       if (exportDecl.specifiers.length !== 1) continue;
 
-      // 1. Rename the BI to the exported name.
-      const biIndex = instrs.indexOf(bi);
-      instrs[biIndex] = new BindingIdentifierInstruction(
-        bi.id,
-        bi.place,
-        bi.nodePath,
-        exportSpec.exported,
-      );
-
-      // 2. Suppress the standalone statement for the declaration.
-      //    Codegen still runs (populating generator.places) but won't emit
-      //    a standalone statement. The ExportNamedDeclaration wraps it instead.
+      // Suppress the standalone statement for the declaration.
+      // Codegen still runs (populating generator.places) but won't emit
+      // a standalone statement. The export wraps it instead.
       decl.emit = false;
 
-      // 3. Point the ExportNamedDeclaration at the declaration and clear
-      //    its specifiers.
       const exportDeclIndex = instrs.indexOf(exportDecl);
-      instrs[exportDeclIndex] = new ExportNamedDeclarationInstruction(
-        exportDecl.id,
-        exportDecl.place,
-        exportDecl.nodePath,
-        [],
-        decl.place,
-      );
+
+      if (exportSpec.exported === "default") {
+        // For default exports, convert to ExportDefaultDeclaration.
+        // Don't rename the BI — keeps the function name for debugging/stack traces.
+        instrs[exportDeclIndex] = new ExportDefaultDeclarationInstruction(
+          exportDecl.id,
+          exportDecl.place,
+          exportDecl.nodePath,
+          decl.place,
+        );
+      } else {
+        // For named exports, rename the BI and convert to declaration form.
+        const biIndex = instrs.indexOf(bi);
+        instrs[biIndex] = new BindingIdentifierInstruction(
+          bi.id,
+          bi.place,
+          bi.nodePath,
+          exportSpec.exported,
+        );
+
+        instrs[exportDeclIndex] = new ExportNamedDeclarationInstruction(
+          exportDecl.id,
+          exportDecl.place,
+          exportDecl.nodePath,
+          [],
+          decl.place,
+        );
+      }
 
       // 4. Mark the ExportSpecifier for removal.
       toRemove.add(exportSpec);
