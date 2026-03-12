@@ -11,6 +11,7 @@ import { buildArrowFunctionExpression } from "./buildArrowFunctionExpression";
 import { buildAssignmentExpression } from "./buildAssignmentExpression";
 import { buildBinaryExpression } from "./buildBinaryExpression";
 import { buildCallExpression } from "./buildCallExpression";
+import { buildClassExpression } from "./buildClassExpression";
 import { buildConditionalExpression } from "./buildConditionalExpression";
 import { buildFunctionExpression } from "./buildFunctionExpression";
 import { buildLiteral } from "./buildLiteral";
@@ -58,6 +59,9 @@ export function buildExpression(
     case "CallExpression":
       nodePath.assertCallExpression();
       return buildCallExpression(nodePath, functionBuilder, moduleBuilder, environment);
+    case "ClassExpression":
+      nodePath.assertClassExpression();
+      return buildClassExpression(nodePath, functionBuilder, environment);
     case "ConditionalExpression":
       nodePath.assertConditionalExpression();
       return buildConditionalExpression(nodePath, functionBuilder, moduleBuilder, environment);

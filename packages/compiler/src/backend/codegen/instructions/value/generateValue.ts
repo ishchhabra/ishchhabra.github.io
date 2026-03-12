@@ -23,8 +23,10 @@ import { AwaitExpressionInstruction } from "../../../../ir/instructions/value/Aw
 import { FunctionExpressionInstruction } from "../../../../ir/instructions/value/FunctionExpression";
 import { TaggedTemplateExpressionInstruction } from "../../../../ir/instructions/value/TaggedTemplateExpression";
 import { ThisExpressionInstruction } from "../../../../ir/instructions/value/ThisExpression";
+import { ClassExpressionInstruction } from "../../../../ir/instructions/value/ClassExpression";
 import { CodeGenerator } from "../../../CodeGenerator";
 import { generateArrayExpressionInstruction } from "./generateArrayExpression";
+import { generateClassExpressionInstruction } from "./generateClassExpression";
 import { generateAwaitExpressionInstruction } from "./generateAwaitExpression";
 import { generateArrowFunctionExpressionInstruction } from "./generateArrowFunctionExpression";
 import { generateBinaryExpressionInstruction } from "./generateBinaryExpression";
@@ -52,7 +54,9 @@ export function generateValueInstruction(
   functionIR: FunctionIR,
   generator: CodeGenerator,
 ): t.Expression | t.ObjectMethod | t.ObjectProperty | null {
-  if (instruction instanceof ArrayExpressionInstruction) {
+  if (instruction instanceof ClassExpressionInstruction) {
+    return generateClassExpressionInstruction(instruction, generator);
+  } else if (instruction instanceof ArrayExpressionInstruction) {
     return generateArrayExpressionInstruction(instruction, generator);
   } else if (instruction instanceof AwaitExpressionInstruction) {
     return generateAwaitExpressionInstruction(instruction, generator);
