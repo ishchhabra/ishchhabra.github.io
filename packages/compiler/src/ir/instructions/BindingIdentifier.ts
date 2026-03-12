@@ -20,7 +20,6 @@ export class BindingIdentifierInstruction extends BaseInstruction {
     public readonly id: InstructionId,
     public readonly place: Place,
     public readonly nodePath: NodePath<t.Node> | undefined,
-    public readonly name: string,
   ) {
     super(id, place, nodePath);
   }
@@ -32,7 +31,6 @@ export class BindingIdentifierInstruction extends BaseInstruction {
       BindingIdentifierInstruction,
       place,
       this.nodePath,
-      identifier.name,
     );
   }
 

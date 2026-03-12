@@ -91,7 +91,6 @@ function buildFunctionIdentifierParam(
     BindingIdentifierInstruction,
     place,
     paramPath,
-    identifier.name,
   );
   functionBuilder.header.push(instruction);
 
@@ -226,12 +225,12 @@ function buildFunctionObjectPropertyKey(
   // Not using `buildBindingIdentifier` because that defaults to using
   // existing place if it exists.
   const keyIdentifier = environment.createIdentifier();
+  keyIdentifier.name = keyPath.node.name;
   const keyPlace = environment.createPlace(keyIdentifier);
   const keyInstruction = environment.createInstruction(
     BindingIdentifierInstruction,
     keyPlace,
     keyPath,
-    keyPath.node.name,
   );
   functionBuilder.header.push(keyInstruction);
   return keyPlace;

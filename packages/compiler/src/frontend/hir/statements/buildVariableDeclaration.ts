@@ -270,12 +270,12 @@ function buildObjectPropertyKeyVariableDeclaratorLVal(
   // Not using `buildBindingIdentifier` because that defaults to using
   // existing place if it exists.
   const keyIdentifier = environment.createIdentifier();
+  keyIdentifier.name = nodePath.node.name;
   const keyPlace = environment.createPlace(keyIdentifier);
   const keyInstruction = environment.createInstruction(
     BindingIdentifierInstruction,
     keyPlace,
     nodePath,
-    nodePath.node.name,
   );
   functionBuilder.addInstruction(keyInstruction);
   return keyPlace;

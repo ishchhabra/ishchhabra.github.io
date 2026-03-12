@@ -19,12 +19,12 @@ export function buildObjectProperty(
     // references. Create a fresh BI to avoid colliding with same-named
     // variable declarations.
     const keyIdentifier = environment.createIdentifier();
+    keyIdentifier.name = keyPath.node.name;
     keyPlace = environment.createPlace(keyIdentifier);
     const keyInstruction = environment.createInstruction(
       BindingIdentifierInstruction,
       keyPlace,
       keyPath,
-      keyPath.node.name,
     );
     functionBuilder.addInstruction(keyInstruction);
   } else {

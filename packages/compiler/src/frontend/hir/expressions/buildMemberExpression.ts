@@ -140,7 +140,6 @@ export function buildMemberExpressionUpdate(
       BindingIdentifierInstruction,
       oldValBindingPlace,
       updatePath,
-      oldValBinding.name,
     ),
   );
   const oldValStorePlace = environment.createPlace(environment.createIdentifier());

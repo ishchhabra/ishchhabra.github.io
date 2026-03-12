@@ -108,7 +108,6 @@ function buildTemporaryIdentifier(
       BindingIdentifierInstruction,
       bindingPlace,
       nodePath,
-      bindingIdentifier.name,
     ),
   );
   functionBuilder.registerDeclarationName(
@@ -162,7 +161,6 @@ function buildBranchExpression(
     BindingIdentifierInstruction,
     lvalPlace,
     nodePath,
-    lvalIdentifier.name,
   );
   functionBuilder.addInstruction(lvalInstruction);
   environment.registerDeclaration(

@@ -6,7 +6,7 @@ export function generateBindingIdentifierInstruction(
   instruction: BindingIdentifierInstruction,
   generator: CodeGenerator,
 ): t.Identifier {
-  const node = t.identifier(instruction.name);
+  const node = t.identifier(instruction.place.identifier.name);
   generator.places.set(instruction.place.id, node);
   return node;
 }

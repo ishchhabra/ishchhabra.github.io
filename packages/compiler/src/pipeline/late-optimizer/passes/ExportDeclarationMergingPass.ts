@@ -125,13 +125,7 @@ export class ExportDeclarationMergingPass extends BaseOptimizationPass {
         );
       } else {
         // For named exports, rename the BI and convert to declaration form.
-        const biIndex = instrs.indexOf(bi);
-        instrs[biIndex] = new BindingIdentifierInstruction(
-          bi.id,
-          bi.place,
-          bi.nodePath,
-          exportSpec.exported,
-        );
+        bi.place.identifier.name = exportSpec.exported;
 
         instrs[exportDeclIndex] = new ExportNamedDeclarationInstruction(
           exportDecl.id,

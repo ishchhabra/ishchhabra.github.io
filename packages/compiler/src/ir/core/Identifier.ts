@@ -25,13 +25,13 @@ export function makeDeclarationId(id: number): DeclarationId {
 }
 
 export class Identifier {
+  public name: string;
+
   constructor(
     public readonly id: IdentifierId,
     public readonly version: string,
     public readonly declarationId: DeclarationId,
-  ) {}
-
-  public get name(): string {
-    return `$${this.declarationId}_${this.version}`;
+  ) {
+    this.name = `$${this.declarationId}_${this.version}`;
   }
 }

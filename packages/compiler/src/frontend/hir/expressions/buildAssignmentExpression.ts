@@ -251,7 +251,6 @@ function buildIdentifierAssignmentLeft(
     BindingIdentifierInstruction,
     place,
     nodePath,
-    identifier.name,
   );
   functionBuilder.addInstruction(instruction);
   environment.registerDeclaration(declarationId, functionBuilder.currentBlock.id, place.id);
@@ -271,7 +270,6 @@ function buildMemberExpressionAssignmentLeft(
     BindingIdentifierInstruction,
     place,
     nodePath,
-    identifier.name,
   );
   functionBuilder.addInstruction(instruction);
   environment.registerDeclaration(
@@ -399,12 +397,12 @@ function buildObjectPatternAssignmentLeft(
         // references. Create a fresh BI to avoid colliding with same-named
         // variable declarations.
         const keyIdentifier = environment.createIdentifier();
+        keyIdentifier.name = keyPath.node.name;
         keyPlace = environment.createPlace(keyIdentifier);
         const keyInstruction = environment.createInstruction(
           BindingIdentifierInstruction,
           keyPlace,
           keyPath,
-          keyPath.node.name,
         );
         functionBuilder.addInstruction(keyInstruction);
       } else {
