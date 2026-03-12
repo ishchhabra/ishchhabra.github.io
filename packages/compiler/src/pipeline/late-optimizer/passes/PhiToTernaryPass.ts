@@ -66,7 +66,10 @@ export class PhiToTernaryPass extends BaseOptimizationPass {
     if (!consBlock || !altBlock) return false;
 
     // Both branches must jump to the same fallthrough
-    if (!(consBlock.terminal instanceof JumpTerminal) || !(altBlock.terminal instanceof JumpTerminal))
+    if (
+      !(consBlock.terminal instanceof JumpTerminal) ||
+      !(altBlock.terminal instanceof JumpTerminal)
+    )
       return false;
     if (consBlock.terminal.target !== terminal.fallthrough) return false;
     if (altBlock.terminal.target !== terminal.fallthrough) return false;
