@@ -95,8 +95,16 @@ function buildMemberExpressionAssignment(
 
   if (isStaticMemberAccess(leftPath)) {
     const propertyPath: NodePath<t.MemberExpression["property"]> = leftPath.get("property");
-    propertyPath.assertIdentifier();
-    const property = propertyPath.node.name;
+    let property: string;
+    if (propertyPath.isIdentifier()) {
+      property = propertyPath.node.name;
+    } else if (propertyPath.isStringLiteral()) {
+      property = propertyPath.node.value;
+    } else if (propertyPath.isNumericLiteral()) {
+      property = String(propertyPath.node.value);
+    } else {
+      throw new Error(`Unexpected static member property type: ${propertyPath.type}`);
+    }
 
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
@@ -287,8 +295,16 @@ function buildMemberExpressionAssignmentLeft(
   }
 
   const propertyPath: NodePath<t.MemberExpression["property"]> = leftPath.get("property");
-  propertyPath.assertIdentifier();
-  const property = propertyPath.node.name;
+  let property: string;
+  if (propertyPath.isIdentifier()) {
+    property = propertyPath.node.name;
+  } else if (propertyPath.isStringLiteral()) {
+    property = propertyPath.node.value;
+  } else if (propertyPath.isNumericLiteral()) {
+    property = String(propertyPath.node.value);
+  } else {
+    throw new Error(`Unexpected static member property type: ${propertyPath.type}`);
+  }
 
   const storePropertyPlace = environment.createPlace(environment.createIdentifier());
   const storePropertyInstruction = environment.createInstruction(
