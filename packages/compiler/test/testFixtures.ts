@@ -31,10 +31,10 @@ interface TreeNode {
  * Safely reads and parses JSON from a file, returning undefined if the file
  * doesn't exist or if parsing fails.
  */
-function safeReadJson(filePath: string): CompilerOptions | undefined {
+function safeReadJson(filePath: string): Partial<CompilerOptions> | undefined {
   if (!existsSync(filePath)) return undefined;
   try {
-    return CompilerOptionsSchema.parse(JSON.parse(readFileSync(filePath, "utf-8")));
+    return JSON.parse(readFileSync(filePath, "utf-8"));
   } catch {
     return undefined;
   }
