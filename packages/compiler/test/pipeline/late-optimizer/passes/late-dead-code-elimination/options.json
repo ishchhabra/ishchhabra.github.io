@@ -1,0 +1,7 @@
+{
+  "enableLateDeadCodeEliminationPass": true,
+  "enablePhiToTernaryPass": false,
+  "enableLateCopyPropagationPass": false,
+  "enableRedundantCopyEliminationPass": false,
+  "enableExportDeclarationMergingPass": false
+}

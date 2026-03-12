@@ -4,6 +4,7 @@ import { BasicBlock, BlockId } from "../../ir";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { ExportDeclarationMergingPass } from "./passes/ExportDeclarationMergingPass";
 import { LateCopyPropagationPass } from "./passes/LateCopyPropagationPass";
+import { LateDeadCodeEliminationPass } from "./passes/LateDeadCodeEliminationPass";
 import { LoadStoreForwardingPass } from "./passes/LoadStoreForwardingPass";
 import { PhiToTernaryPass } from "./passes/PhiToTernaryPass";
 import { RedundantCopyEliminationPass } from "./passes/RedundantCopyEliminationPass";
@@ -41,6 +42,13 @@ export class LateOptimizer {
     if (this.options.enableLateCopyPropagationPass) {
       const lateCopyPropagationResult = new LateCopyPropagationPass(this.functionIR).run();
       blocks = lateCopyPropagationResult.blocks;
+    }
+
+    if (this.options.enableLateDeadCodeEliminationPass) {
+      const lateDeadCodeEliminationResult = new LateDeadCodeEliminationPass(
+        this.functionIR,
+      ).run();
+      blocks = lateDeadCodeEliminationResult.blocks;
     }
 
     if (this.options.enableExportDeclarationMergingPass) {

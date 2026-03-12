@@ -1,6 +1,7 @@
 import {
   BaseInstruction,
   BasicBlock,
+  BlockId,
   CopyInstruction,
   IdentifierId,
   StoreLocalInstruction,
@@ -9,48 +10,57 @@ import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
 
 /**
  * A late Dead Code Elimination (DCE) pass that removes unused instructions
- * which define a place not read by any other instruction in the block
- * (and have no side effects). This pass is less aggressive than the
- * early DCE pass, which runs before the SSA elimination and has access
- * to phi nodes information.
+ * which define a place not read by any other instruction (and have no side
+ * effects). This runs after SSA elimination, so it operates on the
+ * post-SSA IR without phi nodes or def-use chains.
  *
- * It relies on each instruction implementing:
- *    `public getReadPlaces(): Place[] { ... }`
- * which returns the list of places that instruction *reads*.
+ * Algorithm: single-pass over blocks in post-order (leaves first). A shared
+ * `usedPlaceIds` set accumulates reads across blocks. By processing
+ * successors before predecessors, a definition's downstream reads are
+ * already in the set when we decide whether to keep it.
  *
- * Also, each instruction that "defines" a place should do so in a known field
- * (e.g. `lval` for StoreLocal, or `argumentPlace` for a BinaryExpression, etc.).
- *
- * For instructions that are "pure" and produce a result that no one reads, we remove them.
- * If an instruction is "impure" (side effects, function calls, etc.), we keep it even if unused.
- *
- * NOTE: This pass is local. If a variable is used in a different block,
- * we won't see it here and might remove it incorrectly if you haven't accounted for that globally.
+ * The base class re-runs `step()` until fixpoint, so chains of dead
+ * instructions are cleaned up across iterations.
  */
 export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
   protected step(): OptimizationResult {
     let changed = false;
     const usedPlaceIds = new Set<IdentifierId>();
+    const postOrder = this.computePostOrder();
 
-    // Process blocks in post order
-    // TODO: Fix this type assertion by adding postOrder to ModuleUnit
-    // oxlint-disable-next-line typescript/no-explicit-any
-    for (const blockId of (this.functionIR as any).postOrder) {
+    for (const blockId of postOrder) {
       const block = this.functionIR.blocks.get(blockId);
       if (!block) {
         throw new Error(`Block ${blockId} not found`);
       }
-      try {
-        const blockChanged = this.eliminateDeadCodeInBlock(block, usedPlaceIds);
-        if (blockChanged) {
-          changed = true;
-        }
-      } catch {
-        console.warn(`Skipping dead code elimination for block ${blockId} due to error`);
+      if (this.eliminateDeadCodeInBlock(block, usedPlaceIds)) {
+        changed = true;
       }
     }
 
     return { changed };
+  }
+
+  /**
+   * Computes a post-order traversal of the CFG via DFS from the entry block.
+   * Post-order visits successors before predecessors, so all downstream
+   * reads are collected before we process the defining block.
+   */
+  private computePostOrder(): BlockId[] {
+    const visited = new Set<BlockId>();
+    const result: BlockId[] = [];
+
+    const dfs = (blockId: BlockId) => {
+      if (visited.has(blockId)) return;
+      visited.add(blockId);
+      for (const succ of this.functionIR.successors.get(blockId) ?? []) {
+        dfs(succ);
+      }
+      result.push(blockId);
+    };
+
+    dfs(this.functionIR.entryBlockId);
+    return result;
   }
 
   private eliminateDeadCodeInBlock(block: BasicBlock, usedPlaceIds: Set<IdentifierId>): boolean {
@@ -58,28 +68,24 @@ export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
     const newInstrs: BaseInstruction[] = [];
     let changed = false;
 
-    // 1) Gather "used" places (i.e., read by instructions in this block).
-    //    Because each instruction implements getReadPlaces(), we just call it.
+    // 1) Gather places read by instructions and the terminal in this block.
     for (const instr of instrs) {
       for (const place of instr.getReadPlaces()) {
         usedPlaceIds.add(place.identifier.id);
       }
     }
 
-    // Also gather places read by the terminal
     if (block.terminal) {
       for (const place of block.terminal.getReadPlaces()) {
         usedPlaceIds.add(place.identifier.id);
       }
     }
 
-    // 2) Filter out instructions that define a place that is never read
-    //    (and have no side effects).
+    // 2) Filter out pure instructions that define a place nobody reads.
     for (const instr of instrs) {
       if (this.shouldKeepInstruction(instr, usedPlaceIds)) {
         newInstrs.push(instr);
       } else {
-        // Instruction is considered dead, removing it.
         changed = true;
       }
     }
@@ -89,37 +95,27 @@ export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
   }
 
   /**
-   * Decide if we keep this instruction:
-   *   1) If it doesn't "define" any place, we keep it by default unless
-   *      it's a pure instruction with no side effects (like a pure call returning
-   *      a value that is never used).
-   *   2) If it's pure (like a store or copy with no side effects) and
-   *      defines a place that is not in usedPlaceIds, remove it.
-   *   3) Otherwise keep it.
+   * Keep an instruction if:
+   *   - It's a copy (inserted by SSA elimination, handled by early DCE)
+   *   - It's impure (has side effects)
+   *   - Its defined place is read by another instruction
    */
   private shouldKeepInstruction(
     instruction: BaseInstruction,
     usedPlaceIds: Set<IdentifierId>,
   ): boolean {
-    // Do not remove copy instructions, since they are inserted by the SSA transformation.
-    // If there are opportunities for dead code elimination involving assignment,
-    // they can be removed by the EarlyDeadCodeEliminationPass which has access to phi nodes.
     if (instruction instanceof CopyInstruction) {
       return true;
     }
 
-    // If the instruction is not pure, it might have side effects => keep it
     if (!instruction.isPure) {
       return true;
     }
 
-    // When using StoreLocalInstruction, the instruction place is never read,
-    // but the lval is read.
     if (instruction instanceof StoreLocalInstruction) {
       return usedPlaceIds.has(instruction.lval.identifier.id);
     }
 
-    // Keep the instruction if the place it defines is read
     return usedPlaceIds.has(instruction.place.identifier.id);
   }
 }

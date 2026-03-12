@@ -1,4 +1,5 @@
 {
   "enableOptimizer": false,
-  "enableLateOptimizer": true
+  "enableLateOptimizer": true,
+  "enableLateDeadCodeEliminationPass": false
 }

@@ -1,5 +1,6 @@
 {
   "enableOptimizer": false,
   "enableLateOptimizer": true,
-  "enableLoadStoreForwardingPass": true
+  "enableLoadStoreForwardingPass": true,
+  "enableLateDeadCodeEliminationPass": false
 }
