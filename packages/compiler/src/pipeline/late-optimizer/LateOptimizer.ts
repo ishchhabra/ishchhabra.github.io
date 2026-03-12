@@ -5,6 +5,7 @@ import { FunctionIR } from "../../ir/core/FunctionIR";
 import { ExportDeclarationMergingPass } from "./passes/ExportDeclarationMergingPass";
 import { LateCopyPropagationPass } from "./passes/LateCopyPropagationPass";
 import { LoadStoreForwardingPass } from "./passes/LoadStoreForwardingPass";
+import { PhiToTernaryPass } from "./passes/PhiToTernaryPass";
 import { RedundantCopyEliminationPass } from "./passes/RedundantCopyEliminationPass";
 
 interface LateOptimizerResult {
@@ -20,6 +21,11 @@ export class LateOptimizer {
 
   public run(): LateOptimizerResult {
     let blocks = this.functionIR.blocks;
+    if (this.options.enablePhiToTernaryPass) {
+      const phiToTernaryResult = new PhiToTernaryPass(this.functionIR).run();
+      blocks = phiToTernaryResult.blocks;
+    }
+
     if (this.options.enableLoadStoreForwardingPass) {
       const loadStoreForwardingResult = new LoadStoreForwardingPass(this.functionIR).run();
       blocks = loadStoreForwardingResult.blocks;

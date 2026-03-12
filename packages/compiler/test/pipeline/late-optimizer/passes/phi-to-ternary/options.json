@@ -1,0 +1,8 @@
+{
+  "enableOptimizer": false,
+  "enablePhiToTernaryPass": true,
+  "enableLoadStoreForwardingPass": false,
+  "enableRedundantCopyEliminationPass": false,
+  "enableLateCopyPropagationPass": false,
+  "enableExportDeclarationMergingPass": false
+}
