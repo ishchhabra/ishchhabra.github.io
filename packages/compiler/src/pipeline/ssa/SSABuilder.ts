@@ -6,8 +6,8 @@ import {
   LoadLocalInstruction,
   LoadPhiInstruction,
   Place,
-  PlaceId,
   ReturnTerminal,
+  StoreLocalInstruction,
   ThrowTerminal,
 } from "../../ir";
 import { BaseTerminal } from "../../ir/base/Terminal";
@@ -31,8 +31,7 @@ export class SSABuilder {
 
   public build(): SSA {
     const phis = this.computePhiNodes();
-    this.populatePhiOperands(phis);
-    this.rewritePhiReferences(phis);
+    this.renameVariables(phis);
     return { phis };
   }
 
@@ -54,7 +53,7 @@ export class SSABuilder {
         continue;
       }
 
-      this.insertPhiNodesForDeclaration(declarationId, placeIds, definitionBlocks, phis);
+      this.insertPhiNodesForDeclaration(declarationId, definitionBlocks, phis);
     }
 
     return phis;
@@ -66,12 +65,12 @@ export class SSABuilder {
    */
   private insertPhiNodesForDeclaration(
     declarationId: DeclarationId,
-    placeIds: { blockId: BlockId; placeId: PlaceId }[],
     definitionBlocks: BlockId[],
     phis: Set<Phi>,
   ): void {
     const workList = [...definitionBlocks];
     const hasPhi = new Set<BlockId>();
+    const defBlocks = new Set(definitionBlocks);
 
     while (workList.length > 0) {
       const definitionBlock = workList.pop()!;
@@ -91,11 +90,9 @@ export class SSABuilder {
         phis.add(new Phi(blockId, place, new Map(), declarationId));
         hasPhi.add(blockId);
 
-        // Record that this block now also defines the variable
-        placeIds.push({ blockId, placeId: place.id });
-
-        // If blockId wasn't already in the definition list, add it to the workList
-        if (!definitionBlocks.includes(blockId)) {
+        // If blockId wasn't already in the definition set, add it to the workList
+        if (!defBlocks.has(blockId)) {
+          defBlocks.add(blockId);
           workList.push(blockId);
         }
       }
@@ -103,70 +100,115 @@ export class SSABuilder {
   }
 
   /**
-   * After computing the φ-nodes, populate each φ-node's map from predecessorBlock -> place.
-   * This tells the φ-node which place from each predecessor block flows into it.
+   * Perform classic SSA renaming using dominator-tree DFS (Cytron et al.).
+   * Populates φ-node operands and rewrites references in a single pass.
    */
-  private populatePhiOperands(phis: Set<Phi>): void {
+  private renameVariables(phis: Set<Phi>): void {
+    const stacks = new Map<DeclarationId, Place[]>();
+    const domChildren = this.buildDominatorChildren();
+
+    // Index phis by block for O(1) lookup instead of scanning all phis per block
+    const phisByBlock = new Map<BlockId, Phi[]>();
+    const phiDecls = new Set<DeclarationId>();
     for (const phi of phis) {
-      // For each predecessor of the φ's block, find the place that variable was defined in
-      const predecessors = this.functionIR.predecessors.get(phi.blockId);
-      if (!predecessors) {
-        continue;
-      }
-
-      const places = this.moduleIR.environment.declToPlaces.get(phi.declarationId);
-      if (!places) {
-        continue;
-      }
-
-      for (const predecessor of predecessors) {
-        const placeId = places.find((p) => p.blockId === predecessor)?.placeId;
-        // If the variable is not defined in the predecessor, ignore it.
-        // This occurs with back edges in loops, where the variable is defined
-        // within the loop body but not in the block that enters the loop.
-        // The variable definition exists in the loop block (a predecessor)
-        // but not in the original entry block.
-        if (placeId === undefined) {
-          continue;
-        }
-
-        const place = this.moduleIR.environment.places.get(placeId)!;
-        phi.operands.set(predecessor, place);
-      }
+      phiDecls.add(phi.declarationId);
+      if (!phisByBlock.has(phi.blockId)) phisByBlock.set(phi.blockId, []);
+      phisByBlock.get(phi.blockId)!.push(phi);
     }
-  }
 
-  /**
-   * Rewrites references in all blocks that are dominated by each φ's block.
-   * Whenever an instruction refers to one of the φ's operand identifiers,
-   * replace it with a LoadPhiInstruction referencing the φ-place.
-   */
-  private rewritePhiReferences(phis: Set<Phi>): void {
-    for (const phi of phis) {
-      const rewriteMap = new Map(
-        Array.from(phi.operands.values()).map((place) => [place.identifier, phi.place]),
-      );
+    const rename = (blockId: BlockId) => {
+      const block = this.functionIR.blocks.get(blockId)!;
+      const pushed: DeclarationId[] = [];
 
-      for (const [blockId, block] of this.functionIR.blocks) {
-        const dominators = this.functionIR.dominators.get(blockId)!;
-        if (!dominators.has(phi.blockId)) {
-          continue;
+      // 1. Push φ results
+      for (const phi of phisByBlock.get(blockId) ?? []) {
+        const decl = phi.declarationId;
+        if (!stacks.has(decl)) stacks.set(decl, []);
+
+        stacks.get(decl)!.push(phi.place);
+        pushed.push(decl);
+      }
+
+      // 2. Rewrite instruction uses and push new definitions
+      for (let i = 0; i < block.instructions.length; i++) {
+        const instruction = block.instructions[i];
+
+        // Build a rewrite map for phi'd variables referenced by this instruction
+        const rewriteMap = new Map<Identifier, Place>();
+        const reads = instruction.getReadPlaces?.() ?? [];
+        for (const place of reads) {
+          const decl = place.identifier.declarationId;
+          if (!phiDecls.has(decl)) continue;
+          const stack = stacks.get(decl);
+          if (stack && stack.length > 0) {
+            rewriteMap.set(place.identifier, stack[stack.length - 1]);
+          }
         }
 
-        block.instructions = block.instructions.map((instruction) =>
-          this.rewriteInstruction(instruction, rewriteMap),
-        );
+        if (rewriteMap.size > 0) {
+          block.instructions[i] = this.rewriteInstruction(instruction, rewriteMap);
+        }
 
-        if (block.terminal !== undefined) {
+        // Push new definitions for StoreLocal of phi'd variables
+        if (instruction instanceof StoreLocalInstruction) {
+          const decl = instruction.lval.identifier.declarationId;
+          if (phiDecls.has(decl)) {
+            if (!stacks.has(decl)) stacks.set(decl, []);
+            stacks.get(decl)!.push(instruction.lval);
+            pushed.push(decl);
+          }
+        }
+      }
+
+      // 3. Rewrite terminal uses
+      if (block.terminal !== undefined) {
+        const reads = block.terminal.getReadPlaces?.() ?? [];
+        const rewriteMap = new Map<Identifier, Place>();
+        for (const place of reads) {
+          const decl = place.identifier.declarationId;
+          if (!phiDecls.has(decl)) continue;
+          const stack = stacks.get(decl);
+          if (stack && stack.length > 0) {
+            rewriteMap.set(place.identifier, stack[stack.length - 1]);
+          }
+        }
+        if (rewriteMap.size > 0) {
           block.terminal = this.rewriteTerminal(block.terminal, rewriteMap);
         }
       }
-    }
+
+      // 4. Fill successor φ operands
+      const successors = this.functionIR.successors.get(blockId) ?? [];
+      for (const succ of successors) {
+        for (const phi of phisByBlock.get(succ) ?? []) {
+          const stack = stacks.get(phi.declarationId);
+          if (stack && stack.length > 0) {
+            phi.operands.set(blockId, stack[stack.length - 1]);
+          }
+        }
+      }
+
+      // 5. Recurse dominator children
+      for (const child of domChildren.get(blockId) ?? []) {
+        rename(child);
+      }
+
+      // 6. Pop definitions
+      for (const decl of pushed.reverse()) {
+        stacks.get(decl)!.pop();
+      }
+    };
+
+    rename(this.functionIR.entryBlockId);
   }
 
   private rewriteTerminal(terminal: BaseTerminal, values: Map<Identifier, Place>): BaseTerminal {
     if (terminal instanceof ReturnTerminal && values.has(terminal.value.identifier)) {
       return new ReturnTerminal(terminal.id, values.get(terminal.value.identifier)!);
+    }
+
+    if (terminal instanceof ThrowTerminal && values.has(terminal.value.identifier)) {
+      return new ThrowTerminal(terminal.id, values.get(terminal.value.identifier)!);
     }
 
     return terminal;
@@ -186,5 +228,21 @@ export class SSABuilder {
     }
 
     return instruction.rewrite(values) as T;
+  }
+
+  /**
+   * Build dominator tree children map from immediate dominators.
+   */
+  private buildDominatorChildren(): Map<BlockId, BlockId[]> {
+    const children = new Map<BlockId, BlockId[]>();
+
+    for (const [blockId, idom] of this.functionIR.immediateDominators) {
+      if (idom === undefined) continue;
+
+      if (!children.has(idom)) children.set(idom, []);
+      children.get(idom)!.push(blockId);
+    }
+
+    return children;
   }
 }
