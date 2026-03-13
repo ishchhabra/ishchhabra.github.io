@@ -9,6 +9,7 @@ export {
 export { Place, type PlaceId } from "./Place";
 export {
   BranchTerminal,
+  ForOfTerminal,
   JumpTerminal,
   ReturnTerminal,
   ThrowTerminal,

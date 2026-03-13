@@ -51,6 +51,23 @@ export class ReturnTerminal extends BaseTerminal {
   }
 }
 
+export class ForOfTerminal extends BaseTerminal {
+  constructor(
+    id: InstructionId,
+    public readonly left: Place,
+    public readonly right: Place,
+    public readonly body: BlockId,
+    public readonly fallthrough: BlockId,
+    public readonly isAwait: boolean,
+  ) {
+    super(id);
+  }
+
+  getReadPlaces(): Place[] {
+    return [this.right];
+  }
+}
+
 export class ThrowTerminal extends BaseTerminal {
   constructor(
     id: InstructionId,
@@ -61,3 +78,5 @@ export class ThrowTerminal extends BaseTerminal {
 
   getReadPlaces(): Place[] {
     return [this.value];
+  }
+}
