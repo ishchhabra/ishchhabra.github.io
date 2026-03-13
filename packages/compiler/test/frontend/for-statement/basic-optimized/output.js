@@ -3,6 +3,6 @@ let $13_phi_17 = 0;
 while ($13_phi_17 < 3) {
   console.log($13_phi_17);
   const $0_1 = $13_phi_17 + 1;
-  $13_phi_17;
+  $0_1;
   $13_phi_17 = $0_1;
 }
