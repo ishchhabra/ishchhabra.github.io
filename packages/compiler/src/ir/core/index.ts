@@ -13,4 +13,5 @@ export {
   JumpTerminal,
   ReturnTerminal,
   ThrowTerminal,
+  TryTerminal,
 } from "./Terminal";

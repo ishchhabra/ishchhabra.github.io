@@ -6,6 +6,7 @@ import {
   JumpTerminal,
   ReturnTerminal,
   ThrowTerminal,
+  TryTerminal,
 } from "../../../ir";
 import { FunctionIR } from "../../../ir/core/FunctionIR";
 import { CodeGenerator } from "../../CodeGenerator";
@@ -14,6 +15,7 @@ import { generateForOfTerminal } from "./generateForOf";
 import { generateJumpTerminal } from "./generateJump";
 import { generateReturnTerminal } from "./generateReturn";
 import { generateThrowTerminal } from "./generateThrow";
+import { generateTryTerminal } from "./generateTry";
 
 export function generateTerminal(
   terminal: BaseTerminal,
@@ -30,6 +32,8 @@ export function generateTerminal(
     return generateForOfTerminal(terminal, functionIR, generator);
   } else if (terminal instanceof ThrowTerminal) {
     return generateThrowTerminal(terminal, generator);
+  } else if (terminal instanceof TryTerminal) {
+    return generateTryTerminal(terminal, functionIR, generator);
   }
 
   throw new Error(`Unsupported terminal type: ${terminal.constructor.name}`);

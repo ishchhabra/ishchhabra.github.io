@@ -1,4 +1,4 @@
-import { BasicBlock, BlockId, BranchTerminal, ForOfTerminal, JumpTerminal } from "../../ir";
+import { BasicBlock, BlockId, BranchTerminal, ForOfTerminal, JumpTerminal, TryTerminal } from "../../ir";
 
 export function getPredecessors(blocks: Map<BlockId, BasicBlock>) {
   const predecessors = new Map<BlockId, Set<BlockId>>();
@@ -32,6 +32,15 @@ export function getPredecessors(blocks: Map<BlockId, BasicBlock>) {
       processBlock(block.terminal.alternate, block);
     } else if (block.terminal instanceof ForOfTerminal) {
       processBlock(block.terminal.body, block);
+      processBlock(block.terminal.fallthrough, block);
+    } else if (block.terminal instanceof TryTerminal) {
+      processBlock(block.terminal.tryBlock, block);
+      if (block.terminal.handler !== null) {
+        processBlock(block.terminal.handler.block, block);
+      }
+      if (block.terminal.finallyBlock !== null) {
+        processBlock(block.terminal.finallyBlock, block);
+      }
       processBlock(block.terminal.fallthrough, block);
     }
   };

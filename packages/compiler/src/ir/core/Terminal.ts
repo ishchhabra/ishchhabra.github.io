@@ -80,3 +80,19 @@ export class ThrowTerminal extends BaseTerminal {
     return [this.value];
   }
 }
+
+export class TryTerminal extends BaseTerminal {
+  constructor(
+    id: InstructionId,
+    public readonly tryBlock: BlockId,
+    public readonly handler: { param: Place | null; block: BlockId } | null,
+    public readonly finallyBlock: BlockId | null,
+    public readonly fallthrough: BlockId,
+  ) {
+    super(id);
+  }
+
+  getReadPlaces(): Place[] {
+    return [];
+  }
+}

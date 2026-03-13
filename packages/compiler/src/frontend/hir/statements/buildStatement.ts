@@ -16,6 +16,7 @@ import { buildIfStatement } from "./buildIfStatement";
 import { buildImportDeclaration } from "./buildImportDeclaration";
 import { buildReturnStatement } from "./buildReturnStatement";
 import { buildThrowStatement } from "./buildThrowStatement";
+import { buildTryStatement } from "./buildTryStatement";
 import { buildVariableDeclaration } from "./buildVariableDeclaration";
 import { buildWhileStatement } from "./buildWhileStatement";
 
@@ -65,6 +66,9 @@ export function buildStatement(
     case "ThrowStatement":
       nodePath.assertThrowStatement();
       return buildThrowStatement(nodePath, functionBuilder, moduleBuilder, environment);
+    case "TryStatement":
+      nodePath.assertTryStatement();
+      return buildTryStatement(nodePath, functionBuilder, moduleBuilder, environment);
     default:
       return buildUnsupportedNode(nodePath, functionBuilder, environment);
   }
