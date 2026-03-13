@@ -7,6 +7,7 @@ export { ConditionalExpressionInstruction } from "./ConditionalExpression";
 export { HoleInstruction } from "./Hole";
 export { LiteralInstruction, type TPrimitiveValue } from "./Literal";
 export { LogicalExpressionInstruction } from "./LogicalExpression";
+export { MetaPropertyInstruction } from "./MetaProperty";
 export { NewExpressionInstruction } from "./NewExpression";
 export { ObjectExpressionInstruction } from "./ObjectExpression";
 export { RegExpLiteralInstruction } from "./RegExpLiteral";

@@ -1,0 +1,1 @@
+const meta = import.meta;

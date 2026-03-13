@@ -17,6 +17,7 @@ import { buildFunctionExpression } from "./buildFunctionExpression";
 import { buildLiteral } from "./buildLiteral";
 import { buildLogicalExpression } from "./buildLogicalExpression";
 import { buildMemberExpression } from "./buildMemberExpression";
+import { buildMetaProperty } from "./buildMetaProperty";
 import { buildNewExpression } from "./buildNewExpression";
 import { buildObjectExpression } from "./buildObjectExpression";
 import { buildRegExpLiteral } from "./buildRegExpLiteral";
@@ -74,6 +75,9 @@ export function buildExpression(
     case "MemberExpression":
       nodePath.assertMemberExpression();
       return buildMemberExpression(nodePath, functionBuilder, moduleBuilder, environment);
+    case "MetaProperty":
+      nodePath.assertMetaProperty();
+      return buildMetaProperty(nodePath, functionBuilder, environment);
     case "NewExpression":
       nodePath.assertNewExpression();
       return buildNewExpression(nodePath, functionBuilder, moduleBuilder, environment);

@@ -22,6 +22,7 @@ import { ArrowFunctionExpressionInstruction } from "../../../../ir/instructions/
 import { AwaitExpressionInstruction } from "../../../../ir/instructions/value/AwaitExpression";
 import { FunctionExpressionInstruction } from "../../../../ir/instructions/value/FunctionExpression";
 import { TaggedTemplateExpressionInstruction } from "../../../../ir/instructions/value/TaggedTemplateExpression";
+import { MetaPropertyInstruction } from "../../../../ir/instructions/value/MetaProperty";
 import { ThisExpressionInstruction } from "../../../../ir/instructions/value/ThisExpression";
 import { ClassExpressionInstruction } from "../../../../ir/instructions/value/ClassExpression";
 import { CodeGenerator } from "../../../CodeGenerator";
@@ -36,6 +37,7 @@ import { generateFunctionExpressionInstruction } from "./generateFunctionExpress
 import { generateHoleInstruction } from "./generateHole";
 import { generateLiteralInstruction } from "./generateLiteral";
 import { generateLogicalExpressionInstruction } from "./generateLogicalExpression";
+import { generateMetaPropertyInstruction } from "./generateMetaProperty";
 import { generateNewExpressionInstruction } from "./generateNewExpression";
 import { generateObjectExpressionInstruction } from "./generateObjectExpression";
 import { generateObjectMethodInstruction } from "./generateObjectMethod";
@@ -76,6 +78,8 @@ export function generateValueInstruction(
     return generateLiteralInstruction(instruction, generator);
   } else if (instruction instanceof LogicalExpressionInstruction) {
     return generateLogicalExpressionInstruction(instruction, generator);
+  } else if (instruction instanceof MetaPropertyInstruction) {
+    return generateMetaPropertyInstruction(instruction, generator);
   } else if (instruction instanceof NewExpressionInstruction) {
     return generateNewExpressionInstruction(instruction, generator);
   } else if (instruction instanceof RegExpLiteralInstruction) {
