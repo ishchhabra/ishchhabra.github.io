@@ -1,4 +1,5 @@
 export { JSXAttributeInstruction } from "./JSXAttribute";
+export { JSXSpreadAttributeInstruction } from "./JSXSpreadAttribute";
 export { JSXClosingElementInstruction } from "./JSXClosingElement";
 export { JSXClosingFragmentInstruction } from "./JSXClosingFragment";
 export { JSXElementInstruction } from "./JSXElement";

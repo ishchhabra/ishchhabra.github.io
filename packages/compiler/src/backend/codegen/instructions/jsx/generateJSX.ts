@@ -8,12 +8,14 @@ import {
   JSXTextInstruction,
 } from "../../../../ir";
 import { JSXAttributeInstruction } from "../../../../ir/instructions/jsx/JSXAttribute";
+import { JSXSpreadAttributeInstruction } from "../../../../ir/instructions/jsx/JSXSpreadAttribute";
 import { JSXClosingElementInstruction } from "../../../../ir/instructions/jsx/JSXClosingElement";
 import { JSXClosingFragmentInstruction } from "../../../../ir/instructions/jsx/JSXClosingFragment";
 import { JSXOpeningElementInstruction } from "../../../../ir/instructions/jsx/JSXOpeningElement";
 import { JSXOpeningFragmentInstruction } from "../../../../ir/instructions/jsx/JSXOpeningFragment";
 import { CodeGenerator } from "../../../CodeGenerator";
 import { generateJSXAttributeInstruction } from "./generateJSXAttribute";
+import { generateJSXSpreadAttributeInstruction } from "./generateJSXSpreadAttribute";
 import { generateJSXClosingElementInstruction } from "./generateJSXClosingElement";
 import { generateJSXClosingFragmentInstruction } from "./generateJSXClosingFragment";
 import { generateJSXElementInstruction } from "./generateJSXElement";
@@ -34,6 +36,8 @@ export function generateJSXInstruction(instruction: JSXInstruction, generator: C
     return generateJSXTextInstruction(instruction, generator);
   } else if (instruction instanceof JSXAttributeInstruction) {
     return generateJSXAttributeInstruction(instruction, generator);
+  } else if (instruction instanceof JSXSpreadAttributeInstruction) {
+    return generateJSXSpreadAttributeInstruction(instruction, generator);
   } else if (instruction instanceof JSXOpeningElementInstruction) {
     return generateJSXOpeningElementInstruction(instruction, generator);
   } else if (instruction instanceof JSXClosingElementInstruction) {

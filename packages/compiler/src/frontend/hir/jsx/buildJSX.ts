@@ -6,6 +6,7 @@ import { buildUnsupportedNode } from "../buildUnsupportedNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildJSXAttribute } from "./buildJSXAttribute";
+import { buildJSXSpreadAttribute } from "./buildJSXSpreadAttribute";
 import { buildJSXClosingElement } from "./buildJSXClosingElement";
 import { buildJSXClosingFragment } from "./buildJSXClosingFragment";
 import { buildJSXElement } from "./buildJSXElement";
@@ -54,6 +55,9 @@ export function buildJSX(
     case "JSXAttribute":
       nodePath.assertJSXAttribute();
       return buildJSXAttribute(nodePath, functionBuilder, moduleBuilder, environment);
+    case "JSXSpreadAttribute":
+      nodePath.assertJSXSpreadAttribute();
+      return buildJSXSpreadAttribute(nodePath, functionBuilder, moduleBuilder, environment);
     case "JSXExpressionContainer":
       nodePath.assertJSXExpressionContainer();
       return buildJSXExpressionContainer(nodePath, functionBuilder, moduleBuilder, environment);
