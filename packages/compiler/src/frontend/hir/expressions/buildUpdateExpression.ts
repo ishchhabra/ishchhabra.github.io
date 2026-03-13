@@ -1,7 +1,11 @@
 import { NodePath } from "@babel/traverse";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
-import { StoreLocalInstruction } from "../../../ir";
+import {
+  BindingIdentifierInstruction,
+  LoadLocalInstruction,
+  StoreLocalInstruction,
+} from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildBinaryExpression } from "./buildBinaryExpression";
@@ -38,6 +42,39 @@ export function buildUpdateExpression(
     throw new Error(`Unable to find the place for ${argumentPath.node.name} (${declarationId})`);
   }
 
+  // For postfix operations, snapshot the original value into a temporary
+  // so that codegen emits a distinct variable for the pre-increment value.
+  // Without this, in loops with phi nodes the original place gets reassigned
+  // before codegen can read the pre-increment value.
+  let oldValLoadPlace = originalPlace;
+  if (!nodePath.node.prefix) {
+    const oldValBinding = environment.createIdentifier();
+    const oldValBindingPlace = environment.createPlace(oldValBinding);
+    functionBuilder.addInstruction(
+      environment.createInstruction(BindingIdentifierInstruction, oldValBindingPlace, nodePath),
+    );
+    const oldValStorePlace = environment.createPlace(environment.createIdentifier());
+    functionBuilder.addInstruction(
+      environment.createInstruction(
+        StoreLocalInstruction,
+        oldValStorePlace,
+        nodePath,
+        oldValBindingPlace,
+        originalPlace,
+        "const",
+      ),
+    );
+    oldValLoadPlace = environment.createPlace(environment.createIdentifier());
+    functionBuilder.addInstruction(
+      environment.createInstruction(
+        LoadLocalInstruction,
+        oldValLoadPlace,
+        nodePath,
+        oldValBindingPlace,
+      ),
+    );
+  }
+
   const lvalIdentifier = environment.createIdentifier(declarationId);
   const lvalPlace = environment.createPlace(lvalIdentifier);
 
@@ -72,7 +109,7 @@ export function buildUpdateExpression(
   );
   functionBuilder.addInstruction(instruction);
   environment.registerDeclaration(declarationId, functionBuilder.currentBlock.id, lvalPlace.id);
-  return nodePath.node.prefix ? valuePlace : originalPlace;
+  return nodePath.node.prefix ? valuePlace : oldValLoadPlace;
 }
 
 function createSyntheticBinaryPath(

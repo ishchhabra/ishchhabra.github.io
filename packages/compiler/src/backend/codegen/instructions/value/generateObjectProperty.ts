@@ -21,7 +21,7 @@ export function generateObjectPropertyInstruction(
     throw new Error(`Value ${instruction.value.id} is not an expression or pattern`);
   }
 
-  const node = t.objectProperty(key, value);
+  const node = t.objectProperty(key, value, instruction.computed, instruction.shorthand);
   generator.places.set(instruction.place.id, node);
   return node;
 }

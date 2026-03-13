@@ -1,10 +1,11 @@
 const $0_0 = function* () {
   const $1_0 = 0;
-  let $12_phi_14 = $1_0;
-  $12_phi_14 = $1_0;
+  let $15_phi_17 = $1_0;
+  $15_phi_17 = $1_0;
   while (true) {
-    const $1_1 = $12_phi_14 + 1;
-    yield $1_1;
-    $12_phi_14 = $1_1;
+    const $5_0 = $15_phi_17;
+    const $1_1 = $15_phi_17 + 1;
+    yield $5_0;
+    $15_phi_17 = $1_1;
   }
 };
