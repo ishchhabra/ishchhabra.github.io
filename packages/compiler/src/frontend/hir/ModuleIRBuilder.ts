@@ -11,7 +11,10 @@ import { FunctionIRBuilder } from "./FunctionIRBuilder";
 
 const require = createRequire(import.meta.url);
 
-const traverse = (_traverse as unknown as { default: typeof _traverse }).default;
+const traverse =
+  typeof _traverse === "function"
+    ? _traverse
+    : (_traverse as unknown as { default: typeof _traverse }).default;
 
 export class ModuleIRBuilder {
   public readonly globals: Map<string, ModuleGlobal> = new Map();

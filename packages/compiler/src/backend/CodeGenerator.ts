@@ -7,7 +7,10 @@ import { ModuleIR } from "../ir/core/ModuleIR";
 import { generateFunction } from "./codegen/generateFunction";
 import { generateBindingIdentifierInstruction } from "./codegen/instructions/generateBindingIdentifier";
 
-const generate = (_generate as unknown as { default: typeof _generate }).default;
+const generate =
+  typeof _generate === "function"
+    ? _generate
+    : (_generate as unknown as { default: typeof _generate }).default;
 
 /**
  * Generates the code from the IR.

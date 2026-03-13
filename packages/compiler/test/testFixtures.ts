@@ -1,36 +1,31 @@
 // testFixtures.ts
 
 import { execFileSync } from "child_process";
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "fs";
 import { merge } from "lodash-es";
+import { tmpdir } from "os";
 import { dirname, join, relative, resolve } from "path";
 import { fileURLToPath } from "url";
+import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { compile, CompilerOptions, CompilerOptionsSchema } from "../src/compile";
 
-/**
- * Represents a single fixture file pair:
- * - input (path to code.js or code.jsx)
- * - output (path to output.js or output.jsx)
- */
 interface Fixture {
   input: string;
   output: string;
 }
 
-/**
- * Each directory node can have:
- * - An array of fixtures (`__fixtures`), plus
- * - Zero or more subdirectories keyed by name.
- */
 interface TreeNode {
   __fixtures?: Fixture[];
   [key: string]: TreeNode | Fixture[] | undefined;
 }
 
-/**
- * Safely reads and parses JSON from a file, returning undefined if the file
- * doesn't exist or if parsing fails.
- */
 function safeReadJson(filePath: string): Partial<CompilerOptions> | undefined {
   if (!existsSync(filePath)) return undefined;
   try {
@@ -40,10 +35,6 @@ function safeReadJson(filePath: string): Partial<CompilerOptions> | undefined {
   }
 }
 
-/**
- * Traverses from `rootDir` up to `testDir`, collecting any `options.json` along the way,
- * and merges them (outer → inner) into a single CompilerOptions object.
- */
 function loadOptionsChain(
   rootDir: string,
   testDir: string,
@@ -60,10 +51,7 @@ function loadOptionsChain(
     current = parent;
   }
 
-  // Reverse so we apply outermost first, then innermost
   dirs.reverse();
-
-  // Start with a copy of baseOptions
   let merged = { ...baseOptions };
 
   for (const dir of dirs) {
@@ -75,10 +63,6 @@ function loadOptionsChain(
   return merged;
 }
 
-/**
- * A helper that recursively collects all fixtures under `dir`.
- * Looks for `code.js` or `code.jsx` in a folder, and creates corresponding output path.
- */
 function findFixtures(dir: string): Fixture[] {
   const fixtures: Fixture[] = [];
   const entries = readdirSync(dir, { withFileTypes: true });
@@ -88,34 +72,20 @@ function findFixtures(dir: string): Fixture[] {
       const subdir = join(dir, entry.name);
       fixtures.push(...findFixtures(subdir));
     } else if (entry.name === "code.js") {
-      const outputPath = join(dir, `output.js`);
-      fixtures.push({
-        input: join(dir, entry.name),
-        output: outputPath,
-      });
+      fixtures.push({ input: join(dir, entry.name), output: join(dir, "output.js") });
     } else if (entry.name === "code.jsx") {
-      const outputPath = join(dir, `output.jsx`);
-      fixtures.push({
-        input: join(dir, entry.name),
-        output: outputPath,
-      });
+      fixtures.push({ input: join(dir, entry.name), output: join(dir, "output.jsx") });
     }
   }
   return fixtures;
 }
 
-/**
- * Converts a flat list of fixtures into a nested structure based on subfolders.
- */
 function buildTreeFromFixtures(dir: string, fixtures: Fixture[]): TreeNode {
   const root: TreeNode = {};
   for (const { input, output } of fixtures) {
-    // Convert to relative path so it doesn't show the full absolute path
     const relPath = relative(dir, input);
-    // e.g. "variable-declaration/array-pattern/code.js"
-    //      => ["variable-declaration","array-pattern","code.js"]
     const parts = relPath.split("/");
-    parts.pop(); // remove "code.js" or "code.jsx"
+    parts.pop();
 
     let currentNode: TreeNode = root;
     for (const part of parts) {
@@ -133,19 +103,11 @@ function buildTreeFromFixtures(dir: string, fixtures: Fixture[]): TreeNode {
   return root;
 }
 
-/**
- * Returns the parent folder's name for use in the test label.
- * e.g. "variable-declaration/array-pattern/code.js" => "array-pattern"
- */
 function getFolderName(path: string): string {
   const parts = path.split("/");
   return parts[parts.length - 2] || "unknown";
 }
 
-/**
- * Actually compiles the input, reads/creates expected output, formats both,
- * and does the jest `expect(...)`.
- */
 const oxfmtBin = resolve(
   dirname(fileURLToPath(import.meta.url)),
   "..",
@@ -154,35 +116,38 @@ const oxfmtBin = resolve(
   "oxfmt",
 );
 
-function formatWithOxfmt(code: string): string {
-  return execFileSync(oxfmtBin, ["--stdin-filepath", "file.js"], {
-    input: code,
-    encoding: "utf-8",
-  }).trim();
-}
+/**
+ * Pre-compiled and formatted results, keyed by fixture input path.
+ * Populated in beforeAll, consumed by individual tests.
+ */
+const formattedResults = new Map<string, string>();
+let tmpDir: string | undefined;
 
-function runCompileTest(input: string, output: string, options: CompilerOptions) {
-  const actualCode = compile(input, options);
+function compileAndBatchFormat(
+  allFixtures: Fixture[],
+  rootDir: string,
+  baseOptions: CompilerOptions,
+) {
+  tmpDir = mkdtempSync(join(tmpdir(), "compiler-test-"));
 
-  const formattedActual = formatWithOxfmt(actualCode);
-
-  const outputExists = existsSync(output);
-  if (!outputExists && expect.getState().snapshotState._updateSnapshot == "new") {
-    writeFileSync(output, formattedActual + "\n", "utf8");
-    console.info(`[INFO] Created missing fixture file at: ${output}`);
+  // Phase 1: Compile all fixtures and write raw output to temp files.
+  for (const { input } of allFixtures) {
+    const options = loadOptionsChain(rootDir, dirname(input), baseOptions);
+    const compiled = compile(input, options);
+    const tmpFile = join(tmpDir, encodeURIComponent(input) + ".js");
+    writeFileSync(tmpFile, compiled);
   }
 
-  const expectedCode = readFileSync(output, "utf-8").trim();
-  const formattedExpected = formatWithOxfmt(expectedCode);
+  // Phase 2: Single oxfmt call formats all files at once.
+  execFileSync(oxfmtBin, ["--write", tmpDir]);
 
-  expect(formattedActual).toBe(formattedExpected);
+  // Phase 3: Read back formatted results.
+  for (const { input } of allFixtures) {
+    const tmpFile = join(tmpDir, encodeURIComponent(input) + ".js");
+    formattedResults.set(input, readFileSync(tmpFile, "utf-8").trim());
+  }
 }
 
-/**
- * Recursively creates describe/test blocks from the tree.
- * - If a folder has exactly one fixture and no subfolders, it becomes a single test line.
- * - If a folder has multiple fixtures or subfolders, it becomes a describe(...).
- */
 function addTestSuites(
   tree: TreeNode,
   baseOptions: CompilerOptions,
@@ -193,42 +158,42 @@ function addTestSuites(
   const subDirs = Object.keys(tree).filter((k) => k !== "__fixtures");
   const fixtures = tree.__fixtures ?? [];
 
-  // If exactly one fixture and no subdirectories, single test
-  if (subDirs.length === 0 && fixtures.length === 1) {
-    const { input, output } = fixtures[0];
-    test(nodeName ?? getFolderName(input), () => {
-      // Load merged options for this fixture's directory
-      const localOptions = loadOptionsChain(rootDir!, dirname(input), baseOptions);
-      runCompileTest(input, output, localOptions);
+  const addFixtureTest = ({ input, output }: Fixture, name: string) => {
+    test(name, () => {
+      const formattedActual = formattedResults.get(input);
+      if (formattedActual === undefined) {
+        throw new Error(`No compiled result for ${input}`);
+      }
+
+      if (!existsSync(output) && process.env.UPDATE_FIXTURES) {
+        writeFileSync(output, formattedActual + "\n", "utf8");
+        console.info(`[INFO] Created missing fixture file at: ${output}`);
+      }
+
+      const expectedCode = readFileSync(output, "utf-8").trim();
+      expect(formattedActual).toBe(expectedCode);
     });
+  };
+
+  if (subDirs.length === 0 && fixtures.length === 1) {
+    addFixtureTest(fixtures[0], nodeName ?? getFolderName(fixtures[0].input));
     return;
   }
 
-  // Otherwise, create a describe block if we have a nodeName
   if (nodeName) {
     describe(nodeName, () => {
-      // Add tests for each fixture in this directory
-      for (const { input, output } of fixtures) {
-        test(getFolderName(input), () => {
-          const localOptions = loadOptionsChain(rootDir!, dirname(input), baseOptions);
-          runCompileTest(input, output, localOptions);
-        });
+      for (const fixture of fixtures) {
+        addFixtureTest(fixture, getFolderName(fixture.input));
       }
-      // Recurse for subdirectories
       for (const subDir of subDirs) {
         const nextDir = join(currentDir ?? "", subDir);
         addTestSuites(tree[subDir] as TreeNode, baseOptions, subDir, rootDir, nextDir);
       }
     });
   } else {
-    // Top-level root: no named describe
-    for (const { input, output } of fixtures) {
-      test(getFolderName(input), async () => {
-        const localOptions = loadOptionsChain(rootDir!, dirname(input), baseOptions);
-        runCompileTest(input, output, localOptions);
-      });
+    for (const fixture of fixtures) {
+      addFixtureTest(fixture, getFolderName(fixture.input));
     }
-    // Recurse on subdirectories
     for (const subDir of subDirs) {
       const nextDir = join(currentDir ?? "", subDir);
       addTestSuites(tree[subDir] as TreeNode, baseOptions, subDir, rootDir, nextDir);
@@ -237,17 +202,15 @@ function addTestSuites(
 }
 
 /**
- * MAIN EXPORTED FUNCTION:
- *
- * Call this in your Jest test file with a directory (e.g. `__dirname`):
+ * Call this in your test file with a directory:
  *   testFixtures(__dirname, { enableConstantPropagationPass: true });
  *
  * It will:
  *   1) Find all fixtures under the directory (look for `code.js` or `code.jsx`)
  *   2) Build a nested tree structure
- *   3) Dynamically add describe/test blocks for each fixture/subdirectory
- *   4) Merge any `options.json` from outer → inner directories for each test
- *   5) If `output.js`/`output.jsx` is missing and `JEST_UPDATE_SNAPSHOTS` is true,
+ *   3) In beforeAll: compile all fixtures and batch-format with a single oxfmt call
+ *   4) Dynamically add describe/test blocks that compare pre-formatted results
+ *   5) If `output.js`/`output.jsx` is missing and `UPDATE_FIXTURES` is set,
  *      create it using the compiled code's actual output.
  */
 export function testFixtures(
@@ -256,5 +219,16 @@ export function testFixtures(
 ) {
   const allFixtures = findFixtures(directory);
   const tree = buildTreeFromFixtures(directory, allFixtures);
+
+  beforeAll(() => {
+    compileAndBatchFormat(allFixtures, directory, baseOptions);
+  });
+
+  afterAll(() => {
+    if (tmpDir) {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
   addTestSuites(tree, baseOptions, undefined, directory, directory);
 }
