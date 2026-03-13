@@ -121,6 +121,7 @@ const oxfmtBin = resolve(
  * Populated in beforeAll, consumed by individual tests.
  */
 const formattedResults = new Map<string, string>();
+const compileErrors = new Map<string, string>();
 let tmpDir: string | undefined;
 
 function compileAndBatchFormat(
@@ -132,17 +133,22 @@ function compileAndBatchFormat(
 
   // Phase 1: Compile all fixtures and write raw output to temp files.
   for (const { input } of allFixtures) {
-    const options = loadOptionsChain(rootDir, dirname(input), baseOptions);
-    const compiled = compile(input, options);
-    const tmpFile = join(tmpDir, encodeURIComponent(input) + ".js");
-    writeFileSync(tmpFile, compiled);
+    try {
+      const options = loadOptionsChain(rootDir, dirname(input), baseOptions);
+      const compiled = compile(input, options);
+      const tmpFile = join(tmpDir, encodeURIComponent(input) + ".js");
+      writeFileSync(tmpFile, compiled);
+    } catch (e) {
+      compileErrors.set(input, e instanceof Error ? e.message : String(e));
+    }
   }
 
   // Phase 2: Single oxfmt call formats all files at once.
   execFileSync(oxfmtBin, ["--write", tmpDir]);
 
-  // Phase 3: Read back formatted results.
+  // Phase 3: Read back formatted results (skip fixtures that failed compilation).
   for (const { input } of allFixtures) {
+    if (compileErrors.has(input)) continue;
     const tmpFile = join(tmpDir, encodeURIComponent(input) + ".js");
     formattedResults.set(input, readFileSync(tmpFile, "utf-8").trim());
   }
@@ -160,6 +166,10 @@ function addTestSuites(
 
   const addFixtureTest = ({ input, output }: Fixture, name: string) => {
     test(name, () => {
+      const error = compileErrors.get(input);
+      if (error !== undefined) {
+        throw new Error(`Compilation failed for ${input}: ${error}`);
+      }
       const formattedActual = formattedResults.get(input);
       if (formattedActual === undefined) {
         throw new Error(`No compiled result for ${input}`);
