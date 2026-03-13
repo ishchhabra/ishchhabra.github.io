@@ -5,9 +5,11 @@ import { Place } from "../../../ir";
 import { buildUnsupportedNode } from "../buildUnsupportedNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
+import { buildJSXAttribute } from "./buildJSXAttribute";
 import { buildJSXClosingElement } from "./buildJSXClosingElement";
 import { buildJSXClosingFragment } from "./buildJSXClosingFragment";
 import { buildJSXElement } from "./buildJSXElement";
+import { buildJSXExpressionContainer } from "./buildJSXExpressionContainer";
 import { buildJSXFragment } from "./buildJSXFragment";
 import { buildJSXIdentifier } from "./buildJSXIdentifier";
 import { buildJSXMemberExpression } from "./buildJSXMemberExpression";
@@ -49,6 +51,12 @@ export function buildJSX(
     case "JSXNamespacedName":
       nodePath.assertJSXNamespacedName();
       return buildJSXNamespacedName(nodePath, functionBuilder, environment);
+    case "JSXAttribute":
+      nodePath.assertJSXAttribute();
+      return buildJSXAttribute(nodePath, functionBuilder, moduleBuilder, environment);
+    case "JSXExpressionContainer":
+      nodePath.assertJSXExpressionContainer();
+      return buildJSXExpressionContainer(nodePath, functionBuilder, moduleBuilder, environment);
     default:
       return buildUnsupportedNode(nodePath, functionBuilder, environment);
   }

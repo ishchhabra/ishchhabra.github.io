@@ -1,5 +1,4 @@
 import * as t from "@babel/types";
-import { assertJSXChild } from "../../../../babel-utils";
 import { JSXFragmentInstruction } from "../../../../ir";
 import { CodeGenerator } from "../../../CodeGenerator";
 
@@ -15,8 +14,17 @@ export function generateJSXFragmentInstruction(
 
   const children = instruction.children.map((child) => {
     const node = generator.places.get(child.id);
-    assertJSXChild(node);
-    return node;
+    if (
+      t.isJSXText(node) ||
+      t.isJSXExpressionContainer(node) ||
+      t.isJSXSpreadChild(node) ||
+      t.isJSXElement(node) ||
+      t.isJSXFragment(node)
+    ) {
+      return node;
+    }
+    t.assertExpression(node);
+    return t.jsxExpressionContainer(node);
   });
 
   const node = t.jsxFragment(openingFragment, closingFragment, children);
