@@ -247,11 +247,7 @@ function buildIdentifierAssignmentLeft(
 
   const identifier = environment.createIdentifier(declarationId);
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    BindingIdentifierInstruction,
-    place,
-    nodePath,
-  );
+  const instruction = environment.createInstruction(BindingIdentifierInstruction, place, nodePath);
   functionBuilder.addInstruction(instruction);
   environment.registerDeclaration(declarationId, functionBuilder.currentBlock.id, place.id);
   return { place, instructions: [] };
@@ -266,11 +262,7 @@ function buildMemberExpressionAssignmentLeft(
 ): { place: Place; instructions: BaseInstruction[] } {
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    BindingIdentifierInstruction,
-    place,
-    nodePath,
-  );
+  const instruction = environment.createInstruction(BindingIdentifierInstruction, place, nodePath);
   functionBuilder.addInstruction(instruction);
   environment.registerDeclaration(
     identifier.declarationId,

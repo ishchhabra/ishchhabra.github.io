@@ -1,14 +1,7 @@
 // testFixtures.ts
 
 import { execFileSync } from "child_process";
-import {
-  existsSync,
-  mkdtempSync,
-  readdirSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { merge } from "lodash-es";
 import { tmpdir } from "os";
 import { dirname, join, relative, resolve } from "path";

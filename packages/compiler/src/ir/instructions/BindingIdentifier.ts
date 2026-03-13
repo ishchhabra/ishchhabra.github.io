@@ -27,11 +27,7 @@ export class BindingIdentifierInstruction extends BaseInstruction {
   public clone(environment: Environment): BindingIdentifierInstruction {
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    return environment.createInstruction(
-      BindingIdentifierInstruction,
-      place,
-      this.nodePath,
-    );
+    return environment.createInstruction(BindingIdentifierInstruction, place, this.nodePath);
   }
 
   rewrite(): BaseInstruction {

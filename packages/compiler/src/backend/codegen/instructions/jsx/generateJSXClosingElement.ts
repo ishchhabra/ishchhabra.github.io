@@ -7,7 +7,12 @@ export function generateJSXClosingElementInstruction(
   generator: CodeGenerator,
 ): t.JSXClosingElement {
   const tagName = generator.places.get(instruction.tagPlace.id);
-  if (!tagName || (!t.isJSXIdentifier(tagName) && !t.isJSXMemberExpression(tagName) && !t.isJSXNamespacedName(tagName))) {
+  if (
+    !tagName ||
+    (!t.isJSXIdentifier(tagName) &&
+      !t.isJSXMemberExpression(tagName) &&
+      !t.isJSXNamespacedName(tagName))
+  ) {
     throw new Error(`Expected JSX tag name for JSXClosingElement, got ${tagName?.type}`);
   }
 

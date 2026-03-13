@@ -11,7 +11,9 @@ export function generateJSXMemberExpressionInstruction(
     throw new Error(`Place ${instruction.object.id} not found for JSX member expression object`);
   }
   if (!t.isJSXIdentifier(object) && !t.isJSXMemberExpression(object)) {
-    throw new Error(`Expected JSXIdentifier or JSXMemberExpression for JSX member expression object`);
+    throw new Error(
+      `Expected JSXIdentifier or JSXMemberExpression for JSX member expression object`,
+    );
   }
 
   const node = t.jsxMemberExpression(object, t.jsxIdentifier(instruction.property));

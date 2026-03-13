@@ -104,11 +104,7 @@ function buildTemporaryIdentifier(
   const bindingIdentifier = environment.createIdentifier();
   const bindingPlace = environment.createPlace(bindingIdentifier);
   functionBuilder.addInstruction(
-    environment.createInstruction(
-      BindingIdentifierInstruction,
-      bindingPlace,
-      nodePath,
-    ),
+    environment.createInstruction(BindingIdentifierInstruction, bindingPlace, nodePath),
   );
   functionBuilder.registerDeclarationName(
     bindingIdentifier.name,

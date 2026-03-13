@@ -45,9 +45,7 @@ export class LateOptimizer {
     }
 
     if (this.options.enableLateDeadCodeEliminationPass) {
-      const lateDeadCodeEliminationResult = new LateDeadCodeEliminationPass(
-        this.functionIR,
-      ).run();
+      const lateDeadCodeEliminationResult = new LateDeadCodeEliminationPass(this.functionIR).run();
       blocks = lateDeadCodeEliminationResult.blocks;
     }
 

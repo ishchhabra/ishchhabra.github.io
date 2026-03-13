@@ -1,7 +1,12 @@
 import { NodePath } from "@babel/traverse";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
-import { createInstructionId, ForOfTerminal, JumpTerminal, StoreLocalInstruction } from "../../../ir";
+import {
+  createInstructionId,
+  ForOfTerminal,
+  JumpTerminal,
+  StoreLocalInstruction,
+} from "../../../ir";
 import { buildBindings } from "../bindings/buildBindings";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -61,10 +66,7 @@ export function buildForOfStatement(
   functionBuilder.blocks.set(headerBlock.id, headerBlock);
 
   // Jump from the current (pre-loop) block to the header.
-  currentBlock.terminal = new JumpTerminal(
-    createInstructionId(environment),
-    headerBlock.id,
-  );
+  currentBlock.terminal = new JumpTerminal(createInstructionId(environment), headerBlock.id);
 
   // Create the body block.
   const bodyBlock = environment.createBlock();
@@ -82,10 +84,7 @@ export function buildForOfStatement(
   // Body block terminus jumps back to the header block (back edge) so that
   // SSA analysis can create loop phis for variables modified inside the body.
   if (bodyBlockTerminus.terminal === undefined) {
-    bodyBlockTerminus.terminal = new JumpTerminal(
-      createInstructionId(environment),
-      headerBlock.id,
-    );
+    bodyBlockTerminus.terminal = new JumpTerminal(createInstructionId(environment), headerBlock.id);
   }
 
   // Set the ForOfTerminal on the header block.

@@ -56,11 +56,7 @@ export function buildBindingIdentifier(
 
   place.identifier.name = name;
 
-  const instruction = environment.createInstruction(
-    BindingIdentifierInstruction,
-    place,
-    nodePath,
-  );
+  const instruction = environment.createInstruction(BindingIdentifierInstruction, place, nodePath);
   builder.addInstruction(instruction);
 
   return place;

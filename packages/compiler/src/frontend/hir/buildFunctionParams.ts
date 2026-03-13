@@ -87,11 +87,7 @@ function buildFunctionIdentifierParam(
   const name = paramPath.node.name;
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    BindingIdentifierInstruction,
-    place,
-    paramPath,
-  );
+  const instruction = environment.createInstruction(BindingIdentifierInstruction, place, paramPath);
   functionBuilder.header.push(instruction);
 
   const declarationId = identifier.declarationId;
