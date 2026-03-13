@@ -8,6 +8,7 @@ import {
   Place,
   ReturnTerminal,
   StoreLocalInstruction,
+  SwitchTerminal,
   ThrowTerminal,
 } from "../../ir";
 import { BaseTerminal } from "../../ir/base/Terminal";
@@ -209,6 +210,17 @@ export class SSABuilder {
 
     if (terminal instanceof ThrowTerminal && values.has(terminal.value.identifier)) {
       return new ThrowTerminal(terminal.id, values.get(terminal.value.identifier)!);
+    }
+
+    if (terminal instanceof SwitchTerminal) {
+      const discriminant = values.get(terminal.discriminant.identifier) ?? terminal.discriminant;
+      const cases = terminal.cases.map((c) => ({
+        test: c.test !== null ? (values.get(c.test.identifier) ?? c.test) : null,
+        block: c.block,
+      }));
+      if (discriminant !== terminal.discriminant || cases.some((c, i) => c.test !== terminal.cases[i].test)) {
+        return new SwitchTerminal(terminal.id, discriminant, cases, terminal.fallthrough);
+      }
     }
 
     return terminal;

@@ -5,6 +5,7 @@ import {
   BaseInstruction,
   BasicBlock,
   BlockId,
+  type ControlContext,
   DeclarationId,
   createInstructionId,
   ReturnTerminal,
@@ -19,6 +20,7 @@ export class FunctionIRBuilder {
   public currentBlock: BasicBlock;
   public readonly blocks: Map<BlockId, BasicBlock> = new Map();
   public readonly header: BaseInstruction[] = [];
+  public readonly controlStack: ControlContext[] = [];
 
   constructor(
     public readonly paramPaths: NodePath<t.Identifier | t.RestElement | t.Pattern>[],
@@ -85,5 +87,9 @@ export class FunctionIRBuilder {
 
   public getDeclarationId(name: string, nodePath: NodePath<t.Node>): DeclarationId | undefined {
     return nodePath.scope.getData(name);
+  }
+
+  public getBreakTarget(): BlockId | undefined {
+    return this.controlStack[this.controlStack.length - 1]?.breakTarget;
   }
 }

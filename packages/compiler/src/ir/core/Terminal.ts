@@ -81,6 +81,27 @@ export class ThrowTerminal extends BaseTerminal {
   }
 }
 
+export class SwitchTerminal extends BaseTerminal {
+  constructor(
+    id: InstructionId,
+    public readonly discriminant: Place,
+    public readonly cases: Array<{ test: Place | null; block: BlockId }>,
+    public readonly fallthrough: BlockId,
+  ) {
+    super(id);
+  }
+
+  getReadPlaces(): Place[] {
+    const places = [this.discriminant];
+    for (const c of this.cases) {
+      if (c.test !== null) {
+        places.push(c.test);
+      }
+    }
+    return places;
+  }
+}
+
 export class TryTerminal extends BaseTerminal {
   constructor(
     id: InstructionId,

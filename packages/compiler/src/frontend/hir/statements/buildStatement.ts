@@ -5,6 +5,7 @@ import { Place } from "../../../ir";
 import { buildUnsupportedNode } from "../buildUnsupportedNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
+import { buildBreakStatement } from "./buildBreakStatement";
 import { buildBlockStatement } from "./buildBlockStatement";
 import { buildExportDefaultDeclaration } from "./buildExportDefaultDeclaration";
 import { buildExportNamedDeclaration } from "./buildExportNamedDeclaration";
@@ -15,6 +16,7 @@ import { buildFunctionDeclaration } from "./buildFunctionDeclaration";
 import { buildIfStatement } from "./buildIfStatement";
 import { buildImportDeclaration } from "./buildImportDeclaration";
 import { buildReturnStatement } from "./buildReturnStatement";
+import { buildSwitchStatement } from "./buildSwitchStatement";
 import { buildThrowStatement } from "./buildThrowStatement";
 import { buildTryStatement } from "./buildTryStatement";
 import { buildVariableDeclaration } from "./buildVariableDeclaration";
@@ -27,6 +29,9 @@ export function buildStatement(
   environment: Environment,
 ): Place | Place[] | undefined {
   switch (nodePath.type) {
+    case "BreakStatement":
+      nodePath.assertBreakStatement();
+      return buildBreakStatement(nodePath, functionBuilder, environment);
     case "BlockStatement":
       nodePath.assertBlockStatement();
       return buildBlockStatement(nodePath, functionBuilder, moduleBuilder, environment);
@@ -66,6 +71,9 @@ export function buildStatement(
     case "ThrowStatement":
       nodePath.assertThrowStatement();
       return buildThrowStatement(nodePath, functionBuilder, moduleBuilder, environment);
+    case "SwitchStatement":
+      nodePath.assertSwitchStatement();
+      return buildSwitchStatement(nodePath, functionBuilder, moduleBuilder, environment);
     case "TryStatement":
       nodePath.assertTryStatement();
       return buildTryStatement(nodePath, functionBuilder, moduleBuilder, environment);

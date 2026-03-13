@@ -9,5 +9,9 @@ export function generateJumpTerminal(
   functionIR: FunctionIR,
   generator: CodeGenerator,
 ): Array<t.Statement> {
+  if (generator.isBreakTarget(terminal.target)) {
+    return [t.breakStatement()];
+  }
+
   return generateBlock(terminal.target, functionIR, generator);
 }

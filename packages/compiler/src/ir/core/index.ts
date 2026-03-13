@@ -1,4 +1,5 @@
 export { BasicBlock, makeBlockId, type BlockId } from "./Block";
+export type { ControlContext } from "./ControlContext";
 export {
   Identifier,
   makeDeclarationId,
@@ -12,6 +13,7 @@ export {
   ForOfTerminal,
   JumpTerminal,
   ReturnTerminal,
+  SwitchTerminal,
   ThrowTerminal,
   TryTerminal,
 } from "./Terminal";

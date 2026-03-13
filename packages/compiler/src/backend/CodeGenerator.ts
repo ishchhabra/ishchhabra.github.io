@@ -1,7 +1,7 @@
 import _generate from "@babel/generator";
 import * as t from "@babel/types";
 import { ProjectUnit } from "../frontend/ProjectBuilder";
-import { BindingIdentifierInstruction, BlockId, PlaceId } from "../ir";
+import { BindingIdentifierInstruction, BlockId, type ControlContext, PlaceId } from "../ir";
 import { FunctionIR, makeFunctionIRId } from "../ir/core/FunctionIR";
 import { ModuleIR } from "../ir/core/ModuleIR";
 import { generateFunction } from "./codegen/generateFunction";
@@ -19,6 +19,11 @@ export class CodeGenerator {
   public readonly places: Map<PlaceId, t.Node | null> = new Map();
   public readonly blockToStatements: Map<BlockId, Array<t.Statement>> = new Map();
   public generatedBlocks: Set<BlockId> = new Set();
+  public readonly controlStack: ControlContext[] = [];
+
+  public isBreakTarget(blockId: BlockId): boolean {
+    return this.controlStack.some((ctx) => ctx.breakTarget === blockId);
+  }
 
   constructor(
     public readonly path: string,
