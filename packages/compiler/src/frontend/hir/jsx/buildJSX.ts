@@ -5,8 +5,14 @@ import { Place } from "../../../ir";
 import { buildUnsupportedNode } from "../buildUnsupportedNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
+import { buildJSXClosingElement } from "./buildJSXClosingElement";
+import { buildJSXClosingFragment } from "./buildJSXClosingFragment";
 import { buildJSXElement } from "./buildJSXElement";
 import { buildJSXFragment } from "./buildJSXFragment";
+import { buildJSXIdentifier } from "./buildJSXIdentifier";
+import { buildJSXMemberExpression } from "./buildJSXMemberExpression";
+import { buildJSXNamespacedName } from "./buildJSXNamespacedName";
+import { buildJSXOpeningFragment } from "./buildJSXOpeningFragment";
 import { buildJSXText } from "./buildJSXText";
 
 export function buildJSX(
@@ -25,6 +31,24 @@ export function buildJSX(
     case "JSXText":
       nodePath.assertJSXText();
       return buildJSXText(nodePath, functionBuilder, environment);
+    case "JSXClosingElement":
+      nodePath.assertJSXClosingElement();
+      return buildJSXClosingElement(nodePath, functionBuilder, moduleBuilder, environment);
+    case "JSXOpeningFragment":
+      nodePath.assertJSXOpeningFragment();
+      return buildJSXOpeningFragment(nodePath, functionBuilder, environment);
+    case "JSXClosingFragment":
+      nodePath.assertJSXClosingFragment();
+      return buildJSXClosingFragment(nodePath, functionBuilder, environment);
+    case "JSXIdentifier":
+      nodePath.assertJSXIdentifier();
+      return buildJSXIdentifier(nodePath, functionBuilder, environment);
+    case "JSXMemberExpression":
+      nodePath.assertJSXMemberExpression();
+      return buildJSXMemberExpression(nodePath, functionBuilder, moduleBuilder, environment);
+    case "JSXNamespacedName":
+      nodePath.assertJSXNamespacedName();
+      return buildJSXNamespacedName(nodePath, functionBuilder, environment);
     default:
       return buildUnsupportedNode(nodePath, functionBuilder, environment);
   }

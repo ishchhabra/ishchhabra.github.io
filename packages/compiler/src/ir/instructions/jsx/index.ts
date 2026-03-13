@@ -1,5 +1,11 @@
 export { JSXAttributeInstruction } from "./JSXAttribute";
+export { JSXClosingElementInstruction } from "./JSXClosingElement";
+export { JSXClosingFragmentInstruction } from "./JSXClosingFragment";
 export { JSXElementInstruction } from "./JSXElement";
 export { JSXFragmentInstruction } from "./JSXFragment";
+export { JSXIdentifierInstruction } from "./JSXIdentifier";
+export { JSXMemberExpressionInstruction } from "./JSXMemberExpression";
+export { JSXNamespacedNameInstruction } from "./JSXNamespacedName";
 export { JSXOpeningElementInstruction } from "./JSXOpeningElement";
+export { JSXOpeningFragmentInstruction } from "./JSXOpeningFragment";
 export { JSXTextInstruction } from "./JSXText";

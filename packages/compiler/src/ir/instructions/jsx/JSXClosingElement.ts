@@ -5,50 +5,44 @@ import { BaseInstruction, InstructionId, JSXInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
 
 /**
- * Represents a JSX opening element in the IR.
+ * Represents a JSX closing element in the IR.
  *
  * Examples:
- * - `<div className={x}>`
- * - `<MyComponent foo="bar" />`
+ * - `</div>`
+ * - `</MyComponent>`
  */
-export class JSXOpeningElementInstruction extends JSXInstruction {
+export class JSXClosingElementInstruction extends JSXInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
     public readonly nodePath: NodePath<t.Node> | undefined,
     public readonly tagPlace: Place,
-    public readonly attributes: Place[],
-    public readonly selfClosing: boolean,
   ) {
     super(id, place, nodePath);
   }
 
-  public clone(environment: Environment): JSXOpeningElementInstruction {
+  public clone(environment: Environment): JSXClosingElementInstruction {
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
     return environment.createInstruction(
-      JSXOpeningElementInstruction,
+      JSXClosingElementInstruction,
       place,
       this.nodePath,
       this.tagPlace,
-      this.attributes,
-      this.selfClosing,
     );
   }
 
-  public rewrite(values: Map<Identifier, Place>): BaseInstruction {
-    return new JSXOpeningElementInstruction(
+  rewrite(values: Map<Identifier, Place>): BaseInstruction {
+    return new JSXClosingElementInstruction(
       this.id,
       this.place,
       this.nodePath,
       values.get(this.tagPlace.identifier) ?? this.tagPlace,
-      this.attributes.map((attr) => values.get(attr.identifier) ?? attr),
-      this.selfClosing,
     );
   }
 
-  public getReadPlaces(): Place[] {
-    return [this.tagPlace, ...this.attributes];
+  getReadPlaces(): Place[] {
+    return [this.tagPlace];
   }
 
   public get isPure(): boolean {
