@@ -50,3 +50,14 @@ export class ReturnTerminal extends BaseTerminal {
     return [this.value];
   }
 }
+
+export class ThrowTerminal extends BaseTerminal {
+  constructor(
+    id: InstructionId,
+    public readonly value: Place,
+  ) {
+    super(id);
+  }
+
+  getReadPlaces(): Place[] {
+    return [this.value];

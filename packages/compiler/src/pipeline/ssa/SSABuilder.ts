@@ -8,6 +8,7 @@ import {
   Place,
   PlaceId,
   ReturnTerminal,
+  ThrowTerminal,
 } from "../../ir";
 import { BaseTerminal } from "../../ir/base/Terminal";
 import { FunctionIR } from "../../ir/core/FunctionIR";

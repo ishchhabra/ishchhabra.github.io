@@ -7,4 +7,9 @@ export {
   type IdentifierId,
 } from "./Identifier";
 export { Place, type PlaceId } from "./Place";
-export { BranchTerminal, JumpTerminal, ReturnTerminal } from "./Terminal";
+export {
+  BranchTerminal,
+  JumpTerminal,
+  ReturnTerminal,
+  ThrowTerminal,
+} from "./Terminal";
