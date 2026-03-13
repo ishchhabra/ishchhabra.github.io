@@ -8,7 +8,9 @@ export function generateJSXSpreadAttributeInstruction(
 ): t.JSXSpreadAttribute {
   const argumentNode = generator.places.get(instruction.argument.id);
   if (!argumentNode) {
-    throw new Error(`Place not found for JSX spread attribute argument: ${instruction.argument.id}`);
+    throw new Error(
+      `Place not found for JSX spread attribute argument: ${instruction.argument.id}`,
+    );
   }
   t.assertExpression(argumentNode);
 

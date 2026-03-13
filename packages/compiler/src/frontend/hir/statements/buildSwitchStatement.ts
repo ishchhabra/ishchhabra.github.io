@@ -1,11 +1,7 @@
 import { NodePath } from "@babel/traverse";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
-import {
-  createInstructionId,
-  JumpTerminal,
-  SwitchTerminal,
-} from "../../../ir";
+import { createInstructionId, JumpTerminal, SwitchTerminal } from "../../../ir";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -20,7 +16,12 @@ export function buildSwitchStatement(
 
   // Build the discriminant expression in the current block.
   const discriminantPath = nodePath.get("discriminant");
-  const discriminantPlace = buildNode(discriminantPath, functionBuilder, moduleBuilder, environment);
+  const discriminantPlace = buildNode(
+    discriminantPath,
+    functionBuilder,
+    moduleBuilder,
+    environment,
+  );
   if (discriminantPlace === undefined || Array.isArray(discriminantPlace)) {
     throw new Error("Switch discriminant must be a single place");
   }
@@ -33,7 +34,10 @@ export function buildSwitchStatement(
   functionBuilder.controlStack.push({ kind: "switch", breakTarget: fallthroughBlock.id });
 
   const casePaths = nodePath.get("cases");
-  const cases: Array<{ test: import("../../../ir").Place | null; block: import("../../../ir").BlockId }> = [];
+  const cases: Array<{
+    test: import("../../../ir").Place | null;
+    block: import("../../../ir").BlockId;
+  }> = [];
 
   // Process cases in reverse order to handle fallthrough.
   // Each case's default terminal falls through to the next case's block.

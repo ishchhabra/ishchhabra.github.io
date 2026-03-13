@@ -52,7 +52,10 @@ export function buildTryStatement(
   }
 
   // Build the catch handler block if present.
-  let handler: { param: import("../../../ir").Place | null; block: import("../../../ir").BlockId } | null = null;
+  let handler: {
+    param: import("../../../ir").Place | null;
+    block: import("../../../ir").BlockId;
+  } | null = null;
   if (hasHandler) {
     const handlerPath = nodePath.get("handler") as NodePath<t.CatchClause>;
     const handlerBlock = environment.createBlock();

@@ -6,10 +6,7 @@ export function generateMetaPropertyInstruction(
   instruction: MetaPropertyInstruction,
   generator: CodeGenerator,
 ): t.Expression {
-  const node = t.metaProperty(
-    t.identifier(instruction.meta),
-    t.identifier(instruction.property),
-  );
+  const node = t.metaProperty(t.identifier(instruction.meta), t.identifier(instruction.property));
   generator.places.set(instruction.place.id, node);
   return node;
 }

@@ -218,7 +218,10 @@ export class SSABuilder {
         test: c.test !== null ? (values.get(c.test.identifier) ?? c.test) : null,
         block: c.block,
       }));
-      if (discriminant !== terminal.discriminant || cases.some((c, i) => c.test !== terminal.cases[i].test)) {
+      if (
+        discriminant !== terminal.discriminant ||
+        cases.some((c, i) => c.test !== terminal.cases[i].test)
+      ) {
         return new SwitchTerminal(terminal.id, discriminant, cases, terminal.fallthrough);
       }
     }
