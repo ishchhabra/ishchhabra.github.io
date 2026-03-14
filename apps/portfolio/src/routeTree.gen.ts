@@ -18,6 +18,7 @@ import { Route as WritingPnpmMonorepoRouteImport } from './routes/writing/pnpm-m
 import { Route as LabSandboxRouteImport } from './routes/lab/sandbox'
 import { Route as LabDesignOverlayRouteImport } from './routes/lab/design-overlay'
 import { Route as DebugFeedRouteImport } from './routes/debug/feed'
+import { Route as ApiSubscribeRouteImport } from './routes/api.subscribe'
 import { Route as DemosSsrThemingSimpleLocalStorageRouteImport } from './routes/demos/ssr-theming/simple-local-storage'
 import { Route as DemosSsrThemingSimpleCookieRouteImport } from './routes/demos/ssr-theming/simple-cookie'
 import { Route as ApiAuthSplatRouteImport } from './routes/api.auth.$'
@@ -71,6 +72,11 @@ const LabDesignOverlayRoute = LabDesignOverlayRouteImport.update({
 const DebugFeedRoute = DebugFeedRouteImport.update({
   id: '/debug/feed',
   path: '/debug/feed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSubscribeRoute = ApiSubscribeRouteImport.update({
+  id: '/api/subscribe',
+  path: '/api/subscribe',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemosSsrThemingSimpleLocalStorageRoute =
@@ -131,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/feed': typeof FeedRoute
   '/login': typeof LoginRoute
+  '/api/subscribe': typeof ApiSubscribeRoute
   '/debug/feed': typeof DebugFeedRoute
   '/lab/design-overlay': typeof LabDesignOverlayRoute
   '/lab/sandbox': typeof LabSandboxRoute
@@ -151,6 +158,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/feed': typeof FeedRoute
   '/login': typeof LoginRoute
+  '/api/subscribe': typeof ApiSubscribeRoute
   '/debug/feed': typeof DebugFeedRoute
   '/lab/design-overlay': typeof LabDesignOverlayRoute
   '/lab/sandbox': typeof LabSandboxRoute
@@ -170,6 +178,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/feed': typeof FeedRoute
   '/login': typeof LoginRoute
+  '/api/subscribe': typeof ApiSubscribeRoute
   '/debug/feed': typeof DebugFeedRoute
   '/lab/design-overlay': typeof LabDesignOverlayRoute
   '/lab/sandbox': typeof LabSandboxRoute
@@ -192,6 +201,7 @@ export interface FileRouteTypes {
     | '/'
     | '/feed'
     | '/login'
+    | '/api/subscribe'
     | '/debug/feed'
     | '/lab/design-overlay'
     | '/lab/sandbox'
@@ -212,6 +222,7 @@ export interface FileRouteTypes {
     | '/'
     | '/feed'
     | '/login'
+    | '/api/subscribe'
     | '/debug/feed'
     | '/lab/design-overlay'
     | '/lab/sandbox'
@@ -230,6 +241,7 @@ export interface FileRouteTypes {
     | '/'
     | '/feed'
     | '/login'
+    | '/api/subscribe'
     | '/debug/feed'
     | '/lab/design-overlay'
     | '/lab/sandbox'
@@ -251,6 +263,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   FeedRoute: typeof FeedRoute
   LoginRoute: typeof LoginRoute
+  ApiSubscribeRoute: typeof ApiSubscribeRoute
   DebugFeedRoute: typeof DebugFeedRoute
   LabDesignOverlayRoute: typeof LabDesignOverlayRoute
   LabSandboxRoute: typeof LabSandboxRoute
@@ -327,6 +340,13 @@ declare module '@tanstack/react-router' {
       path: '/debug/feed'
       fullPath: '/debug/feed'
       preLoaderRoute: typeof DebugFeedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/subscribe': {
+      id: '/api/subscribe'
+      path: '/api/subscribe'
+      fullPath: '/api/subscribe'
+      preLoaderRoute: typeof ApiSubscribeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demos/ssr-theming/simple-local-storage': {
@@ -435,6 +455,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   FeedRoute: FeedRoute,
   LoginRoute: LoginRoute,
+  ApiSubscribeRoute: ApiSubscribeRoute,
   DebugFeedRoute: DebugFeedRoute,
   LabDesignOverlayRoute: LabDesignOverlayRoute,
   LabSandboxRoute: LabSandboxRoute,

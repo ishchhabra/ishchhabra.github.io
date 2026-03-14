@@ -1,6 +1,13 @@
 /// <reference types="vite/client" />
 
-import { createRootRoute, HeadContent, Outlet, Scripts, useLocation } from "@tanstack/react-router";
+import type { QueryClient } from "@tanstack/react-query";
+import {
+  createRootRouteWithContext,
+  HeadContent,
+  Outlet,
+  Scripts,
+  useLocation,
+} from "@tanstack/react-router";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import type { ReactNode } from "react";
@@ -17,7 +24,7 @@ import {
 } from "../lib/seo";
 import { getThemeForClientNav, getThemeServerFn, ThemeProvider, useTheme } from "../lib/theme";
 
-export const Route = createRootRoute({
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   beforeLoad: async () => {
     if (typeof window === "undefined") {
       return { theme: await getThemeServerFn() };

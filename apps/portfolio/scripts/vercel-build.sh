@@ -10,6 +10,7 @@ cleanup() {
 trap cleanup EXIT
 
 pnpm exec auth migrate --yes
+pnpm db:migrate
 
 NITRO_PRESET=node-server pnpm build
 cp ".vercel/output/static/sitemap.xml" "$sitemap_tmp"
