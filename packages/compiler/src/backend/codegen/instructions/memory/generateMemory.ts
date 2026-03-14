@@ -1,11 +1,13 @@
 import * as t from "@babel/types";
 import {
   CopyInstruction,
+  LoadContextInstruction,
   LoadDynamicPropertyInstruction,
   LoadGlobalInstruction,
   LoadLocalInstruction,
   LoadPhiInstruction,
   MemoryInstruction,
+  StoreContextInstruction,
   StoreLocalInstruction,
 } from "../../../../ir";
 import { LoadStaticPropertyInstruction } from "../../../../ir/instructions/memory/LoadStaticProperty";
@@ -13,11 +15,13 @@ import { StoreDynamicPropertyInstruction } from "../../../../ir/instructions/mem
 import { StoreStaticPropertyInstruction } from "../../../../ir/instructions/memory/StoreStaticProperty";
 import { CodeGenerator } from "../../../CodeGenerator";
 import { generateCopyInstruction } from "./generateCopy";
+import { generateLoadContextInstruction } from "./generateLoadContext";
 import { generateLoadDynamicPropertyInstruction } from "./generateLoadDynamicProperty";
 import { generateLoadGlobalInstruction } from "./generateLoadGlobal";
 import { generateLoadLocalInstruction } from "./generateLoadLocal";
 import { generateLoadPhiInstruction } from "./generateLoadPhi";
 import { generateLoadStaticPropertyInstruction } from "./generateLoadStaticProperty";
+import { generateStoreContextInstruction } from "./generateStoreContext";
 import { generateStoreDynamicPropertyInstruction } from "./generateStoreDynamicProperty";
 import { generateStoreLocalInstruction } from "./generateStoreLocal";
 import { generateStoreStaticPropertyInstruction } from "./generateStoreStaticProperty";
@@ -28,6 +32,8 @@ export function generateMemoryInstruction(
 ): t.Node {
   if (instruction instanceof CopyInstruction) {
     return generateCopyInstruction(instruction, generator);
+  } else if (instruction instanceof LoadContextInstruction) {
+    return generateLoadContextInstruction(instruction, generator);
   } else if (instruction instanceof LoadGlobalInstruction) {
     return generateLoadGlobalInstruction(instruction, generator);
   } else if (instruction instanceof LoadLocalInstruction) {
@@ -38,6 +44,8 @@ export function generateMemoryInstruction(
     return generateLoadStaticPropertyInstruction(instruction, generator);
   } else if (instruction instanceof LoadDynamicPropertyInstruction) {
     return generateLoadDynamicPropertyInstruction(instruction, generator);
+  } else if (instruction instanceof StoreContextInstruction) {
+    return generateStoreContextInstruction(instruction, generator);
   } else if (instruction instanceof StoreLocalInstruction) {
     return generateStoreLocalInstruction(instruction, generator);
   } else if (instruction instanceof StoreStaticPropertyInstruction) {

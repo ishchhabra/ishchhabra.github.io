@@ -3,6 +3,7 @@ import * as t from "@babel/types";
 import { Environment } from "../../environment";
 import {
   BindingIdentifierInstruction,
+  LoadContextInstruction,
   LoadGlobalInstruction,
   LoadLocalInstruction,
   Place,
@@ -88,8 +89,11 @@ function buildReferencedIdentifier(
       throw new Error(`Unable to find the place for ${name} (${declarationId})`);
     }
 
+    const LoadClass = environment.contextDeclarationIds.has(declarationId)
+      ? LoadContextInstruction
+      : LoadLocalInstruction;
     const instruction = environment.createInstruction(
-      LoadLocalInstruction,
+      LoadClass,
       place,
       nodePath,
       declarationPlace,

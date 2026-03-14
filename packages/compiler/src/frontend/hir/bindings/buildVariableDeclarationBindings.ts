@@ -2,6 +2,7 @@ import { NodePath } from "@babel/core";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { isContextVariable } from "./isContextVariable";
 
 export function buildVariableDeclarationBindings(
   bindingsPath: NodePath<t.Node>,
@@ -64,15 +65,22 @@ function buildIdentifierBindings(
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
+  const originalName = nodePath.node.name;
   const identifier = environment.createIdentifier();
   functionBuilder.registerDeclarationName(
-    nodePath.node.name,
+    originalName,
     identifier.declarationId,
     bindingsPath,
   );
 
+  // Mark context variables before renaming so SSA can skip them.
+  const binding = bindingsPath.scope.getBinding(originalName);
+  if (binding && isContextVariable(binding, bindingsPath)) {
+    environment.contextDeclarationIds.add(identifier.declarationId);
+  }
+
   // Rename the variable name in the scope to the temporary place.
-  bindingsPath.scope.rename(nodePath.node.name, identifier.name);
+  bindingsPath.scope.rename(originalName, identifier.name);
   functionBuilder.registerDeclarationName(identifier.name, identifier.declarationId, bindingsPath);
 
   const place = environment.createPlace(identifier);

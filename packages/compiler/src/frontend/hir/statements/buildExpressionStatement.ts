@@ -2,7 +2,12 @@ import { NodePath } from "@babel/core";
 import * as t from "@babel/types";
 import { castArray } from "lodash-es";
 import { Environment } from "../../../environment";
-import { ExpressionStatementInstruction, Place, StoreLocalInstruction } from "../../../ir";
+import {
+  ExpressionStatementInstruction,
+  Place,
+  StoreContextInstruction,
+  StoreLocalInstruction,
+} from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildNode } from "../buildNode";
@@ -23,7 +28,10 @@ export function buildExpressionStatement(
       );
       // For assignments, since we convert them to a memory instruction,
       // we do not need to emit an expression statement instruction.
-      if (expressionInstruction instanceof StoreLocalInstruction) {
+      if (
+        expressionInstruction instanceof StoreLocalInstruction ||
+        expressionInstruction instanceof StoreContextInstruction
+      ) {
         return undefined;
       }
 

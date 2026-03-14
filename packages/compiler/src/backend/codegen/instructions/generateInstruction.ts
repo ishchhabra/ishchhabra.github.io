@@ -13,6 +13,7 @@ import {
   PatternInstruction,
   RestElementInstruction,
   SpreadElementInstruction,
+  StoreContextInstruction,
   StoreLocalInstruction,
   UnsupportedNodeInstruction,
   ValueInstruction,
@@ -58,7 +59,11 @@ export function generateInstruction(
     const statement = generateMemoryInstruction(instruction, generator);
     // TODO: Refactor HIRBuilder to include a property indicating whether
     // the place is temporary or not.
-    if (instruction instanceof StoreLocalInstruction && instruction.emit) {
+    if (
+      (instruction instanceof StoreLocalInstruction ||
+        instruction instanceof StoreContextInstruction) &&
+      instruction.emit
+    ) {
       return [statement as t.Statement];
     }
 

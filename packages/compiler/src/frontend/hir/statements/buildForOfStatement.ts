@@ -5,6 +5,7 @@ import {
   createInstructionId,
   ForOfTerminal,
   JumpTerminal,
+  StoreContextInstruction,
   StoreLocalInstruction,
 } from "../../../ir";
 import { buildBindings } from "../bindings/buildBindings";
@@ -48,7 +49,10 @@ export function buildForOfStatement(
 
     // Mark the StoreLocal as non-emitting — the for-of construct handles the declaration.
     const storeLocalInstruction = environment.placeToInstruction.get(leftPlace.id);
-    if (storeLocalInstruction instanceof StoreLocalInstruction) {
+    if (
+      storeLocalInstruction instanceof StoreLocalInstruction ||
+      storeLocalInstruction instanceof StoreContextInstruction
+    ) {
       storeLocalInstruction.emit = false;
     }
   } else {

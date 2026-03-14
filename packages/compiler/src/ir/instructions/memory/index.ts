@@ -1,7 +1,9 @@
 export { CopyInstruction } from "./CopyInstruction";
+export { LoadContextInstruction } from "./LoadContext";
 export { LoadDynamicPropertyInstruction } from "./LoadDynamicProperty";
 export { LoadGlobalInstruction } from "./LoadGlobal";
 export { LoadLocalInstruction } from "./LoadLocal";
 export { LoadPhiInstruction } from "./LoadPhi";
 export { LoadStaticPropertyInstruction } from "./LoadStaticProperty";
+export { StoreContextInstruction } from "./StoreContext";
 export { StoreLocalInstruction } from "./StoreLocal";

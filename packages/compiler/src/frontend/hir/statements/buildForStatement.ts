@@ -5,6 +5,7 @@ import {
   BranchTerminal,
   ExpressionStatementInstruction,
   JumpTerminal,
+  StoreContextInstruction,
   StoreLocalInstruction,
   makeInstructionId,
 } from "../../../ir";
@@ -126,7 +127,10 @@ function buildExpressionAsStatement(
   const expressionInstruction = functionBuilder.environment.placeToInstruction.get(
     expressionPlace.id,
   );
-  if (expressionInstruction instanceof StoreLocalInstruction) {
+  if (
+    expressionInstruction instanceof StoreLocalInstruction ||
+    expressionInstruction instanceof StoreContextInstruction
+  ) {
     return expressionPlace;
   }
 

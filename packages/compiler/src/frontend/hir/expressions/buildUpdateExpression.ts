@@ -4,6 +4,8 @@ import { Environment } from "../../../environment";
 import {
   BindingIdentifierInstruction,
   LoadLocalInstruction,
+  Place,
+  StoreContextInstruction,
   StoreLocalInstruction,
 } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -75,8 +77,13 @@ export function buildUpdateExpression(
     );
   }
 
-  const lvalIdentifier = environment.createIdentifier(declarationId);
-  const lvalPlace = environment.createPlace(lvalIdentifier);
+  let lvalPlace: Place;
+  if (environment.contextDeclarationIds.has(declarationId)) {
+    lvalPlace = originalPlace;
+  } else {
+    const lvalIdentifier = environment.createIdentifier(declarationId);
+    lvalPlace = environment.createPlace(lvalIdentifier);
+  }
 
   const rightLiteral = t.numericLiteral(1);
   const isIncrement = nodePath.node.operator === "++";
@@ -99,8 +106,11 @@ export function buildUpdateExpression(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
+  const StoreClass = environment.contextDeclarationIds.has(declarationId)
+    ? StoreContextInstruction
+    : StoreLocalInstruction;
   const instruction = environment.createInstruction(
-    StoreLocalInstruction,
+    StoreClass,
     place,
     nodePath,
     lvalPlace,

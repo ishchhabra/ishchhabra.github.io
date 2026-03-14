@@ -45,6 +45,12 @@ export class SSABuilder {
     const functionBlockIds = new Set(this.functionIR.blocks.keys());
 
     for (const [declarationId, placeIds] of this.moduleIR.environment.declToPlaces) {
+      // Context variables (mutable variables captured across closures) are
+      // excluded from SSA — they keep a single shared binding.
+      if (this.moduleIR.environment.contextDeclarationIds.has(declarationId)) {
+        continue;
+      }
+
       // Only consider definitions in blocks belonging to this function,
       // since declToPlaces is shared across all functions in the module.
       const definitionBlocks = placeIds

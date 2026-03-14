@@ -8,6 +8,7 @@ import {
   ObjectPropertyInstruction,
   Place,
   RestElementInstruction,
+  StoreContextInstruction,
   StoreLocalInstruction,
 } from "../../../ir";
 import { AssignmentPatternInstruction } from "../../../ir/instructions/pattern/AssignmentPattern";
@@ -49,15 +50,18 @@ export function buildVariableDeclaration(
       throw new Error("Value place must be a single place");
     }
 
+    const isContext = lvalIdentifiers.some((p) =>
+      environment.contextDeclarationIds.has(p.identifier.declarationId),
+    );
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
     const instruction = environment.createInstruction(
-      StoreLocalInstruction,
+      isContext ? StoreContextInstruction : StoreLocalInstruction,
       place,
       nodePath,
       lvalPlace,
       valuePlace,
-      "const",
+      isContext ? "let" : "const",
     );
     functionBuilder.addInstruction(instruction);
     lvalIdentifiers.forEach((lvalIdentifier) => {

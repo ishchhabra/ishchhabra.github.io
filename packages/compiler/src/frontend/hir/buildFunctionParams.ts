@@ -10,6 +10,7 @@ import {
 } from "../../ir";
 import { AssignmentPatternInstruction } from "../../ir/instructions/pattern/AssignmentPattern";
 import { ObjectPatternInstruction } from "../../ir/instructions/pattern/ObjectPattern";
+import { isContextVariable } from "./bindings/isContextVariable";
 import { buildNode } from "./buildNode";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
@@ -91,6 +92,13 @@ function buildFunctionIdentifierParam(
   functionBuilder.header.push(instruction);
 
   const declarationId = identifier.declarationId;
+
+  // Mark context variables before renaming so SSA can skip them.
+  const binding = bodyPath.scope.getBinding(name);
+  if (binding && isContextVariable(binding, bodyPath)) {
+    environment.contextDeclarationIds.add(declarationId);
+  }
+
   functionBuilder.registerDeclarationName(name, declarationId, bodyPath);
   bodyPath.scope.rename(name, identifier.name);
   functionBuilder.registerDeclarationName(identifier.name, declarationId, bodyPath);

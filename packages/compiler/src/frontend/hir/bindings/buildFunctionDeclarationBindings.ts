@@ -3,6 +3,7 @@ import * as t from "@babel/types";
 import { getFunctionName } from "../../../babel-utils";
 import { Environment } from "../../../environment";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { isContextVariable } from "./isContextVariable";
 
 export function buildFunctionDeclarationBindings(
   bindingsPath: NodePath<t.Node>,
@@ -29,6 +30,12 @@ export function buildFunctionDeclarationBindings(
     identifier.declarationId,
     bindingsPath,
   );
+
+  // Mark context variables before renaming so SSA can skip them.
+  const binding = bindingsPath.scope.getBinding(functionName.node.name);
+  if (binding && isContextVariable(binding, bindingsPath)) {
+    environment.contextDeclarationIds.add(identifier.declarationId);
+  }
 
   // Rename the variable name in the scope to the temporary place.
   bindingsPath.scope.rename(functionName.node.name, identifier.name);
