@@ -23,13 +23,17 @@ export function buildFunctionExpression(
 
   const paramPaths = nodePath.get("params");
   const bodyPath = nodePath.get("body");
-  const functionIR = new FunctionIRBuilder(
+  const functionIRBuilder = new FunctionIRBuilder(
     paramPaths,
     bodyPath,
     functionBuilder.environment,
     moduleBuilder,
-  ).build();
+  );
+  const functionIR = functionIRBuilder.build();
 
+  functionBuilder.propagateCapturesFrom(functionIRBuilder);
+
+  const capturedPlaces = [...functionIRBuilder.captures.values()];
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(
@@ -40,6 +44,7 @@ export function buildFunctionExpression(
     functionIR,
     nodePath.node.generator,
     nodePath.node.async,
+    capturedPlaces,
   );
   functionBuilder.addInstruction(instruction);
   return place;

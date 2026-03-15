@@ -89,6 +89,12 @@ function buildReferencedIdentifier(
       throw new Error(`Unable to find the place for ${name} (${declarationId})`);
     }
 
+    // If this variable was declared in an enclosing scope (not in the
+    // current function), record it as a closure capture.
+    if (!builder.isOwnDeclaration(declarationId)) {
+      builder.captures.set(declarationId, declarationPlace);
+    }
+
     const LoadClass = environment.contextDeclarationIds.has(declarationId)
       ? LoadContextInstruction
       : LoadLocalInstruction;

@@ -7,6 +7,7 @@ import {
   BlockId,
   type ControlContext,
   DeclarationId,
+  Place,
   createInstructionId,
   ReturnTerminal,
 } from "../../ir";
@@ -21,6 +22,15 @@ export class FunctionIRBuilder {
   public readonly blocks: Map<BlockId, BasicBlock> = new Map();
   public readonly header: BaseInstruction[] = [];
   public readonly controlStack: ControlContext[] = [];
+
+  /**
+   * Places captured from enclosing scopes, keyed by DeclarationId to
+   * avoid duplicates when the same variable is referenced multiple times.
+   * Stored on the function instruction so that `getReadPlaces()` exposes
+   * them to optimization passes, preventing DCE from eliminating captured
+   * variable definitions in the outer scope.
+   */
+  public readonly captures = new Map<DeclarationId, Place>();
 
   constructor(
     public readonly paramPaths: NodePath<t.Identifier | t.RestElement | t.Pattern>[],
@@ -87,6 +97,35 @@ export class FunctionIRBuilder {
 
   public getDeclarationId(name: string, nodePath: NodePath<t.Node>): DeclarationId | undefined {
     return nodePath.scope.getData(name);
+  }
+
+  /**
+   * Returns true if the given declaration was created in one of this
+   * function's blocks (i.e. it is an own declaration, not a capture from
+   * an enclosing scope).
+   *
+   * Works by checking which block the declaration was first registered in
+   * (via `declToPlaces[0].blockId`) against this function's block set.
+   */
+  public isOwnDeclaration(declarationId: DeclarationId): boolean {
+    const entries = this.environment.declToPlaces.get(declarationId);
+    if (!entries || entries.length === 0) return false;
+    return this.blocks.has(entries[0].blockId);
+  }
+
+  /**
+   * Copies captures from a child function builder into this builder,
+   * filtering out declarations owned by this function. This propagates
+   * transitive captures: if a grandchild function captures a variable
+   * from the grandparent scope, all intermediate functions must also
+   * list it as a capture so DCE keeps the definition alive at each level.
+   */
+  public propagateCapturesFrom(child: FunctionIRBuilder): void {
+    for (const [declId, capture] of child.captures) {
+      if (!this.isOwnDeclaration(declId)) {
+        this.captures.set(declId, capture);
+      }
+    }
   }
 
   public getBreakTarget(): BlockId | undefined {

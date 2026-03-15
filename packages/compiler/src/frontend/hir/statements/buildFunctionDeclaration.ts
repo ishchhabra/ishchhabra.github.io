@@ -22,12 +22,16 @@ export function buildFunctionDeclaration(
 
   const paramPaths = nodePath.get("params");
   const bodyPath = nodePath.get("body");
-  const functionIR = new FunctionIRBuilder(
+  const functionIRBuilder = new FunctionIRBuilder(
     paramPaths,
     bodyPath,
     functionBuilder.environment,
     moduleBuilder,
-  ).build();
+  );
+  const functionIR = functionIRBuilder.build();
+
+  functionBuilder.propagateCapturesFrom(functionIRBuilder);
+  const capturedPlaces = [...functionIRBuilder.captures.values()];
 
   const functionName = getFunctionName(nodePath);
   if (functionName === null) {
@@ -53,6 +57,7 @@ export function buildFunctionDeclaration(
     functionIR,
     nodePath.node.generator,
     nodePath.node.async,
+    capturedPlaces,
   );
   functionBuilder.addInstruction(instruction);
   environment.registerDeclarationInstruction(identifierPlace, instruction);

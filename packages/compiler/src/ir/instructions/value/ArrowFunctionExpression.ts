@@ -22,6 +22,7 @@ export class ArrowFunctionExpressionInstruction extends ValueInstruction {
     public readonly async: boolean,
     public readonly expression: boolean,
     public readonly generator: boolean,
+    public readonly captures: Place[] = [],
   ) {
     super(id, place, nodePath);
   }
@@ -37,6 +38,7 @@ export class ArrowFunctionExpressionInstruction extends ValueInstruction {
       this.async,
       this.expression,
       this.generator,
+      this.captures,
     );
   }
 
@@ -45,7 +47,7 @@ export class ArrowFunctionExpressionInstruction extends ValueInstruction {
   }
 
   public getReadPlaces(): Place[] {
-    return [];
+    return this.captures;
   }
 
   public get isPure(): boolean {

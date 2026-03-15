@@ -22,6 +22,7 @@ export class FunctionDeclarationInstruction extends DeclarationInstruction {
     public readonly functionIR: FunctionIR,
     public readonly generator: boolean,
     public readonly async: boolean,
+    public readonly captures: Place[] = [],
   ) {
     super(id, place, nodePath);
   }
@@ -37,6 +38,7 @@ export class FunctionDeclarationInstruction extends DeclarationInstruction {
       this.functionIR,
       this.generator,
       this.async,
+      this.captures,
     );
   }
 
@@ -49,11 +51,12 @@ export class FunctionDeclarationInstruction extends DeclarationInstruction {
       this.functionIR,
       this.generator,
       this.async,
+      this.captures,
     );
   }
 
   getReadPlaces(): Place[] {
-    return [this.identifier];
+    return [this.identifier, ...this.captures];
   }
 
   public get isPure(): boolean {

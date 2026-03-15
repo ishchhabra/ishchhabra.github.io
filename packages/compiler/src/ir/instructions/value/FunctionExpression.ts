@@ -15,6 +15,7 @@ export class FunctionExpressionInstruction extends ValueInstruction {
     public readonly functionIR: FunctionIR,
     public readonly generator: boolean,
     public readonly async: boolean,
+    public readonly captures: Place[] = [],
   ) {
     super(id, place, nodePath);
   }
@@ -30,6 +31,7 @@ export class FunctionExpressionInstruction extends ValueInstruction {
       this.functionIR,
       this.generator,
       this.async,
+      this.captures,
     );
   }
 
@@ -42,11 +44,12 @@ export class FunctionExpressionInstruction extends ValueInstruction {
       this.functionIR,
       this.generator,
       this.async,
+      this.captures,
     );
   }
 
   public getReadPlaces(): Place[] {
-    return this.identifier ? [this.identifier] : [];
+    return this.identifier ? [this.identifier, ...this.captures] : this.captures;
   }
 
   public get isPure(): boolean {
