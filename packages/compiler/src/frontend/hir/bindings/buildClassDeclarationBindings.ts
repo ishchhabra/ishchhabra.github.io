@@ -16,7 +16,7 @@ export function buildClassDeclarationBindings(
   }
 
   const idNode = nodePath.node.id;
-  if (idNode === null) {
+  if (idNode == null) {
     return;
   }
 
