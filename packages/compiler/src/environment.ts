@@ -53,6 +53,13 @@ export class Environment {
    */
   placeToInstruction: Map<PlaceId, BaseInstruction> = new Map();
 
+  /**
+   * Set of `DeclarationId`s for mutable variables that are captured and/or
+   * mutated across closure boundaries ("context variables"). These are
+   * excluded from SSA renaming and use dedicated Load/StoreContext instructions.
+   */
+  contextDeclarationIds: Set<DeclarationId> = new Set();
+
   nextFunctionId = 0;
   nextBlockId = 0;
   nextDeclarationId = 0;
