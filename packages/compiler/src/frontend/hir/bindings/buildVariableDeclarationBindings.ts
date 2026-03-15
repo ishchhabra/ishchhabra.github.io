@@ -67,11 +67,7 @@ function buildIdentifierBindings(
 ) {
   const originalName = nodePath.node.name;
   const identifier = environment.createIdentifier();
-  functionBuilder.registerDeclarationName(
-    originalName,
-    identifier.declarationId,
-    bindingsPath,
-  );
+  functionBuilder.registerDeclarationName(originalName, identifier.declarationId, bindingsPath);
 
   // Mark context variables before renaming so SSA can skip them.
   const binding = bindingsPath.scope.getBinding(originalName);

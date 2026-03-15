@@ -158,13 +158,11 @@ function buildDestructuringAssignment(
 
   const leftPath: NodePath<t.AssignmentExpression["left"]> = nodePath.get("left");
   leftPath.assertLVal();
-  const { place: leftPlace, instructions, hasContext } = buildAssignmentLeft(
-    leftPath,
-    nodePath,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-  );
+  const {
+    place: leftPlace,
+    instructions,
+    hasContext,
+  } = buildAssignmentLeft(leftPath, nodePath, functionBuilder, moduleBuilder, environment);
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
@@ -494,13 +492,11 @@ function buildAssignmentPatternAssignmentLeft(
   environment: Environment,
 ): { place: Place; instructions: BaseInstruction[]; hasContext: boolean } {
   const leftPath_ = leftPath.get("left");
-  const { place: leftPlace, instructions, hasContext } = buildAssignmentLeft(
-    leftPath_,
-    nodePath,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-  );
+  const {
+    place: leftPlace,
+    instructions,
+    hasContext,
+  } = buildAssignmentLeft(leftPath_, nodePath, functionBuilder, moduleBuilder, environment);
 
   const rightPath = leftPath.get("right");
   const rightPlace = buildNode(rightPath, functionBuilder, moduleBuilder, environment);
@@ -529,8 +525,11 @@ function buildRestElementAssignmentLeft(
   environment: Environment,
 ): { place: Place; instructions: BaseInstruction[]; hasContext: boolean } {
   const argumentPath = leftPath.get("argument");
-  const { place: argumentPlace, instructions: argumentInstructions, hasContext } =
-    buildAssignmentLeft(argumentPath, nodePath, functionBuilder, moduleBuilder, environment);
+  const {
+    place: argumentPlace,
+    instructions: argumentInstructions,
+    hasContext,
+  } = buildAssignmentLeft(argumentPath, nodePath, functionBuilder, moduleBuilder, environment);
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);

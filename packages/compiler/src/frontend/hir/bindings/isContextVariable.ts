@@ -45,10 +45,7 @@ export function isContextVariable(binding: Binding, scopePath: NodePath): boolea
  * compared to `ownerFn`. If `ownerFn` is null (program-level), any
  * reference inside a function counts as nested.
  */
-function isInNestedFunction(
-  innerPath: NodePath,
-  ownerFn: NodePath | null,
-): boolean {
+function isInNestedFunction(innerPath: NodePath, ownerFn: NodePath | null): boolean {
   const innerFn = innerPath.getFunctionParent();
   return innerFn !== ownerFn;
 }

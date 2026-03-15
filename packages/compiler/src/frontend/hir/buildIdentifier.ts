@@ -98,12 +98,7 @@ function buildReferencedIdentifier(
     const LoadClass = environment.contextDeclarationIds.has(declarationId)
       ? LoadContextInstruction
       : LoadLocalInstruction;
-    const instruction = environment.createInstruction(
-      LoadClass,
-      place,
-      nodePath,
-      declarationPlace,
-    );
+    const instruction = environment.createInstruction(LoadClass, place, nodePath, declarationPlace);
     builder.addInstruction(instruction);
   }
 

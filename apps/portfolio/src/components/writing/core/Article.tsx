@@ -78,9 +78,8 @@ function ArticleFooter() {
           That's all. Hope this saves you the hours of debugging that I went through.
         </p>
         <p className="text-[13px] text-zinc-500 dark:text-zinc-600">
-          Found an issue?{" "}
-          <A href="https://github.com/ishchhabra/ishchhabra.github.io">Open a PR</A> or{" "}
-          <A href="mailto:hello@ishchhabra.com">send me an email</A>.
+          Found an issue? <A href="https://github.com/ishchhabra/ishchhabra.github.io">Open a PR</A>{" "}
+          or <A href="mailto:hello@ishchhabra.com">send me an email</A>.
         </p>
       </div>
       <div className="border-t border-zinc-200 pt-6 dark:border-white/5">
