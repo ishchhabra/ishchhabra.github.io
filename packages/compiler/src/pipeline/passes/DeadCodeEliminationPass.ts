@@ -1,5 +1,10 @@
-import { BaseInstruction, IdentifierId, StoreLocalInstruction } from "../../ir";
+import {
+  FunctionDeclarationInstruction,
+  IdentifierId,
+  StoreLocalInstruction,
+} from "../../ir";
 import { FunctionIR } from "../../ir/core/FunctionIR";
+import { DefMap } from "../analysis/DefMap";
 import { BaseOptimizationPass, OptimizationResult } from "../late-optimizer/OptimizationPass";
 import { Phi } from "../ssa/Phi";
 
@@ -39,14 +44,13 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
 
   protected step(): OptimizationResult {
     let changed = false;
+    const defs = new DefMap(this.functionIR);
 
     // 1. Collect every identifier that is *read* by any instruction or terminal.
     const usedIds = new Set<IdentifierId>();
-    const definedBy = new Map<IdentifierId, BaseInstruction>();
 
     for (const block of this.functionIR.blocks.values()) {
       for (const instr of block.instructions) {
-        definedBy.set(instr.place.identifier.id, instr);
         for (const place of instr.getReadPlaces()) {
           usedIds.add(place.identifier.id);
         }
@@ -86,17 +90,19 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
           return true;
         }
 
+        // FunctionDeclaration defines a binding via `identifier`, not `place`.
+        if (instr instanceof FunctionDeclarationInstruction) {
+          return usedIds.has(instr.identifier.identifier.id);
+        }
+
         if (instr instanceof StoreLocalInstruction) {
           if (usedIds.has(instr.lval.identifier.id)) {
             return true;
           }
 
           // If the value is produced by an impure instruction, keep the
-          // StoreLocal so that codegen emits the side effect. Without this
-          // anchor, impure ValueInstructions (e.g. `delete obj.x`) are
-          // silently dropped during code generation.
-          const valueDefiner = definedBy.get(instr.value.identifier.id);
-          if (valueDefiner !== undefined && !valueDefiner.isPure) {
+          // StoreLocal to anchor the side effect to the codegen output.
+          if (defs.isImpure(instr.value.identifier.id)) {
             return true;
           }
 

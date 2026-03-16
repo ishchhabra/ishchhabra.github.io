@@ -11,6 +11,7 @@ import {
 } from "../../ir";
 import { BaseTerminal } from "../../ir/base/Terminal";
 import { FunctionIR } from "../../ir/core/FunctionIR";
+import { DefMap } from "../analysis/DefMap";
 import { BaseOptimizationPass, OptimizationResult } from "../late-optimizer/OptimizationPass";
 import { Phi } from "../ssa/Phi";
 
@@ -45,14 +46,21 @@ export class CopyPropagationPass extends BaseOptimizationPass {
     // 1. Build a map from copy destination → copy source.
     //    LoadLocal: place.identifier → value (the variable being loaded)
     //    StoreLocal: lval.identifier → value (the temp being stored)
+    //
+    //    StoreLocals whose value comes from an impure instruction are
+    //    skipped — propagating through them would cause codegen to
+    //    re-emit the impure expression at every use site.
     const copySource = new Map<IdentifierId, Place>();
+    const defs = new DefMap(this.functionIR);
 
     for (const block of this.functionIR.blocks.values()) {
       for (const instr of block.instructions) {
         if (instr instanceof LoadLocalInstruction && !(instr instanceof LoadPhiInstruction)) {
           copySource.set(instr.place.identifier.id, instr.value);
         } else if (instr instanceof StoreLocalInstruction) {
-          copySource.set(instr.lval.identifier.id, instr.value);
+          if (!defs.isImpure(instr.value.identifier.id)) {
+            copySource.set(instr.lval.identifier.id, instr.value);
+          }
         }
       }
     }

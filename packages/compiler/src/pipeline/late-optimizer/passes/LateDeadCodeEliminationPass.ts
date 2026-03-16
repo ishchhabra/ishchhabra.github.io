@@ -1,6 +1,7 @@
 import {
   BaseInstruction,
   BindingIdentifierInstruction,
+  FunctionDeclarationInstruction,
   IdentifierId,
   ObjectPropertyInstruction,
   RestElementInstruction,
@@ -10,6 +11,7 @@ import { ArrayPatternInstruction } from "../../../ir/instructions/pattern/ArrayP
 import { AssignmentPatternInstruction } from "../../../ir/instructions/pattern/AssignmentPattern";
 import { ObjectPatternInstruction } from "../../../ir/instructions/pattern/ObjectPattern";
 import { Place, PlaceId } from "../../../ir/core/Place";
+import { DefMap } from "../../analysis/DefMap";
 import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
 
 /**
@@ -29,15 +31,14 @@ import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
 export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
   protected step(): OptimizationResult {
     let changed = false;
+    const defs = new DefMap(this.functionIR);
 
     // 1. Collect every identifier read by any instruction or terminal.
     const usedIds = new Set<IdentifierId>();
-    const definedBy = new Map<IdentifierId, BaseInstruction>();
     const placeToInstr = new Map<PlaceId, BaseInstruction>();
 
     for (const block of this.functionIR.blocks.values()) {
       for (const instr of block.instructions) {
-        definedBy.set(instr.place.identifier.id, instr);
         placeToInstr.set(instr.place.id, instr);
         for (const place of instr.getReadPlaces()) {
           usedIds.add(place.identifier.id);
@@ -58,6 +59,10 @@ export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
           return true;
         }
 
+        if (instr instanceof FunctionDeclarationInstruction) {
+          return usedIds.has(instr.identifier.identifier.id);
+        }
+
         if (instr instanceof StoreLocalInstruction) {
           if (usedIds.has(instr.lval.identifier.id)) {
             return true;
@@ -75,8 +80,7 @@ export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
 
           // If the value is produced by an impure instruction, keep the
           // StoreLocal to anchor the side effect to the codegen output.
-          const valueDefiner = definedBy.get(instr.value.identifier.id);
-          if (valueDefiner !== undefined && !valueDefiner.isPure) {
+          if (defs.isImpure(instr.value.identifier.id)) {
             return true;
           }
 
