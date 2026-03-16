@@ -12,7 +12,7 @@ import {
 import { ArrayPatternInstruction } from "../../../ir/instructions/pattern/ArrayPattern";
 import { AssignmentPatternInstruction } from "../../../ir/instructions/pattern/AssignmentPattern";
 import { ObjectPatternInstruction } from "../../../ir/instructions/pattern/ObjectPattern";
-import { PlaceId } from "../../../ir/core/Place";
+import { Place, PlaceId } from "../../../ir/core/Place";
 import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
 
 /**
