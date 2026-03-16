@@ -53,6 +53,6 @@ export class FunctionExpressionInstruction extends ValueInstruction {
   }
 
   public get isPure(): boolean {
-    return false;
+    return true;
   }
 }

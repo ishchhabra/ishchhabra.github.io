@@ -51,6 +51,6 @@ export class ArrowFunctionExpressionInstruction extends ValueInstruction {
   }
 
   public get isPure(): boolean {
-    return false;
+    return true;
   }
 }

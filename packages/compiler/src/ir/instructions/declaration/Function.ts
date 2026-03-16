@@ -60,6 +60,6 @@ export class FunctionDeclarationInstruction extends DeclarationInstruction {
   }
 
   public get isPure(): boolean {
-    return false;
+    return true;
   }
 }
