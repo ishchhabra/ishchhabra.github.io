@@ -1,11 +1,18 @@
 import {
   BaseInstruction,
   BasicBlock,
+  BindingIdentifierInstruction,
   BlockId,
   CopyInstruction,
   IdentifierId,
+  ObjectPropertyInstruction,
+  RestElementInstruction,
   StoreLocalInstruction,
 } from "../../../ir";
+import { ArrayPatternInstruction } from "../../../ir/instructions/pattern/ArrayPattern";
+import { AssignmentPatternInstruction } from "../../../ir/instructions/pattern/AssignmentPattern";
+import { ObjectPatternInstruction } from "../../../ir/instructions/pattern/ObjectPattern";
+import { PlaceId } from "../../../ir/core/Place";
 import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
 
 /**
@@ -68,6 +75,12 @@ export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
     const newInstrs: BaseInstruction[] = [];
     let changed = false;
 
+    // Build a map from PlaceId → defining instruction for pattern tree walking.
+    const placeToInstr = new Map<PlaceId, BaseInstruction>();
+    for (const instr of instrs) {
+      placeToInstr.set(instr.place.id, instr);
+    }
+
     // 1) Gather places read by instructions and the terminal in this block.
     for (const instr of instrs) {
       for (const place of instr.getReadPlaces()) {
@@ -83,7 +96,7 @@ export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
 
     // 2) Filter out pure instructions that define a place nobody reads.
     for (const instr of instrs) {
-      if (this.shouldKeepInstruction(instr, usedPlaceIds)) {
+      if (this.shouldKeepInstruction(instr, usedPlaceIds, placeToInstr)) {
         newInstrs.push(instr);
       } else {
         changed = true;
@@ -99,10 +112,12 @@ export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
    *   - It's a copy (inserted by SSA elimination, handled by early DCE)
    *   - It's impure (has side effects)
    *   - Its defined place is read by another instruction
+   *   - It's a StoreLocal with a pattern lval where any leaf binding is used
    */
   private shouldKeepInstruction(
     instruction: BaseInstruction,
     usedPlaceIds: Set<IdentifierId>,
+    placeToInstr: Map<PlaceId, BaseInstruction>,
   ): boolean {
     if (instruction instanceof CopyInstruction) {
       return true;
@@ -113,9 +128,54 @@ export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
     }
 
     if (instruction instanceof StoreLocalInstruction) {
-      return usedPlaceIds.has(instruction.lval.identifier.id);
+      // For simple lvals (identifiers), check directly.
+      if (usedPlaceIds.has(instruction.lval.identifier.id)) {
+        return true;
+      }
+
+      // For pattern lvals (ObjectPattern/ArrayPattern from rest-element
+      // fallback), walk the pattern tree to check if any leaf binding is used.
+      const lvalInstr = placeToInstr.get(instruction.lval.id);
+      if (
+        lvalInstr instanceof ObjectPatternInstruction ||
+        lvalInstr instanceof ArrayPatternInstruction
+      ) {
+        return this.hasUsedBinding(lvalInstr, usedPlaceIds, placeToInstr);
+      }
+
+      return false;
     }
 
     return usedPlaceIds.has(instruction.place.identifier.id);
+  }
+
+  /**
+   * Recursively walks a pattern instruction tree to check if any leaf
+   * BindingIdentifier place is in the used set.
+   */
+  private hasUsedBinding(
+    instruction: BaseInstruction,
+    usedPlaceIds: Set<IdentifierId>,
+    placeToInstr: Map<PlaceId, BaseInstruction>,
+  ): boolean {
+    if (instruction instanceof BindingIdentifierInstruction) {
+      return usedPlaceIds.has(instruction.place.identifier.id);
+    }
+
+    return this.getPatternChildren(instruction).some((child) => {
+      const childInstr = placeToInstr.get(child.id);
+      return (
+        childInstr !== undefined && this.hasUsedBinding(childInstr, usedPlaceIds, placeToInstr)
+      );
+    });
+  }
+
+  private getPatternChildren(instruction: BaseInstruction): Place[] {
+    if (instruction instanceof ObjectPatternInstruction) return instruction.properties;
+    if (instruction instanceof ArrayPatternInstruction) return instruction.elements;
+    if (instruction instanceof ObjectPropertyInstruction) return [instruction.value];
+    if (instruction instanceof RestElementInstruction) return [instruction.argument];
+    if (instruction instanceof AssignmentPatternInstruction) return [instruction.left];
+    return [];
   }
 }

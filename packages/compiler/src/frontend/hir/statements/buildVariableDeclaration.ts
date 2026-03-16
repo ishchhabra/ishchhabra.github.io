@@ -17,6 +17,7 @@ import { buildBindingIdentifier } from "../buildIdentifier";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
+import { buildDestructuring } from "./buildDestructuring";
 
 export function buildVariableDeclaration(
   nodePath: NodePath<t.VariableDeclaration>,
@@ -27,6 +28,27 @@ export function buildVariableDeclaration(
   const declarations = nodePath.get("declarations");
   const declarationPlaces = declarations.map((declaration) => {
     const id = declaration.get("id") as NodePath<t.LVal>;
+    const init: NodePath<t.Expression | null | undefined> = declaration.get("init");
+
+    // Lower destructuring patterns (without rest elements) to individual
+    // property accesses. This makes each binding a separate StoreLocal so
+    // DCE can eliminate unused bindings without understanding patterns.
+    if (
+      (id.isObjectPattern() || id.isArrayPattern()) &&
+      !containsRestElement(id) &&
+      init.hasNode()
+    ) {
+      return buildDestructuring(
+        id,
+        init as NodePath<t.Expression>,
+        nodePath,
+        functionBuilder,
+        moduleBuilder,
+        environment,
+      );
+    }
+
+    // Existing path for identifiers, patterns with rest, and uninitialized.
     const { place: lvalPlace, identifiers: lvalIdentifiers } = buildVariableDeclaratorLVal(
       id,
       functionBuilder,
@@ -37,7 +59,6 @@ export function buildVariableDeclaration(
       throw new Error("Lval place must be a single place");
     }
 
-    const init: NodePath<t.Expression | null | undefined> = declaration.get("init");
     let valuePlace: Place | Place[] | undefined;
     if (!init.hasNode()) {
       init.replaceWith(t.identifier("undefined"));
@@ -67,12 +88,6 @@ export function buildVariableDeclaration(
     lvalIdentifiers.forEach((lvalIdentifier) => {
       environment.registerDeclarationInstruction(lvalIdentifier, instruction);
 
-      // Update the declToPlaces entry to reflect the actual block where the
-      // declaration instruction lives. The binding registration (in buildBindings)
-      // uses the block that was current at binding-discovery time (e.g., the function
-      // entry block), but the actual StoreLocal may end up in a later block (e.g.,
-      // after an if-statement). Without this update, SSA phi operands won't find
-      // the definition in the correct predecessor block.
       const declPlaces = environment.declToPlaces.get(lvalIdentifier.identifier.declarationId);
       if (declPlaces) {
         const entry = declPlaces.find((p) => p.placeId === lvalIdentifier.id);
@@ -271,8 +286,6 @@ function buildObjectPropertyKeyVariableDeclaratorLVal(
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {
-  // Not using `buildBindingIdentifier` because that defaults to using
-  // existing place if it exists.
   const keyIdentifier = environment.createIdentifier();
   keyIdentifier.name = nodePath.node.name;
   const keyPlace = environment.createPlace(keyIdentifier);
@@ -342,4 +355,35 @@ function buildRestElementVariableDeclaratorLVal(
   );
   functionBuilder.addInstruction(instruction);
   return { place, identifiers: argumentIdentifiers };
+}
+
+/**
+ * Returns true if the pattern tree contains any RestElement.
+ * When rest elements are present, we fall back to the existing pattern
+ * approach since rest destructuring can't be lowered to simple property accesses.
+ */
+function containsRestElement(nodePath: NodePath<t.LVal>): boolean {
+  if (nodePath.isRestElement()) return true;
+  if (nodePath.isArrayPattern()) {
+    return nodePath.get("elements").some((el) => {
+      if (!el.hasNode()) return false;
+      if (!el.isLVal()) return false;
+      return containsRestElement(el as NodePath<t.LVal>);
+    });
+  }
+  if (nodePath.isObjectPattern()) {
+    return nodePath.get("properties").some((prop) => {
+      if (prop.isRestElement()) return true;
+      if (prop.isObjectProperty()) {
+        const value = prop.get("value");
+        if (!value.isLVal()) return false;
+        return containsRestElement(value as NodePath<t.LVal>);
+      }
+      return false;
+    });
+  }
+  if (nodePath.isAssignmentPattern()) {
+    return containsRestElement(nodePath.get("left"));
+  }
+  return false;
 }

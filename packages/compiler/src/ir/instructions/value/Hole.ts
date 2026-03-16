@@ -14,7 +14,7 @@ export class HoleInstruction extends ValueInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<null>,
+    public readonly nodePath: NodePath<null> | undefined,
   ) {
     super(id, place, nodePath);
   }
