@@ -5,6 +5,7 @@ import {
   ArrayPatternInstruction,
   BaseInstruction,
   BasicBlock,
+  IdentifierId,
   LiteralInstruction,
   ReturnTerminal,
   StoreLocalInstruction,
@@ -53,7 +54,8 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     let changed = false;
 
     for (const [, block] of this.functionIR.blocks) {
-      for (const [index, instr] of block.instructions.entries()) {
+      for (let index = 0; index < block.instructions.length; index++) {
+        const instr = block.instructions[index];
         if (!(instr instanceof CallExpressionInstruction)) {
           continue;
         }
@@ -78,7 +80,11 @@ export class FunctionInliningPass extends BaseOptimizationPass {
           continue;
         }
 
+        const prevLen = block.instructions.length;
         this.inlineFunctionIR(index, block, functionIR, this.moduleIR.environment);
+        changed = true;
+        // Skip past the instructions that were spliced in.
+        index += block.instructions.length - prevLen;
       }
     }
 
@@ -89,6 +95,9 @@ export class FunctionInliningPass extends BaseOptimizationPass {
    * Checks whether the function is inlinable:
    * - Must have exactly one block
    * - Must not be recursive
+   * - If cross-module, must be self-contained (no references to Places
+   *   from the callee's module scope). Cross-module inlining with
+   *   import forwarding is planned but not yet implemented.
    */
   private isInlinableFunction(funcIR: FunctionIR, modulePath: string): boolean {
     if (funcIR.blocks.size > 1) {
@@ -99,7 +108,37 @@ export class FunctionInliningPass extends BaseOptimizationPass {
       return false;
     }
 
+    if (modulePath !== this.moduleIR.path && this.hasExternalReferences(funcIR)) {
+      return false;
+    }
+
     return true;
+  }
+
+  /**
+   * Returns true if the function reads from Places not defined within
+   * its own header or blocks (i.e., it captures from its module scope).
+   */
+  private hasExternalReferences(funcIR: FunctionIR): boolean {
+    const ownPlaceIds = new Set<IdentifierId>();
+    for (const instr of funcIR.header) {
+      ownPlaceIds.add(instr.place.identifier.id);
+    }
+    for (const [, block] of funcIR.blocks) {
+      for (const instr of block.instructions) {
+        ownPlaceIds.add(instr.place.identifier.id);
+      }
+    }
+    for (const [, block] of funcIR.blocks) {
+      for (const instr of block.instructions) {
+        for (const place of instr.getReadPlaces()) {
+          if (!ownPlaceIds.has(place.identifier.id)) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
   }
 
   /**
