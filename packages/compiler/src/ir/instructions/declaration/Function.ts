@@ -56,7 +56,7 @@ export class FunctionDeclarationInstruction extends DeclarationInstruction {
   }
 
   getReadPlaces(): Place[] {
-    return [this.identifier, ...this.captures];
+    return this.captures;
   }
 
   public get isPure(): boolean {

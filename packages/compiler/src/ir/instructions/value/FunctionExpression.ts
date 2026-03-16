@@ -49,7 +49,7 @@ export class FunctionExpressionInstruction extends ValueInstruction {
   }
 
   public getReadPlaces(): Place[] {
-    return this.identifier ? [this.identifier, ...this.captures] : this.captures;
+    return this.captures;
   }
 
   public get isPure(): boolean {
