@@ -51,7 +51,7 @@ export class FunctionDeclarationInstruction extends DeclarationInstruction {
       this.functionIR,
       this.generator,
       this.async,
-      this.captures,
+      this.captures.map((capture) => values.get(capture.identifier) ?? capture),
     );
   }
 

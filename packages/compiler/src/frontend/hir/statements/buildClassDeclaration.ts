@@ -24,16 +24,14 @@ export function buildClassDeclaration(
     throw new Error(`Class accessed before declaration: ${idPath.node.name}`);
   }
 
-  const latestDeclaration = environment.getLatestDeclaration(declarationId)!;
-  const classPlace = environment.places.get(latestDeclaration.placeId)!;
-
+  const place = environment.createPlace(environment.createIdentifier(declarationId));
   const instruction = environment.createInstruction(
     ClassDeclarationInstruction,
-    classPlace,
+    place,
     nodePath,
     identifierPlace,
   );
   functionBuilder.addInstruction(instruction);
-  environment.registerDeclarationInstruction(identifierPlace, instruction);
-  return classPlace;
+  environment.registerDeclarationInstruction(place, instruction);
+  return place;
 }

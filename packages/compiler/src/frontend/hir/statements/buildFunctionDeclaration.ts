@@ -43,15 +43,10 @@ export function buildFunctionDeclaration(
     throw new Error(`Function accessed before declaration: ${functionName.node.name}`);
   }
 
-  const latestDeclaration = environment.getLatestDeclaration(declarationId)!;
-  const functionPlace = environment.places.get(latestDeclaration.placeId)!;
-  if (functionPlace === undefined) {
-    throw new Error(`Unable to find the place for ${functionName.node.name} (${declarationId})`);
-  }
-
+  const place = environment.createPlace(environment.createIdentifier(declarationId));
   const instruction = environment.createInstruction(
     FunctionDeclarationInstruction,
-    functionPlace,
+    place,
     nodePath,
     identifierPlace,
     functionIR,
@@ -60,6 +55,6 @@ export function buildFunctionDeclaration(
     capturedPlaces,
   );
   functionBuilder.addInstruction(instruction);
-  environment.registerDeclarationInstruction(identifierPlace, instruction);
-  return functionPlace;
+  environment.registerDeclarationInstruction(place, instruction);
+  return place;
 }

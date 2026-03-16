@@ -7,7 +7,7 @@ export function generateFunctionDeclarationInstruction(
   instruction: FunctionDeclarationInstruction,
   generator: CodeGenerator,
 ): t.FunctionDeclaration {
-  const idNode = generator.places.get(instruction.place.id)!;
+  const idNode = generator.places.get(instruction.identifier.id)!;
   t.assertIdentifier(idNode);
 
   const { params, statements } = generateFunction(instruction.functionIR, generator);
