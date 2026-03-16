@@ -49,6 +49,6 @@ export class UnaryExpressionInstruction extends ValueInstruction {
   }
 
   public get isPure(): boolean {
-    return ["throw", "delete"].includes(this.operator);
+    return !["throw", "delete"].includes(this.operator);
   }
 }

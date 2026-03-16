@@ -1,7 +1,7 @@
 {
+  "enableOptimizer": true,
+  "enableLateOptimizer": true,
   "enableLateDeadCodeEliminationPass": true,
-  "enablePhiToTernaryPass": false,
-  "enableLateCopyPropagationPass": false,
-  "enableRedundantCopyEliminationPass": false,
+  "enableDestructuringReconstructionPass": false,
   "enableExportDeclarationMergingPass": false
 }

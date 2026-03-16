@@ -42,6 +42,6 @@ export class LoadContextInstruction extends MemoryInstruction {
   }
 
   public get isPure(): boolean {
-    return false;
+    return true;
   }
 }

@@ -7,6 +7,7 @@ import { CallGraph } from "../analysis/CallGraph";
 import { AlgebraicSimplificationPass } from "../passes/AlgebraicSimplificationPass";
 import { ConstantPropagationPass } from "../passes/ConstantPropagationPass";
 import { FunctionInliningPass } from "../passes/FunctionInliningPass";
+import { DeadCodeEliminationPass } from "../passes/DeadCodeEliminationPass";
 import { UnreachableCodeEliminationPass } from "../passes/UnreachableCodeEliminationPass";
 import { SSA } from "../ssa/SSABuilder";
 
@@ -58,6 +59,15 @@ export class Optimizer {
         ).run();
         changed ||= unreachableCodeEliminationResult.changed;
         blocks = unreachableCodeEliminationResult.blocks;
+      }
+
+      if (this.options.enableDeadCodeEliminationPass) {
+        const deadCodeEliminationResult = new DeadCodeEliminationPass(
+          this.functionIR,
+          this.ssa.phis,
+        ).run();
+        changed ||= deadCodeEliminationResult.changed;
+        blocks = deadCodeEliminationResult.blocks;
       }
 
       if (this.options.enableFunctionInliningPass) {

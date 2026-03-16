@@ -16,6 +16,8 @@ export const CompilerOptionsSchema = z.object({
   enableUnusedExportEliminationPass: z.boolean().default(true),
   /** Whether to enable the unreachable code elimination pass */
   enableUnreachableCodeEliminationPass: z.boolean().default(true),
+  /** Whether to enable the dead code elimination pass */
+  enableDeadCodeEliminationPass: z.boolean().default(true),
 
   /** Whether to enable the late optimizer */
   enableLateOptimizer: z.boolean().default(true),
