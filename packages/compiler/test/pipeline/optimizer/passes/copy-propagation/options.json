@@ -1,0 +1,5 @@
+{
+  "enableCopyPropagationPass": true,
+  "enableAlgebraicSimplificationPass": false,
+  "enableUnreachableCodeEliminationPass": false
+}
