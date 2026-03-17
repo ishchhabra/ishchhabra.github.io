@@ -2,8 +2,6 @@ import { CompilerOptions } from "../../compile";
 import { ProjectUnit } from "../../frontend/ProjectBuilder";
 import { BasicBlock, BlockId } from "../../ir";
 import { FunctionIR } from "../../ir/core/FunctionIR";
-import { ModuleIR } from "../../ir/core/ModuleIR";
-import { DestructuringReconstructionPass } from "./passes/DestructuringReconstructionPass";
 import { ExportDeclarationMergingPass } from "./passes/ExportDeclarationMergingPass";
 import { LateCopyPropagationPass } from "./passes/LateCopyPropagationPass";
 import { LateDeadCodeEliminationPass } from "./passes/LateDeadCodeEliminationPass";
@@ -18,7 +16,6 @@ interface LateOptimizerResult {
 export class LateOptimizer {
   constructor(
     private readonly functionIR: FunctionIR,
-    private readonly moduleIR: ModuleIR,
     private readonly projectUnit: ProjectUnit,
     private readonly options: CompilerOptions,
   ) {}
@@ -50,14 +47,6 @@ export class LateOptimizer {
     if (this.options.enableLateDeadCodeEliminationPass) {
       const lateDeadCodeEliminationResult = new LateDeadCodeEliminationPass(this.functionIR).run();
       blocks = lateDeadCodeEliminationResult.blocks;
-    }
-
-    if (this.options.enableDestructuringReconstructionPass) {
-      const destructuringReconstructionResult = new DestructuringReconstructionPass(
-        this.functionIR,
-        this.moduleIR,
-      ).run();
-      blocks = destructuringReconstructionResult.blocks;
     }
 
     if (this.options.enableExportDeclarationMergingPass) {

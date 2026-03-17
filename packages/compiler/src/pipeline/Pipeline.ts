@@ -57,7 +57,6 @@ export class Pipeline {
         if (this.options.enableLateOptimizer) {
           const lateOptimizerResult = new LateOptimizer(
             functionIR,
-            moduleIR,
             this.projectUnit,
             this.options,
           ).run();

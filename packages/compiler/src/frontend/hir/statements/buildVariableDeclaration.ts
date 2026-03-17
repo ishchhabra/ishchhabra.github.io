@@ -17,8 +17,6 @@ import { buildBindingIdentifier } from "../buildIdentifier";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
-import { buildDestructuring } from "./buildDestructuring";
-
 export function buildVariableDeclaration(
   nodePath: NodePath<t.VariableDeclaration>,
   functionBuilder: FunctionIRBuilder,
@@ -29,26 +27,6 @@ export function buildVariableDeclaration(
   const declarationPlaces = declarations.map((declaration) => {
     const id = declaration.get("id") as NodePath<t.LVal>;
     const init: NodePath<t.Expression | null | undefined> = declaration.get("init");
-
-    // Lower destructuring patterns (without rest elements) to individual
-    // property accesses. This makes each binding a separate StoreLocal so
-    // DCE can eliminate unused bindings without understanding patterns.
-    if (
-      (id.isObjectPattern() || id.isArrayPattern()) &&
-      !containsRestElement(id) &&
-      init.hasNode()
-    ) {
-      return buildDestructuring(
-        id,
-        init as NodePath<t.Expression>,
-        nodePath,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
-    }
-
-    // Existing path for identifiers, patterns with rest, and uninitialized.
     const { place: lvalPlace, identifiers: lvalIdentifiers } = buildVariableDeclaratorLVal(
       id,
       functionBuilder,
@@ -357,33 +335,3 @@ function buildRestElementVariableDeclaratorLVal(
   return { place, identifiers: argumentIdentifiers };
 }
 
-/**
- * Returns true if the pattern tree contains any RestElement.
- * When rest elements are present, we fall back to the existing pattern
- * approach since rest destructuring can't be lowered to simple property accesses.
- */
-function containsRestElement(nodePath: NodePath<t.LVal>): boolean {
-  if (nodePath.isRestElement()) return true;
-  if (nodePath.isArrayPattern()) {
-    return nodePath.get("elements").some((el) => {
-      if (!el.hasNode()) return false;
-      if (!el.isLVal()) return false;
-      return containsRestElement(el as NodePath<t.LVal>);
-    });
-  }
-  if (nodePath.isObjectPattern()) {
-    return nodePath.get("properties").some((prop) => {
-      if (prop.isRestElement()) return true;
-      if (prop.isObjectProperty()) {
-        const value = prop.get("value");
-        if (!value.isLVal()) return false;
-        return containsRestElement(value as NodePath<t.LVal>);
-      }
-      return false;
-    });
-  }
-  if (nodePath.isAssignmentPattern()) {
-    return containsRestElement(nodePath.get("left"));
-  }
-  return false;
-}

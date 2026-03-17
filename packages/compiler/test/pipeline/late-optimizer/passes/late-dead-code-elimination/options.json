@@ -2,6 +2,5 @@
   "enableOptimizer": true,
   "enableLateOptimizer": true,
   "enableLateDeadCodeEliminationPass": true,
-  "enableDestructuringReconstructionPass": false,
   "enableExportDeclarationMergingPass": false
 }
