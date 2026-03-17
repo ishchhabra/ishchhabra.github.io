@@ -44,7 +44,7 @@ export class RestElementInstruction extends BaseInstruction {
     return [this.argument];
   }
 
-  public get isPure(): boolean {
-    return true;
+  public override get hasSideEffects(): boolean {
+    return false;
   }
 }

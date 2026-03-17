@@ -47,8 +47,4 @@ export class LoadDynamicPropertyInstruction extends MemoryInstruction {
   getReadPlaces(): Place[] {
     return [this.object, this.property];
   }
-
-  public get isPure(): boolean {
-    return false;
-  }
 }

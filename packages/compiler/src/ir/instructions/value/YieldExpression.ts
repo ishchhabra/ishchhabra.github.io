@@ -40,8 +40,4 @@ export class YieldExpressionInstruction extends ValueInstruction {
   getReadPlaces(): Place[] {
     return this.argument ? [this.argument] : [];
   }
-
-  public get isPure(): boolean {
-    return false;
-  }
 }

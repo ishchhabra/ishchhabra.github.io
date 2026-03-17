@@ -45,7 +45,7 @@ export class JSXSpreadAttributeInstruction extends JSXInstruction {
     return [this.argument];
   }
 
-  public get isPure(): boolean {
-    return true;
+  public override get hasSideEffects(): boolean {
+    return false;
   }
 }

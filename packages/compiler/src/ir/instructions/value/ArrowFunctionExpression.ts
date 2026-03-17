@@ -50,7 +50,7 @@ export class ArrowFunctionExpressionInstruction extends ValueInstruction {
     return this.captures;
   }
 
-  public get isPure(): boolean {
-    return true;
+  public override get hasSideEffects(): boolean {
+    return false;
   }
 }

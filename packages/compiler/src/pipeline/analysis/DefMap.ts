@@ -42,4 +42,15 @@ export class DefMap {
     const definer = this.map.get(id);
     return definer !== undefined && !definer.isPure;
   }
+
+  /**
+   * Returns true if any of the given instruction's read places are
+   * defined by a side-effecting instruction.
+   */
+  hasSideEffects(instruction: BaseInstruction): boolean {
+    return instruction.getReadPlaces().some((place) => {
+      const definer = this.map.get(place.identifier.id);
+      return definer !== undefined && definer.hasSideEffects;
+    });
+  }
 }

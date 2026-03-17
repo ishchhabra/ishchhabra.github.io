@@ -44,7 +44,7 @@ export class ArrayPatternInstruction extends PatternInstruction {
     return this.elements;
   }
 
-  public get isPure(): boolean {
-    return true;
+  public override get hasSideEffects(): boolean {
+    return false;
   }
 }

@@ -63,7 +63,7 @@ export class FunctionDeclarationInstruction extends DeclarationInstruction {
     return [this.place, this.identifier];
   }
 
-  public get isPure(): boolean {
-    return true;
+  public override get hasSideEffects(): boolean {
+    return false;
   }
 }

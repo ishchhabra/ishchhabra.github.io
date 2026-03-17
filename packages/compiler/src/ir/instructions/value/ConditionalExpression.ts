@@ -47,7 +47,7 @@ export class ConditionalExpressionInstruction extends ValueInstruction {
     return [this.test, this.consequent, this.alternate];
   }
 
-  public get isPure(): boolean {
-    return true;
+  public override get hasSideEffects(): boolean {
+    return false;
   }
 }

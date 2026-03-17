@@ -47,8 +47,4 @@ export class StoreStaticPropertyInstruction extends MemoryInstruction {
   getReadPlaces(): Place[] {
     return [this.object, this.value];
   }
-
-  public get isPure(): boolean {
-    return false;
-  }
 }

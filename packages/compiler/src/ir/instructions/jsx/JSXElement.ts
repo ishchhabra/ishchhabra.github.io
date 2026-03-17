@@ -56,8 +56,4 @@ export class JSXElementInstruction extends JSXInstruction {
       ...this.children,
     ];
   }
-
-  public get isPure(): boolean {
-    return false;
-  }
 }

@@ -50,7 +50,7 @@ export class CopyInstruction extends MemoryInstruction {
     return [this.place, this.lval];
   }
 
-  public get isPure(): boolean {
-    return true;
+  public override get hasSideEffects(): boolean {
+    return false;
   }
 }

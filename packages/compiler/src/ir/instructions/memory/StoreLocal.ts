@@ -1,8 +1,9 @@
 import { NodePath } from "@babel/core";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
-import { InstructionId, MemoryInstruction } from "../../base";
+import { BaseInstruction, InstructionId, MemoryInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
+import { ExpressionStatementInstruction } from "../ExpressionStatement";
 
 /**
  * Represents a memory instruction that stores a value at a given place.
@@ -67,7 +68,16 @@ export class StoreLocalInstruction extends MemoryInstruction {
     return [this.place, this.lval];
   }
 
-  public get isPure(): boolean {
-    return true;
+  public override get hasSideEffects(): boolean {
+    return false;
+  }
+
+  override asSideEffect(): BaseInstruction | null {
+    return new ExpressionStatementInstruction(
+      this.id,
+      this.place,
+      this.nodePath,
+      this.value,
+    );
   }
 }

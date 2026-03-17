@@ -37,8 +37,4 @@ export class AwaitExpressionInstruction extends ValueInstruction {
   getReadPlaces(): Place[] {
     return [this.argument];
   }
-
-  public get isPure(): boolean {
-    return false;
-  }
 }

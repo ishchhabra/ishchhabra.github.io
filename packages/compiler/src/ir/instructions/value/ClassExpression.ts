@@ -31,8 +31,4 @@ export class ClassExpressionInstruction extends ValueInstruction {
   getReadPlaces(): Place[] {
     return [];
   }
-
-  public get isPure(): boolean {
-    return false;
-  }
 }

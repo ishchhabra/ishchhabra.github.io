@@ -40,8 +40,4 @@ export class TaggedTemplateExpressionInstruction extends ValueInstruction {
   getReadPlaces(): Place[] {
     return [this.tag, this.quasi];
   }
-
-  public get isPure(): boolean {
-    return false;
-  }
 }

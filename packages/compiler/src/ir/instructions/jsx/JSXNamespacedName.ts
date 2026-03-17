@@ -42,7 +42,7 @@ export class JSXNamespacedNameInstruction extends JSXInstruction {
     return [];
   }
 
-  public get isPure(): boolean {
-    return true;
+  public override get hasSideEffects(): boolean {
+    return false;
   }
 }

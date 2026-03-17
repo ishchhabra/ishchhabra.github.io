@@ -41,7 +41,7 @@ export class LoadContextInstruction extends MemoryInstruction {
     return [this.value];
   }
 
-  public get isPure(): boolean {
-    return true;
+  public override get hasSideEffects(): boolean {
+    return false;
   }
 }

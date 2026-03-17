@@ -51,7 +51,7 @@ export class JSXOpeningElementInstruction extends JSXInstruction {
     return [this.tagPlace, ...this.attributes];
   }
 
-  public get isPure(): boolean {
-    return true;
+  public override get hasSideEffects(): boolean {
+    return false;
   }
 }

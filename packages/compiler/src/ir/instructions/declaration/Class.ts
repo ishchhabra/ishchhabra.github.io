@@ -43,7 +43,4 @@ export class ClassDeclarationInstruction extends DeclarationInstruction {
     return [this.place, this.identifier];
   }
 
-  public get isPure(): boolean {
-    return false;
-  }
 }

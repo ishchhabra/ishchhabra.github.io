@@ -50,8 +50,4 @@ export class CallExpressionInstruction extends ValueInstruction {
   getReadPlaces(): Place[] {
     return [this.callee, ...this.args];
   }
-
-  public get isPure(): boolean {
-    return false;
-  }
 }

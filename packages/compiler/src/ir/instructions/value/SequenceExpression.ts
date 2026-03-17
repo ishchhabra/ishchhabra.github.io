@@ -37,8 +37,4 @@ export class SequenceExpressionInstruction extends ValueInstruction {
   getReadPlaces(): Place[] {
     return [...this.expressions];
   }
-
-  public get isPure(): boolean {
-    return false;
-  }
 }

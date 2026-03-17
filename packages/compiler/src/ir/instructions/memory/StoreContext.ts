@@ -59,8 +59,4 @@ export class StoreContextInstruction extends MemoryInstruction {
   override getWrittenPlaces(): Place[] {
     return [this.place, this.lval];
   }
-
-  public get isPure(): boolean {
-    return false;
-  }
 }

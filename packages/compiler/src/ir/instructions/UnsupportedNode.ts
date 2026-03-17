@@ -51,8 +51,4 @@ export class UnsupportedNodeInstruction extends BaseInstruction {
   getReadPlaces(): Place[] {
     throw new Error(`Unable to get read places for unsupported node: ${this.node.type}`);
   }
-
-  public get isPure(): boolean {
-    return false;
-  }
 }

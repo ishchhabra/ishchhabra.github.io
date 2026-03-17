@@ -64,9 +64,44 @@ export abstract class BaseInstruction {
     return [this.place];
   }
 
-  /** Whether this instruction is pure. */
+  /**
+   * Whether this instruction has observable side effects (mutations, I/O,
+   * throws). Instructions with side effects cannot be removed even when
+   * their result is unused.
+   */
+  public get hasSideEffects(): boolean {
+    return true;
+  }
+
+  /**
+   * Whether this instruction always produces the same result given the
+   * same inputs. Non-deterministic instructions (e.g. reading mutable
+   * state) cannot be deduplicated by CSE/GVN.
+   */
+  public get isDeterministic(): boolean {
+    return true;
+  }
+
+  /**
+   * Whether this instruction is pure — no side effects and deterministic.
+   * Pure instructions can be freely removed, moved, or deduplicated.
+   */
   public get isPure(): boolean {
-    return false;
+    return !this.hasSideEffects && this.isDeterministic;
+  }
+
+  /**
+   * When this instruction is dead (none of its written places are used),
+   * returns a replacement instruction that preserves only the side
+   * effects, stripping the definition. Returns null if the instruction
+   * can be removed entirely.
+   *
+   * For example, a dead `StoreLocal result = delete obj.x` returns an
+   * `ExpressionStatement(delete obj.x)` — the definition of `result` is
+   * stripped, but the side-effecting `delete` is preserved.
+   */
+  asSideEffect(): BaseInstruction | null {
+    return null;
   }
 
   public toString(): string {

@@ -48,7 +48,7 @@ export class AssignmentPatternInstruction extends PatternInstruction {
     return [this.left, this.right];
   }
 
-  public get isPure(): boolean {
-    return true;
+  public override get hasSideEffects(): boolean {
+    return false;
   }
 }

@@ -44,8 +44,4 @@ export class ExpressionStatementInstruction extends BaseInstruction {
   getReadPlaces(): Place[] {
     return [this.expression];
   }
-
-  public get isPure(): boolean {
-    return false;
-  }
 }

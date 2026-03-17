@@ -49,7 +49,7 @@ export class JSXAttributeInstruction extends JSXInstruction {
     return this.value ? [this.value] : [];
   }
 
-  public get isPure(): boolean {
-    return true;
+  public override get hasSideEffects(): boolean {
+    return false;
   }
 }
