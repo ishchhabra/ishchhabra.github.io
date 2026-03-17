@@ -1,8 +1,4 @@
-import {
-  FunctionDeclarationInstruction,
-  IdentifierId,
-  StoreLocalInstruction,
-} from "../../ir";
+import { BaseInstruction, IdentifierId } from "../../ir";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { DefMap } from "../analysis/DefMap";
 import { BaseOptimizationPass, OptimizationResult } from "../late-optimizer/OptimizationPass";
@@ -11,10 +7,10 @@ import { Phi } from "../ssa/Phi";
 /**
  * SSA-phase Dead Code Elimination.
  *
- * Removes pure instructions whose defined place has no readers anywhere
+ * Removes instructions whose defined places have no readers anywhere
  * in the function. Because the IR is in SSA form, each place has exactly
- * one definition, so an instruction is dead when its place's identifier
- * never appears in any other instruction's read set.
+ * one definition, so an instruction is dead when none of its written
+ * places' identifiers appear in any other instruction's read set.
  *
  * Algorithm:
  *   1. Collect all identifiers that are **read** by any instruction or
@@ -23,12 +19,11 @@ import { Phi } from "../ssa/Phi";
  *      whose result is used, mark its operands as used. Repeat until
  *      stable, since phi operands may themselves be other phi results
  *      (nested control flow).
- *   3. Walk every block and remove pure instructions whose defined
- *      identifier is not in the read set.
- *   4. For StoreLocal, the instruction is dead when its lval is not read
- *      — unless its value is produced by an impure instruction, in which
- *      case the StoreLocal must be kept to anchor the side effect to the
- *      codegen output.
+ *   3. Walk every block and remove instructions that have no side effects
+ *      and whose written places are all unused. Dead instructions that
+ *      wrap a side-effecting value (e.g. `StoreLocal result = delete obj.x`)
+ *      are replaced via `asSideEffect()` to preserve the side effect as
+ *      an expression statement.
  *
  * The base class re-runs `step()` until fixpoint so that chains of dead
  * instructions (e.g. `a = 1; b = a;` where only `b` is dead initially)
@@ -82,35 +77,36 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
       }
     }
 
-    // 3. Remove pure instructions that define an unused identifier.
+    // 3. Remove dead instructions, preserving side effects via asSideEffect().
     for (const block of this.functionIR.blocks.values()) {
       const before = block.instructions.length;
-      block.instructions = block.instructions.filter((instr) => {
-        if (!instr.isPure) {
-          return true;
-        }
-
-        // FunctionDeclaration defines a binding via `identifier`, not `place`.
-        if (instr instanceof FunctionDeclarationInstruction) {
-          return usedIds.has(instr.identifier.identifier.id);
-        }
-
-        if (instr instanceof StoreLocalInstruction) {
-          if (usedIds.has(instr.lval.identifier.id)) {
-            return true;
+      block.instructions = block.instructions.flatMap(
+        (instr): BaseInstruction[] => {
+          // Side-effecting instructions are always live.
+          if (instr.hasSideEffects) {
+            return [instr];
           }
 
-          // If the value is produced by an impure instruction, keep the
-          // StoreLocal to anchor the side effect to the codegen output.
-          if (defs.isImpure(instr.value.identifier.id)) {
-            return true;
+          // Keep the instruction if any of its written places are used.
+          if (
+            instr
+              .getWrittenPlaces()
+              .some((place) => usedIds.has(place.identifier.id))
+          ) {
+            return [instr];
           }
 
-          return false;
-        }
+          // The instruction is dead. If it wraps a side-effecting value,
+          // replace it with a side-effect-only form to preserve the effect.
+          const replacement = instr.asSideEffect();
+          if (replacement && defs.hasSideEffects(replacement)) {
+            return [replacement];
+          }
 
-        return usedIds.has(instr.place.identifier.id);
-      });
+          // Truly dead — remove entirely.
+          return [];
+        },
+      );
 
       if (block.instructions.length !== before) {
         changed = true;
