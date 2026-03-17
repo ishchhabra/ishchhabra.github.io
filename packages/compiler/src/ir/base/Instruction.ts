@@ -53,6 +53,17 @@ export abstract class BaseInstruction {
    */
   abstract getReadPlaces(): Place[];
 
+  /**
+   * Return the places that this instruction *defines* (writes to).
+   *
+   * Most instructions define only their own `place`. Instructions that
+   * introduce additional bindings (e.g. StoreLocal's lval,
+   * FunctionDeclaration's identifier) override this to include them.
+   */
+  getWrittenPlaces(): Place[] {
+    return [this.place];
+  }
+
   /** Whether this instruction is pure. */
   public get isPure(): boolean {
     return false;

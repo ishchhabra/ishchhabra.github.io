@@ -59,6 +59,10 @@ export class FunctionDeclarationInstruction extends DeclarationInstruction {
     return this.captures;
   }
 
+  override getWrittenPlaces(): Place[] {
+    return [this.place, this.identifier];
+  }
+
   public get isPure(): boolean {
     return true;
   }

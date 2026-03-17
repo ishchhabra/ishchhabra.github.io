@@ -52,6 +52,10 @@ export class FunctionExpressionInstruction extends ValueInstruction {
     return this.captures;
   }
 
+  public override getWrittenPlaces(): Place[] {
+    return this.identifier ? [this.place, this.identifier] : [this.place];
+  }
+
   public get isPure(): boolean {
     return true;
   }
