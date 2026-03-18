@@ -7,3 +7,4 @@ export { LoadPhiInstruction } from "./LoadPhi";
 export { LoadStaticPropertyInstruction } from "./LoadStaticProperty";
 export { StoreContextInstruction } from "./StoreContext";
 export { StoreLocalInstruction } from "./StoreLocal";
+export { StorePatternInstruction } from "./StorePattern";

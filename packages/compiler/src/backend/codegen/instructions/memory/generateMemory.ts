@@ -9,6 +9,7 @@ import {
   MemoryInstruction,
   StoreContextInstruction,
   StoreLocalInstruction,
+  StorePatternInstruction,
 } from "../../../../ir";
 import { LoadStaticPropertyInstruction } from "../../../../ir/instructions/memory/LoadStaticProperty";
 import { StoreDynamicPropertyInstruction } from "../../../../ir/instructions/memory/StoreDynamicProperty";
@@ -24,6 +25,7 @@ import { generateLoadStaticPropertyInstruction } from "./generateLoadStaticPrope
 import { generateStoreContextInstruction } from "./generateStoreContext";
 import { generateStoreDynamicPropertyInstruction } from "./generateStoreDynamicProperty";
 import { generateStoreLocalInstruction } from "./generateStoreLocal";
+import { generateStorePatternInstruction } from "./generateStorePattern";
 import { generateStoreStaticPropertyInstruction } from "./generateStoreStaticProperty";
 
 export function generateMemoryInstruction(
@@ -48,6 +50,8 @@ export function generateMemoryInstruction(
     return generateStoreContextInstruction(instruction, generator);
   } else if (instruction instanceof StoreLocalInstruction) {
     return generateStoreLocalInstruction(instruction, generator);
+  } else if (instruction instanceof StorePatternInstruction) {
+    return generateStorePatternInstruction(instruction, generator);
   } else if (instruction instanceof StoreStaticPropertyInstruction) {
     return generateStoreStaticPropertyInstruction(instruction, generator);
   } else if (instruction instanceof StoreDynamicPropertyInstruction) {

@@ -18,6 +18,7 @@ export class AssignmentPatternInstruction extends PatternInstruction {
     public readonly nodePath: NodePath<t.Node> | undefined,
     public readonly left: Place,
     public readonly right: Place,
+    public readonly bindings: Place[] = [],
   ) {
     super(id, place, nodePath);
   }
@@ -31,6 +32,7 @@ export class AssignmentPatternInstruction extends PatternInstruction {
       this.nodePath,
       this.left,
       this.right,
+      this.bindings,
     );
   }
 
@@ -41,11 +43,16 @@ export class AssignmentPatternInstruction extends PatternInstruction {
       this.nodePath,
       values.get(this.left.identifier) ?? this.left,
       values.get(this.right.identifier) ?? this.right,
+      this.bindings.map((binding) => values.get(binding.identifier) ?? binding),
     );
   }
 
   public getReadPlaces(): Place[] {
-    return [this.left, this.right];
+    return [this.right];
+  }
+
+  public override getWrittenPlaces(): Place[] {
+    return [this.place, ...this.bindings];
   }
 
   public override get hasSideEffects(): boolean {

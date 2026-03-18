@@ -10,6 +10,7 @@ import {
   RestElementInstruction,
   StoreContextInstruction,
   StoreLocalInstruction,
+  StorePatternInstruction,
 } from "../../../ir";
 import { AssignmentPatternInstruction } from "../../../ir/instructions/pattern/AssignmentPattern";
 import { ObjectPatternInstruction } from "../../../ir/instructions/pattern/ObjectPattern";
@@ -52,16 +53,31 @@ export function buildVariableDeclaration(
     const isContext = lvalIdentifiers.some((p) =>
       environment.contextDeclarationIds.has(p.identifier.declarationId),
     );
+    const isPattern =
+      id.isArrayPattern() ||
+      id.isObjectPattern() ||
+      id.isAssignmentPattern() ||
+      id.isRestElement();
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    const instruction = environment.createInstruction(
-      isContext ? StoreContextInstruction : StoreLocalInstruction,
-      place,
-      nodePath,
-      lvalPlace,
-      valuePlace,
-      isContext ? "let" : "const",
-    );
+    const instruction = isPattern
+      ? environment.createInstruction(
+          StorePatternInstruction,
+          place,
+          nodePath,
+          lvalPlace,
+          valuePlace,
+          isContext ? "let" : "const",
+          lvalIdentifiers,
+        )
+      : environment.createInstruction(
+          isContext ? StoreContextInstruction : StoreLocalInstruction,
+          place,
+          nodePath,
+          lvalPlace,
+          valuePlace,
+          isContext ? "let" : "const",
+        );
     functionBuilder.addInstruction(instruction);
     lvalIdentifiers.forEach((lvalIdentifier) => {
       environment.registerDeclarationInstruction(lvalIdentifier, instruction);
@@ -173,6 +189,7 @@ function buildArrayPatternVariableDeclaratorLVal(
     place,
     nodePath,
     elementPlaces,
+    identifiers,
   );
   functionBuilder.addInstruction(instruction);
   return { place, identifiers };
@@ -221,6 +238,7 @@ function buildObjectPatternVariableDeclaratorLVal(
         valuePlace,
         propertyPath.node.computed,
         false,
+        valueIdentifiers,
       );
       functionBuilder.addInstruction(instruction);
       return place;
@@ -239,6 +257,7 @@ function buildObjectPatternVariableDeclaratorLVal(
         place,
         propertyPath,
         argumentPlace,
+        argumentIdentifiers,
       );
       functionBuilder.addInstruction(instruction);
       return place;
@@ -254,6 +273,7 @@ function buildObjectPatternVariableDeclaratorLVal(
     place,
     nodePath,
     propertyPlaces,
+    identifiers,
   );
   functionBuilder.addInstruction(instruction);
   return { place, identifiers };
@@ -304,6 +324,7 @@ function buildAssignmentPatternVariableDeclaratorLVal(
     nodePath,
     leftPlace,
     rightPlace,
+    leftIdentifiers,
   );
   functionBuilder.addInstruction(instruction);
   return { place, identifiers: leftIdentifiers };
@@ -330,6 +351,7 @@ function buildRestElementVariableDeclaratorLVal(
     place,
     nodePath,
     argumentPlace,
+    argumentIdentifiers,
   );
   functionBuilder.addInstruction(instruction);
   return { place, identifiers: argumentIdentifiers };

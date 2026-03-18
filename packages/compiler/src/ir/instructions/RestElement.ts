@@ -16,6 +16,7 @@ export class RestElementInstruction extends BaseInstruction {
     public readonly place: Place,
     public readonly nodePath: NodePath<t.RestElement>,
     public readonly argument: Place,
+    public readonly bindings: Place[] = [],
   ) {
     super(id, place, nodePath);
   }
@@ -28,6 +29,7 @@ export class RestElementInstruction extends BaseInstruction {
       place,
       this.nodePath,
       this.argument,
+      this.bindings,
     );
   }
 
@@ -37,11 +39,16 @@ export class RestElementInstruction extends BaseInstruction {
       this.place,
       this.nodePath,
       values.get(this.argument.identifier) ?? this.argument,
+      this.bindings.map((binding) => values.get(binding.identifier) ?? binding),
     );
   }
 
   public getReadPlaces(): Place[] {
-    return [this.argument];
+    return [];
+  }
+
+  public override getWrittenPlaces(): Place[] {
+    return [this.place, ...this.bindings];
   }
 
   public override get hasSideEffects(): boolean {

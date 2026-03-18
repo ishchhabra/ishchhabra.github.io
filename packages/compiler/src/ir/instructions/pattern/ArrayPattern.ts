@@ -16,6 +16,7 @@ export class ArrayPatternInstruction extends PatternInstruction {
     public readonly place: Place,
     public readonly nodePath: NodePath<t.ArrayPattern> | undefined,
     public readonly elements: Place[],
+    public readonly bindings: Place[] = [],
   ) {
     super(id, place, nodePath);
   }
@@ -28,6 +29,7 @@ export class ArrayPatternInstruction extends PatternInstruction {
       place,
       this.nodePath,
       this.elements,
+      this.bindings,
     );
   }
 
@@ -37,11 +39,16 @@ export class ArrayPatternInstruction extends PatternInstruction {
       this.place,
       this.nodePath,
       this.elements.map((element) => values.get(element.identifier) ?? element),
+      this.bindings.map((binding) => values.get(binding.identifier) ?? binding),
     );
   }
 
   getReadPlaces(): Place[] {
-    return this.elements;
+    return [];
+  }
+
+  override getWrittenPlaces(): Place[] {
+    return [this.place, ...this.bindings];
   }
 
   public override get hasSideEffects(): boolean {

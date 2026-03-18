@@ -9,6 +9,7 @@ import { Identifier, Place } from "../../core";
  *
  * Examples:
  * - `{ x: 1, y: 2 } // `x: 1` and `y: 2` are the object properties
+ * - `{ a: b } = obj` // `a: b` in a destructuring pattern
  */
 export class ObjectPropertyInstruction extends ValueInstruction {
   constructor(
@@ -19,6 +20,7 @@ export class ObjectPropertyInstruction extends ValueInstruction {
     public readonly value: Place,
     public readonly computed: boolean,
     public readonly shorthand: boolean,
+    public readonly bindings: Place[] = [],
   ) {
     super(id, place, nodePath);
   }
@@ -34,6 +36,7 @@ export class ObjectPropertyInstruction extends ValueInstruction {
       this.value,
       this.computed,
       this.shorthand,
+      this.bindings,
     );
   }
 
@@ -46,10 +49,15 @@ export class ObjectPropertyInstruction extends ValueInstruction {
       values.get(this.value.identifier) ?? this.value,
       this.computed,
       this.shorthand,
+      this.bindings.map((binding) => values.get(binding.identifier) ?? binding),
     );
   }
 
   getReadPlaces(): Place[] {
     return [this.key, this.value];
+  }
+
+  override getWrittenPlaces(): Place[] {
+    return [this.place, ...this.bindings];
   }
 }

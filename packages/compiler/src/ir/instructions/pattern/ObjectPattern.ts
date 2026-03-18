@@ -15,6 +15,7 @@ export class ObjectPatternInstruction extends PatternInstruction {
     public readonly place: Place,
     public readonly nodePath: NodePath<t.ObjectPattern> | undefined,
     public readonly properties: Place[],
+    public readonly bindings: Place[] = [],
   ) {
     super(id, place, nodePath);
   }
@@ -27,6 +28,7 @@ export class ObjectPatternInstruction extends PatternInstruction {
       place,
       this.nodePath,
       this.properties,
+      this.bindings,
     );
   }
 
@@ -36,10 +38,15 @@ export class ObjectPatternInstruction extends PatternInstruction {
       this.place,
       this.nodePath,
       this.properties.map((property) => values.get(property.identifier) ?? property),
+      this.bindings.map((binding) => values.get(binding.identifier) ?? binding),
     );
   }
 
   getReadPlaces(): Place[] {
-    return this.properties;
+    return [];
+  }
+
+  override getWrittenPlaces(): Place[] {
+    return [this.place, ...this.bindings];
   }
 }

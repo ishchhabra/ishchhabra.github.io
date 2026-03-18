@@ -7,6 +7,7 @@ import {
   JumpTerminal,
   StoreContextInstruction,
   StoreLocalInstruction,
+  StorePatternInstruction,
 } from "../../../ir";
 import { buildBindings } from "../bindings/buildBindings";
 import { buildNode } from "../buildNode";
@@ -51,7 +52,8 @@ export function buildForOfStatement(
     const storeLocalInstruction = environment.placeToInstruction.get(leftPlace.id);
     if (
       storeLocalInstruction instanceof StoreLocalInstruction ||
-      storeLocalInstruction instanceof StoreContextInstruction
+      storeLocalInstruction instanceof StoreContextInstruction ||
+      storeLocalInstruction instanceof StorePatternInstruction
     ) {
       storeLocalInstruction.emit = false;
     }

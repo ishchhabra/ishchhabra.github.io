@@ -1,16 +1,9 @@
 import {
-  BaseInstruction,
-  BindingIdentifierInstruction,
   FunctionDeclarationInstruction,
   IdentifierId,
-  ObjectPropertyInstruction,
-  RestElementInstruction,
   StoreLocalInstruction,
+  StorePatternInstruction,
 } from "../../../ir";
-import { ArrayPatternInstruction } from "../../../ir/instructions/pattern/ArrayPattern";
-import { AssignmentPatternInstruction } from "../../../ir/instructions/pattern/AssignmentPattern";
-import { ObjectPatternInstruction } from "../../../ir/instructions/pattern/ObjectPattern";
-import { Place, PlaceId } from "../../../ir/core/Place";
 import { DefMap } from "../../analysis/DefMap";
 import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
 
@@ -35,11 +28,9 @@ export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
 
     // 1. Collect every identifier read by any instruction or terminal.
     const usedIds = new Set<IdentifierId>();
-    const placeToInstr = new Map<PlaceId, BaseInstruction>();
 
     for (const block of this.functionIR.blocks.values()) {
       for (const instr of block.instructions) {
-        placeToInstr.set(instr.place.id, instr);
         for (const place of instr.getReadPlaces()) {
           usedIds.add(place.identifier.id);
         }
@@ -63,23 +54,17 @@ export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
           return usedIds.has(instr.identifier.identifier.id);
         }
 
-        if (instr instanceof StoreLocalInstruction) {
-          if (usedIds.has(instr.lval.identifier.id)) {
+        if (instr instanceof StoreLocalInstruction || instr instanceof StorePatternInstruction) {
+          if (
+            instr
+              .getWrittenPlaces()
+              .some((place) => usedIds.has(place.identifier.id))
+          ) {
             return true;
           }
 
-          // For pattern lvals (ObjectPattern/ArrayPattern), walk the
-          // pattern tree to check if any leaf binding is used.
-          const lvalInstr = placeToInstr.get(instr.lval.id);
-          if (
-            lvalInstr instanceof ObjectPatternInstruction ||
-            lvalInstr instanceof ArrayPatternInstruction
-          ) {
-            return this.hasUsedBinding(lvalInstr, usedIds, placeToInstr);
-          }
-
           // If the value is produced by an impure instruction, keep the
-          // StoreLocal to anchor the side effect to the codegen output.
+          // store to anchor the side effect to the codegen output.
           if (defs.isImpure(instr.value.identifier.id)) {
             return true;
           }
@@ -87,7 +72,7 @@ export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
           return false;
         }
 
-        return usedIds.has(instr.place.identifier.id);
+        return instr.getWrittenPlaces().some((place) => usedIds.has(place.identifier.id));
       });
 
       if (block.instructions.length !== before) {
@@ -96,33 +81,5 @@ export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
     }
 
     return { changed };
-  }
-
-  /**
-   * Recursively walks a pattern instruction tree to check if any leaf
-   * BindingIdentifier place is in the used set.
-   */
-  private hasUsedBinding(
-    instruction: BaseInstruction,
-    usedIds: Set<IdentifierId>,
-    placeToInstr: Map<PlaceId, BaseInstruction>,
-  ): boolean {
-    if (instruction instanceof BindingIdentifierInstruction) {
-      return usedIds.has(instruction.place.identifier.id);
-    }
-
-    return this.getPatternChildren(instruction).some((child) => {
-      const childInstr = placeToInstr.get(child.id);
-      return childInstr !== undefined && this.hasUsedBinding(childInstr, usedIds, placeToInstr);
-    });
-  }
-
-  private getPatternChildren(instruction: BaseInstruction): Place[] {
-    if (instruction instanceof ObjectPatternInstruction) return instruction.properties;
-    if (instruction instanceof ArrayPatternInstruction) return instruction.elements;
-    if (instruction instanceof ObjectPropertyInstruction) return [instruction.value];
-    if (instruction instanceof RestElementInstruction) return [instruction.argument];
-    if (instruction instanceof AssignmentPatternInstruction) return [instruction.left];
-    return [];
   }
 }
