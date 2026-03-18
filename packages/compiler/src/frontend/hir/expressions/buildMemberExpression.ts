@@ -179,6 +179,34 @@ export function buildMemberExpressionUpdate(
   );
   functionBuilder.addInstruction(binaryInstruction);
 
+  // 5b. Materialize the computed value into a named local so codegen
+  //     references an identifier rather than re-emitting the binary expression.
+  const newValBinding = environment.createIdentifier();
+  const newValBindingPlace = environment.createPlace(newValBinding);
+  functionBuilder.addInstruction(
+    environment.createInstruction(BindingIdentifierInstruction, newValBindingPlace, updatePath),
+  );
+  const newValStorePlace = environment.createPlace(environment.createIdentifier());
+  functionBuilder.addInstruction(
+    environment.createInstruction(
+      StoreLocalInstruction,
+      newValStorePlace,
+      updatePath,
+      newValBindingPlace,
+      resultPlace,
+      "const",
+    ),
+  );
+  const newValLoadPlace = environment.createPlace(environment.createIdentifier());
+  functionBuilder.addInstruction(
+    environment.createInstruction(
+      LoadLocalInstruction,
+      newValLoadPlace,
+      updatePath,
+      newValBindingPlace,
+    ),
+  );
+
   // 6. Store the new value back to the property
   const storeIdentifier = environment.createIdentifier();
   const storePlace = environment.createPlace(storeIdentifier);
@@ -191,7 +219,7 @@ export function buildMemberExpressionUpdate(
       updatePath,
       objectPlace,
       propertyName,
-      resultPlace,
+      newValLoadPlace,
     );
     functionBuilder.addInstruction(storeInstruction);
   } else {
@@ -201,7 +229,7 @@ export function buildMemberExpressionUpdate(
       updatePath,
       objectPlace,
       dynamicPropertyPlace!,
-      resultPlace,
+      newValLoadPlace,
     );
     functionBuilder.addInstruction(storeInstruction);
   }
@@ -218,7 +246,7 @@ export function buildMemberExpressionUpdate(
   functionBuilder.addInstruction(exprStmtInstruction);
 
   // 8. Return old value (postfix) or new value (prefix)
-  return updatePath.node.prefix ? resultPlace : oldValLoadPlace;
+  return updatePath.node.prefix ? newValLoadPlace : oldValLoadPlace;
 }
 
 function getStaticPropertyName(nodePath: NodePath<t.Expression>) {

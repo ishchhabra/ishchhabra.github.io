@@ -1,5 +1,6 @@
 import {
   BasicBlock,
+  BindingIdentifierInstruction,
   BlockId,
   CopyInstruction,
   ExpressionStatementInstruction,
@@ -49,6 +50,14 @@ export class SSAEliminator {
     if (declarationBlock === undefined) {
       throw new Error(`Declaration block not found for ${phi.declarationId}`);
     }
+
+    declarationBlock.instructions.push(
+      this.moduleIR.environment.createInstruction(
+        BindingIdentifierInstruction,
+        phi.place,
+        undefined,
+      ),
+    );
 
     const identifier = this.moduleIR.environment.createIdentifier(
       phi.place.identifier.declarationId,

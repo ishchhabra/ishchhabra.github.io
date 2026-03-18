@@ -6,12 +6,12 @@ export function generateStoreLocalInstruction(
   instruction: StoreLocalInstruction,
   generator: CodeGenerator,
 ): t.Statement {
-  let lval = generator.places.get(instruction.lval.id);
-  // TODO: Use BindingIdentifierInstruction to generate instead of this hack.
-  // Since this is the first time we're using lval, it does not exist in the
-  // places map. We need to create a new identifier for it.
-  lval ??= t.identifier(instruction.lval.identifier.name);
-  generator.places.set(instruction.lval.id, lval);
+  const lval = generator.places.get(instruction.lval.id);
+  if (lval === undefined || lval === null) {
+    throw new Error(
+      `Place ${instruction.lval.id} not found for StoreLocal lval (name=${instruction.lval.identifier.name})`,
+    );
+  }
   t.assertLVal(lval);
 
   const value = generator.places.get(instruction.value.id);

@@ -83,6 +83,9 @@ export function buildUpdateExpression(
   } else {
     const lvalIdentifier = environment.createIdentifier(declarationId);
     lvalPlace = environment.createPlace(lvalIdentifier);
+    functionBuilder.addInstruction(
+      environment.createInstruction(BindingIdentifierInstruction, lvalPlace, nodePath),
+    );
   }
 
   const rightLiteral = t.numericLiteral(1);
@@ -119,7 +122,19 @@ export function buildUpdateExpression(
   );
   functionBuilder.addInstruction(instruction);
   environment.registerDeclaration(declarationId, functionBuilder.currentBlock.id, lvalPlace.id);
-  return nodePath.node.prefix ? valuePlace : oldValLoadPlace;
+
+  if (nodePath.node.prefix) {
+    // For prefix (++i), return a LoadLocal of the stored value so codegen
+    // references the named variable ($0_1) instead of re-emitting the
+    // binary expression.
+    const loadIdentifier = environment.createIdentifier(declarationId);
+    const loadPlace = environment.createPlace(loadIdentifier);
+    functionBuilder.addInstruction(
+      environment.createInstruction(LoadLocalInstruction, loadPlace, nodePath, lvalPlace),
+    );
+    return loadPlace;
+  }
+  return oldValLoadPlace;
 }
 
 function createSyntheticBinaryPath(
