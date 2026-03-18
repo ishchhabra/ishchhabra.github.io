@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as FeedRouteImport } from './routes/feed'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WritingIndexRouteImport } from './routes/writing/index'
+import { Route as LabIndexRouteImport } from './routes/lab/index'
 import { Route as WritingSsrThemingRouteImport } from './routes/writing/ssr-theming'
 import { Route as WritingPnpmMonorepoRouteImport } from './routes/writing/pnpm-monorepo'
 import { Route as LabSandboxRouteImport } from './routes/lab/sandbox'
@@ -47,6 +48,11 @@ const IndexRoute = IndexRouteImport.update({
 const WritingIndexRoute = WritingIndexRouteImport.update({
   id: '/writing/',
   path: '/writing/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LabIndexRoute = LabIndexRouteImport.update({
+  id: '/lab/',
+  path: '/lab/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WritingSsrThemingRoute = WritingSsrThemingRouteImport.update({
@@ -143,6 +149,7 @@ export interface FileRoutesByFullPath {
   '/lab/sandbox': typeof LabSandboxRoute
   '/writing/pnpm-monorepo': typeof WritingPnpmMonorepoRoute
   '/writing/ssr-theming': typeof WritingSsrThemingRoute
+  '/lab/': typeof LabIndexRoute
   '/writing/': typeof WritingIndexRoute
   '/demos/ssr-theming/cookie-optimistic': typeof DemosSsrThemingCookieOptimisticRouteRouteWithChildren
   '/demos/ssr-theming/cookie-optimistic-client-cache': typeof DemosSsrThemingCookieOptimisticClientCacheRouteRouteWithChildren
@@ -164,6 +171,7 @@ export interface FileRoutesByTo {
   '/lab/sandbox': typeof LabSandboxRoute
   '/writing/pnpm-monorepo': typeof WritingPnpmMonorepoRoute
   '/writing/ssr-theming': typeof WritingSsrThemingRoute
+  '/lab': typeof LabIndexRoute
   '/writing': typeof WritingIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/demos/ssr-theming/simple-cookie': typeof DemosSsrThemingSimpleCookieRoute
@@ -184,6 +192,7 @@ export interface FileRoutesById {
   '/lab/sandbox': typeof LabSandboxRoute
   '/writing/pnpm-monorepo': typeof WritingPnpmMonorepoRoute
   '/writing/ssr-theming': typeof WritingSsrThemingRoute
+  '/lab/': typeof LabIndexRoute
   '/writing/': typeof WritingIndexRoute
   '/demos/ssr-theming/cookie-optimistic': typeof DemosSsrThemingCookieOptimisticRouteRouteWithChildren
   '/demos/ssr-theming/cookie-optimistic-client-cache': typeof DemosSsrThemingCookieOptimisticClientCacheRouteRouteWithChildren
@@ -207,6 +216,7 @@ export interface FileRouteTypes {
     | '/lab/sandbox'
     | '/writing/pnpm-monorepo'
     | '/writing/ssr-theming'
+    | '/lab/'
     | '/writing/'
     | '/demos/ssr-theming/cookie-optimistic'
     | '/demos/ssr-theming/cookie-optimistic-client-cache'
@@ -228,6 +238,7 @@ export interface FileRouteTypes {
     | '/lab/sandbox'
     | '/writing/pnpm-monorepo'
     | '/writing/ssr-theming'
+    | '/lab'
     | '/writing'
     | '/api/auth/$'
     | '/demos/ssr-theming/simple-cookie'
@@ -247,6 +258,7 @@ export interface FileRouteTypes {
     | '/lab/sandbox'
     | '/writing/pnpm-monorepo'
     | '/writing/ssr-theming'
+    | '/lab/'
     | '/writing/'
     | '/demos/ssr-theming/cookie-optimistic'
     | '/demos/ssr-theming/cookie-optimistic-client-cache'
@@ -269,6 +281,7 @@ export interface RootRouteChildren {
   LabSandboxRoute: typeof LabSandboxRoute
   WritingPnpmMonorepoRoute: typeof WritingPnpmMonorepoRoute
   WritingSsrThemingRoute: typeof WritingSsrThemingRoute
+  LabIndexRoute: typeof LabIndexRoute
   WritingIndexRoute: typeof WritingIndexRoute
   DemosSsrThemingCookieOptimisticRouteRoute: typeof DemosSsrThemingCookieOptimisticRouteRouteWithChildren
   DemosSsrThemingCookieOptimisticClientCacheRouteRoute: typeof DemosSsrThemingCookieOptimisticClientCacheRouteRouteWithChildren
@@ -305,6 +318,13 @@ declare module '@tanstack/react-router' {
       path: '/writing'
       fullPath: '/writing/'
       preLoaderRoute: typeof WritingIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lab/': {
+      id: '/lab/'
+      path: '/lab'
+      fullPath: '/lab/'
+      preLoaderRoute: typeof LabIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/writing/ssr-theming': {
@@ -461,6 +481,7 @@ const rootRouteChildren: RootRouteChildren = {
   LabSandboxRoute: LabSandboxRoute,
   WritingPnpmMonorepoRoute: WritingPnpmMonorepoRoute,
   WritingSsrThemingRoute: WritingSsrThemingRoute,
+  LabIndexRoute: LabIndexRoute,
   WritingIndexRoute: WritingIndexRoute,
   DemosSsrThemingCookieOptimisticRouteRoute:
     DemosSsrThemingCookieOptimisticRouteRouteWithChildren,

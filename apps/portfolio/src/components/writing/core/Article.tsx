@@ -1,7 +1,7 @@
-import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { getArticleBySlug } from "../../../lib/articles";
 import { useRenderMode } from "../../../lib/render-mode";
+import { BackLink } from "../../core/BackLink";
 import { Page } from "../../Page";
 import { Surface } from "../../Surface";
 import { ArticleCard } from "./ArticleCard";
@@ -41,23 +41,7 @@ export function ArticleHeader({
 }) {
   return (
     <header className="max-w-4xl pb-8">
-      <Link
-        to="/writing"
-        className="mb-8 inline-flex items-center gap-1.5 text-[12px] text-zinc-500 transition-colors hover:text-zinc-700 dark:text-zinc-600 dark:hover:text-zinc-400"
-      >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          aria-hidden
-        >
-          <path d="M19 12H5M12 19l-7-7 7-7" />
-        </svg>
-        Writing
-      </Link>
+      <BackLink to="/writing">Writing</BackLink>
       <Page.Hero title={<ArticleCard.Title as="h1" slug={slug} />}>
         <ArticleCard.Description
           as="p"

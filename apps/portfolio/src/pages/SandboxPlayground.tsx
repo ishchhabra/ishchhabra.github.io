@@ -1,7 +1,7 @@
 import { Sandbox } from "@ish/sandbox";
 import type { ReactNode } from "react";
 import { Component, useCallback, useEffect, useRef, useState } from "react";
-import { Page } from "../components/Page";
+import { Lab } from "../components/lab/Lab";
 import { Surface } from "../components/Surface";
 
 const AUTO_RUN_DEBOUNCE_MS = 500;
@@ -384,19 +384,7 @@ export function SandboxPlayground() {
   }, [code]);
 
   return (
-    <Page.Main>
-      <div className="mb-6">
-        <Page.Hero title="React Sandbox" accentLine={false} viewTransitionName="lab-sandbox-title">
-          <p
-            className="max-w-2xl text-sm text-zinc-600 dark:text-zinc-400"
-            style={{ viewTransitionName: "lab-sandbox-description" }}
-          >
-            Write React code and run it in an isolated iframe. CSP-enforced — no network access, no
-            host DOM access. Full React with hooks and interactivity.
-          </p>
-        </Page.Hero>
-      </div>
-
+    <Lab.Layout slug="sandbox">
       {/* Examples row */}
       <div className="mb-5 flex flex-wrap gap-2">
         {EXAMPLES.map((example, i) => (
@@ -555,6 +543,6 @@ export function SandboxPlayground() {
           </div>
         </Surface>
       </div>
-    </Page.Main>
+    </Lab.Layout>
   );
 }
