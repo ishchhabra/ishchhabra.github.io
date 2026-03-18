@@ -161,20 +161,30 @@ function buildDestructuringAssignment(
   const {
     place: leftPlace,
     instructions,
+    identifiers,
     hasContext,
   } = buildAssignmentLeft(leftPath, nodePath, functionBuilder, moduleBuilder, environment);
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const StoreClass = hasContext ? StoreContextInstruction : StoreLocalInstruction;
-  const instruction = environment.createInstruction(
-    StoreClass,
-    place,
-    nodePath,
-    leftPlace,
-    rightPlace,
-    "const",
-  );
+  const instruction = hasContext
+    ? environment.createInstruction(
+        StoreContextInstruction,
+        place,
+        nodePath,
+        leftPlace,
+        rightPlace,
+        "const",
+      )
+    : environment.createInstruction(
+        StoreLocalInstruction,
+        place,
+        nodePath,
+        leftPlace,
+        rightPlace,
+        "const",
+        identifiers,
+      );
   functionBuilder.addInstruction(instruction);
 
   for (const instruction of instructions) {
@@ -189,7 +199,7 @@ function buildAssignmentLeft(
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): { place: Place; instructions: BaseInstruction[]; hasContext: boolean } {
+): { place: Place; instructions: BaseInstruction[]; identifiers: Place[]; hasContext: boolean } {
   if (leftPath.isIdentifier()) {
     return buildIdentifierAssignmentLeft(leftPath, nodePath, functionBuilder, environment);
   } else if (leftPath.isMemberExpression()) {
@@ -242,7 +252,7 @@ function buildIdentifierAssignmentLeft(
   nodePath: NodePath<t.AssignmentExpression>,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
-): { place: Place; instructions: BaseInstruction[]; hasContext: boolean } {
+): { place: Place; instructions: BaseInstruction[]; identifiers: Place[]; hasContext: boolean } {
   const declarationId = functionBuilder.getDeclarationId(leftPath.node.name, nodePath);
   if (declarationId === undefined) {
     throw new Error(`Variable accessed before declaration: ${leftPath.node.name}`);
@@ -253,7 +263,7 @@ function buildIdentifierAssignmentLeft(
   if (environment.contextDeclarationIds.has(declarationId)) {
     const latestDeclaration = environment.getLatestDeclaration(declarationId);
     const existingPlace = environment.places.get(latestDeclaration.placeId)!;
-    return { place: existingPlace, instructions: [], hasContext: true };
+    return { place: existingPlace, instructions: [], identifiers: [existingPlace], hasContext: true };
   }
 
   const identifier = environment.createIdentifier(declarationId);
@@ -261,7 +271,7 @@ function buildIdentifierAssignmentLeft(
   const instruction = environment.createInstruction(BindingIdentifierInstruction, place, nodePath);
   functionBuilder.addInstruction(instruction);
   environment.registerDeclaration(declarationId, functionBuilder.currentBlock.id, place.id);
-  return { place, instructions: [], hasContext: false };
+  return { place, instructions: [], identifiers: [place], hasContext: false };
 }
 
 function buildMemberExpressionAssignmentLeft(
@@ -270,7 +280,7 @@ function buildMemberExpressionAssignmentLeft(
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): { place: Place; instructions: BaseInstruction[]; hasContext: boolean } {
+): { place: Place; instructions: BaseInstruction[]; identifiers: Place[]; hasContext: boolean } {
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(BindingIdentifierInstruction, place, nodePath);
@@ -328,6 +338,7 @@ function buildMemberExpressionAssignmentLeft(
   return {
     place,
     instructions: [loadLocalInstruction, storePropertyInstruction, expressionStatementInstruction],
+    identifiers: [place],
     hasContext: false,
   };
 }
@@ -338,8 +349,9 @@ function buildArrayPatternAssignmentLeft(
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): { place: Place; instructions: BaseInstruction[]; hasContext: boolean } {
+): { place: Place; instructions: BaseInstruction[]; identifiers: Place[]; hasContext: boolean } {
   const instructions: BaseInstruction[] = [];
+  const identifiers: Place[] = [];
   let hasContext = false;
 
   const elementPaths = leftPath.get("elements");
@@ -368,6 +380,7 @@ function buildArrayPatternAssignmentLeft(
       environment,
     );
     instructions.push(...result.instructions);
+    identifiers.push(...result.identifiers);
     if (result.hasContext) hasContext = true;
     return result.place;
   });
@@ -379,9 +392,10 @@ function buildArrayPatternAssignmentLeft(
     place,
     leftPath,
     elementPlaces,
+    identifiers,
   );
   functionBuilder.addInstruction(instruction);
-  return { place, instructions, hasContext };
+  return { place, instructions, identifiers, hasContext };
 }
 
 function buildObjectPatternAssignmentLeft(
@@ -390,8 +404,9 @@ function buildObjectPatternAssignmentLeft(
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): { place: Place; instructions: BaseInstruction[]; hasContext: boolean } {
+): { place: Place; instructions: BaseInstruction[]; identifiers: Place[]; hasContext: boolean } {
   const instructions: BaseInstruction[] = [];
+  const identifiers: Place[] = [];
   let hasContext = false;
 
   const propertyPaths = leftPath.get("properties");
@@ -428,6 +443,7 @@ function buildObjectPatternAssignmentLeft(
         environment,
       );
       instructions.push(...result.instructions);
+      identifiers.push(...result.identifiers);
       if (result.hasContext) hasContext = true;
 
       const identifier = environment.createIdentifier();
@@ -440,6 +456,7 @@ function buildObjectPatternAssignmentLeft(
         result.place,
         propertyPath.node.computed,
         propertyPath.node.shorthand,
+        result.identifiers,
       );
       functionBuilder.addInstruction(instruction);
       return place;
@@ -455,6 +472,7 @@ function buildObjectPatternAssignmentLeft(
         environment,
       );
       instructions.push(...result.instructions);
+      identifiers.push(...result.identifiers);
       if (result.hasContext) hasContext = true;
 
       const identifier = environment.createIdentifier();
@@ -464,6 +482,7 @@ function buildObjectPatternAssignmentLeft(
         place,
         propertyPath,
         result.place,
+        result.identifiers,
       );
       functionBuilder.addInstruction(instruction);
       return place;
@@ -479,9 +498,10 @@ function buildObjectPatternAssignmentLeft(
     place,
     leftPath,
     propertyPlaces,
+    identifiers,
   );
   functionBuilder.addInstruction(instruction);
-  return { place, instructions, hasContext };
+  return { place, instructions, identifiers, hasContext };
 }
 
 function buildAssignmentPatternAssignmentLeft(
@@ -490,11 +510,12 @@ function buildAssignmentPatternAssignmentLeft(
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): { place: Place; instructions: BaseInstruction[]; hasContext: boolean } {
+): { place: Place; instructions: BaseInstruction[]; identifiers: Place[]; hasContext: boolean } {
   const leftPath_ = leftPath.get("left");
   const {
     place: leftPlace,
     instructions,
+    identifiers,
     hasContext,
   } = buildAssignmentLeft(leftPath_, nodePath, functionBuilder, moduleBuilder, environment);
 
@@ -512,9 +533,10 @@ function buildAssignmentPatternAssignmentLeft(
     leftPath,
     leftPlace,
     rightPlace,
+    identifiers,
   );
   functionBuilder.addInstruction(instruction);
-  return { place, instructions, hasContext };
+  return { place, instructions, identifiers, hasContext };
 }
 
 function buildRestElementAssignmentLeft(
@@ -523,11 +545,12 @@ function buildRestElementAssignmentLeft(
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): { place: Place; instructions: BaseInstruction[]; hasContext: boolean } {
+): { place: Place; instructions: BaseInstruction[]; identifiers: Place[]; hasContext: boolean } {
   const argumentPath = leftPath.get("argument");
   const {
     place: argumentPlace,
     instructions: argumentInstructions,
+    identifiers,
     hasContext,
   } = buildAssignmentLeft(argumentPath, nodePath, functionBuilder, moduleBuilder, environment);
 
@@ -538,9 +561,10 @@ function buildRestElementAssignmentLeft(
     place,
     leftPath,
     argumentPlace,
+    identifiers,
   );
   functionBuilder.addInstruction(instruction);
-  return { place, instructions: [...argumentInstructions], hasContext };
+  return { place, instructions: [...argumentInstructions], identifiers, hasContext };
 }
 
 function buildAssignmentRight(

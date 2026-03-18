@@ -29,6 +29,7 @@ export class StoreLocalInstruction extends MemoryInstruction {
     public readonly lval: Place,
     public readonly value: Place,
     public readonly type: "let" | "const" | "var",
+    public readonly bindings: Place[] = [],
   ) {
     super(id, place, nodePath);
   }
@@ -43,6 +44,7 @@ export class StoreLocalInstruction extends MemoryInstruction {
       this.lval,
       this.value,
       this.type,
+      this.bindings,
     );
   }
 
@@ -57,6 +59,9 @@ export class StoreLocalInstruction extends MemoryInstruction {
       rewriteDefinitions ? (values.get(this.lval.identifier) ?? this.lval) : this.lval,
       values.get(this.value.identifier) ?? this.value,
       this.type,
+      rewriteDefinitions
+        ? this.bindings.map((binding) => values.get(binding.identifier) ?? binding)
+        : this.bindings,
     );
   }
 
@@ -65,7 +70,7 @@ export class StoreLocalInstruction extends MemoryInstruction {
   }
 
   override getWrittenPlaces(): Place[] {
-    return [this.place, this.lval];
+    return [this.place, this.lval, ...this.bindings];
   }
 
   public override get hasSideEffects(): boolean {

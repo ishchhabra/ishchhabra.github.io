@@ -15,7 +15,6 @@ import {
   SpreadElementInstruction,
   StoreContextInstruction,
   StoreLocalInstruction,
-  StorePatternInstruction,
   UnsupportedNodeInstruction,
   ValueInstruction,
 } from "../../../ir";
@@ -62,8 +61,7 @@ export function generateInstruction(
     // the place is temporary or not.
     if (
       (instruction instanceof StoreLocalInstruction ||
-        instruction instanceof StoreContextInstruction ||
-        instruction instanceof StorePatternInstruction) &&
+        instruction instanceof StoreContextInstruction) &&
       instruction.emit
     ) {
       return [statement as t.Statement];

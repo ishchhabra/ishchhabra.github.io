@@ -2,7 +2,6 @@ import {
   FunctionDeclarationInstruction,
   IdentifierId,
   StoreLocalInstruction,
-  StorePatternInstruction,
 } from "../../../ir";
 import { DefMap } from "../../analysis/DefMap";
 import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
@@ -54,7 +53,7 @@ export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
           return usedIds.has(instr.identifier.identifier.id);
         }
 
-        if (instr instanceof StoreLocalInstruction || instr instanceof StorePatternInstruction) {
+        if (instr instanceof StoreLocalInstruction) {
           if (
             instr
               .getWrittenPlaces()

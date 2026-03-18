@@ -10,7 +10,6 @@ import {
   RestElementInstruction,
   StoreContextInstruction,
   StoreLocalInstruction,
-  StorePatternInstruction,
 } from "../../../ir";
 import { AssignmentPatternInstruction } from "../../../ir/instructions/pattern/AssignmentPattern";
 import { ObjectPatternInstruction } from "../../../ir/instructions/pattern/ObjectPattern";
@@ -60,23 +59,23 @@ export function buildVariableDeclaration(
       id.isRestElement();
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    const instruction = isPattern
+    const instruction = isContext
       ? environment.createInstruction(
-          StorePatternInstruction,
+          StoreContextInstruction,
           place,
           nodePath,
           lvalPlace,
           valuePlace,
-          isContext ? "let" : "const",
-          lvalIdentifiers,
+          "let",
         )
       : environment.createInstruction(
-          isContext ? StoreContextInstruction : StoreLocalInstruction,
+          StoreLocalInstruction,
           place,
           nodePath,
           lvalPlace,
           valuePlace,
-          isContext ? "let" : "const",
+          "const",
+          isPattern ? lvalIdentifiers : [],
         );
     functionBuilder.addInstruction(instruction);
     lvalIdentifiers.forEach((lvalIdentifier) => {
