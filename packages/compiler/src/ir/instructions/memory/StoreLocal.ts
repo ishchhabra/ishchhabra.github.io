@@ -78,11 +78,6 @@ export class StoreLocalInstruction extends MemoryInstruction {
   }
 
   override asSideEffect(): BaseInstruction | null {
-    return new ExpressionStatementInstruction(
-      this.id,
-      this.place,
-      this.nodePath,
-      this.value,
-    );
+    return new ExpressionStatementInstruction(this.id, this.place, this.nodePath, this.value);
   }
 }

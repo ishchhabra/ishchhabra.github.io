@@ -53,10 +53,7 @@ export function buildVariableDeclaration(
       environment.contextDeclarationIds.has(p.identifier.declarationId),
     );
     const isPattern =
-      id.isArrayPattern() ||
-      id.isObjectPattern() ||
-      id.isAssignmentPattern() ||
-      id.isRestElement();
+      id.isArrayPattern() || id.isObjectPattern() || id.isAssignmentPattern() || id.isRestElement();
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
     const instruction = isContext
@@ -355,4 +352,3 @@ function buildRestElementVariableDeclaratorLVal(
   functionBuilder.addInstruction(instruction);
   return { place, identifiers: argumentIdentifiers };
 }
-

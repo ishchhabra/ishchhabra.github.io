@@ -80,33 +80,27 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
     // 3. Remove dead instructions, preserving side effects via asSideEffect().
     for (const block of this.functionIR.blocks.values()) {
       const before = block.instructions.length;
-      block.instructions = block.instructions.flatMap(
-        (instr): BaseInstruction[] => {
-          // Side-effecting instructions are always live.
-          if (instr.hasSideEffects) {
-            return [instr];
-          }
+      block.instructions = block.instructions.flatMap((instr): BaseInstruction[] => {
+        // Side-effecting instructions are always live.
+        if (instr.hasSideEffects) {
+          return [instr];
+        }
 
-          // Keep the instruction if any of its written places are used.
-          if (
-            instr
-              .getWrittenPlaces()
-              .some((place) => usedIds.has(place.identifier.id))
-          ) {
-            return [instr];
-          }
+        // Keep the instruction if any of its written places are used.
+        if (instr.getWrittenPlaces().some((place) => usedIds.has(place.identifier.id))) {
+          return [instr];
+        }
 
-          // The instruction is dead. If it wraps a side-effecting value,
-          // replace it with a side-effect-only form to preserve the effect.
-          const replacement = instr.asSideEffect();
-          if (replacement && defs.hasSideEffects(replacement)) {
-            return [replacement];
-          }
+        // The instruction is dead. If it wraps a side-effecting value,
+        // replace it with a side-effect-only form to preserve the effect.
+        const replacement = instr.asSideEffect();
+        if (replacement && defs.hasSideEffects(replacement)) {
+          return [replacement];
+        }
 
-          // Truly dead — remove entirely.
-          return [];
-        },
-      );
+        // Truly dead — remove entirely.
+        return [];
+      });
 
       if (block.instructions.length !== before) {
         changed = true;

@@ -263,7 +263,12 @@ function buildIdentifierAssignmentLeft(
   if (environment.contextDeclarationIds.has(declarationId)) {
     const latestDeclaration = environment.getLatestDeclaration(declarationId);
     const existingPlace = environment.places.get(latestDeclaration.placeId)!;
-    return { place: existingPlace, instructions: [], identifiers: [existingPlace], hasContext: true };
+    return {
+      place: existingPlace,
+      instructions: [],
+      identifiers: [existingPlace],
+      hasContext: true,
+    };
   }
 
   const identifier = environment.createIdentifier(declarationId);

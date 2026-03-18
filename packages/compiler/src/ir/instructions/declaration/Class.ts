@@ -42,5 +42,4 @@ export class ClassDeclarationInstruction extends DeclarationInstruction {
   public override getWrittenPlaces(): Place[] {
     return [this.place, this.identifier];
   }
-
 }

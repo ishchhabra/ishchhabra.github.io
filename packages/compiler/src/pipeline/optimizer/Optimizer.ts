@@ -63,10 +63,7 @@ export class Optimizer {
       }
 
       if (this.options.enableCopyPropagationPass) {
-        const copyPropagationResult = new CopyPropagationPass(
-          this.functionIR,
-          this.ssa.phis,
-        ).run();
+        const copyPropagationResult = new CopyPropagationPass(this.functionIR, this.ssa.phis).run();
         changed ||= copyPropagationResult.changed;
         blocks = copyPropagationResult.blocks;
       }
