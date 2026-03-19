@@ -19,4 +19,8 @@ export class Place {
     public readonly id: PlaceId,
     public readonly identifier: Identifier,
   ) {}
+
+  rewrite(values: Map<Identifier, Place>): Place {
+    return values.get(this.identifier) ?? this;
+  }
 }

@@ -2,13 +2,16 @@ import {
   BasicBlock,
   BlockId,
   BranchTerminal,
-  ForOfTerminal,
   JumpTerminal,
   SwitchTerminal,
   TryTerminal,
 } from "../../ir";
+import { BaseStructure } from "../../ir/core/Structure";
 
-export function getPredecessors(blocks: Map<BlockId, BasicBlock>) {
+export function getPredecessors(
+  blocks: Map<BlockId, BasicBlock>,
+  structures: Map<BlockId, BaseStructure>,
+) {
   const predecessors = new Map<BlockId, Set<BlockId>>();
   const visited = new Set<BlockId>();
 
@@ -32,15 +35,21 @@ export function getPredecessors(blocks: Map<BlockId, BasicBlock>) {
     if (visited.has(blockId)) return;
     visited.add(blockId);
 
+    const structure = structures.get(blockId);
+    if (structure) {
+      for (const [, target] of structure.getEdges()) {
+        predecessors.get(target)?.add(blockId);
+        processBlock(target, block);
+      }
+      return;
+    }
+
     // Visit successors based on terminal type
     if (block.terminal instanceof JumpTerminal) {
       processBlock(block.terminal.target, block);
     } else if (block.terminal instanceof BranchTerminal) {
       processBlock(block.terminal.consequent, block);
       processBlock(block.terminal.alternate, block);
-    } else if (block.terminal instanceof ForOfTerminal) {
-      processBlock(block.terminal.body, block);
-      processBlock(block.terminal.fallthrough, block);
     } else if (block.terminal instanceof SwitchTerminal) {
       for (const c of block.terminal.cases) {
         processBlock(c.block, block);

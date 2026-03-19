@@ -4,12 +4,8 @@ import {
   LoadLocalInstruction,
   LoadPhiInstruction,
   Place,
-  ReturnTerminal,
   StoreLocalInstruction,
-  SwitchTerminal,
-  ThrowTerminal,
 } from "../../ir";
-import { BaseTerminal } from "../../ir/base/Terminal";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { DefMap } from "../analysis/DefMap";
 import { BaseOptimizationPass, OptimizationResult } from "../late-optimizer/OptimizationPass";
@@ -123,7 +119,7 @@ export class CopyPropagationPass extends BaseOptimizationPass {
           }
         }
         if (rewriteMap.size > 0) {
-          block.terminal = this.rewriteTerminal(block.terminal, rewriteMap);
+          block.terminal = block.terminal.rewrite(rewriteMap);
           changed = true;
         }
       }
@@ -141,31 +137,5 @@ export class CopyPropagationPass extends BaseOptimizationPass {
     }
 
     return { changed };
-  }
-
-  private rewriteTerminal(terminal: BaseTerminal, values: Map<Identifier, Place>): BaseTerminal {
-    if (terminal instanceof ReturnTerminal && values.has(terminal.value.identifier)) {
-      return new ReturnTerminal(terminal.id, values.get(terminal.value.identifier)!);
-    }
-
-    if (terminal instanceof ThrowTerminal && values.has(terminal.value.identifier)) {
-      return new ThrowTerminal(terminal.id, values.get(terminal.value.identifier)!);
-    }
-
-    if (terminal instanceof SwitchTerminal) {
-      const discriminant = values.get(terminal.discriminant.identifier) ?? terminal.discriminant;
-      const cases = terminal.cases.map((c) => ({
-        test: c.test !== null ? (values.get(c.test.identifier) ?? c.test) : null,
-        block: c.block,
-      }));
-      if (
-        discriminant !== terminal.discriminant ||
-        cases.some((c, i) => c.test !== terminal.cases[i].test)
-      ) {
-        return new SwitchTerminal(terminal.id, discriminant, cases, terminal.fallthrough);
-      }
-    }
-
-    return terminal;
   }
 }

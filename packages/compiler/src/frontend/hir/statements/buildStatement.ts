@@ -5,13 +5,12 @@ import { Place } from "../../../ir";
 import { buildUnsupportedNode } from "../buildUnsupportedNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
-import { buildBreakStatement } from "./buildBreakStatement";
 import { buildBlockStatement } from "./buildBlockStatement";
+import { buildBreakStatement } from "./buildBreakStatement";
 import { buildClassDeclaration } from "./buildClassDeclaration";
 import { buildExportDefaultDeclaration } from "./buildExportDefaultDeclaration";
 import { buildExportNamedDeclaration } from "./buildExportNamedDeclaration";
 import { buildExpressionStatement } from "./buildExpressionStatement";
-import { buildForOfStatement } from "./buildForOfStatement";
 import { buildForStatement } from "./buildForStatement";
 import { buildFunctionDeclaration } from "./buildFunctionDeclaration";
 import { buildIfStatement } from "./buildIfStatement";
@@ -69,9 +68,6 @@ export function buildStatement(
     case "WhileStatement":
       nodePath.assertWhileStatement();
       return buildWhileStatement(nodePath, functionBuilder, moduleBuilder, environment);
-    case "ForOfStatement":
-      nodePath.assertForOfStatement();
-      return buildForOfStatement(nodePath, functionBuilder, moduleBuilder, environment);
     case "ThrowStatement":
       nodePath.assertThrowStatement();
       return buildThrowStatement(nodePath, functionBuilder, moduleBuilder, environment);

@@ -33,8 +33,7 @@ export function generateFunction(
   generateHeader(functionIR, generator);
   const params = generateFunctionParams(functionIR, generator);
 
-  const entryBlock = functionIR.entryBlockId;
-  const statements = generateBlock(entryBlock, functionIR, generator);
+  const statements = generateBlock(functionIR.entryBlockId, functionIR, generator);
 
   generator.generatedBlocks = savedGeneratedBlocks;
 

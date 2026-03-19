@@ -92,6 +92,12 @@ export class MergeConsecutiveBlocksPass extends BaseOptimizationPass {
       }
     }
 
+    const structure = this.functionIR.structures.get(successorId);
+    if (structure) {
+      this.functionIR.structures.delete(successorId);
+      this.functionIR.structures.set(predecessorId, structure);
+    }
+
     // Remove the successor block from FunctionIR data structures
     this.functionIR.blocks.delete(successorId);
     this.functionIR.successors.delete(successorId);

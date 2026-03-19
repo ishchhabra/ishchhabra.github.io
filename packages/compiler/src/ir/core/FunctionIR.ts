@@ -9,6 +9,7 @@ import {
 import { BaseInstruction } from "../base";
 import { BasicBlock, BlockId } from "./Block";
 import { Place } from "./Place";
+import { BaseStructure } from "./Structure";
 
 /**
  * Simulated opaque type for FunctionIR to prevent using normal numbers as ids
@@ -63,12 +64,13 @@ export class FunctionIR {
     public readonly header: BaseInstruction[],
     public readonly params: Place[],
     public blocks: Map<BlockId, BasicBlock>,
+    public structures: Map<BlockId, BaseStructure>,
   ) {
     this.computeCFG();
   }
 
   private computeCFG() {
-    this.predecessors = getPredecessors(this.blocks);
+    this.predecessors = getPredecessors(this.blocks, this.structures);
     this.successors = getSuccessors(this.predecessors);
     this.dominators = getDominators(this.predecessors, this.entryBlockId);
     this.immediateDominators = getImmediateDominators(this.dominators);

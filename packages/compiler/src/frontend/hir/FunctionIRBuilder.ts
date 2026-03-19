@@ -3,6 +3,7 @@ import * as t from "@babel/types";
 import { Environment } from "../../environment";
 import {
   BaseInstruction,
+  BaseStructure,
   BasicBlock,
   BlockId,
   type ControlContext,
@@ -20,6 +21,7 @@ import { ModuleIRBuilder } from "./ModuleIRBuilder";
 export class FunctionIRBuilder {
   public currentBlock: BasicBlock;
   public readonly blocks: Map<BlockId, BasicBlock> = new Map();
+  public readonly structures: Map<BlockId, BaseStructure> = new Map();
   public readonly header: BaseInstruction[] = [];
   public readonly controlStack: ControlContext[] = [];
 
@@ -77,7 +79,13 @@ export class FunctionIRBuilder {
       }
     }
 
-    const functionIR = new FunctionIR(functionId, this.header, params, this.blocks);
+    const functionIR = new FunctionIR(
+      functionId,
+      this.header,
+      params,
+      this.blocks,
+      this.structures,
+    );
     this.moduleBuilder.functions.set(functionIR.id, functionIR);
     return functionIR;
   }

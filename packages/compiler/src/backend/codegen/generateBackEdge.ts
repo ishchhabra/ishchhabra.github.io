@@ -1,11 +1,10 @@
-import { BranchTerminal, ForOfTerminal, JumpTerminal } from "../../ir";
+import { BranchTerminal, JumpTerminal } from "../../ir";
 
 import * as t from "@babel/types";
 import { BlockId } from "../../ir";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { CodeGenerator } from "../CodeGenerator";
 import { generateBasicBlock } from "./generateBlock";
-import { generateForOfTerminal } from "./terminals/generateForOf";
 
 export function generateBackEdge(
   blockId: BlockId,
@@ -20,10 +19,6 @@ export function generateBackEdge(
 
   if (terminal instanceof BranchTerminal) {
     return generateBranchBackEdge(terminal, functionIR, generator);
-  }
-
-  if (terminal instanceof ForOfTerminal) {
-    return generateForOfTerminal(terminal, functionIR, generator);
   }
 
   throw new Error(`Unsupported back edge on block ${blockId} (${terminal.constructor.name})`);

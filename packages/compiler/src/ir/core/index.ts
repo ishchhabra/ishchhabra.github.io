@@ -8,9 +8,9 @@ export {
   type IdentifierId,
 } from "./Identifier";
 export { Place, type PlaceId } from "./Place";
+export { BaseStructure } from "./Structure";
 export {
   BranchTerminal,
-  ForOfTerminal,
   JumpTerminal,
   ReturnTerminal,
   SwitchTerminal,

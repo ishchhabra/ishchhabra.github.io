@@ -104,7 +104,7 @@ export class Environment {
 
   public createFunction(): FunctionIR {
     const functionId = makeFunctionIRId(this.nextFunctionId++);
-    const functionIR = new FunctionIR(functionId, [], [], new Map());
+    const functionIR = new FunctionIR(functionId, [], [], new Map(), new Map());
     this.functions.set(functionId, functionIR);
     return functionIR;
   }

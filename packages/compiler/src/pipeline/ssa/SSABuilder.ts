@@ -6,12 +6,8 @@ import {
   LoadLocalInstruction,
   LoadPhiInstruction,
   Place,
-  ReturnTerminal,
   StoreLocalInstruction,
-  SwitchTerminal,
-  ThrowTerminal,
 } from "../../ir";
-import { BaseTerminal } from "../../ir/base/Terminal";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { Phi } from "./Phi";
@@ -180,7 +176,7 @@ export class SSABuilder {
           }
         }
         if (rewriteMap.size > 0) {
-          block.terminal = this.rewriteTerminal(block.terminal, rewriteMap);
+          block.terminal = block.terminal.rewrite(rewriteMap);
         }
       }
 
@@ -207,32 +203,6 @@ export class SSABuilder {
     };
 
     rename(this.functionIR.entryBlockId);
-  }
-
-  private rewriteTerminal(terminal: BaseTerminal, values: Map<Identifier, Place>): BaseTerminal {
-    if (terminal instanceof ReturnTerminal && values.has(terminal.value.identifier)) {
-      return new ReturnTerminal(terminal.id, values.get(terminal.value.identifier)!);
-    }
-
-    if (terminal instanceof ThrowTerminal && values.has(terminal.value.identifier)) {
-      return new ThrowTerminal(terminal.id, values.get(terminal.value.identifier)!);
-    }
-
-    if (terminal instanceof SwitchTerminal) {
-      const discriminant = values.get(terminal.discriminant.identifier) ?? terminal.discriminant;
-      const cases = terminal.cases.map((c) => ({
-        test: c.test !== null ? (values.get(c.test.identifier) ?? c.test) : null,
-        block: c.block,
-      }));
-      if (
-        discriminant !== terminal.discriminant ||
-        cases.some((c, i) => c.test !== terminal.cases[i].test)
-      ) {
-        return new SwitchTerminal(terminal.id, discriminant, cases, terminal.fallthrough);
-      }
-    }
-
-    return terminal;
   }
 
   private rewriteInstruction<T extends BaseInstruction>(

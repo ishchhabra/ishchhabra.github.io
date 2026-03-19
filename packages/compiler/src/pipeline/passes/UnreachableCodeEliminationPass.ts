@@ -1,5 +1,5 @@
-import { FunctionIR } from "../../ir/core/FunctionIR";
 import { getPredecessors } from "../../frontend/cfg/getPredecessors";
+import { FunctionIR } from "../../ir/core/FunctionIR";
 import { BaseOptimizationPass, OptimizationResult } from "../late-optimizer/OptimizationPass";
 
 /**
@@ -17,7 +17,7 @@ export class UnreachableCodeEliminationPass extends BaseOptimizationPass {
   protected step(): OptimizationResult {
     let changed = false;
 
-    const predecessors = getPredecessors(this.functionIR.blocks);
+    const predecessors = getPredecessors(this.functionIR.blocks, this.functionIR.structures);
     const entryBlockId = this.functionIR.entryBlockId;
 
     for (const [blockId, block] of this.functionIR.blocks) {

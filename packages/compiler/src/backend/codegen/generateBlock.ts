@@ -4,6 +4,7 @@ import { FunctionIR } from "../../ir/core/FunctionIR";
 import { CodeGenerator } from "../CodeGenerator";
 import { generateBackEdge } from "./generateBackEdge";
 import { generateInstruction } from "./instructions/generateInstruction";
+import { generateStructure } from "./structures/generateStructure";
 import { generateTerminal } from "./terminals/generateTerminal";
 
 export function generateBlock(
@@ -40,6 +41,13 @@ export function generateBasicBlock(
   const statements: Array<t.Statement> = [];
   for (const instruction of block.instructions) {
     statements.push(...generateInstruction(instruction, functionIR, generator));
+  }
+
+  const structure = functionIR.structures.get(blockId);
+  if (structure) {
+    statements.push(...generateStructure(structure, functionIR, generator));
+    generator.blockToStatements.set(blockId, statements);
+    return statements;
   }
 
   const backEdges = functionIR.backEdges.get(blockId)!;

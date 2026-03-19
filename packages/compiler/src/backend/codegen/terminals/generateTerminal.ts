@@ -2,7 +2,6 @@ import * as t from "@babel/types";
 import {
   BaseTerminal,
   BranchTerminal,
-  ForOfTerminal,
   JumpTerminal,
   ReturnTerminal,
   SwitchTerminal,
@@ -12,7 +11,6 @@ import {
 import { FunctionIR } from "../../../ir/core/FunctionIR";
 import { CodeGenerator } from "../../CodeGenerator";
 import { generateBranchTerminal } from "./generateBranch";
-import { generateForOfTerminal } from "./generateForOf";
 import { generateJumpTerminal } from "./generateJump";
 import { generateReturnTerminal } from "./generateReturn";
 import { generateSwitchTerminal } from "./generateSwitch";
@@ -30,8 +28,6 @@ export function generateTerminal(
     return generateJumpTerminal(terminal, functionIR, generator);
   } else if (terminal instanceof ReturnTerminal) {
     return generateReturnTerminal(terminal, generator);
-  } else if (terminal instanceof ForOfTerminal) {
-    return generateForOfTerminal(terminal, functionIR, generator);
   } else if (terminal instanceof ThrowTerminal) {
     return generateThrowTerminal(terminal, generator);
   } else if (terminal instanceof SwitchTerminal) {
