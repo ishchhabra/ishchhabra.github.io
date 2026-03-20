@@ -35,13 +35,18 @@ export function buildJSXFragment(
   }
 
   const children = nodePath.get("children");
-  const childrenPlaces = children.map((child) => {
+  const childrenPlaces: Place[] = [];
+  for (const child of children) {
     const place = buildNode(child, functionBuilder, moduleBuilder, environment);
-    if (place === undefined || Array.isArray(place)) {
+    // JSXEmptyExpression (`{}`, `{/* … */}`) yields no value and no IR child.
+    if (place === undefined) {
+      continue;
+    }
+    if (Array.isArray(place)) {
       throw new Error("JSXFragment: child should be a single place");
     }
-    return place;
-  });
+    childrenPlaces.push(place);
+  }
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
