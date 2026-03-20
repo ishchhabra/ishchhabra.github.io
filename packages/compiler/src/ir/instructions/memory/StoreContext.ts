@@ -21,6 +21,7 @@ export class StoreContextInstruction extends MemoryInstruction {
     public readonly lval: Place,
     public readonly value: Place,
     public readonly type: "let" | "const" | "var",
+    public readonly bindings: Place[] = [],
   ) {
     super(id, place, nodePath);
   }
@@ -35,6 +36,7 @@ export class StoreContextInstruction extends MemoryInstruction {
       this.lval,
       this.value,
       this.type,
+      this.bindings,
     );
   }
 
@@ -42,13 +44,27 @@ export class StoreContextInstruction extends MemoryInstruction {
     values: Map<Identifier, Place>,
     { rewriteDefinitions = false }: { rewriteDefinitions?: boolean } = {},
   ): StoreContextInstruction {
+    const value = this.value.rewrite(values);
+    const lval = rewriteDefinitions ? this.lval.rewrite(values) : this.lval;
+
+    let bindings = this.bindings;
+    if (rewriteDefinitions && bindings.length) {
+      const next = bindings.map((b) => b.rewrite(values));
+      if (next.some((b, i) => b !== bindings[i])) bindings = next;
+    }
+
+    if (value === this.value && lval === this.lval && bindings === this.bindings) {
+      return this;
+    }
+
     return new StoreContextInstruction(
       this.id,
       this.place,
       this.nodePath,
-      rewriteDefinitions ? (values.get(this.lval.identifier) ?? this.lval) : this.lval,
-      values.get(this.value.identifier) ?? this.value,
+      lval,
+      value,
       this.type,
+      bindings,
     );
   }
 
@@ -57,6 +73,6 @@ export class StoreContextInstruction extends MemoryInstruction {
   }
 
   override getWrittenPlaces(): Place[] {
-    return [this.place, this.lval];
+    return [this.place, this.lval, ...this.bindings];
   }
 }
