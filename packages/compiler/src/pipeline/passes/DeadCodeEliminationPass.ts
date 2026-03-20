@@ -19,6 +19,9 @@ import { Phi } from "../ssa/Phi";
  *      whose result is used, mark its operands as used. Repeat until
  *      stable, since phi operands may themselves be other phi results
  *      (nested control flow).
+ *   2b. Remove dead phis from `phis`: if a phi's result is unused, delete
+ *      it so SSA elimination never emits loads from operand defs that DCE
+ *      may remove (dead merge / unused variable).
  *   3. Walk every block and remove instructions that have no side effects
  *      and whose written places are all unused. Dead instructions that
  *      wrap a side-effecting value (e.g. `StoreLocal result = delete obj.x`)
@@ -85,6 +88,21 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
           }
         }
       }
+    }
+
+    // 2b. Drop phis whose result is never used — keeps SSAEliminator consistent
+    //     with instruction DCE (operand defs may be removed below).
+    const deadPhis: Phi[] = [];
+    for (const phi of this.phis) {
+      if (!usedIds.has(phi.place.identifier.id)) {
+        deadPhis.push(phi);
+      }
+    }
+    if (deadPhis.length > 0) {
+      for (const phi of deadPhis) {
+        this.phis.delete(phi);
+      }
+      changed = true;
     }
 
     // 3. Remove dead instructions, preserving side effects via asSideEffect().
