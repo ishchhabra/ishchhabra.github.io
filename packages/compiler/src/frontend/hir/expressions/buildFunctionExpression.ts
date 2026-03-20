@@ -28,6 +28,8 @@ export function buildFunctionExpression(
     bodyPath,
     functionBuilder.environment,
     moduleBuilder,
+    nodePath.node.async,
+    nodePath.node.generator,
   );
   const functionIR = functionIRBuilder.build();
 

@@ -19,6 +19,8 @@ export function buildArrowFunctionExpression(
     bodyPath,
     functionBuilder.environment,
     moduleBuilder,
+    nodePath.node.async,
+    false,
   );
   const functionIR = functionIRBuilder.build();
 

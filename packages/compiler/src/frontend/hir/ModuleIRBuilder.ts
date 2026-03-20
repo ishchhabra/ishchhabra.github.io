@@ -75,7 +75,14 @@ export class ModuleIRBuilder {
       throw new Error("Program path not found");
     }
 
-    const functionIR = new FunctionIRBuilder([], programPath, this.environment, this).build();
+    const functionIR = new FunctionIRBuilder(
+      [],
+      programPath,
+      this.environment,
+      this,
+      false,
+      false,
+    ).build();
     this.functions.set(functionIR.id, functionIR);
 
     return {

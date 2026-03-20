@@ -21,7 +21,14 @@ export function buildObjectMethod(
 
   const paramPaths = nodePath.get("params");
   const bodyPath = nodePath.get("body");
-  const bodyIR = new FunctionIRBuilder(paramPaths, bodyPath, environment, moduleBuilder).build();
+  const bodyIR = new FunctionIRBuilder(
+    paramPaths,
+    bodyPath,
+    environment,
+    moduleBuilder,
+    nodePath.node.async,
+    nodePath.node.generator,
+  ).build();
 
   const methodIdentifier = environment.createIdentifier();
   const methodPlace = environment.createPlace(methodIdentifier);

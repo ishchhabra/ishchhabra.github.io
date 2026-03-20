@@ -27,6 +27,8 @@ export function buildFunctionDeclaration(
     bodyPath,
     functionBuilder.environment,
     moduleBuilder,
+    nodePath.node.async,
+    nodePath.node.generator,
   );
   const functionIR = functionIRBuilder.build();
 

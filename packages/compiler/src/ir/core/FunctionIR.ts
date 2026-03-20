@@ -69,6 +69,10 @@ export class FunctionIR {
      * Aligned by index with `params`.
      */
     public readonly paramBindings: Place[][],
+    /** Whether the function is `async`. */
+    public readonly async: boolean,
+    /** Whether the function is a generator (`function*`, etc.). */
+    public readonly generator: boolean,
     public blocks: Map<BlockId, BasicBlock>,
     public structures: Map<BlockId, BaseStructure>,
   ) {

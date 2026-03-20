@@ -7,9 +7,9 @@ import {
   BasicBlock,
   BlockId,
   type ControlContext,
+  createInstructionId,
   DeclarationId,
   Place,
-  createInstructionId,
   ReturnTerminal,
 } from "../../ir";
 import { FunctionIR, makeFunctionIRId } from "../../ir/core/FunctionIR";
@@ -39,6 +39,8 @@ export class FunctionIRBuilder {
     public readonly bodyPath: NodePath<t.Program | t.BlockStatement | t.Expression>,
     public readonly environment: Environment,
     public readonly moduleBuilder: ModuleIRBuilder,
+    public readonly async: boolean,
+    public readonly generator: boolean,
   ) {
     const entryBlock = this.environment.createBlock();
     this.blocks.set(entryBlock.id, entryBlock);
@@ -86,6 +88,8 @@ export class FunctionIRBuilder {
       this.header,
       params,
       paramBindings,
+      this.async,
+      this.generator,
       this.blocks,
       this.structures,
     );

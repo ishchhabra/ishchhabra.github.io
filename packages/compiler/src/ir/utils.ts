@@ -4,7 +4,7 @@ import { FunctionIR, makeFunctionIRId } from "./core/FunctionIR";
 
 export function createFunction(environment: Environment): FunctionIR {
   const functionId = makeFunctionIRId(environment.nextFunctionId++);
-  return new FunctionIR(functionId, [], [], [], new Map(), new Map());
+  return new FunctionIR(functionId, [], [], [], false, false, new Map(), new Map());
 }
 
 export function createInstructionId(environment: Environment): InstructionId {

@@ -94,6 +94,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
   /**
    * Checks whether the function is inlinable:
    * - Must have exactly one block
+   * - Must not be async or a generator (inlining would splice await/yield into the wrong context)
    * - Must not be recursive
    * - If cross-module, must be self-contained (no references to Places
    *   from the callee's module scope). Cross-module inlining with
@@ -101,6 +102,10 @@ export class FunctionInliningPass extends BaseOptimizationPass {
    */
   private isInlinableFunction(funcIR: FunctionIR, modulePath: string): boolean {
     if (funcIR.blocks.size > 1) {
+      return false;
+    }
+
+    if (funcIR.async || funcIR.generator) {
       return false;
     }
 
