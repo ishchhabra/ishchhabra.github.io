@@ -17,6 +17,7 @@ import { buildBindingIdentifier } from "../buildIdentifier";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
+
 export function buildVariableDeclaration(
   nodePath: NodePath<t.VariableDeclaration>,
   functionBuilder: FunctionIRBuilder,
@@ -93,7 +94,7 @@ export function buildVariableDeclaration(
   return declarationPlaces;
 }
 
-function buildVariableDeclaratorLVal(
+export function buildVariableDeclaratorLVal(
   nodePath: NodePath<t.LVal>,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

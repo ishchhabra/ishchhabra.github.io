@@ -57,6 +57,16 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
       }
     }
 
+    // Mark places read and written by structures as used.
+    for (const structure of this.functionIR.structures.values()) {
+      for (const place of structure.getReadPlaces()) {
+        usedIds.add(place.identifier.id);
+      }
+      for (const place of structure.getWrittenPlaces()) {
+        usedIds.add(place.identifier.id);
+      }
+    }
+
     // 2. Propagate liveness through phi operands to fixpoint. A phi is
     //    live when its result place is used. Its operands may be other phi
     //    results (nested control flow), so we iterate until no new ids are

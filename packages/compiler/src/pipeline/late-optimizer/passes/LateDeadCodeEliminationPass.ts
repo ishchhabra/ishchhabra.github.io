@@ -37,6 +37,16 @@ export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
       }
     }
 
+    // Mark places read and written by structures as used.
+    for (const structure of this.functionIR.structures.values()) {
+      for (const place of structure.getReadPlaces()) {
+        usedIds.add(place.identifier.id);
+      }
+      for (const place of structure.getWrittenPlaces()) {
+        usedIds.add(place.identifier.id);
+      }
+    }
+
     // 2. Remove pure instructions that define an unused identifier.
     for (const block of this.functionIR.blocks.values()) {
       const before = block.instructions.length;

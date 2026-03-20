@@ -154,10 +154,38 @@ export class SSABuilder {
 
         // Push new definitions for StoreLocal of phi'd variables
         if (instruction instanceof StoreLocalInstruction) {
-          const decl = instruction.lval.identifier.declarationId;
+          for (const place of instruction.getWrittenPlaces()) {
+            const decl = place.identifier.declarationId;
+            if (phiDecls.has(decl)) {
+              if (!stacks.has(decl)) stacks.set(decl, []);
+              stacks.get(decl)!.push(place);
+              pushed.push(decl);
+            }
+          }
+        }
+      }
+
+      // 2.5. Rewrite structure reads and push structure-written places
+      const structure = this.functionIR.structures.get(blockId);
+      if (structure) {
+        const structureRewriteMap = new Map<Identifier, Place>();
+        for (const place of structure.getReadPlaces()) {
+          const decl = place.identifier.declarationId;
+          if (!phiDecls.has(decl)) continue;
+          const stack = stacks.get(decl);
+          if (stack && stack.length > 0) {
+            structureRewriteMap.set(place.identifier, stack[stack.length - 1]);
+          }
+        }
+        if (structureRewriteMap.size > 0) {
+          this.functionIR.structures.set(blockId, structure.rewrite(structureRewriteMap));
+        }
+
+        for (const place of structure.getWrittenPlaces()) {
+          const decl = place.identifier.declarationId;
           if (phiDecls.has(decl)) {
             if (!stacks.has(decl)) stacks.set(decl, []);
-            stacks.get(decl)!.push(instruction.lval);
+            stacks.get(decl)!.push(place);
             pushed.push(decl);
           }
         }

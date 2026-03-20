@@ -39,15 +39,16 @@ export function generateBasicBlock(
   }
 
   const statements: Array<t.Statement> = [];
-  for (const instruction of block.instructions) {
-    statements.push(...generateInstruction(instruction, functionIR, generator));
-  }
 
   const structure = functionIR.structures.get(blockId);
   if (structure) {
     statements.push(...generateStructure(structure, functionIR, generator));
     generator.blockToStatements.set(blockId, statements);
     return statements;
+  }
+
+  for (const instruction of block.instructions) {
+    statements.push(...generateInstruction(instruction, functionIR, generator));
   }
 
   const backEdges = functionIR.backEdges.get(blockId)!;

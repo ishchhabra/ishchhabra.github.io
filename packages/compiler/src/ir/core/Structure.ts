@@ -29,23 +29,46 @@ export abstract class BaseStructure {
  * A structure that represents a for...of loop.
  */
 export class ForOfStructure extends BaseStructure {
-  constructor() {
+  constructor(
+    public readonly header: BlockId,
+    public readonly iterationValue: Place,
+    public readonly iterable: Place,
+    public readonly body: BlockId,
+    public readonly fallthrough: BlockId,
+    public readonly isAwait: boolean,
+  ) {
     super();
   }
 
   getEdges(): Array<[BlockId, BlockId]> {
-    throw new Error("Not implemented");
+    return [
+      [this.header, this.body],
+      [this.header, this.fallthrough],
+    ];
   }
 
   getReadPlaces(): Place[] {
-    throw new Error("Not implemented");
+    return [this.iterable];
   }
 
   getWrittenPlaces(): Place[] {
-    throw new Error("Not implemented");
+    return [this.iterationValue];
   }
 
   rewrite(values: Map<Identifier, Place>): ForOfStructure {
-    throw new Error("Not implemented");
+    const iterationValue = this.iterationValue.rewrite(values);
+    const iterable = this.iterable.rewrite(values);
+    if (iterationValue === this.iterationValue && iterable === this.iterable) {
+      return this;
+    }
+
+    return new ForOfStructure(
+      this.header,
+      iterationValue,
+      iterable,
+      this.body,
+      this.fallthrough,
+      this.isAwait,
+    );
   }
 }

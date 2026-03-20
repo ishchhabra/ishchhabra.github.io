@@ -193,7 +193,7 @@ function buildDestructuringAssignment(
   return place;
 }
 
-function buildAssignmentLeft(
+export function buildAssignmentLeft(
   leftPath: NodePath<t.LVal>,
   nodePath: NodePath<t.AssignmentExpression>,
   functionBuilder: FunctionIRBuilder,
