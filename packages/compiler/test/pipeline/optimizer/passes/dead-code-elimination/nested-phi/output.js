@@ -1,5 +1,5 @@
-let $17_phi_21 = $0_0;
-let $18_phi_22 = $0_0;
+let $17_phi_21 = undefined;
+let $18_phi_22 = undefined;
 if (globalThis.a) {
   if (globalThis.b) {
     const $0_1 = 1;

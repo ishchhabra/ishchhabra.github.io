@@ -4,6 +4,7 @@ import {
   BlockId,
   CopyInstruction,
   ExpressionStatementInstruction,
+  LiteralInstruction,
   LoadLocalInstruction,
   makeInstructionId,
   StoreLocalInstruction,
@@ -59,22 +60,26 @@ export class SSAEliminator {
       ),
     );
 
+    const undefinedId = makeInstructionId(this.moduleIR.environment.nextInstructionId++);
+    const undefinedPlace = this.moduleIR.environment.createPlace(
+      this.moduleIR.environment.createIdentifier(),
+    );
+    declarationBlock.instructions.push(
+      new LiteralInstruction(undefinedId, undefinedPlace, undefined, undefined),
+    );
+
     const identifier = this.moduleIR.environment.createIdentifier(
       phi.place.identifier.declarationId,
     );
     const place = this.moduleIR.environment.createPlace(identifier);
 
     const instructionId = makeInstructionId(this.moduleIR.environment.nextInstructionId++);
-    const declarationPlace = this.moduleIR.environment.places.get(declaration.placeId);
-    if (declarationPlace === undefined) {
-      throw new Error(`Declaration place not found for ${phi.declarationId}`);
-    }
     const instruction = new StoreLocalInstruction(
       instructionId,
       place,
       undefined,
       phi.place,
-      declarationPlace,
+      undefinedPlace,
       "let",
     );
 

@@ -1,8 +1,8 @@
 const $0_0 = 10;
 const $1_0 = 20;
 const $2_0 = undefined;
-let $27_phi_40 = $2_0;
-let $28_phi_41 = $2_0;
+let $27_phi_40 = undefined;
+let $28_phi_41 = undefined;
 if ($0_0 > 5) {
   if ($1_0 < 15) {
     const $2_1 = $0_0 + $1_0;

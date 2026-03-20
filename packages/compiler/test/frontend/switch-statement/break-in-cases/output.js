@@ -1,6 +1,6 @@
 const $0_0 = "greet";
 const $1_0 = undefined;
-let $18_phi_23 = $1_0;
+let $18_phi_23 = undefined;
 $18_phi_23 = $1_0;
 switch ($0_0) {
   case "greet":

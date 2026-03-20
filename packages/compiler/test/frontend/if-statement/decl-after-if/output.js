@@ -2,7 +2,7 @@ if (true) {
   console.log("first");
 }
 const $0_0 = 10;
-let $16_phi_18 = $0_0;
+let $16_phi_18 = undefined;
 $16_phi_18 = $0_0;
 if (true) {
   const $0_1 = 20;

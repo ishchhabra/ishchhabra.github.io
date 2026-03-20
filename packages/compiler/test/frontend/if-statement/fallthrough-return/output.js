@@ -1,6 +1,6 @@
 function $0_0($1_0) {
   const $4_0 = undefined;
-  let $7_phi_15 = $4_0;
+  let $7_phi_15 = undefined;
   if ($1_0 > 0) {
     const $4_1 = "positive";
     $7_phi_15 = $4_1;

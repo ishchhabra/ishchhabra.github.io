@@ -1,6 +1,6 @@
 function $0_0($1_0) {
   const $2_0 = "default";
-  let $12_phi_17 = $2_0;
+  let $12_phi_17 = undefined;
   $12_phi_17 = $2_0;
   try {
     const $2_1 = JSON.parse($1_0);

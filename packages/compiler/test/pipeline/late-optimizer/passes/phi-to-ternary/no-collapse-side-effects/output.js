@@ -1,5 +1,5 @@
 const $0_0 = undefined;
-let $15_phi_18 = $0_0;
+let $15_phi_18 = undefined;
 if (true) {
   console.log("side effect");
   const $0_1 = 1;
