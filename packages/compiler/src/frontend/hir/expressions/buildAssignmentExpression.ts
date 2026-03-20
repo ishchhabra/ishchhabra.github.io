@@ -167,24 +167,16 @@ function buildDestructuringAssignment(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = hasContext
-    ? environment.createInstruction(
-        StoreContextInstruction,
-        place,
-        nodePath,
-        leftPlace,
-        rightPlace,
-        "const",
-      )
-    : environment.createInstruction(
-        StoreLocalInstruction,
-        place,
-        nodePath,
-        leftPlace,
-        rightPlace,
-        "const",
-        identifiers,
-      );
+  const StoreClass = hasContext ? StoreContextInstruction : StoreLocalInstruction;
+  const instruction = environment.createInstruction(
+    StoreClass,
+    place,
+    nodePath,
+    leftPlace,
+    rightPlace,
+    "const",
+    identifiers,
+  );
   functionBuilder.addInstruction(instruction);
 
   for (const instruction of instructions) {

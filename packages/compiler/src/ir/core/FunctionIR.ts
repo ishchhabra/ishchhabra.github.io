@@ -63,6 +63,12 @@ export class FunctionIR {
      */
     public readonly header: BaseInstruction[],
     public readonly params: Place[],
+    /**
+     * Per formal parameter: places in the root header instruction `bindings`
+     * (e.g. destructuring leaves). Empty for a simple identifier param.
+     * Aligned by index with `params`.
+     */
+    public readonly paramBindings: Place[][],
     public blocks: Map<BlockId, BasicBlock>,
     public structures: Map<BlockId, BaseStructure>,
   ) {

@@ -277,6 +277,12 @@ export class FunctionInliningPass extends BaseOptimizationPass {
       rewriteMap.set(paramPlace.identifier, elementPlace);
     }
 
+    // Mirror buildFunctionArrayPatternParam: identifier formals have empty
+    // FunctionIR.paramBindings (no header `.bindings`), but the array pattern
+    // still introduces one binding place per element. Those places must appear
+    // on StoreLocal/ArrayPattern `bindings` so getWrittenPlaces tracks them;
+    // otherwise Late DCE can drop the wiring StoreLocal while the body still
+    // reads the cloned param places (undefined identifiers in codegen).
     const leftArrayPatternIdentifier = environment.createIdentifier();
     const leftArrayPatternPlace = environment.createPlace(leftArrayPatternIdentifier);
     const leftArrayPattern = environment.createInstruction(
@@ -284,6 +290,13 @@ export class FunctionInliningPass extends BaseOptimizationPass {
       leftArrayPatternPlace,
       undefined,
       leftElements,
+      funcIR.params.flatMap((paramPlace, i) => {
+        const leaves = funcIR.paramBindings[i];
+        if (leaves.length > 0) {
+          return leaves.map((p) => rewriteMap.get(p.identifier) ?? p);
+        }
+        return [rewriteMap.get(paramPlace.identifier)!];
+      }),
     );
 
     const rightElements = [];
@@ -310,6 +323,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
       leftArrayPatternPlace,
       rightArrayPatternPlace,
       "const",
+      leftArrayPattern.bindings,
     );
 
     instrs.push(leftArrayPattern, rightArrayPattern, storeLocalInstr);

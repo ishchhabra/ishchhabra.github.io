@@ -65,6 +65,7 @@ export function buildVariableDeclaration(
           lvalPlace,
           valuePlace,
           "let",
+          isPattern ? lvalIdentifiers : [],
         )
       : environment.createInstruction(
           StoreLocalInstruction,

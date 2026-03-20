@@ -46,13 +46,15 @@ export class FunctionIRBuilder {
   }
 
   public build(): FunctionIR {
-    const params = buildFunctionParams(
+    const builtParams = buildFunctionParams(
       this.paramPaths,
       this.bodyPath,
       this,
       this.moduleBuilder,
       this.environment,
     );
+    const params = builtParams.map((p) => p.place);
+    const paramBindings = builtParams.map((p) => p.paramBindings);
 
     const functionId = makeFunctionIRId(this.environment.nextFunctionId++);
 
@@ -83,6 +85,7 @@ export class FunctionIRBuilder {
       functionId,
       this.header,
       params,
+      paramBindings,
       this.blocks,
       this.structures,
     );

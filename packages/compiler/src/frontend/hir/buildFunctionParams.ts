@@ -15,22 +15,39 @@ import { buildNode } from "./buildNode";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
 
+/**
+ * One formal parameter after lowering: the param root `place` and the root
+ * header instruction `paramBindings` (empty for a simple identifier param).
+ */
+export interface BuiltFunctionParam {
+  place: Place;
+  paramBindings: Place[];
+}
+
+/** Internal result while lowering params (includes recursive `identifiers`). */
+interface ParamBuildResult {
+  place: Place;
+  identifiers: Place[];
+  paramBindings: Place[];
+}
+
 export function buildFunctionParams(
   paramPaths: NodePath<t.Identifier | t.RestElement | t.Pattern>[],
   bodyPath: NodePath,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place[] {
-  return paramPaths.map((paramPath: NodePath<t.Identifier | t.RestElement | t.Pattern>) =>
-    buildFunctionParam(
+): BuiltFunctionParam[] {
+  return paramPaths.map((paramPath: NodePath<t.Identifier | t.RestElement | t.Pattern>) => {
+    const r = buildFunctionParam(
       paramPath as NodePath<t.LVal>,
       bodyPath,
       functionBuilder,
       moduleBuilder,
       environment,
-    ),
-  );
+    );
+    return { place: r.place, paramBindings: r.paramBindings };
+  });
 }
 
 function buildFunctionParam(
@@ -39,7 +56,7 @@ function buildFunctionParam(
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
+): ParamBuildResult {
   if (paramPath.isIdentifier()) {
     return buildFunctionIdentifierParam(paramPath, bodyPath, functionBuilder, environment);
   } else if (paramPath.isArrayPattern()) {
@@ -84,7 +101,7 @@ function buildFunctionIdentifierParam(
   bodyPath: NodePath,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
-): Place {
+): ParamBuildResult {
   const name = paramPath.node.name;
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
@@ -103,7 +120,7 @@ function buildFunctionIdentifierParam(
   bodyPath.scope.rename(name, identifier.name);
   functionBuilder.registerDeclarationName(identifier.name, declarationId, bodyPath);
   environment.registerDeclaration(declarationId, functionBuilder.currentBlock.id, place.id);
-  return place;
+  return { place, identifiers: [place], paramBindings: [] };
 }
 
 function buildFunctionArrayPatternParam(
@@ -112,20 +129,23 @@ function buildFunctionArrayPatternParam(
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
+): ParamBuildResult {
+  const identifiers: Place[] = [];
   const elements = paramPath.get("elements");
   const places = elements.map((elementPath) => {
     if (!(elementPath.isIdentifier() || elementPath.isRestElement() || elementPath.isPattern())) {
       throw new Error(`Unsupported element type: ${elementPath.node!.type}`);
     }
 
-    return buildFunctionParam(
+    const result = buildFunctionParam(
       elementPath as NodePath<t.LVal>,
       bodyPath,
       functionBuilder,
       moduleBuilder,
       environment,
     );
+    identifiers.push(...result.identifiers);
+    return result.place;
   });
 
   const identifier = environment.createIdentifier();
@@ -135,9 +155,10 @@ function buildFunctionArrayPatternParam(
     place,
     paramPath,
     places,
+    identifiers,
   );
   functionBuilder.header.push(instruction);
-  return place;
+  return { place, identifiers, paramBindings: identifiers };
 }
 
 function buildFunctionObjectPatternParam(
@@ -146,7 +167,8 @@ function buildFunctionObjectPatternParam(
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
+): ParamBuildResult {
+  const identifiers: Place[] = [];
   const propertyPaths = paramPath.get("properties");
   const propertyPlaces = propertyPaths.map((propertyPath) => {
     if (propertyPath.isObjectProperty()) {
@@ -161,13 +183,14 @@ function buildFunctionObjectPatternParam(
       }
 
       const valuePath = propertyPath.get("value");
-      const valuePlace = buildFunctionParam(
+      const valueResult = buildFunctionParam(
         valuePath as NodePath<t.LVal>,
         bodyPath,
         functionBuilder,
         moduleBuilder,
         environment,
       );
+      identifiers.push(...valueResult.identifiers);
 
       const identifier = environment.createIdentifier();
       const place = environment.createPlace(identifier);
@@ -176,9 +199,10 @@ function buildFunctionObjectPatternParam(
         place,
         paramPath,
         keyPlace,
-        valuePlace,
+        valueResult.place,
         propertyPath.node.computed,
         propertyPath.node.shorthand,
+        valueResult.identifiers,
       );
       functionBuilder.header.push(instruction);
       return place;
@@ -186,13 +210,14 @@ function buildFunctionObjectPatternParam(
 
     if (propertyPath.isRestElement()) {
       const argumentPath = propertyPath.get("argument");
-      const argumentPlace = buildFunctionParam(
+      const argumentResult = buildFunctionParam(
         argumentPath as NodePath<t.LVal>,
         bodyPath,
         functionBuilder,
         moduleBuilder,
         environment,
       );
+      identifiers.push(...argumentResult.identifiers);
 
       const identifier = environment.createIdentifier();
       const place = environment.createPlace(identifier);
@@ -200,7 +225,8 @@ function buildFunctionObjectPatternParam(
         RestElementInstruction,
         place,
         propertyPath,
-        argumentPlace,
+        argumentResult.place,
+        argumentResult.identifiers,
       );
       functionBuilder.header.push(instruction);
       return place;
@@ -216,9 +242,10 @@ function buildFunctionObjectPatternParam(
     place,
     paramPath,
     propertyPlaces,
+    identifiers,
   );
   functionBuilder.header.push(instruction);
-  return place;
+  return { place, identifiers, paramBindings: identifiers };
 }
 
 function buildFunctionObjectPropertyKey(
@@ -246,9 +273,9 @@ function buildFunctionAssignmentPatternParam(
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
+): ParamBuildResult {
   const leftPath = paramPath.get("left");
-  const leftPlace = buildFunctionParam(
+  const leftResult = buildFunctionParam(
     leftPath as NodePath<t.LVal>,
     bodyPath,
     functionBuilder,
@@ -275,11 +302,16 @@ function buildFunctionAssignmentPatternParam(
     AssignmentPatternInstruction,
     place,
     paramPath,
-    leftPlace,
+    leftResult.place,
     rightPlace,
+    leftResult.identifiers,
   );
   functionBuilder.header.push(instruction);
-  return place;
+  return {
+    place,
+    identifiers: leftResult.identifiers,
+    paramBindings: leftResult.identifiers,
+  };
 }
 
 function buildFunctionRestElementParam(
@@ -288,9 +320,9 @@ function buildFunctionRestElementParam(
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
+): ParamBuildResult {
   const argumentPath = paramPath.get("argument");
-  const argumentPlace = buildFunctionParam(
+  const argumentResult = buildFunctionParam(
     argumentPath as NodePath<t.LVal>,
     bodyPath,
     functionBuilder,
@@ -304,8 +336,13 @@ function buildFunctionRestElementParam(
     RestElementInstruction,
     place,
     paramPath,
-    argumentPlace,
+    argumentResult.place,
+    argumentResult.identifiers,
   );
   functionBuilder.header.push(instruction);
-  return place;
+  return {
+    place,
+    identifiers: argumentResult.identifiers,
+    paramBindings: argumentResult.identifiers,
+  };
 }
