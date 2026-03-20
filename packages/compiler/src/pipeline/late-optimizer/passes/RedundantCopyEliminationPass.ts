@@ -95,6 +95,7 @@ export class RedundantCopyEliminationPass extends BaseOptimizationPass {
               instr.lval,
               instr.value,
               lastInstr.type,
+              lastInstr.bindings,
             );
           }
 
