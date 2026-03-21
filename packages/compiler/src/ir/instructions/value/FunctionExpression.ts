@@ -2,7 +2,7 @@ import { NodePath } from "@babel/traverse";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
-import { FunctionIR } from "../../core/FunctionIR";
+import { FunctionIR, rewriteFunctionIR } from "../../core/FunctionIR";
 import { Identifier } from "../../core/Identifier";
 import { Place } from "../../core/Place";
 
@@ -36,15 +36,24 @@ export class FunctionExpressionInstruction extends ValueInstruction {
   }
 
   public rewrite(values: Map<Identifier, Place>): BaseInstruction {
+    const newIdentifier = this.identifier ? this.identifier.rewrite(values) : null;
+    const newCaptures = this.captures.map((c) => c.rewrite(values));
+
+    const capturesChanged = newCaptures.some((c, i) => c !== this.captures[i]);
+    const identifierChanged = newIdentifier !== this.identifier;
+    if (!capturesChanged && !identifierChanged) {
+      return this;
+    }
+
     return new FunctionExpressionInstruction(
       this.id,
       this.place,
       this.nodePath,
-      this.identifier ? (values.get(this.identifier.identifier) ?? this.identifier) : null,
-      this.functionIR,
+      newIdentifier,
+      capturesChanged ? rewriteFunctionIR(this.functionIR, values) : this.functionIR,
       this.generator,
       this.async,
-      this.captures,
+      newCaptures,
     );
   }
 

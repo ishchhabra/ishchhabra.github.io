@@ -2,7 +2,8 @@ import { NodePath } from "@babel/traverse";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
-import { FunctionIR } from "../../core/FunctionIR";
+import { FunctionIR, rewriteFunctionIR } from "../../core/FunctionIR";
+import { Identifier } from "../../core/Identifier";
 import { Place } from "../../core/Place";
 
 /**
@@ -42,8 +43,24 @@ export class ArrowFunctionExpressionInstruction extends ValueInstruction {
     );
   }
 
-  public rewrite(): BaseInstruction {
-    return this;
+  public rewrite(values: Map<Identifier, Place>): BaseInstruction {
+    const newCaptures = this.captures.map((c) => c.rewrite(values));
+    const capturesChanged = newCaptures.some((c, i) => c !== this.captures[i]);
+
+    if (!capturesChanged) {
+      return this;
+    }
+
+    return new ArrowFunctionExpressionInstruction(
+      this.id,
+      this.place,
+      this.nodePath,
+      rewriteFunctionIR(this.functionIR, values),
+      this.async,
+      this.expression,
+      this.generator,
+      newCaptures,
+    );
   }
 
   public getReadPlaces(): Place[] {

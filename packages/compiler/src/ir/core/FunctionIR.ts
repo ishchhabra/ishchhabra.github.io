@@ -8,6 +8,7 @@ import {
 } from "../../frontend/cfg";
 import { BaseInstruction } from "../base";
 import { BasicBlock, BlockId } from "./Block";
+import { Identifier } from "./Identifier";
 import { Place } from "./Place";
 import { BaseStructure } from "./Structure";
 
@@ -91,4 +92,46 @@ export class FunctionIR {
   public recomputeCFG() {
     this.computeCFG();
   }
+}
+
+/**
+ * Creates a deep copy of a FunctionIR with all Place references rewritten
+ * using the given map. Recursively rewrites any nested FunctionIRs contained
+ * in arrow/function expression instructions via their own `rewrite()` methods.
+ *
+ * Used by function inlining to produce an independently-owned copy of a
+ * nested FunctionIR whose captured bindings have been remapped.
+ */
+export function rewriteFunctionIR(
+  functionIR: FunctionIR,
+  values: Map<Identifier, Place>,
+): FunctionIR {
+  const header = functionIR.header.map((instr) => instr.rewrite(values));
+  const params = functionIR.params.map((p) => p.rewrite(values));
+  const paramBindings = functionIR.paramBindings.map((bindings) =>
+    bindings.map((p) => p.rewrite(values)),
+  );
+
+  const blocks = new Map<BlockId, BasicBlock>();
+  for (const [blockId, block] of functionIR.blocks) {
+    const instructions = block.instructions.map((instr) => instr.rewrite(values));
+    const terminal = block.terminal?.rewrite(values);
+    blocks.set(blockId, new BasicBlock(blockId, instructions, terminal));
+  }
+
+  const structures = new Map<BlockId, BaseStructure>();
+  for (const [blockId, structure] of functionIR.structures) {
+    structures.set(blockId, structure.rewrite(values));
+  }
+
+  return new FunctionIR(
+    functionIR.id,
+    header,
+    params,
+    paramBindings,
+    functionIR.async,
+    functionIR.generator,
+    blocks,
+    structures,
+  );
 }
