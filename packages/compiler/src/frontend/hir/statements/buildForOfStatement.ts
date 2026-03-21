@@ -74,13 +74,11 @@ export function buildForOfStatement(
   // outer variable(s) at the start of the body. buildAssignmentLeft handles
   // identifiers, array patterns, and object patterns.
   if (bareLVal !== undefined) {
-    const { place: outerPlace, instructions, identifiers } = buildAssignmentLeft(
-      bareLVal,
-      nodePath as any,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
+    const {
+      place: outerPlace,
+      instructions,
+      identifiers,
+    } = buildAssignmentLeft(bareLVal, nodePath as any, functionBuilder, moduleBuilder, environment);
 
     const storePlace = environment.createPlace(environment.createIdentifier());
     functionBuilder.addInstruction(

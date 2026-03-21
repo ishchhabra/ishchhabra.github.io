@@ -6,10 +6,7 @@ export function HighlightedCode({ code, lang }) {
   const html = highlightCode(code, lang);
   return (
     <pre>
-      <code
-        style={{ fontFamily: "mono" }}
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
+      <code style={{ fontFamily: "mono" }} dangerouslySetInnerHTML={{ __html: html }} />
     </pre>
   );
 }

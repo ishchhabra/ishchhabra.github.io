@@ -46,7 +46,12 @@ export function generateForOfStructure(
   // Left side is wrapped in a variable declaration: `const x`
   const left = t.variableDeclaration("const", [t.variableDeclarator(iterationValue)]);
   const right = iterable;
-  const node = t.forOfStatement(left, right, t.blockStatement([...headerStatements, ...bodyStatements]), structure.isAwait);
+  const node = t.forOfStatement(
+    left,
+    right,
+    t.blockStatement([...headerStatements, ...bodyStatements]),
+    structure.isAwait,
+  );
 
   return [node, ...exitStatements];
 }
