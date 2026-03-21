@@ -1,0 +1,13 @@
+name: Mirror main to portfolio AOT branch
+on:
+  push:
+    branches: [main]
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: git push origin main:deploy/portfolio-aot --force
