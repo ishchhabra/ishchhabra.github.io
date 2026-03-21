@@ -12,10 +12,11 @@ import {
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 /**
- * Lower a JSX tag name like a normal identifier: if `getDeclarationId(name, path)`
- * is set, emit the same loads as `buildReferencedIdentifier`. Unbound lowercase
- * names use a string literal (common host-tag spelling); other unbound names use
- * `LoadGlobal`.
+ * Lower a JSX tag name. React treats names starting with a lowercase ASCII letter
+ * as intrinsic host elements (DOM/SVG), not as references to in-scope bindings —
+ * so `<code>` must stay the tag `code` even when a parameter or local is named `code`.
+ * Uppercase / non-intrinsic tags resolve like normal identifiers: local/context load
+ * or `LoadGlobal`.
  */
 export function buildJSXIdentifier(
   nodePath: NodePath<t.JSXIdentifier>,
@@ -27,33 +28,35 @@ export function buildJSXIdentifier(
   const valueIdentifier = environment.createIdentifier();
   const valuePlace = environment.createPlace(valueIdentifier);
 
-  const declarationId = functionBuilder.getDeclarationId(name, nodePath);
-
-  if (declarationId !== undefined) {
-    const latestDeclaration = environment.getLatestDeclaration(declarationId);
-    const declarationPlace = environment.places.get(latestDeclaration.placeId);
-    if (declarationPlace === undefined) {
-      throw new Error(`Unable to find the place for ${name} (${declarationId})`);
-    }
-
-    if (!functionBuilder.isOwnDeclaration(declarationId)) {
-      functionBuilder.captures.set(declarationId, declarationPlace);
-    }
-
-    const LoadClass = environment.contextDeclarationIds.has(declarationId)
-      ? LoadContextInstruction
-      : LoadLocalInstruction;
-    functionBuilder.addInstruction(
-      environment.createInstruction(LoadClass, valuePlace, nodePath, declarationPlace),
-    );
-  } else if (/^[a-z]/.test(name)) {
+  if (/^[a-z]/.test(name)) {
     functionBuilder.addInstruction(
       environment.createInstruction(LiteralInstruction, valuePlace, nodePath, name),
     );
   } else {
-    functionBuilder.addInstruction(
-      environment.createInstruction(LoadGlobalInstruction, valuePlace, nodePath, name),
-    );
+    const declarationId = functionBuilder.getDeclarationId(name, nodePath);
+
+    if (declarationId !== undefined) {
+      const latestDeclaration = environment.getLatestDeclaration(declarationId);
+      const declarationPlace = environment.places.get(latestDeclaration.placeId);
+      if (declarationPlace === undefined) {
+        throw new Error(`Unable to find the place for ${name} (${declarationId})`);
+      }
+
+      if (!functionBuilder.isOwnDeclaration(declarationId)) {
+        functionBuilder.captures.set(declarationId, declarationPlace);
+      }
+
+      const LoadClass = environment.contextDeclarationIds.has(declarationId)
+        ? LoadContextInstruction
+        : LoadLocalInstruction;
+      functionBuilder.addInstruction(
+        environment.createInstruction(LoadClass, valuePlace, nodePath, declarationPlace),
+      );
+    } else {
+      functionBuilder.addInstruction(
+        environment.createInstruction(LoadGlobalInstruction, valuePlace, nodePath, name),
+      );
+    }
   }
 
   const outIdentifier = environment.createIdentifier();

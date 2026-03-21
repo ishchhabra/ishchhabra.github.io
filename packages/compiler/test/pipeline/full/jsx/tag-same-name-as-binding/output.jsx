@@ -5,7 +5,7 @@ export function HighlightedCode({ code: $9_0, lang: $12_0 }) {
   const [$52_0, $53_0] = [$9_0, $12_0];
   return (
     <pre>
-      <$9_0
+      <code
         style={{
           fontFamily: "mono",
         }}
