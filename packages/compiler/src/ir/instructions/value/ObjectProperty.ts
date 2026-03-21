@@ -10,6 +10,10 @@ import { Identifier, Place } from "../../core";
  * Examples:
  * - `{ x: 1, y: 2 } // `x: 1` and `y: 2` are the object properties
  * - `{ a: b } = obj` // `a: b` in a destructuring pattern
+ *
+ * Non-computed keys are emitted as `LiteralInstruction`s in the IR so that
+ * the property name survives SSA transformations (clone/rewrite) unchanged.
+ * Computed keys (`[expr]`) remain ordinary expression places.
  */
 export class ObjectPropertyInstruction extends ValueInstruction {
   constructor(

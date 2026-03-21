@@ -1,7 +1,7 @@
 import { NodePath } from "@babel/core";
 import * as t from "@babel/types";
 import { Environment } from "../../environment";
-import { BindingIdentifierInstruction, ObjectPropertyInstruction } from "../../ir";
+import { LiteralInstruction, ObjectPropertyInstruction } from "../../ir";
 import { buildNode } from "./buildNode";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
@@ -15,16 +15,16 @@ export function buildObjectProperty(
   const keyPath = nodePath.get("key");
   let keyPlace;
   if (!nodePath.node.computed && keyPath.isIdentifier()) {
-    // Non-computed identifier keys are property labels, not variable
-    // references. Create a fresh BI to avoid colliding with same-named
-    // variable declarations.
+    // Non-computed identifier keys are property labels (string literals),
+    // not variable references.  Emit a LiteralInstruction so the key
+    // survives SSA transformations (clone/rewrite) unchanged.
     const keyIdentifier = environment.createIdentifier();
-    keyIdentifier.name = keyPath.node.name;
     keyPlace = environment.createPlace(keyIdentifier);
     const keyInstruction = environment.createInstruction(
-      BindingIdentifierInstruction,
+      LiteralInstruction,
       keyPlace,
       keyPath,
+      keyPath.node.name,
     );
     functionBuilder.addInstruction(keyInstruction);
   } else {

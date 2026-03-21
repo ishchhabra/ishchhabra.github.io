@@ -3,8 +3,8 @@ import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import {
   ArrayPatternInstruction,
-  BindingIdentifierInstruction,
   HoleInstruction,
+  LiteralInstruction,
   ObjectPropertyInstruction,
   Place,
   RestElementInstruction,
@@ -207,13 +207,21 @@ function buildObjectPatternVariableDeclaratorLVal(
       const keyPath: NodePath<t.ObjectProperty["key"]> = propertyPath.get("key");
       keyPath.assertIdentifier();
 
-      const keyPlace = buildObjectPropertyKeyVariableDeclaratorLVal(
-        keyPath,
-        functionBuilder,
-        environment,
-      );
-      if (keyPlace === undefined || Array.isArray(keyPlace)) {
-        throw new Error("Object pattern key must be a single place");
+      let keyPlace: Place;
+      if (propertyPath.node.computed) {
+        // Computed keys are variable references — emit via buildNode so
+        // they produce a proper instruction in the block.
+        const p = buildNode(keyPath, functionBuilder, moduleBuilder, environment);
+        if (p === undefined || Array.isArray(p)) {
+          throw new Error("Object pattern computed key must be a single place");
+        }
+        keyPlace = p;
+      } else {
+        keyPlace = buildObjectPropertyKeyVariableDeclaratorLVal(
+          keyPath,
+          functionBuilder,
+          environment,
+        );
       }
 
       const valuePath: NodePath<t.ObjectProperty["value"]> = propertyPath.get("value");
@@ -282,13 +290,16 @@ function buildObjectPropertyKeyVariableDeclaratorLVal(
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {
+  // Non-computed destructuring keys are property labels (string literals),
+  // not variable references.  Emit a LiteralInstruction so the key survives
+  // SSA transformations (clone/rewrite) unchanged.
   const keyIdentifier = environment.createIdentifier();
-  keyIdentifier.name = nodePath.node.name;
   const keyPlace = environment.createPlace(keyIdentifier);
   const keyInstruction = environment.createInstruction(
-    BindingIdentifierInstruction,
+    LiteralInstruction,
     keyPlace,
     nodePath,
+    nodePath.node.name,
   );
   functionBuilder.addInstruction(keyInstruction);
   return keyPlace;

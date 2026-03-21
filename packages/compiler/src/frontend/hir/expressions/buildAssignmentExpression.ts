@@ -9,6 +9,7 @@ import {
   BindingIdentifierInstruction,
   ExpressionStatementInstruction,
   HoleInstruction,
+  LiteralInstruction,
   LoadLocalInstruction,
   ObjectPropertyInstruction,
   Place,
@@ -412,16 +413,16 @@ function buildObjectPatternAssignmentLeft(
       const keyPath = propertyPath.get("key");
       let keyPlace;
       if (!propertyPath.node.computed && keyPath.isIdentifier()) {
-        // Non-computed identifier keys are property labels, not variable
-        // references. Create a fresh BI to avoid colliding with same-named
-        // variable declarations.
+        // Non-computed identifier keys are property labels (string literals),
+        // not variable references.  Emit a LiteralInstruction so the key
+        // survives SSA transformations (clone/rewrite) unchanged.
         const keyIdentifier = environment.createIdentifier();
-        keyIdentifier.name = keyPath.node.name;
         keyPlace = environment.createPlace(keyIdentifier);
         const keyInstruction = environment.createInstruction(
-          BindingIdentifierInstruction,
+          LiteralInstruction,
           keyPlace,
           keyPath,
+          keyPath.node.name,
         );
         functionBuilder.addInstruction(keyInstruction);
       } else {

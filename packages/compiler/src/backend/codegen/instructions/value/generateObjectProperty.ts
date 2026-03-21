@@ -6,9 +6,18 @@ export function generateObjectPropertyInstruction(
   instruction: ObjectPropertyInstruction,
   generator: CodeGenerator,
 ): t.ObjectProperty {
-  const key = generator.places.get(instruction.key.id);
+  let key = generator.places.get(instruction.key.id);
   if (key === undefined) {
     throw new Error(`Place ${instruction.key.id} not found`);
+  }
+
+  // Non-computed identifier keys are lowered to LiteralInstructions in the
+  // IR.  Convert back to an identifier node so codegen produces
+  // `{ name: v }` rather than `{ "name": v }`.  Only convert when the
+  // value is a valid identifier — genuinely quoted keys like `{ "a-b": v }`
+  // must stay as string literals.
+  if (!instruction.computed && t.isStringLiteral(key) && t.isValidIdentifier(key.value)) {
+    key = t.identifier(key.value);
   }
 
   const value = generator.places.get(instruction.value.id);

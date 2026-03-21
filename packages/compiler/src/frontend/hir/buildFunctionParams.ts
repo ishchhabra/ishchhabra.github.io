@@ -4,6 +4,7 @@ import { Environment } from "../../environment";
 import {
   ArrayPatternInstruction,
   BindingIdentifierInstruction,
+  LiteralInstruction,
   ObjectPropertyInstruction,
   Place,
   RestElementInstruction,
@@ -253,15 +254,16 @@ function buildFunctionObjectPropertyKey(
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {
-  // Not using `buildBindingIdentifier` because that defaults to using
-  // existing place if it exists.
+  // Non-computed parameter destructuring keys are property labels (string
+  // literals), not variable references.  Emit a LiteralInstruction so the
+  // key survives SSA transformations (clone/rewrite) unchanged.
   const keyIdentifier = environment.createIdentifier();
-  keyIdentifier.name = keyPath.node.name;
   const keyPlace = environment.createPlace(keyIdentifier);
   const keyInstruction = environment.createInstruction(
-    BindingIdentifierInstruction,
+    LiteralInstruction,
     keyPlace,
     keyPath,
+    keyPath.node.name,
   );
   functionBuilder.header.push(keyInstruction);
   return keyPlace;
