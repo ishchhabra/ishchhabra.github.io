@@ -112,7 +112,7 @@ importers:
         version: 5.2.0
       nitro:
         specifier: 3.0.1-alpha.2
-        version: 3.0.1-alpha.2(@electric-sql/pglite@0.3.15)(chokidar@5.0.0)(drizzle-orm@0.45.1(@electric-sql/pglite@0.3.15)(@opentelemetry/api@1.9.0)(@prisma/client@7.4.2(prisma@7.4.2(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.18.0)(kysely@0.28.11)(mysql2@3.15.3)(pg@8.19.0)(postgres@3.4.7)(prisma@7.4.2(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)))(mongodb@7.1.0)(mysql2@3.15.3)(rollup@4.57.1)(vite@7.3.1(@types/node@22.19.9)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))(xml2js@0.6.2)
+        version: 3.0.1-alpha.2(@electric-sql/pglite@0.3.15)(chokidar@5.0.0)(drizzle-orm@0.45.1(@electric-sql/pglite@0.3.15)(@opentelemetry/api@1.9.0)(@prisma/client@7.4.2(prisma@7.4.2(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.18.0)(kysely@0.28.11)(mysql2@3.15.3)(pg@8.19.0)(postgres@3.4.7)(prisma@7.4.2(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)))(lru-cache@11.2.7)(mongodb@7.1.0)(mysql2@3.15.3)(rollup@4.57.1)(vite@7.3.1(@types/node@22.19.9)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))(xml2js@0.6.2)
       pg:
         specifier: ^8.19.0
         version: 8.19.0
@@ -155,6 +155,9 @@ importers:
       '@ish/sandbox':
         injected: true
     devDependencies:
+      '@i2-labs/compiler':
+        specifier: workspace:*
+        version: file:../../packages/compiler
       '@pnpm/find-workspace-packages':
         specifier: ^6.0.9
         version: 6.0.9(@pnpm/logger@5.2.0)
@@ -1075,6 +1078,10 @@ packages:
   '@humanwhocodes/retry@0.4.3':
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
+
+  '@i2-labs/compiler@file:../../packages/compiler':
+    resolution: {directory: ../../packages/compiler, type: directory}
+    engines: {node: '>=22'}
 
   '@iframe-resizer/child@5.5.9':
     resolution: {integrity: sha512-kX4GeGvlfu9S0XfDgSEy+O36q6qFz17kslLYdBT1evBTCK7Q3ETYtZMzVnHlB5PKc9co699kWEZbmpUGtE9IQw==}
@@ -3505,11 +3512,21 @@ packages:
   babel-plugin-react-compiler@1.0.0:
     resolution: {integrity: sha512-Ixm8tFfoKKIPYdCCKYTsqv+Fd4IJ0DQqMyEimo+pxUOMUR9cVPlwTrFt9Avu+3cb6Zp3mAzl+t1MrG2fxxKsxw==}
 
+  babel-plugin-tester@11.0.4:
+    resolution: {integrity: sha512-cqswtpSPo0e++rZB0l/54EG17LL25l9gLgh59yXfnmNxX+2lZTIOpx2zt4YI9QIClVXc8xf63J6yWwKkzy0jNg==}
+    engines: {node: ^14.20.0 || ^16.16.0 || >=18.5.0}
+    peerDependencies:
+      '@babel/core': '>=7.11.6'
+
   bail@2.0.2:
     resolution: {integrity: sha512-0xO6mYd7JB2YesxDKplafRpsiOzPt9V02ddPCLbY1xYGPOX24NTyN50qnUxgCPcSoYMhKpAuBTjQoRZCAkUDRw==}
 
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
+
+  balanced-match@4.0.4:
+    resolution: {integrity: sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA==}
+    engines: {node: 18 || 20 || >=22}
 
   base64-js@0.0.8:
     resolution: {integrity: sha512-3XSA2cR/h/73EzlXXdU6YNycmYI7+kicTxks4eJg2g39biHR84slg2+des+p7iHYhbRg/udIS4TD53WabcOUkw==}
@@ -3682,6 +3699,10 @@ packages:
 
   brace-expansion@1.1.12:
     resolution: {integrity: sha512-9T9UjW3r0UW5c1Q7GTwllptXwhvYmEzFhzMfZ9H7FQWt+uZePjZPjBP/W1ZEyZ1twGWom5/56TF4lPcqjnDHcg==}
+
+  brace-expansion@5.0.4:
+    resolution: {integrity: sha512-h+DEnpVvxmfVefa4jFbCf5HdH5YMDXRsmKflpf1pILZWRFlTbJpxeU55nJl4Smt5HQaGzg1o6RHFPJaOqnmBDg==}
+    engines: {node: 18 || 20 || >=22}
 
   braces@3.0.3:
     resolution: {integrity: sha512-yQbXgO/OSZVD2IsiLlro+7Hf6Q18EJrKSEsdoMzKePKXct3gvD8oLcOQdIzGupr5Fj+EDe8gO/lxc1BzfMpxvA==}
@@ -4463,6 +4484,10 @@ packages:
     resolution: {integrity: sha512-XxwI8EOhVQgWp6iDL+3b0r86f4d6AX6zSU55HfB4ydCEuXLXc5FcYeOu+nnGftS4TEju/11rt4KJPTMgbfmv4A==}
     engines: {node: '>=10.13.0'}
 
+  glob@13.0.6:
+    resolution: {integrity: sha512-Wjlyrolmm8uDpm/ogGyXZXb1Z+Ca2B8NbJwqBVg0axK9GbBeoS7yGV6vjXnYdGm6X53iehEuxxbyiKp8QmN4Vw==}
+    engines: {node: 18 || 20 || >=22}
+
   globals@14.0.0:
     resolution: {integrity: sha512-oahGvuMGQlPw/ivIYBjVSrWAfWLBeku5tpPE2fOPLi+WHffIWbuh2tCjhyQhTBPMf5E9jDEH4FOmTYgYwbKwtQ==}
     engines: {node: '>=18'}
@@ -4811,8 +4836,14 @@ packages:
     resolution: {integrity: sha512-iPZK6eYjbxRu3uB4/WZ3EsEIMJFMqAoopl3R+zuq0UjcAm/MO6KCweDgPfP3elTztoKP3KtnVHxTn2NHBSDVUw==}
     engines: {node: '>=10'}
 
+  lodash-es@4.17.23:
+    resolution: {integrity: sha512-kVI48u3PZr38HdYz98UmfPnXl2DXrpdctLrFLCd3kOx1xUkOmpFPx7gCWWM5MPkL/fD8zb+Ph0QzjGFs4+hHWg==}
+
   lodash.merge@4.6.2:
     resolution: {integrity: sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==}
+
+  lodash.mergewith@4.6.2:
+    resolution: {integrity: sha512-GK3g5RPZWTRSeLSpgP8Xhra+pnjBC56q9FZYe1d5RN3TJ35dbkGy3YqBSMbyCrlbi+CM9Z3Jk5yTL7RCsqboyQ==}
 
   lodash@4.17.21:
     resolution: {integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==}
@@ -4822,6 +4853,10 @@ packages:
 
   longest-streak@3.1.0:
     resolution: {integrity: sha512-9Ri+o0JYgehTaVBBDoMqIl8GXtbWg711O3srftcHhZ0dqnETqLaoIK0x17fUw9rFSlK/0NlsKe0Ahhyl5pXE2g==}
+
+  lru-cache@11.2.7:
+    resolution: {integrity: sha512-aY/R+aEsRelme17KGQa/1ZSIpLpNYYrhcrepKTZgE+W3WM16YMCaPwOHLHsmopZHELU0Ojin1lPVxKR0MihncA==}
+    engines: {node: 20 || >=22}
 
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
@@ -4959,11 +4994,23 @@ packages:
     resolution: {integrity: sha512-Ysbi9uYW9hFyfrThdDEQuykN4Ey6BuwPD2kpI5ES/nFTDn/98yxYNLZJcgUAKPT/mcrLLKaGzJR9YVxJrIdASQ==}
     engines: {node: '>=8'}
 
+  min-indent@1.0.1:
+    resolution: {integrity: sha512-I9jwMn07Sy/IwOj3zVkVik2JTvgpaykDZEigL6Rx6N9LbMywwUSMtxET+7lVoDLLd3O3IXwJwvuuns8UB/HeAg==}
+    engines: {node: '>=4'}
+
+  minimatch@10.2.4:
+    resolution: {integrity: sha512-oRjTw/97aTBN0RHbYCdtF1MQfvusSIBQM0IZEgzl6426+8jSC0nF1a/GmnVLpfB9yyr6g6FTqWqiZVbxrtaCIg==}
+    engines: {node: 18 || 20 || >=22}
+
   minimatch@3.1.5:
     resolution: {integrity: sha512-VgjWUsnnT6n+NUk6eZq77zeFdpW2LWDzP6zFGrCbHXiYNul5Dzqk2HHQ5uFH2DNW5Xbp8+jVzaeNt94ssEEl4w==}
 
   minimist@1.2.8:
     resolution: {integrity: sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==}
+
+  minipass@7.1.3:
+    resolution: {integrity: sha512-tEBHqDnIoM/1rXME1zgka9g6Q2lcoCkxHLuc7ODJ5BxbP5d4c2Z5cGgtXAku59200Cx7diuHTOYfSBD8n6mm8A==}
+    engines: {node: '>=16 || 14 >=14.17'}
 
   mongodb-connection-string-url@7.0.1:
     resolution: {integrity: sha512-h0AZ9A7IDVwwHyMxmdMXKy+9oNlF0zFoahHiX3vQ8e3KFcSP3VmsmfvtRSuLPxmyv2vjIDxqty8smTgie/SNRQ==}
@@ -5190,6 +5237,10 @@ packages:
   path-name@1.0.0:
     resolution: {integrity: sha512-/dcAb5vMXH0f51yvMuSUqFpxUcA8JelbRmE5mW/p4CUJxrNgK24IkstnV7ENtg2IDGBOu6izKTG6eilbnbNKWQ==}
 
+  path-scurry@2.0.2:
+    resolution: {integrity: sha512-3O/iVVsJAPsOnpwWIeD+d6z/7PmqApyQePUtCndjatj/9I5LylHvt5qluFaBT3I5h3r1ejfR056c+FCv+NnNXg==}
+    engines: {node: 18 || 20 || >=22}
+
   path-temp@2.1.1:
     resolution: {integrity: sha512-2pIjpQb28baC42ttBsQuRRqZ33a8DnWzfSwEFKJjz7SMiCmBECUOebUNLTmmPCG8F4ZIXG7ZRJ8FAxYXdx0Jiw==}
     engines: {node: '>=8.15'}
@@ -5291,6 +5342,11 @@ packages:
   prelude-ls@1.2.1:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
     engines: {node: '>= 0.8.0'}
+
+  prettier@2.8.8:
+    resolution: {integrity: sha512-tdN8qQGvNjw4CHbY+XXk0JgCXn9QiF21a55rBe5LJAU+kDyC4WQn4+awm2Xfk2lQMk5fKup9XgzTZtGkjBdP9Q==}
+    engines: {node: '>=10.13.0'}
+    hasBin: true
 
   prettier@3.8.1:
     resolution: {integrity: sha512-UOnG6LftzbdaHZcKoPFtOcCKztrQ57WkHDeRD9t/PTQtmT0NHSeWWepj6pS0z/N7+08BHFDQVUrfmfMRcZwbMg==}
@@ -5681,6 +5737,10 @@ packages:
   strip-final-newline@2.0.0:
     resolution: {integrity: sha512-BrpvfNAE3dcvq7ll3xVumzjKjZQ5tI1sEUIKr3Uoks0XUl45St3FlatVqef9prk4jRDzhW6WZg+3bk93y6pLjA==}
     engines: {node: '>=6'}
+
+  strip-indent@3.0.0:
+    resolution: {integrity: sha512-laJTa3Jb+VQpaC6DseHhF7dXVqHTfJPCRDaEbid/drOhgitgYku/letMUqOXFoWV0zIIUbjpdH2t+tYj4bQMRQ==}
+    engines: {node: '>=8'}
 
   strip-json-comments@3.1.1:
     resolution: {integrity: sha512-6fPc+R4ihwqP6N/aIv2f1gMH8lOVtWQHoqC4yK6oSDVVocumAsfCqjkXnqiYMhmMwS/mEHLp7Vehlt3ql6lEig==}
@@ -6843,6 +6903,22 @@ snapshots:
   '@humanwhocodes/module-importer@1.0.1': {}
 
   '@humanwhocodes/retry@0.4.3': {}
+
+  '@i2-labs/compiler@file:../../packages/compiler':
+    dependencies:
+      '@babel/core': 7.29.0
+      '@babel/generator': 7.29.1
+      '@babel/helper-validator-identifier': 7.28.5
+      '@babel/parser': 7.29.0
+      '@babel/preset-typescript': 7.28.5(@babel/core@7.29.0)
+      '@babel/traverse': 7.29.0
+      '@babel/types': 7.29.0
+      babel-plugin-tester: 11.0.4(@babel/core@7.29.0)
+      glob: 13.0.6
+      lodash-es: 4.17.23
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - supports-color
 
   '@iframe-resizer/child@5.5.9':
     dependencies:
@@ -9196,9 +9272,22 @@ snapshots:
     dependencies:
       '@babel/types': 7.29.0
 
+  babel-plugin-tester@11.0.4(@babel/core@7.29.0):
+    dependencies:
+      '@babel/core': 7.29.0
+      core-js: 3.48.0
+      debug: 4.4.3
+      lodash.mergewith: 4.6.2
+      prettier: 2.8.8
+      strip-indent: 3.0.0
+    transitivePeerDependencies:
+      - supports-color
+
   bail@2.0.2: {}
 
   balanced-match@1.0.2: {}
+
+  balanced-match@4.0.4: {}
 
   base64-js@0.0.8: {}
 
@@ -9311,6 +9400,10 @@ snapshots:
     dependencies:
       balanced-match: 1.0.2
       concat-map: 0.0.1
+
+  brace-expansion@5.0.4:
+    dependencies:
+      balanced-match: 4.0.4
 
   braces@3.0.3:
     dependencies:
@@ -10003,6 +10096,12 @@ snapshots:
     dependencies:
       is-glob: 4.0.3
 
+  glob@13.0.6:
+    dependencies:
+      minimatch: 10.2.4
+      minipass: 7.1.3
+      path-scurry: 2.0.2
+
   globals@14.0.0: {}
 
   globrex@0.1.2: {}
@@ -10324,13 +10423,19 @@ snapshots:
     dependencies:
       p-locate: 5.0.0
 
+  lodash-es@4.17.23: {}
+
   lodash.merge@4.6.2: {}
+
+  lodash.mergewith@4.6.2: {}
 
   lodash@4.17.21: {}
 
   long@5.3.2: {}
 
   longest-streak@3.1.0: {}
+
+  lru-cache@11.2.7: {}
 
   lru-cache@5.1.1:
     dependencies:
@@ -10594,11 +10699,19 @@ snapshots:
 
   mimic-fn@3.1.0: {}
 
+  min-indent@1.0.1: {}
+
+  minimatch@10.2.4:
+    dependencies:
+      brace-expansion: 5.0.4
+
   minimatch@3.1.5:
     dependencies:
       brace-expansion: 1.1.12
 
   minimist@1.2.8: {}
+
+  minipass@7.1.3: {}
 
   mongodb-connection-string-url@7.0.1:
     dependencies:
@@ -10645,7 +10758,7 @@ snapshots:
 
   nf3@0.3.10: {}
 
-  nitro@3.0.1-alpha.2(@electric-sql/pglite@0.3.15)(chokidar@5.0.0)(drizzle-orm@0.45.1(@electric-sql/pglite@0.3.15)(@opentelemetry/api@1.9.0)(@prisma/client@7.4.2(prisma@7.4.2(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.18.0)(kysely@0.28.11)(mysql2@3.15.3)(pg@8.19.0)(postgres@3.4.7)(prisma@7.4.2(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)))(mongodb@7.1.0)(mysql2@3.15.3)(rollup@4.57.1)(vite@7.3.1(@types/node@22.19.9)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))(xml2js@0.6.2):
+  nitro@3.0.1-alpha.2(@electric-sql/pglite@0.3.15)(chokidar@5.0.0)(drizzle-orm@0.45.1(@electric-sql/pglite@0.3.15)(@opentelemetry/api@1.9.0)(@prisma/client@7.4.2(prisma@7.4.2(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.18.0)(kysely@0.28.11)(mysql2@3.15.3)(pg@8.19.0)(postgres@3.4.7)(prisma@7.4.2(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)))(lru-cache@11.2.7)(mongodb@7.1.0)(mysql2@3.15.3)(rollup@4.57.1)(vite@7.3.1(@types/node@22.19.9)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))(xml2js@0.6.2):
     dependencies:
       consola: 3.4.2
       crossws: 0.4.4(srvx@0.10.1)
@@ -10660,7 +10773,7 @@ snapshots:
       srvx: 0.10.1
       undici: 7.21.0
       unenv: 2.0.0-rc.24
-      unstorage: 2.0.0-alpha.5(chokidar@5.0.0)(db0@0.3.4(@electric-sql/pglite@0.3.15)(drizzle-orm@0.45.1(@electric-sql/pglite@0.3.15)(@opentelemetry/api@1.9.0)(@prisma/client@7.4.2(prisma@7.4.2(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.18.0)(kysely@0.28.11)(mysql2@3.15.3)(pg@8.19.0)(postgres@3.4.7)(prisma@7.4.2(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)))(mysql2@3.15.3))(mongodb@7.1.0)(ofetch@2.0.0-alpha.3)
+      unstorage: 2.0.0-alpha.5(chokidar@5.0.0)(db0@0.3.4(@electric-sql/pglite@0.3.15)(drizzle-orm@0.45.1(@electric-sql/pglite@0.3.15)(@opentelemetry/api@1.9.0)(@prisma/client@7.4.2(prisma@7.4.2(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.18.0)(kysely@0.28.11)(mysql2@3.15.3)(pg@8.19.0)(postgres@3.4.7)(prisma@7.4.2(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)))(mysql2@3.15.3))(lru-cache@11.2.7)(mongodb@7.1.0)(ofetch@2.0.0-alpha.3)
     optionalDependencies:
       rollup: 4.57.1
       vite: 7.3.1(@types/node@22.19.9)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)
@@ -10908,6 +11021,11 @@ snapshots:
 
   path-name@1.0.0: {}
 
+  path-scurry@2.0.2:
+    dependencies:
+      lru-cache: 11.2.7
+      minipass: 7.1.3
+
   path-temp@2.1.1:
     dependencies:
       unique-string: 2.0.0
@@ -11009,6 +11127,8 @@ snapshots:
   preact@10.28.4: {}
 
   prelude-ls@1.2.1: {}
+
+  prettier@2.8.8: {}
 
   prettier@3.8.1: {}
 
@@ -11497,6 +11617,10 @@ snapshots:
 
   strip-final-newline@2.0.0: {}
 
+  strip-indent@3.0.0:
+    dependencies:
+      min-indent: 1.0.1
+
   strip-json-comments@3.1.1: {}
 
   style-to-js@1.1.21:
@@ -11638,10 +11762,11 @@ snapshots:
       picomatch: 4.0.3
       webpack-virtual-modules: 0.6.2
 
-  unstorage@2.0.0-alpha.5(chokidar@5.0.0)(db0@0.3.4(@electric-sql/pglite@0.3.15)(drizzle-orm@0.45.1(@electric-sql/pglite@0.3.15)(@opentelemetry/api@1.9.0)(@prisma/client@7.4.2(prisma@7.4.2(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.18.0)(kysely@0.28.11)(mysql2@3.15.3)(pg@8.19.0)(postgres@3.4.7)(prisma@7.4.2(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)))(mysql2@3.15.3))(mongodb@7.1.0)(ofetch@2.0.0-alpha.3):
+  unstorage@2.0.0-alpha.5(chokidar@5.0.0)(db0@0.3.4(@electric-sql/pglite@0.3.15)(drizzle-orm@0.45.1(@electric-sql/pglite@0.3.15)(@opentelemetry/api@1.9.0)(@prisma/client@7.4.2(prisma@7.4.2(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.18.0)(kysely@0.28.11)(mysql2@3.15.3)(pg@8.19.0)(postgres@3.4.7)(prisma@7.4.2(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)))(mysql2@3.15.3))(lru-cache@11.2.7)(mongodb@7.1.0)(ofetch@2.0.0-alpha.3):
     optionalDependencies:
       chokidar: 5.0.0
       db0: 0.3.4(@electric-sql/pglite@0.3.15)(drizzle-orm@0.45.1(@electric-sql/pglite@0.3.15)(@opentelemetry/api@1.9.0)(@prisma/client@7.4.2(prisma@7.4.2(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.18.0)(kysely@0.28.11)(mysql2@3.15.3)(pg@8.19.0)(postgres@3.4.7)(prisma@7.4.2(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)))(mysql2@3.15.3)
+      lru-cache: 11.2.7
       mongodb: 7.1.0
       ofetch: 2.0.0-alpha.3
 

@@ -12,6 +12,11 @@ trap cleanup EXIT
 pnpm exec auth migrate --yes
 pnpm db:migrate
 
+if [ "${ENABLE_AOT:-}" = "1" ]; then
+  pnpm --filter @i2-labs/compiler build
+  pnpm aot:compile
+fi
+
 NITRO_PRESET=node-server pnpm build
 cp ".vercel/output/static/sitemap.xml" "$sitemap_tmp"
 

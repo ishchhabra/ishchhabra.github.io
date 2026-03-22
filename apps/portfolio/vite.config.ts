@@ -10,6 +10,8 @@ import tsConfigPaths from "vite-tsconfig-paths";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = path.resolve(__dirname, "../..");
+const portfolioAot = process.env["ENABLE_AOT"] === "1";
+const effectiveSrcDir = portfolioAot ? ".aot-src" : "src";
 
 // https://vite.dev/config/
 export default defineConfig(async (): Promise<UserConfig> => {
@@ -26,6 +28,14 @@ export default defineConfig(async (): Promise<UserConfig> => {
       // React 18+ has useSyncExternalStore. Alias only the base shim (exact match) so
       // use-sync-external-store/shim/with-selector.js still resolves to the real package.
       alias: [
+        ...(portfolioAot
+          ? [
+              {
+                find: path.resolve(__dirname, "src"),
+                replacement: path.resolve(__dirname, ".aot-src"),
+              },
+            ]
+          : []),
         {
           find: /^use-sync-external-store\/shim$/,
           replacement: "react",
@@ -35,6 +45,7 @@ export default defineConfig(async (): Promise<UserConfig> => {
     plugins: [
       tsConfigPaths(),
       tanstackStart({
+        srcDirectory: effectiveSrcDir,
         prerender: { enabled: process.env["NITRO_PRESET"] !== "vercel" },
         sitemap: {
           enabled: process.env["NITRO_PRESET"] !== "vercel",
