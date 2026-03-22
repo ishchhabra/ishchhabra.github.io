@@ -63,7 +63,11 @@ export class Optimizer {
       }
 
       if (this.options.enableCopyPropagationPass) {
-        const copyPropagationResult = new CopyPropagationPass(this.functionIR, this.ssa.phis).run();
+        const copyPropagationResult = new CopyPropagationPass(
+          this.functionIR,
+          this.ssa.phis,
+          this.moduleIR.environment,
+        ).run();
         changed ||= copyPropagationResult.changed;
         blocks = copyPropagationResult.blocks;
       }
@@ -72,6 +76,7 @@ export class Optimizer {
         const deadCodeEliminationResult = new DeadCodeEliminationPass(
           this.functionIR,
           this.ssa.phis,
+          this.moduleIR.environment,
         ).run();
         changed ||= deadCodeEliminationResult.changed;
         blocks = deadCodeEliminationResult.blocks;

@@ -50,7 +50,7 @@ export class BinaryExpressionInstruction extends ValueInstruction {
     return [this.left, this.right];
   }
 
-  public override get hasSideEffects(): boolean {
+  public override hasSideEffects(): boolean {
     return false;
   }
 }

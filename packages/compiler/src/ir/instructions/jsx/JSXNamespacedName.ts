@@ -42,7 +42,7 @@ export class JSXNamespacedNameInstruction extends JSXInstruction {
     return [];
   }
 
-  public override get hasSideEffects(): boolean {
+  public override hasSideEffects(): boolean {
     return false;
   }
 }

@@ -44,7 +44,7 @@ export class ObjectExpressionInstruction extends ValueInstruction {
     return this.properties;
   }
 
-  public override get hasSideEffects(): boolean {
+  public override hasSideEffects(): boolean {
     return false;
   }
 }

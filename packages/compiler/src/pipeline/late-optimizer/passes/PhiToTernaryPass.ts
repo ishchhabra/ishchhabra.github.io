@@ -1,3 +1,4 @@
+import { Environment } from "../../../environment";
 import {
   BaseInstruction,
   BasicBlock,
@@ -8,6 +9,7 @@ import {
   StoreLocalInstruction,
   makeInstructionId,
 } from "../../../ir";
+import { FunctionIR } from "../../../ir/core/FunctionIR";
 import { BranchTerminal, JumpTerminal } from "../../../ir/core/Terminal";
 import { BindingIdentifierInstruction } from "../../../ir/instructions/BindingIdentifier";
 import { ConditionalExpressionInstruction } from "../../../ir/instructions/value/ConditionalExpression";
@@ -45,6 +47,13 @@ import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
  * - All non-phi-copy instructions in both branches must be pure
  */
 export class PhiToTernaryPass extends BaseOptimizationPass {
+  constructor(
+    protected readonly functionIR: FunctionIR,
+    private readonly environment: Environment,
+  ) {
+    super(functionIR);
+  }
+
   protected step(): OptimizationResult {
     let changed = false;
 
@@ -86,8 +95,9 @@ export class PhiToTernaryPass extends BaseOptimizationPass {
     const consOtherInstrs = consBlock.instructions.slice(0, consBlock.instructions.length - 3);
     const altOtherInstrs = altBlock.instructions.slice(0, altBlock.instructions.length - 3);
 
-    if (!consOtherInstrs.every(isHoistable)) return false;
-    if (!altOtherInstrs.every(isHoistable)) return false;
+    const hoistable = (instr: BaseInstruction) => isHoistable(instr, this.environment);
+    if (!consOtherInstrs.every(hoistable)) return false;
+    if (!altOtherInstrs.every(hoistable)) return false;
 
     // Find the phi declaration (StoreLocal "let") in the parent block
     const phiDeclIndex = block.instructions.findIndex(
@@ -165,9 +175,9 @@ interface PhiCopyChainResult {
  * BindingIdentifierInstruction is treated as hoistable (it's a name binding
  * with no side effects) even though its default isPure is false.
  */
-function isHoistable(instr: BaseInstruction): boolean {
+function isHoistable(instr: BaseInstruction, environment: Environment): boolean {
   if (instr instanceof BindingIdentifierInstruction) return true;
-  return instr.isPure;
+  return instr.isPure(environment);
 }
 
 /**

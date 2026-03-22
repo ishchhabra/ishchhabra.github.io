@@ -2,6 +2,7 @@ import { CompilerOptions } from "../../compile";
 import { ProjectUnit } from "../../frontend/ProjectBuilder";
 import { BasicBlock, BlockId } from "../../ir";
 import { FunctionIR } from "../../ir/core/FunctionIR";
+import { ModuleIR } from "../../ir/core/ModuleIR";
 import { ExportDeclarationMergingPass } from "./passes/ExportDeclarationMergingPass";
 import { LateCopyPropagationPass } from "./passes/LateCopyPropagationPass";
 import { LateDeadCodeEliminationPass } from "./passes/LateDeadCodeEliminationPass";
@@ -15,6 +16,7 @@ interface LateOptimizerResult {
 
 export class LateOptimizer {
   constructor(
+    private readonly moduleIR: ModuleIR,
     private readonly functionIR: FunctionIR,
     private readonly projectUnit: ProjectUnit,
     private readonly options: CompilerOptions,
@@ -23,7 +25,10 @@ export class LateOptimizer {
   public run(): LateOptimizerResult {
     let blocks = this.functionIR.blocks;
     if (this.options.enablePhiToTernaryPass) {
-      const phiToTernaryResult = new PhiToTernaryPass(this.functionIR).run();
+      const phiToTernaryResult = new PhiToTernaryPass(
+        this.functionIR,
+        this.moduleIR.environment,
+      ).run();
       blocks = phiToTernaryResult.blocks;
     }
 
@@ -45,7 +50,10 @@ export class LateOptimizer {
     }
 
     if (this.options.enableLateDeadCodeEliminationPass) {
-      const lateDeadCodeEliminationResult = new LateDeadCodeEliminationPass(this.functionIR).run();
+      const lateDeadCodeEliminationResult = new LateDeadCodeEliminationPass(
+        this.functionIR,
+        this.moduleIR.environment,
+      ).run();
       blocks = lateDeadCodeEliminationResult.blocks;
     }
 

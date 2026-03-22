@@ -92,6 +92,7 @@ export class Environment {
     const instructionId = makeInstructionId(this.nextInstructionId++);
     const instruction = new Class(instructionId, ...args);
     this.instructions.set(instructionId, instruction);
+    this.placeToInstruction.set(instruction.place.id, instruction);
     return instruction;
   }
 

@@ -1,4 +1,6 @@
+import { Environment } from "../../../environment";
 import { FunctionDeclarationInstruction, IdentifierId, StoreLocalInstruction } from "../../../ir";
+import { FunctionIR } from "../../../ir/core/FunctionIR";
 import { DefMap } from "../../analysis/DefMap";
 import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
 
@@ -17,9 +19,16 @@ import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
  * instructions are cleaned up across iterations.
  */
 export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
+  constructor(
+    protected readonly functionIR: FunctionIR,
+    private readonly environment: Environment,
+  ) {
+    super(functionIR);
+  }
+
   protected step(): OptimizationResult {
     let changed = false;
-    const defs = new DefMap(this.functionIR);
+    const defs = new DefMap(this.functionIR, this.environment);
 
     // 1. Collect every identifier read by any instruction or terminal.
     const usedIds = new Set<IdentifierId>();
@@ -51,7 +60,7 @@ export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
     for (const block of this.functionIR.blocks.values()) {
       const before = block.instructions.length;
       block.instructions = block.instructions.filter((instr) => {
-        if (!instr.isPure) {
+        if (!instr.isPure(this.environment)) {
           return true;
         }
 

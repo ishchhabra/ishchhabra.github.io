@@ -41,7 +41,7 @@ export class LoadLocalInstruction extends MemoryInstruction {
     return [this.value];
   }
 
-  public override get hasSideEffects(): boolean {
+  public override hasSideEffects(): boolean {
     return false;
   }
 }

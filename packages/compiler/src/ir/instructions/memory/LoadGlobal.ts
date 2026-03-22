@@ -35,7 +35,7 @@ export class LoadGlobalInstruction extends MemoryInstruction {
     return [];
   }
 
-  public override get hasSideEffects(): boolean {
+  public override hasSideEffects(): boolean {
     return false;
   }
 }

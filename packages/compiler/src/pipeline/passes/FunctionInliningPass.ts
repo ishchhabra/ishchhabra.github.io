@@ -214,7 +214,9 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     }
 
     if (block.terminal instanceof ReturnTerminal) {
-      callExpressionBlock.instructions[index] = callExpressionInstr.rewrite(rewriteMap);
+      const rewritten = callExpressionInstr.rewrite(rewriteMap);
+      callExpressionBlock.instructions[index] = rewritten;
+      environment.placeToInstruction.set(rewritten.place.id, rewritten);
     }
 
     let returnPlace: Place;
@@ -241,12 +243,20 @@ export class FunctionInliningPass extends BaseOptimizationPass {
 
     callExpressionBlock.instructions.splice(index, 1, ...instrs);
 
+    // Register inlined instructions in placeToInstruction so downstream
+    // passes (e.g. DCE) can resolve expression definitions.
+    for (const instr of instrs) {
+      environment.placeToInstruction.set(instr.place.id, instr);
+    }
+
     const retRewriteMap = new Map<Identifier, Place>();
     retRewriteMap.set(callExpressionInstr.place.identifier, returnPlace);
 
     for (let i = index + instrs.length; i < callExpressionBlock.instructions.length; i++) {
       const oldInstr = callExpressionBlock.instructions[i];
-      callExpressionBlock.instructions[i] = oldInstr.rewrite(retRewriteMap);
+      const rewrittenInstr = oldInstr.rewrite(retRewriteMap);
+      callExpressionBlock.instructions[i] = rewrittenInstr;
+      environment.placeToInstruction.set(rewrittenInstr.place.id, rewrittenInstr);
     }
 
     // Also update the block's terminal if it references the old call place

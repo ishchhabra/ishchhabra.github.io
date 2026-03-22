@@ -48,7 +48,7 @@ export class UnaryExpressionInstruction extends ValueInstruction {
     return [this.argument];
   }
 
-  public override get hasSideEffects(): boolean {
+  public override hasSideEffects(): boolean {
     return ["throw", "delete"].includes(this.operator);
   }
 }

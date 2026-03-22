@@ -1,3 +1,4 @@
+import { Environment } from "../../environment";
 import {
   Identifier,
   IdentifierId,
@@ -32,6 +33,7 @@ export class CopyPropagationPass extends BaseOptimizationPass {
   constructor(
     protected readonly functionIR: FunctionIR,
     private readonly phis: Set<Phi>,
+    private readonly environment: Environment,
   ) {
     super(functionIR);
   }
@@ -47,7 +49,7 @@ export class CopyPropagationPass extends BaseOptimizationPass {
     //    skipped — propagating through them would cause codegen to
     //    re-emit the impure expression at every use site.
     const copySource = new Map<IdentifierId, Place>();
-    const defs = new DefMap(this.functionIR);
+    const defs = new DefMap(this.functionIR, this.environment);
 
     for (const block of this.functionIR.blocks.values()) {
       for (const instr of block.instructions) {
@@ -105,7 +107,9 @@ export class CopyPropagationPass extends BaseOptimizationPass {
         }
 
         if (rewriteMap.size > 0) {
-          block.instructions[i] = instr.rewrite(rewriteMap);
+          const rewritten = instr.rewrite(rewriteMap);
+          block.instructions[i] = rewritten;
+          this.environment.placeToInstruction.set(rewritten.place.id, rewritten);
           changed = true;
         }
       }

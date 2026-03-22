@@ -51,7 +51,7 @@ export class ArrayPatternInstruction extends PatternInstruction {
     return [this.place, ...this.bindings];
   }
 
-  public override get hasSideEffects(): boolean {
+  public override hasSideEffects(): boolean {
     return false;
   }
 }

@@ -63,7 +63,7 @@ export class FunctionDeclarationInstruction extends DeclarationInstruction {
     return [this.place, this.identifier];
   }
 
-  public override get hasSideEffects(): boolean {
+  public override hasSideEffects(): boolean {
     return false;
   }
 }

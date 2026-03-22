@@ -45,7 +45,7 @@ export class JSXSpreadAttributeInstruction extends JSXInstruction {
     return [this.argument];
   }
 
-  public override get hasSideEffects(): boolean {
+  public override hasSideEffects(): boolean {
     return false;
   }
 }

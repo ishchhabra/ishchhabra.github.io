@@ -45,7 +45,7 @@ export class SpreadElementInstruction extends BaseInstruction {
     return [this.argument];
   }
 
-  public override get hasSideEffects(): boolean {
+  public override hasSideEffects(): boolean {
     return false;
   }
 }

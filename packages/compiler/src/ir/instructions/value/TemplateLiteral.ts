@@ -41,7 +41,7 @@ export class TemplateLiteralInstruction extends ValueInstruction {
     return [...this.expressions];
   }
 
-  public override get hasSideEffects(): boolean {
+  public override hasSideEffects(): boolean {
     return false;
   }
 }

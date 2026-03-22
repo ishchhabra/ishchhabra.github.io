@@ -48,7 +48,7 @@ export class JSXMemberExpressionInstruction extends JSXInstruction {
     return [this.object];
   }
 
-  public override get hasSideEffects(): boolean {
+  public override hasSideEffects(): boolean {
     return false;
   }
 }

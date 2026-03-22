@@ -44,7 +44,7 @@ export class ArrayExpressionInstruction extends ValueInstruction {
     return this.elements;
   }
 
-  public override get hasSideEffects(): boolean {
+  public override hasSideEffects(): boolean {
     return false;
   }
 }

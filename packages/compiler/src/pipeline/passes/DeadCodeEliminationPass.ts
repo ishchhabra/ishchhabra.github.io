@@ -1,6 +1,6 @@
+import { Environment } from "../../environment";
 import { BaseInstruction, IdentifierId } from "../../ir";
 import { FunctionIR } from "../../ir/core/FunctionIR";
-import { DefMap } from "../analysis/DefMap";
 import { BaseOptimizationPass, OptimizationResult } from "../late-optimizer/OptimizationPass";
 import { Phi } from "../ssa/Phi";
 
@@ -26,7 +26,9 @@ import { Phi } from "../ssa/Phi";
  *      and whose written places are all unused. Dead instructions that
  *      wrap a side-effecting value (e.g. `StoreLocal result = delete obj.x`)
  *      are replaced via `asSideEffect()` to preserve the side effect as
- *      an expression statement.
+ *      an expression statement. ExpressionStatementInstruction derives
+ *      its `hasSideEffects` from the wrapped expression via
+ *      `environment.placeToInstruction`, so no special-casing is needed.
  *
  * The base class re-runs `step()` until fixpoint so that chains of dead
  * instructions (e.g. `a = 1; b = a;` where only `b` is dead initially)
@@ -36,13 +38,13 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
   constructor(
     protected readonly functionIR: FunctionIR,
     private readonly phis: Set<Phi>,
+    private readonly environment: Environment,
   ) {
     super(functionIR);
   }
 
   protected step(): OptimizationResult {
     let changed = false;
-    const defs = new DefMap(this.functionIR);
 
     // 1. Collect every identifier that is *read* by any instruction or terminal.
     const usedIds = new Set<IdentifierId>();
@@ -110,7 +112,7 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
       const before = block.instructions.length;
       block.instructions = block.instructions.flatMap((instr): BaseInstruction[] => {
         // Side-effecting instructions are always live.
-        if (instr.hasSideEffects) {
+        if (instr.hasSideEffects(this.environment)) {
           return [instr];
         }
 
@@ -122,7 +124,7 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
         // The instruction is dead. If it wraps a side-effecting value,
         // replace it with a side-effect-only form to preserve the effect.
         const replacement = instr.asSideEffect();
-        if (replacement && defs.hasSideEffects(replacement)) {
+        if (replacement && replacement.hasSideEffects(this.environment)) {
           return [replacement];
         }
 

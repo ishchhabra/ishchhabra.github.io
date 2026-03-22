@@ -35,7 +35,7 @@ export class HoleInstruction extends ValueInstruction {
     return [];
   }
 
-  public override get hasSideEffects(): boolean {
+  public override hasSideEffects(): boolean {
     return false;
   }
 }

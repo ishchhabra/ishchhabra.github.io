@@ -73,7 +73,7 @@ export class StoreLocalInstruction extends MemoryInstruction {
     return [this.place, this.lval, ...this.bindings];
   }
 
-  public override get hasSideEffects(): boolean {
+  public override hasSideEffects(): boolean {
     return false;
   }
 

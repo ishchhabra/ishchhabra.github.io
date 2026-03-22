@@ -65,7 +65,7 @@ export class FunctionExpressionInstruction extends ValueInstruction {
     return this.identifier ? [this.place, this.identifier] : [this.place];
   }
 
-  public override get hasSideEffects(): boolean {
+  public override hasSideEffects(): boolean {
     return false;
   }
 }

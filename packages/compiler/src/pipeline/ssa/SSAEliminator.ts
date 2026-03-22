@@ -52,21 +52,26 @@ export class SSAEliminator {
       throw new Error(`Declaration block not found for ${phi.declarationId}`);
     }
 
-    declarationBlock.instructions.push(
-      this.moduleIR.environment.createInstruction(
-        BindingIdentifierInstruction,
-        phi.place,
-        undefined,
-      ),
+    const bindingInstr = this.moduleIR.environment.createInstruction(
+      BindingIdentifierInstruction,
+      phi.place,
+      undefined,
     );
+    declarationBlock.instructions.push(bindingInstr);
+    this.moduleIR.environment.placeToInstruction.set(phi.place.id, bindingInstr);
 
     const undefinedId = makeInstructionId(this.moduleIR.environment.nextInstructionId++);
     const undefinedPlace = this.moduleIR.environment.createPlace(
       this.moduleIR.environment.createIdentifier(),
     );
-    declarationBlock.instructions.push(
-      new LiteralInstruction(undefinedId, undefinedPlace, undefined, undefined),
+    const undefinedInstr = new LiteralInstruction(
+      undefinedId,
+      undefinedPlace,
+      undefined,
+      undefined,
     );
+    declarationBlock.instructions.push(undefinedInstr);
+    this.moduleIR.environment.placeToInstruction.set(undefinedPlace.id, undefinedInstr);
 
     const identifier = this.moduleIR.environment.createIdentifier(
       phi.place.identifier.declarationId,
@@ -84,6 +89,7 @@ export class SSAEliminator {
     );
 
     declarationBlock.instructions.push(instruction);
+    this.moduleIR.environment.placeToInstruction.set(place.id, instruction);
   }
 
   #insertPhiCopies(phi: Phi) {
@@ -98,25 +104,27 @@ export class SSAEliminator {
       const loadPlace = this.moduleIR.environment.createPlace(
         this.moduleIR.environment.createIdentifier(),
       );
-      block.instructions.push(new LoadLocalInstruction(loadId, loadPlace, undefined, place));
+      const loadInstr = new LoadLocalInstruction(loadId, loadPlace, undefined, place);
+      block.instructions.push(loadInstr);
+      this.moduleIR.environment.placeToInstruction.set(loadPlace.id, loadInstr);
 
       // Step 2: Create a copy instruction using the loaded value.
       const copyId = makeInstructionId(this.moduleIR.environment.nextInstructionId++);
       const copyPlace = this.moduleIR.environment.createPlace(
         this.moduleIR.environment.createIdentifier(phi.place.identifier.declarationId),
       );
-      block.instructions.push(
-        new CopyInstruction(copyId, copyPlace, undefined, phi.place, loadPlace),
-      );
+      const copyInstr = new CopyInstruction(copyId, copyPlace, undefined, phi.place, loadPlace);
+      block.instructions.push(copyInstr);
+      this.moduleIR.environment.placeToInstruction.set(copyPlace.id, copyInstr);
 
       // Step 3: Wrap the copy instruction in an expression statement.
       const exprId = makeInstructionId(this.moduleIR.environment.nextInstructionId++);
       const exprPlace = this.moduleIR.environment.createPlace(
         this.moduleIR.environment.createIdentifier(),
       );
-      block.instructions.push(
-        new ExpressionStatementInstruction(exprId, exprPlace, undefined, copyPlace),
-      );
+      const exprInstr = new ExpressionStatementInstruction(exprId, exprPlace, undefined, copyPlace);
+      block.instructions.push(exprInstr);
+      this.moduleIR.environment.placeToInstruction.set(exprPlace.id, exprInstr);
     }
   }
 }

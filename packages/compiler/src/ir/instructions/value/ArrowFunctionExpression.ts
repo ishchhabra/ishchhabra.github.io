@@ -67,7 +67,7 @@ export class ArrowFunctionExpressionInstruction extends ValueInstruction {
     return this.captures;
   }
 
-  public override get hasSideEffects(): boolean {
+  public override hasSideEffects(): boolean {
     return false;
   }
 }

@@ -44,7 +44,7 @@ export class JSXIdentifierInstruction extends JSXInstruction {
     return [this.value];
   }
 
-  public override get hasSideEffects(): boolean {
+  public override hasSideEffects(): boolean {
     return false;
   }
 }

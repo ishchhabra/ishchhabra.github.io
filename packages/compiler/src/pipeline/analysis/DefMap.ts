@@ -1,3 +1,4 @@
+import { Environment } from "../../environment";
 import { BaseInstruction, IdentifierId } from "../../ir";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 
@@ -15,7 +16,10 @@ import { FunctionIR } from "../../ir/core/FunctionIR";
 export class DefMap {
   private readonly map: Map<IdentifierId, BaseInstruction>;
 
-  constructor(functionIR: FunctionIR) {
+  constructor(
+    functionIR: FunctionIR,
+    private readonly environment: Environment,
+  ) {
     this.map = new Map();
     for (const block of functionIR.blocks.values()) {
       for (const instr of block.instructions) {
@@ -40,17 +44,6 @@ export class DefMap {
    */
   isImpure(id: IdentifierId): boolean {
     const definer = this.map.get(id);
-    return definer !== undefined && !definer.isPure;
-  }
-
-  /**
-   * Returns true if any of the given instruction's read places are
-   * defined by a side-effecting instruction.
-   */
-  hasSideEffects(instruction: BaseInstruction): boolean {
-    return instruction.getReadPlaces().some((place) => {
-      const definer = this.map.get(place.identifier.id);
-      return definer !== undefined && definer.hasSideEffects;
-    });
+    return definer !== undefined && !definer.isPure(this.environment);
   }
 }

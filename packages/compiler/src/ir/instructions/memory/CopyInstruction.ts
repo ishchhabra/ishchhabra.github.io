@@ -50,7 +50,7 @@ export class CopyInstruction extends MemoryInstruction {
     return [this.place, this.lval];
   }
 
-  public override get hasSideEffects(): boolean {
+  public override hasSideEffects(): boolean {
     return false;
   }
 }

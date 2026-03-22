@@ -149,7 +149,9 @@ export class SSABuilder {
         }
 
         if (rewriteMap.size > 0) {
-          block.instructions[i] = this.rewriteInstruction(instruction, rewriteMap);
+          const rewritten = this.rewriteInstruction(instruction, rewriteMap);
+          block.instructions[i] = rewritten;
+          this.moduleIR.environment.placeToInstruction.set(rewritten.place.id, rewritten);
         }
 
         // Push new definitions for StoreLocal of phi'd variables

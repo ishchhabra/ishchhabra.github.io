@@ -68,8 +68,12 @@ export abstract class BaseInstruction {
    * Whether this instruction has observable side effects (mutations, I/O,
    * throws). Instructions with side effects cannot be removed even when
    * their result is unused.
+   *
+   * @param environment - Environment for context-dependent lookups.
+   *   ExpressionStatementInstruction uses this to resolve the wrapped
+   *   expression's side-effect status via `placeToInstruction`.
    */
-  public get hasSideEffects(): boolean {
+  public hasSideEffects(_environment: Environment): boolean {
     return true;
   }
 
@@ -86,8 +90,8 @@ export abstract class BaseInstruction {
    * Whether this instruction is pure — no side effects and deterministic.
    * Pure instructions can be freely removed, moved, or deduplicated.
    */
-  public get isPure(): boolean {
-    return !this.hasSideEffects && this.isDeterministic;
+  public isPure(environment: Environment): boolean {
+    return !this.hasSideEffects(environment) && this.isDeterministic;
   }
 
   /**

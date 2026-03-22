@@ -27,7 +27,7 @@ export class ThisExpressionInstruction extends ValueInstruction {
     return [];
   }
 
-  public override get hasSideEffects(): boolean {
+  public override hasSideEffects(): boolean {
     return false;
   }
 }

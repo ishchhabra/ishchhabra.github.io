@@ -45,7 +45,7 @@ export class JSXClosingElementInstruction extends JSXInstruction {
     return [this.tagPlace];
   }
 
-  public override get hasSideEffects(): boolean {
+  public override hasSideEffects(): boolean {
     return false;
   }
 }
