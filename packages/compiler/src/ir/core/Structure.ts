@@ -26,6 +26,52 @@ export abstract class BaseStructure {
 }
 
 /**
+ * A structure that represents a for...in loop.
+ */
+export class ForInStructure extends BaseStructure {
+  constructor(
+    public readonly header: BlockId,
+    public readonly iterationValue: Place,
+    public readonly object: Place,
+    public readonly body: BlockId,
+    public readonly fallthrough: BlockId,
+  ) {
+    super();
+  }
+
+  getEdges(): Array<[BlockId, BlockId]> {
+    return [
+      [this.header, this.body],
+      [this.header, this.fallthrough],
+    ];
+  }
+
+  getReadPlaces(): Place[] {
+    return [this.object];
+  }
+
+  getWrittenPlaces(): Place[] {
+    return [this.iterationValue];
+  }
+
+  rewrite(values: Map<Identifier, Place>): ForInStructure {
+    const iterationValue = this.iterationValue.rewrite(values);
+    const object = this.object.rewrite(values);
+    if (iterationValue === this.iterationValue && object === this.object) {
+      return this;
+    }
+
+    return new ForInStructure(
+      this.header,
+      iterationValue,
+      object,
+      this.body,
+      this.fallthrough,
+    );
+  }
+}
+
+/**
  * A structure that represents a for...of loop.
  */
 export class ForOfStructure extends BaseStructure {

@@ -11,6 +11,7 @@ import { buildClassDeclaration } from "./buildClassDeclaration";
 import { buildExportDefaultDeclaration } from "./buildExportDefaultDeclaration";
 import { buildExportNamedDeclaration } from "./buildExportNamedDeclaration";
 import { buildExpressionStatement } from "./buildExpressionStatement";
+import { buildForInStatement } from "./buildForInStatement";
 import { buildForOfStatement } from "./buildForOfStatement";
 import { buildForStatement } from "./buildForStatement";
 import { buildFunctionDeclaration } from "./buildFunctionDeclaration";
@@ -48,6 +49,9 @@ export function buildStatement(
     case "ForStatement":
       nodePath.assertForStatement();
       return buildForStatement(nodePath, functionBuilder, moduleBuilder, environment);
+    case "ForInStatement":
+      nodePath.assertForInStatement();
+      return buildForInStatement(nodePath, functionBuilder, moduleBuilder, environment);
     case "ForOfStatement":
       nodePath.assertForOfStatement();
       return buildForOfStatement(nodePath, functionBuilder, moduleBuilder, environment);
