@@ -4,6 +4,7 @@ import { Environment } from "../../environment";
 import {
   ArrayPatternInstruction,
   BindingIdentifierInstruction,
+  HoleInstruction,
   LiteralInstruction,
   ObjectPropertyInstruction,
   Place,
@@ -135,8 +136,17 @@ function buildFunctionArrayPatternParam(
   const identifiers: Place[] = [];
   const elements = paramPath.get("elements");
   const places = elements.map((elementPath) => {
-    if (!(elementPath.isIdentifier() || elementPath.isRestElement() || elementPath.isPattern())) {
-      throw new Error(`Unsupported element type: ${elementPath.node!.type}`);
+    // Holes in array patterns (e.g. `function([,b]){}`) — emit a HoleInstruction.
+    if (!elementPath.hasNode()) {
+      const holeIdentifier = environment.createIdentifier();
+      const holePlace = environment.createPlace(holeIdentifier);
+      const instruction = environment.createInstruction(
+        HoleInstruction,
+        holePlace,
+        elementPath as NodePath<null>,
+      );
+      functionBuilder.header.push(instruction);
+      return holePlace;
     }
 
     const result = buildFunctionParam(
