@@ -136,6 +136,15 @@ export class ConstantPropagationPass extends BaseOptimizationPass {
       throw new Error("Terminal is not a branch terminal");
     }
 
+    // Don't fold branch terminals on loop headers (blocks with back edges).
+    // Folding loses the exit block id, which break statements need to target.
+    // It also incorrectly prunes phi operands on the exit path as "dead" even
+    // though break makes that path reachable.
+    const backEdges = this.functionIR.backEdges.get(block.id);
+    if (backEdges !== undefined && backEdges.size > 0) {
+      return false;
+    }
+
     if (!this.constants.has(terminal.test.identifier.id)) {
       return false;
     }

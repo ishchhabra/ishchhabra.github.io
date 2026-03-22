@@ -54,7 +54,10 @@ function generateBranchBackEdge(
 
   t.assertExpression(test);
 
+  generator.controlStack.push({ kind: "loop", breakTarget: terminal.fallthrough });
   const bodyInstructions = generateBasicBlock(terminal.consequent, functionIR, generator);
+  generator.controlStack.pop();
+
   const exitInstructions = generateBasicBlock(terminal.fallthrough, functionIR, generator);
 
   const node = t.whileStatement(test, t.blockStatement(bodyInstructions));

@@ -98,13 +98,19 @@ export function buildForOfStatement(
     }
   }
 
-  const bodyPath = nodePath.get("body");
-  buildNode(bodyPath, functionBuilder, moduleBuilder, environment);
-  const bodyBlockTerminus = functionBuilder.currentBlock;
-
-  // Build the exit block.
+  // Build the exit block (created early so break statements can reference it).
   const exitBlock = environment.createBlock();
   functionBuilder.blocks.set(exitBlock.id, exitBlock);
+
+  const bodyPath = nodePath.get("body");
+  functionBuilder.controlStack.push({
+    kind: "loop",
+    breakTarget: exitBlock.id,
+    continueTarget: headerBlock.id,
+  });
+  buildNode(bodyPath, functionBuilder, moduleBuilder, environment);
+  functionBuilder.controlStack.pop();
+  const bodyBlockTerminus = functionBuilder.currentBlock;
 
   // Set the jump terminal for the current block to the header block.
   currentBlock.terminal = new JumpTerminal(

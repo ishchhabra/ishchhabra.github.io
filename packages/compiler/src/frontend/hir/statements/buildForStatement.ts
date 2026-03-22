@@ -60,13 +60,23 @@ export function buildForStatement(
   }
   const testBlockTerminus = functionBuilder.currentBlock;
 
+  // Build the exit block (created early so break statements can reference it).
+  const exitBlock = environment.createBlock();
+  functionBuilder.blocks.set(exitBlock.id, exitBlock);
+
   // Build the body block.
   const bodyPath = nodePath.get("body");
   const bodyBlock = environment.createBlock();
   functionBuilder.blocks.set(bodyBlock.id, bodyBlock);
 
   functionBuilder.currentBlock = bodyBlock;
+  functionBuilder.controlStack.push({
+    kind: "loop",
+    breakTarget: exitBlock.id,
+    continueTarget: testBlock.id,
+  });
   buildNode(bodyPath, functionBuilder, moduleBuilder, environment);
+  functionBuilder.controlStack.pop();
 
   // Build the update inside body block.
   const updatePath: NodePath<t.ForStatement["update"]> = nodePath.get("update");
@@ -75,10 +85,6 @@ export function buildForStatement(
   }
 
   const bodyBlockTerminus = functionBuilder.currentBlock;
-
-  // Build the exit block.
-  const exitBlock = environment.createBlock();
-  functionBuilder.blocks.set(exitBlock.id, exitBlock);
 
   // Set the jump terminal for init block to test block.
   initBlockTerminus.terminal = new JumpTerminal(

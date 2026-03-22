@@ -37,7 +37,9 @@ export function generateForOfStructure(
   t.assertExpression(iterable);
 
   // Generate the body block statements.
+  generator.controlStack.push({ kind: "loop", breakTarget: structure.fallthrough });
   const bodyStatements = generateBasicBlock(structure.body, functionIR, generator);
+  generator.controlStack.pop();
 
   // Generate the fallthrough (exit) block statements.
   const exitStatements = generateBasicBlock(structure.fallthrough, functionIR, generator);
