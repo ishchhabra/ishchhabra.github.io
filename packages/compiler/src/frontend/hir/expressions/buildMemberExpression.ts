@@ -249,4 +249,3 @@ export function buildMemberExpressionUpdate(
   // 8. Return old value (postfix) or new value (prefix)
   return updatePath.node.prefix ? newValLoadPlace : oldValLoadPlace;
 }
-

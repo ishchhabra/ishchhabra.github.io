@@ -37,12 +37,19 @@ function generateJumpBackEdge(
   functionIR: FunctionIR,
   generator: CodeGenerator,
 ): Array<t.Statement> {
-  generator.controlStack.push({ kind: "loop", breakTarget: headerBlockId, continueTarget: headerBlockId });
+  generator.controlStack.push({
+    kind: "loop",
+    breakTarget: headerBlockId,
+    continueTarget: headerBlockId,
+  });
   const bodyInstructions = generateBasicBlock(terminal.target, functionIR, generator);
   generator.controlStack.pop();
 
   // Strip the trailing `continue` that the implicit back-edge produces.
-  if (bodyInstructions.length > 0 && t.isContinueStatement(bodyInstructions[bodyInstructions.length - 1])) {
+  if (
+    bodyInstructions.length > 0 &&
+    t.isContinueStatement(bodyInstructions[bodyInstructions.length - 1])
+  ) {
     bodyInstructions.pop();
   }
 
@@ -63,13 +70,20 @@ function generateBranchBackEdge(
 
   t.assertExpression(test);
 
-  generator.controlStack.push({ kind: "loop", breakTarget: terminal.fallthrough, continueTarget: headerBlockId });
+  generator.controlStack.push({
+    kind: "loop",
+    breakTarget: terminal.fallthrough,
+    continueTarget: headerBlockId,
+  });
   const bodyInstructions = generateBasicBlock(terminal.consequent, functionIR, generator);
   generator.controlStack.pop();
 
   // Strip the trailing `continue` that the implicit back-edge produces —
   // the while construct already loops back to the header.
-  if (bodyInstructions.length > 0 && t.isContinueStatement(bodyInstructions[bodyInstructions.length - 1])) {
+  if (
+    bodyInstructions.length > 0 &&
+    t.isContinueStatement(bodyInstructions[bodyInstructions.length - 1])
+  ) {
     bodyInstructions.pop();
   }
 

@@ -61,13 +61,7 @@ export class ForInStructure extends BaseStructure {
       return this;
     }
 
-    return new ForInStructure(
-      this.header,
-      iterationValue,
-      object,
-      this.body,
-      this.fallthrough,
-    );
+    return new ForInStructure(this.header, iterationValue, object, this.body, this.fallthrough);
   }
 }
 
