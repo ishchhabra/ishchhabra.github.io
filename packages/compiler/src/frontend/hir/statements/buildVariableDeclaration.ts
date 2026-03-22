@@ -15,6 +15,7 @@ import { AssignmentPatternInstruction } from "../../../ir/instructions/pattern/A
 import { ObjectPatternInstruction } from "../../../ir/instructions/pattern/ObjectPattern";
 import { buildBindingIdentifier } from "../buildIdentifier";
 import { buildNode } from "../buildNode";
+import { getValueFromStaticKey } from "../getValueFromStaticKey";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
@@ -205,7 +206,6 @@ function buildObjectPatternVariableDeclaratorLVal(
   const propertyPlaces = propertyPaths.map((propertyPath) => {
     if (propertyPath.isObjectProperty()) {
       const keyPath: NodePath<t.ObjectProperty["key"]> = propertyPath.get("key");
-      keyPath.assertIdentifier();
 
       let keyPlace: Place;
       if (propertyPath.node.computed) {
@@ -286,20 +286,25 @@ function buildObjectPatternVariableDeclaratorLVal(
 }
 
 function buildObjectPropertyKeyVariableDeclaratorLVal(
-  nodePath: NodePath<t.Identifier>,
+  nodePath: NodePath,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {
-  // Non-computed destructuring keys are property labels (string literals),
-  // not variable references.  Emit a LiteralInstruction so the key survives
-  // SSA transformations (clone/rewrite) unchanged.
+  // Non-computed destructuring keys are property labels (identifiers,
+  // string literals, or numeric literals), not variable references.
+  // Emit a LiteralInstruction so the key survives SSA transformations
+  // (clone/rewrite) unchanged.
+  const value = getValueFromStaticKey(nodePath);
+  if (value === undefined) {
+    throw new Error("Unsupported static key type in object pattern destructuring");
+  }
   const keyIdentifier = environment.createIdentifier();
   const keyPlace = environment.createPlace(keyIdentifier);
   const keyInstruction = environment.createInstruction(
     LiteralInstruction,
     keyPlace,
     nodePath,
-    nodePath.node.name,
+    value,
   );
   functionBuilder.addInstruction(keyInstruction);
   return keyPlace;

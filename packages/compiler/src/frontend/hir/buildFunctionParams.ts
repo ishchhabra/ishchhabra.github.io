@@ -13,6 +13,7 @@ import { AssignmentPatternInstruction } from "../../ir/instructions/pattern/Assi
 import { ObjectPatternInstruction } from "../../ir/instructions/pattern/ObjectPattern";
 import { isContextVariable } from "./bindings/isContextVariable";
 import { buildNode } from "./buildNode";
+import { getValueFromStaticKey } from "./getValueFromStaticKey";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
 
@@ -174,13 +175,19 @@ function buildFunctionObjectPatternParam(
   const propertyPlaces = propertyPaths.map((propertyPath) => {
     if (propertyPath.isObjectProperty()) {
       const keyPath = propertyPath.get("key");
-      const keyPlace = buildFunctionObjectPropertyKey(
-        keyPath as NodePath<t.Identifier>,
-        functionBuilder,
-        environment,
-      );
-      if (keyPlace === undefined || Array.isArray(keyPlace)) {
-        throw new Error("Object pattern key must be a single place");
+      let keyPlace: Place;
+      if (propertyPath.node.computed) {
+        // Computed keys — emit via buildNode, then splice into header.
+        const insertPoint = functionBuilder.currentBlock.instructions.length;
+        const p = buildNode(keyPath, functionBuilder, moduleBuilder, environment);
+        if (p === undefined || Array.isArray(p)) {
+          throw new Error("Object pattern computed key must be a single place");
+        }
+        const keyInstructions = functionBuilder.currentBlock.instructions.splice(insertPoint);
+        functionBuilder.header.push(...keyInstructions);
+        keyPlace = p;
+      } else {
+        keyPlace = buildFunctionObjectPropertyKey(keyPath, functionBuilder, environment);
       }
 
       const valuePath = propertyPath.get("value");
@@ -250,20 +257,25 @@ function buildFunctionObjectPatternParam(
 }
 
 function buildFunctionObjectPropertyKey(
-  keyPath: NodePath<t.Identifier>,
+  keyPath: NodePath,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {
-  // Non-computed parameter destructuring keys are property labels (string
-  // literals), not variable references.  Emit a LiteralInstruction so the
-  // key survives SSA transformations (clone/rewrite) unchanged.
+  // Non-computed parameter destructuring keys are property labels (identifiers,
+  // string literals, or numeric literals), not variable references.
+  // Emit a LiteralInstruction so the key survives SSA transformations
+  // (clone/rewrite) unchanged.
+  const value = getValueFromStaticKey(keyPath);
+  if (value === undefined) {
+    throw new Error("Unsupported static key type in object pattern destructuring");
+  }
   const keyIdentifier = environment.createIdentifier();
   const keyPlace = environment.createPlace(keyIdentifier);
   const keyInstruction = environment.createInstruction(
     LiteralInstruction,
     keyPlace,
     keyPath,
-    keyPath.node.name,
+    value,
   );
   functionBuilder.header.push(keyInstruction);
   return keyPlace;
