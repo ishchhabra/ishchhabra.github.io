@@ -5,6 +5,7 @@ import { CallExpressionInstruction, Place } from "../../../ir";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
+import { buildImportExpression } from "./buildImportExpression";
 
 export function buildCallExpression(
   expressionPath: NodePath<t.CallExpression | t.OptionalCallExpression>,
@@ -14,6 +15,18 @@ export function buildCallExpression(
 ): Place {
   const optional = expressionPath.isOptionalCallExpression() && expressionPath.node.optional;
   const calleePath = expressionPath.get("callee");
+
+  // Dynamic import: import("./module")
+  // The callee is an Import node, not an expression.
+  if (calleePath.isImport()) {
+    return buildImportExpression(
+      expressionPath as NodePath<t.CallExpression>,
+      functionBuilder,
+      moduleBuilder,
+      environment,
+    );
+  }
+
   if (!calleePath.isExpression()) {
     throw new Error(`Unsupported callee type: ${calleePath.type}`);
   }

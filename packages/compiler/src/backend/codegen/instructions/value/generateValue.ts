@@ -16,6 +16,7 @@ import {
   UnaryExpressionInstruction,
   ValueInstruction,
 } from "../../../../ir";
+import { ImportExpressionInstruction } from "../../../../ir/instructions/value/ImportExpression";
 import { FunctionIR } from "../../../../ir/core/FunctionIR";
 import { RegExpLiteralInstruction } from "../../../../ir/instructions/value/RegExpLiteral";
 import { ArrowFunctionExpressionInstruction } from "../../../../ir/instructions/value/ArrowFunctionExpression";
@@ -35,6 +36,7 @@ import { generateCallExpression } from "./generateCallExpression";
 import { generateConditionalExpressionInstruction } from "./generateConditionalExpression";
 import { generateFunctionExpressionInstruction } from "./generateFunctionExpression";
 import { generateHoleInstruction } from "./generateHole";
+import { generateImportExpressionInstruction } from "./generateImportExpression";
 import { generateLiteralInstruction } from "./generateLiteral";
 import { generateLogicalExpressionInstruction } from "./generateLogicalExpression";
 import { generateMetaPropertyInstruction } from "./generateMetaProperty";
@@ -74,6 +76,8 @@ export function generateValueInstruction(
     return generateFunctionExpressionInstruction(instruction, generator);
   } else if (instruction instanceof HoleInstruction) {
     return generateHoleInstruction(instruction, generator);
+  } else if (instruction instanceof ImportExpressionInstruction) {
+    return generateImportExpressionInstruction(instruction, generator);
   } else if (instruction instanceof LiteralInstruction) {
     return generateLiteralInstruction(instruction, generator);
   } else if (instruction instanceof LogicalExpressionInstruction) {

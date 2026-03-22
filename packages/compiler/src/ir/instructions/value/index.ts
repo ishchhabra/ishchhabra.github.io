@@ -5,6 +5,7 @@ export { BinaryExpressionInstruction } from "./BinaryExpression";
 export { CallExpressionInstruction } from "./CallExpression";
 export { ConditionalExpressionInstruction } from "./ConditionalExpression";
 export { HoleInstruction } from "./Hole";
+export { ImportExpressionInstruction } from "./ImportExpression";
 export { LiteralInstruction, type TPrimitiveValue } from "./Literal";
 export { LogicalExpressionInstruction } from "./LogicalExpression";
 export { MetaPropertyInstruction } from "./MetaProperty";
