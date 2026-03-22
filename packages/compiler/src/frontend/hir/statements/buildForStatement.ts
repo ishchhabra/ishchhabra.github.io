@@ -69,18 +69,32 @@ export function buildForStatement(
   const bodyBlock = environment.createBlock();
   functionBuilder.blocks.set(bodyBlock.id, bodyBlock);
 
+  const updatePath: NodePath<t.ForStatement["update"]> = nodePath.get("update");
+  const updateBlock = updatePath.hasNode() ? environment.createBlock() : undefined;
+  if (updateBlock !== undefined) {
+    functionBuilder.blocks.set(updateBlock.id, updateBlock);
+  }
+
   functionBuilder.currentBlock = bodyBlock;
   functionBuilder.controlStack.push({
     kind: "loop",
     breakTarget: exitBlock.id,
-    continueTarget: testBlock.id,
+    continueTarget: updateBlock?.id ?? testBlock.id,
   });
   buildNode(bodyPath, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
 
-  // Build the update only when the body can fall through to it (no break/return/throw).
-  const updatePath: NodePath<t.ForStatement["update"]> = nodePath.get("update");
-  if (updatePath.hasNode() && functionBuilder.currentBlock.terminal === undefined) {
+  // For `continue`, run the update before the test (ECMAScript for-loop semantics).
+  // Normal fall-through from the body also reaches the update when present.
+  if (updateBlock !== undefined) {
+    if (functionBuilder.currentBlock.terminal === undefined) {
+      functionBuilder.currentBlock.terminal = new JumpTerminal(
+        makeInstructionId(functionBuilder.environment.nextInstructionId++),
+        updateBlock.id,
+      );
+    }
+    functionBuilder.currentBlock = updateBlock;
+    updatePath.assertExpression();
     buildExpressionAsStatement(updatePath, functionBuilder, moduleBuilder, environment);
   }
 

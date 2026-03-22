@@ -14,11 +14,11 @@ export function generateBackEdge(
   const terminal = functionIR.blocks.get(blockId)!.terminal!;
 
   if (terminal instanceof JumpTerminal) {
-    return generateJumpBackEdge(terminal, functionIR, generator);
+    return generateJumpBackEdge(terminal, blockId, functionIR, generator);
   }
 
   if (terminal instanceof BranchTerminal) {
-    return generateBranchBackEdge(terminal, functionIR, generator);
+    return generateBranchBackEdge(terminal, blockId, functionIR, generator);
   }
 
   throw new Error(`Unsupported back edge on block ${blockId} (${terminal.constructor.name})`);
@@ -33,10 +33,18 @@ export function generateBackEdge(
  */
 function generateJumpBackEdge(
   terminal: JumpTerminal,
+  headerBlockId: BlockId,
   functionIR: FunctionIR,
   generator: CodeGenerator,
 ): Array<t.Statement> {
+  generator.controlStack.push({ kind: "loop", breakTarget: headerBlockId, continueTarget: headerBlockId });
   const bodyInstructions = generateBasicBlock(terminal.target, functionIR, generator);
+  generator.controlStack.pop();
+
+  // Strip the trailing `continue` that the implicit back-edge produces.
+  if (bodyInstructions.length > 0 && t.isContinueStatement(bodyInstructions[bodyInstructions.length - 1])) {
+    bodyInstructions.pop();
+  }
 
   const node = t.whileStatement(t.booleanLiteral(true), t.blockStatement(bodyInstructions));
   return [node];
@@ -44,6 +52,7 @@ function generateJumpBackEdge(
 
 function generateBranchBackEdge(
   terminal: BranchTerminal,
+  headerBlockId: BlockId,
   functionIR: FunctionIR,
   generator: CodeGenerator,
 ): Array<t.Statement> {
@@ -54,9 +63,15 @@ function generateBranchBackEdge(
 
   t.assertExpression(test);
 
-  generator.controlStack.push({ kind: "loop", breakTarget: terminal.fallthrough });
+  generator.controlStack.push({ kind: "loop", breakTarget: terminal.fallthrough, continueTarget: headerBlockId });
   const bodyInstructions = generateBasicBlock(terminal.consequent, functionIR, generator);
   generator.controlStack.pop();
+
+  // Strip the trailing `continue` that the implicit back-edge produces —
+  // the while construct already loops back to the header.
+  if (bodyInstructions.length > 0 && t.isContinueStatement(bodyInstructions[bodyInstructions.length - 1])) {
+    bodyInstructions.pop();
+  }
 
   const exitInstructions = generateBasicBlock(terminal.fallthrough, functionIR, generator);
 

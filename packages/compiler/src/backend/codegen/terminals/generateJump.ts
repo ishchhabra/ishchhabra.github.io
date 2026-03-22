@@ -13,5 +13,9 @@ export function generateJumpTerminal(
     return [t.breakStatement()];
   }
 
+  if (generator.isContinueTarget(terminal.target)) {
+    return [t.continueStatement()];
+  }
+
   return generateBlock(terminal.target, functionIR, generator);
 }

@@ -35,9 +35,15 @@ export function generateForInStructure(
   t.assertExpression(object);
 
   // Generate the body block statements.
-  generator.controlStack.push({ kind: "loop", breakTarget: structure.fallthrough });
+  generator.controlStack.push({ kind: "loop", breakTarget: structure.fallthrough, continueTarget: structure.header });
   const bodyStatements = generateBasicBlock(structure.body, functionIR, generator);
   generator.controlStack.pop();
+
+  // Strip the trailing `continue` that the implicit back-edge produces —
+  // the for-in construct already loops back to the header.
+  if (bodyStatements.length > 0 && t.isContinueStatement(bodyStatements[bodyStatements.length - 1])) {
+    bodyStatements.pop();
+  }
 
   // Generate the fallthrough (exit) block statements.
   const exitStatements = generateBasicBlock(structure.fallthrough, functionIR, generator);

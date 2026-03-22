@@ -13,6 +13,17 @@ export function generateBlock(
   generator: CodeGenerator,
 ): Array<t.Statement> {
   if (generator.generatedBlocks.has(blockId)) {
+    // Some blocks are referenced from multiple code paths (e.g. the update
+    // block in a `for` loop is reached by both the normal body fall-through
+    // and any `continue` statements). Return cloned cached statements so
+    // the block's code is correctly inlined at each reference site.
+    // Safe because back-edge blocks (loop headers) return early from
+    // generateBasicBlock before blockToStatements is set, so they will
+    // never be duplicated here.
+    const cached = generator.blockToStatements.get(blockId);
+    if (cached !== undefined && cached.length > 0) {
+      return cached.map((stmt) => t.cloneNode(stmt, true));
+    }
     return [];
   }
 
@@ -52,10 +63,6 @@ export function generateBasicBlock(
   }
 
   const backEdges = functionIR.backEdges.get(blockId)!;
-  if (backEdges.size > 1) {
-    throw new Error(`Block ${blockId} has multiple back edges`);
-  }
-
   if (backEdges.size > 0) {
     return generateBackEdge(blockId, functionIR, generator);
   }

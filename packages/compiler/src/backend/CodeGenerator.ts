@@ -25,6 +25,10 @@ export class CodeGenerator {
     return this.controlStack.some((ctx) => ctx.breakTarget === blockId);
   }
 
+  public isContinueTarget(blockId: BlockId): boolean {
+    return this.controlStack.some((ctx) => ctx.continueTarget === blockId);
+  }
+
   constructor(
     public readonly path: string,
     public readonly projectUnit: ProjectUnit,

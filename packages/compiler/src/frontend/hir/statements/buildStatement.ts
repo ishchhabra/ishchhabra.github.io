@@ -7,6 +7,7 @@ import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildBlockStatement } from "./buildBlockStatement";
 import { buildBreakStatement } from "./buildBreakStatement";
+import { buildContinueStatement } from "./buildContinueStatement";
 import { buildClassDeclaration } from "./buildClassDeclaration";
 import { buildExportDefaultDeclaration } from "./buildExportDefaultDeclaration";
 import { buildExportNamedDeclaration } from "./buildExportNamedDeclaration";
@@ -37,6 +38,9 @@ export function buildStatement(
     case "BlockStatement":
       nodePath.assertBlockStatement();
       return buildBlockStatement(nodePath, functionBuilder, moduleBuilder, environment);
+    case "ContinueStatement":
+      nodePath.assertContinueStatement();
+      return buildContinueStatement(nodePath, functionBuilder, environment);
     case "ClassDeclaration":
       nodePath.assertClassDeclaration();
       return buildClassDeclaration(nodePath, functionBuilder, moduleBuilder, environment);

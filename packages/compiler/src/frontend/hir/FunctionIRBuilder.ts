@@ -149,4 +149,15 @@ export class FunctionIRBuilder {
   public getBreakTarget(): BlockId | undefined {
     return this.controlStack[this.controlStack.length - 1]?.breakTarget;
   }
+
+  public getContinueTarget(): BlockId | undefined {
+    for (let i = this.controlStack.length - 1; i >= 0; i--) {
+      const ctx = this.controlStack[i];
+      if (ctx.kind === "loop") {
+        return ctx.continueTarget;
+      }
+    }
+
+    return undefined;
+  }
 }
