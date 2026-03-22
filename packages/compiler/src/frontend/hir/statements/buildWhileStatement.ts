@@ -54,11 +54,14 @@ export function buildWhileStatement(
     exitBlock.id,
   );
 
-  // Set the jump terminal for body block to create a back edge.
-  bodyBlockTerminus.terminal = new JumpTerminal(
-    createInstructionId(functionBuilder.environment),
-    testBlock.id,
-  );
+  // Set the jump terminal for body block to create a back edge (unless the body
+  // already ended with break/return/throw, which owns the terminal).
+  if (bodyBlockTerminus.terminal === undefined) {
+    bodyBlockTerminus.terminal = new JumpTerminal(
+      createInstructionId(functionBuilder.environment),
+      testBlock.id,
+    );
+  }
 
   // Set the jump terminal for the current block.
   currentBlock.terminal = new JumpTerminal(

@@ -78,9 +78,9 @@ export function buildForStatement(
   buildNode(bodyPath, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
 
-  // Build the update inside body block.
+  // Build the update only when the body can fall through to it (no break/return/throw).
   const updatePath: NodePath<t.ForStatement["update"]> = nodePath.get("update");
-  if (updatePath.hasNode()) {
+  if (updatePath.hasNode() && functionBuilder.currentBlock.terminal === undefined) {
     buildExpressionAsStatement(updatePath, functionBuilder, moduleBuilder, environment);
   }
 
@@ -101,11 +101,14 @@ export function buildForStatement(
     exitBlock.id,
   );
 
-  // Set the jump terminal for body block to create a back edge.
-  bodyBlockTerminus.terminal = new JumpTerminal(
-    makeInstructionId(functionBuilder.environment.nextInstructionId++),
-    testBlock.id,
-  );
+  // Set the jump terminal for body block to create a back edge (unless the body
+  // already ended with break/return/throw, which owns the terminal).
+  if (bodyBlockTerminus.terminal === undefined) {
+    bodyBlockTerminus.terminal = new JumpTerminal(
+      makeInstructionId(functionBuilder.environment.nextInstructionId++),
+      testBlock.id,
+    );
+  }
 
   // Set the jump terminal for the current block.
   currentBlock.terminal = new JumpTerminal(

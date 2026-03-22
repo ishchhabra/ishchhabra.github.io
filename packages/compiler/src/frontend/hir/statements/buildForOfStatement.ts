@@ -118,11 +118,14 @@ export function buildForOfStatement(
     headerBlock.id,
   );
 
-  // Set the jump terminal for the body block to create a back edge.
-  bodyBlockTerminus.terminal = new JumpTerminal(
-    makeInstructionId(functionBuilder.environment.nextInstructionId++),
-    headerBlock.id,
-  );
+  // Set the jump terminal for the body block to create a back edge (unless the body
+  // already ended with break/return/throw, which owns the terminal).
+  if (bodyBlockTerminus.terminal === undefined) {
+    bodyBlockTerminus.terminal = new JumpTerminal(
+      makeInstructionId(functionBuilder.environment.nextInstructionId++),
+      headerBlock.id,
+    );
+  }
 
   // Register the ForOfStructure on the header block.
   functionBuilder.structures.set(

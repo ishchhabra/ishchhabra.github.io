@@ -24,6 +24,10 @@ export function buildBlockStatement(
   const body = nodePath.get("body");
   for (const statementPath of body) {
     buildNode(statementPath, functionBuilder, moduleBuilder, environment);
+    // Do not emit unreachable statements after break/return/throw/etc.
+    if (functionBuilder.currentBlock.terminal !== undefined) {
+      break;
+    }
   }
 
   currentBlock.terminal = new JumpTerminal(

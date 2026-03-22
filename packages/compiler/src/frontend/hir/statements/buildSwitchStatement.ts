@@ -81,6 +81,9 @@ export function buildSwitchStatement(
     const consequentPaths = casePath.get("consequent");
     for (const stmtPath of consequentPaths) {
       buildNode(stmtPath, functionBuilder, moduleBuilder, environment);
+      if (functionBuilder.currentBlock.terminal !== undefined) {
+        break;
+      }
     }
 
     // If the case body didn't end with a terminal (no break/return/throw),

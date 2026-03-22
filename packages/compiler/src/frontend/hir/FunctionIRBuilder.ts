@@ -80,6 +80,9 @@ export class FunctionIRBuilder {
 
       for (const statementPath of bodyPath) {
         buildNode(statementPath, this, this.moduleBuilder, this.environment);
+        if (this.currentBlock.terminal !== undefined) {
+          break;
+        }
       }
     }
 
