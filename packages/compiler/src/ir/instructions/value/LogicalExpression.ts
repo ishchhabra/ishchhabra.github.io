@@ -50,4 +50,8 @@ export class LogicalExpressionInstruction extends ValueInstruction {
   getReadPlaces(): Place[] {
     return [this.left, this.right];
   }
+
+  public override hasSideEffects(): boolean {
+    return false;
+  }
 }
