@@ -12,7 +12,11 @@ export function generateFunctionExpressionInstruction(
     throw new Error("Function expression identifier is not an identifier");
   }
 
-  const { params, statements } = generateFunction(instruction.functionIR, generator);
+  const { params, statements } = generateFunction(
+    instruction.functionIR,
+    instruction.captures,
+    generator,
+  );
   const node = t.functionExpression(
     idNode,
     params,

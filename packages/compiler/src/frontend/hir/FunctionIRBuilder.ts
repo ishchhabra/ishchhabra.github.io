@@ -34,6 +34,18 @@ export class FunctionIRBuilder {
    */
   public readonly captures = new Map<DeclarationId, Place>();
 
+  /**
+   * Local places inside this function that correspond to each captured
+   * variable. Aligned by key with `captures`: for each DeclarationId,
+   * `captureParams.get(declId)` is the local Place that instructions in
+   * this function's blocks use to reference the captured variable.
+   *
+   * This indirection decouples the function's blocks from the parent
+   * scope's identifiers, so rewriting captures (e.g. during SSA or
+   * inlining) never requires modifying the function's blocks.
+   */
+  public readonly captureParams = new Map<DeclarationId, Place>();
+
   constructor(
     public readonly paramPaths: NodePath<t.Identifier | t.RestElement | t.Pattern>[],
     public readonly bodyPath: NodePath<t.Program | t.BlockStatement | t.Expression>,
@@ -95,6 +107,7 @@ export class FunctionIRBuilder {
       this.generator,
       this.blocks,
       this.structures,
+      [...this.captureParams.values()],
     );
     this.moduleBuilder.functions.set(functionIR.id, functionIR);
     return functionIR;

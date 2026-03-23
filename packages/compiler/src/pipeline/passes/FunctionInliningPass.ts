@@ -187,6 +187,27 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     return dfs(start);
   }
 
+  /**
+   * Finds the instruction (FunctionDeclaration, ArrowFunctionExpression,
+   * or FunctionExpression) that declares the given FunctionIR, by
+   * scanning all blocks in the module. Returns undefined if not found.
+   */
+  private findDeclaringInstruction(funcIR: FunctionIR): BaseInstruction | undefined {
+    for (const fn of this.moduleIR.functions.values()) {
+      for (const block of fn.blocks.values()) {
+        for (const instr of block.instructions) {
+          if (
+            "functionIR" in instr &&
+            (instr as { functionIR: FunctionIR }).functionIR === funcIR
+          ) {
+            return instr;
+          }
+        }
+      }
+    }
+    return undefined;
+  }
+
   private inlineFunctionIR(
     index: number,
     callExpressionBlock: BasicBlock,
@@ -203,6 +224,20 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     }
 
     const rewriteMap = new Map<Identifier, Place>();
+
+    // Resolve capture params to the actual outer places so inlined
+    // instructions can reference captured variables directly.
+    // The declaring instruction's captures[i] corresponds to funcIR.captureParams[i].
+    const declInstr = this.findDeclaringInstruction(funcIR);
+    if (declInstr) {
+      const captures = "captures" in declInstr ? (declInstr as { captures: Place[] }).captures : [];
+      for (let i = 0; i < funcIR.captureParams.length; i++) {
+        if (i < captures.length) {
+          rewriteMap.set(funcIR.captureParams[i].identifier, captures[i]);
+        }
+      }
+    }
+
     const instrs: BaseInstruction[] = [];
     this.inlineFunctionParams(funcIR, callExpressionInstr, environment, instrs, rewriteMap);
 

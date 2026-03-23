@@ -7,7 +7,11 @@ export function generateArrowFunctionExpressionInstruction(
   instruction: ArrowFunctionExpressionInstruction,
   generator: CodeGenerator,
 ): t.ArrowFunctionExpression {
-  const { params, statements } = generateFunction(instruction.functionIR, generator);
+  const { params, statements } = generateFunction(
+    instruction.functionIR,
+    instruction.captures,
+    generator,
+  );
 
   let body: t.BlockStatement | t.Expression = t.blockStatement(statements);
   if (instruction.expression) {

@@ -90,16 +90,34 @@ function buildReferencedIdentifier(
     }
 
     // If this variable was declared in an enclosing scope (not in the
-    // current function), record it as a closure capture.
+    // current function), record it as a closure capture and use a local
+    // capture parameter place so the function's blocks are decoupled
+    // from the parent scope's identifiers.
     if (!builder.isOwnDeclaration(declarationId)) {
       builder.captures.set(declarationId, declarationPlace);
+      if (!builder.captureParams.has(declarationId)) {
+        const paramIdentifier = environment.createIdentifier(declarationId);
+        paramIdentifier.name = declarationPlace.identifier.name;
+        builder.captureParams.set(declarationId, environment.createPlace(paramIdentifier));
+      }
+      const captureParam = builder.captureParams.get(declarationId)!;
+      const LoadClass = environment.contextDeclarationIds.has(declarationId)
+        ? LoadContextInstruction
+        : LoadLocalInstruction;
+      const instruction = environment.createInstruction(LoadClass, place, nodePath, captureParam);
+      builder.addInstruction(instruction);
+    } else {
+      const LoadClass = environment.contextDeclarationIds.has(declarationId)
+        ? LoadContextInstruction
+        : LoadLocalInstruction;
+      const instruction = environment.createInstruction(
+        LoadClass,
+        place,
+        nodePath,
+        declarationPlace,
+      );
+      builder.addInstruction(instruction);
     }
-
-    const LoadClass = environment.contextDeclarationIds.has(declarationId)
-      ? LoadContextInstruction
-      : LoadLocalInstruction;
-    const instruction = environment.createInstruction(LoadClass, place, nodePath, declarationPlace);
-    builder.addInstruction(instruction);
   }
 
   return place;

@@ -1,13 +1,24 @@
 import * as t from "@babel/types";
 import { BindingIdentifierInstruction } from "../../ir";
 import { FunctionIR } from "../../ir/core/FunctionIR";
+import { Place } from "../../ir/core/Place";
 import { CodeGenerator } from "../CodeGenerator";
 import { generateBlock } from "./generateBlock";
 import { generateBindingIdentifierInstruction } from "./instructions/generateBindingIdentifier";
 import { generateInstruction } from "./instructions/generateInstruction";
 
+/**
+ * Generates the body of a function.
+ *
+ * @param captures - Outer-scope Places this function captures, aligned
+ *   by index with `functionIR.captureParams`. When present, each
+ *   `captureParams[i]` is bound to `captures[i]`'s generated node so
+ *   the function body can reference captured variables through the
+ *   indirection layer.
+ */
 export function generateFunction(
   functionIR: FunctionIR,
+  captures: Place[],
   generator: CodeGenerator,
 ): {
   params: Array<t.Identifier | t.RestElement | t.Pattern>;
@@ -18,6 +29,17 @@ export function generateFunction(
   // objects between the original definition and the inlined call site,
   // causing blocks to be incorrectly skipped on the second generation.
   const savedGeneratedBlocks = new Set(generator.generatedBlocks);
+
+  // Bind capture parameters to outer captures so the function body
+  // resolves captured variables through the indirection layer.
+  for (let i = 0; i < functionIR.captureParams.length; i++) {
+    if (i < captures.length) {
+      const outerNode = generator.places.get(captures[i].id);
+      if (outerNode !== undefined) {
+        generator.places.set(functionIR.captureParams[i].id, outerNode);
+      }
+    }
+  }
 
   // Pre-register all binding identifiers across ALL blocks of this function.
   // This ensures closures defined in earlier blocks can reference variables

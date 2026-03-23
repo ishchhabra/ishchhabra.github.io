@@ -2,7 +2,7 @@ import { NodePath } from "@babel/traverse";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
-import { FunctionIR, rewriteFunctionIR } from "../../core/FunctionIR";
+import { FunctionIR } from "../../core/FunctionIR";
 import { Identifier } from "../../core/Identifier";
 import { Place } from "../../core/Place";
 
@@ -10,9 +10,10 @@ import { Place } from "../../core/Place";
  * Represents an arrow function expression, e.g.
  *   `const arrow = (x) => x + 1;`
  *
- * The `functionIR` property contains the IR for the arrow's body,
- * `async` indicates if it's `async ( ) => { }`,
- * `expression` indicates if it has a concise expression body rather than a block.
+ * `captures` are the outer-scope Places this closure reads from,
+ * aligned by index with `functionIR.captureParams`. Codegen binds
+ * `captureParams[i]` → `captures[i]` so the function body resolves
+ * captured variables through the indirection layer.
  */
 export class ArrowFunctionExpressionInstruction extends ValueInstruction {
   constructor(
@@ -55,7 +56,7 @@ export class ArrowFunctionExpressionInstruction extends ValueInstruction {
       this.id,
       this.place,
       this.nodePath,
-      rewriteFunctionIR(this.functionIR, values),
+      this.functionIR,
       this.async,
       this.expression,
       this.generator,

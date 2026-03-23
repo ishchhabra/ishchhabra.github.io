@@ -42,7 +42,7 @@ export class CodeGenerator {
   generate(): string {
     const moduleIR = this.projectUnit.modules.get(this.path)!;
     this.preRegisterBindingIdentifiers(moduleIR);
-    const { statements } = generateFunction(this.entryFunction, this);
+    const { statements } = generateFunction(this.entryFunction, [], this);
     const program = t.program(statements);
     return generate(program).code;
   }
@@ -60,7 +60,7 @@ export class CodeGenerator {
     const generator = new CodeGenerator(modulePath, this.projectUnit);
     generator.preRegisterBindingIdentifiers(moduleIR);
     const entryFunction = moduleIR.functions.get(makeFunctionIRId(0))!;
-    const { statements } = generateFunction(entryFunction, generator);
+    const { statements } = generateFunction(entryFunction, [], generator);
     const program = t.program(statements);
     return generate(program).code;
   }

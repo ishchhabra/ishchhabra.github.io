@@ -44,14 +44,29 @@ export function buildJSXIdentifier(
 
       if (!functionBuilder.isOwnDeclaration(declarationId)) {
         functionBuilder.captures.set(declarationId, declarationPlace);
+        if (!functionBuilder.captureParams.has(declarationId)) {
+          const paramIdentifier = environment.createIdentifier(declarationId);
+          paramIdentifier.name = declarationPlace.identifier.name;
+          functionBuilder.captureParams.set(
+            declarationId,
+            environment.createPlace(paramIdentifier),
+          );
+        }
+        const captureParam = functionBuilder.captureParams.get(declarationId)!;
+        const LoadClass = environment.contextDeclarationIds.has(declarationId)
+          ? LoadContextInstruction
+          : LoadLocalInstruction;
+        functionBuilder.addInstruction(
+          environment.createInstruction(LoadClass, valuePlace, nodePath, captureParam),
+        );
+      } else {
+        const LoadClass = environment.contextDeclarationIds.has(declarationId)
+          ? LoadContextInstruction
+          : LoadLocalInstruction;
+        functionBuilder.addInstruction(
+          environment.createInstruction(LoadClass, valuePlace, nodePath, declarationPlace),
+        );
       }
-
-      const LoadClass = environment.contextDeclarationIds.has(declarationId)
-        ? LoadContextInstruction
-        : LoadLocalInstruction;
-      functionBuilder.addInstruction(
-        environment.createInstruction(LoadClass, valuePlace, nodePath, declarationPlace),
-      );
     } else {
       functionBuilder.addInstruction(
         environment.createInstruction(LoadGlobalInstruction, valuePlace, nodePath, name),
