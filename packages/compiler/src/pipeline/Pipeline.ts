@@ -4,6 +4,7 @@ import { ProjectUnit } from "../frontend/ProjectBuilder";
 import { BasicBlock, BlockId } from "../ir";
 import { CallGraph } from "./analysis/CallGraph";
 import { LateOptimizer } from "./late-optimizer/LateOptimizer";
+import { ExportDeclarationMergingPass } from "./late-optimizer/passes/ExportDeclarationMergingPass";
 import { MergeConsecutiveBlocksPass } from "./MergeConsecutiveBlocksPass";
 import { Optimizer } from "./optimizer/Optimizer";
 import { UnusedExportEliminationPass } from "./passes/UnusedExportEliminationPass";
@@ -39,6 +40,7 @@ export class Pipeline {
 
         const ssaBuilderResult = new SSABuilder(functionIR, moduleIR).build();
 
+        // Phase 1: SSA optimization (fixpoint loop).
         if (this.options.enableOptimizer) {
           const optimizerResult = new Optimizer(
             functionIR,
@@ -52,16 +54,19 @@ export class Pipeline {
           functionIR.blocks = optimizerResult.blocks;
         }
 
+        // Phase 2: SSA elimination.
         new SSAEliminator(functionIR, moduleIR, ssaBuilderResult.phis).eliminate();
 
+        // Phase 3: Post-SSA cleanup (fixpoint loop).
         if (this.options.enableLateOptimizer) {
-          const lateOptimizerResult = new LateOptimizer(
-            moduleIR,
-            functionIR,
-            this.projectUnit,
-            this.options,
-          ).run();
+          const lateOptimizerResult = new LateOptimizer(moduleIR, functionIR, this.options).run();
           functionIR.blocks = lateOptimizerResult.blocks;
+        }
+
+        // Phase 4: Output optimization (single-run passes).
+        if (this.options.enableExportDeclarationMergingPass) {
+          const exportMergingResult = new ExportDeclarationMergingPass(functionIR).run();
+          functionIR.blocks = exportMergingResult.blocks;
         }
       }
     }

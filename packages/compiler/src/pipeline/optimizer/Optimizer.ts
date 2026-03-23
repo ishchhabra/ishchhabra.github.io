@@ -9,6 +9,7 @@ import { ConstantPropagationPass } from "../passes/ConstantPropagationPass";
 import { FunctionInliningPass } from "../passes/FunctionInliningPass";
 import { CopyPropagationPass } from "../passes/CopyPropagationPass";
 import { DeadCodeEliminationPass } from "../passes/DeadCodeEliminationPass";
+import { PhiOptimizationPass } from "../passes/PhiOptimizationPass";
 import { UnreachableCodeEliminationPass } from "../passes/UnreachableCodeEliminationPass";
 import { SSA } from "../ssa/SSABuilder";
 
@@ -52,6 +53,16 @@ export class Optimizer {
         ).run();
         changed ||= algebraicSimplificationResult.changed;
         blocks = algebraicSimplificationResult.blocks;
+      }
+
+      if (this.options.enablePhiOptimizationPass) {
+        const phiOptimizationResult = new PhiOptimizationPass(
+          this.functionIR,
+          this.ssa.phis,
+          this.moduleIR.environment,
+        ).run();
+        changed ||= phiOptimizationResult.changed;
+        blocks = phiOptimizationResult.blocks;
       }
 
       if (this.options.enableUnreachableCodeEliminationPass) {
