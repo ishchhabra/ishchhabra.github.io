@@ -150,11 +150,21 @@ export class FunctionIRBuilder {
    * transitive captures: if a grandchild function captures a variable
    * from the grandparent scope, all intermediate functions must also
    * list it as a capture so DCE keeps the definition alive at each level.
+   *
+   * Both `captures` and `captureParams` are populated so the two maps
+   * stay aligned by DeclarationId — consumers iterate them in lockstep
+   * by index to bind each inner capture parameter to the corresponding
+   * outer place.
    */
   public propagateCapturesFrom(child: FunctionIRBuilder): void {
     for (const [declId, capture] of child.captures) {
       if (!this.isOwnDeclaration(declId)) {
         this.captures.set(declId, capture);
+        if (!this.captureParams.has(declId)) {
+          const paramIdentifier = this.environment.createIdentifier(declId);
+          paramIdentifier.name = capture.identifier.name;
+          this.captureParams.set(declId, this.environment.createPlace(paramIdentifier));
+        }
       }
     }
   }
