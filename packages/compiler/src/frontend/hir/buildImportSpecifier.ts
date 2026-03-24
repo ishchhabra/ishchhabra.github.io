@@ -1,7 +1,7 @@
 import { NodePath } from "@babel/core";
 import * as t from "@babel/types";
 import { Environment } from "../../environment";
-import { ImportSpecifierInstruction } from "../../ir";
+import { BindingIdentifierInstruction, ImportSpecifierInstruction } from "../../ir";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
 import { resolveModulePath } from "./resolveModulePath";
@@ -28,6 +28,31 @@ export function buildImportSpecifier(
     importedName,
   );
   functionBuilder.addInstruction(instruction);
+
+  // Register the import as a declaration so that export specifiers (and any
+  // other consumer that looks up declarations by name) can find it through
+  // the uniform getDeclarationId path.
+  const bindingIdentifier = environment.createIdentifier();
+  bindingIdentifier.name = localName;
+  const bindingPlace = environment.createPlace(bindingIdentifier);
+  const bindingInstruction = environment.createInstruction(
+    BindingIdentifierInstruction,
+    bindingPlace,
+    specifierNodePath,
+  );
+  functionBuilder.addInstruction(bindingInstruction);
+
+  functionBuilder.registerDeclarationName(
+    localName,
+    bindingIdentifier.declarationId,
+    declarationNodePath,
+  );
+  environment.registerDeclaration(
+    bindingIdentifier.declarationId,
+    functionBuilder.currentBlock.id,
+    bindingPlace.id,
+  );
+  environment.registerDeclarationInstruction(bindingPlace, instruction);
 
   const source = declarationNodePath.node.source.value;
   moduleBuilder.globals.set(localName, {

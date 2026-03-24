@@ -3,6 +3,7 @@ import * as t from "@babel/types";
 import { Environment } from "../../environment";
 import {
   BindingIdentifierInstruction,
+  ImportSpecifierInstruction,
   LoadContextInstruction,
   LoadGlobalInstruction,
   LoadLocalInstruction,
@@ -74,7 +75,11 @@ function buildReferencedIdentifier(
   const identifier = environment.createIdentifier(declarationId);
   const place = environment.createPlace(identifier);
 
-  if (declarationId === undefined) {
+  if (
+    declarationId === undefined ||
+    environment.instructions.get(environment.getDeclarationInstruction(declarationId))
+      instanceof ImportSpecifierInstruction
+  ) {
     const instruction = environment.createInstruction(LoadGlobalInstruction, place, nodePath, name);
     builder.addInstruction(instruction);
   } else {
