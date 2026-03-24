@@ -3,7 +3,6 @@ export { ClassExpressionInstruction } from "./ClassExpression";
 export { ArrayExpressionInstruction } from "./ArrayExpression";
 export { BinaryExpressionInstruction } from "./BinaryExpression";
 export { CallExpressionInstruction } from "./CallExpression";
-export { ConditionalExpressionInstruction } from "./ConditionalExpression";
 export { HoleInstruction } from "./Hole";
 export { ImportExpressionInstruction } from "./ImportExpression";
 export { LiteralInstruction, type TPrimitiveValue } from "./Literal";

@@ -93,13 +93,20 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
    * as used.
    */
   private propagateStructureLiveness(usedIds: Set<IdentifierId>): void {
-    for (const structure of this.functionIR.structures.values()) {
-      const isLive =
-        structure.hasSideEffects() ||
-        structure.getWrittenPlaces().some((p) => usedIds.has(p.identifier.id));
-      if (isLive) {
-        for (const place of structure.getReadPlaces()) {
-          usedIds.add(place.identifier.id);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const structure of this.functionIR.structures.values()) {
+        const isLive =
+          structure.hasSideEffects() ||
+          structure.getWrittenPlaces().some((p) => usedIds.has(p.identifier.id));
+        if (isLive) {
+          for (const place of structure.getReadPlaces()) {
+            if (!usedIds.has(place.identifier.id)) {
+              usedIds.add(place.identifier.id);
+              changed = true;
+            }
+          }
         }
       }
     }

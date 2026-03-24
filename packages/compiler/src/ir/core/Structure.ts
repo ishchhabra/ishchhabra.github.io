@@ -122,3 +122,81 @@ export class ForOfStructure extends BaseStructure {
     );
   }
 }
+
+/**
+ * A structure that represents a conditional (ternary) expression.
+ *
+ * Keeps the consequent and alternate as blocks so branch instructions
+ * stay in their arms — no hoisting required, and side effects remain
+ * guarded by the condition.
+ *
+ * The codegen emits this as `test ? (consequent block as expr) : (alternate block as expr)`.
+ */
+export class TernaryStructure extends BaseStructure {
+  constructor(
+    /** The block that owns this structure (contains the test + the ternary). */
+    public readonly header: BlockId,
+    /** The condition expression place. */
+    public readonly test: Place,
+    /** Block containing the consequent arm instructions. */
+    public readonly consequent: BlockId,
+    /** The Place produced by the consequent arm (the ternary's "true" value). */
+    public readonly consequentValue: Place,
+    /** Block containing the alternate arm instructions. */
+    public readonly alternate: BlockId,
+    /** The Place produced by the alternate arm (the ternary's "false" value). */
+    public readonly alternateValue: Place,
+    /** The block after the ternary (merge point). */
+    public readonly fallthrough: BlockId,
+    /** The Place where the ternary result is registered in the codegen. */
+    public readonly resultPlace: Place,
+  ) {
+    super();
+  }
+
+  getEdges(): Array<[BlockId, BlockId]> {
+    return [
+      [this.header, this.consequent],
+      [this.header, this.alternate],
+      [this.header, this.fallthrough],
+    ];
+  }
+
+  getReadPlaces(): Place[] {
+    return [this.test, this.consequentValue, this.alternateValue];
+  }
+
+  getWrittenPlaces(): Place[] {
+    return [this.resultPlace];
+  }
+
+  override hasSideEffects(): boolean {
+    return false;
+  }
+
+  rewrite(values: Map<Identifier, Place>): TernaryStructure {
+    const test = this.test.rewrite(values);
+    const consequentValue = this.consequentValue.rewrite(values);
+    const alternateValue = this.alternateValue.rewrite(values);
+    const resultPlace = this.resultPlace.rewrite(values);
+    if (
+      test === this.test &&
+      consequentValue === this.consequentValue &&
+      alternateValue === this.alternateValue &&
+      resultPlace === this.resultPlace
+    ) {
+      return this;
+    }
+
+    return new TernaryStructure(
+      this.header,
+      test,
+      this.consequent,
+      consequentValue,
+      this.alternate,
+      alternateValue,
+      this.fallthrough,
+      resultPlace,
+    );
+  }
+}
