@@ -236,12 +236,22 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
 
     // Structure-through case — the arm has an inner TernaryStructure
     // and the phi operand comes from its fallthrough trampoline.
-    // Use the operand place (inner result) directly. Collect trampolines.
+    // Extract the outer phi's StoreLocal from the trampoline block
+    // (that's where SSA placed it), then use the stored value.
     const trampolines = this.collectTrampolines(armBlockId, phiBlockId);
     if (trampolines === null) return null;
 
+    const phiBlock = this.functionIR.blocks.get(phiBlockId);
+    if (!phiBlock) return null;
+
+    const phiStoreResult = this.extractPhiStore(phiBlock, phi, operandPlace);
+    if (!phiStoreResult) return null;
+
+    // Update the trampoline block's instructions (phi store removed).
+    phiBlock.instructions = phiStoreResult.remainingInstrs;
+
     return {
-      valuePlace: operandPlace,
+      valuePlace: phiStoreResult.valuePlace,
       remainingInstrs: [...armBlock.instructions],
       trampolines,
     };
