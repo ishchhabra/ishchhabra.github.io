@@ -18,6 +18,8 @@ export const CompilerOptionsSchema = z.object({
   enableUnreachableCodeEliminationPass: z.boolean().default(true),
   /** Whether to enable the copy propagation pass */
   enableCopyPropagationPass: z.boolean().default(true),
+  /** Whether to enable the capture pruning pass */
+  enableCapturePruningPass: z.boolean().default(true),
   /** Whether to enable the dead code elimination pass */
   enableDeadCodeEliminationPass: z.boolean().default(true),
   /** Whether to enable the phi optimization pass */

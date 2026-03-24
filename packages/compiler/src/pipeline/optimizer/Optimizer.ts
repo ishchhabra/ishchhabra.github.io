@@ -8,6 +8,7 @@ import { AlgebraicSimplificationPass } from "../passes/AlgebraicSimplificationPa
 import { ConstantPropagationPass } from "../passes/ConstantPropagationPass";
 import { FunctionInliningPass } from "../passes/FunctionInliningPass";
 import { CopyPropagationPass } from "../passes/CopyPropagationPass";
+import { CapturePruningPass } from "../passes/CapturePruningPass";
 import { DeadCodeEliminationPass } from "../passes/DeadCodeEliminationPass";
 import { PhiOptimizationPass } from "../passes/PhiOptimizationPass";
 import { UnreachableCodeEliminationPass } from "../passes/UnreachableCodeEliminationPass";
@@ -81,6 +82,12 @@ export class Optimizer {
         ).run();
         changed ||= copyPropagationResult.changed;
         blocks = copyPropagationResult.blocks;
+      }
+
+      if (this.options.enableCapturePruningPass) {
+        const capturePruningResult = new CapturePruningPass(this.functionIR).run();
+        changed ||= capturePruningResult.changed;
+        blocks = capturePruningResult.blocks;
       }
 
       if (this.options.enableDeadCodeEliminationPass) {
