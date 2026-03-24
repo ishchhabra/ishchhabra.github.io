@@ -18,6 +18,10 @@ export function generateStoreLocalInstruction(
   t.assertExpression(value);
 
   const node = t.variableDeclaration(instruction.type, [t.variableDeclarator(lval, value)]);
-  generator.places.set(instruction.place.id, node);
+  // When emitted as a standalone statement, downstream consumers that reference
+  // this place need the lval identifier (an Expression), not the full
+  // VariableDeclaration (a Statement). When emit is false (e.g. wrapped by an
+  // ExportNamedDeclaration), the consumer needs the Declaration node itself.
+  generator.places.set(instruction.place.id, instruction.emit ? lval : node);
   return node;
 }
