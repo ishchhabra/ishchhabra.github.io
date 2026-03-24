@@ -191,11 +191,14 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
   }
 
   /**
-   * Finds the StoreLocal in a branch block that writes to the phi's variable,
-   * and returns the value being stored along with the remaining hoistable instructions.
+   * Extracts the value flowing into a phi from a branch block.
    *
-   * Returns null if no matching StoreLocal is found or if the operand place
-   * doesn't match the expected StoreLocal lval.
+   * Primary path: finds the StoreLocal that writes to the phi's variable
+   * and returns the stored value along with the remaining hoistable instructions.
+   *
+   * Fallback path: when no StoreLocal exists (e.g. after an inner diamond was
+   * collapsed into a ternary), the phi operand place itself is the value and
+   * all block instructions are candidates for hoisting.
    */
   private extractPhiStore(
     block: { instructions: BaseInstruction[] },
@@ -216,20 +219,27 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
       }
     }
 
-    if (storeIndex === -1) return null;
+    if (storeIndex !== -1) {
+      const store = block.instructions[storeIndex] as StoreLocalInstruction;
 
-    const store = block.instructions[storeIndex] as StoreLocalInstruction;
+      // Verify this StoreLocal's lval matches the phi operand.
+      if (store.lval.identifier.id !== operandPlace.identifier.id) return null;
 
-    // Verify this StoreLocal's lval matches the phi operand.
-    if (store.lval.identifier.id !== operandPlace.identifier.id) return null;
+      // Collect all instructions except the phi StoreLocal.
+      const otherInstrs = [
+        ...block.instructions.slice(0, storeIndex),
+        ...block.instructions.slice(storeIndex + 1),
+      ];
 
-    // Collect all instructions except the phi StoreLocal.
-    const otherInstrs = [
-      ...block.instructions.slice(0, storeIndex),
-      ...block.instructions.slice(storeIndex + 1),
-    ];
+      return { valuePlace: store.value, otherInstrs };
+    }
 
-    return { valuePlace: store.value, otherInstrs };
+    // Fallback: no StoreLocal for this phi variable exists in the block.
+    // This happens when an inner diamond was already collapsed — the phi
+    // operand place is defined directly by an instruction (e.g. a ternary)
+    // rather than through a StoreLocal. Use the operand place as the value
+    // and treat all block instructions as hoistable candidates.
+    return { valuePlace: operandPlace, otherInstrs: [...block.instructions] };
   }
 }
 

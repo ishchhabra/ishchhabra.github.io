@@ -5,7 +5,7 @@ import { BasicBlock, BlockId } from "../ir";
 import { CallGraph } from "./analysis/CallGraph";
 import { LateOptimizer } from "./late-optimizer/LateOptimizer";
 import { ExportDeclarationMergingPass } from "./late-optimizer/passes/ExportDeclarationMergingPass";
-import { MergeConsecutiveBlocksPass } from "./MergeConsecutiveBlocksPass";
+import { CFGSimplificationPass } from "./CFGSimplificationPass";
 import { Optimizer } from "./optimizer/Optimizer";
 import { UnusedExportEliminationPass } from "./passes/UnusedExportEliminationPass";
 import { SSABuilder } from "./ssa/SSABuilder";
@@ -36,7 +36,7 @@ export class Pipeline {
       const moduleIR = this.projectUnit.modules.get(moduleName)!;
       for (const functionIR of moduleIR.functions.values()) {
         new CommonJSExportCollectorPass(functionIR, moduleIR).run();
-        new MergeConsecutiveBlocksPass(functionIR, moduleIR).run();
+        new CFGSimplificationPass(functionIR, moduleIR).run();
 
         const ssaBuilderResult = new SSABuilder(functionIR, moduleIR).build();
 

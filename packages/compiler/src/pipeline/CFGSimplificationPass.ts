@@ -1,0 +1,383 @@
+import { BlockId } from "../ir";
+import { BaseTerminal } from "../ir/base";
+import { FunctionIR } from "../ir/core/FunctionIR";
+import { ModuleIR } from "../ir/core/ModuleIR";
+import {
+  BranchTerminal,
+  JumpTerminal,
+  SwitchTerminal,
+  TryTerminal,
+} from "../ir/core/Terminal";
+import { BaseOptimizationPass, OptimizationResult } from "./late-optimizer/OptimizationPass";
+import { Phi } from "./ssa/Phi";
+
+/**
+ * Textbook CFG simplification pass.
+ *
+ * Performs three transforms in a fixpoint loop until no more changes:
+ *
+ *   1. **Unreachable block removal** — delete blocks with no path from entry.
+ *   2. **Linear chain merging** — when a block has exactly one predecessor
+ *      and that predecessor has exactly one successor, merge them.
+ *   3. **Empty block elimination** — redirect predecessors around blocks that
+ *      contain no instructions and just jump unconditionally.
+ *
+ * These transforms feed each other: removing an unreachable block may create
+ * a linear chain; merging a chain may produce an empty block; eliminating an
+ * empty block may make another block unreachable.
+ *
+ * When an optional `phis` set is provided (SSA context), phi operands are
+ * updated to reflect block deletions and merges.
+ */
+export class CFGSimplificationPass extends BaseOptimizationPass {
+  constructor(
+    protected readonly functionIR: FunctionIR,
+    private readonly moduleIR: ModuleIR,
+    private readonly phis?: Set<Phi>,
+  ) {
+    super(functionIR);
+  }
+
+  protected step(): OptimizationResult {
+    let changed = false;
+    changed = this.removeUnreachableBlocks() || changed;
+    changed = this.mergeLinearChains() || changed;
+    // TODO: enable eliminateEmptyBlocks once the code generator no longer
+    // relies on the existence of empty fallthrough blocks. The implementation
+    // is correct but the code generator expects certain blocks to exist for
+    // structural code emission (e.g. if-else merge points).
+    if (changed) {
+      this.functionIR.recomputeCFG();
+    }
+    return { changed };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Transform 1: Unreachable block removal
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Remove blocks not reachable from entry.
+   *
+   * A block is deleted only if no reachable block's terminal or structure
+   * still references it. Otherwise we clear its instructions (the block
+   * remains as an empty target so the code generator doesn't crash).
+   */
+  private removeUnreachableBlocks(): boolean {
+    const reachable = new Set<BlockId>();
+    const worklist: BlockId[] = [this.functionIR.entryBlockId];
+
+    while (worklist.length > 0) {
+      const blockId = worklist.pop()!;
+      if (reachable.has(blockId)) continue;
+      reachable.add(blockId);
+
+      const succs = this.functionIR.successors.get(blockId);
+      if (succs) {
+        for (const succ of succs) {
+          worklist.push(succ);
+        }
+      }
+    }
+
+    // Collect all block IDs still referenced by reachable blocks'
+    // terminals and structures (includes fallthrough targets that
+    // getPredecessors does not treat as successors).
+    const referenced = new Set<BlockId>();
+    for (const blockId of reachable) {
+      const block = this.functionIR.blocks.get(blockId);
+      if (!block) continue;
+      for (const ref of getTerminalBlockRefs(block.terminal)) {
+        referenced.add(ref);
+      }
+      const structure = this.functionIR.structures.get(blockId);
+      if (structure) {
+        for (const [, target] of structure.getEdges()) {
+          referenced.add(target);
+        }
+      }
+    }
+
+    let changed = false;
+    for (const [blockId, block] of this.functionIR.blocks) {
+      if (reachable.has(blockId)) continue;
+
+      if (referenced.has(blockId)) {
+        // Still referenced — clear instructions but keep the block.
+        if (block.instructions.length > 0) {
+          block.instructions = [];
+          changed = true;
+        }
+      } else {
+        // Truly orphaned — safe to delete.
+        this.deleteBlock(blockId);
+        changed = true;
+      }
+    }
+    return changed;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Transform 2: Linear chain merging
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Merge successor into predecessor when the edge is the only one for both.
+   */
+  private mergeLinearChains(): boolean {
+    let changed = false;
+
+    for (const blockId of [...this.functionIR.blocks.keys()]) {
+      if (!this.functionIR.blocks.has(blockId)) continue;
+
+      const preds = this.functionIR.predecessors.get(blockId);
+      if (!preds || preds.size !== 1) continue;
+
+      const [predId] = preds;
+      if (!this.functionIR.blocks.has(predId)) continue;
+
+      const predSuccs = this.functionIR.successors.get(predId);
+      if (!predSuccs || predSuccs.size !== 1) continue;
+
+      const predBlock = this.functionIR.blocks.get(predId)!;
+      const block = this.functionIR.blocks.get(blockId)!;
+
+      // Absorb instructions and terminal.
+      predBlock.instructions.push(...block.instructions);
+      predBlock.terminal = block.terminal;
+
+      // Re-home declToPlaces references.
+      for (const [, places] of this.moduleIR.environment.declToPlaces) {
+        for (const entry of places) {
+          if (entry.blockId === blockId) {
+            entry.blockId = predId;
+          }
+        }
+      }
+
+      // Transfer structure ownership.
+      const structure = this.functionIR.structures.get(blockId);
+      if (structure) {
+        this.functionIR.structures.delete(blockId);
+        this.functionIR.structures.set(predId, structure);
+      }
+
+      // Re-key phi operands: blockId → predId.
+      this.rekeyPhiOperands(blockId, predId);
+
+      this.functionIR.blocks.delete(blockId);
+      changed = true;
+    }
+    return changed;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Transform 3: Empty block elimination
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Redirect all references around empty blocks that just unconditionally jump.
+   *
+   * An empty trampoline block B (no instructions, Jump terminal, not entry,
+   * no structure, no phis) jumping to target T can be bypassed: every block
+   * whose terminal references B is retargeted to T directly.
+   *
+   * Unlike mergeLinearChains, this handles the case where B has multiple
+   * predecessors or is referenced by terminals that don't create CFG
+   * predecessor edges (e.g. BranchTerminal.fallthrough).
+   */
+  private eliminateEmptyBlocks(): boolean {
+    let changed = false;
+
+    for (const [blockId, block] of this.functionIR.blocks) {
+      // Must be an empty unconditional jump.
+      if (blockId === this.functionIR.entryBlockId) continue;
+      if (block.instructions.length !== 0) continue;
+      if (!(block.terminal instanceof JumpTerminal)) continue;
+      if (this.functionIR.structures.has(blockId)) continue;
+      if (this.blockHasPhis(blockId)) continue;
+      if (this.isReferencedByStructure(blockId)) continue;
+
+      const target = block.terminal.target;
+      if (target === blockId) continue; // self-loop
+
+      // Collect CFG predecessors for phi migration.
+      const preds = this.functionIR.predecessors.get(blockId);
+
+      // Abort if retargeting would create duplicate predecessors at the target.
+      if (preds && preds.size > 0) {
+        const targetPreds = this.functionIR.predecessors.get(target);
+        if (targetPreds && [...preds].some((p) => p !== blockId && targetPreds.has(p))) {
+          continue;
+        }
+      }
+
+      // Retarget ALL blocks whose terminal references blockId (not just CFG
+      // predecessors — BranchTerminal.fallthrough is not a CFG edge but must
+      // still be updated).
+      for (const [otherId, otherBlock] of this.functionIR.blocks) {
+        if (otherId === blockId) continue;
+        if (!otherBlock.terminal) continue;
+        const retargeted = retargetTerminal(otherBlock.terminal, blockId, target);
+        if (retargeted !== otherBlock.terminal) {
+          otherBlock.terminal = retargeted;
+        }
+      }
+
+      // Migrate phi operands: any phi that references blockId now
+      // references each of blockId's CFG predecessors with the same value.
+      if (this.phis && preds) {
+        for (const phi of this.phis) {
+          const operand = phi.operands.get(blockId);
+          if (operand !== undefined) {
+            phi.operands.delete(blockId);
+            for (const predId of preds) {
+              if (predId !== blockId) {
+                phi.operands.set(predId, operand);
+              }
+            }
+          }
+        }
+      }
+
+      this.deleteBlock(blockId);
+      changed = true;
+    }
+    return changed;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
+
+  private deleteBlock(blockId: BlockId): void {
+    // Remove phi operands that reference this block.
+    if (this.phis) {
+      for (const phi of this.phis) {
+        phi.operands.delete(blockId);
+      }
+    }
+
+    this.functionIR.blocks.delete(blockId);
+    this.functionIR.structures.delete(blockId);
+  }
+
+  private rekeyPhiOperands(fromBlockId: BlockId, toBlockId: BlockId): void {
+    if (!this.phis) return;
+    for (const phi of this.phis) {
+      const operand = phi.operands.get(fromBlockId);
+      if (operand !== undefined) {
+        phi.operands.delete(fromBlockId);
+        phi.operands.set(toBlockId, operand);
+      }
+    }
+  }
+
+  private isReferencedByStructure(blockId: BlockId): boolean {
+    for (const [, structure] of this.functionIR.structures) {
+      for (const [, target] of structure.getEdges()) {
+        if (target === blockId) return true;
+      }
+    }
+    return false;
+  }
+
+  private blockHasPhis(blockId: BlockId): boolean {
+    if (!this.phis) return false;
+    for (const phi of this.phis) {
+      if (phi.blockId === blockId) return true;
+    }
+    return false;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Terminal retargeting
+// -----------------------------------------------------------------------------
+
+/**
+ * Returns a new terminal with every reference to `from` replaced by `to`.
+ * Returns the original terminal unchanged if `from` does not appear.
+ */
+function retargetTerminal(terminal: BaseTerminal, from: BlockId, to: BlockId): BaseTerminal {
+  if (terminal instanceof JumpTerminal) {
+    return terminal.target === from ? new JumpTerminal(terminal.id, to) : terminal;
+  }
+
+  if (terminal instanceof BranchTerminal) {
+    const cons = terminal.consequent === from ? to : terminal.consequent;
+    const alt = terminal.alternate === from ? to : terminal.alternate;
+    const fall = terminal.fallthrough === from ? to : terminal.fallthrough;
+    if (cons === terminal.consequent && alt === terminal.alternate && fall === terminal.fallthrough) {
+      return terminal;
+    }
+    return new BranchTerminal(terminal.id, terminal.test, cons, alt, fall);
+  }
+
+  if (terminal instanceof SwitchTerminal) {
+    const cases = terminal.cases.map((c) => ({
+      ...c,
+      block: c.block === from ? to : c.block,
+    }));
+    const fall = terminal.fallthrough === from ? to : terminal.fallthrough;
+    if (
+      fall === terminal.fallthrough &&
+      cases.every((c, i) => c.block === terminal.cases[i].block)
+    ) {
+      return terminal;
+    }
+    return new SwitchTerminal(terminal.id, terminal.discriminant, cases, fall);
+  }
+
+  if (terminal instanceof TryTerminal) {
+    const tryBlock = terminal.tryBlock === from ? to : terminal.tryBlock;
+    const handler = terminal.handler
+      ? {
+          param: terminal.handler.param,
+          block: terminal.handler.block === from ? to : terminal.handler.block,
+        }
+      : null;
+    const finallyBlock =
+      terminal.finallyBlock !== null && terminal.finallyBlock === from
+        ? to
+        : terminal.finallyBlock;
+    const fall = terminal.fallthrough === from ? to : terminal.fallthrough;
+    if (
+      tryBlock === terminal.tryBlock &&
+      handler?.block === terminal.handler?.block &&
+      finallyBlock === terminal.finallyBlock &&
+      fall === terminal.fallthrough
+    ) {
+      return terminal;
+    }
+    return new TryTerminal(terminal.id, tryBlock, handler, finallyBlock, fall);
+  }
+
+  // ReturnTerminal, ThrowTerminal — no block references.
+  return terminal;
+}
+
+/**
+ * Returns every block ID referenced by a terminal (including fallthrough
+ * targets that are not modeled as CFG successors by getPredecessors).
+ */
+function getTerminalBlockRefs(terminal: BaseTerminal | undefined): BlockId[] {
+  if (!terminal) return [];
+
+  if (terminal instanceof JumpTerminal) {
+    return [terminal.target];
+  }
+  if (terminal instanceof BranchTerminal) {
+    return [terminal.consequent, terminal.alternate, terminal.fallthrough];
+  }
+  if (terminal instanceof SwitchTerminal) {
+    return [...terminal.cases.map((c) => c.block), terminal.fallthrough];
+  }
+  if (terminal instanceof TryTerminal) {
+    const refs = [terminal.tryBlock, terminal.fallthrough];
+    if (terminal.handler) refs.push(terminal.handler.block);
+    if (terminal.finallyBlock !== null) refs.push(terminal.finallyBlock);
+    return refs;
+  }
+  return [];
+}

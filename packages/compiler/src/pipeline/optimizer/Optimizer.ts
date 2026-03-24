@@ -10,7 +10,7 @@ import { FunctionInliningPass } from "../passes/FunctionInliningPass";
 import { CapturePruningPass } from "../passes/CapturePruningPass";
 import { DeadCodeEliminationPass } from "../passes/DeadCodeEliminationPass";
 import { PhiOptimizationPass } from "../passes/PhiOptimizationPass";
-import { UnreachableCodeEliminationPass } from "../passes/UnreachableCodeEliminationPass";
+import { CFGSimplificationPass } from "../CFGSimplificationPass";
 import { SSA } from "../ssa/SSABuilder";
 
 interface OptimizerResult {
@@ -55,6 +55,16 @@ export class Optimizer {
         blocks = algebraicSimplificationResult.blocks;
       }
 
+      {
+        const cfgSimplificationResult = new CFGSimplificationPass(
+          this.functionIR,
+          this.moduleIR,
+          this.ssa.phis,
+        ).run();
+        changed ||= cfgSimplificationResult.changed;
+        blocks = cfgSimplificationResult.blocks;
+      }
+
       if (this.options.enablePhiOptimizationPass) {
         const phiOptimizationResult = new PhiOptimizationPass(
           this.functionIR,
@@ -63,14 +73,6 @@ export class Optimizer {
         ).run();
         changed ||= phiOptimizationResult.changed;
         blocks = phiOptimizationResult.blocks;
-      }
-
-      if (this.options.enableUnreachableCodeEliminationPass) {
-        const unreachableCodeEliminationResult = new UnreachableCodeEliminationPass(
-          this.functionIR,
-        ).run();
-        changed ||= unreachableCodeEliminationResult.changed;
-        blocks = unreachableCodeEliminationResult.blocks;
       }
 
       if (this.options.enableCapturePruningPass) {
