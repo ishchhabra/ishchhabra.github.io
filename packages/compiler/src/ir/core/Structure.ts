@@ -23,6 +23,16 @@ export abstract class BaseStructure {
 
   /** Returns a new structure with places rewritten per the given map (used by SSA renaming). */
   abstract rewrite(values: Map<Identifier, Place>): BaseStructure;
+
+  /**
+   * Whether this structure has observable side effects. Side-effectful
+   * structures (e.g. loops that run user code) are always live even if
+   * their written places are unused. Pure structures (e.g. ternary
+   * expressions) can be eliminated when their result is unused.
+   */
+  hasSideEffects(): boolean {
+    return true;
+  }
 }
 
 /**

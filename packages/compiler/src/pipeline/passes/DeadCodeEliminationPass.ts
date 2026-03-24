@@ -7,32 +7,19 @@ import { Phi } from "../ssa/Phi";
 /**
  * SSA-phase Dead Code Elimination.
  *
- * Removes instructions whose defined places have no readers anywhere
- * in the function. Because the IR is in SSA form, each place has exactly
- * one definition, so an instruction is dead when none of its written
- * places' identifiers appear in any other instruction's read set.
+ * Removes instructions, phis, and structures whose results have no
+ * readers anywhere in the function. Because the IR is in SSA form,
+ * each place has exactly one definition, so a definition is dead when
+ * its identifier never appears in another definition's read set.
  *
  * Algorithm:
- *   1. Collect all identifiers that are **read** by any instruction or
- *      terminal across every block.
- *   2. Propagate liveness through phi nodes to fixpoint: for each phi
- *      whose result is used, mark its operands as used. Repeat until
- *      stable, since phi operands may themselves be other phi results
- *      (nested control flow).
- *   2b. Remove dead phis from `phis`: if a phi's result is unused, delete
- *      it so SSA elimination never emits loads from operand defs that DCE
- *      may remove (dead merge / unused variable).
- *   3. Walk every block and remove instructions that have no side effects
- *      and whose written places are all unused. Dead instructions that
- *      wrap a side-effecting value (e.g. `StoreLocal result = delete obj.x`)
- *      are replaced via `asSideEffect()` to preserve the side effect as
- *      an expression statement. ExpressionStatementInstruction derives
- *      its `hasSideEffects` from the wrapped expression via
- *      `environment.placeToInstruction`, so no special-casing is needed.
+ *   1. Collect all identifiers **read** by instructions, terminals,
+ *      and live structures.
+ *   2. Propagate liveness through phi operands to fixpoint.
+ *   3. Remove dead structures, phis, and instructions.
  *
- * The base class re-runs `step()` until fixpoint so that chains of dead
- * instructions (e.g. `a = 1; b = a;` where only `b` is dead initially)
- * are cleaned up across iterations.
+ * The base class re-runs `step()` until fixpoint so that chains of
+ * dead definitions are cleaned up across iterations.
  */
 export class DeadCodeEliminationPass extends BaseOptimizationPass {
   constructor(
@@ -44,9 +31,22 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
   }
 
   protected step(): OptimizationResult {
-    let changed = false;
+    const usedIds = this.collectUsedIds();
+    this.propagatePhiLiveness(usedIds);
+    this.propagateStructureLiveness(usedIds);
 
-    // 1. Collect every identifier that is *read* by any instruction or terminal.
+    const removedStructures = this.removeDeadStructures(usedIds);
+    const removedPhis = this.removeDeadPhis(usedIds);
+    const removedInstructions = this.removeDeadInstructions(usedIds);
+
+    return { changed: removedStructures || removedPhis || removedInstructions };
+  }
+
+  /**
+   * Collects every identifier that is read by any instruction or
+   * terminal across all blocks.
+   */
+  private collectUsedIds(): Set<IdentifierId> {
     const usedIds = new Set<IdentifierId>();
 
     for (const block of this.functionIR.blocks.values()) {
@@ -62,73 +62,106 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
       }
     }
 
-    // Mark places read and written by structures as used.
-    for (const structure of this.functionIR.structures.values()) {
-      for (const place of structure.getReadPlaces()) {
-        usedIds.add(place.identifier.id);
-      }
-      for (const place of structure.getWrittenPlaces()) {
-        usedIds.add(place.identifier.id);
-      }
-    }
+    return usedIds;
+  }
 
-    // 2. Propagate liveness through phi operands to fixpoint. A phi is
-    //    live when its result place is used. Its operands may be other phi
-    //    results (nested control flow), so we iterate until no new ids are
-    //    added to handle chains like phi_A → phi_B → phi_C.
-    let phiChanged = true;
-    while (phiChanged) {
-      phiChanged = false;
+  /**
+   * Propagates liveness through phi operands to fixpoint. A phi is
+   * live when its result place is used. Its operands may be other phi
+   * results, so we iterate until stable.
+   */
+  private propagatePhiLiveness(usedIds: Set<IdentifierId>): void {
+    let changed = true;
+    while (changed) {
+      changed = false;
       for (const phi of this.phis) {
-        if (!usedIds.has(phi.place.identifier.id)) {
-          continue;
-        }
+        if (!usedIds.has(phi.place.identifier.id)) continue;
         for (const [, place] of phi.operands) {
           if (!usedIds.has(place.identifier.id)) {
             usedIds.add(place.identifier.id);
-            phiChanged = true;
+            changed = true;
           }
         }
       }
     }
+  }
 
-    // 2b. Drop phis whose result is never used — keeps SSAEliminator consistent
-    //     with instruction DCE (operand defs may be removed below).
-    const deadPhis: Phi[] = [];
+  /**
+   * Propagates liveness through structures. A structure is live when
+   * it has side effects (e.g. loops) or any of its written places are
+   * used downstream. When live, its read places (inputs) are marked
+   * as used.
+   */
+  private propagateStructureLiveness(usedIds: Set<IdentifierId>): void {
+    for (const structure of this.functionIR.structures.values()) {
+      const isLive =
+        structure.hasSideEffects() ||
+        structure.getWrittenPlaces().some((p) => usedIds.has(p.identifier.id));
+      if (isLive) {
+        for (const place of structure.getReadPlaces()) {
+          usedIds.add(place.identifier.id);
+        }
+      }
+    }
+  }
+
+  /**
+   * Removes structures that are dead: no side effects and no written
+   * places used downstream.
+   */
+  private removeDeadStructures(usedIds: Set<IdentifierId>): boolean {
+    let changed = false;
+
+    for (const [blockId, structure] of this.functionIR.structures) {
+      if (structure.hasSideEffects()) continue;
+      const isLive = structure
+        .getWrittenPlaces()
+        .some((p) => usedIds.has(p.identifier.id));
+      if (!isLive) {
+        this.functionIR.structures.delete(blockId);
+        this.functionIR.recomputeCFG();
+        changed = true;
+      }
+    }
+
+    return changed;
+  }
+
+  /**
+   * Drops phis whose result is never used. Keeps SSA elimination
+   * consistent with instruction DCE.
+   */
+  private removeDeadPhis(usedIds: Set<IdentifierId>): boolean {
+    let changed = false;
+
     for (const phi of this.phis) {
       if (!usedIds.has(phi.place.identifier.id)) {
-        deadPhis.push(phi);
-      }
-    }
-    if (deadPhis.length > 0) {
-      for (const phi of deadPhis) {
         this.phis.delete(phi);
+        changed = true;
       }
-      changed = true;
     }
 
-    // 3. Remove dead instructions, preserving side effects via asSideEffect().
+    return changed;
+  }
+
+  /**
+   * Removes dead instructions. An instruction is dead when it has no
+   * side effects and none of its written places are used. Dead
+   * instructions that wrap a side-effectful value are replaced via
+   * `asSideEffect()` to preserve the effect.
+   */
+  private removeDeadInstructions(usedIds: Set<IdentifierId>): boolean {
+    let changed = false;
+
     for (const block of this.functionIR.blocks.values()) {
       const before = block.instructions.length;
       block.instructions = block.instructions.flatMap((instr): BaseInstruction[] => {
-        // Side-effecting instructions are always live.
-        if (instr.hasSideEffects(this.environment)) {
-          return [instr];
-        }
+        if (instr.hasSideEffects(this.environment)) return [instr];
+        if (instr.getWrittenPlaces().some((p) => usedIds.has(p.identifier.id))) return [instr];
 
-        // Keep the instruction if any of its written places are used.
-        if (instr.getWrittenPlaces().some((place) => usedIds.has(place.identifier.id))) {
-          return [instr];
-        }
-
-        // The instruction is dead. If it wraps a side-effecting value,
-        // replace it with a side-effect-only form to preserve the effect.
         const replacement = instr.asSideEffect();
-        if (replacement && replacement.hasSideEffects(this.environment)) {
-          return [replacement];
-        }
+        if (replacement && replacement.hasSideEffects(this.environment)) return [replacement];
 
-        // Truly dead — remove entirely.
         return [];
       });
 
@@ -137,6 +170,6 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
       }
     }
 
-    return { changed };
+    return changed;
   }
 }
