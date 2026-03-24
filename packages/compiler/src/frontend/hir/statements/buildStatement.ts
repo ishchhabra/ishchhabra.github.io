@@ -89,6 +89,8 @@ export function buildStatement(
     case "TryStatement":
       nodePath.assertTryStatement();
       return buildTryStatement(nodePath, functionBuilder, moduleBuilder, environment);
+    case "EmptyStatement":
+      return undefined;
     default:
       return buildUnsupportedNode(nodePath, functionBuilder, environment);
   }
