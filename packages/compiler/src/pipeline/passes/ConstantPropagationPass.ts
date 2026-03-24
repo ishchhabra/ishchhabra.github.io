@@ -481,6 +481,7 @@ export class ConstantPropagationPass extends BaseOptimizationPass {
 
     const value = this.constants.get(instruction.value.identifier.id);
     this.constants.set(instruction.place.identifier.id, value);
+    return new LiteralInstruction(instruction.id, instruction.place, instruction.nodePath, value);
   }
 
   private evaluateLoadPhiInstruction(instruction: LoadPhiInstruction) {
