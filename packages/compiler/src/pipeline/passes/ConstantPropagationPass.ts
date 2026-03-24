@@ -1,3 +1,4 @@
+import * as t from "@babel/types";
 import { ProjectUnit } from "../../frontend/ProjectBuilder";
 import {
   BaseInstruction,
@@ -17,7 +18,9 @@ import {
   StoreLocalInstruction,
   TPrimitiveValue,
   UnaryExpressionInstruction,
+  Place,
 } from "../../ir";
+import { TemplateLiteralInstruction } from "../../ir/instructions/value/TemplateLiteral";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { BaseOptimizationPass } from "../late-optimizer/OptimizationPass";
@@ -211,6 +214,8 @@ export class ConstantPropagationPass extends BaseOptimizationPass {
       return this.evaluateUnaryExpressionInstruction(instruction);
     } else if (instruction instanceof LogicalExpressionInstruction) {
       return this.evaluateLogicalExpressionInstruction(instruction);
+    } else if (instruction instanceof TemplateLiteralInstruction) {
+      return this.evaluateTemplateLiteralInstruction(instruction);
     } else if (instruction instanceof LoadGlobalInstruction) {
       return this.evaluateLoadGlobalInstruction(instruction);
     } else if (instruction instanceof StoreLocalInstruction) {
@@ -376,6 +381,84 @@ export class ConstantPropagationPass extends BaseOptimizationPass {
     return new LiteralInstruction(instruction.id, instruction.place, instruction.nodePath, result);
   }
 
+  private evaluateTemplateLiteralInstruction(instruction: TemplateLiteralInstruction) {
+    // Skip zero-expression templates — they are already effectively string
+    // literals and folding them can increase size by converting newlines to
+    // \n and requiring quote escaping in the output.
+    if (instruction.expressions.length === 0) {
+      return undefined;
+    }
+
+    // Check which expressions are constant.
+    let allConstant = true;
+    let anyConstant = false;
+    for (const expr of instruction.expressions) {
+      if (this.constants.has(expr.identifier.id)) {
+        anyConstant = true;
+      } else {
+        allConstant = false;
+      }
+    }
+
+    if (!anyConstant) {
+      return undefined;
+    }
+
+    if (allConstant) {
+      // All expressions are constant — fold into a single string literal.
+      let result = "";
+      for (let i = 0; i < instruction.quasis.length; i++) {
+        result += instruction.quasis[i].value.cooked ?? instruction.quasis[i].value.raw;
+        if (i < instruction.expressions.length) {
+          result += String(this.constants.get(instruction.expressions[i].identifier.id));
+        }
+      }
+
+      this.constants.set(instruction.place.identifier.id, result);
+      return new LiteralInstruction(
+        instruction.id,
+        instruction.place,
+        instruction.nodePath,
+        result,
+      );
+    }
+
+    // Partial fold: merge constant expressions into adjacent quasis,
+    // producing a new TemplateLiteralInstruction with fewer expressions.
+    const newQuasis: t.TemplateElement[] = [];
+    const newExpressions: Place[] = [];
+
+    // Start with the first quasi's text.
+    let pendingText = instruction.quasis[0].value.cooked ?? instruction.quasis[0].value.raw;
+
+    for (let i = 0; i < instruction.expressions.length; i++) {
+      const expr = instruction.expressions[i];
+      const nextQuasi = instruction.quasis[i + 1];
+      const nextText = nextQuasi.value.cooked ?? nextQuasi.value.raw;
+
+      if (this.constants.has(expr.identifier.id)) {
+        // Constant expression — absorb into pending text.
+        pendingText += String(this.constants.get(expr.identifier.id)) + nextText;
+      } else {
+        // Dynamic expression — flush pending text as a quasi, keep the expression.
+        newQuasis.push(templateElement(pendingText, false));
+        newExpressions.push(expr);
+        pendingText = nextText;
+      }
+    }
+
+    // Flush the final pending text as the tail quasi.
+    newQuasis.push(templateElement(pendingText, true));
+
+    return new TemplateLiteralInstruction(
+      instruction.id,
+      instruction.place,
+      instruction.nodePath,
+      newQuasis,
+      newExpressions,
+    );
+  }
+
   private evaluateStoreLocalInstruction(instruction: StoreLocalInstruction) {
     if (this.constants.has(instruction.lval.identifier.id)) {
       return undefined;
@@ -503,4 +586,8 @@ export class ConstantPropagationPass extends BaseOptimizationPass {
     this.constants.set(instruction.place.identifier.id, value);
     return new LiteralInstruction(instruction.id, instruction.place, instruction.nodePath, value);
   }
+}
+
+function templateElement(text: string, tail: boolean): t.TemplateElement {
+  return t.templateElement({ raw: text, cooked: text }, tail);
 }
