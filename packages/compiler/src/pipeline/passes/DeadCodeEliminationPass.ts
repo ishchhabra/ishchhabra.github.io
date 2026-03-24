@@ -32,8 +32,7 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
 
   protected step(): OptimizationResult {
     const usedIds = this.collectUsedIds();
-    this.propagatePhiLiveness(usedIds);
-    this.propagateStructureLiveness(usedIds);
+    this.propagateLiveness(usedIds);
 
     const removedStructures = this.removeDeadStructures(usedIds);
     const removedPhis = this.removeDeadPhis(usedIds);
@@ -66,14 +65,19 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
   }
 
   /**
-   * Propagates liveness through phi operands to fixpoint. A phi is
-   * live when its result place is used. Its operands may be other phi
-   * results, so we iterate until stable.
+   * Propagates liveness through phis and structures to fixpoint.
+   *
+   * A phi is live when its result is used; its operands then become
+   * used. A structure is live when it has side effects or any written
+   * place is used; its reads then become used. Both can form chains
+   * (phi→phi, structure→structure, phi→structure, structure→phi),
+   * so they're handled in a single fixpoint loop.
    */
-  private propagatePhiLiveness(usedIds: Set<IdentifierId>): void {
+  private propagateLiveness(usedIds: Set<IdentifierId>): void {
     let changed = true;
     while (changed) {
       changed = false;
+
       for (const phi of this.phis) {
         if (!usedIds.has(phi.place.identifier.id)) continue;
         for (const [, place] of phi.operands) {
@@ -83,19 +87,7 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
           }
         }
       }
-    }
-  }
 
-  /**
-   * Propagates liveness through structures. A structure is live when
-   * it has side effects (e.g. loops) or any of its written places are
-   * used downstream. When live, its read places (inputs) are marked
-   * as used.
-   */
-  private propagateStructureLiveness(usedIds: Set<IdentifierId>): void {
-    let changed = true;
-    while (changed) {
-      changed = false;
       for (const structure of this.functionIR.structures.values()) {
         const isLive =
           structure.hasSideEffects() ||
