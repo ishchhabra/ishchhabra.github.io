@@ -121,24 +121,14 @@ export class CapturePruningPass extends BaseOptimizationPass {
           }
         }
 
-        // Determine which capture slots are still live.
-        //
-        // A captureParam is live if either:
-        //   (a) its own identifier is read directly by an instruction, OR
-        //   (b) the outer identifier it aliases (captures[j]) is read.
-        //
-        // Case (b) handles the capture indirection layer: nested functions
-        // reference the *original* outer identifier in their captures, not
-        // the captureParam. Codegen resolves this at generation time by
-        // binding captureParam → outer identifier's node. So if the outer
-        // identifier appears in readIds, the captureParam is needed.
+        // Determine which capture slots are still live.  Each scope level
+        // captures from its immediate parent (not the original declaring
+        // scope), so a captureParam is live when its identifier is read
+        // by any instruction inside the inner function.
         const captureParams = innerFunctionIR.captureParams;
         const liveIndices: number[] = [];
         for (let j = 0; j < captureParams.length; j++) {
-          if (
-            readIds.has(captureParams[j].identifier.id) ||
-            readIds.has(captures[j].identifier.id)
-          ) {
+          if (readIds.has(captureParams[j].identifier.id)) {
             liveIndices.push(j);
           }
         }

@@ -165,6 +165,12 @@ export class FunctionIRBuilder {
           paramIdentifier.name = capture.identifier.name;
           this.captureParams.set(declId, this.environment.createPlace(paramIdentifier));
         }
+        // Rewrite the child's capture to reference this function's
+        // captureParam so each scope level captures from its immediate
+        // parent rather than the original declaring scope.  This makes
+        // the capture chain explicit in the IR and lets standard
+        // liveness analysis work without special-casing indirection.
+        child.captures.set(declId, this.captureParams.get(declId)!);
       }
     }
   }
