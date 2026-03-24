@@ -16,9 +16,7 @@ export const CompilerOptionsSchema = z.object({
   enableUnusedExportEliminationPass: z.boolean().default(true),
   /** Whether to enable the unreachable code elimination pass */
   enableUnreachableCodeEliminationPass: z.boolean().default(true),
-  /** Whether to enable the copy propagation pass */
-  enableCopyPropagationPass: z.boolean().default(true),
-  /** Whether to enable the capture pruning pass */
+/** Whether to enable the capture pruning pass */
   enableCapturePruningPass: z.boolean().default(true),
   /** Whether to enable the dead code elimination pass */
   enableDeadCodeEliminationPass: z.boolean().default(true),
@@ -31,11 +29,11 @@ export const CompilerOptionsSchema = z.object({
   enablePhiToTernaryPass: z.boolean().default(true),
   /** Whether to enable the load store forwarding pass */
   enableLoadStoreForwardingPass: z.boolean().default(true),
-  /** Whether to enable the redundant store elimination pass */
-  enableRedundantCopyEliminationPass: z.boolean().default(true),
   /** Whether to enable the late copy propagation pass */
   enableLateCopyPropagationPass: z.boolean().default(true),
-  /** Whether to enable the late dead code elimination pass */
+  /** Whether to enable the redundant store elimination pass */
+  enableRedundantCopyEliminationPass: z.boolean().default(true),
+/** Whether to enable the late dead code elimination pass */
   enableLateDeadCodeEliminationPass: z.boolean().default(true),
   /** Whether to enable the export declaration merging pass */
   enableExportDeclarationMergingPass: z.boolean().default(true),

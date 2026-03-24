@@ -41,18 +41,18 @@ export class LateOptimizer {
         blocks = loadStoreForwardingResult.blocks;
       }
 
+      if (this.options.enableLateCopyPropagationPass) {
+        const copyPropagationResult = new LateCopyPropagationPass(this.functionIR).run();
+        changed ||= copyPropagationResult.changed;
+        blocks = copyPropagationResult.blocks;
+      }
+
       if (this.options.enableRedundantCopyEliminationPass) {
         const redundantStoreEliminationResult = new RedundantCopyEliminationPass(
           this.functionIR,
         ).run();
         changed ||= redundantStoreEliminationResult.changed;
         blocks = redundantStoreEliminationResult.blocks;
-      }
-
-      if (this.options.enableLateCopyPropagationPass) {
-        const lateCopyPropagationResult = new LateCopyPropagationPass(this.functionIR).run();
-        changed ||= lateCopyPropagationResult.changed;
-        blocks = lateCopyPropagationResult.blocks;
       }
 
       if (this.options.enableLateDeadCodeEliminationPass) {

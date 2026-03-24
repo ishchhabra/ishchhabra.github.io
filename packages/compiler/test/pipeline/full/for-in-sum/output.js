@@ -1,5 +1,6 @@
 function $0_0($1_0) {
-  let $15_phi_21 = 0;
+  const $2_0 = 0;
+  let $15_phi_21 = $2_0;
   for (const $5_0 in $1_0) {
     $15_phi_21 = $15_phi_21 + 1;
   }

@@ -2,7 +2,6 @@
   "enableOptimizer": true,
   "enableConstantPropagationPass": false,
   "enableFunctionInliningPass": false,
-  "enableCopyPropagationPass": false,
   "enableDeadCodeEliminationPass": false,
   "enableLateOptimizer": false
 }

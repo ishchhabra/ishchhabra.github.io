@@ -7,7 +7,6 @@ import { CallGraph } from "../analysis/CallGraph";
 import { AlgebraicSimplificationPass } from "../passes/AlgebraicSimplificationPass";
 import { ConstantPropagationPass } from "../passes/ConstantPropagationPass";
 import { FunctionInliningPass } from "../passes/FunctionInliningPass";
-import { CopyPropagationPass } from "../passes/CopyPropagationPass";
 import { CapturePruningPass } from "../passes/CapturePruningPass";
 import { DeadCodeEliminationPass } from "../passes/DeadCodeEliminationPass";
 import { PhiOptimizationPass } from "../passes/PhiOptimizationPass";
@@ -72,16 +71,6 @@ export class Optimizer {
         ).run();
         changed ||= unreachableCodeEliminationResult.changed;
         blocks = unreachableCodeEliminationResult.blocks;
-      }
-
-      if (this.options.enableCopyPropagationPass) {
-        const copyPropagationResult = new CopyPropagationPass(
-          this.functionIR,
-          this.ssa.phis,
-          this.moduleIR.environment,
-        ).run();
-        changed ||= copyPropagationResult.changed;
-        blocks = copyPropagationResult.blocks;
       }
 
       if (this.options.enableCapturePruningPass) {
