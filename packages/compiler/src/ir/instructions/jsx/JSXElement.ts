@@ -56,4 +56,8 @@ export class JSXElementInstruction extends JSXInstruction {
       ...this.children,
     ];
   }
+
+  public override hasSideEffects(): boolean {
+    return false;
+  }
 }

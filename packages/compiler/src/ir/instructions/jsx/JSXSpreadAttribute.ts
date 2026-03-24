@@ -44,8 +44,4 @@ export class JSXSpreadAttributeInstruction extends JSXInstruction {
   public getReadPlaces(): Place[] {
     return [this.argument];
   }
-
-  public override hasSideEffects(): boolean {
-    return false;
-  }
 }

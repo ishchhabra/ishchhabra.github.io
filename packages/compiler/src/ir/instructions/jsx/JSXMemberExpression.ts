@@ -47,8 +47,4 @@ export class JSXMemberExpressionInstruction extends JSXInstruction {
   getReadPlaces(): Place[] {
     return [this.object];
   }
-
-  public override hasSideEffects(): boolean {
-    return false;
-  }
 }

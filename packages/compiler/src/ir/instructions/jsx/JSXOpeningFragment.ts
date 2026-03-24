@@ -32,4 +32,8 @@ export class JSXOpeningFragmentInstruction extends JSXInstruction {
   getReadPlaces(): Place[] {
     return [];
   }
+
+  public override hasSideEffects(): boolean {
+    return false;
+  }
 }
