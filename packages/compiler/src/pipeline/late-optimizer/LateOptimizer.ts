@@ -5,7 +5,7 @@ import { ModuleIR } from "../../ir/core/ModuleIR";
 import { LateCopyPropagationPass } from "./passes/LateCopyPropagationPass";
 import { LateDeadCodeEliminationPass } from "./passes/LateDeadCodeEliminationPass";
 import { LoadStoreForwardingPass } from "./passes/LoadStoreForwardingPass";
-import { RedundantCopyEliminationPass } from "./passes/RedundantCopyEliminationPass";
+import { LateDeadStoreEliminationPass } from "./passes/LateDeadStoreEliminationPass";
 
 interface LateOptimizerResult {
   blocks: Map<BlockId, BasicBlock>;
@@ -47,12 +47,12 @@ export class LateOptimizer {
         blocks = copyPropagationResult.blocks;
       }
 
-      if (this.options.enableRedundantCopyEliminationPass) {
-        const redundantStoreEliminationResult = new RedundantCopyEliminationPass(
+      if (this.options.enableLateDeadStoreEliminationPass) {
+        const deadStoreEliminationResult = new LateDeadStoreEliminationPass(
           this.functionIR,
         ).run();
-        changed ||= redundantStoreEliminationResult.changed;
-        blocks = redundantStoreEliminationResult.blocks;
+        changed ||= deadStoreEliminationResult.changed;
+        blocks = deadStoreEliminationResult.blocks;
       }
 
       if (this.options.enableLateDeadCodeEliminationPass) {

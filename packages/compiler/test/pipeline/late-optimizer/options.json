@@ -2,6 +2,6 @@
   "enableOptimizer": false,
   "enableLateOptimizer": true,
   "enableLoadStoreForwardingPass": false,
-  "enableRedundantStoreEliminationPass": false,
+  "enableLateDeadStoreEliminationPass": false,
   "enableLateDeadCodeEliminationPass": false
 }

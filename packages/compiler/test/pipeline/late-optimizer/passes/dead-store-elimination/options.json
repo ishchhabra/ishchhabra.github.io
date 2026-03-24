@@ -1,0 +1,4 @@
+{
+  "enableLateDeadStoreEliminationPass": true,
+  "enableLateCopyPropagationPass": false
+}

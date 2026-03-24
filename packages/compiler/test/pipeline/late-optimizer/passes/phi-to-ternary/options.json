@@ -3,6 +3,6 @@
   "enablePhiToTernaryPass": true,
   "enableLoadStoreForwardingPass": false,
   "enableLateCopyPropagationPass": false,
-  "enableRedundantCopyEliminationPass": false,
+  "enableLateDeadStoreEliminationPass": false,
   "enableExportDeclarationMergingPass": false
 }

@@ -1,8 +1,8 @@
 const $0_0 = 0;
-let $28_phi_36 = $0_0;
+let $28_phi_36 = 0;
 while ($28_phi_36 < 10) {
   const $5_0 = 0;
-  let $29_phi_37 = $5_0;
+  let $29_phi_37 = 0;
   while ($29_phi_37 < 10) {
     console.log($28_phi_36, $29_phi_37);
     const $14_0 = $29_phi_37;

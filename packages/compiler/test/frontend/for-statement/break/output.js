@@ -1,5 +1,5 @@
 const $0_0 = 0;
-let $18_phi_23 = $0_0;
+let $18_phi_23 = 0;
 while ($18_phi_23 < 10) {
   if ($18_phi_23 === 5) {
     break;
