@@ -7,6 +7,7 @@ import {
   BasicBlock,
   IdentifierId,
   LiteralInstruction,
+  RestElementInstruction,
   ReturnTerminal,
   StoreLocalInstruction,
 } from "../../ir";
@@ -14,6 +15,7 @@ import { FunctionIR, FunctionIRId } from "../../ir/core/FunctionIR";
 import { Identifier } from "../../ir/core/Identifier";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { Place } from "../../ir/core/Place";
+import { AssignmentPatternInstruction } from "../../ir/instructions/pattern/AssignmentPattern";
 import { CallExpressionInstruction } from "../../ir/instructions/value/CallExpression";
 import { CallGraph } from "../analysis/CallGraph";
 import { BaseOptimizationPass } from "../late-optimizer/OptimizationPass";
@@ -306,6 +308,25 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     }
   }
 
+  /**
+   * Returns true when every param can be directly assigned to its
+   * corresponding call-site arg via a simple `const param = arg`.
+   * This is the case for plain identifiers and destructuring patterns
+   * (object/array), but NOT for default params (AssignmentPattern) or
+   * rest params (RestElement) which need the array-pattern wrapper.
+   */
+  private canDirectWireParams(funcIR: FunctionIR): boolean {
+    // Build a set of identifiers that are param roots for O(1) lookup.
+    const paramIds = new Set(funcIR.params.map((p) => p.identifier.id));
+
+    for (const instr of funcIR.header) {
+      if (!paramIds.has(instr.place.identifier.id)) continue;
+      if (instr instanceof AssignmentPatternInstruction) return false;
+      if (instr instanceof RestElementInstruction) return false;
+    }
+    return true;
+  }
+
   private inlineFunctionParams(
     funcIR: FunctionIR,
     callExpressionInstr: CallExpressionInstruction,
@@ -319,6 +340,53 @@ export class FunctionInliningPass extends BaseOptimizationPass {
       instrs.push(clonedInstr.rewrite(rewriteMap));
     }
 
+    // Per-param direct wiring: when every param's root instruction is NOT
+    // an AssignmentPattern (default) or RestElement (rest), we can emit
+    // a direct StoreLocal per param instead of wrapping everything in
+    // const [params] = [args]. This handles simple identifiers, object
+    // destructuring, and array destructuring params.
+    if (this.canDirectWireParams(funcIR)) {
+      for (let i = 0; i < funcIR.params.length; i++) {
+        const paramPlace = funcIR.params[i];
+        const elementPlace = rewriteMap.get(paramPlace.identifier)!;
+        rewriteMap.set(paramPlace.identifier, elementPlace);
+
+        // When the caller passes fewer args than the function declares,
+        // the missing param is undefined (standard JS semantics).
+        let argPlace = callExpressionInstr.args[i];
+        if (argPlace === undefined) {
+          const undefinedLiteral = environment.createInstruction(
+            LiteralInstruction,
+            environment.createPlace(environment.createIdentifier()),
+            undefined,
+            undefined,
+          );
+          instrs.push(undefinedLiteral);
+          argPlace = undefinedLiteral.place;
+        }
+
+        const bindings = funcIR.paramBindings[i].map(
+          (p) => rewriteMap.get(p.identifier) ?? p,
+        );
+
+        const storeLocalPlace = environment.createPlace(environment.createIdentifier());
+        instrs.push(
+          environment.createInstruction(
+            StoreLocalInstruction,
+            storeLocalPlace,
+            undefined,
+            elementPlace,
+            argPlace,
+            "const",
+            bindings,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Fallback: default or rest params require array pattern to preserve
+    // full JS parameter semantics.
     const leftElements = [];
     for (let i = 0; i < funcIR.params.length; i++) {
       const paramPlace = funcIR.params[i];
@@ -327,12 +395,6 @@ export class FunctionInliningPass extends BaseOptimizationPass {
       rewriteMap.set(paramPlace.identifier, elementPlace);
     }
 
-    // Mirror buildFunctionArrayPatternParam: identifier formals have empty
-    // FunctionIR.paramBindings (no header `.bindings`), but the array pattern
-    // still introduces one binding place per element. Those places must appear
-    // on StoreLocal/ArrayPattern `bindings` so getWrittenPlaces tracks them;
-    // otherwise Late DCE can drop the wiring StoreLocal while the body still
-    // reads the cloned param places (undefined identifiers in codegen).
     const leftArrayPatternIdentifier = environment.createIdentifier();
     const leftArrayPatternPlace = environment.createPlace(leftArrayPatternIdentifier);
     const leftArrayPattern = environment.createInstruction(
