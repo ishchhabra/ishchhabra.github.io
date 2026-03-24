@@ -96,8 +96,13 @@ export class CapturePruningPass extends BaseOptimizationPass {
 
         const { functionIR: innerFunctionIR, captures } = fields;
 
-        // Collect every identifier read inside the inner function body.
+        // Collect every identifier read inside the inner function.
         const readIds = new Set<IdentifierId>();
+        for (const headerInstr of innerFunctionIR.header) {
+          for (const place of headerInstr.getReadPlaces()) {
+            readIds.add(place.identifier.id);
+          }
+        }
         for (const innerBlock of innerFunctionIR.blocks.values()) {
           for (const innerInstr of innerBlock.instructions) {
             for (const place of innerInstr.getReadPlaces()) {
