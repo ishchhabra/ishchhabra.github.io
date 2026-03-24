@@ -4,7 +4,6 @@ import { FunctionIR } from "../../ir/core/FunctionIR";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { LateCopyPropagationPass } from "./passes/LateCopyPropagationPass";
 import { LateDeadCodeEliminationPass } from "./passes/LateDeadCodeEliminationPass";
-import { LoadStoreForwardingPass } from "./passes/LoadStoreForwardingPass";
 import { LateDeadStoreEliminationPass } from "./passes/LateDeadStoreEliminationPass";
 
 interface LateOptimizerResult {
@@ -34,12 +33,6 @@ export class LateOptimizer {
 
     while (changed) {
       changed = false;
-
-      if (this.options.enableLoadStoreForwardingPass) {
-        const loadStoreForwardingResult = new LoadStoreForwardingPass(this.functionIR).run();
-        changed ||= loadStoreForwardingResult.changed;
-        blocks = loadStoreForwardingResult.blocks;
-      }
 
       if (this.options.enableLateCopyPropagationPass) {
         const copyPropagationResult = new LateCopyPropagationPass(this.functionIR).run();

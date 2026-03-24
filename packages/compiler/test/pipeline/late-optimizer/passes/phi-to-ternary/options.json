@@ -1,7 +1,6 @@
 {
   "enableOptimizer": false,
   "enablePhiToTernaryPass": true,
-  "enableLoadStoreForwardingPass": false,
   "enableLateCopyPropagationPass": false,
   "enableLateDeadStoreEliminationPass": false,
   "enableExportDeclarationMergingPass": false
