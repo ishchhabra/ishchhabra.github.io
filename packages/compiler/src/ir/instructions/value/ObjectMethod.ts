@@ -22,6 +22,7 @@ export class ObjectMethodInstruction extends ValueInstruction {
     public readonly generator: boolean,
     public readonly async: boolean,
     public readonly kind: "method" | "get" | "set",
+    public readonly captures: Place[] = [],
   ) {
     super(id, place, nodePath);
   }
@@ -39,24 +40,32 @@ export class ObjectMethodInstruction extends ValueInstruction {
       this.generator,
       this.async,
       this.kind,
+      this.captures,
     );
   }
 
   rewrite(values: Map<Identifier, Place>): BaseInstruction {
+    const newKey = values.get(this.key.identifier) ?? this.key;
+    const newCaptures = this.captures.map((c) => c.rewrite(values));
+    const capturesChanged = newCaptures.some((c, i) => c !== this.captures[i]);
+    if (newKey === this.key && !capturesChanged) {
+      return this;
+    }
     return new ObjectMethodInstruction(
       this.id,
       this.place,
       this.nodePath,
-      values.get(this.key.identifier) ?? this.key,
+      newKey,
       this.body,
       this.computed,
       this.generator,
       this.async,
       this.kind,
+      newCaptures,
     );
   }
 
   getReadPlaces(): Place[] {
-    return [this.key];
+    return [this.key, ...this.captures];
   }
 }

@@ -21,15 +21,19 @@ export function buildObjectMethod(
 
   const paramPaths = nodePath.get("params");
   const bodyPath = nodePath.get("body");
-  const bodyIR = new FunctionIRBuilder(
+  const functionIRBuilder = new FunctionIRBuilder(
     paramPaths,
     bodyPath,
     environment,
     moduleBuilder,
     nodePath.node.async,
     nodePath.node.generator,
-  ).build();
+  );
+  const bodyIR = functionIRBuilder.build();
 
+  functionBuilder.propagateCapturesFrom(functionIRBuilder);
+
+  const capturedPlaces = [...functionIRBuilder.captures.values()];
   const methodIdentifier = environment.createIdentifier();
   const methodPlace = environment.createPlace(methodIdentifier);
   const instruction = environment.createInstruction(
@@ -42,6 +46,7 @@ export function buildObjectMethod(
     nodePath.node.generator,
     nodePath.node.async,
     nodePath.node.kind,
+    capturedPlaces,
   );
   functionBuilder.addInstruction(instruction);
   return methodPlace;
