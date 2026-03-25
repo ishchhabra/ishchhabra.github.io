@@ -17,7 +17,9 @@ export function generateNewExpressionInstruction(
     if (!node) {
       throw new Error(`Place not found for new expression argument: ${argument.id}`);
     }
-    t.assertExpression(node);
+    if (!t.isExpression(node) && !t.isSpreadElement(node)) {
+      throw new Error(`Expected Expression or SpreadElement but got ${node.type}`);
+    }
     return node;
   });
 

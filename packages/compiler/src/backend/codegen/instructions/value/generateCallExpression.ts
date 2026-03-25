@@ -19,7 +19,9 @@ export function generateCallExpression(
       throw new Error(`Place ${argument.id} not found`);
     }
 
-    t.assertExpression(node);
+    if (!t.isExpression(node) && !t.isSpreadElement(node)) {
+      throw new Error(`Expected Expression or SpreadElement but got ${node.type}`);
+    }
     return node;
   });
 
