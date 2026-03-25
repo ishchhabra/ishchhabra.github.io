@@ -8,15 +8,9 @@ export class BranchTerminal extends BaseTerminal {
   constructor(
     id: InstructionId,
     public readonly test: Place,
-    public readonly consequent: BlockId,
-    public readonly alternate: BlockId,
-    /*
-     * Ideally, the fallthrough block should be computed based on the
-     * CFG. Currently, to simplify the implementation, we're just manually
-     * including it during the IR construction. This makes the IR construction
-     * more error-prone, but easier to implement.
-     */
-    public readonly fallthrough: BlockId,
+    public consequent: BlockId,
+    public alternate: BlockId,
+    public fallthrough: BlockId,
   ) {
     super(id);
   }
@@ -30,12 +24,26 @@ export class BranchTerminal extends BaseTerminal {
     if (test === this.test) return this;
     return new BranchTerminal(this.id, test, this.consequent, this.alternate, this.fallthrough);
   }
+
+  remap(from: BlockId, to: BlockId): void {
+    if (this.consequent === from) this.consequent = to;
+    if (this.alternate === from) this.alternate = to;
+    if (this.fallthrough === from) this.fallthrough = to;
+  }
+
+  getBlockRefs(): BlockId[] {
+    return [this.consequent, this.alternate, this.fallthrough];
+  }
+
+  override getJoinTarget(): BlockId {
+    return this.fallthrough;
+  }
 }
 
 export class JumpTerminal extends BaseTerminal {
   constructor(
     id: InstructionId,
-    public readonly target: BlockId,
+    public target: BlockId,
   ) {
     super(id);
   }
@@ -46,6 +54,14 @@ export class JumpTerminal extends BaseTerminal {
 
   rewrite(_values: Map<Identifier, Place>): JumpTerminal {
     return this;
+  }
+
+  remap(from: BlockId, to: BlockId): void {
+    if (this.target === from) this.target = to;
+  }
+
+  getBlockRefs(): BlockId[] {
+    return [this.target];
   }
 }
 
@@ -66,6 +82,12 @@ export class ReturnTerminal extends BaseTerminal {
     if (value === this.value) return this;
     return new ReturnTerminal(this.id, value);
   }
+
+  remap(): void {}
+
+  getBlockRefs(): BlockId[] {
+    return [];
+  }
 }
 
 export class ThrowTerminal extends BaseTerminal {
@@ -85,6 +107,12 @@ export class ThrowTerminal extends BaseTerminal {
     if (value === this.value) return this;
     return new ThrowTerminal(this.id, value);
   }
+
+  remap(): void {}
+
+  getBlockRefs(): BlockId[] {
+    return [];
+  }
 }
 
 export class SwitchTerminal extends BaseTerminal {
@@ -92,7 +120,7 @@ export class SwitchTerminal extends BaseTerminal {
     id: InstructionId,
     public readonly discriminant: Place,
     public readonly cases: Array<{ test: Place | null; block: BlockId }>,
-    public readonly fallthrough: BlockId,
+    public fallthrough: BlockId,
   ) {
     super(id);
   }
@@ -121,15 +149,30 @@ export class SwitchTerminal extends BaseTerminal {
     }
     return new SwitchTerminal(this.id, discriminant, cases, this.fallthrough);
   }
+
+  remap(from: BlockId, to: BlockId): void {
+    for (const c of this.cases) {
+      if (c.block === from) c.block = to;
+    }
+    if (this.fallthrough === from) this.fallthrough = to;
+  }
+
+  getBlockRefs(): BlockId[] {
+    return [...this.cases.map((c) => c.block), this.fallthrough];
+  }
+
+  override getJoinTarget(): BlockId {
+    return this.fallthrough;
+  }
 }
 
 export class TryTerminal extends BaseTerminal {
   constructor(
     id: InstructionId,
-    public readonly tryBlock: BlockId,
-    public readonly handler: { param: Place | null; block: BlockId } | null,
-    public readonly finallyBlock: BlockId | null,
-    public readonly fallthrough: BlockId,
+    public tryBlock: BlockId,
+    public handler: { param: Place | null; block: BlockId } | null,
+    public finallyBlock: BlockId | null,
+    public fallthrough: BlockId,
   ) {
     super(id);
   }
@@ -140,5 +183,23 @@ export class TryTerminal extends BaseTerminal {
 
   rewrite(_values: Map<Identifier, Place>): TryTerminal {
     return this;
+  }
+
+  remap(from: BlockId, to: BlockId): void {
+    if (this.tryBlock === from) this.tryBlock = to;
+    if (this.handler?.block === from) this.handler.block = to;
+    if (this.finallyBlock === from) this.finallyBlock = to;
+    if (this.fallthrough === from) this.fallthrough = to;
+  }
+
+  getBlockRefs(): BlockId[] {
+    const refs: BlockId[] = [this.tryBlock, this.fallthrough];
+    if (this.handler) refs.push(this.handler.block);
+    if (this.finallyBlock !== null) refs.push(this.finallyBlock);
+    return refs;
+  }
+
+  override getJoinTarget(): BlockId {
+    return this.fallthrough;
   }
 }

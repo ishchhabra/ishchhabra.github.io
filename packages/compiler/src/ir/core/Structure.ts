@@ -15,6 +15,9 @@ export abstract class BaseStructure {
   /** Returns CFG edges defined by this structure as [source, target] pairs. */
   abstract getEdges(): Array<[BlockId, BlockId]>;
 
+  /** Returns all block IDs referenced by this structure. */
+  abstract getBlockRefs(): BlockId[];
+
   /** Returns places read by this structure (used by DCE to track liveness). */
   abstract getReadPlaces(): Place[];
 
@@ -23,6 +26,9 @@ export abstract class BaseStructure {
 
   /** Returns a new structure with places rewritten per the given map (used by SSA renaming). */
   abstract rewrite(values: Map<Identifier, Place>): BaseStructure;
+
+  /** Replaces block references to `from` with `to` in place. */
+  abstract remap(from: BlockId, to: BlockId): void;
 
   /**
    * Whether this structure has observable side effects. Side-effectful
@@ -40,11 +46,11 @@ export abstract class BaseStructure {
  */
 export class ForInStructure extends BaseStructure {
   constructor(
-    public readonly header: BlockId,
+    public header: BlockId,
     public readonly iterationValue: Place,
     public readonly object: Place,
-    public readonly body: BlockId,
-    public readonly fallthrough: BlockId,
+    public body: BlockId,
+    public fallthrough: BlockId,
   ) {
     super();
   }
@@ -54,6 +60,10 @@ export class ForInStructure extends BaseStructure {
       [this.header, this.body],
       [this.header, this.fallthrough],
     ];
+  }
+
+  getBlockRefs(): BlockId[] {
+    return [this.body, this.fallthrough];
   }
 
   getReadPlaces(): Place[] {
@@ -73,6 +83,12 @@ export class ForInStructure extends BaseStructure {
 
     return new ForInStructure(this.header, iterationValue, object, this.body, this.fallthrough);
   }
+
+  remap(from: BlockId, to: BlockId): void {
+    if (this.header === from) this.header = to;
+    if (this.body === from) this.body = to;
+    if (this.fallthrough === from) this.fallthrough = to;
+  }
 }
 
 /**
@@ -80,11 +96,11 @@ export class ForInStructure extends BaseStructure {
  */
 export class ForOfStructure extends BaseStructure {
   constructor(
-    public readonly header: BlockId,
+    public header: BlockId,
     public readonly iterationValue: Place,
     public readonly iterable: Place,
-    public readonly body: BlockId,
-    public readonly fallthrough: BlockId,
+    public body: BlockId,
+    public fallthrough: BlockId,
     public readonly isAwait: boolean,
   ) {
     super();
@@ -95,6 +111,10 @@ export class ForOfStructure extends BaseStructure {
       [this.header, this.body],
       [this.header, this.fallthrough],
     ];
+  }
+
+  getBlockRefs(): BlockId[] {
+    return [this.body, this.fallthrough];
   }
 
   getReadPlaces(): Place[] {
@@ -121,6 +141,12 @@ export class ForOfStructure extends BaseStructure {
       this.isAwait,
     );
   }
+
+  remap(from: BlockId, to: BlockId): void {
+    if (this.header === from) this.header = to;
+    if (this.body === from) this.body = to;
+    if (this.fallthrough === from) this.fallthrough = to;
+  }
 }
 
 /**
@@ -135,19 +161,19 @@ export class ForOfStructure extends BaseStructure {
 export class TernaryStructure extends BaseStructure {
   constructor(
     /** The block that owns this structure (contains the test + the ternary). */
-    public readonly header: BlockId,
+    public header: BlockId,
     /** The condition expression place. */
     public readonly test: Place,
     /** Block containing the consequent arm instructions. */
-    public readonly consequent: BlockId,
+    public consequent: BlockId,
     /** The Place produced by the consequent arm (the ternary's "true" value). */
     public readonly consequentValue: Place,
     /** Block containing the alternate arm instructions. */
-    public readonly alternate: BlockId,
+    public alternate: BlockId,
     /** The Place produced by the alternate arm (the ternary's "false" value). */
     public readonly alternateValue: Place,
     /** The block after the ternary (merge point). */
-    public readonly fallthrough: BlockId,
+    public fallthrough: BlockId,
     /** The Place where the ternary result is registered in the codegen. */
     public readonly resultPlace: Place,
   ) {
@@ -160,6 +186,10 @@ export class TernaryStructure extends BaseStructure {
       [this.header, this.alternate],
       [this.header, this.fallthrough],
     ];
+  }
+
+  getBlockRefs(): BlockId[] {
+    return [this.consequent, this.alternate, this.fallthrough];
   }
 
   getReadPlaces(): Place[] {
@@ -198,5 +228,12 @@ export class TernaryStructure extends BaseStructure {
       this.fallthrough,
       resultPlace,
     );
+  }
+
+  remap(from: BlockId, to: BlockId): void {
+    if (this.header === from) this.header = to;
+    if (this.consequent === from) this.consequent = to;
+    if (this.alternate === from) this.alternate = to;
+    if (this.fallthrough === from) this.fallthrough = to;
   }
 }

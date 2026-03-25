@@ -1,13 +1,7 @@
 import { BlockId } from "../ir";
-import { BaseTerminal } from "../ir/base";
 import { FunctionIR } from "../ir/core/FunctionIR";
 import { ModuleIR } from "../ir/core/ModuleIR";
-import {
-  BranchTerminal,
-  JumpTerminal,
-  SwitchTerminal,
-  TryTerminal,
-} from "../ir/core/Terminal";
+import { JumpTerminal } from "../ir/core/Terminal";
 import { BaseOptimizationPass, OptimizationResult } from "./late-optimizer/OptimizationPass";
 import { Phi } from "./ssa/Phi";
 
@@ -87,13 +81,15 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
     for (const blockId of reachable) {
       const block = this.functionIR.blocks.get(blockId);
       if (!block) continue;
-      for (const ref of getTerminalBlockRefs(block.terminal)) {
-        referenced.add(ref);
+      if (block.terminal) {
+        for (const ref of block.terminal.getBlockRefs()) {
+          referenced.add(ref);
+        }
       }
       const structure = this.functionIR.structures.get(blockId);
       if (structure) {
-        for (const [, target] of structure.getEdges()) {
-          referenced.add(target);
+        for (const ref of structure.getBlockRefs()) {
+          referenced.add(ref);
         }
       }
     }
@@ -139,6 +135,15 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
       const predSuccs = this.functionIR.successors.get(predId);
       if (!predSuccs || predSuccs.size !== 1) continue;
 
+      // Don't merge structural join points (fallthrough targets). These
+      // blocks mark where control reconverges after a branch/switch/try,
+      // and codegen relies on them existing as distinct blocks.
+      if (this.isJoinTarget(blockId)) continue;
+
+      // Don't merge blocks referenced by structures (e.g. loop bodies,
+      // ternary arms).
+      if (this.isReferencedByStructure(blockId)) continue;
+
       const predBlock = this.functionIR.blocks.get(predId)!;
       const block = this.functionIR.blocks.get(blockId)!;
 
@@ -164,6 +169,9 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
 
       // Re-key phi operands: blockId → predId.
       this.rekeyPhiOperands(blockId, predId);
+
+      // Remap all references to the deleted block.
+      this.remapBlockReferences(blockId, predId);
 
       this.functionIR.blocks.delete(blockId);
       changed = true;
@@ -212,17 +220,8 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
         }
       }
 
-      // Retarget ALL blocks whose terminal references blockId (not just CFG
-      // predecessors — BranchTerminal.fallthrough is not a CFG edge but must
-      // still be updated).
-      for (const [otherId, otherBlock] of this.functionIR.blocks) {
-        if (otherId === blockId) continue;
-        if (!otherBlock.terminal) continue;
-        const retargeted = retargetTerminal(otherBlock.terminal, blockId, target);
-        if (retargeted !== otherBlock.terminal) {
-          otherBlock.terminal = retargeted;
-        }
-      }
+      // Remap all references from the deleted block to its target.
+      this.remapBlockReferences(blockId, target);
 
       // Migrate phi operands: any phi that references blockId now
       // references each of blockId's CFG predecessors with the same value.
@@ -250,6 +249,22 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
   // Helpers
   // ---------------------------------------------------------------------------
 
+  /**
+   * Remap every terminal and structure reference from `from` to `to`.
+   * Standard step 2 of CFG block merging — after absorbing a block's
+   * contents, all dangling references must be updated.
+   */
+  private remapBlockReferences(from: BlockId, to: BlockId): void {
+    for (const [otherId, otherBlock] of this.functionIR.blocks) {
+      if (otherId === from || otherId === to) continue;
+      otherBlock.terminal?.remap(from, to);
+    }
+    for (const [structId, structure] of this.functionIR.structures) {
+      if (structId === from) continue;
+      structure.remap(from, to);
+    }
+  }
+
   private deleteBlock(blockId: BlockId): void {
     // Remove phi operands that reference this block.
     if (this.phis) {
@@ -273,10 +288,17 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
     }
   }
 
+  private isJoinTarget(blockId: BlockId): boolean {
+    for (const [, block] of this.functionIR.blocks) {
+      if (block.terminal?.getJoinTarget() === blockId) return true;
+    }
+    return false;
+  }
+
   private isReferencedByStructure(blockId: BlockId): boolean {
     for (const [, structure] of this.functionIR.structures) {
-      for (const [, target] of structure.getEdges()) {
-        if (target === blockId) return true;
+      for (const ref of structure.getBlockRefs()) {
+        if (ref === blockId) return true;
       }
     }
     return false;
@@ -289,95 +311,4 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
     }
     return false;
   }
-}
-
-// -----------------------------------------------------------------------------
-// Terminal retargeting
-// -----------------------------------------------------------------------------
-
-/**
- * Returns a new terminal with every reference to `from` replaced by `to`.
- * Returns the original terminal unchanged if `from` does not appear.
- */
-function retargetTerminal(terminal: BaseTerminal, from: BlockId, to: BlockId): BaseTerminal {
-  if (terminal instanceof JumpTerminal) {
-    return terminal.target === from ? new JumpTerminal(terminal.id, to) : terminal;
-  }
-
-  if (terminal instanceof BranchTerminal) {
-    const cons = terminal.consequent === from ? to : terminal.consequent;
-    const alt = terminal.alternate === from ? to : terminal.alternate;
-    const fall = terminal.fallthrough === from ? to : terminal.fallthrough;
-    if (cons === terminal.consequent && alt === terminal.alternate && fall === terminal.fallthrough) {
-      return terminal;
-    }
-    return new BranchTerminal(terminal.id, terminal.test, cons, alt, fall);
-  }
-
-  if (terminal instanceof SwitchTerminal) {
-    const cases = terminal.cases.map((c) => ({
-      ...c,
-      block: c.block === from ? to : c.block,
-    }));
-    const fall = terminal.fallthrough === from ? to : terminal.fallthrough;
-    if (
-      fall === terminal.fallthrough &&
-      cases.every((c, i) => c.block === terminal.cases[i].block)
-    ) {
-      return terminal;
-    }
-    return new SwitchTerminal(terminal.id, terminal.discriminant, cases, fall);
-  }
-
-  if (terminal instanceof TryTerminal) {
-    const tryBlock = terminal.tryBlock === from ? to : terminal.tryBlock;
-    const handler = terminal.handler
-      ? {
-          param: terminal.handler.param,
-          block: terminal.handler.block === from ? to : terminal.handler.block,
-        }
-      : null;
-    const finallyBlock =
-      terminal.finallyBlock !== null && terminal.finallyBlock === from
-        ? to
-        : terminal.finallyBlock;
-    const fall = terminal.fallthrough === from ? to : terminal.fallthrough;
-    if (
-      tryBlock === terminal.tryBlock &&
-      handler?.block === terminal.handler?.block &&
-      finallyBlock === terminal.finallyBlock &&
-      fall === terminal.fallthrough
-    ) {
-      return terminal;
-    }
-    return new TryTerminal(terminal.id, tryBlock, handler, finallyBlock, fall);
-  }
-
-  // ReturnTerminal, ThrowTerminal — no block references.
-  return terminal;
-}
-
-/**
- * Returns every block ID referenced by a terminal (including fallthrough
- * targets that are not modeled as CFG successors by getPredecessors).
- */
-function getTerminalBlockRefs(terminal: BaseTerminal | undefined): BlockId[] {
-  if (!terminal) return [];
-
-  if (terminal instanceof JumpTerminal) {
-    return [terminal.target];
-  }
-  if (terminal instanceof BranchTerminal) {
-    return [terminal.consequent, terminal.alternate, terminal.fallthrough];
-  }
-  if (terminal instanceof SwitchTerminal) {
-    return [...terminal.cases.map((c) => c.block), terminal.fallthrough];
-  }
-  if (terminal instanceof TryTerminal) {
-    const refs = [terminal.tryBlock, terminal.fallthrough];
-    if (terminal.handler) refs.push(terminal.handler.block);
-    if (terminal.finallyBlock !== null) refs.push(terminal.finallyBlock);
-    return refs;
-  }
-  return [];
 }
