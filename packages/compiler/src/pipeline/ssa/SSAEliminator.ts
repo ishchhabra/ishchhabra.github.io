@@ -29,8 +29,12 @@ export class SSAEliminator {
 
   public eliminate(): SSAEliminationResult {
     for (const phi of this.phis) {
-      // Ignore phis with only one operand since they are redundant.
-      if (phi.operands.size <= 1) {
+      // Single-operand phis are redundant but must still be declared —
+      // SSA renaming already inserted references to them. When the
+      // optimizer is enabled, ConstantPropagation degrades these before
+      // elimination. Without the optimizer, we emit the declaration and
+      // copy; the late optimizer can clean up the redundancy.
+      if (phi.operands.size === 0) {
         continue;
       }
 
