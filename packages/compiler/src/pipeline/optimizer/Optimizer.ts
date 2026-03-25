@@ -42,6 +42,7 @@ export class Optimizer {
           this.projectUnit,
           this.ssa,
           this.context,
+          this.options,
         ).run();
         changed ||= constantPropagationResult.changed;
         blocks = constantPropagationResult.blocks;

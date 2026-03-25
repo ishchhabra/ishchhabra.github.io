@@ -28,11 +28,20 @@ function safeReadJson(filePath: string): Partial<CompilerOptions> | undefined {
   }
 }
 
-function loadOptionsChain(
+async function loadOptions(dir: string): Promise<Partial<CompilerOptions> | undefined> {
+  const jsPath = join(dir, "options.js");
+  if (existsSync(jsPath)) {
+    const mod = await import(jsPath);
+    return mod.default ?? mod;
+  }
+  return safeReadJson(join(dir, "options.json"));
+}
+
+async function loadOptionsChain(
   rootDir: string,
   testDir: string,
   baseOptions: CompilerOptions,
-): CompilerOptions {
+): Promise<CompilerOptions> {
   const dirs: string[] = [];
   let current = testDir;
 
@@ -48,7 +57,7 @@ function loadOptionsChain(
   let merged = { ...baseOptions };
 
   for (const dir of dirs) {
-    const localOpts = safeReadJson(join(dir, "options.json"));
+    const localOpts = await loadOptions(dir);
     if (localOpts && typeof localOpts === "object") {
       merged = merge({}, merged, localOpts);
     }
@@ -117,7 +126,7 @@ const formattedResults = new Map<string, string>();
 const compileErrors = new Map<string, string>();
 let tmpDir: string | undefined;
 
-function compileAndBatchFormat(
+async function compileAndBatchFormat(
   allFixtures: Fixture[],
   rootDir: string,
   baseOptions: CompilerOptions,
@@ -127,7 +136,7 @@ function compileAndBatchFormat(
   // Phase 1: Compile all fixtures and write raw output to temp files.
   for (const { input } of allFixtures) {
     try {
-      const options = loadOptionsChain(rootDir, dirname(input), baseOptions);
+      const options = await loadOptionsChain(rootDir, dirname(input), baseOptions);
       const compiled = compile(input, options);
       const tmpFile = join(tmpDir, encodeURIComponent(input) + ".js");
       writeFileSync(tmpFile, compiled);
@@ -223,8 +232,8 @@ export function testFixtures(
   const allFixtures = findFixtures(directory);
   const tree = buildTreeFromFixtures(directory, allFixtures);
 
-  beforeAll(() => {
-    compileAndBatchFormat(allFixtures, directory, baseOptions);
+  beforeAll(async () => {
+    await compileAndBatchFormat(allFixtures, directory, baseOptions);
   });
 
   afterAll(() => {

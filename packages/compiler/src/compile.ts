@@ -2,6 +2,7 @@ import { z } from "zod";
 import { CodeGenerator } from "./backend/CodeGenerator";
 import { ProjectBuilder } from "./frontend/ProjectBuilder";
 import { Pipeline } from "./pipeline/Pipeline";
+import type { ResolveConstantHook } from "./pipeline/passes/resolveConstant";
 
 export const CompilerOptionsSchema = z.object({
   /** Whether to enable the optimizer */
@@ -31,9 +32,18 @@ export const CompilerOptionsSchema = z.object({
   enableLateDeadCodeEliminationPass: z.boolean().default(true),
   /** Whether to enable the export declaration merging pass */
   enableExportDeclarationMergingPass: z.boolean().default(true),
+
+  /**
+   * Hook called for each instruction during constant propagation.
+   * Return a compile-time constant via `ctx.set()` to treat the
+   * instruction's result as a known value for partial evaluation.
+   */
+  resolveConstant: z.function().optional(),
 });
 
-export type CompilerOptions = z.infer<typeof CompilerOptionsSchema>;
+export type CompilerOptions = z.infer<typeof CompilerOptionsSchema> & {
+  resolveConstant?: ResolveConstantHook;
+};
 
 export function compile(
   entryPoint: string,

@@ -1,4 +1,5 @@
 import * as t from "@babel/types";
+import { CompilerOptions } from "../../compile";
 import { ProjectUnit } from "../../frontend/ProjectBuilder";
 import {
   BaseInstruction,
@@ -26,6 +27,7 @@ import { ModuleIR } from "../../ir/core/ModuleIR";
 import { BaseOptimizationPass } from "../late-optimizer/OptimizationPass";
 import { Phi } from "../ssa/Phi";
 import { SSA } from "../ssa/SSABuilder";
+import type { ResolveConstantContext } from "./resolveConstant";
 
 /**
  * A pass that propagates constant values through the program by evaluating expressions
@@ -47,6 +49,7 @@ import { SSA } from "../ssa/SSABuilder";
  */
 export class ConstantPropagationPass extends BaseOptimizationPass {
   private readonly constants: Map<IdentifierId, TPrimitiveValue>;
+  private readonly resolveConstantCtx: ResolveConstantContext;
 
   constructor(
     protected readonly functionIR: FunctionIR,
@@ -54,6 +57,7 @@ export class ConstantPropagationPass extends BaseOptimizationPass {
     private readonly projectUnit: ProjectUnit,
     private readonly ssa: SSA,
     private readonly context: Map<string, Map<string, Map<IdentifierId, TPrimitiveValue>>>,
+    private readonly options: CompilerOptions,
   ) {
     super(functionIR);
 
@@ -70,6 +74,15 @@ export class ConstantPropagationPass extends BaseOptimizationPass {
     }
 
     this.constants = constants;
+
+    this.resolveConstantCtx = {
+      set: () => {
+        throw new Error("set() can only be called during resolveConstant hook invocation");
+      },
+      get: (place: Place) => this.constants.get(place.identifier.id),
+      has: (place: Place) => this.constants.has(place.identifier.id),
+      environment: this.moduleUnit.environment,
+    };
   }
 
   public step() {
@@ -206,6 +219,28 @@ export class ConstantPropagationPass extends BaseOptimizationPass {
    *          or undefined if no changes were made.
    */
   private evaluateInstruction(instruction: BaseInstruction) {
+    if (this.options.resolveConstant) {
+      let resolvedValue: TPrimitiveValue | undefined;
+      let resolved = false;
+
+      this.resolveConstantCtx.set = (value: TPrimitiveValue) => {
+        resolvedValue = value;
+        resolved = true;
+      };
+
+      this.options.resolveConstant(instruction, this.resolveConstantCtx);
+
+      // Reset set() to guard against out-of-band calls.
+      this.resolveConstantCtx.set = () => {
+        throw new Error("set() can only be called during resolveConstant hook invocation");
+      };
+
+      if (resolved) {
+        this.constants.set(instruction.place.identifier.id, resolvedValue);
+        return new LiteralInstruction(instruction.id, instruction.place, instruction.nodePath, resolvedValue);
+      }
+    }
+
     if (instruction instanceof LiteralInstruction) {
       return this.evaluateLiteralInstruction(instruction);
     } else if (instruction instanceof BinaryExpressionInstruction) {
