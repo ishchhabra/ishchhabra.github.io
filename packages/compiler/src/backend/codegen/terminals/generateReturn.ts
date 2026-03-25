@@ -6,6 +6,10 @@ export function generateReturnTerminal(
   terminal: ReturnTerminal,
   generator: CodeGenerator,
 ): Array<t.Statement> {
+  if (terminal.value === null) {
+    return [t.returnStatement()];
+  }
+
   const value = generator.places.get(terminal.value.id);
   if (value === undefined) {
     throw new Error(`Place ${terminal.value.id} not found`);

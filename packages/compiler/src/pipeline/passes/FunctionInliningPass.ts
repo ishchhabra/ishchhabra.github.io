@@ -257,7 +257,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     }
 
     let returnPlace: Place;
-    if (block.terminal instanceof ReturnTerminal) {
+    if (block.terminal instanceof ReturnTerminal && block.terminal.value !== null) {
       const oldReturnId = block.terminal.value.identifier;
       const rewritten = rewriteMap.get(oldReturnId);
 
@@ -299,7 +299,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     // Also update the block's terminal if it references the old call place
     if (
       callExpressionBlock.terminal instanceof ReturnTerminal &&
-      callExpressionBlock.terminal.value.identifier === callExpressionInstr.place.identifier
+      callExpressionBlock.terminal.value?.identifier === callExpressionInstr.place.identifier
     ) {
       callExpressionBlock.terminal = new ReturnTerminal(
         callExpressionBlock.terminal.id,

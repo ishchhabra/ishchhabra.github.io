@@ -14,7 +14,11 @@ export function buildReturnStatement(
 ) {
   const argument = nodePath.get("argument");
   if (!argument.hasNode()) {
-    return;
+    functionBuilder.currentBlock.terminal = new ReturnTerminal(
+      createInstructionId(functionBuilder.environment),
+      null,
+    );
+    return undefined;
   }
 
   const valuePlace = buildNode(argument, functionBuilder, moduleBuilder, environment);

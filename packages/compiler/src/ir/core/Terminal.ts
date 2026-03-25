@@ -68,16 +68,17 @@ export class JumpTerminal extends BaseTerminal {
 export class ReturnTerminal extends BaseTerminal {
   constructor(
     id: InstructionId,
-    public readonly value: Place,
+    public readonly value: Place | null,
   ) {
     super(id);
   }
 
   getReadPlaces(): Place[] {
-    return [this.value];
+    return this.value ? [this.value] : [];
   }
 
   rewrite(values: Map<Identifier, Place>): ReturnTerminal {
+    if (!this.value) return this;
     const value = values.get(this.value.identifier) ?? this.value;
     if (value === this.value) return this;
     return new ReturnTerminal(this.id, value);
