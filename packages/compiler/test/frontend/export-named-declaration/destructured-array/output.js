@@ -1,2 +1,2 @@
-const [$2_0, $3_0] = getItems();
-export { $2_0 as first, $3_0 as second };
+const [$0_0, $1_0] = getItems();
+export { $0_0 as first, $1_0 as second };

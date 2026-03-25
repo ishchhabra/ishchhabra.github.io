@@ -1,4 +1,4 @@
-var Foo = class {
+const Foo = class {
   x = 1;
   constructor(y) {
     this.y = y;

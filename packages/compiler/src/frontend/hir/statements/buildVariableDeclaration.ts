@@ -3,6 +3,7 @@ import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import {
   ArrayPatternInstruction,
+  BindingIdentifierInstruction,
   HoleInstruction,
   LiteralInstruction,
   ObjectPropertyInstruction,
@@ -15,8 +16,8 @@ import { AssignmentPatternInstruction } from "../../../ir/instructions/pattern/A
 import { ObjectPatternInstruction } from "../../../ir/instructions/pattern/ObjectPattern";
 import { buildBindingIdentifier } from "../buildIdentifier";
 import { buildNode } from "../buildNode";
-import { getValueFromStaticKey } from "../getValueFromStaticKey";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { getValueFromStaticKey } from "../getValueFromStaticKey";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildVariableDeclaration(
@@ -29,12 +30,29 @@ export function buildVariableDeclaration(
   const declarationPlaces = declarations.map((declaration) => {
     const id = declaration.get("id") as NodePath<t.LVal>;
     const init: NodePath<t.Expression | null | undefined> = declaration.get("init");
-    const { place: lvalPlace, identifiers: lvalIdentifiers } = buildVariableDeclaratorLVal(
+    let { place: lvalPlace, identifiers: lvalIdentifiers } = buildVariableDeclaratorLVal(
       id,
       functionBuilder,
       moduleBuilder,
       environment,
     );
+
+    // var declarations have a hoisted `undefined` init from the bindings
+    // pass. Create a fresh SSA Place (like an assignment) so this store
+    // is a distinct definition from the hoisted one.
+    if (nodePath.node.kind === "var" && id.isIdentifier()) {
+      const declId = functionBuilder.getDeclarationId(id.node.name, id);
+      if (declId !== undefined) {
+        const newPlace = environment.createPlace(environment.createIdentifier(declId));
+        functionBuilder.addInstruction(
+          environment.createInstruction(BindingIdentifierInstruction, newPlace, nodePath),
+        );
+        environment.registerDeclaration(declId, functionBuilder.currentBlock.id, newPlace.id);
+        lvalPlace = newPlace;
+        lvalIdentifiers = [newPlace];
+      }
+    }
+
     if (lvalPlace === undefined || Array.isArray(lvalPlace)) {
       throw new Error("Lval place must be a single place");
     }

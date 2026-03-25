@@ -1,6 +1,11 @@
 import { NodePath } from "@babel/core";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
+import {
+  BindingIdentifierInstruction,
+  LiteralInstruction,
+  StoreLocalInstruction,
+} from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { isContextVariable } from "./isContextVariable";
 
@@ -10,8 +15,9 @@ export function buildVariableDeclarationBindings(
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
-  const isHoistable = bindingsPath.isFunctionDeclaration() && nodePath.node.kind === "var";
   const parentPath = nodePath.parentPath;
+  const isHoistable =
+    nodePath.node.kind === "var" && !hasInterveningFunction(nodePath, bindingsPath);
   if (!parentPath.isExportDeclaration() && parentPath !== bindingsPath && !isHoistable) {
     return;
   }
@@ -66,6 +72,10 @@ function buildIdentifierBindings(
   environment: Environment,
 ) {
   const originalName = nodePath.node.name;
+
+  // Skip if already registered by a parent scope's buildBindings (hoisted var).
+  if (functionBuilder.getDeclarationId(originalName, nodePath) !== undefined) return;
+
   const identifier = environment.createIdentifier();
   functionBuilder.registerDeclarationName(originalName, identifier.declarationId, bindingsPath);
 
@@ -85,6 +95,36 @@ function buildIdentifierBindings(
     functionBuilder.currentBlock.id,
     place.id,
   );
+
+  // Emit hoisted `const <binding> = undefined` for var declarations.
+  if (binding?.kind === "var") {
+    const hoistId = environment.createIdentifier(identifier.declarationId);
+    const hoistPlace = environment.createPlace(hoistId);
+    functionBuilder.addInstruction(
+      environment.createInstruction(BindingIdentifierInstruction, hoistPlace, nodePath),
+    );
+    const undefPlace = environment.createPlace(environment.createIdentifier());
+    functionBuilder.addInstruction(
+      environment.createInstruction(LiteralInstruction, undefPlace, nodePath, undefined),
+    );
+    const storePlace = environment.createPlace(environment.createIdentifier());
+    functionBuilder.addInstruction(
+      environment.createInstruction(
+        StoreLocalInstruction,
+        storePlace,
+        nodePath,
+        hoistPlace,
+        undefPlace,
+        "const" as const,
+        [],
+      ),
+    );
+    environment.registerDeclaration(
+      identifier.declarationId,
+      functionBuilder.currentBlock.id,
+      hoistPlace.id,
+    );
+  }
 }
 
 function buildArrayPatternBindings(
@@ -152,4 +192,14 @@ function buildRestElementBindings(
 ) {
   const elementPath = nodePath.get("argument");
   buildLValBindings(bindingsPath, elementPath, functionBuilder, environment);
+}
+
+function hasInterveningFunction(nodePath: NodePath, bindingsPath: NodePath): boolean {
+  let current = nodePath.parentPath;
+  while (current && current !== bindingsPath) {
+    if (current.isFunction()) return true;
+    current = current.parentPath;
+  }
+
+  return false;
 }
