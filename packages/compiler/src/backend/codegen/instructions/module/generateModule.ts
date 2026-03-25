@@ -7,8 +7,10 @@ import {
   ImportSpecifierInstruction,
   ModuleInstruction,
 } from "../../../../ir";
+import { ExportAllInstruction } from "../../../../ir/instructions/module/ExportAll";
 import { ExportFromInstruction } from "../../../../ir/instructions/module/ExportFrom";
 import { CodeGenerator } from "../../../CodeGenerator";
+import { generateExportAllInstruction } from "./generateExportAll";
 import { generateExportDefaultDeclarationInstruction } from "./generateExportDefaultDeclaration";
 import { generateExportFromInstruction } from "./generateExportFrom";
 import { generateExportNamedDeclarationInstruction } from "./generateExportNamedDeclaration";
@@ -25,7 +27,9 @@ export function generateModuleInstruction(
   | t.ImportSpecifier
   | t.ImportDefaultSpecifier
   | t.ImportNamespaceSpecifier {
-  if (instruction instanceof ExportDefaultDeclarationInstruction) {
+  if (instruction instanceof ExportAllInstruction) {
+    return generateExportAllInstruction(instruction, generator);
+  } else if (instruction instanceof ExportDefaultDeclarationInstruction) {
     return generateExportDefaultDeclarationInstruction(instruction, generator);
   } else if (instruction instanceof ExportFromInstruction) {
     return generateExportFromInstruction(instruction, generator);

@@ -1,3 +1,4 @@
+export { ExportAllInstruction } from "./ExportAll";
 export { ExportDefaultDeclarationInstruction } from "./ExportDefaultDeclaration";
 export { ExportFromInstruction } from "./ExportFrom";
 export { ExportNamedDeclarationInstruction } from "./ExportNamedDeclaration";

@@ -9,6 +9,7 @@ import { buildBlockStatement } from "./buildBlockStatement";
 import { buildBreakStatement } from "./buildBreakStatement";
 import { buildContinueStatement } from "./buildContinueStatement";
 import { buildClassDeclaration } from "./buildClassDeclaration";
+import { buildExportAllDeclaration } from "./buildExportAllDeclaration";
 import { buildExportDefaultDeclaration } from "./buildExportDefaultDeclaration";
 import { buildExportNamedDeclaration } from "./buildExportNamedDeclaration";
 import { buildExpressionStatement } from "./buildExpressionStatement";
@@ -44,6 +45,9 @@ export function buildStatement(
     case "ClassDeclaration":
       nodePath.assertClassDeclaration();
       return buildClassDeclaration(nodePath, functionBuilder, moduleBuilder, environment);
+    case "ExportAllDeclaration":
+      nodePath.assertExportAllDeclaration();
+      return buildExportAllDeclaration(nodePath, functionBuilder, moduleBuilder, environment);
     case "ExportDefaultDeclaration":
       nodePath.assertExportDefaultDeclaration();
       return buildExportDefaultDeclaration(nodePath, functionBuilder, moduleBuilder, environment);
