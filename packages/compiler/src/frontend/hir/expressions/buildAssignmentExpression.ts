@@ -7,15 +7,21 @@ import {
   BaseInstruction,
   BinaryExpressionInstruction,
   BindingIdentifierInstruction,
+  BranchTerminal,
+  createInstructionId,
   ExpressionStatementInstruction,
   HoleInstruction,
+  JumpTerminal,
   LiteralInstruction,
+  LoadDynamicPropertyInstruction,
   LoadLocalInstruction,
+  LoadStaticPropertyInstruction,
   ObjectPropertyInstruction,
   Place,
   RestElementInstruction,
   StoreContextInstruction,
   StoreLocalInstruction,
+  UnaryExpressionInstruction,
 } from "../../../ir";
 import { StoreDynamicPropertyInstruction } from "../../../ir/instructions/memory/StoreDynamicProperty";
 import { StoreStaticPropertyInstruction } from "../../../ir/instructions/memory/StoreStaticProperty";
@@ -47,6 +53,20 @@ function buildIdentifierAssignment(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
+  const operator = nodePath.node.operator;
+
+  // Logical assignments (||=, &&=, ??=) have short-circuit semantics:
+  // the right side is only evaluated when the condition requires it.
+  // Lower to control flow: if (<condition>) x = y;
+  if (operator === "||=" || operator === "&&=" || operator === "??=") {
+    return buildLogicalIdentifierAssignment(
+      nodePath,
+      functionBuilder,
+      moduleBuilder,
+      environment,
+    );
+  }
+
   const rightPlace = buildAssignmentRight(nodePath, functionBuilder, moduleBuilder, environment);
 
   const leftPath: NodePath<t.AssignmentExpression["left"]> = nodePath.get("left");
@@ -81,12 +101,201 @@ function buildIdentifierAssignment(
   return place;
 }
 
+/**
+ * Builds the condition place for a logical assignment operator.
+ *
+ *   ||= : assign when falsy  → condition is !value
+ *   &&= : assign when truthy → condition is value
+ *   ??= : assign when nullish → condition is value == null
+ */
+function buildLogicalCondition(
+  operator: string,
+  valuePlace: Place,
+  functionBuilder: FunctionIRBuilder,
+  environment: Environment,
+): Place {
+  if (operator === "||=") {
+    const place = environment.createPlace(environment.createIdentifier());
+    functionBuilder.addInstruction(
+      environment.createInstruction(UnaryExpressionInstruction, place, undefined, "!", valuePlace),
+    );
+    return place;
+  }
+  if (operator === "&&=") {
+    return valuePlace;
+  }
+  // ??= : value == null (checks both null and undefined)
+  const nullPlace = environment.createPlace(environment.createIdentifier());
+  functionBuilder.addInstruction(
+    environment.createInstruction(LiteralInstruction, nullPlace, undefined, null),
+  );
+  const place = environment.createPlace(environment.createIdentifier());
+  functionBuilder.addInstruction(
+    environment.createInstruction(BinaryExpressionInstruction, place, undefined, "==", valuePlace, nullPlace),
+  );
+  return place;
+}
+
+/**
+ * Emits `let _result = initialValue` and returns the binding and store
+ * places, used by logical assignment lowering to track the expression
+ * result across both branches.
+ */
+function emitResultVariable(
+  initialValue: Place,
+  functionBuilder: FunctionIRBuilder,
+  environment: Environment,
+): { bindingPlace: Place; storePlace: Place } {
+  const bindingPlace = environment.createPlace(environment.createIdentifier());
+  functionBuilder.addInstruction(
+    environment.createInstruction(BindingIdentifierInstruction, bindingPlace, undefined),
+  );
+  environment.registerDeclaration(
+    bindingPlace.identifier.declarationId,
+    functionBuilder.currentBlock.id,
+    bindingPlace.id,
+  );
+  const storePlace = environment.createPlace(environment.createIdentifier());
+  functionBuilder.addInstruction(
+    environment.createInstruction(
+      StoreLocalInstruction, storePlace, undefined, bindingPlace, initialValue, "let",
+    ),
+  );
+  return { bindingPlace, storePlace };
+}
+
+/**
+ * Emits `_result = newValue` in the current block, creating a new SSA
+ * version of the result variable so the phi merge works correctly.
+ */
+function emitResultUpdate(
+  bindingPlace: Place,
+  newValue: Place,
+  functionBuilder: FunctionIRBuilder,
+  environment: Environment,
+): void {
+  const updateBinding = environment.createPlace(
+    environment.createIdentifier(bindingPlace.identifier.declarationId),
+  );
+  functionBuilder.addInstruction(
+    environment.createInstruction(BindingIdentifierInstruction, updateBinding, undefined),
+  );
+  environment.registerDeclaration(
+    bindingPlace.identifier.declarationId,
+    functionBuilder.currentBlock.id,
+    updateBinding.id,
+  );
+  functionBuilder.addInstruction(
+    environment.createInstruction(
+      StoreLocalInstruction,
+      environment.createPlace(environment.createIdentifier()),
+      undefined,
+      updateBinding,
+      newValue,
+      "const",
+    ),
+  );
+}
+
+/**
+ * Lowers `x ||= y`, `x &&= y`, `x ??= y` to:
+ *
+ *   let _result = x;
+ *   if (<condition>) { x = y; _result = y; }
+ *   // expression value is _result
+ */
+function buildLogicalIdentifierAssignment(
+  nodePath: NodePath<t.AssignmentExpression>,
+  functionBuilder: FunctionIRBuilder,
+  moduleBuilder: ModuleIRBuilder,
+  environment: Environment,
+): Place {
+  const operator = nodePath.node.operator;
+  const leftPath = nodePath.get("left") as NodePath<t.Identifier>;
+
+  const declarationId = functionBuilder.getDeclarationId(leftPath.node.name, leftPath);
+  if (declarationId === undefined) {
+    throw new Error(`Variable accessed before declaration: ${leftPath.node.name}`);
+  }
+
+  // Load x once.
+  const testPlace = buildNode(leftPath, functionBuilder, moduleBuilder, environment);
+  if (testPlace === undefined || Array.isArray(testPlace)) {
+    throw new Error("Logical assignment left must be a single place");
+  }
+
+  const conditionPlace = buildLogicalCondition(operator, testPlace, functionBuilder, environment);
+
+  // let _result = x; — holds the expression value across both paths.
+  const { bindingPlace } = emitResultVariable(testPlace, functionBuilder, environment);
+
+  const assignBlock = environment.createBlock();
+  functionBuilder.blocks.set(assignBlock.id, assignBlock);
+  const mergeBlock = environment.createBlock();
+  functionBuilder.blocks.set(mergeBlock.id, mergeBlock);
+
+  functionBuilder.currentBlock.terminal = new BranchTerminal(
+    createInstructionId(environment),
+    conditionPlace,
+    assignBlock.id,
+    mergeBlock.id,
+    mergeBlock.id,
+  );
+
+  // Build the assignment in assignBlock.
+  functionBuilder.currentBlock = assignBlock;
+
+  const rightPath = nodePath.get("right");
+  const rightPlace = buildNode(rightPath, functionBuilder, moduleBuilder, environment);
+  if (rightPlace === undefined || Array.isArray(rightPlace)) {
+    throw new Error("Logical assignment right must be a single place");
+  }
+
+  // Store x = y.
+  const { place: lvalPlace } = buildIdentifierAssignmentLeft(
+    leftPath, nodePath, functionBuilder, environment,
+  );
+  const StoreClass = environment.contextDeclarationIds.has(declarationId)
+    ? StoreContextInstruction
+    : StoreLocalInstruction;
+  functionBuilder.addInstruction(
+    environment.createInstruction(
+      StoreClass,
+      environment.createPlace(environment.createIdentifier()),
+      nodePath, lvalPlace, rightPlace, "const",
+    ),
+  );
+
+  // _result = y;
+  emitResultUpdate(bindingPlace, rightPlace, functionBuilder, environment);
+
+  functionBuilder.currentBlock.terminal = new JumpTerminal(
+    createInstructionId(environment),
+    mergeBlock.id,
+  );
+
+  // Load _result at the merge block. SSA creates a phi merging the
+  // initial value (skip path) and the updated value (assign path).
+  functionBuilder.currentBlock = mergeBlock;
+  const resultPlace = environment.createPlace(environment.createIdentifier());
+  functionBuilder.addInstruction(
+    environment.createInstruction(LoadLocalInstruction, resultPlace, undefined, bindingPlace),
+  );
+  return resultPlace;
+}
+
 function buildMemberExpressionAssignment(
   nodePath: NodePath<t.AssignmentExpression>,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
+  const operator = nodePath.node.operator;
+
+  if (operator === "||=" || operator === "&&=" || operator === "??=") {
+    return buildLogicalMemberAssignment(nodePath, functionBuilder, moduleBuilder, environment);
+  }
+
   const rightPlace = buildAssignmentRight(nodePath, functionBuilder, moduleBuilder, environment);
 
   const leftPath: NodePath<t.AssignmentExpression["left"]> = nodePath.get("left");
@@ -143,6 +352,153 @@ function buildMemberExpressionAssignment(
     functionBuilder.addInstruction(instruction);
     return place;
   }
+}
+
+/**
+ * Lowers `obj.x ||= y`, `obj.x &&= y`, and `obj.x ??= y` to:
+ *
+ *   let _result = obj.x;          // read property once
+ *   if (<condition>) {
+ *     _result = y;                // update result
+ *     obj.x = y;                  // store property
+ *   }
+ *   // expression value is _result
+ *
+ * The temp variable holds the result across both paths without
+ * re-reading the property (which would trigger a getter twice).
+ */
+function buildLogicalMemberAssignment(
+  nodePath: NodePath<t.AssignmentExpression>,
+  functionBuilder: FunctionIRBuilder,
+  moduleBuilder: ModuleIRBuilder,
+  environment: Environment,
+): Place {
+  const operator = nodePath.node.operator;
+  const leftPath = nodePath.get("left") as NodePath<t.MemberExpression>;
+
+  // Evaluate the object (and computed key if dynamic) once.
+  const objectPath = leftPath.get("object");
+  const objectPlace = buildNode(objectPath, functionBuilder, moduleBuilder, environment);
+  if (objectPlace === undefined || Array.isArray(objectPlace)) {
+    throw new Error("Logical member assignment object must be a single place");
+  }
+
+  const isStatic = isStaticMemberAccess(leftPath);
+  let propertyName: string | undefined;
+  let propertyPlace: Place | undefined;
+
+  if (isStatic) {
+    const propertyPath = leftPath.get("property");
+    if (propertyPath.isIdentifier()) {
+      propertyName = propertyPath.node.name;
+    } else if (propertyPath.isStringLiteral()) {
+      propertyName = propertyPath.node.value;
+    } else if (propertyPath.isNumericLiteral()) {
+      propertyName = String(propertyPath.node.value);
+    } else {
+      throw new Error(`Unexpected static member property type: ${propertyPath.type}`);
+    }
+  } else {
+    const propertyPath = leftPath.get("property");
+    const built = buildNode(propertyPath, functionBuilder, moduleBuilder, environment);
+    if (built === undefined || Array.isArray(built)) {
+      throw new Error("Logical member assignment computed property must be a single place");
+    }
+    propertyPlace = built;
+  }
+
+  // Load the property value once.
+  const testPlace = environment.createPlace(environment.createIdentifier());
+  if (isStatic) {
+    functionBuilder.addInstruction(
+      environment.createInstruction(
+        LoadStaticPropertyInstruction, testPlace, nodePath, objectPlace, propertyName!,
+      ),
+    );
+  } else {
+    functionBuilder.addInstruction(
+      environment.createInstruction(
+        LoadDynamicPropertyInstruction, testPlace, nodePath, objectPlace, propertyPlace!,
+      ),
+    );
+  }
+
+  // let _result = testPlace; — cache the property read. The condition
+  // and all subsequent references use _result, not testPlace, to avoid
+  // re-triggering getters.
+  const { bindingPlace: resultBinding } = emitResultVariable(testPlace, functionBuilder, environment);
+
+  // Build the condition from the cached result, not from testPlace.
+  const cachedPlace = environment.createPlace(environment.createIdentifier());
+  functionBuilder.addInstruction(
+    environment.createInstruction(LoadLocalInstruction, cachedPlace, undefined, resultBinding),
+  );
+  const conditionPlace = buildLogicalCondition(operator, cachedPlace, functionBuilder, environment);
+
+  const assignBlock = environment.createBlock();
+  functionBuilder.blocks.set(assignBlock.id, assignBlock);
+  const mergeBlock = environment.createBlock();
+  functionBuilder.blocks.set(mergeBlock.id, mergeBlock);
+
+  functionBuilder.currentBlock.terminal = new BranchTerminal(
+    createInstructionId(environment),
+    conditionPlace,
+    assignBlock.id,
+    mergeBlock.id,
+    mergeBlock.id,
+  );
+
+  // Build the assignment in assignBlock.
+  functionBuilder.currentBlock = assignBlock;
+
+  const rightPath = nodePath.get("right");
+  const rightPlace = buildNode(rightPath, functionBuilder, moduleBuilder, environment);
+  if (rightPlace === undefined || Array.isArray(rightPlace)) {
+    throw new Error("Logical member assignment right must be a single place");
+  }
+
+  // Store the property.
+  const storePlace = environment.createPlace(environment.createIdentifier());
+  if (isStatic) {
+    functionBuilder.addInstruction(
+      environment.createInstruction(
+        StoreStaticPropertyInstruction, storePlace, nodePath, objectPlace, propertyName!, rightPlace,
+      ),
+    );
+  } else {
+    functionBuilder.addInstruction(
+      environment.createInstruction(
+        StoreDynamicPropertyInstruction, storePlace, nodePath, objectPlace, propertyPlace!, rightPlace,
+      ),
+    );
+  }
+
+  // Wrap the store in an ExpressionStatement so it emits as a statement.
+  functionBuilder.addInstruction(
+    environment.createInstruction(
+      ExpressionStatementInstruction,
+      environment.createPlace(environment.createIdentifier()),
+      nodePath,
+      storePlace,
+    ),
+  );
+
+  // _result = y;
+  emitResultUpdate(resultBinding, rightPlace, functionBuilder, environment);
+
+  functionBuilder.currentBlock.terminal = new JumpTerminal(
+    createInstructionId(environment),
+    mergeBlock.id,
+  );
+
+  // Load _result at the merge block. SSA creates a phi merging the
+  // initial value (skip path) and the updated value (assign path).
+  functionBuilder.currentBlock = mergeBlock;
+  const resultPlace = environment.createPlace(environment.createIdentifier());
+  functionBuilder.addInstruction(
+    environment.createInstruction(LoadLocalInstruction, resultPlace, undefined, resultBinding),
+  );
+  return resultPlace;
 }
 
 function buildDestructuringAssignment(
