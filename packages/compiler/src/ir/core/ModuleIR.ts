@@ -16,8 +16,8 @@ export interface ModuleExport {
   /** The ExportDeclarationInstruction for the export */
   instruction: BaseInstruction;
 
-  /** The instruction that declares the exported variable */
-  declaration: BaseInstruction;
+  /** The instruction that declares the exported variable (undefined for anonymous export default) */
+  declaration?: BaseInstruction;
 }
 
 export interface ModuleIR {

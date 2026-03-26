@@ -535,7 +535,7 @@ export class ConstantPropagationPass extends BaseOptimizationPass {
     }
 
     const moduleExport = this.moduleUnit.exports.get(instruction.exported);
-    if (moduleExport === undefined) {
+    if (moduleExport === undefined || moduleExport.declaration === undefined) {
       return undefined;
     }
 
