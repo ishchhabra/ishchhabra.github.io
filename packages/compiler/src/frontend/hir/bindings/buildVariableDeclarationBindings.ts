@@ -73,12 +73,12 @@ function buildIdentifierBindings(
 ) {
   const originalName = nodePath.node.name;
 
-  // Skip if already registered in the enclosing function scope (hoisted
-  // var processed by an earlier buildBindings call). Check the function
-  // scope's own data directly rather than using getData() which walks
-  // up the entire scope chain and would incorrectly match a same-named
-  // declaration from an enclosing function.
-  const functionScope = bindingsPath.scope.getFunctionParent() ?? bindingsPath.scope;
+  // Skip if already registered in the enclosing function (or program)
+  // scope — a hoisted var processed by an earlier buildBindings call.
+  // Check that scope's own data directly rather than using getData()
+  // which walks the entire scope chain and would incorrectly match a
+  // same-named declaration from an enclosing function.
+  const functionScope = bindingsPath.scope.getFunctionParent() ?? bindingsPath.scope.getProgramParent();
   if (functionScope.data[originalName] !== undefined) return;
 
   const identifier = environment.createIdentifier();
