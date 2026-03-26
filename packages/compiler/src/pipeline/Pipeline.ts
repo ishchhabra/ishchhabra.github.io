@@ -2,6 +2,7 @@ import { CompilerOptions } from "../compile";
 import { CommonJSExportCollectorPass } from "../frontend/passes/CommonJSExportCollectorPass";
 import { ProjectUnit } from "../frontend/ProjectBuilder";
 import { BasicBlock, BlockId } from "../ir";
+import { AnalysisManager } from "./analysis/AnalysisManager";
 import { CallGraph } from "./analysis/CallGraph";
 import { LateOptimizer } from "./late-optimizer/LateOptimizer";
 import { ExportDeclarationMergingPass } from "./late-optimizer/passes/ExportDeclarationMergingPass";
@@ -29,6 +30,10 @@ export class Pipeline {
       new UnusedExportEliminationPass(this.projectUnit, entryModules).run();
     }
 
+    // Shared analysis manager — caches analysis results across passes
+    // within each function, and project-level analyses across all functions.
+    const AM = new AnalysisManager();
+
     // oxlint-disable-next-line typescript/no-explicit-any
     const context = new Map<string, any>();
     const callGraph = new CallGraph(this.projectUnit);
@@ -50,16 +55,25 @@ export class Pipeline {
             this.projectUnit,
             this.options,
             context,
+            AM,
           ).run();
           functionIR.blocks = optimizerResult.blocks;
         }
 
         // Phase 2: SSA elimination.
-        new SSAEliminator(functionIR, moduleIR, ssaBuilderResult.phis).eliminate();
+        new SSAEliminator(functionIR, moduleIR).eliminate();
+
+        // Invalidate function analyses — SSA elimination rewrites the IR.
+        AM.invalidateFunction(functionIR);
 
         // Phase 3: Post-SSA cleanup (fixpoint loop).
         if (this.options.enableLateOptimizer) {
-          const lateOptimizerResult = new LateOptimizer(moduleIR, functionIR, this.options).run();
+          const lateOptimizerResult = new LateOptimizer(
+            moduleIR,
+            functionIR,
+            this.options,
+            AM,
+          ).run();
           functionIR.blocks = lateOptimizerResult.blocks;
         }
 

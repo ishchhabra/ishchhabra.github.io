@@ -3,6 +3,7 @@ import { ProjectUnit } from "../../frontend/ProjectBuilder";
 import { BasicBlock, BlockId } from "../../ir";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { ModuleIR } from "../../ir/core/ModuleIR";
+import { AnalysisManager } from "../analysis/AnalysisManager";
 import { CallGraph } from "../analysis/CallGraph";
 import { AlgebraicSimplificationPass } from "../passes/AlgebraicSimplificationPass";
 import { ConstantPropagationPass } from "../passes/ConstantPropagationPass";
@@ -27,6 +28,7 @@ export class Optimizer {
     private readonly options: CompilerOptions,
     // oxlint-disable-next-line typescript/no-explicit-any
     private readonly context: Map<string, any>,
+    private readonly AM: AnalysisManager,
   ) {}
 
   public run(): OptimizerResult {
@@ -44,7 +46,10 @@ export class Optimizer {
           this.context,
           this.options,
         ).run();
-        changed ||= constantPropagationResult.changed;
+        if (constantPropagationResult.changed) {
+          changed = true;
+          this.AM.invalidateFunction(this.functionIR);
+        }
         blocks = constantPropagationResult.blocks;
       }
 
@@ -52,7 +57,10 @@ export class Optimizer {
         const algebraicSimplificationResult = new AlgebraicSimplificationPass(
           this.functionIR,
         ).run();
-        changed ||= algebraicSimplificationResult.changed;
+        if (algebraicSimplificationResult.changed) {
+          changed = true;
+          this.AM.invalidateFunction(this.functionIR);
+        }
         blocks = algebraicSimplificationResult.blocks;
       }
 
@@ -60,35 +68,45 @@ export class Optimizer {
         const cfgSimplificationResult = new CFGSimplificationPass(
           this.functionIR,
           this.moduleIR,
-          this.ssa.phis,
         ).run();
-        changed ||= cfgSimplificationResult.changed;
+        if (cfgSimplificationResult.changed) {
+          changed = true;
+          this.AM.invalidateFunction(this.functionIR);
+        }
         blocks = cfgSimplificationResult.blocks;
       }
 
       if (this.options.enablePhiOptimizationPass) {
         const phiOptimizationResult = new PhiOptimizationPass(
           this.functionIR,
-          this.ssa.phis,
           this.moduleIR.environment,
         ).run();
-        changed ||= phiOptimizationResult.changed;
+        if (phiOptimizationResult.changed) {
+          changed = true;
+          this.AM.invalidateFunction(this.functionIR);
+        }
         blocks = phiOptimizationResult.blocks;
       }
 
       if (this.options.enableCapturePruningPass) {
-        const capturePruningResult = new CapturePruningPass(this.functionIR).run();
-        changed ||= capturePruningResult.changed;
+        const capturePruningResult = new CapturePruningPass(this.functionIR, this.AM).run();
+        if (capturePruningResult.changed) {
+          changed = true;
+          this.AM.invalidateFunction(this.functionIR);
+        }
         blocks = capturePruningResult.blocks;
       }
 
       if (this.options.enableDeadCodeEliminationPass) {
         const deadCodeEliminationResult = new DeadCodeEliminationPass(
           this.functionIR,
-          this.ssa.phis,
           this.moduleIR.environment,
+          this.AM,
         ).run();
-        changed ||= deadCodeEliminationResult.changed;
+        if (deadCodeEliminationResult.changed) {
+          changed = true;
+          this.AM.invalidateFunction(this.functionIR);
+        }
         blocks = deadCodeEliminationResult.blocks;
       }
 
@@ -98,9 +116,11 @@ export class Optimizer {
           this.moduleIR,
           this.callGraph,
           this.projectUnit,
-          this.ssa.phis,
         ).run();
-        changed ||= functionInliningResult.changed;
+        if (functionInliningResult.changed) {
+          changed = true;
+          this.AM.invalidateFunction(this.functionIR);
+        }
         blocks = functionInliningResult.blocks;
       }
     }

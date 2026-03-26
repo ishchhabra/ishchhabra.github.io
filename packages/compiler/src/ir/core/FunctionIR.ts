@@ -10,6 +10,7 @@ import { BaseInstruction } from "../base";
 import { BasicBlock, BlockId } from "./Block";
 import { Place } from "./Place";
 import { BaseStructure } from "./Structure";
+import type { Phi } from "../../pipeline/ssa/Phi";
 
 /**
  * Simulated opaque type for FunctionIR to prevent using normal numbers as ids
@@ -29,6 +30,12 @@ export class FunctionIR {
   public immediateDominators!: Map<BlockId, BlockId | undefined>;
   public dominanceFrontier!: Map<BlockId, Set<BlockId>>;
   public backEdges!: Map<BlockId, Set<BlockId>>;
+
+  /**
+   * SSA phi nodes for this function. Set by SSABuilder after SSA
+   * construction. Empty before SSA and after SSA elimination.
+   */
+  public phis: Set<Phi> = new Set();
 
   get entryBlockId(): BlockId {
     return this.blocks.keys().next().value!;

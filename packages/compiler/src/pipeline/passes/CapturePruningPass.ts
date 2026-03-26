@@ -4,6 +4,8 @@ import { Place } from "../../ir/core/Place";
 import { ArrowFunctionExpressionInstruction } from "../../ir/instructions/value/ArrowFunctionExpression";
 import { FunctionDeclarationInstruction } from "../../ir/instructions/declaration/Function";
 import { FunctionExpressionInstruction } from "../../ir/instructions/value/FunctionExpression";
+import { AnalysisManager } from "../analysis/AnalysisManager";
+import { DefUseAnalysis } from "../analysis/DefUseAnalysis";
 import { BaseOptimizationPass, OptimizationResult } from "../late-optimizer/OptimizationPass";
 
 type FunctionBearingInstruction =
@@ -71,15 +73,14 @@ function rebuildWithCaptures(instr: FunctionBearingInstruction, newCaptures: Pla
  *
  * This pass reconciles the two: for each function-bearing instruction, it
  * checks which captureParams are actually read inside the inner function
- * body, and removes capture/captureParam pairs that are dead.
- *
- * This is intentionally not part of the inlining pass or DCE — captures
- * are derived cross-scope metadata that can be invalidated by *any*
- * transformation, so a dedicated reconciliation pass keeps concerns
- * separated and composes with future passes.
+ * body (via the cached DefUseAnalysis), and removes capture/captureParam
+ * pairs that are dead.
  */
 export class CapturePruningPass extends BaseOptimizationPass {
-  constructor(protected readonly functionIR: FunctionIR) {
+  constructor(
+    protected readonly functionIR: FunctionIR,
+    private readonly AM: AnalysisManager,
+  ) {
     super(functionIR);
   }
 
@@ -96,39 +97,35 @@ export class CapturePruningPass extends BaseOptimizationPass {
 
         const { functionIR: innerFunctionIR, captures } = fields;
 
-        // Collect every identifier read inside the inner function.
-        const readIds = new Set<IdentifierId>();
+        // Use the cached DefUseAnalysis for the inner function to check
+        // which captureParams are actually read.
+        const innerDefUse = this.AM.get(DefUseAnalysis, innerFunctionIR);
+
+        // Also check header reads (parameter bindings) — these are not
+        // in blocks, so DefUseAnalysis doesn't cover them.
+        const headerReadIds = new Set<IdentifierId>();
         for (const headerInstr of innerFunctionIR.header) {
           for (const place of headerInstr.getReadPlaces()) {
-            readIds.add(place.identifier.id);
-          }
-        }
-        for (const innerBlock of innerFunctionIR.blocks.values()) {
-          for (const innerInstr of innerBlock.instructions) {
-            for (const place of innerInstr.getReadPlaces()) {
-              readIds.add(place.identifier.id);
-            }
-          }
-          if (innerBlock.terminal) {
-            for (const place of innerBlock.terminal.getReadPlaces()) {
-              readIds.add(place.identifier.id);
-            }
-          }
-        }
-        for (const structure of innerFunctionIR.structures.values()) {
-          for (const place of structure.getReadPlaces()) {
-            readIds.add(place.identifier.id);
+            headerReadIds.add(place.identifier.id);
           }
         }
 
-        // Determine which capture slots are still live.  Each scope level
-        // captures from its immediate parent (not the original declaring
-        // scope), so a captureParam is live when its identifier is read
-        // by any instruction inside the inner function.
+        // Also check structure reads.
+        const structureReadIds = new Set<IdentifierId>();
+        for (const structure of innerFunctionIR.structures.values()) {
+          for (const place of structure.getReadPlaces()) {
+            structureReadIds.add(place.identifier.id);
+          }
+        }
+
+        const isRead = (id: IdentifierId): boolean =>
+          innerDefUse.isUsed(id) || headerReadIds.has(id) || structureReadIds.has(id);
+
+        // Determine which capture slots are still live.
         const captureParams = innerFunctionIR.captureParams;
         const liveIndices: number[] = [];
         for (let j = 0; j < captureParams.length; j++) {
-          if (readIds.has(captureParams[j].identifier.id)) {
+          if (isRead(captureParams[j].identifier.id)) {
             liveIndices.push(j);
           }
         }
@@ -152,6 +149,10 @@ export class CapturePruningPass extends BaseOptimizationPass {
 
         changed = true;
       }
+    }
+
+    if (changed) {
+      this.AM.invalidateFunction(this.functionIR);
     }
 
     return { changed };

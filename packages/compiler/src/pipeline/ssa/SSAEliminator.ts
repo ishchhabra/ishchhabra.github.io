@@ -24,11 +24,10 @@ export class SSAEliminator {
   constructor(
     private readonly functionIR: FunctionIR,
     private readonly moduleIR: ModuleIR,
-    private readonly phis: Set<Phi>,
   ) {}
 
   public eliminate(): SSAEliminationResult {
-    for (const phi of this.phis) {
+    for (const phi of this.functionIR.phis) {
       // Single-operand phis are redundant but must still be declared —
       // SSA renaming already inserted references to them. When the
       // optimizer is enabled, ConstantPropagation degrades these before

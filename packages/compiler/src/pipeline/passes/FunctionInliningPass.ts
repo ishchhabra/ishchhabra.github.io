@@ -53,9 +53,12 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     private readonly moduleIR: ModuleIR,
     private readonly callGraph: CallGraph,
     private readonly projectUnit: ProjectUnit,
-    private readonly phis: Set<Phi>,
   ) {
     super(functionIR);
+  }
+
+  private get phis(): Set<Phi> {
+    return this.functionIR.phis;
   }
 
   public step() {

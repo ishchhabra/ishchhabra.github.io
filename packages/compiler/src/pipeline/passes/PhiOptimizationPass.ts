@@ -28,10 +28,13 @@ import { Phi } from "../ssa/Phi";
 export class PhiOptimizationPass extends BaseOptimizationPass {
   constructor(
     protected readonly functionIR: FunctionIR,
-    private readonly phis: Set<Phi>,
     private readonly environment: Environment,
   ) {
     super(functionIR);
+  }
+
+  private get phis(): Set<Phi> {
+    return this.functionIR.phis;
   }
 
   protected step(): OptimizationResult {

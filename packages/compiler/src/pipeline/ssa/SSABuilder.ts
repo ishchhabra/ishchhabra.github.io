@@ -39,6 +39,7 @@ export class SSABuilder {
   public build(): SSA {
     const phis = this.placePhi();
     this.rename(phis);
+    this.functionIR.phis = phis;
     return { phis };
   }
 

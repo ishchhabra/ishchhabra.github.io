@@ -3,7 +3,6 @@ import { FunctionIR } from "../ir/core/FunctionIR";
 import { ModuleIR } from "../ir/core/ModuleIR";
 import { JumpTerminal } from "../ir/core/Terminal";
 import { BaseOptimizationPass, OptimizationResult } from "./late-optimizer/OptimizationPass";
-import { Phi } from "./ssa/Phi";
 
 /**
  * Textbook CFG simplification pass.
@@ -27,9 +26,12 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
   constructor(
     protected readonly functionIR: FunctionIR,
     private readonly moduleIR: ModuleIR,
-    private readonly phis?: Set<Phi>,
   ) {
     super(functionIR);
+  }
+
+  private get phis(): Set<Phi> {
+    return this.functionIR.phis;
   }
 
   protected step(): OptimizationResult {
@@ -225,7 +227,7 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
 
       // Migrate phi operands: any phi that references blockId now
       // references each of blockId's CFG predecessors with the same value.
-      if (this.phis && preds) {
+      if (preds) {
         for (const phi of this.phis) {
           const operand = phi.operands.get(blockId);
           if (operand !== undefined) {
@@ -267,10 +269,8 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
 
   private deleteBlock(blockId: BlockId): void {
     // Remove phi operands that reference this block.
-    if (this.phis) {
-      for (const phi of this.phis) {
-        phi.operands.delete(blockId);
-      }
+    for (const phi of this.phis) {
+      phi.operands.delete(blockId);
     }
 
     this.functionIR.blocks.delete(blockId);
@@ -278,7 +278,6 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
   }
 
   private rekeyPhiOperands(fromBlockId: BlockId, toBlockId: BlockId): void {
-    if (!this.phis) return;
     for (const phi of this.phis) {
       const operand = phi.operands.get(fromBlockId);
       if (operand !== undefined) {
@@ -305,7 +304,6 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
   }
 
   private blockHasPhis(blockId: BlockId): boolean {
-    if (!this.phis) return false;
     for (const phi of this.phis) {
       if (phi.blockId === blockId) return true;
     }

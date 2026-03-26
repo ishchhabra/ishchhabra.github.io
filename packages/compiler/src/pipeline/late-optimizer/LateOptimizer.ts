@@ -2,6 +2,7 @@ import { CompilerOptions } from "../../compile";
 import { BasicBlock, BlockId } from "../../ir";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { ModuleIR } from "../../ir/core/ModuleIR";
+import { AnalysisManager } from "../analysis/AnalysisManager";
 import { LateCopyPropagationPass } from "./passes/LateCopyPropagationPass";
 import { LateDeadCodeEliminationPass } from "./passes/LateDeadCodeEliminationPass";
 import { LateDeadStoreEliminationPass } from "./passes/LateDeadStoreEliminationPass";
@@ -25,6 +26,7 @@ export class LateOptimizer {
     private readonly moduleIR: ModuleIR,
     private readonly functionIR: FunctionIR,
     private readonly options: CompilerOptions,
+    private readonly AM: AnalysisManager,
   ) {}
 
   public run(): LateOptimizerResult {
@@ -36,7 +38,10 @@ export class LateOptimizer {
 
       if (this.options.enableLateCopyPropagationPass) {
         const copyPropagationResult = new LateCopyPropagationPass(this.functionIR).run();
-        changed ||= copyPropagationResult.changed;
+        if (copyPropagationResult.changed) {
+          changed = true;
+          this.AM.invalidateFunction(this.functionIR);
+        }
         blocks = copyPropagationResult.blocks;
       }
 
@@ -44,7 +49,10 @@ export class LateOptimizer {
         const deadStoreEliminationResult = new LateDeadStoreEliminationPass(
           this.functionIR,
         ).run();
-        changed ||= deadStoreEliminationResult.changed;
+        if (deadStoreEliminationResult.changed) {
+          changed = true;
+          this.AM.invalidateFunction(this.functionIR);
+        }
         blocks = deadStoreEliminationResult.blocks;
       }
 
@@ -52,8 +60,12 @@ export class LateOptimizer {
         const lateDeadCodeEliminationResult = new LateDeadCodeEliminationPass(
           this.functionIR,
           this.moduleIR.environment,
+          this.AM,
         ).run();
-        changed ||= lateDeadCodeEliminationResult.changed;
+        if (lateDeadCodeEliminationResult.changed) {
+          changed = true;
+          this.AM.invalidateFunction(this.functionIR);
+        }
         blocks = lateDeadCodeEliminationResult.blocks;
       }
     }
