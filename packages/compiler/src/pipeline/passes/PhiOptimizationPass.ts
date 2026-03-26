@@ -1,5 +1,13 @@
 import { Environment } from "../../environment";
-import { BaseInstruction, BlockId, StoreLocalInstruction } from "../../ir";
+import {
+  BaseInstruction,
+  BlockId,
+  DeclarationInstruction,
+  ExpressionStatementInstruction,
+  ModuleInstruction,
+  StoreContextInstruction,
+  StoreLocalInstruction,
+} from "../../ir";
 import { Place } from "../../ir/core/Place";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { BranchTerminal, JumpTerminal } from "../../ir/core/Terminal";
@@ -108,6 +116,13 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
     const consResult = this.extractArmValue(consBlock, consBlockId, blockIdB, phi, consOperandPlace);
     const altResult = this.extractArmValue(altBlock, altBlockId, blockIdC, phi, altOperandPlace);
     if (!consResult || !altResult) return false;
+
+    // Ternary arms are expression-only contexts — code generation discards
+    // any statements they produce. If either arm's remaining instructions
+    // contain statement-producing instructions, the diamond cannot be
+    // collapsed into a ternary without losing declarations or side effects.
+    if (this.armHasStatements(consResult.remainingInstrs)) return false;
+    if (this.armHasStatements(altResult.remainingInstrs)) return false;
 
     // === Apply the transformation ===
 
@@ -304,5 +319,32 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
     }
 
     return { valuePlace: operandPlace, remainingInstrs: [...block.instructions] };
+  }
+
+  /**
+   * Returns true if the instruction list contains any statement-producing
+   * instruction. Ternary arms are expression-only contexts — code
+   * generation discards statements from arm blocks, so any instruction
+   * that produces a statement (variable declaration, side-effect wrapper,
+   * function/class declaration, etc.) would be silently dropped.
+   *
+   * StoreLocal instructions that are phi stores (their lval's
+   * declarationId matches a known phi) are exempt — SSA elimination
+   * handles their declarations and copies independently.
+   */
+  private armHasStatements(instrs: BaseInstruction[]): boolean {
+    const phiDeclarationIds = new Set([...this.phis].map((phi) => phi.declarationId));
+
+    return instrs.some((instr) => {
+      if (instr instanceof StoreLocalInstruction && instr.emit) {
+        return !phiDeclarationIds.has(instr.lval.identifier.declarationId);
+      }
+      return (
+        (instr instanceof StoreContextInstruction && instr.emit) ||
+        instr instanceof ExpressionStatementInstruction ||
+        instr instanceof DeclarationInstruction ||
+        instr instanceof ModuleInstruction
+      );
+    });
   }
 }
