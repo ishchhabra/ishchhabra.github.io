@@ -98,6 +98,7 @@ export class Optimizer {
           this.moduleIR,
           this.callGraph,
           this.projectUnit,
+          this.ssa.phis,
         ).run();
         changed ||= functionInliningResult.changed;
         blocks = functionInliningResult.blocks;

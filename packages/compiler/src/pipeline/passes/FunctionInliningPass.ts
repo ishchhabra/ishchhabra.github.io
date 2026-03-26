@@ -5,6 +5,7 @@ import {
   ArrayPatternInstruction,
   BaseInstruction,
   BasicBlock,
+  BlockId,
   IdentifierId,
   LiteralInstruction,
   RestElementInstruction,
@@ -15,10 +16,14 @@ import { FunctionIR, FunctionIRId } from "../../ir/core/FunctionIR";
 import { Identifier } from "../../ir/core/Identifier";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { Place } from "../../ir/core/Place";
+import { BranchTerminal, JumpTerminal } from "../../ir/core/Terminal";
+import { TernaryStructure } from "../../ir/core/Structure";
+import { makeInstructionId } from "../../ir/base/Instruction";
 import { AssignmentPatternInstruction } from "../../ir/instructions/pattern/AssignmentPattern";
 import { CallExpressionInstruction } from "../../ir/instructions/value/CallExpression";
 import { CallGraph } from "../analysis/CallGraph";
 import { BaseOptimizationPass } from "../late-optimizer/OptimizationPass";
+import { Phi } from "../ssa/Phi";
 
 /**
  * A pass that inlines calls to small or trivial functions directly into the
@@ -48,6 +53,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     private readonly moduleIR: ModuleIR,
     private readonly callGraph: CallGraph,
     private readonly projectUnit: ProjectUnit,
+    private readonly phis: Set<Phi>,
   ) {
     super(functionIR);
   }
@@ -55,7 +61,20 @@ export class FunctionInliningPass extends BaseOptimizationPass {
   public step() {
     let changed = false;
 
-    for (const [, block] of this.functionIR.blocks) {
+    for (const [blockId, block] of this.functionIR.blocks) {
+      // If this block is a ternary arm that contains an inlinable call,
+      // dissolve the ternary back into an if/else diamond first. This
+      // lets us inline into a normal block; PhiOptimizationPass will
+      // re-evaluate the diamond on the next fixpoint iteration and
+      // collapse it back into a ternary if the arms remain expression-only.
+      if (this.blockHasInlinableCall(block)) {
+        const owning = this.findOwningTernary(blockId);
+        if (owning) {
+          this.dissolveTernary(owning.headerBlockId, owning.structure);
+          changed = true;
+        }
+      }
+
       for (let index = 0; index < block.instructions.length; index++) {
         const instr = block.instructions[index];
         if (!(instr instanceof CallExpressionInstruction)) {
@@ -91,6 +110,106 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     }
 
     return { changed };
+  }
+
+  /**
+   * Returns true if the block contains at least one call expression that
+   * would be inlinable, without actually performing the inline.
+   */
+  private blockHasInlinableCall(block: BasicBlock): boolean {
+    for (const instr of block.instructions) {
+      if (!(instr instanceof CallExpressionInstruction)) continue;
+
+      const calleeIR = this.callGraph.resolveFunctionFromCallExpression(this.moduleIR, instr);
+      if (calleeIR === undefined) continue;
+
+      const { modulePath, functionIRId } = calleeIR;
+      const moduleIR = this.projectUnit.modules.get(modulePath);
+      if (!moduleIR) continue;
+
+      const functionIR = moduleIR.functions.get(functionIRId);
+      if (!functionIR) continue;
+
+      if (this.isInlinableFunction(functionIR, modulePath)) return true;
+    }
+    return false;
+  }
+
+  /**
+   * If `blockId` is a consequent or alternate arm of a TernaryStructure,
+   * returns that structure and its header block ID. Otherwise returns null.
+   */
+  private findOwningTernary(
+    blockId: BlockId,
+  ): { headerBlockId: BlockId; structure: TernaryStructure } | null {
+    for (const [headerBlockId, structure] of this.functionIR.structures) {
+      if (
+        structure instanceof TernaryStructure &&
+        (structure.consequent === blockId || structure.alternate === blockId)
+      ) {
+        return { headerBlockId, structure };
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Dissolves a TernaryStructure back into a normal if/else diamond so
+   * that its arm blocks can be inlined into. Creates a new Phi to merge
+   * the arm values at the fallthrough block. PhiOptimizationPass will
+   * re-evaluate the diamond on the next fixpoint iteration.
+   */
+  private dissolveTernary(headerBlockId: BlockId, structure: TernaryStructure): void {
+    const environment = this.moduleIR.environment;
+
+    // Remove the structure.
+    this.functionIR.structures.delete(headerBlockId);
+
+    // Restore the header's BranchTerminal.
+    const headerBlock = this.functionIR.blocks.get(headerBlockId)!;
+    const terminalId = headerBlock.terminal
+      ? headerBlock.terminal.id
+      : makeInstructionId(environment.nextInstructionId++);
+    headerBlock.terminal = new BranchTerminal(
+      terminalId,
+      structure.test,
+      structure.consequent,
+      structure.alternate,
+      structure.fallthrough,
+    );
+
+    // Restore JumpTerminals on each arm.
+    const consBlock = this.functionIR.blocks.get(structure.consequent)!;
+    const altBlock = this.functionIR.blocks.get(structure.alternate)!;
+    consBlock.terminal = new JumpTerminal(
+      makeInstructionId(environment.nextInstructionId++),
+      structure.fallthrough,
+    );
+    altBlock.terminal = new JumpTerminal(
+      makeInstructionId(environment.nextInstructionId++),
+      structure.fallthrough,
+    );
+
+    // Create a Phi that merges the arm values into resultPlace.
+    // Register the declaration so SSAEliminator can find the dominator
+    // block for the `let` declaration it emits.
+    const declId = structure.resultPlace.identifier.declarationId;
+    if (!environment.declToPlaces.has(declId)) {
+      environment.registerDeclaration(declId, headerBlockId, structure.resultPlace.id);
+    }
+
+    const phi = new Phi(
+      structure.fallthrough,
+      structure.resultPlace,
+      new Map<BlockId, Place>([
+        [structure.consequent, structure.consequentValue],
+        [structure.alternate, structure.alternateValue],
+      ]),
+      declId,
+    );
+    this.phis.add(phi);
+
+    this.functionIR.recomputeCFG();
   }
 
   /**
@@ -296,15 +415,27 @@ export class FunctionInliningPass extends BaseOptimizationPass {
       environment.placeToInstruction.set(rewrittenInstr.place.id, rewrittenInstr);
     }
 
-    // Also update the block's terminal if it references the old call place
-    if (
-      callExpressionBlock.terminal instanceof ReturnTerminal &&
-      callExpressionBlock.terminal.value?.identifier === callExpressionInstr.place.identifier
-    ) {
-      callExpressionBlock.terminal = new ReturnTerminal(
-        callExpressionBlock.terminal.id,
-        returnPlace,
-      );
+    // Update the block's terminal if it references the old call result place.
+    if (callExpressionBlock.terminal) {
+      callExpressionBlock.terminal = callExpressionBlock.terminal.rewrite(retRewriteMap);
+    }
+
+    // Update any structures that reference the old call result place
+    // (e.g. a TernaryStructure whose test was the inlined call's result).
+    for (const [blockId, structure] of this.functionIR.structures) {
+      const rewritten = structure.rewrite(retRewriteMap);
+      if (rewritten !== structure) {
+        this.functionIR.structures.set(blockId, rewritten);
+      }
+    }
+
+    // Update any phi operands that reference the old call result place.
+    for (const phi of this.phis) {
+      for (const [phiBlockId, operandPlace] of phi.operands) {
+        if (operandPlace.identifier === callExpressionInstr.place.identifier) {
+          phi.operands.set(phiBlockId, returnPlace);
+        }
+      }
     }
   }
 
