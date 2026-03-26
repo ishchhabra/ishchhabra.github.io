@@ -408,16 +408,21 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     const retRewriteMap = new Map<Identifier, Place>();
     retRewriteMap.set(callExpressionInstr.place.identifier, returnPlace);
 
-    for (let i = index + instrs.length; i < callExpressionBlock.instructions.length; i++) {
-      const oldInstr = callExpressionBlock.instructions[i];
-      const rewrittenInstr = oldInstr.rewrite(retRewriteMap);
-      callExpressionBlock.instructions[i] = rewrittenInstr;
-      environment.placeToInstruction.set(rewrittenInstr.place.id, rewrittenInstr);
-    }
-
-    // Update the block's terminal if it references the old call result place.
-    if (callExpressionBlock.terminal) {
-      callExpressionBlock.terminal = callExpressionBlock.terminal.rewrite(retRewriteMap);
+    // Rewrite all references to the old call result across the entire
+    // function — not just the inlined block, but also other blocks
+    // (e.g. a ternary's fallthrough) that may reference the call result.
+    for (const [, rewriteBlock] of this.functionIR.blocks) {
+      const startIdx = rewriteBlock === callExpressionBlock ? index + instrs.length : 0;
+      for (let i = startIdx; i < rewriteBlock.instructions.length; i++) {
+        const rewrittenInstr = rewriteBlock.instructions[i].rewrite(retRewriteMap);
+        if (rewrittenInstr !== rewriteBlock.instructions[i]) {
+          rewriteBlock.instructions[i] = rewrittenInstr;
+          environment.placeToInstruction.set(rewrittenInstr.place.id, rewrittenInstr);
+        }
+      }
+      if (rewriteBlock.terminal) {
+        rewriteBlock.terminal = rewriteBlock.terminal.rewrite(retRewriteMap);
+      }
     }
 
     // Update any structures that reference the old call result place
