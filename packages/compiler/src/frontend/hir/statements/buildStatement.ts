@@ -9,6 +9,7 @@ import { buildBlockStatement } from "./buildBlockStatement";
 import { buildBreakStatement } from "./buildBreakStatement";
 import { buildContinueStatement } from "./buildContinueStatement";
 import { buildClassDeclaration } from "./buildClassDeclaration";
+import { buildDoWhileStatement } from "./buildDoWhileStatement";
 import { buildExportAllDeclaration } from "./buildExportAllDeclaration";
 import { buildExportDefaultDeclaration } from "./buildExportDefaultDeclaration";
 import { buildExportNamedDeclaration } from "./buildExportNamedDeclaration";
@@ -54,6 +55,9 @@ export function buildStatement(
     case "ExportNamedDeclaration":
       nodePath.assertExportNamedDeclaration();
       return buildExportNamedDeclaration(nodePath, functionBuilder, moduleBuilder, environment);
+    case "DoWhileStatement":
+      nodePath.assertDoWhileStatement();
+      return buildDoWhileStatement(nodePath, functionBuilder, moduleBuilder, environment);
     case "ForStatement":
       nodePath.assertForStatement();
       return buildForStatement(nodePath, functionBuilder, moduleBuilder, environment);
