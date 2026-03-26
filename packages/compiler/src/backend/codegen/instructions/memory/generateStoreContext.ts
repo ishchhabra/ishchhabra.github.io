@@ -27,6 +27,6 @@ export function generateStoreContextInstruction(
   // Reassignment — emit `lval = value`
   const assignment = t.assignmentExpression("=", lval, value);
   const node = t.expressionStatement(assignment);
-  generator.places.set(instruction.place.id, node);
+  generator.places.set(instruction.place.id, assignment);
   return node;
 }
