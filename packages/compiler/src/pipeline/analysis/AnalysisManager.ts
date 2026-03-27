@@ -50,7 +50,9 @@ export class PreservedAnalyses {
   }
 
   /** Check if a specific analysis was preserved. */
-  isPreserved(analysisClass: FunctionAnalysisClass<unknown> | ProjectAnalysisClass<unknown>): boolean {
+  isPreserved(
+    analysisClass: FunctionAnalysisClass<unknown> | ProjectAnalysisClass<unknown>,
+  ): boolean {
     return this._all || this.preserved.has(analysisClass);
   }
 
@@ -107,28 +109,16 @@ export class AnalysisManager {
    * Computes lazily on first access, returns cached result on
    * subsequent calls until invalidated.
    */
-  get<Result>(
-    analysisClass: FunctionAnalysisClass<Result>,
-    ir: FunctionIR,
-  ): Result;
-  get<Result>(
-    analysisClass: ProjectAnalysisClass<Result>,
-    ir: ProjectUnit,
-  ): Result;
+  get<Result>(analysisClass: FunctionAnalysisClass<Result>, ir: FunctionIR): Result;
+  get<Result>(analysisClass: ProjectAnalysisClass<Result>, ir: ProjectUnit): Result;
   get<Result>(
     analysisClass: FunctionAnalysisClass<Result> | ProjectAnalysisClass<Result>,
     ir: FunctionIR | ProjectUnit,
   ): Result {
     if (isFunctionIR(ir)) {
-      return this.getFunction(
-        analysisClass as FunctionAnalysisClass<Result>,
-        ir,
-      );
+      return this.getFunction(analysisClass as FunctionAnalysisClass<Result>, ir);
     }
-    return this.getProject(
-      analysisClass as ProjectAnalysisClass<Result>,
-      ir,
-    );
+    return this.getProject(analysisClass as ProjectAnalysisClass<Result>, ir);
   }
 
   private getFunction<Result>(
@@ -189,9 +179,7 @@ export class AnalysisManager {
    * Called when cross-module structure changes (exports modified,
    * modules added/removed, etc.).
    */
-  invalidateProject(
-    preserved: PreservedAnalyses = PreservedAnalyses.none(),
-  ): void {
+  invalidateProject(preserved: PreservedAnalyses = PreservedAnalyses.none()): void {
     for (const analysisClass of this.projectCache.keys()) {
       if (!preserved.isPreserved(analysisClass)) {
         this.projectCache.delete(analysisClass);

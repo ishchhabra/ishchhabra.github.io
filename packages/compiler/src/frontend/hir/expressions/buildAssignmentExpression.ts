@@ -59,12 +59,7 @@ function buildIdentifierAssignment(
   // the right side is only evaluated when the condition requires it.
   // Lower to control flow: if (<condition>) x = y;
   if (operator === "||=" || operator === "&&=" || operator === "??=") {
-    return buildLogicalIdentifierAssignment(
-      nodePath,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
+    return buildLogicalIdentifierAssignment(nodePath, functionBuilder, moduleBuilder, environment);
   }
 
   const rightPlace = buildAssignmentRight(nodePath, functionBuilder, moduleBuilder, environment);
@@ -131,7 +126,14 @@ function buildLogicalCondition(
   );
   const place = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
-    environment.createInstruction(BinaryExpressionInstruction, place, undefined, "==", valuePlace, nullPlace),
+    environment.createInstruction(
+      BinaryExpressionInstruction,
+      place,
+      undefined,
+      "==",
+      valuePlace,
+      nullPlace,
+    ),
   );
   return place;
 }
@@ -158,7 +160,12 @@ function emitResultVariable(
   const storePlace = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
     environment.createInstruction(
-      StoreLocalInstruction, storePlace, undefined, bindingPlace, initialValue, "let",
+      StoreLocalInstruction,
+      storePlace,
+      undefined,
+      bindingPlace,
+      initialValue,
+      "let",
     ),
   );
   return { bindingPlace, storePlace };
@@ -253,7 +260,10 @@ function buildLogicalIdentifierAssignment(
 
   // Store x = y.
   const { place: lvalPlace } = buildIdentifierAssignmentLeft(
-    leftPath, nodePath, functionBuilder, environment,
+    leftPath,
+    nodePath,
+    functionBuilder,
+    environment,
   );
   const StoreClass = environment.contextDeclarationIds.has(declarationId)
     ? StoreContextInstruction
@@ -262,7 +272,10 @@ function buildLogicalIdentifierAssignment(
     environment.createInstruction(
       StoreClass,
       environment.createPlace(environment.createIdentifier()),
-      nodePath, lvalPlace, rightPlace, "const",
+      nodePath,
+      lvalPlace,
+      rightPlace,
+      "const",
     ),
   );
 
@@ -412,13 +425,21 @@ function buildLogicalMemberAssignment(
   if (isStatic) {
     functionBuilder.addInstruction(
       environment.createInstruction(
-        LoadStaticPropertyInstruction, testPlace, nodePath, objectPlace, propertyName!,
+        LoadStaticPropertyInstruction,
+        testPlace,
+        nodePath,
+        objectPlace,
+        propertyName!,
       ),
     );
   } else {
     functionBuilder.addInstruction(
       environment.createInstruction(
-        LoadDynamicPropertyInstruction, testPlace, nodePath, objectPlace, propertyPlace!,
+        LoadDynamicPropertyInstruction,
+        testPlace,
+        nodePath,
+        objectPlace,
+        propertyPlace!,
       ),
     );
   }
@@ -426,7 +447,11 @@ function buildLogicalMemberAssignment(
   // let _result = testPlace; — cache the property read. The condition
   // and all subsequent references use _result, not testPlace, to avoid
   // re-triggering getters.
-  const { bindingPlace: resultBinding } = emitResultVariable(testPlace, functionBuilder, environment);
+  const { bindingPlace: resultBinding } = emitResultVariable(
+    testPlace,
+    functionBuilder,
+    environment,
+  );
 
   // Build the condition from the cached result, not from testPlace.
   const cachedPlace = environment.createPlace(environment.createIdentifier());
@@ -462,13 +487,23 @@ function buildLogicalMemberAssignment(
   if (isStatic) {
     functionBuilder.addInstruction(
       environment.createInstruction(
-        StoreStaticPropertyInstruction, storePlace, nodePath, objectPlace, propertyName!, rightPlace,
+        StoreStaticPropertyInstruction,
+        storePlace,
+        nodePath,
+        objectPlace,
+        propertyName!,
+        rightPlace,
       ),
     );
   } else {
     functionBuilder.addInstruction(
       environment.createInstruction(
-        StoreDynamicPropertyInstruction, storePlace, nodePath, objectPlace, propertyPlace!, rightPlace,
+        StoreDynamicPropertyInstruction,
+        storePlace,
+        nodePath,
+        objectPlace,
+        propertyPlace!,
+        rightPlace,
       ),
     );
   }

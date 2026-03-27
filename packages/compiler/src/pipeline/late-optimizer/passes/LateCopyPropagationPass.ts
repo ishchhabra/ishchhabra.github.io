@@ -92,12 +92,10 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
             resolved &&
             resolved.identifier.declarationId !== instr.value.identifier.declarationId
           ) {
-            block.replaceInstruction(i, new LoadLocalInstruction(
-              instr.id,
-              instr.place,
-              instr.nodePath,
-              resolved,
-            ));
+            block.replaceInstruction(
+              i,
+              new LoadLocalInstruction(instr.id, instr.place, instr.nodePath, resolved),
+            );
             placeSource.set(instr.place.identifier.id, resolved);
             changed = true;
           }
@@ -137,10 +135,7 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
 
     for (const block of this.functionIR.blocks.values()) {
       // Index the last StoreLocal per SSA variable (by lval IdentifierId).
-      const storeById = new Map<
-        IdentifierId,
-        { index: number; instr: StoreLocalInstruction }
-      >();
+      const storeById = new Map<IdentifierId, { index: number; instr: StoreLocalInstruction }>();
       for (let i = 0; i < block.instructions.length; i++) {
         const instr = block.instructions[i];
         if (instr instanceof StoreLocalInstruction) {
@@ -183,13 +178,10 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
         if (toRemove.has(store.index)) continue;
 
         // Rewrite: Copy now references the expression directly.
-        block.replaceInstruction(i, new CopyInstruction(
-          copy.id,
-          copy.place,
-          copy.nodePath,
-          copy.lval,
-          store.instr.value,
-        ));
+        block.replaceInstruction(
+          i,
+          new CopyInstruction(copy.id, copy.place, copy.nodePath, copy.lval, store.instr.value),
+        );
 
         toRemove.add(store.index); // Remove StoreLocal
         toRemove.add(loadIdx); // Remove LoadLocal
@@ -237,10 +229,7 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
         // Intersect: keep only entries present in both that agree on source.
         for (const [declId, place] of result) {
           const other = predState.get(declId);
-          if (
-            !other ||
-            other.identifier.declarationId !== place.identifier.declarationId
-          ) {
+          if (!other || other.identifier.declarationId !== place.identifier.declarationId) {
             result.delete(declId);
           }
         }

@@ -117,7 +117,13 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
     // For structure-through arms, the phi operand block is the structure's
     // fallthrough (a trampoline), not the branch target. Use the operand
     // place directly in that case.
-    const consResult = this.extractArmValue(consBlock, consBlockId, blockIdB, phi, consOperandPlace);
+    const consResult = this.extractArmValue(
+      consBlock,
+      consBlockId,
+      blockIdB,
+      phi,
+      consOperandPlace,
+    );
     const altResult = this.extractArmValue(altBlock, altBlockId, blockIdC, phi, altOperandPlace);
     if (!consResult || !altResult) return false;
 

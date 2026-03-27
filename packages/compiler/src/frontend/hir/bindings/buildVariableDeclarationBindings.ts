@@ -78,7 +78,8 @@ function buildIdentifierBindings(
   // Check that scope's own data directly rather than using getData()
   // which walks the entire scope chain and would incorrectly match a
   // same-named declaration from an enclosing function.
-  const functionScope = bindingsPath.scope.getFunctionParent() ?? bindingsPath.scope.getProgramParent();
+  const functionScope =
+    bindingsPath.scope.getFunctionParent() ?? bindingsPath.scope.getProgramParent();
   if (functionScope.data[originalName] !== undefined) return;
 
   const identifier = environment.createIdentifier();

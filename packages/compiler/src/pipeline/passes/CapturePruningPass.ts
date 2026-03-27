@@ -24,7 +24,10 @@ function getFunctionBearingFields(
   return undefined;
 }
 
-function rebuildWithCaptures(instr: FunctionBearingInstruction, newCaptures: Place[]): BaseInstruction {
+function rebuildWithCaptures(
+  instr: FunctionBearingInstruction,
+  newCaptures: Place[],
+): BaseInstruction {
   if (instr instanceof FunctionDeclarationInstruction) {
     return new FunctionDeclarationInstruction(
       instr.id,
@@ -130,10 +133,10 @@ export class CapturePruningPass extends BaseOptimizationPass {
         const newCaptures = liveIndices.map((j) => captures[j]);
         const newCaptureParams = liveIndices.map((j) => captureParams[j]);
 
-        block.replaceInstruction(i, rebuildWithCaptures(
-          instr as FunctionBearingInstruction,
-          newCaptures,
-        ));
+        block.replaceInstruction(
+          i,
+          rebuildWithCaptures(instr as FunctionBearingInstruction, newCaptures),
+        );
 
         // Update captureParams on the inner FunctionIR to match.
         captureParams.length = 0;

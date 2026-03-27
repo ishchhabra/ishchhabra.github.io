@@ -1,7 +1,7 @@
 import { getQualifiedName } from "../../../../src/pipeline/passes/resolveConstant.ts";
 
 const defines = {
-  "__DEV__": false,
+  __DEV__: false,
   "process.env.NODE_ENV": "production",
 };
 

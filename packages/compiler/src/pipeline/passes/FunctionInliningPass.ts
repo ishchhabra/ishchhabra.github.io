@@ -173,25 +173,25 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     const terminalId = headerBlock.terminal
       ? headerBlock.terminal.id
       : makeInstructionId(environment.nextInstructionId++);
-    headerBlock.replaceTerminal(new BranchTerminal(
-      terminalId,
-      structure.test,
-      structure.consequent,
-      structure.alternate,
-      structure.fallthrough,
-    ));
+    headerBlock.replaceTerminal(
+      new BranchTerminal(
+        terminalId,
+        structure.test,
+        structure.consequent,
+        structure.alternate,
+        structure.fallthrough,
+      ),
+    );
 
     // Restore JumpTerminals on each arm.
     const consBlock = this.functionIR.blocks.get(structure.consequent)!;
     const altBlock = this.functionIR.blocks.get(structure.alternate)!;
-    consBlock.replaceTerminal(new JumpTerminal(
-      makeInstructionId(environment.nextInstructionId++),
-      structure.fallthrough,
-    ));
-    altBlock.replaceTerminal(new JumpTerminal(
-      makeInstructionId(environment.nextInstructionId++),
-      structure.fallthrough,
-    ));
+    consBlock.replaceTerminal(
+      new JumpTerminal(makeInstructionId(environment.nextInstructionId++), structure.fallthrough),
+    );
+    altBlock.replaceTerminal(
+      new JumpTerminal(makeInstructionId(environment.nextInstructionId++), structure.fallthrough),
+    );
 
     // Create a Phi that merges the arm values into resultPlace.
     // Register the declaration so SSAEliminator can find the dominator
@@ -521,9 +521,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
           argPlace = undefinedLiteral.place;
         }
 
-        const bindings = funcIR.paramBindings[i].map(
-          (p) => rewriteMap.get(p.identifier) ?? p,
-        );
+        const bindings = funcIR.paramBindings[i].map((p) => rewriteMap.get(p.identifier) ?? p);
 
         const storeLocalPlace = environment.createPlace(environment.createIdentifier());
         instrs.push(

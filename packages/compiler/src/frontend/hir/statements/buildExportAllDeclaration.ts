@@ -15,12 +15,7 @@ export function buildExportAllDeclaration(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    ExportAllInstruction,
-    place,
-    nodePath,
-    source,
-  );
+  const instruction = environment.createInstruction(ExportAllInstruction, place, nodePath, source);
   functionBuilder.addInstruction(instruction);
   return place;
 }

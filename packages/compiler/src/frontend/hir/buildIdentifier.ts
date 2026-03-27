@@ -77,8 +77,8 @@ function buildReferencedIdentifier(
 
   if (
     declarationId === undefined ||
-    environment.instructions.get(environment.getDeclarationInstruction(declarationId))
-      instanceof ImportSpecifierInstruction
+    environment.instructions.get(environment.getDeclarationInstruction(declarationId)) instanceof
+      ImportSpecifierInstruction
   ) {
     const instruction = environment.createInstruction(LoadGlobalInstruction, place, nodePath, name);
     builder.addInstruction(instruction);

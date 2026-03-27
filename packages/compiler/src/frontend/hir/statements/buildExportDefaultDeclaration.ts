@@ -58,9 +58,10 @@ export function buildExportDefaultDeclaration(
   const declarationInstructionId = environment.getDeclarationInstruction(
     declarationPlace.identifier.declarationId,
   );
-  const declaration = declarationInstructionId !== undefined
-    ? environment.instructions.get(declarationInstructionId)
-    : environment.placeToInstruction.get(declarationPlace.id);
+  const declaration =
+    declarationInstructionId !== undefined
+      ? environment.instructions.get(declarationInstructionId)
+      : environment.placeToInstruction.get(declarationPlace.id);
   moduleBuilder.exports.set("default", {
     instruction,
     declaration,

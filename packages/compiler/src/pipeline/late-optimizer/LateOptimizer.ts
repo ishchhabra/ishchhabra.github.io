@@ -46,9 +46,7 @@ export class LateOptimizer {
       }
 
       if (this.options.enableLateDeadStoreEliminationPass) {
-        const deadStoreEliminationResult = new LateDeadStoreEliminationPass(
-          this.functionIR,
-        ).run();
+        const deadStoreEliminationResult = new LateDeadStoreEliminationPass(this.functionIR).run();
         if (deadStoreEliminationResult.changed) {
           changed = true;
           this.AM.invalidateFunction(this.functionIR);

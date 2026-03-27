@@ -1,5 +1,9 @@
 import { Environment } from "../../../environment";
-import { BaseInstruction, FunctionDeclarationInstruction, StoreLocalInstruction } from "../../../ir";
+import {
+  BaseInstruction,
+  FunctionDeclarationInstruction,
+  StoreLocalInstruction,
+} from "../../../ir";
 import { FunctionIR } from "../../../ir/core/FunctionIR";
 import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
 

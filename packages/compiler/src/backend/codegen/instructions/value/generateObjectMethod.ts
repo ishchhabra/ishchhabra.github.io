@@ -14,7 +14,11 @@ export function generateObjectMethodInstruction(
 
   t.assertExpression(key);
 
-  const { params, statements } = generateFunction(instruction.body, instruction.captures, generator);
+  const { params, statements } = generateFunction(
+    instruction.body,
+    instruction.captures,
+    generator,
+  );
   const node = t.objectMethod(
     instruction.kind,
     key,
