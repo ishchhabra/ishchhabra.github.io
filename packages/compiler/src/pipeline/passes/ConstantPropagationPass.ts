@@ -9,6 +9,7 @@ import {
   ExportDefaultDeclarationInstruction,
   ExportNamedDeclarationInstruction,
   ExportSpecifierInstruction,
+  Identifier,
   IdentifierId,
   JumpTerminal,
   LiteralInstruction,
@@ -202,12 +203,21 @@ export class ConstantPropagationPass extends BaseOptimizationPass {
       throw new Error(`Block ${phi.blockId} not found`);
     }
 
+    const rewriteMap = new Map<Identifier, Place>();
+    rewriteMap.set(phi.place.identifier, singleOperandPlace);
+
     phiBlock.instructions = phiBlock.instructions.map((instr) => {
       if (instr instanceof LoadPhiInstruction && phi.place.id === instr.value.id) {
         return new LoadLocalInstruction(instr.id, instr.place, instr.nodePath, singleOperandPlace);
       }
-      return instr;
+      return instr.rewrite(rewriteMap) as BaseInstruction;
     });
+
+    if (phiBlock.terminal) {
+      phiBlock.terminal = phiBlock.terminal.rewrite(rewriteMap);
+    }
+
+    this.ssa.phis.delete(phi);
   }
 
   /**
