@@ -186,10 +186,12 @@ export class ConstantPropagationPass extends BaseOptimizationPass {
         if (dominators.has(deadBlockId)) {
           phi.operands.delete(operandBlockId);
         }
+      }
 
-        if (phi.operands.size === 1) {
-          this.degradeSingleOperandPhi(phi);
-        }
+      if (phi.operands.size === 1) {
+        this.degradeSingleOperandPhi(phi);
+      } else if (phi.operands.size === 0) {
+        this.ssa.phis.delete(phi);
       }
     }
 
@@ -206,13 +208,14 @@ export class ConstantPropagationPass extends BaseOptimizationPass {
     const rewriteMap = new Map<Identifier, Place>();
     rewriteMap.set(phi.place.identifier, singleOperandPlace);
 
+    // Rewrite instructions and terminal in the phi's block to replace
+    // references to phi.place with the single remaining operand.
     phiBlock.instructions = phiBlock.instructions.map((instr) => {
       if (instr instanceof LoadPhiInstruction && phi.place.id === instr.value.id) {
         return new LoadLocalInstruction(instr.id, instr.place, instr.nodePath, singleOperandPlace);
       }
       return instr.rewrite(rewriteMap) as BaseInstruction;
     });
-
     if (phiBlock.terminal) {
       phiBlock.terminal = phiBlock.terminal.rewrite(rewriteMap);
     }

@@ -120,6 +120,17 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
     const altResult = this.extractArmValue(altBlock, altBlockId, blockIdC, phi, altOperandPlace);
     if (!consResult || !altResult) return false;
 
+    // Don't collapse if other phis at the merge block have operands from
+    // BOTH arm blocks — they form a sibling diamond that can't be
+    // represented by a single TernaryStructure. Collapsing would clear
+    // the arm terminals and orphan the sibling phi.
+    for (const otherPhi of this.phis) {
+      if (otherPhi === phi || otherPhi.blockId !== mergeBlockId) continue;
+      if (otherPhi.operands.has(blockIdB) && otherPhi.operands.has(blockIdC)) {
+        return false;
+      }
+    }
+
     // Ternary arms are expression-only contexts — code generation discards
     // any statements they produce. If either arm's remaining instructions
     // contain statement-producing instructions, the diamond cannot be

@@ -271,6 +271,9 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
     // Remove phi operands that reference this block.
     for (const phi of this.phis) {
       phi.operands.delete(blockId);
+      if (phi.operands.size === 0) {
+        this.phis.delete(phi);
+      }
     }
 
     this.functionIR.blocks.delete(blockId);
