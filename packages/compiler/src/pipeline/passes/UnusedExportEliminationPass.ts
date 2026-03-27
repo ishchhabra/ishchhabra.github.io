@@ -78,31 +78,23 @@ export class UnusedExportEliminationPass {
       // Remove the corresponding export instructions from all function blocks.
       for (const functionIR of moduleIR.functions.values()) {
         for (const block of functionIR.blocks.values()) {
-          block.instructions = block.instructions.filter((instr) => {
-            // Remove ExportSpecifierInstruction for unused exports.
+          for (let i = block.instructions.length - 1; i >= 0; i--) {
+            const instr = block.instructions[i];
+            let remove = false;
+
             if (instr instanceof ExportSpecifierInstruction) {
-              return !unusedExportNames.has(instr.exported);
-            }
-
-            // Remove ExportNamedDeclarationInstruction if it's one of the dead ones.
-            if (instr instanceof ExportNamedDeclarationInstruction) {
-              return !deadExportInstructions.has(instr);
-            }
-
-            // Remove ExportFromInstruction if all its specifiers are unused,
-            // or filter out individual unused specifiers.
-            if (instr instanceof ExportFromInstruction) {
+              remove = unusedExportNames.has(instr.exported);
+            } else if (instr instanceof ExportNamedDeclarationInstruction) {
+              remove = deadExportInstructions.has(instr);
+            } else if (instr instanceof ExportFromInstruction) {
               instr.specifiers = instr.specifiers.filter((s) => !unusedExportNames.has(s.exported));
-              return instr.specifiers.length > 0;
+              remove = instr.specifiers.length === 0;
+            } else if (instr instanceof ExportDefaultDeclarationInstruction) {
+              remove = unusedExportNames.has("default");
             }
 
-            // Remove ExportDefaultDeclarationInstruction for unused "default" export.
-            if (instr instanceof ExportDefaultDeclarationInstruction) {
-              return !unusedExportNames.has("default");
-            }
-
-            return true;
-          });
+            if (remove) block.removeInstructionAt(i);
+          }
         }
       }
     }

@@ -78,7 +78,7 @@ export class LateDeadStoreEliminationPass extends BaseOptimizationPass {
           // the overwriting instruction is a bare Copy, promote the
           // Copy to a StoreLocal so the declaration is preserved.
           if (deadInstr instanceof StoreLocalInstruction && instr instanceof CopyInstruction) {
-            instrs[i] = new StoreLocalInstruction(
+            block.replaceInstruction(i, new StoreLocalInstruction(
               instr.id,
               instr.place,
               instr.nodePath,
@@ -86,7 +86,7 @@ export class LateDeadStoreEliminationPass extends BaseOptimizationPass {
               instr.value,
               deadInstr.type,
               deadInstr.bindings,
-            );
+            ));
 
             // Phi elimination wraps each Copy in an ExpressionStatement.
             // Now that the Copy has been promoted to a StoreLocal (which
@@ -112,7 +112,10 @@ export class LateDeadStoreEliminationPass extends BaseOptimizationPass {
       return false;
     }
 
-    block.instructions = instrs.filter((_, i) => !dead.has(i));
+    const sorted = [...dead].sort((a, b) => b - a);
+    for (const idx of sorted) {
+      block.removeInstructionAt(idx);
+    }
     return true;
   }
 }

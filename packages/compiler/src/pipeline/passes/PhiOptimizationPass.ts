@@ -1,6 +1,7 @@
 import { Environment } from "../../environment";
 import {
   BaseInstruction,
+  BasicBlock,
   BlockId,
   DeclarationInstruction,
   ExpressionStatementInstruction,
@@ -135,28 +136,30 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
     // any statements they produce. If either arm's remaining instructions
     // contain statement-producing instructions, the diamond cannot be
     // collapsed into a ternary without losing declarations or side effects.
-    if (this.armHasStatements(consResult.remainingInstrs)) return false;
-    if (this.armHasStatements(altResult.remainingInstrs)) return false;
+    if (this.armHasStatements(consBlock.instructions, consResult.storeIndex)) return false;
+    if (this.armHasStatements(altBlock.instructions, altResult.storeIndex)) return false;
 
     // === Apply the transformation ===
 
-    consBlock.instructions = consResult.remainingInstrs;
-    altBlock.instructions = altResult.remainingInstrs;
+    // Remove the phi stores from the arm blocks (in reverse order to
+    // preserve indices if both are in the same block).
+    if (consResult.storeIndex >= 0) consBlock.removeInstructionAt(consResult.storeIndex);
+    if (altResult.storeIndex >= 0) altBlock.removeInstructionAt(altResult.storeIndex);
 
     // Clear arm block terminals — they're owned by the structure now.
-    consBlock.terminal = undefined;
-    altBlock.terminal = undefined;
+    consBlock.replaceTerminal(undefined);
+    altBlock.replaceTerminal(undefined);
 
     // If an arm traces through a structure fallthrough trampoline (G),
     // clear its terminal too so the inner structure's codegen doesn't
     // follow it into the outer merge block.
     for (const trampoline of consResult.trampolines) {
       const block = this.functionIR.blocks.get(trampoline);
-      if (block) block.terminal = undefined;
+      if (block) block.replaceTerminal(undefined);
     }
     for (const trampoline of altResult.trampolines) {
       const block = this.functionIR.blocks.get(trampoline);
-      if (block) block.terminal = undefined;
+      if (block) block.replaceTerminal(undefined);
     }
 
     const resultPlace = this.environment.createPlace(this.environment.createIdentifier());
@@ -171,26 +174,12 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
       mergeBlockId,
       resultPlace,
     );
-    this.functionIR.structures.set(branchBlockId, ternary);
+    this.functionIR.setStructure(branchBlockId, ternary);
 
-    branchBlock.terminal = new JumpTerminal(terminal.id, mergeBlockId);
+    branchBlock.replaceTerminal(new JumpTerminal(terminal.id, mergeBlockId));
 
     // Rewrite all references to the phi's place → the ternary result.
-    const rewriteMap = new Map([[phi.place.identifier, resultPlace]]);
-    for (const block of this.functionIR.blocks.values()) {
-      for (let i = 0; i < block.instructions.length; i++) {
-        const rewritten = block.instructions[i].rewrite(rewriteMap);
-        if (rewritten !== block.instructions[i]) {
-          block.instructions[i] = rewritten;
-        }
-      }
-      if (block.terminal) {
-        const rewrittenTerminal = block.terminal.rewrite(rewriteMap);
-        if (rewrittenTerminal !== block.terminal) {
-          block.terminal = rewrittenTerminal;
-        }
-      }
-    }
+    this.functionIR.rewriteAllBlocks(new Map([[phi.place.identifier, resultPlace]]));
 
     for (const otherPhi of this.phis) {
       for (const [blockId, operandPlace] of otherPhi.operands) {
@@ -250,12 +239,12 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
    * terminals can be cleared.
    */
   private extractArmValue(
-    armBlock: { instructions: BaseInstruction[] },
+    armBlock: BasicBlock,
     armBlockId: BlockId,
     phiBlockId: BlockId,
     phi: Phi,
     operandPlace: Place,
-  ): { valuePlace: Place; remainingInstrs: BaseInstruction[]; trampolines: BlockId[] } | null {
+  ): { valuePlace: Place; storeIndex: number; trampolines: BlockId[] } | null {
     if (armBlockId === phiBlockId) {
       // Direct case — extract phi store normally.
       const result = this.extractPhiStore(armBlock, phi, operandPlace);
@@ -276,12 +265,14 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
     const phiStoreResult = this.extractPhiStore(phiBlock, phi, operandPlace);
     if (!phiStoreResult) return null;
 
-    // Update the trampoline block's instructions (phi store removed).
-    phiBlock.instructions = phiStoreResult.remainingInstrs;
+    // Remove the phi store from the trampoline block.
+    if (phiStoreResult.storeIndex >= 0) {
+      phiBlock.removeInstructionAt(phiStoreResult.storeIndex);
+    }
 
     return {
       valuePlace: phiStoreResult.valuePlace,
-      remainingInstrs: [...armBlock.instructions],
+      storeIndex: -1, // already removed from trampoline
       trampolines,
     };
   }
@@ -304,10 +295,10 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
   }
 
   private extractPhiStore(
-    block: { instructions: BaseInstruction[] },
+    block: BasicBlock,
     phi: Phi,
     operandPlace: Place,
-  ): { valuePlace: Place; remainingInstrs: BaseInstruction[] } | null {
+  ): { valuePlace: Place; storeIndex: number } | null {
     let storeIndex = -1;
 
     for (let i = block.instructions.length - 1; i >= 0; i--) {
@@ -324,15 +315,10 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
     if (storeIndex !== -1) {
       const store = block.instructions[storeIndex] as StoreLocalInstruction;
       if (store.lval.identifier.id !== operandPlace.identifier.id) return null;
-
-      const remainingInstrs = [
-        ...block.instructions.slice(0, storeIndex),
-        ...block.instructions.slice(storeIndex + 1),
-      ];
-      return { valuePlace: store.value, remainingInstrs };
+      return { valuePlace: store.value, storeIndex };
     }
 
-    return { valuePlace: operandPlace, remainingInstrs: [...block.instructions] };
+    return { valuePlace: operandPlace, storeIndex: -1 };
   }
 
   /**
@@ -346,10 +332,11 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
    * declarationId matches a known phi) are exempt — SSA elimination
    * handles their declarations and copies independently.
    */
-  private armHasStatements(instrs: BaseInstruction[]): boolean {
+  private armHasStatements(instrs: BaseInstruction[], skipIndex: number = -1): boolean {
     const phiDeclarationIds = new Set([...this.phis].map((phi) => phi.declarationId));
 
-    return instrs.some((instr) => {
+    return instrs.some((instr, i) => {
+      if (i === skipIndex) return false;
       if (instr instanceof StoreLocalInstruction && instr.emit) {
         return !phiDeclarationIds.has(instr.lval.identifier.declarationId);
       }

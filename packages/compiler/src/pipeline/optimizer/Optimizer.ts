@@ -6,7 +6,7 @@ import { ModuleIR } from "../../ir/core/ModuleIR";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { CallGraph } from "../analysis/CallGraph";
 import { AlgebraicSimplificationPass } from "../passes/AlgebraicSimplificationPass";
-import { ConstantPropagationPass } from "../passes/ConstantPropagationPass";
+import { SparseConditionalConstantPropagationPass } from "../passes/SparseConditionalConstantPropagationPass";
 import { FunctionInliningPass } from "../passes/FunctionInliningPass";
 import { CapturePruningPass } from "../passes/CapturePruningPass";
 import { DeadCodeEliminationPass } from "../passes/DeadCodeEliminationPass";
@@ -38,7 +38,7 @@ export class Optimizer {
     while (changed) {
       changed = false;
       if (this.options.enableConstantPropagationPass) {
-        const constantPropagationResult = new ConstantPropagationPass(
+        const sccpResult = new SparseConditionalConstantPropagationPass(
           this.functionIR,
           this.moduleIR,
           this.projectUnit,
@@ -46,11 +46,11 @@ export class Optimizer {
           this.context,
           this.options,
         ).run();
-        if (constantPropagationResult.changed) {
+        if (sccpResult.changed) {
           changed = true;
           this.AM.invalidateFunction(this.functionIR);
         }
-        blocks = constantPropagationResult.blocks;
+        blocks = sccpResult.blocks;
       }
 
       if (this.options.enableAlgebraicSimplificationPass) {
@@ -89,7 +89,7 @@ export class Optimizer {
       }
 
       if (this.options.enableCapturePruningPass) {
-        const capturePruningResult = new CapturePruningPass(this.functionIR, this.AM).run();
+        const capturePruningResult = new CapturePruningPass(this.functionIR).run();
         if (capturePruningResult.changed) {
           changed = true;
           this.AM.invalidateFunction(this.functionIR);

@@ -24,8 +24,33 @@ export function makeDeclarationId(id: number): DeclarationId {
   return id as DeclarationId;
 }
 
+/**
+ * An instruction, terminal, or structure that reads a place.
+ *
+ * This is the element type stored in {@link Identifier.uses}. The
+ * constraint is intentionally structural (any object with
+ * `getReadPlaces()`) so that BaseInstruction, BaseTerminal, and
+ * BaseStructure all satisfy it without a circular import.
+ */
+export type User = {
+  getReadPlaces(): readonly { readonly identifier: Identifier }[];
+};
+
 export class Identifier {
   public name: string;
+
+  /**
+   * The instruction that defines (writes to) this identifier.
+   * Maintained automatically by {@link BasicBlock} mutation methods.
+   */
+  public definer: User | undefined;
+
+  /**
+   * Embedded use-chain: the set of instructions, terminals, and
+   * structures that read this identifier. Maintained automatically
+   * by {@link BasicBlock} mutation methods.
+   */
+  public readonly uses: Set<User> = new Set();
 
   constructor(
     public readonly id: IdentifierId,

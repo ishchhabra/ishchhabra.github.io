@@ -8,6 +8,7 @@ import {
 } from "../../frontend/cfg";
 import { BaseInstruction } from "../base";
 import { BasicBlock, BlockId } from "./Block";
+import { Identifier } from "./Identifier";
 import { Place } from "./Place";
 import { BaseStructure } from "./Structure";
 import type { Phi } from "../../pipeline/ssa/Phi";
@@ -90,6 +91,10 @@ export class FunctionIR {
     public readonly captureParams: Place[] = [],
   ) {
     this.computeCFG();
+    // Register use-chains for structures passed in at construction time.
+    for (const structure of this.structures.values()) {
+      FunctionIR.registerStructure(structure);
+    }
   }
 
   private computeCFG() {
@@ -103,5 +108,63 @@ export class FunctionIR {
 
   public recomputeCFG() {
     this.computeCFG();
+  }
+
+  /**
+   * Look up a block by ID, throwing with context if not found.
+   */
+  getBlock(blockId: BlockId): BasicBlock {
+    const block = this.blocks.get(blockId);
+    if (!block) {
+      throw new Error(`Block ${blockId} not found in function ${this.id}`);
+    }
+    return block;
+  }
+
+  /**
+   * Rewrite all instructions and terminals across all blocks using the
+   * given identifier → place mapping (delegates to {@link BasicBlock.rewriteAll}).
+   */
+  rewriteAllBlocks(values: Map<Identifier, Place>): void {
+    for (const block of this.blocks.values()) {
+      block.rewriteAll(values);
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  // Structure mutations — maintain Identifier.uses
+  // -----------------------------------------------------------------------
+
+  /** Add or replace a structure, maintaining use-chains. */
+  setStructure(blockId: BlockId, structure: BaseStructure): void {
+    const old = this.structures.get(blockId);
+    if (old) FunctionIR.unregisterStructure(old);
+    FunctionIR.registerStructure(structure);
+    this.structures.set(blockId, structure);
+  }
+
+  /** Remove a structure and unregister its use-chains. */
+  deleteStructure(blockId: BlockId): void {
+    const old = this.structures.get(blockId);
+    if (old) FunctionIR.unregisterStructure(old);
+    this.structures.delete(blockId);
+  }
+
+  private static registerStructure(s: BaseStructure): void {
+    for (const place of s.getReadPlaces()) {
+      place.identifier.uses.add(s);
+    }
+    for (const place of s.getWrittenPlaces()) {
+      place.identifier.uses.add(s);
+    }
+  }
+
+  private static unregisterStructure(s: BaseStructure): void {
+    for (const place of s.getReadPlaces()) {
+      place.identifier.uses.delete(s);
+    }
+    for (const place of s.getWrittenPlaces()) {
+      place.identifier.uses.delete(s);
+    }
   }
 }

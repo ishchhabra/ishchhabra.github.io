@@ -60,7 +60,6 @@ export class LateOptimizer {
         const lateDeadCodeEliminationResult = new LateDeadCodeEliminationPass(
           this.functionIR,
           this.moduleIR.environment,
-          this.AM,
         ).run();
         if (lateDeadCodeEliminationResult.changed) {
           changed = true;

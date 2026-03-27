@@ -1,5 +1,4 @@
 import { Environment } from "../../environment";
-import { BaseInstruction } from "../../ir";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { LivenessAnalysis, LivenessResult } from "../analysis/LivenessAnalysis";
@@ -44,11 +43,9 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
 
     for (const [blockId, structure] of this.functionIR.structures) {
       if (structure.hasSideEffects()) continue;
-      const isLive = structure
-        .getWrittenPlaces()
-        .some((p) => liveness.isLive(p.identifier.id));
+      const isLive = structure.getWrittenPlaces().some((p) => liveness.isLive(p.identifier.id));
       if (!isLive) {
-        this.functionIR.structures.delete(blockId);
+        this.functionIR.deleteStructure(blockId);
         this.functionIR.recomputeCFG();
         changed = true;
       }
@@ -74,18 +71,17 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
     let changed = false;
 
     for (const block of this.functionIR.blocks.values()) {
-      const before = block.instructions.length;
-      block.instructions = block.instructions.flatMap((instr): BaseInstruction[] => {
-        if (instr.hasSideEffects(this.environment)) return [instr];
-        if (instr.getWrittenPlaces().some((p) => liveness.isLive(p.identifier.id))) return [instr];
+      for (let i = block.instructions.length - 1; i >= 0; i--) {
+        const instr = block.instructions[i];
+        if (instr.hasSideEffects(this.environment)) continue;
+        if (instr.getWrittenPlaces().some((p) => liveness.isLive(p.identifier.id))) continue;
 
         const replacement = instr.asSideEffect();
-        if (replacement && replacement.hasSideEffects(this.environment)) return [replacement];
-
-        return [];
-      });
-
-      if (block.instructions.length !== before) {
+        if (replacement && replacement.hasSideEffects(this.environment)) {
+          block.replaceInstruction(i, replacement);
+        } else {
+          block.removeInstructionAt(i);
+        }
         changed = true;
       }
     }

@@ -83,7 +83,7 @@ export class PreservedAnalyses {
  *
  * Usage:
  * ```ts
- * const defUse = AM.get(DefUseAnalysis, functionIR);
+ * const liveness = AM.get(LivenessAnalysis, functionIR);
  * const callGraph = AM.get(CallGraphAnalysis, projectUnit);
  * ```
  */

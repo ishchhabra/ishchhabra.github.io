@@ -114,7 +114,7 @@ export class FunctionIRBuilder {
   }
 
   public addInstruction<T extends BaseInstruction>(instruction: T) {
-    this.currentBlock.instructions.push(instruction);
+    this.currentBlock.appendInstruction(instruction);
     this.environment.placeToInstruction.set(instruction.place.id, instruction);
   }
 

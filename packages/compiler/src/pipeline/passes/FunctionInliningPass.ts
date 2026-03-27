@@ -166,32 +166,32 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     const environment = this.moduleIR.environment;
 
     // Remove the structure.
-    this.functionIR.structures.delete(headerBlockId);
+    this.functionIR.deleteStructure(headerBlockId);
 
     // Restore the header's BranchTerminal.
     const headerBlock = this.functionIR.blocks.get(headerBlockId)!;
     const terminalId = headerBlock.terminal
       ? headerBlock.terminal.id
       : makeInstructionId(environment.nextInstructionId++);
-    headerBlock.terminal = new BranchTerminal(
+    headerBlock.replaceTerminal(new BranchTerminal(
       terminalId,
       structure.test,
       structure.consequent,
       structure.alternate,
       structure.fallthrough,
-    );
+    ));
 
     // Restore JumpTerminals on each arm.
     const consBlock = this.functionIR.blocks.get(structure.consequent)!;
     const altBlock = this.functionIR.blocks.get(structure.alternate)!;
-    consBlock.terminal = new JumpTerminal(
+    consBlock.replaceTerminal(new JumpTerminal(
       makeInstructionId(environment.nextInstructionId++),
       structure.fallthrough,
-    );
-    altBlock.terminal = new JumpTerminal(
+    ));
+    altBlock.replaceTerminal(new JumpTerminal(
       makeInstructionId(environment.nextInstructionId++),
       structure.fallthrough,
-    );
+    ));
 
     // Create a Phi that merges the arm values into resultPlace.
     // Register the declaration so SSAEliminator can find the dominator
@@ -374,7 +374,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
 
     if (block.terminal instanceof ReturnTerminal) {
       const rewritten = callExpressionInstr.rewrite(rewriteMap);
-      callExpressionBlock.instructions[index] = rewritten;
+      callExpressionBlock.replaceInstruction(index, rewritten);
       environment.placeToInstruction.set(rewritten.place.id, rewritten);
     }
 
@@ -400,11 +400,24 @@ export class FunctionInliningPass extends BaseOptimizationPass {
       returnPlace = undefinedLiteral.place;
     }
 
+    // Splice out the call and insert inlined instructions.
+    const removed = callExpressionBlock.instructions[index];
+    // Unregister the removed call instruction's uses and definers.
+    for (const place of removed.getReadPlaces()) {
+      place.identifier.uses.delete(removed);
+    }
+    for (const place of removed.getWrittenPlaces()) {
+      if (place.identifier.definer === removed) place.identifier.definer = undefined;
+    }
     callExpressionBlock.instructions.splice(index, 1, ...instrs);
-
-    // Register inlined instructions in placeToInstruction so downstream
-    // passes (e.g. DCE) can resolve expression definitions.
+    // Register inlined instructions' uses, definers, and placeToInstruction entries.
     for (const instr of instrs) {
+      for (const place of instr.getReadPlaces()) {
+        place.identifier.uses.add(instr);
+      }
+      for (const place of instr.getWrittenPlaces()) {
+        place.identifier.definer = instr;
+      }
       environment.placeToInstruction.set(instr.place.id, instr);
     }
 
@@ -415,16 +428,20 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     // function — not just the inlined block, but also other blocks
     // (e.g. a ternary's fallthrough) that may reference the call result.
     for (const [, rewriteBlock] of this.functionIR.blocks) {
-      const startIdx = rewriteBlock === callExpressionBlock ? index + instrs.length : 0;
-      for (let i = startIdx; i < rewriteBlock.instructions.length; i++) {
-        const rewrittenInstr = rewriteBlock.instructions[i].rewrite(retRewriteMap);
-        if (rewrittenInstr !== rewriteBlock.instructions[i]) {
-          rewriteBlock.instructions[i] = rewrittenInstr;
-          environment.placeToInstruction.set(rewrittenInstr.place.id, rewrittenInstr);
+      if (rewriteBlock === callExpressionBlock) {
+        // Skip the just-inlined instructions; only rewrite from after them.
+        for (let i = index + instrs.length; i < rewriteBlock.instructions.length; i++) {
+          const rewrittenInstr = rewriteBlock.instructions[i].rewrite(retRewriteMap);
+          if (rewrittenInstr !== rewriteBlock.instructions[i]) {
+            rewriteBlock.replaceInstruction(i, rewrittenInstr);
+            environment.placeToInstruction.set(rewrittenInstr.place.id, rewrittenInstr);
+          }
         }
-      }
-      if (rewriteBlock.terminal) {
-        rewriteBlock.terminal = rewriteBlock.terminal.rewrite(retRewriteMap);
+        if (rewriteBlock.terminal) {
+          rewriteBlock.replaceTerminal(rewriteBlock.terminal.rewrite(retRewriteMap));
+        }
+      } else {
+        rewriteBlock.rewriteAll(retRewriteMap);
       }
     }
 
@@ -433,7 +450,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     for (const [blockId, structure] of this.functionIR.structures) {
       const rewritten = structure.rewrite(retRewriteMap);
       if (rewritten !== structure) {
-        this.functionIR.structures.set(blockId, rewritten);
+        this.functionIR.setStructure(blockId, rewritten);
       }
     }
 

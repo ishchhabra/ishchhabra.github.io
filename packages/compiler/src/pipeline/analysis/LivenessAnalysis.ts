@@ -34,8 +34,8 @@ export class LivenessResult {
  * etc.).
  *
  * Reads phis from `functionIR.phis` (set by SSABuilder). For post-SSA
- * usage (where phis have been eliminated), the simpler
- * DefUseAnalysis.isUsed() is sufficient.
+ * usage (where phis have been eliminated), the embedded
+ * `Identifier.uses` chain is sufficient.
  *
  * Usage:
  * ```ts

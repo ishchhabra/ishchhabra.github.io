@@ -58,9 +58,7 @@ export class SSABuilder {
     for (const [declId, entries] of this.moduleIR.environment.declToPlaces) {
       if (this.moduleIR.environment.contextDeclarationIds.has(declId)) continue;
 
-      const defBlocks = entries
-        .filter((e) => ownBlockIds.has(e.blockId))
-        .map((e) => e.blockId);
+      const defBlocks = entries.filter((e) => ownBlockIds.has(e.blockId)).map((e) => e.blockId);
       if (defBlocks.length <= 1) continue;
 
       this.placePhiForDeclaration(declId, defBlocks, phis);
@@ -207,7 +205,10 @@ export class SSABuilder {
   }
 
   private rewriteAndPushInstructions(
-    block: { instructions: BaseInstruction[] },
+    block: {
+      instructions: BaseInstruction[];
+      replaceInstruction(index: number, instr: BaseInstruction): void;
+    },
     phiDecls: Set<DeclarationId>,
     stacks: Map<DeclarationId, Place[]>,
     pushed: DeclarationId[],
@@ -222,7 +223,7 @@ export class SSABuilder {
       );
       if (rewriteMap.size > 0) {
         const rewritten = this.rewriteInstruction(instruction, rewriteMap);
-        block.instructions[i] = rewritten;
+        block.replaceInstruction(i, rewritten);
         this.moduleIR.environment.placeToInstruction.set(rewritten.place.id, rewritten);
       }
 
@@ -243,13 +244,9 @@ export class SSABuilder {
     const structure = this.functionIR.structures.get(blockId);
     if (!structure) return;
 
-    const rewriteMap = this.buildRewriteMap(
-      structure.getReadPlaces(),
-      phiDecls,
-      stacks,
-    );
+    const rewriteMap = this.buildRewriteMap(structure.getReadPlaces(), phiDecls, stacks);
     if (rewriteMap.size > 0) {
-      this.functionIR.structures.set(blockId, structure.rewrite(rewriteMap));
+      this.functionIR.setStructure(blockId, structure.rewrite(rewriteMap));
     }
 
     for (const place of structure.getWrittenPlaces()) {
@@ -258,7 +255,10 @@ export class SSABuilder {
   }
 
   private rewriteTerminal(
-    block: { terminal?: { getReadPlaces?(): Place[]; rewrite(v: Map<Identifier, Place>): any } },
+    block: {
+      terminal?: { getReadPlaces?(): Place[]; rewrite(v: Map<Identifier, Place>): any };
+      replaceTerminal(t: any): void;
+    },
     phiDecls: Set<DeclarationId>,
     stacks: Map<DeclarationId, Place[]>,
   ): void {
@@ -270,7 +270,7 @@ export class SSABuilder {
       stacks,
     );
     if (rewriteMap.size > 0) {
-      block.terminal = block.terminal.rewrite(rewriteMap);
+      block.replaceTerminal(block.terminal.rewrite(rewriteMap));
     }
   }
 

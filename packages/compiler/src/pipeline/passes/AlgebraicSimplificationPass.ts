@@ -88,7 +88,7 @@ export class AlgebraicSimplificationPass extends BaseOptimizationPass {
       }
 
       if (replacement !== undefined) {
-        block.instructions[index] = replacement;
+        block.replaceInstruction(index, replacement);
         if (replacement instanceof LiteralInstruction) {
           this.literals.set(replacement.place.identifier.id, replacement.value);
         }

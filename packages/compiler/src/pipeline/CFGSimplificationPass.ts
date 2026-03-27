@@ -103,7 +103,7 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
       if (referenced.has(blockId)) {
         // Still referenced — clear instructions but keep the block.
         if (block.instructions.length > 0) {
-          block.instructions = [];
+          block.clearInstructions();
           changed = true;
         }
       } else {
@@ -149,9 +149,15 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
       const predBlock = this.functionIR.blocks.get(predId)!;
       const block = this.functionIR.blocks.get(blockId)!;
 
-      // Absorb instructions and terminal.
+      // Absorb instructions and terminal. Instructions are moved (not
+      // created/deleted), so use-chains stay valid without re-registration.
+      // Terminal must be detached from `block` first (unregisters), then
+      // attached to `predBlock` (re-registers) — block-agnostic use-chains
+      // end up with the terminal registered exactly once.
       predBlock.instructions.push(...block.instructions);
-      predBlock.terminal = block.terminal;
+      const movedTerminal = block.terminal;
+      block.terminal = undefined;
+      predBlock.terminal = movedTerminal;
 
       // Re-home declToPlaces references.
       for (const [, places] of this.moduleIR.environment.declToPlaces) {
@@ -162,7 +168,8 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
         }
       }
 
-      // Transfer structure ownership.
+      // Transfer structure ownership (move — no use-chain change needed,
+      // just re-key). Use raw map ops since the structure object is unchanged.
       const structure = this.functionIR.structures.get(blockId);
       if (structure) {
         this.functionIR.structures.delete(blockId);
@@ -270,14 +277,14 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
   private deleteBlock(blockId: BlockId): void {
     // Remove phi operands that reference this block.
     for (const phi of this.phis) {
-      phi.operands.delete(blockId);
-      if (phi.operands.size === 0) {
+      const result = phi.removeOperand(blockId);
+      if (result === "empty") {
         this.phis.delete(phi);
       }
     }
 
     this.functionIR.blocks.delete(blockId);
-    this.functionIR.structures.delete(blockId);
+    this.functionIR.deleteStructure(blockId);
   }
 
   private rekeyPhiOperands(fromBlockId: BlockId, toBlockId: BlockId): void {

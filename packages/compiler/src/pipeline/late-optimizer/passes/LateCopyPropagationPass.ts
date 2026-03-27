@@ -92,12 +92,12 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
             resolved &&
             resolved.identifier.declarationId !== instr.value.identifier.declarationId
           ) {
-            block.instructions[i] = new LoadLocalInstruction(
+            block.replaceInstruction(i, new LoadLocalInstruction(
               instr.id,
               instr.place,
               instr.nodePath,
               resolved,
-            );
+            ));
             placeSource.set(instr.place.identifier.id, resolved);
             changed = true;
           }
@@ -183,13 +183,13 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
         if (toRemove.has(store.index)) continue;
 
         // Rewrite: Copy now references the expression directly.
-        block.instructions[i] = new CopyInstruction(
+        block.replaceInstruction(i, new CopyInstruction(
           copy.id,
           copy.place,
           copy.nodePath,
           copy.lval,
           store.instr.value,
-        );
+        ));
 
         toRemove.add(store.index); // Remove StoreLocal
         toRemove.add(loadIdx); // Remove LoadLocal
@@ -197,7 +197,11 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
       }
 
       if (toRemove.size > 0) {
-        block.instructions = block.instructions.filter((_, idx) => !toRemove.has(idx));
+        // Remove in reverse order to preserve indices.
+        const sorted = [...toRemove].sort((a, b) => b - a);
+        for (const idx of sorted) {
+          block.removeInstructionAt(idx);
+        }
       }
     }
 
