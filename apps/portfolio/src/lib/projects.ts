@@ -10,6 +10,8 @@ export type LabProject = {
   external?: boolean;
   /** External URL. For internal projects, href is derived from slug. */
   href?: string;
+  /** Additional links shown on the card (e.g. live demo, docs). */
+  links?: Array<{ label: string; href: string; live?: boolean }>;
 };
 
 export const LAB_PROJECTS: LabProject[] = [
@@ -35,13 +37,14 @@ export const LAB_PROJECTS: LabProject[] = [
   },
   {
     slug: "js-aot-transpiler",
-    title: "JS AOT Transpiler",
+    title: "JS AOT Compiler",
     description:
-      "Ahead-of-time compilation for non-hot-path JavaScript. Babel plugin, performance research.",
+      "Ahead-of-time optimizing compiler for JavaScript. SSA-based IR, constant propagation, dead code elimination.",
     tag: "Research",
     accent: "violet",
     external: true,
-    href: "https://github.com/ishchhabra/babel-plugin-javascript-aot",
+    href: "https://github.com/ishchhabra/ishchhabra.github.io/tree/main/packages/compiler",
+    links: [{ label: "Live demo", href: "https://aot.ishchhabra.com", live: true }],
   },
 ];
 

@@ -40,6 +40,24 @@ export function LabCard({ project }: { project: LabProject }) {
           >
             {project.tag}
           </span>
+          {project.links?.map((link) => (
+            <a
+              key={link.href}
+              href={link.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="relative z-10 ml-auto inline-flex items-center gap-1.5 text-xs text-zinc-400 transition-colors hover:text-violet-400 dark:text-zinc-500 dark:hover:text-violet-400"
+            >
+              {link.live && (
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-50" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-violet-400" />
+                </span>
+              )}
+              {link.label}
+            </a>
+          ))}
         </div>
         <p
           className="mb-5 flex-1 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400"
