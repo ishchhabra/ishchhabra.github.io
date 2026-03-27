@@ -3,6 +3,7 @@ import { FunctionIR } from "../ir/core/FunctionIR";
 import { ModuleIR } from "../ir/core/ModuleIR";
 import { JumpTerminal } from "../ir/core/Terminal";
 import { BaseOptimizationPass, OptimizationResult } from "./late-optimizer/OptimizationPass";
+import type { Phi } from "./ssa/Phi";
 
 /**
  * Textbook CFG simplification pass.
@@ -125,7 +126,7 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
   private mergeLinearChains(): boolean {
     let changed = false;
 
-    for (const blockId of [...this.functionIR.blocks.keys()]) {
+    for (const blockId of Array.from(this.functionIR.blocks.keys())) {
       if (!this.functionIR.blocks.has(blockId)) continue;
 
       const preds = this.functionIR.predecessors.get(blockId);

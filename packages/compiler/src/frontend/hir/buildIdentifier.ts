@@ -75,10 +75,12 @@ function buildReferencedIdentifier(
   const identifier = environment.createIdentifier(declarationId);
   const place = environment.createPlace(identifier);
 
+  const declInstrId =
+    declarationId !== undefined ? environment.getDeclarationInstruction(declarationId) : undefined;
   if (
     declarationId === undefined ||
-    environment.instructions.get(environment.getDeclarationInstruction(declarationId)) instanceof
-      ImportSpecifierInstruction
+    (declInstrId !== undefined &&
+      environment.instructions.get(declInstrId) instanceof ImportSpecifierInstruction)
   ) {
     const instruction = environment.createInstruction(LoadGlobalInstruction, place, nodePath, name);
     builder.addInstruction(instruction);

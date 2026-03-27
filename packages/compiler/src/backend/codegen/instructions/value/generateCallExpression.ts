@@ -15,7 +15,7 @@ export function generateCallExpression(
 
   const args = instruction.args.map((argument) => {
     const node = generator.places.get(argument.id);
-    if (node === undefined) {
+    if (node == null) {
       throw new Error(`Place ${argument.id} not found`);
     }
 
