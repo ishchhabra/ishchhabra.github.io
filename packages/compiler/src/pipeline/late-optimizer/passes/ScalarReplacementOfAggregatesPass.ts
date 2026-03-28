@@ -174,7 +174,10 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
     const escapeResult = this.AM.get(EscapeAnalysis, this.functionIR);
 
     // 1. Find non-escaping, unmodified object literals.
-    const candidates = new Map<IdentifierId, { objExpr: ObjectExpressionInstruction; propMap: Map<string, Place> }>();
+    const candidates = new Map<
+      IdentifierId,
+      { objExpr: ObjectExpressionInstruction; propMap: Map<string, Place> }
+    >();
 
     for (const block of this.functionIR.blocks.values()) {
       for (const instr of block.instructions) {
@@ -284,7 +287,10 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
    *   is a `LoadStaticProperty` on the object
    */
   private removeModifiedObjects(
-    candidates: Map<IdentifierId, { objExpr: ObjectExpressionInstruction; propMap: Map<string, Place> }>,
+    candidates: Map<
+      IdentifierId,
+      { objExpr: ObjectExpressionInstruction; propMap: Map<string, Place> }
+    >,
   ): void {
     for (const block of this.functionIR.blocks.values()) {
       for (const instr of block.instructions) {
@@ -300,10 +306,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
         }
 
         // `delete obj.prop` — the delete argument is a LoadStaticProperty.
-        if (
-          instr instanceof UnaryExpressionInstruction &&
-          instr.operator === "delete"
-        ) {
+        if (instr instanceof UnaryExpressionInstruction && instr.operator === "delete") {
           const argDefiner = instr.argument.identifier.definer;
           if (argDefiner instanceof LoadStaticPropertyInstruction) {
             const objExpr = this.resolveToObjectExpression(argDefiner.object);
@@ -377,10 +380,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
         }
 
         // `delete obj.prop` → invalidate the specific property.
-        if (
-          instr instanceof UnaryExpressionInstruction &&
-          instr.operator === "delete"
-        ) {
+        if (instr instanceof UnaryExpressionInstruction && instr.operator === "delete") {
           const argDefiner = instr.argument.identifier.definer;
           if (argDefiner instanceof LoadStaticPropertyInstruction) {
             const objId = this.resolveToObjectId(argDefiner.object);
@@ -511,10 +511,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
    */
   private feedsDeleteExpression(instr: LoadStaticPropertyInstruction): boolean {
     for (const user of instr.place.identifier.uses) {
-      if (
-        user instanceof UnaryExpressionInstruction &&
-        user.operator === "delete"
-      ) {
+      if (user instanceof UnaryExpressionInstruction && user.operator === "delete") {
         return true;
       }
     }

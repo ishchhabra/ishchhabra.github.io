@@ -24,11 +24,7 @@ export function generateLabeledBlockStructure(
   // Strip trailing `break label` that represents the natural block exit.
   if (bodyStatements.length > 0) {
     const last = bodyStatements[bodyStatements.length - 1];
-    if (
-      t.isBreakStatement(last) &&
-      last.label &&
-      last.label.name === structure.label
-    ) {
+    if (t.isBreakStatement(last) && last.label && last.label.name === structure.label) {
       bodyStatements.pop();
     }
   }

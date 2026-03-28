@@ -82,7 +82,14 @@ export class ForInStructure extends BaseStructure {
       return this;
     }
 
-    return new ForInStructure(this.header, iterationValue, object, this.body, this.fallthrough, this.label);
+    return new ForInStructure(
+      this.header,
+      iterationValue,
+      object,
+      this.body,
+      this.fallthrough,
+      this.label,
+    );
   }
 
   remap(from: BlockId, to: BlockId): void {

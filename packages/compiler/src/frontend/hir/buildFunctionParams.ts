@@ -4,7 +4,6 @@ import { Environment } from "../../environment";
 import {
   ArrayPatternInstruction,
   BindingIdentifierInstruction,
-  HoleInstruction,
   LiteralInstruction,
   ObjectPropertyInstruction,
   Place,
@@ -136,17 +135,11 @@ function buildFunctionArrayPatternParam(
   const identifiers: Place[] = [];
   const elements = paramPath.get("elements");
   const places = elements.map((elementPath) => {
-    // Holes in array patterns (e.g. `function([,b]){}`) — emit a HoleInstruction.
+    // Holes in array patterns (e.g. `function([,b]){}`) — represented as
+    // null in the elements array, not as instructions. Holes are structural
+    // markers in the pattern shape, not values in the data-flow graph.
     if (!elementPath.hasNode()) {
-      const holeIdentifier = environment.createIdentifier();
-      const holePlace = environment.createPlace(holeIdentifier);
-      const instruction = environment.createInstruction(
-        HoleInstruction,
-        holePlace,
-        elementPath as NodePath<null>,
-      );
-      functionBuilder.header.push(instruction);
-      return holePlace;
+      return null;
     }
 
     const result = buildFunctionParam(

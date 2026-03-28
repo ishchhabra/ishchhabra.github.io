@@ -13,9 +13,7 @@ export function buildContinueStatement(
   const target = functionBuilder.getContinueTarget(label);
   if (target === undefined) {
     throw new Error(
-      label
-        ? `Labeled continue target "${label}" not found`
-        : "Continue statement outside of loop",
+      label ? `Labeled continue target "${label}" not found` : "Continue statement outside of loop",
     );
   }
 

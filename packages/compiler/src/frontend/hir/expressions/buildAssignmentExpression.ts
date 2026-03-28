@@ -10,7 +10,6 @@ import {
   BranchTerminal,
   createInstructionId,
   ExpressionStatementInstruction,
-  HoleInstruction,
   JumpTerminal,
   LiteralInstruction,
   LoadDynamicPropertyInstruction,
@@ -750,15 +749,7 @@ function buildArrayPatternAssignmentLeft(
     }
 
     if (!elementPath.hasNode()) {
-      const holeIdentifier = environment.createIdentifier();
-      const holePlace = environment.createPlace(holeIdentifier);
-      const instruction = environment.createInstruction(
-        HoleInstruction,
-        holePlace,
-        elementPath as NodePath<null>,
-      );
-      functionBuilder.addInstruction(instruction);
-      return holePlace;
+      return null;
     }
 
     const result = buildAssignmentLeft(

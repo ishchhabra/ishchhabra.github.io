@@ -56,10 +56,7 @@ export function buildLabeledStatement(
   functionBuilder.blocks.set(exitBlock.id, exitBlock);
 
   // Wire current block → header block.
-  currentBlock.terminal = new JumpTerminal(
-    createInstructionId(environment),
-    headerBlock.id,
-  );
+  currentBlock.terminal = new JumpTerminal(createInstructionId(environment), headerBlock.id);
 
   // Build the body inside a labeled control context.
   functionBuilder.currentBlock = bodyBlock;

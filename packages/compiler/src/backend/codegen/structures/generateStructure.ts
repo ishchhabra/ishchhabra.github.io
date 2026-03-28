@@ -1,5 +1,11 @@
 import * as t from "@babel/types";
-import { BaseStructure, ForInStructure, ForOfStructure, LabeledBlockStructure, TernaryStructure } from "../../../ir";
+import {
+  BaseStructure,
+  ForInStructure,
+  ForOfStructure,
+  LabeledBlockStructure,
+  TernaryStructure,
+} from "../../../ir";
 import { FunctionIR } from "../../../ir/core/FunctionIR";
 import { CodeGenerator } from "../../CodeGenerator";
 import { generateForInStructure } from "./generateForInStructure";

@@ -7,13 +7,13 @@ export function generateArrayPatternInstruction(
   generator: CodeGenerator,
 ): t.ArrayPattern {
   const elements = instruction.elements.map((element) => {
+    if (element === null) {
+      return null;
+    }
+
     const node = generator.places.get(element.id);
     if (node === undefined) {
       throw new Error(`Place ${element.id} not found`);
-    }
-
-    if (node === null) {
-      return null;
     }
 
     t.assertLVal(node);

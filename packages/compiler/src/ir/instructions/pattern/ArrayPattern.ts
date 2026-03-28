@@ -15,7 +15,7 @@ export class ArrayPatternInstruction extends PatternInstruction {
     public readonly id: InstructionId,
     public readonly place: Place,
     public readonly nodePath: NodePath<t.ArrayPattern> | undefined,
-    public readonly elements: Place[],
+    public readonly elements: (Place | null)[],
     public readonly bindings: Place[] = [],
   ) {
     super(id, place, nodePath);
@@ -38,7 +38,9 @@ export class ArrayPatternInstruction extends PatternInstruction {
       this.id,
       this.place,
       this.nodePath,
-      this.elements.map((element) => values.get(element.identifier) ?? element),
+      this.elements.map((element) =>
+        element === null ? null : (values.get(element.identifier) ?? element),
+      ),
       this.bindings.map((binding) => values.get(binding.identifier) ?? binding),
     );
   }

@@ -50,7 +50,10 @@ function generateJumpBackEdge(
   // Strip the trailing `continue` that the implicit back-edge produces.
   stripTrailingContinue(bodyInstructions, label);
 
-  const node: t.Statement = t.whileStatement(t.booleanLiteral(true), t.blockStatement(bodyInstructions));
+  const node: t.Statement = t.whileStatement(
+    t.booleanLiteral(true),
+    t.blockStatement(bodyInstructions),
+  );
   if (label) {
     return [t.labeledStatement(t.identifier(label), node)];
   }
