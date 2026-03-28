@@ -37,8 +37,10 @@ function generateJumpBackEdge(
   functionIR: FunctionIR,
   generator: CodeGenerator,
 ): Array<t.Statement> {
+  const label = functionIR.blockLabels.get(headerBlockId);
   generator.controlStack.push({
     kind: "loop",
+    label,
     breakTarget: headerBlockId,
     continueTarget: headerBlockId,
   });
@@ -46,14 +48,12 @@ function generateJumpBackEdge(
   generator.controlStack.pop();
 
   // Strip the trailing `continue` that the implicit back-edge produces.
-  if (
-    bodyInstructions.length > 0 &&
-    t.isContinueStatement(bodyInstructions[bodyInstructions.length - 1])
-  ) {
-    bodyInstructions.pop();
-  }
+  stripTrailingContinue(bodyInstructions, label);
 
-  const node = t.whileStatement(t.booleanLiteral(true), t.blockStatement(bodyInstructions));
+  const node: t.Statement = t.whileStatement(t.booleanLiteral(true), t.blockStatement(bodyInstructions));
+  if (label) {
+    return [t.labeledStatement(t.identifier(label), node)];
+  }
   return [node];
 }
 
@@ -70,8 +70,10 @@ function generateBranchBackEdge(
 
   t.assertExpression(test);
 
+  const label = functionIR.blockLabels.get(headerBlockId);
   generator.controlStack.push({
     kind: "loop",
+    label,
     breakTarget: terminal.fallthrough,
     continueTarget: headerBlockId,
   });
@@ -80,15 +82,26 @@ function generateBranchBackEdge(
 
   // Strip the trailing `continue` that the implicit back-edge produces —
   // the while construct already loops back to the header.
-  if (
-    bodyInstructions.length > 0 &&
-    t.isContinueStatement(bodyInstructions[bodyInstructions.length - 1])
-  ) {
-    bodyInstructions.pop();
-  }
+  stripTrailingContinue(bodyInstructions, label);
 
   const exitInstructions = generateBasicBlock(terminal.fallthrough, functionIR, generator);
 
-  const node = t.whileStatement(test, t.blockStatement(bodyInstructions));
+  const node: t.Statement = t.whileStatement(test, t.blockStatement(bodyInstructions));
+  if (label) {
+    return [t.labeledStatement(t.identifier(label), node), ...exitInstructions];
+  }
   return [node, ...exitInstructions];
+}
+
+/**
+ * Strips a trailing `continue` if it targets this loop: either unlabeled
+ * (always targets the innermost loop) or labeled with this loop's label.
+ */
+export function stripTrailingContinue(statements: t.Statement[], loopLabel?: string): void {
+  if (statements.length === 0) return;
+  const last = statements[statements.length - 1];
+  if (!t.isContinueStatement(last)) return;
+  if (!last.label || last.label.name === loopLabel) {
+    statements.pop();
+  }
 }

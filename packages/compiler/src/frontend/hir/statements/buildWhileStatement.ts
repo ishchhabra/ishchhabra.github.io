@@ -11,6 +11,7 @@ export function buildWhileStatement(
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
+  label?: string,
 ) {
   const currentBlock = functionBuilder.currentBlock;
 
@@ -38,9 +39,13 @@ export function buildWhileStatement(
   functionBuilder.currentBlock = bodyBlock;
   functionBuilder.controlStack.push({
     kind: "loop",
+    label,
     breakTarget: exitBlock.id,
     continueTarget: testBlock.id,
   });
+  if (label) {
+    functionBuilder.blockLabels.set(testBlock.id, label);
+  }
   buildNode(bodyPath, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
   const bodyBlockTerminus = functionBuilder.currentBlock;

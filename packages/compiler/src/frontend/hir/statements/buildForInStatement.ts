@@ -21,6 +21,7 @@ export function buildForInStatement(
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
+  label?: string,
 ) {
   const currentBlock = functionBuilder.currentBlock;
 
@@ -102,6 +103,7 @@ export function buildForInStatement(
   const bodyPath = nodePath.get("body");
   functionBuilder.controlStack.push({
     kind: "loop",
+    label,
     breakTarget: exitBlock.id,
     continueTarget: headerBlock.id,
   });
@@ -133,6 +135,7 @@ export function buildForInStatement(
       objectPlace,
       bodyBlock.id,
       exitBlock.id,
+      label,
     ),
   );
 

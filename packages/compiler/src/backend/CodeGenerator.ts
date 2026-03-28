@@ -21,12 +21,61 @@ export class CodeGenerator {
   public generatedBlocks: Set<BlockId> = new Set();
   public readonly controlStack: ControlContext[] = [];
 
-  public isBreakTarget(blockId: BlockId): boolean {
-    return this.controlStack.some((ctx) => ctx.breakTarget === blockId);
+  /**
+   * Returns the label to use for a `break` statement targeting the given block.
+   * - `undefined` if the block is not a break target at all
+   * - `null` if it's the innermost break target (plain `break`)
+   * - A label string if targeting an outer labeled context (`break label`)
+   */
+  public getBreakLabel(blockId: BlockId): string | null | undefined {
+    const innermostIdx = this.controlStack.length - 1;
+    if (innermostIdx >= 0 && this.controlStack[innermostIdx].breakTarget === blockId) {
+      // Labeled blocks (kind: "label") always require an explicit label
+      // because bare `break` is only valid inside loops and switches.
+      if (this.controlStack[innermostIdx].kind === "label") {
+        return this.controlStack[innermostIdx].label ?? null;
+      }
+      return null;
+    }
+    for (let i = this.controlStack.length - 2; i >= 0; i--) {
+      if (this.controlStack[i].breakTarget === blockId) {
+        // A non-innermost context requires a label; without one, bare
+        // `break` would incorrectly target the innermost context.
+        // Return undefined (not a valid break target) to fall through
+        // to block inlining.
+        return this.controlStack[i].label ?? undefined;
+      }
+    }
+    return undefined;
   }
 
-  public isContinueTarget(blockId: BlockId): boolean {
-    return this.controlStack.some((ctx) => ctx.continueTarget === blockId);
+  /**
+   * Returns the label to use for a `continue` statement targeting the given block.
+   * - `undefined` if the block is not a continue target at all
+   * - `null` if it's the innermost loop's continue target (plain `continue`)
+   * - A label string if targeting an outer labeled loop (`continue label`)
+   */
+  public getContinueLabel(blockId: BlockId): string | null | undefined {
+    // Find the innermost loop — only loops have continue targets.
+    let innermostLoop: Extract<ControlContext, { kind: "loop" }> | undefined;
+    for (let i = this.controlStack.length - 1; i >= 0; i--) {
+      const ctx = this.controlStack[i];
+      if (ctx.kind === "loop") {
+        innermostLoop = ctx;
+        break;
+      }
+    }
+    if (innermostLoop && innermostLoop.continueTarget === blockId) {
+      return null;
+    }
+    for (let i = this.controlStack.length - 1; i >= 0; i--) {
+      const ctx = this.controlStack[i];
+      if (ctx.kind === "loop" && ctx.continueTarget === blockId) {
+        // Same reasoning as getBreakLabel: outer contexts need a label.
+        return ctx.label ?? undefined;
+      }
+    }
+    return undefined;
   }
 
   constructor(

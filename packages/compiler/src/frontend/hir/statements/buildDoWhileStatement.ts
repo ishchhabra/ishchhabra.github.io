@@ -27,6 +27,7 @@ export function buildDoWhileStatement(
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
+  label?: string,
 ) {
   const currentBlock = functionBuilder.currentBlock;
 
@@ -54,9 +55,13 @@ export function buildDoWhileStatement(
   functionBuilder.currentBlock = bodyBlock;
   functionBuilder.controlStack.push({
     kind: "loop",
+    label,
     breakTarget: exitBlock.id,
     continueTarget: testBlock.id,
   });
+  if (label) {
+    functionBuilder.blockLabels.set(testBlock.id, label);
+  }
   buildNode(bodyPath, functionBuilder, moduleBuilder, environment);
 
   // After the body, evaluate the do-while test. If false, break.

@@ -273,6 +273,12 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
       if (structId === from) continue;
       structure.remap(from, to);
     }
+    // Remap block labels so the backend can still find them.
+    const label = this.functionIR.blockLabels.get(from);
+    if (label !== undefined) {
+      this.functionIR.blockLabels.delete(from);
+      this.functionIR.blockLabels.set(to, label);
+    }
   }
 
   private deleteBlock(blockId: BlockId): void {
@@ -286,6 +292,7 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
 
     this.functionIR.blocks.delete(blockId);
     this.functionIR.deleteStructure(blockId);
+    this.functionIR.blockLabels.delete(blockId);
   }
 
   private rekeyPhiOperands(fromBlockId: BlockId, toBlockId: BlockId): void {

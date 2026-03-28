@@ -1,7 +1,6 @@
 import { BlockId } from "./Block";
 
-export interface ControlContext {
-  kind: "switch" | "loop";
-  breakTarget: BlockId;
-  continueTarget?: BlockId;
-}
+export type ControlContext =
+  | { kind: "loop"; label?: string; breakTarget: BlockId; continueTarget: BlockId }
+  | { kind: "switch"; label?: string; breakTarget: BlockId }
+  | { kind: "label"; label: string; breakTarget: BlockId };

@@ -2,6 +2,7 @@ import * as t from "@babel/types";
 import { ForInStructure } from "../../../ir";
 import { FunctionIR } from "../../../ir/core/FunctionIR";
 import { CodeGenerator } from "../../CodeGenerator";
+import { stripTrailingContinue } from "../generateBackEdge";
 import { generateBasicBlock } from "../generateBlock";
 import { generateInstruction } from "../instructions/generateInstruction";
 
@@ -35,8 +36,10 @@ export function generateForInStructure(
   t.assertExpression(object);
 
   // Generate the body block statements.
+  const label = structure.label;
   generator.controlStack.push({
     kind: "loop",
+    label,
     breakTarget: structure.fallthrough,
     continueTarget: structure.header,
   });
@@ -45,12 +48,7 @@ export function generateForInStructure(
 
   // Strip the trailing `continue` that the implicit back-edge produces —
   // the for-in construct already loops back to the header.
-  if (
-    bodyStatements.length > 0 &&
-    t.isContinueStatement(bodyStatements[bodyStatements.length - 1])
-  ) {
-    bodyStatements.pop();
-  }
+  stripTrailingContinue(bodyStatements, label);
 
   // Generate the fallthrough (exit) block statements.
   const exitStatements = generateBasicBlock(structure.fallthrough, functionIR, generator);
@@ -64,5 +62,8 @@ export function generateForInStructure(
     t.blockStatement([...headerStatements, ...bodyStatements]),
   );
 
+  if (label) {
+    return [t.labeledStatement(t.identifier(label), node), ...exitStatements];
+  }
   return [node, ...exitStatements];
 }

@@ -20,7 +20,8 @@ export function generateSwitchTerminal(
   t.assertExpression(discriminantNode);
 
   // Push switch onto control stack so JumpTerminals to fallthrough emit `break`.
-  generator.controlStack.push({ kind: "switch", breakTarget: terminal.fallthrough });
+  const label = terminal.label;
+  generator.controlStack.push({ kind: "switch", label, breakTarget: terminal.fallthrough });
 
   // Reserve all case blocks to prevent cross-pulling.
   for (const c of terminal.cases) {
@@ -55,6 +56,9 @@ export function generateSwitchTerminal(
   generator.generatedBlocks.delete(terminal.fallthrough);
   const fallthroughStatements = generateBlock(terminal.fallthrough, functionIR, generator);
 
-  const switchStatement = t.switchStatement(discriminantNode, switchCases);
+  const switchStatement: t.Statement = t.switchStatement(discriminantNode, switchCases);
+  if (label) {
+    return [t.labeledStatement(t.identifier(label), switchStatement), ...fallthroughStatements];
+  }
   return [switchStatement, ...fallthroughStatements];
 }

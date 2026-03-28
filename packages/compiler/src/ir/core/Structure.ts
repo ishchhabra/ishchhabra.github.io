@@ -51,6 +51,7 @@ export class ForInStructure extends BaseStructure {
     public readonly object: Place,
     public body: BlockId,
     public fallthrough: BlockId,
+    public readonly label?: string,
   ) {
     super();
   }
@@ -81,7 +82,7 @@ export class ForInStructure extends BaseStructure {
       return this;
     }
 
-    return new ForInStructure(this.header, iterationValue, object, this.body, this.fallthrough);
+    return new ForInStructure(this.header, iterationValue, object, this.body, this.fallthrough, this.label);
   }
 
   remap(from: BlockId, to: BlockId): void {
@@ -102,6 +103,7 @@ export class ForOfStructure extends BaseStructure {
     public body: BlockId,
     public fallthrough: BlockId,
     public readonly isAwait: boolean,
+    public readonly label?: string,
   ) {
     super();
   }
@@ -139,6 +141,7 @@ export class ForOfStructure extends BaseStructure {
       this.body,
       this.fallthrough,
       this.isAwait,
+      this.label,
     );
   }
 
@@ -234,6 +237,53 @@ export class TernaryStructure extends BaseStructure {
     if (this.header === from) this.header = to;
     if (this.consequent === from) this.consequent = to;
     if (this.alternate === from) this.alternate = to;
+    if (this.fallthrough === from) this.fallthrough = to;
+  }
+}
+
+/**
+ * A structure that represents a labeled block statement.
+ *
+ * Labeled blocks allow `break label` to exit the block early.
+ * The structure wraps the block body and provides a fallthrough
+ * (exit) block that `break label` targets.
+ */
+export class LabeledBlockStructure extends BaseStructure {
+  constructor(
+    public header: BlockId,
+    public body: BlockId,
+    public fallthrough: BlockId,
+    public readonly label: string,
+  ) {
+    super();
+  }
+
+  getEdges(): Array<[BlockId, BlockId]> {
+    return [
+      [this.header, this.body],
+      [this.header, this.fallthrough],
+    ];
+  }
+
+  getBlockRefs(): BlockId[] {
+    return [this.body, this.fallthrough];
+  }
+
+  getReadPlaces(): Place[] {
+    return [];
+  }
+
+  getWrittenPlaces(): Place[] {
+    return [];
+  }
+
+  rewrite(_values: Map<Identifier, Place>): LabeledBlockStructure {
+    return this;
+  }
+
+  remap(from: BlockId, to: BlockId): void {
+    if (this.header === from) this.header = to;
+    if (this.body === from) this.body = to;
     if (this.fallthrough === from) this.fallthrough = to;
   }
 }

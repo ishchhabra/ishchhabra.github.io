@@ -122,6 +122,7 @@ export class SwitchTerminal extends BaseTerminal {
     public readonly discriminant: Place,
     public readonly cases: Array<{ test: Place | null; block: BlockId }>,
     public fallthrough: BlockId,
+    public readonly label?: string,
   ) {
     super(id);
   }
@@ -148,7 +149,7 @@ export class SwitchTerminal extends BaseTerminal {
     ) {
       return this;
     }
-    return new SwitchTerminal(this.id, discriminant, cases, this.fallthrough);
+    return new SwitchTerminal(this.id, discriminant, cases, this.fallthrough, this.label);
   }
 
   remap(from: BlockId, to: BlockId): void {

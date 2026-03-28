@@ -9,13 +9,14 @@ export function buildContinueStatement(
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
-  if (nodePath.node.label !== null) {
-    throw new Error("Labeled continue statements are not supported");
-  }
-
-  const target = functionBuilder.getContinueTarget();
+  const label = nodePath.node.label?.name;
+  const target = functionBuilder.getContinueTarget(label);
   if (target === undefined) {
-    throw new Error("Continue statement outside of loop");
+    throw new Error(
+      label
+        ? `Labeled continue target "${label}" not found`
+        : "Continue statement outside of loop",
+    );
   }
 
   functionBuilder.currentBlock.terminal = new JumpTerminal(

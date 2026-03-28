@@ -9,12 +9,14 @@ export function generateJumpTerminal(
   functionIR: FunctionIR,
   generator: CodeGenerator,
 ): Array<t.Statement> {
-  if (generator.isBreakTarget(terminal.target)) {
-    return [t.breakStatement()];
+  const breakLabel = generator.getBreakLabel(terminal.target);
+  if (breakLabel !== undefined) {
+    return [t.breakStatement(breakLabel ? t.identifier(breakLabel) : null)];
   }
 
-  if (generator.isContinueTarget(terminal.target)) {
-    return [t.continueStatement()];
+  const continueLabel = generator.getContinueLabel(terminal.target);
+  if (continueLabel !== undefined) {
+    return [t.continueStatement(continueLabel ? t.identifier(continueLabel) : null)];
   }
 
   return generateBlock(terminal.target, functionIR, generator);

@@ -20,6 +20,7 @@ export function buildForStatement(
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
+  label?: string,
 ) {
   const currentBlock = functionBuilder.currentBlock;
 
@@ -78,9 +79,13 @@ export function buildForStatement(
   functionBuilder.currentBlock = bodyBlock;
   functionBuilder.controlStack.push({
     kind: "loop",
+    label,
     breakTarget: exitBlock.id,
     continueTarget: updateBlock?.id ?? testBlock.id,
   });
+  if (label) {
+    functionBuilder.blockLabels.set(testBlock.id, label);
+  }
   buildNode(bodyPath, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
 

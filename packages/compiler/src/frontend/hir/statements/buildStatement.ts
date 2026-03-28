@@ -19,6 +19,7 @@ import { buildForOfStatement } from "./buildForOfStatement";
 import { buildForStatement } from "./buildForStatement";
 import { buildFunctionDeclaration } from "./buildFunctionDeclaration";
 import { buildIfStatement } from "./buildIfStatement";
+import { buildLabeledStatement } from "./buildLabeledStatement";
 import { buildImportDeclaration } from "./buildImportDeclaration";
 import { buildReturnStatement } from "./buildReturnStatement";
 import { buildSwitchStatement } from "./buildSwitchStatement";
@@ -70,6 +71,9 @@ export function buildStatement(
     case "IfStatement":
       nodePath.assertIfStatement();
       return buildIfStatement(nodePath, functionBuilder, moduleBuilder, environment);
+    case "LabeledStatement":
+      nodePath.assertLabeledStatement();
+      return buildLabeledStatement(nodePath, functionBuilder, moduleBuilder, environment);
     case "ImportDeclaration":
       nodePath.assertImportDeclaration();
       return buildImportDeclaration(nodePath, functionBuilder, moduleBuilder, environment);

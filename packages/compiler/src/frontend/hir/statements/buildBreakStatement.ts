@@ -9,13 +9,14 @@ export function buildBreakStatement(
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
-  if (nodePath.node.label !== null) {
-    throw new Error("Labeled break statements are not supported");
-  }
-
-  const target = functionBuilder.getBreakTarget();
+  const label = nodePath.node.label?.name;
+  const target = functionBuilder.getBreakTarget(label);
   if (target === undefined) {
-    throw new Error("Break statement outside of switch/loop");
+    throw new Error(
+      label
+        ? `Labeled break target "${label}" not found`
+        : "Break statement outside of switch/loop",
+    );
   }
 
   functionBuilder.currentBlock.terminal = new JumpTerminal(

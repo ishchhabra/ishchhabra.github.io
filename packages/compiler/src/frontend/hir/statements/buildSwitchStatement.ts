@@ -11,6 +11,7 @@ export function buildSwitchStatement(
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
+  label?: string,
 ) {
   const currentBlock = functionBuilder.currentBlock;
 
@@ -31,7 +32,7 @@ export function buildSwitchStatement(
   functionBuilder.blocks.set(fallthroughBlock.id, fallthroughBlock);
 
   // Register switch control context so BreakStatement can jump to fallthrough.
-  functionBuilder.controlStack.push({ kind: "switch", breakTarget: fallthroughBlock.id });
+  functionBuilder.controlStack.push({ kind: "switch", label, breakTarget: fallthroughBlock.id });
 
   const casePaths = nodePath.get("cases");
   const cases: Array<{
@@ -114,6 +115,7 @@ export function buildSwitchStatement(
     discriminantPlace,
     cases,
     fallthroughBlock.id,
+    label,
   );
 
   functionBuilder.currentBlock = fallthroughBlock;

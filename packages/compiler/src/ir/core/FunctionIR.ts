@@ -89,6 +89,18 @@ export class FunctionIR {
      * `captures` on the containing instruction.
      */
     public readonly captureParams: Place[] = [],
+    /**
+     * Maps header (test/back-edge) block IDs to label names for
+     * while/for/do-while loops. These loops are reconstructed from
+     * back-edges during codegen and have no dedicated structure or
+     * terminal to carry the label.
+     *
+     * Other labeled constructs carry their label structurally:
+     * - `ForInStructure.label` / `ForOfStructure.label`
+     * - `LabeledBlockStructure.label`
+     * - `SwitchTerminal.label`
+     */
+    public readonly blockLabels: Map<BlockId, string> = new Map(),
   ) {
     this.computeCFG();
     // Register use-chains for structures passed in at construction time.

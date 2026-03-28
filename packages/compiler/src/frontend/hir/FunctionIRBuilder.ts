@@ -24,6 +24,7 @@ export class FunctionIRBuilder {
   public readonly structures: Map<BlockId, BaseStructure> = new Map();
   public readonly header: BaseInstruction[] = [];
   public readonly controlStack: ControlContext[] = [];
+  public readonly blockLabels: Map<BlockId, string> = new Map();
 
   /**
    * Places captured from enclosing scopes, keyed by DeclarationId to
@@ -108,6 +109,7 @@ export class FunctionIRBuilder {
       this.blocks,
       this.structures,
       [...this.captureParams.values()],
+      this.blockLabels,
     );
     this.moduleBuilder.functions.set(functionIR.id, functionIR);
     return functionIR;
@@ -175,18 +177,34 @@ export class FunctionIRBuilder {
     }
   }
 
-  public getBreakTarget(): BlockId | undefined {
+  public getBreakTarget(label?: string): BlockId | undefined {
+    if (label !== undefined) {
+      for (let i = this.controlStack.length - 1; i >= 0; i--) {
+        if (this.controlStack[i].label === label) {
+          return this.controlStack[i].breakTarget;
+        }
+      }
+      return undefined;
+    }
     return this.controlStack[this.controlStack.length - 1]?.breakTarget;
   }
 
-  public getContinueTarget(): BlockId | undefined {
+  public getContinueTarget(label?: string): BlockId | undefined {
+    if (label !== undefined) {
+      for (let i = this.controlStack.length - 1; i >= 0; i--) {
+        const ctx = this.controlStack[i];
+        if (ctx.label === label && ctx.kind === "loop") {
+          return ctx.continueTarget;
+        }
+      }
+      return undefined;
+    }
     for (let i = this.controlStack.length - 1; i >= 0; i--) {
       const ctx = this.controlStack[i];
       if (ctx.kind === "loop") {
         return ctx.continueTarget;
       }
     }
-
     return undefined;
   }
 }

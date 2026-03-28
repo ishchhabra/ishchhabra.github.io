@@ -21,6 +21,7 @@ export function buildForOfStatement(
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
+  label?: string,
 ) {
   const currentBlock = functionBuilder.currentBlock;
 
@@ -105,6 +106,7 @@ export function buildForOfStatement(
   const bodyPath = nodePath.get("body");
   functionBuilder.controlStack.push({
     kind: "loop",
+    label,
     breakTarget: exitBlock.id,
     continueTarget: headerBlock.id,
   });
@@ -137,6 +139,7 @@ export function buildForOfStatement(
       bodyBlock.id,
       exitBlock.id,
       nodePath.node.await,
+      label,
     ),
   );
 

@@ -1,9 +1,10 @@
 import * as t from "@babel/types";
-import { BaseStructure, ForInStructure, ForOfStructure, TernaryStructure } from "../../../ir";
+import { BaseStructure, ForInStructure, ForOfStructure, LabeledBlockStructure, TernaryStructure } from "../../../ir";
 import { FunctionIR } from "../../../ir/core/FunctionIR";
 import { CodeGenerator } from "../../CodeGenerator";
 import { generateForInStructure } from "./generateForInStructure";
 import { generateForOfStructure } from "./generateForOfStructure";
+import { generateLabeledBlockStructure } from "./generateLabeledBlockStructure";
 import { generateTernaryStructure } from "./generateTernaryStructure";
 
 export function generateStructure(
@@ -19,6 +20,9 @@ export function generateStructure(
   }
   if (structure instanceof TernaryStructure) {
     return generateTernaryStructure(structure, functionIR, generator);
+  }
+  if (structure instanceof LabeledBlockStructure) {
+    return generateLabeledBlockStructure(structure, functionIR, generator);
   }
 
   throw new Error(`Unsupported structure type: ${structure.constructor.name}`);
