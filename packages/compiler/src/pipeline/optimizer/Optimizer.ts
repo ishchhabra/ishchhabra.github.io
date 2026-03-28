@@ -129,6 +129,7 @@ export class Optimizer {
         const sroaResult = new ScalarReplacementOfAggregatesPass(
           this.functionIR,
           this.moduleIR.environment,
+          this.AM,
         ).run();
         if (sroaResult.changed) {
           changed = true;
