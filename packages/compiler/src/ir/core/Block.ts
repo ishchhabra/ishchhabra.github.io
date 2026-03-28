@@ -99,6 +99,12 @@ export class BasicBlock {
     this.instructions.splice(index, 1);
   }
 
+  /** Insert an instruction at `index` and register its use-chain entries. */
+  insertInstructionAt(index: number, instr: BaseInstruction): void {
+    registerUses(instr);
+    this.instructions.splice(index, 0, instr);
+  }
+
   /** Remove all instructions and unregister their use-chain entries. */
   clearInstructions(): void {
     for (const instr of this.instructions) {

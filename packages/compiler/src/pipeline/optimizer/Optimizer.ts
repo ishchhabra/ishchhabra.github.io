@@ -12,6 +12,7 @@ import { CapturePruningPass } from "../passes/CapturePruningPass";
 import { DeadCodeEliminationPass } from "../passes/DeadCodeEliminationPass";
 import { PhiOptimizationPass } from "../passes/PhiOptimizationPass";
 import { CFGSimplificationPass } from "../CFGSimplificationPass";
+import { ScalarReplacementOfAggregatesPass } from "../late-optimizer/passes/ScalarReplacementOfAggregatesPass";
 import { SSA } from "../ssa/SSABuilder";
 
 interface OptimizerResult {
@@ -122,6 +123,18 @@ export class Optimizer {
           this.AM.invalidateFunction(this.functionIR);
         }
         blocks = functionInliningResult.blocks;
+      }
+
+      if (this.options.enableScalarReplacementOfAggregatesPass) {
+        const sroaResult = new ScalarReplacementOfAggregatesPass(
+          this.functionIR,
+          this.moduleIR.environment,
+        ).run();
+        if (sroaResult.changed) {
+          changed = true;
+          this.AM.invalidateFunction(this.functionIR);
+        }
+        blocks = sroaResult.blocks;
       }
     }
 

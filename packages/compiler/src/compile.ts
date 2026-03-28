@@ -30,6 +30,8 @@ export const CompilerOptionsSchema = z.object({
   enableLateDeadStoreEliminationPass: z.boolean().default(true),
   /** Whether to enable the late dead code elimination pass */
   enableLateDeadCodeEliminationPass: z.boolean().default(true),
+  /** Whether to enable the scalar replacement of aggregates pass */
+  enableScalarReplacementOfAggregatesPass: z.boolean().default(true),
   /** Whether to enable the export declaration merging pass */
   enableExportDeclarationMergingPass: z.boolean().default(true),
 
