@@ -1,3 +1,3 @@
-export default function $1_0() {
+export default function $0_0() {
   return 42;
 }

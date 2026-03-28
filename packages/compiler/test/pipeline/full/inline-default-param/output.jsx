@@ -1,12 +1,12 @@
 export function Home() {
-  const [$48_0 = 5] = [];
-  const $20_0 = $0_0.slice(0, $48_0).map(($13_0) => ({
-    slug: $13_0.slug,
+  const [$47_0 = 5] = [];
+  const $19_0 = $0_0.slice(0, $47_0).map(($12_0) => ({
+    slug: $12_0.slug,
   }));
   return (
     <div>
-      {$20_0.map(($31_0) => (
-        <span key={$31_0.slug}>{$31_0.slug}</span>
+      {$19_0.map(($30_0) => (
+        <span key={$30_0.slug}>{$30_0.slug}</span>
       ))}
     </div>
   );

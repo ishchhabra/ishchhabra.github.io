@@ -7,6 +7,7 @@ import {
   StoreLocalInstruction,
 } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import type { PendingRenames } from "./buildBindings";
 import { isContextVariable } from "./isContextVariable";
 
 export function buildVariableDeclarationBindings(
@@ -14,6 +15,7 @@ export function buildVariableDeclarationBindings(
   nodePath: NodePath<t.VariableDeclaration>,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
+  pendingRenames?: PendingRenames,
 ) {
   const parentPath = nodePath.parentPath;
   const isHoistable =
@@ -25,7 +27,7 @@ export function buildVariableDeclarationBindings(
   const declarationPaths = nodePath.get("declarations");
   for (const declarationPath of declarationPaths) {
     const id = declarationPath.get("id") as NodePath<t.LVal>;
-    buildLValBindings(bindingsPath, id, functionBuilder, environment);
+    buildLValBindings(bindingsPath, id, functionBuilder, environment, pendingRenames);
   }
 }
 
@@ -34,31 +36,32 @@ function buildLValBindings(
   nodePath: NodePath<t.LVal | t.ObjectProperty>,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
+  pendingRenames?: PendingRenames,
 ) {
   switch (nodePath.type) {
     case "Identifier":
       nodePath.assertIdentifier();
-      buildIdentifierBindings(bindingsPath, nodePath, functionBuilder, environment);
+      buildIdentifierBindings(bindingsPath, nodePath, functionBuilder, environment, pendingRenames);
       break;
     case "ArrayPattern":
       nodePath.assertArrayPattern();
-      buildArrayPatternBindings(bindingsPath, nodePath, functionBuilder, environment);
+      buildArrayPatternBindings(bindingsPath, nodePath, functionBuilder, environment, pendingRenames);
       break;
     case "AssignmentPattern":
       nodePath.assertAssignmentPattern();
-      buildAssignmentPatternBindings(bindingsPath, nodePath, functionBuilder, environment);
+      buildAssignmentPatternBindings(bindingsPath, nodePath, functionBuilder, environment, pendingRenames);
       break;
     case "ObjectPattern":
       nodePath.assertObjectPattern();
-      buildObjectPatternBindings(bindingsPath, nodePath, functionBuilder, environment);
+      buildObjectPatternBindings(bindingsPath, nodePath, functionBuilder, environment, pendingRenames);
       break;
     case "ObjectProperty":
       nodePath.assertObjectProperty();
-      buildObjectPropertyBindings(bindingsPath, nodePath, functionBuilder, environment);
+      buildObjectPropertyBindings(bindingsPath, nodePath, functionBuilder, environment, pendingRenames);
       break;
     case "RestElement":
       nodePath.assertRestElement();
-      buildRestElementBindings(bindingsPath, nodePath, functionBuilder, environment);
+      buildRestElementBindings(bindingsPath, nodePath, functionBuilder, environment, pendingRenames);
       break;
     default:
       throw new Error(`Unsupported LVal type: ${nodePath.type}`);
@@ -70,6 +73,7 @@ function buildIdentifierBindings(
   nodePath: NodePath<t.Identifier>,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
+  pendingRenames?: PendingRenames,
 ) {
   const originalName = nodePath.node.name;
 
@@ -91,8 +95,13 @@ function buildIdentifierBindings(
     environment.contextDeclarationIds.add(identifier.declarationId);
   }
 
-  // Rename the variable name in the scope to the temporary place.
-  bindingsPath.scope.rename(originalName, identifier.name);
+  // Collect rename for batch application instead of calling scope.rename()
+  // per-variable (which does O(AST) traversal each time).
+  if (pendingRenames) {
+    pendingRenames.push([originalName, identifier.name]);
+  } else {
+    bindingsPath.scope.rename(originalName, identifier.name);
+  }
   functionBuilder.registerDeclarationName(identifier.name, identifier.declarationId, bindingsPath);
 
   const place = environment.createPlace(identifier);
@@ -138,6 +147,7 @@ function buildArrayPatternBindings(
   nodePath: NodePath<t.ArrayPattern>,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
+  pendingRenames?: PendingRenames,
 ) {
   const elementsPath: NodePath<t.ArrayPattern["elements"][number]>[] = nodePath.get("elements");
   for (const elementPath of elementsPath) {
@@ -146,7 +156,7 @@ function buildArrayPatternBindings(
     }
 
     elementPath.assertLVal();
-    buildLValBindings(bindingsPath, elementPath, functionBuilder, environment);
+    buildLValBindings(bindingsPath, elementPath, functionBuilder, environment, pendingRenames);
   }
 }
 
@@ -155,9 +165,10 @@ function buildAssignmentPatternBindings(
   nodePath: NodePath<t.AssignmentPattern>,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
+  pendingRenames?: PendingRenames,
 ) {
   const leftPath = nodePath.get("left");
-  buildLValBindings(bindingsPath, leftPath, functionBuilder, environment);
+  buildLValBindings(bindingsPath, leftPath, functionBuilder, environment, pendingRenames);
 }
 
 function buildObjectPatternBindings(
@@ -165,6 +176,7 @@ function buildObjectPatternBindings(
   nodePath: NodePath<t.ObjectPattern>,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
+  pendingRenames?: PendingRenames,
 ) {
   const propertiesPath = nodePath.get("properties");
   for (const propertyPath of propertiesPath) {
@@ -172,7 +184,7 @@ function buildObjectPatternBindings(
       throw new Error(`Unsupported property type: ${propertyPath.type}`);
     }
 
-    buildLValBindings(bindingsPath, propertyPath, functionBuilder, environment);
+    buildLValBindings(bindingsPath, propertyPath, functionBuilder, environment, pendingRenames);
   }
 }
 
@@ -181,13 +193,14 @@ function buildObjectPropertyBindings(
   nodePath: NodePath<t.ObjectProperty>,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
+  pendingRenames?: PendingRenames,
 ) {
   const valuePath = nodePath.get("value");
   if (!(valuePath.isLVal() || valuePath.isObjectProperty())) {
     throw new Error(`Unsupported property type: ${valuePath.type}`);
   }
 
-  buildLValBindings(bindingsPath, valuePath, functionBuilder, environment);
+  buildLValBindings(bindingsPath, valuePath, functionBuilder, environment, pendingRenames);
 }
 
 function buildRestElementBindings(
@@ -195,9 +208,10 @@ function buildRestElementBindings(
   nodePath: NodePath<t.RestElement>,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
+  pendingRenames?: PendingRenames,
 ) {
   const elementPath = nodePath.get("argument");
-  buildLValBindings(bindingsPath, elementPath, functionBuilder, environment);
+  buildLValBindings(bindingsPath, elementPath, functionBuilder, environment, pendingRenames);
 }
 
 function hasInterveningFunction(nodePath: NodePath, bindingsPath: NodePath): boolean {

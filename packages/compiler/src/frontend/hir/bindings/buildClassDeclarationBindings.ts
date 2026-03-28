@@ -2,6 +2,7 @@ import { NodePath } from "@babel/core";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import type { PendingRenames } from "./buildBindings";
 import { isContextVariable } from "./isContextVariable";
 
 export function buildClassDeclarationBindings(
@@ -9,6 +10,7 @@ export function buildClassDeclarationBindings(
   nodePath: NodePath<t.ClassDeclaration>,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
+  pendingRenames?: PendingRenames,
 ) {
   const parentPath = nodePath.parentPath;
   if (!parentPath.isExportDeclaration() && parentPath !== bindingsPath) {
@@ -29,7 +31,11 @@ export function buildClassDeclarationBindings(
     environment.contextDeclarationIds.add(identifier.declarationId);
   }
 
-  bindingsPath.scope.rename(idNode.name, identifier.name);
+  if (pendingRenames) {
+    pendingRenames.push([idNode.name, identifier.name]);
+  } else {
+    bindingsPath.scope.rename(idNode.name, identifier.name);
+  }
   functionBuilder.registerDeclarationName(identifier.name, identifier.declarationId, bindingsPath);
 
   const place = environment.createPlace(identifier);

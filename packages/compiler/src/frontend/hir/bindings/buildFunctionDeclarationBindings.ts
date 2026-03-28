@@ -3,6 +3,7 @@ import * as t from "@babel/types";
 import { getFunctionName } from "../../../babel-utils";
 import { Environment } from "../../../environment";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import type { PendingRenames } from "./buildBindings";
 import { isContextVariable } from "./isContextVariable";
 
 export function buildFunctionDeclarationBindings(
@@ -10,6 +11,7 @@ export function buildFunctionDeclarationBindings(
   nodePath: NodePath<t.FunctionDeclaration>,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
+  pendingRenames?: PendingRenames,
 ) {
   // For function declarations, we only want direct children
   // of the binding path. The nested function declarations
@@ -37,8 +39,11 @@ export function buildFunctionDeclarationBindings(
     environment.contextDeclarationIds.add(identifier.declarationId);
   }
 
-  // Rename the variable name in the scope to the temporary place.
-  bindingsPath.scope.rename(functionName.node.name, identifier.name);
+  if (pendingRenames) {
+    pendingRenames.push([functionName.node.name, identifier.name]);
+  } else {
+    bindingsPath.scope.rename(functionName.node.name, identifier.name);
+  }
   functionBuilder.registerDeclarationName(identifier.name, identifier.declarationId, bindingsPath);
 
   const place = environment.createPlace(identifier);

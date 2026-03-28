@@ -1,5 +1,5 @@
 export function App() {
-  const $25_0 = getValue();
-  const $13_0 = useMemo(() => $25_0 + 1, [$25_0]);
-  return <div>{$13_0}</div>;
+  const $24_0 = getValue();
+  const $12_0 = useMemo(() => $24_0 + 1, [$24_0]);
+  return <div>{$12_0}</div>;
 }

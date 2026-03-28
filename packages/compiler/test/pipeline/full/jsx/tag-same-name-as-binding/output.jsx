@@ -1,5 +1,5 @@
-export function HighlightedCode({ code: $9_0, lang: $12_0 }) {
-  const $15_0 = $9_0 + $12_0;
+export function HighlightedCode({ code: $7_0, lang: $10_0 }) {
+  const $13_0 = $7_0 + $10_0;
   return (
     <pre>
       <code
@@ -7,7 +7,7 @@ export function HighlightedCode({ code: $9_0, lang: $12_0 }) {
           fontFamily: "mono",
         }}
         dangerouslySetInnerHTML={{
-          __html: $15_0,
+          __html: $13_0,
         }}
       />
     </pre>
