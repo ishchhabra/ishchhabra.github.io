@@ -1,0 +1,11 @@
+{
+  "enableOptimizer": false,
+  "enableLateOptimizer": true,
+  "enableLateConstantPropagationPass": false,
+  "enableLateCopyPropagationPass": false,
+  "enableLateCopyFoldingPass": true,
+  "enableLateCopyCoalescingPass": false,
+  "enableLateDeadStoreEliminationPass": false,
+  "enableLateDeadCodeEliminationPass": false,
+  "enableExportDeclarationMergingPass": false
+}

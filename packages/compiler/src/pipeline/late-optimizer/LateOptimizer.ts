@@ -3,9 +3,11 @@ import { BasicBlock, BlockId } from "../../ir";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { AnalysisManager } from "../analysis/AnalysisManager";
+import { LateConstantPropagationPass } from "./passes/LateConstantPropagationPass";
+import { LateCopyCoalescingPass } from "./passes/LateCopyCoalescingPass";
+import { LateCopyFoldingPass } from "./passes/LateCopyFoldingPass";
 import { LateCopyPropagationPass } from "./passes/LateCopyPropagationPass";
 import { LateDeadCodeEliminationPass } from "./passes/LateDeadCodeEliminationPass";
-import { LateDeadStoreEliminationPass } from "./passes/LateDeadStoreEliminationPass";
 
 interface LateOptimizerResult {
   blocks: Map<BlockId, BasicBlock>;
@@ -36,6 +38,15 @@ export class LateOptimizer {
     while (changed) {
       changed = false;
 
+      if (this.options.enableLateConstantPropagationPass) {
+        const constantPropagationResult = new LateConstantPropagationPass(this.functionIR).run();
+        if (constantPropagationResult.changed) {
+          changed = true;
+          this.AM.invalidateFunction(this.functionIR);
+        }
+        blocks = constantPropagationResult.blocks;
+      }
+
       if (this.options.enableLateCopyPropagationPass) {
         const copyPropagationResult = new LateCopyPropagationPass(this.functionIR).run();
         if (copyPropagationResult.changed) {
@@ -45,13 +56,22 @@ export class LateOptimizer {
         blocks = copyPropagationResult.blocks;
       }
 
-      if (this.options.enableLateDeadStoreEliminationPass) {
-        const deadStoreEliminationResult = new LateDeadStoreEliminationPass(this.functionIR).run();
-        if (deadStoreEliminationResult.changed) {
+      if (this.options.enableLateCopyFoldingPass) {
+        const copyFoldingResult = new LateCopyFoldingPass(this.functionIR).run();
+        if (copyFoldingResult.changed) {
           changed = true;
           this.AM.invalidateFunction(this.functionIR);
         }
-        blocks = deadStoreEliminationResult.blocks;
+        blocks = copyFoldingResult.blocks;
+      }
+
+      if (this.options.enableLateCopyCoalescingPass) {
+        const copyCoalescingResult = new LateCopyCoalescingPass(this.functionIR).run();
+        if (copyCoalescingResult.changed) {
+          changed = true;
+          this.AM.invalidateFunction(this.functionIR);
+        }
+        blocks = copyCoalescingResult.blocks;
       }
 
       if (this.options.enableLateDeadCodeEliminationPass) {

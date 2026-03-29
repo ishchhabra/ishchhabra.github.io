@@ -1,5 +1,5 @@
-let $17_phi_20 = undefined;
-$17_phi_20 = 0;
+const $0_0 = 0;
+let $17_phi_20 = 0;
 if (globalThis.cond) {
   const $0_1 = globalThis.compute();
   console.log($0_1);

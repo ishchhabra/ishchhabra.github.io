@@ -1,7 +1,8 @@
+const $0_0 = 0;
 let $34_phi_45 = 0;
 outer: while ($34_phi_45 < 5) {
   const $5_0 = 0;
-  let $35_phi_46 = $5_0;
+  let $35_phi_46 = 0;
   let $36_phi_47 = undefined;
   let $37_phi_48 = undefined;
   inner: while ($35_phi_46 < 5) {
@@ -19,7 +20,7 @@ outer: while ($34_phi_45 < 5) {
       continue outer;
     }
     if ($34_phi_45 === 4) {
-      $37_phi_48 = $5_0;
+      $37_phi_48 = undefined;
       break outer;
     }
     console.log($34_phi_45, $35_phi_46);

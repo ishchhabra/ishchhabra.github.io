@@ -1,10 +1,11 @@
 const $0_0 = 0;
+const $3_0 = 0;
 let $19_phi_26 = undefined;
-let $20_phi_27 = $0_0;
+let $20_phi_27 = 0;
 let $21_phi_28 = 0;
 while ($21_phi_28 < 10) {
   if ($21_phi_28 === 5) {
-    $19_phi_26 = $0_0;
+    $19_phi_26 = undefined;
     const $12_0 = $21_phi_28;
     $12_0;
     $20_phi_27 = $19_phi_26;
