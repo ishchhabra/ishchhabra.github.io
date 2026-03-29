@@ -1,21 +1,17 @@
 function $0_0($1_0, $2_0, $3_0) {
-  const $4_2 = undefined;
-  const $7_2 = undefined;
   let $36_phi_62 = undefined;
   let $38_phi_64 = undefined;
   let $40_phi_66 = undefined;
   if ($1_0) {
     let $41_phi_67 = undefined;
     if ($2_0) {
-      const $4_3 = $2_0;
       $36_phi_62 = $2_0;
-      $38_phi_64 = $7_2;
-      $41_phi_67 = $4_3;
+      $38_phi_64 = undefined;
+      $41_phi_67 = $2_0;
     } else {
-      const $7_3 = $3_0;
-      $36_phi_62 = $4_2;
+      $36_phi_62 = undefined;
       $38_phi_64 = $3_0;
-      $41_phi_67 = $7_3;
+      $41_phi_67 = $3_0;
     }
     $40_phi_66 =
       ($41_phi_67,

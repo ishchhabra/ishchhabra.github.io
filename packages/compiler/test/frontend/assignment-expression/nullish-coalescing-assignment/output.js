@@ -1,8 +1,8 @@
 export function f($1_0) {
   let $4_0 = $1_0;
   let $12_phi_15 = undefined;
-  $12_phi_15 = $1_0;
   let $13_phi_16 = undefined;
+  $12_phi_15 = $1_0;
   $13_phi_16 = $4_0;
   if ($1_0 == null) {
     const $1_1 = 30;

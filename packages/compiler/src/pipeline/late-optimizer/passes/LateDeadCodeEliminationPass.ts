@@ -1,21 +1,21 @@
 import { Environment } from "../../../environment";
-import {
-  BaseInstruction,
-  FunctionDeclarationInstruction,
-  StoreLocalInstruction,
-} from "../../../ir";
 import { FunctionIR } from "../../../ir/core/FunctionIR";
 import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
 
 /**
- * Late Dead Code Elimination — cleanup pass after SSA elimination.
+ * Textbook dead code elimination.
  *
- * Removes pure instructions whose defined place has no readers. Uses
- * the embedded {@link Identifier.uses} chain (maintained incrementally
- * by BasicBlock mutation methods) to determine what is used.
+ * An instruction is dead if:
+ *   1. It has no side effects, AND
+ *   2. None of its written places have any uses.
  *
- * The base class re-runs `step()` until fixpoint so that chains of dead
- * instructions are cleaned up across iterations.
+ * Dead instructions are removed. The base class re-runs `step()` until
+ * fixpoint so that chains of dead instructions are cleaned up: removing
+ * instruction A may make instruction B (which only existed to feed A)
+ * dead as well.
+ *
+ * Use-chains (`Identifier.uses`) are maintained automatically by
+ * `BasicBlock.removeInstructionAt()`.
  */
 export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
   constructor(
@@ -29,19 +29,15 @@ export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
     let changed = false;
 
     for (const block of this.functionIR.blocks.values()) {
+      // Iterate backward so removals don't shift unprocessed indices.
       for (let i = block.instructions.length - 1; i >= 0; i--) {
         const instr = block.instructions[i];
+
+        // Keep instructions with side effects.
         if (instr.hasSideEffects(this.environment)) continue;
 
-        if (instr instanceof FunctionDeclarationInstruction) {
-          if (instr.identifier.identifier.uses.size > 0) continue;
-        } else if (instr instanceof StoreLocalInstruction) {
-          if (instr.getWrittenPlaces().some((p) => p.identifier.uses.size > 0)) continue;
-          const definer = instr.value.identifier.definer;
-          if (definer instanceof BaseInstruction && !definer.isPure(this.environment)) continue;
-        } else {
-          if (instr.getWrittenPlaces().some((p) => p.identifier.uses.size > 0)) continue;
-        }
+        // Keep instructions where any written place is still used.
+        if (instr.getWrittenPlaces().some((p) => p.identifier.uses.size > 0)) continue;
 
         block.removeInstructionAt(i);
         changed = true;

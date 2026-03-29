@@ -26,8 +26,8 @@ export const CompilerOptionsSchema = z.object({
   enableLateOptimizer: z.boolean().default(true),
   /** Whether to enable the late copy propagation pass */
   enableLateCopyPropagationPass: z.boolean().default(true),
-  /** Whether to enable the late dead store elimination pass */
-  enableLateDeadStoreEliminationPass: z.boolean().default(true),
+  /** Whether to enable the late copy coalescing pass */
+  enableLateCopyCoalescingPass: z.boolean().default(true),
   /** Whether to enable the late dead code elimination pass */
   enableLateDeadCodeEliminationPass: z.boolean().default(true),
   /** Whether to enable the scalar replacement of aggregates pass */

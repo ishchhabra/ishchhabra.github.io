@@ -1,6 +1,6 @@
 {
   "enableOptimizer": false,
   "enableLateCopyPropagationPass": false,
-  "enableLateDeadStoreEliminationPass": false,
+  "enableLateCopyCoalescingPass": false,
   "enableExportDeclarationMergingPass": false
 }

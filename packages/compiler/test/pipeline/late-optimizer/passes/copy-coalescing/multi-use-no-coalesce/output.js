@@ -1,3 +1,4 @@
+const $0_0 = 0;
 let $17_phi_20 = undefined;
 $17_phi_20 = 0;
 if (globalThis.cond) {

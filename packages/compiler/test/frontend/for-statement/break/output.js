@@ -4,7 +4,5 @@ while ($18_phi_23 < 10) {
     break;
   }
   console.log($18_phi_23);
-  const $11_0 = $18_phi_23;
-  $11_0;
   $18_phi_23 = $18_phi_23 + 1;
 }

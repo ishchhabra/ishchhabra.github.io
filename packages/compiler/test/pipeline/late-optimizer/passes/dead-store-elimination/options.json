@@ -1,4 +1,4 @@
 {
-  "enableLateDeadStoreEliminationPass": true,
+  "enableLateCopyCoalescingPass": true,
   "enableLateCopyPropagationPass": false
 }

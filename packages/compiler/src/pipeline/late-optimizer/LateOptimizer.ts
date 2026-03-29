@@ -3,9 +3,10 @@ import { BasicBlock, BlockId } from "../../ir";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { AnalysisManager } from "../analysis/AnalysisManager";
+import { LateCopyCoalescingPass } from "./passes/LateCopyCoalescingPass";
 import { LateCopyPropagationPass } from "./passes/LateCopyPropagationPass";
 import { LateDeadCodeEliminationPass } from "./passes/LateDeadCodeEliminationPass";
-import { LateDeadStoreEliminationPass } from "./passes/LateDeadStoreEliminationPass";
+import { LateExpressionInliningPass } from "./passes/LateExpressionInliningPass";
 
 interface LateOptimizerResult {
   blocks: Map<BlockId, BasicBlock>;
@@ -14,12 +15,15 @@ interface LateOptimizerResult {
 /**
  * Post-SSA cleanup optimizer.
  *
- * Runs after SSA elimination to clean up artifacts (redundant copies,
- * dead stores, load-store chains) introduced by phi elimination.
- * Passes run in a fixpoint loop until no pass reports changes.
+ * Runs after SSA elimination to clean up artifacts introduced by phi
+ * elimination. Implements Boissinot's "coalesce" phase plus standard
+ * cleanup passes.
  *
- * ExportDeclarationMerging is NOT part of this optimizer — it is a
- * lowering concern and runs separately in the pipeline.
+ * Pipeline order (fixpoint loop):
+ *   1. CopyPropagation    — rewrite reads to use original source
+ *   2. CopyCoalescing     — merge non-interfering copies (Boissinot coalesce)
+ *   3. ExpressionInlining — inline single-use pure consts at use site
+ *   4. DeadCodeElimination — remove instructions with no uses
  */
 export class LateOptimizer {
   constructor(
@@ -37,33 +41,49 @@ export class LateOptimizer {
       changed = false;
 
       if (this.options.enableLateCopyPropagationPass) {
-        const copyPropagationResult = new LateCopyPropagationPass(this.functionIR).run();
-        if (copyPropagationResult.changed) {
+        const result = new LateCopyPropagationPass(this.functionIR).run();
+        if (result.changed) {
           changed = true;
           this.AM.invalidateFunction(this.functionIR);
         }
-        blocks = copyPropagationResult.blocks;
+        blocks = result.blocks;
       }
 
-      if (this.options.enableLateDeadStoreEliminationPass) {
-        const deadStoreEliminationResult = new LateDeadStoreEliminationPass(this.functionIR).run();
-        if (deadStoreEliminationResult.changed) {
+      if (this.options.enableLateCopyCoalescingPass) {
+        const result = new LateCopyCoalescingPass(
+          this.functionIR,
+          this.moduleIR.environment,
+          this.AM,
+        ).run();
+        if (result.changed) {
           changed = true;
           this.AM.invalidateFunction(this.functionIR);
         }
-        blocks = deadStoreEliminationResult.blocks;
+        blocks = result.blocks;
       }
 
-      if (this.options.enableLateDeadCodeEliminationPass) {
-        const lateDeadCodeEliminationResult = new LateDeadCodeEliminationPass(
+      {
+        const result = new LateExpressionInliningPass(
           this.functionIR,
           this.moduleIR.environment,
         ).run();
-        if (lateDeadCodeEliminationResult.changed) {
+        if (result.changed) {
           changed = true;
           this.AM.invalidateFunction(this.functionIR);
         }
-        blocks = lateDeadCodeEliminationResult.blocks;
+        blocks = result.blocks;
+      }
+
+      if (this.options.enableLateDeadCodeEliminationPass) {
+        const result = new LateDeadCodeEliminationPass(
+          this.functionIR,
+          this.moduleIR.environment,
+        ).run();
+        if (result.changed) {
+          changed = true;
+          this.AM.invalidateFunction(this.functionIR);
+        }
+        blocks = result.blocks;
       }
     }
 

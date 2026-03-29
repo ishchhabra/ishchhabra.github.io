@@ -2,6 +2,6 @@
   "enableOptimizer": false,
   "enableLateOptimizer": true,
   "enableLateCopyPropagationPass": true,
-  "enableLateDeadStoreEliminationPass": false,
+  "enableLateCopyCoalescingPass": false,
   "enableLateDeadCodeEliminationPass": false
 }

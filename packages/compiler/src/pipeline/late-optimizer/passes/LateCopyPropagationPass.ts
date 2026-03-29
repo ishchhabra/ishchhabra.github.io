@@ -1,78 +1,53 @@
 import {
-  BaseInstruction,
   BlockId,
   CopyInstruction,
   DeclarationId,
   IdentifierId,
+  LiteralInstruction,
   LoadLocalInstruction,
   Place,
   StoreLocalInstruction,
 } from "../../../ir";
-import { LoadPhiInstruction } from "../../../ir/instructions/memory/LoadPhi";
+import { Identifier } from "../../../ir/core/Identifier";
+import { FunctionIR } from "../../../ir/core/FunctionIR";
 import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
 
 /**
- * Forward copy propagation with copy coalescing — replaces loads of
- * copy-target variables with loads of the original source variable, and
- * eliminates intermediate variables that exist only to feed a phi copy.
+ * Textbook forward copy propagation + const-literal forwarding.
  *
- * **Copy propagation** (forward): when a variable `x` is assigned the value
- * of another variable `y` (via a `CopyInstruction` or a `StoreLocal` whose
- * value was loaded from `y`), subsequent loads of `x` can be replaced with
- * loads of `y`, provided neither variable has been redefined in between.
+ *   1. **Copy propagation**: when `x` copies `y`, rewrite `LoadLocal(x)`
+ *      → `LoadLocal(y)`. Uses forward dataflow with intersection meet.
  *
- * ```
- *   LoadLocal(p1, y)
- *   Copy(p2, x, p1)        // x = y
- *   ...
- *   LoadLocal(p3, x)        // → rewritten to LoadLocal(p3, y)
- * ```
- *
- * **Copy coalescing** (backward): when `StoreLocal(x, expr)` is followed by
- * `LoadLocal(tmp, x) → Copy(phi, tmp)` and `x` has no other loads, the
- * intermediate variable is unnecessary. The Copy is rewritten to reference
- * `expr` directly and the StoreLocal + LoadLocal are removed.
- *
- * ```
- *   BinaryExpr(p1, a, +, b)
- *   StoreLocal(p2, x, p1)   // const x = a + b   ← removed
- *   LoadLocal(p3, x)         // tmp = x            ← removed
- *   Copy(p4, phi, p3)        // phi = tmp          → phi = p1
- * ```
- *
- * The pass uses a forward dataflow analysis with an intersection meet
- * operator to propagate copy information across basic block boundaries.
- * Chains of copies (x = y, y = z) are resolved transitively so that
- * loads are rewritten to the ultimate source.
- *
- * This is especially effective at cleaning up artifacts from phi elimination.
+ *   2. **Const-literal forwarding**: when `const x = <literal>`, rewrite
+ *      reads of `x` to reference the literal directly. Also propagates
+ *      into terminal operands (e.g., `return x` → `return <literal>`).
  */
 export class LateCopyPropagationPass extends BaseOptimizationPass {
+
   protected step(): OptimizationResult {
-    let changed = false;
-    changed ||= this.propagate();
-    changed ||= this.coalesce();
-    return { changed };
+    return { changed: this.propagateAndForwardLiterals() };
   }
 
-  /**
-   * Forward copy propagation: replaces loads of copy-target variables with
-   * loads of the original source variable.
-   *
-   * Uses a forward dataflow analysis with an intersection meet operator to
-   * propagate copy information across basic block boundaries.  Blocks are
-   * processed in Map insertion order (roughly topological for reducible
-   * CFGs).  The outer fixpoint loop in BaseOptimizationPass re-runs step()
-   * until no more rewrites are found, handling back-edges in loops.
-   */
-  private propagate(): boolean {
-    // Build a map from each SSA place to the variable it was loaded from.
-    // This lets us trace which variable flows into a Copy/StoreLocal.
+  // ---------------------------------------------------------------------------
+  // Phase 1 + 2: Copy propagation + const-literal forwarding
+  // ---------------------------------------------------------------------------
+
+  private propagateAndForwardLiterals(): boolean {
     const placeSource = new Map<IdentifierId, Place>();
+    const constForward = new Map<Identifier, Place>();
+
     for (const block of this.functionIR.blocks.values()) {
       for (const instr of block.instructions) {
         if (instr instanceof LoadLocalInstruction) {
           placeSource.set(instr.place.identifier.id, instr.value);
+        }
+
+        if (instr instanceof StoreLocalInstruction && instr.type === "const") {
+          const valueDef = instr.value.identifier.definer;
+          if (valueDef instanceof LiteralInstruction) {
+            placeSource.set(instr.lval.identifier.id, instr.value);
+            constForward.set(instr.lval.identifier, instr.value);
+          }
         }
       }
     }
@@ -81,7 +56,7 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
     let changed = false;
 
     for (const [blockId, block] of this.functionIR.blocks) {
-      const state = this.meetPredecessors(blockId, copyOut);
+      const state = this.meet(blockId, copyOut);
 
       for (let i = 0; i < block.instructions.length; i++) {
         const instr = block.instructions[i];
@@ -98,10 +73,28 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
             );
             placeSource.set(instr.place.identifier.id, resolved);
             changed = true;
+          } else {
+            const forwarded = placeSource.get(instr.value.identifier.id);
+            if (forwarded && forwarded.identifier.id !== instr.value.identifier.id) {
+              block.replaceInstruction(
+                i,
+                new LoadLocalInstruction(instr.id, instr.place, instr.nodePath, forwarded),
+              );
+              placeSource.set(instr.place.identifier.id, forwarded);
+              changed = true;
+            }
           }
         }
 
         this.transfer(block.instructions[i], state, placeSource);
+      }
+
+      if (block.terminal && constForward.size > 0) {
+        const rewritten = block.terminal.rewrite(constForward);
+        if (rewritten !== block.terminal) {
+          block.terminal = rewritten;
+          changed = true;
+        }
       }
 
       copyOut.set(blockId, state);
@@ -110,107 +103,12 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
     return changed;
   }
 
-  /**
-   * Copy coalescing: for each Copy whose value comes from a LoadLocal of a
-   * single-use variable, retarget the Copy to the expression that defined
-   * that variable and delete the intermediate StoreLocal + LoadLocal.
-   */
-  private coalesce(): boolean {
-    // Count how many times each SSA variable is loaded.  We key by the
-    // lval's IdentifierId (unique per SSA version), NOT DeclarationId
-    // (which is shared across versions like $2_0 and $2_1).
-    const loadCounts = new Map<IdentifierId, number>();
-    for (const block of this.functionIR.blocks.values()) {
-      for (const instr of block.instructions) {
-        // Count both LoadLocal and LoadPhi — both read a variable by
-        // identifierId and prevent coalescing if the count exceeds 1.
-        if (instr instanceof LoadLocalInstruction || instr instanceof LoadPhiInstruction) {
-          const id = instr.value.identifier.id;
-          loadCounts.set(id, (loadCounts.get(id) ?? 0) + 1);
-        }
-      }
-    }
 
-    let changed = false;
+  // ---------------------------------------------------------------------------
+  // Dataflow helpers
+  // ---------------------------------------------------------------------------
 
-    for (const block of this.functionIR.blocks.values()) {
-      // Index the last StoreLocal per SSA variable (by lval IdentifierId).
-      const storeById = new Map<IdentifierId, { index: number; instr: StoreLocalInstruction }>();
-      for (let i = 0; i < block.instructions.length; i++) {
-        const instr = block.instructions[i];
-        if (instr instanceof StoreLocalInstruction) {
-          storeById.set(instr.lval.identifier.id, { index: i, instr });
-        }
-      }
-
-      const toRemove = new Set<number>();
-
-      for (let i = 0; i < block.instructions.length; i++) {
-        const copy = block.instructions[i];
-        if (!(copy instanceof CopyInstruction)) continue;
-
-        // Walk backward to find the LoadLocal whose output feeds this Copy.
-        let loadIdx = -1;
-        let loadInstr: LoadLocalInstruction | undefined;
-        for (let j = i - 1; j >= 0; j--) {
-          const candidate = block.instructions[j];
-          if (
-            candidate instanceof LoadLocalInstruction &&
-            candidate.place.identifier.id === copy.value.identifier.id
-          ) {
-            loadIdx = j;
-            loadInstr = candidate;
-            break;
-          }
-        }
-        if (loadIdx === -1 || !loadInstr) continue;
-
-        const srcId = loadInstr.value.identifier.id;
-
-        // The variable must be loaded exactly once (this LoadLocal only).
-        if ((loadCounts.get(srcId) ?? 0) !== 1) continue;
-
-        // Find the StoreLocal that defined this variable in the same block.
-        const store = storeById.get(srcId);
-        if (!store || store.index >= loadIdx) continue;
-        // Don't coalesce if the StoreLocal was already marked for removal
-        // by an earlier coalescing in this block.
-        if (toRemove.has(store.index)) continue;
-
-        // Rewrite: Copy now references the expression directly.
-        block.replaceInstruction(
-          i,
-          new CopyInstruction(copy.id, copy.place, copy.nodePath, copy.lval, store.instr.value),
-        );
-
-        toRemove.add(store.index); // Remove StoreLocal
-        toRemove.add(loadIdx); // Remove LoadLocal
-        changed = true;
-      }
-
-      if (toRemove.size > 0) {
-        // Remove in reverse order to preserve indices.
-        const sorted = [...toRemove].sort((a, b) => b - a);
-        for (const idx of sorted) {
-          block.removeInstructionAt(idx);
-        }
-      }
-    }
-
-    return changed;
-  }
-
-  /**
-   * Compute the copy state at the entry of a block by intersecting the
-   * copy-out states of all predecessors.  Only copy relationships that
-   * agree across every predecessor survive.
-   *
-   * A predecessor whose copy-out has not been computed yet (e.g. a
-   * back-edge target processed before its predecessor) is treated as
-   * "top" (the universal set) — the intersection identity — so it does
-   * not kill valid copy information from other predecessors.
-   */
-  private meetPredecessors(blockId: BlockId, copyOut: Map<BlockId, CopyState>): CopyState {
+  private meet(blockId: BlockId, copyOut: Map<BlockId, CopyState>): CopyState {
     const preds = this.functionIR.predecessors.get(blockId);
     if (!preds || preds.size === 0) {
       return new Map();
@@ -219,14 +117,10 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
     let result: CopyState | undefined;
     for (const predId of preds) {
       const predState = copyOut.get(predId);
-      if (predState === undefined) {
-        // Not yet computed — treat as top (identity for intersection).
-        continue;
-      }
+      if (predState === undefined) continue;
       if (result === undefined) {
         result = new Map(predState);
       } else {
-        // Intersect: keep only entries present in both that agree on source.
         for (const [declId, place] of result) {
           const other = predState.get(declId);
           if (!other || other.identifier.declarationId !== place.identifier.declarationId) {
@@ -239,31 +133,19 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
     return result ?? new Map();
   }
 
-  /**
-   * Transfer function: update the copy state for a single instruction.
-   *
-   *  - CopyInstruction / StoreLocal whose value was loaded from a
-   *    variable: kill the target declaration, then record it as a copy
-   *    of the (transitively resolved) source variable.
-   *  - StoreLocal whose value is NOT from a LoadLocal: just kill the
-   *    target declaration (the variable is no longer a known copy).
-   */
   private transfer(
-    instr: BaseInstruction,
+    instr: import("../../../ir").BaseInstruction,
     state: CopyState,
     placeSource: Map<IdentifierId, Place>,
   ): void {
     if (instr instanceof CopyInstruction || instr instanceof StoreLocalInstruction) {
       const lvalDeclId = instr.lval.identifier.declarationId;
 
-      // Kill: the target variable is being (re)defined.
       this.kill(state, lvalDeclId);
 
-      // Gen: if the stored value was loaded from a variable, record the copy.
       const src = placeSource.get(instr.value.identifier.id);
       if (src) {
         const resolved = this.resolve(state, src.identifier.declarationId) ?? src;
-        // Avoid recording self-copies (x = x).
         if (resolved.identifier.declarationId !== lvalDeclId) {
           state.set(lvalDeclId, resolved);
         }
@@ -271,11 +153,6 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
     }
   }
 
-  /**
-   * Remove `declId` from the copy state and invalidate any entry whose
-   * source variable matches `declId` (since that source was just
-   * redefined, copies derived from it are no longer valid).
-   */
   private kill(state: CopyState, declId: DeclarationId): void {
     state.delete(declId);
     for (const [key, val] of state) {
@@ -285,10 +162,6 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
     }
   }
 
-  /**
-   * Follow the copy chain for `declId` to its ultimate source.
-   * Returns `undefined` if `declId` has no copy mapping.
-   */
   private resolve(state: CopyState, declId: DeclarationId): Place | undefined {
     const visited = new Set<DeclarationId>();
     let current = declId;

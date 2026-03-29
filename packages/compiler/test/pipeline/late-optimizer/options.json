@@ -1,6 +1,6 @@
 {
   "enableOptimizer": false,
   "enableLateOptimizer": true,
-  "enableLateDeadStoreEliminationPass": false,
+  "enableLateCopyCoalescingPass": false,
   "enableLateDeadCodeEliminationPass": false
 }
