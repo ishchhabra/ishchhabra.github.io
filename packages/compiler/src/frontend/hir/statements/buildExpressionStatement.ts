@@ -20,6 +20,9 @@ export function buildExpressionStatement(
 ): Place[] | undefined {
   const expressionPath = nodePath.get("expression");
   const expressionPlace = buildNode(expressionPath, functionBuilder, moduleBuilder, environment);
+  if (expressionPath.isAssignmentExpression()) {
+    return undefined;
+  }
   const expressionPlaces = castArray(expressionPlace);
   const places = expressionPlaces
     .map((expressionPlace) => {

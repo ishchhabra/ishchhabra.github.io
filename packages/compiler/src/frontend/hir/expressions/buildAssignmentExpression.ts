@@ -1,6 +1,5 @@
 import { NodePath } from "@babel/core";
 import * as t from "@babel/types";
-import { isStaticMemberAccess } from "../../../babel-utils";
 import { Environment } from "../../../environment";
 import {
   ArrayPatternInstruction,
@@ -12,9 +11,7 @@ import {
   ExpressionStatementInstruction,
   JumpTerminal,
   LiteralInstruction,
-  LoadDynamicPropertyInstruction,
   LoadLocalInstruction,
-  LoadStaticPropertyInstruction,
   ObjectPropertyInstruction,
   Place,
   RestElementInstruction,
@@ -22,12 +19,17 @@ import {
   StoreLocalInstruction,
   UnaryExpressionInstruction,
 } from "../../../ir";
-import { StoreDynamicPropertyInstruction } from "../../../ir/instructions/memory/StoreDynamicProperty";
-import { StoreStaticPropertyInstruction } from "../../../ir/instructions/memory/StoreStaticProperty";
 import { AssignmentPatternInstruction } from "../../../ir/instructions/pattern/AssignmentPattern";
 import { ObjectPatternInstruction } from "../../../ir/instructions/pattern/ObjectPattern";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import {
+  buildMemberReference,
+  createStoreMemberReferenceInstruction,
+  emitMemberReferenceStore,
+  loadMemberReference,
+} from "./buildMemberReference";
+import { stabilizePlace } from "../materializePlace";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildAssignmentExpression(
@@ -62,6 +64,12 @@ function buildIdentifierAssignment(
   }
 
   const rightPlace = buildAssignmentRight(nodePath, functionBuilder, moduleBuilder, environment);
+  const resultPlace = stabilizeAssignmentResult(
+    rightPlace,
+    nodePath,
+    functionBuilder,
+    environment,
+  );
 
   const leftPath: NodePath<t.AssignmentExpression["left"]> = nodePath.get("left");
   leftPath.assertIdentifier();
@@ -88,11 +96,11 @@ function buildIdentifierAssignment(
     place,
     nodePath,
     leftPlace,
-    rightPlace,
+    resultPlace,
     "const",
   );
   functionBuilder.addInstruction(instruction);
-  return place;
+  return resultPlace;
 }
 
 /**
@@ -203,6 +211,36 @@ function emitResultUpdate(
   );
 }
 
+function isStatementOnlyAssignmentContext(nodePath: NodePath<t.AssignmentExpression>): boolean {
+  const parentPath = nodePath.parentPath;
+  if (!parentPath) return false;
+  if (parentPath.isExpressionStatement()) return true;
+  if (parentPath.isForStatement()) {
+    const initPath = parentPath.get("init");
+    if (!Array.isArray(initPath) && initPath.hasNode() && initPath.node === nodePath.node) {
+      return true;
+    }
+    const updatePath = parentPath.get("update");
+    if (!Array.isArray(updatePath) && updatePath.hasNode() && updatePath.node === nodePath.node) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function stabilizeAssignmentResult(
+  valuePlace: Place,
+  nodePath: NodePath<t.AssignmentExpression>,
+  functionBuilder: FunctionIRBuilder,
+  environment: Environment,
+): Place {
+  if (isStatementOnlyAssignmentContext(nodePath)) {
+    return valuePlace;
+  }
+
+  return stabilizePlace(valuePlace, nodePath, functionBuilder, environment);
+}
+
 /**
  * Lowers `x ||= y`, `x &&= y`, `x ??= y` to:
  *
@@ -256,6 +294,12 @@ function buildLogicalIdentifierAssignment(
   if (rightPlace === undefined || Array.isArray(rightPlace)) {
     throw new Error("Logical assignment right must be a single place");
   }
+  const stabilizedRightPlace = stabilizePlace(
+    rightPlace,
+    nodePath,
+    functionBuilder,
+    environment,
+  );
 
   // Store x = y.
   const { place: lvalPlace } = buildIdentifierAssignmentLeft(
@@ -273,13 +317,13 @@ function buildLogicalIdentifierAssignment(
       environment.createPlace(environment.createIdentifier()),
       nodePath,
       lvalPlace,
-      rightPlace,
+      stabilizedRightPlace,
       "const",
     ),
   );
 
   // _result = y;
-  emitResultUpdate(bindingPlace, rightPlace, functionBuilder, environment);
+  emitResultUpdate(bindingPlace, stabilizedRightPlace, functionBuilder, environment);
 
   functionBuilder.currentBlock.terminal = new JumpTerminal(
     createInstructionId(environment),
@@ -308,62 +352,46 @@ function buildMemberExpressionAssignment(
     return buildLogicalMemberAssignment(nodePath, functionBuilder, moduleBuilder, environment);
   }
 
-  const rightPlace = buildAssignmentRight(nodePath, functionBuilder, moduleBuilder, environment);
-
   const leftPath: NodePath<t.AssignmentExpression["left"]> = nodePath.get("left");
   leftPath.assertMemberExpression();
+  const reference = buildMemberReference(leftPath, functionBuilder, moduleBuilder, environment, {
+    reusable: operator !== "=",
+  });
 
-  const objectPath = leftPath.get("object");
-  const objectPlace = buildNode(objectPath, functionBuilder, moduleBuilder, environment);
-  if (objectPlace === undefined || Array.isArray(objectPlace)) {
-    throw new Error("Assignment expression left must be a single place");
-  }
-
-  if (isStaticMemberAccess(leftPath)) {
-    const propertyPath: NodePath<t.MemberExpression["property"]> = leftPath.get("property");
-    let property: string;
-    if (propertyPath.isIdentifier()) {
-      property = propertyPath.node.name;
-    } else if (propertyPath.isStringLiteral()) {
-      property = propertyPath.node.value;
-    } else if (propertyPath.isNumericLiteral()) {
-      property = String(propertyPath.node.value);
-    } else {
-      throw new Error(`Unexpected static member property type: ${propertyPath.type}`);
-    }
-
-    const identifier = environment.createIdentifier();
-    const place = environment.createPlace(identifier);
-    const instruction = environment.createInstruction(
-      StoreStaticPropertyInstruction,
-      place,
-      nodePath,
-      objectPlace,
-      property,
-      rightPlace,
-    );
-    functionBuilder.addInstruction(instruction);
-    return place;
+  let rightPlace: Place;
+  if (operator === "=") {
+    rightPlace = buildAssignmentRight(nodePath, functionBuilder, moduleBuilder, environment);
   } else {
-    const propertyPath = leftPath.get("property");
-    const propertyPlace = buildNode(propertyPath, functionBuilder, moduleBuilder, environment);
-    if (propertyPlace === undefined || Array.isArray(propertyPlace)) {
-      throw new Error("Assignment expression left must be a single place");
+    const currentValuePlace = loadMemberReference(reference, nodePath, functionBuilder, environment);
+
+    const rightPath = nodePath.get("right");
+    const rhsPlace = buildNode(rightPath, functionBuilder, moduleBuilder, environment);
+    if (rhsPlace === undefined || Array.isArray(rhsPlace)) {
+      throw new Error("Assignment expression right must be a single place");
     }
 
-    const identifier = environment.createIdentifier();
-    const place = environment.createPlace(identifier);
-    const instruction = environment.createInstruction(
-      StoreDynamicPropertyInstruction,
-      place,
-      nodePath,
-      objectPlace,
-      propertyPlace,
-      rightPlace,
+    rightPlace = environment.createPlace(environment.createIdentifier());
+    functionBuilder.addInstruction(
+      environment.createInstruction(
+        BinaryExpressionInstruction,
+        rightPlace,
+        nodePath,
+        operator.slice(0, -1) as t.BinaryExpression["operator"],
+        currentValuePlace,
+        rhsPlace,
+      ),
     );
-    functionBuilder.addInstruction(instruction);
-    return place;
   }
+  const resultPlace = stabilizeAssignmentResult(
+    rightPlace,
+    nodePath,
+    functionBuilder,
+    environment,
+  );
+
+  emitMemberReferenceStore(reference, nodePath, resultPlace, functionBuilder, environment);
+
+  return resultPlace;
 }
 
 /**
@@ -387,61 +415,12 @@ function buildLogicalMemberAssignment(
 ): Place {
   const operator = nodePath.node.operator;
   const leftPath = nodePath.get("left") as NodePath<t.MemberExpression>;
-
-  // Evaluate the object (and computed key if dynamic) once.
-  const objectPath = leftPath.get("object");
-  const objectPlace = buildNode(objectPath, functionBuilder, moduleBuilder, environment);
-  if (objectPlace === undefined || Array.isArray(objectPlace)) {
-    throw new Error("Logical member assignment object must be a single place");
-  }
-
-  const isStatic = isStaticMemberAccess(leftPath);
-  let propertyName: string | undefined;
-  let propertyPlace: Place | undefined;
-
-  if (isStatic) {
-    const propertyPath = leftPath.get("property");
-    if (propertyPath.isIdentifier()) {
-      propertyName = propertyPath.node.name;
-    } else if (propertyPath.isStringLiteral()) {
-      propertyName = propertyPath.node.value;
-    } else if (propertyPath.isNumericLiteral()) {
-      propertyName = String(propertyPath.node.value);
-    } else {
-      throw new Error(`Unexpected static member property type: ${propertyPath.type}`);
-    }
-  } else {
-    const propertyPath = leftPath.get("property");
-    const built = buildNode(propertyPath, functionBuilder, moduleBuilder, environment);
-    if (built === undefined || Array.isArray(built)) {
-      throw new Error("Logical member assignment computed property must be a single place");
-    }
-    propertyPlace = built;
-  }
+  const reference = buildMemberReference(leftPath, functionBuilder, moduleBuilder, environment, {
+    reusable: true,
+  });
 
   // Load the property value once.
-  const testPlace = environment.createPlace(environment.createIdentifier());
-  if (isStatic) {
-    functionBuilder.addInstruction(
-      environment.createInstruction(
-        LoadStaticPropertyInstruction,
-        testPlace,
-        nodePath,
-        objectPlace,
-        propertyName!,
-      ),
-    );
-  } else {
-    functionBuilder.addInstruction(
-      environment.createInstruction(
-        LoadDynamicPropertyInstruction,
-        testPlace,
-        nodePath,
-        objectPlace,
-        propertyPlace!,
-      ),
-    );
-  }
+  const testPlace = loadMemberReference(reference, nodePath, functionBuilder, environment);
 
   // let _result = testPlace; — cache the property read. The condition
   // and all subsequent references use _result, not testPlace, to avoid
@@ -480,32 +459,24 @@ function buildLogicalMemberAssignment(
   if (rightPlace === undefined || Array.isArray(rightPlace)) {
     throw new Error("Logical member assignment right must be a single place");
   }
+  const stabilizedRightPlace = stabilizePlace(
+    rightPlace,
+    nodePath,
+    functionBuilder,
+    environment,
+  );
 
   // Store the property.
   const storePlace = environment.createPlace(environment.createIdentifier());
-  if (isStatic) {
-    functionBuilder.addInstruction(
-      environment.createInstruction(
-        StoreStaticPropertyInstruction,
-        storePlace,
-        nodePath,
-        objectPlace,
-        propertyName!,
-        rightPlace,
-      ),
-    );
-  } else {
-    functionBuilder.addInstruction(
-      environment.createInstruction(
-        StoreDynamicPropertyInstruction,
-        storePlace,
-        nodePath,
-        objectPlace,
-        propertyPlace!,
-        rightPlace,
-      ),
-    );
-  }
+  functionBuilder.addInstruction(
+    createStoreMemberReferenceInstruction(
+      reference,
+      storePlace,
+      nodePath,
+      stabilizedRightPlace,
+      environment,
+    ),
+  );
 
   // Wrap the store in an ExpressionStatement so it emits as a statement.
   functionBuilder.addInstruction(
@@ -518,7 +489,7 @@ function buildLogicalMemberAssignment(
   );
 
   // _result = y;
-  emitResultUpdate(resultBinding, rightPlace, functionBuilder, environment);
+  emitResultUpdate(resultBinding, stabilizedRightPlace, functionBuilder, environment);
 
   functionBuilder.currentBlock.terminal = new JumpTerminal(
     createInstructionId(environment),
@@ -546,6 +517,12 @@ function buildDestructuringAssignment(
   if (rightPlace === undefined || Array.isArray(rightPlace)) {
     throw new Error("Assignment expression right must be a single place");
   }
+  const resultPlace = stabilizeAssignmentResult(
+    rightPlace,
+    nodePath,
+    functionBuilder,
+    environment,
+  );
 
   const leftPath: NodePath<t.AssignmentExpression["left"]> = nodePath.get("left");
   leftPath.assertLVal();
@@ -564,7 +541,7 @@ function buildDestructuringAssignment(
     place,
     nodePath,
     leftPlace,
-    rightPlace,
+    resultPlace,
     "const",
     identifiers,
   );
@@ -573,7 +550,7 @@ function buildDestructuringAssignment(
   for (const instruction of instructions) {
     functionBuilder.addInstruction(instruction);
   }
-  return place;
+  return resultPlace;
 }
 
 export function buildAssignmentLeft(
@@ -678,41 +655,14 @@ function buildMemberExpressionAssignmentLeft(
     functionBuilder.currentBlock.id,
     place.id,
   );
-
-  const loadLocalPlace = environment.createPlace(environment.createIdentifier());
-  const loadLocalInstruction = environment.createInstruction(
-    LoadLocalInstruction,
-    loadLocalPlace,
-    nodePath,
-    place,
-  );
-
-  const objectPath = leftPath.get("object");
-  const objectPlace = buildNode(objectPath, functionBuilder, moduleBuilder, environment);
-  if (objectPlace === undefined || Array.isArray(objectPlace)) {
-    throw new Error("Assignment expression left must be a single place");
-  }
-
-  const propertyPath: NodePath<t.MemberExpression["property"]> = leftPath.get("property");
-  let property: string;
-  if (propertyPath.isIdentifier()) {
-    property = propertyPath.node.name;
-  } else if (propertyPath.isStringLiteral()) {
-    property = propertyPath.node.value;
-  } else if (propertyPath.isNumericLiteral()) {
-    property = String(propertyPath.node.value);
-  } else {
-    throw new Error(`Unexpected static member property type: ${propertyPath.type}`);
-  }
-
+  const reference = buildMemberReference(leftPath, functionBuilder, moduleBuilder, environment);
   const storePropertyPlace = environment.createPlace(environment.createIdentifier());
-  const storePropertyInstruction = environment.createInstruction(
-    StoreStaticPropertyInstruction,
+  const storePropertyInstruction = createStoreMemberReferenceInstruction(
+    reference,
     storePropertyPlace,
     nodePath,
-    objectPlace,
-    property,
-    loadLocalPlace,
+    place,
+    environment,
   );
 
   const expressionStatementPlace = environment.createPlace(environment.createIdentifier());
@@ -725,7 +675,7 @@ function buildMemberExpressionAssignmentLeft(
 
   return {
     place,
-    instructions: [loadLocalInstruction, storePropertyInstruction, expressionStatementInstruction],
+    instructions: [storePropertyInstruction, expressionStatementInstruction],
     identifiers: [place],
     hasContext: false,
   };

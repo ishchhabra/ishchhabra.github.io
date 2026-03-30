@@ -4,5 +4,5 @@ function $0_0() {
     return $1_0;
   }
   $1_0 = 1;
-  return ($1_0 = 1);
+  return 1;
 }

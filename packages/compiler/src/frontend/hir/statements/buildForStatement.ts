@@ -150,6 +150,10 @@ function buildExpressionAsStatement(
     throw new Error("Expression place is undefined");
   }
 
+  if (expressionPath.isAssignmentExpression()) {
+    return expressionPlace;
+  }
+
   // Assignments already emit a StoreLocalInstruction; wrapping in
   // ExpressionStatementInstruction would duplicate the declaration in codegen.
   const expressionInstruction = functionBuilder.environment.placeToInstruction.get(
