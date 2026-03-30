@@ -1,5 +1,5 @@
-function $0_0({ to: $3_0, label: $6_0 }) {
-  return <a href={$3_0}>{$6_0}</a>;
+function $0_0({ to: $2_0, label: $3_0 }) {
+  return <a href={$2_0}>{$3_0}</a>;
 }
 export function Header() {
   return (

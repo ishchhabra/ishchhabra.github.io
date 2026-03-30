@@ -280,6 +280,7 @@ function getInitialDeclarationState(kind: DeclarationKind): DeclarationState {
     case "let":
     case "const":
     case "class":
+    case "param":
       return "uninitialized";
     default:
       return "initialized";

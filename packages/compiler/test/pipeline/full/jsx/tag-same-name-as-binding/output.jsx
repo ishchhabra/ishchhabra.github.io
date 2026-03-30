@@ -1,6 +1,6 @@
-export function HighlightedCode({ code: $7_0, lang: $10_0 }) {
-  const $50_0 = $7_0;
-  const $51_0 = $10_0;
+export function HighlightedCode({ code: $6_0, lang: $7_0 }) {
+  const $50_0 = $6_0;
+  const $51_0 = $7_0;
   const $13_0 = $50_0 + $51_0;
   return (
     <pre>

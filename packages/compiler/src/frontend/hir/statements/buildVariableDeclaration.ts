@@ -29,6 +29,19 @@ export function buildVariableDeclaration(
   const declarationPlaces = declarations.map((declaration) => {
     const id = declaration.get("id") as NodePath<t.LVal>;
     const init: NodePath<t.Expression | null | undefined> = declaration.get("init");
+
+    let valuePlace: Place | Place[] | undefined;
+    if (!init.hasNode()) {
+      init.replaceWith(t.identifier("undefined"));
+      init.assertIdentifier({ name: "undefined" });
+      valuePlace = buildNode(init, functionBuilder, moduleBuilder, environment);
+    } else {
+      valuePlace = buildNode(init, functionBuilder, moduleBuilder, environment);
+    }
+    if (valuePlace === undefined || Array.isArray(valuePlace)) {
+      throw new Error("Value place must be a single place");
+    }
+
     let { place: lvalPlace, identifiers: lvalIdentifiers } = buildVariableDeclaratorLVal(
       id,
       functionBuilder,
@@ -54,18 +67,6 @@ export function buildVariableDeclaration(
 
     if (lvalPlace === undefined || Array.isArray(lvalPlace)) {
       throw new Error("Lval place must be a single place");
-    }
-
-    let valuePlace: Place | Place[] | undefined;
-    if (!init.hasNode()) {
-      init.replaceWith(t.identifier("undefined"));
-      init.assertIdentifier({ name: "undefined" });
-      valuePlace = buildNode(init, functionBuilder, moduleBuilder, environment);
-    } else {
-      valuePlace = buildNode(init, functionBuilder, moduleBuilder, environment);
-    }
-    if (valuePlace === undefined || Array.isArray(valuePlace)) {
-      throw new Error("Value place must be a single place");
     }
 
     const isContext = lvalIdentifiers.some((p) =>
@@ -97,7 +98,6 @@ export function buildVariableDeclaration(
     functionBuilder.addInstruction(instruction);
     lvalIdentifiers.forEach((lvalIdentifier) => {
       environment.registerDeclarationInstruction(lvalIdentifier, instruction);
-      functionBuilder.markDeclarationInitialized(lvalIdentifier.identifier.declarationId);
 
       const declPlaces = environment.declToPlaces.get(lvalIdentifier.identifier.declarationId);
       if (declPlaces) {
@@ -122,28 +122,32 @@ export function buildVariableDeclaratorLVal(
 ): { place: Place; identifiers: Place[] } {
   if (nodePath.isIdentifier()) {
     return buildIdentifierVariableDeclaratorLVal(nodePath, functionBuilder, environment);
-  } else if (nodePath.isArrayPattern()) {
+  }
+  if (nodePath.isArrayPattern()) {
     return buildArrayPatternVariableDeclaratorLVal(
       nodePath,
       functionBuilder,
       moduleBuilder,
       environment,
     );
-  } else if (nodePath.isObjectPattern()) {
+  }
+  if (nodePath.isObjectPattern()) {
     return buildObjectPatternVariableDeclaratorLVal(
       nodePath,
       functionBuilder,
       moduleBuilder,
       environment,
     );
-  } else if (nodePath.isAssignmentPattern()) {
+  }
+  if (nodePath.isAssignmentPattern()) {
     return buildAssignmentPatternVariableDeclaratorLVal(
       nodePath,
       functionBuilder,
       moduleBuilder,
       environment,
     );
-  } else if (nodePath.isRestElement()) {
+  }
+  if (nodePath.isRestElement()) {
     return buildRestElementVariableDeclaratorLVal(
       nodePath,
       functionBuilder,
@@ -161,6 +165,7 @@ function buildIdentifierVariableDeclaratorLVal(
   environment: Environment,
 ): { place: Place; identifiers: Place[] } {
   const place = buildBindingIdentifier(nodePath, functionBuilder, environment);
+  functionBuilder.markDeclarationInitialized(place.identifier.declarationId);
   return { place, identifiers: [place] };
 }
 
@@ -219,8 +224,8 @@ function buildObjectPatternVariableDeclaratorLVal(
 
       let keyPlace: Place;
       if (propertyPath.node.computed) {
-        // Computed keys are variable references — emit via buildNode so
-        // they produce a proper instruction in the block.
+        // Computed keys are variable references, so emit them through buildNode
+        // to preserve their evaluation in the instruction stream.
         const p = buildNode(keyPath, functionBuilder, moduleBuilder, environment);
         if (p === undefined || Array.isArray(p)) {
           throw new Error("Object pattern computed key must be a single place");
@@ -300,10 +305,7 @@ function buildObjectPropertyKeyVariableDeclaratorLVal(
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {
-  // Non-computed destructuring keys are property labels (identifiers,
-  // string literals, or numeric literals), not variable references.
-  // Emit a LiteralInstruction so the key survives SSA transformations
-  // (clone/rewrite) unchanged.
+  // Non-computed destructuring keys are property labels, not variable reads.
   const value = getValueFromStaticKey(nodePath);
   if (value === undefined) {
     throw new Error("Unsupported static key type in object pattern destructuring");
@@ -326,6 +328,12 @@ function buildAssignmentPatternVariableDeclaratorLVal(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): { place: Place; identifiers: Place[] } {
+  const rightPath = nodePath.get("right");
+  const rightPlace = buildNode(rightPath, functionBuilder, moduleBuilder, environment);
+  if (rightPlace === undefined || Array.isArray(rightPlace)) {
+    throw new Error("Right place must be a single place");
+  }
+
   const leftPath = nodePath.get("left");
   const { place: leftPlace, identifiers: leftIdentifiers } = buildVariableDeclaratorLVal(
     leftPath,
@@ -333,12 +341,6 @@ function buildAssignmentPatternVariableDeclaratorLVal(
     moduleBuilder,
     environment,
   );
-
-  const rightPath = nodePath.get("right");
-  const rightPlace = buildNode(rightPath, functionBuilder, moduleBuilder, environment);
-  if (rightPlace === undefined || Array.isArray(rightPlace)) {
-    throw new Error("Right place must be a single place");
-  }
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);

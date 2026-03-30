@@ -3,7 +3,6 @@ import * as t from "@babel/types";
 import { Environment } from "../../environment";
 import {
   ArrayPatternInstruction,
-  BindingIdentifierInstruction,
   LiteralInstruction,
   ObjectPropertyInstruction,
   Place,
@@ -11,22 +10,21 @@ import {
 } from "../../ir";
 import { AssignmentPatternInstruction } from "../../ir/instructions/pattern/AssignmentPattern";
 import { ObjectPatternInstruction } from "../../ir/instructions/pattern/ObjectPattern";
-import { isContextVariable } from "./bindings/isContextVariable";
+import { instantiateFunctionParamBindings } from "./bindings/instantiateFunctionParamBindings";
 import { buildNode } from "./buildNode";
 import { getValueFromStaticKey } from "./getValueFromStaticKey";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
 
-/**
- * One formal parameter after lowering: the param root `place` and the root
- * header instruction `paramBindings` (empty for a simple identifier param).
- */
 export interface BuiltFunctionParam {
   place: Place;
   paramBindings: Place[];
 }
 
-/** Internal result while lowering params (includes recursive `identifiers`). */
+/**
+ * One formal parameter after lowering: the param root `place` and the root
+ * header instruction `paramBindings` (empty for a simple identifier param).
+ */
 interface ParamBuildResult {
   place: Place;
   identifiers: Place[];
@@ -40,15 +38,17 @@ export function buildFunctionParams(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): BuiltFunctionParam[] {
+  instantiateFunctionParamBindings(paramPaths, bodyPath, functionBuilder, environment);
+
   return paramPaths.map((paramPath: NodePath<t.Identifier | t.RestElement | t.Pattern>) => {
-    const r = buildFunctionParam(
+    const result = buildFunctionParam(
       paramPath as NodePath<t.LVal>,
       bodyPath,
       functionBuilder,
       moduleBuilder,
       environment,
     );
-    return { place: r.place, paramBindings: r.paramBindings };
+    return { place: result.place, paramBindings: result.paramBindings };
   });
 }
 
@@ -60,8 +60,9 @@ function buildFunctionParam(
   environment: Environment,
 ): ParamBuildResult {
   if (paramPath.isIdentifier()) {
-    return buildFunctionIdentifierParam(paramPath, bodyPath, functionBuilder, environment);
-  } else if (paramPath.isArrayPattern()) {
+    return buildFunctionIdentifierParam(paramPath, functionBuilder, environment);
+  }
+  if (paramPath.isArrayPattern()) {
     return buildFunctionArrayPatternParam(
       paramPath,
       bodyPath,
@@ -69,7 +70,8 @@ function buildFunctionParam(
       moduleBuilder,
       environment,
     );
-  } else if (paramPath.isObjectPattern()) {
+  }
+  if (paramPath.isObjectPattern()) {
     return buildFunctionObjectPatternParam(
       paramPath,
       bodyPath,
@@ -77,7 +79,8 @@ function buildFunctionParam(
       moduleBuilder,
       environment,
     );
-  } else if (paramPath.isAssignmentPattern()) {
+  }
+  if (paramPath.isAssignmentPattern()) {
     return buildFunctionAssignmentPatternParam(
       paramPath,
       bodyPath,
@@ -85,7 +88,8 @@ function buildFunctionParam(
       moduleBuilder,
       environment,
     );
-  } else if (paramPath.isRestElement()) {
+  }
+  if (paramPath.isRestElement()) {
     return buildFunctionRestElementParam(
       paramPath,
       bodyPath,
@@ -100,29 +104,22 @@ function buildFunctionParam(
 
 function buildFunctionIdentifierParam(
   paramPath: NodePath<t.Identifier>,
-  bodyPath: NodePath,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): ParamBuildResult {
   const name = paramPath.node.name;
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(BindingIdentifierInstruction, place, paramPath);
-  functionBuilder.header.push(instruction);
-
-  const declarationId = identifier.declarationId;
-  functionBuilder.instantiateDeclaration(declarationId, "param", name);
-
-  // Mark context variables before renaming so SSA can skip them.
-  const binding = bodyPath.scope.getBinding(name);
-  if (binding && isContextVariable(binding, bodyPath)) {
-    environment.contextDeclarationIds.add(declarationId);
+  const declarationId = functionBuilder.getDeclarationId(name, paramPath);
+  if (declarationId === undefined) {
+    throw new Error(`Variable accessed before declaration: ${name}`);
   }
 
-  functionBuilder.registerDeclarationName(name, declarationId, bodyPath);
-  bodyPath.scope.rename(name, identifier.name);
-  functionBuilder.registerDeclarationName(identifier.name, declarationId, bodyPath);
-  environment.registerDeclaration(declarationId, functionBuilder.currentBlock.id, place.id);
+  const latestDeclaration = environment.getLatestDeclaration(declarationId);
+  const place = environment.places.get(latestDeclaration.placeId);
+  if (place === undefined) {
+    throw new Error(`Unable to find the place for ${name} (${declarationId})`);
+  }
+
+  functionBuilder.markDeclarationInitialized(declarationId);
   return { place, identifiers: [place], paramBindings: [] };
 }
 
@@ -136,9 +133,8 @@ function buildFunctionArrayPatternParam(
   const identifiers: Place[] = [];
   const elements = paramPath.get("elements");
   const places = elements.map((elementPath) => {
-    // Holes in array patterns (e.g. `function([,b]){}`) — represented as
-    // null in the elements array, not as instructions. Holes are structural
-    // markers in the pattern shape, not values in the data-flow graph.
+    // Holes in array patterns (e.g. `function([,b]){}`) are structural markers
+    // in the pattern shape, not values in the data-flow graph.
     if (!elementPath.hasNode()) {
       return null;
     }
@@ -181,7 +177,8 @@ function buildFunctionObjectPatternParam(
       const keyPath = propertyPath.get("key");
       let keyPlace: Place;
       if (propertyPath.node.computed) {
-        // Computed keys — emit via buildNode, then splice into header.
+        // Computed keys emit normal value instructions; move them into the
+        // function header so param codegen can resolve them during emission.
         const insertPoint = functionBuilder.currentBlock.instructions.length;
         const p = buildNode(keyPath, functionBuilder, moduleBuilder, environment);
         if (p === undefined || Array.isArray(p)) {
@@ -265,10 +262,8 @@ function buildFunctionObjectPropertyKey(
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {
-  // Non-computed parameter destructuring keys are property labels (identifiers,
-  // string literals, or numeric literals), not variable references.
-  // Emit a LiteralInstruction so the key survives SSA transformations
-  // (clone/rewrite) unchanged.
+  // Non-computed parameter destructuring keys are property labels
+  // (identifiers, strings, numbers), not variable references.
   const value = getValueFromStaticKey(keyPath);
   if (value === undefined) {
     throw new Error("Unsupported static key type in object pattern destructuring");
@@ -292,19 +287,8 @@ function buildFunctionAssignmentPatternParam(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): ParamBuildResult {
-  const leftPath = paramPath.get("left");
-  const leftResult = buildFunctionParam(
-    leftPath as NodePath<t.LVal>,
-    bodyPath,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-  );
-
-  // buildNode emits instructions into the current block, but param
-  // instructions must live in the function header for codegen to resolve
-  // places during param generation. We splice the newly added instructions
-  // from the block into the header.
+  // buildNode emits instructions into the current block, but parameter default
+  // value instructions must live in the function header for codegen.
   const insertPoint = functionBuilder.currentBlock.instructions.length;
   const rightPath = paramPath.get("right");
   const rightPlace = buildNode(rightPath, functionBuilder, moduleBuilder, environment);
@@ -313,6 +297,15 @@ function buildFunctionAssignmentPatternParam(
   }
   const defaultValueInstructions = functionBuilder.currentBlock.instructions.splice(insertPoint);
   functionBuilder.header.push(...defaultValueInstructions);
+
+  const leftPath = paramPath.get("left");
+  const leftResult = buildFunctionParam(
+    leftPath as NodePath<t.LVal>,
+    bodyPath,
+    functionBuilder,
+    moduleBuilder,
+    environment,
+  );
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);

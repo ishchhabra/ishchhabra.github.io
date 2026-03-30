@@ -44,6 +44,12 @@ export function generateFunction(
   // Pre-register all binding identifiers across ALL blocks of this function.
   // This ensures closures defined in earlier blocks can reference variables
   // declared in later blocks (e.g. phi variables in merge blocks).
+  for (const instruction of functionIR.header) {
+    if (instruction instanceof BindingIdentifierInstruction) {
+      generateBindingIdentifierInstruction(instruction, generator);
+    }
+  }
+
   for (const [, block] of functionIR.blocks) {
     for (const instruction of block.instructions) {
       if (instruction instanceof BindingIdentifierInstruction) {
