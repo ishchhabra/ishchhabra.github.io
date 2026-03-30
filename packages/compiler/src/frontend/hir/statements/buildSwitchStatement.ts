@@ -6,6 +6,7 @@ import { instantiateScopeBindings } from "../bindings";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
+import { buildStatementList } from "./buildStatementList";
 
 export function buildSwitchStatement(
   nodePath: NodePath<t.SwitchStatement>,
@@ -83,12 +84,7 @@ export function buildSwitchStatement(
 
     // Build the case body statements.
     const consequentPaths = casePath.get("consequent");
-    for (const stmtPath of consequentPaths) {
-      buildNode(stmtPath, functionBuilder, moduleBuilder, environment);
-      if (functionBuilder.currentBlock.terminal !== undefined) {
-        break;
-      }
-    }
+    buildStatementList(consequentPaths, functionBuilder, moduleBuilder, environment);
 
     // If the case body didn't end with a terminal (no break/return/throw),
     // add fallthrough to the next case's block (or the fallthrough block for last case).

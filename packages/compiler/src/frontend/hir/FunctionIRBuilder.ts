@@ -17,6 +17,7 @@ import { instantiateScopeBindings } from "./bindings";
 import { buildFunctionParams } from "./buildFunctionParams";
 import { buildNode } from "./buildNode";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
+import { buildStatementList } from "./statements/buildStatementList";
 
 export type DeclarationKind =
   | "var"
@@ -111,13 +112,7 @@ export class FunctionIRBuilder {
       if (!Array.isArray(bodyPath)) {
         throw new Error("Body path is not an array");
       }
-
-      for (const statementPath of bodyPath) {
-        buildNode(statementPath, this, this.moduleBuilder, this.environment);
-        if (this.currentBlock.terminal !== undefined) {
-          break;
-        }
-      }
+      buildStatementList(bodyPath, this, this.moduleBuilder, this.environment);
     }
 
     const functionIR = new FunctionIR(

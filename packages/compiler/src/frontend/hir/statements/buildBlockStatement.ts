@@ -3,9 +3,9 @@ import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { JumpTerminal, makeInstructionId } from "../../../ir";
 import { instantiateScopeBindings } from "../bindings";
-import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
+import { buildStatementList } from "./buildStatementList";
 
 export function buildBlockStatement(
   nodePath: NodePath<t.BlockStatement>,
@@ -22,13 +22,7 @@ export function buildBlockStatement(
   instantiateScopeBindings(nodePath, functionBuilder, environment);
 
   const body = nodePath.get("body");
-  for (const statementPath of body) {
-    buildNode(statementPath, functionBuilder, moduleBuilder, environment);
-    // Do not emit unreachable statements after break/return/throw/etc.
-    if (functionBuilder.currentBlock.terminal !== undefined) {
-      break;
-    }
-  }
+  buildStatementList(body, functionBuilder, moduleBuilder, environment);
 
   currentBlock.terminal = new JumpTerminal(
     makeInstructionId(functionBuilder.environment.nextInstructionId++),
