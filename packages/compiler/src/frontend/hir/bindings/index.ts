@@ -1,1 +1,1 @@
-export { buildBindings } from "./buildBindings";
+export { instantiateScopeBindings } from "./instantiateScopeBindings";

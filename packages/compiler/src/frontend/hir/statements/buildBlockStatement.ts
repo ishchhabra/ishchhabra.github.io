@@ -2,7 +2,7 @@ import { NodePath } from "@babel/traverse";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { JumpTerminal, makeInstructionId } from "../../../ir";
-import { buildBindings } from "../bindings/buildBindings";
+import { instantiateScopeBindings } from "../bindings";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -19,7 +19,7 @@ export function buildBlockStatement(
   functionBuilder.blocks.set(block.id, block);
   functionBuilder.currentBlock = block;
 
-  buildBindings(nodePath, functionBuilder, environment);
+  instantiateScopeBindings(nodePath, functionBuilder, environment);
 
   const body = nodePath.get("body");
   for (const statementPath of body) {

@@ -9,6 +9,7 @@ import {
   LoadLocalInstruction,
   Place,
 } from "../../../ir";
+import { throwTDZAccessError } from "../buildIdentifier";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 /**
@@ -24,6 +25,8 @@ export function buildJSXIdentifier(
   environment: Environment,
 ): Place {
   const name = nodePath.node.name;
+  const outIdentifier = environment.createIdentifier();
+  const outPlace = environment.createPlace(outIdentifier);
 
   const valueIdentifier = environment.createIdentifier();
   const valuePlace = environment.createPlace(valueIdentifier);
@@ -36,6 +39,10 @@ export function buildJSXIdentifier(
     const declarationId = functionBuilder.getDeclarationId(name, nodePath);
 
     if (declarationId !== undefined) {
+      if (functionBuilder.isDeclarationInTDZ(declarationId)) {
+        throwTDZAccessError(functionBuilder.getDeclarationSourceName(declarationId) ?? name);
+      }
+
       const latestDeclaration = environment.getLatestDeclaration(declarationId);
       const declarationPlace = environment.places.get(latestDeclaration.placeId);
       if (declarationPlace === undefined) {
@@ -74,8 +81,6 @@ export function buildJSXIdentifier(
     }
   }
 
-  const outIdentifier = environment.createIdentifier();
-  const outPlace = environment.createPlace(outIdentifier);
   functionBuilder.addInstruction(
     environment.createInstruction(JSXIdentifierInstruction, outPlace, nodePath, valuePlace),
   );

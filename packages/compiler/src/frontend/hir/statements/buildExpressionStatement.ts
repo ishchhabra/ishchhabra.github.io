@@ -20,15 +20,15 @@ export function buildExpressionStatement(
 ): Place[] | undefined {
   const expressionPath = nodePath.get("expression");
   const expressionPlace = buildNode(expressionPath, functionBuilder, moduleBuilder, environment);
-  if (expressionPath.isAssignmentExpression()) {
-    return undefined;
-  }
   const expressionPlaces = castArray(expressionPlace);
   const places = expressionPlaces
     .map((expressionPlace) => {
       const expressionInstruction = functionBuilder.environment.placeToInstruction.get(
         expressionPlace.id,
       );
+      if (expressionPath.isAssignmentExpression()) {
+        return undefined;
+      }
       // For assignments, since we convert them to a memory instruction,
       // we do not need to emit an expression statement instruction.
       if (

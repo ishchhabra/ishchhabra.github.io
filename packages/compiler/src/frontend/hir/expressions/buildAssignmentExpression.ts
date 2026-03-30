@@ -22,6 +22,7 @@ import {
 import { AssignmentPatternInstruction } from "../../../ir/instructions/pattern/AssignmentPattern";
 import { ObjectPatternInstruction } from "../../../ir/instructions/pattern/ObjectPattern";
 import { buildNode } from "../buildNode";
+import { throwTDZAccessError } from "../buildIdentifier";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import {
   buildMemberReference,
@@ -55,6 +56,13 @@ function buildIdentifierAssignment(
   environment: Environment,
 ): Place {
   const operator = nodePath.node.operator;
+  const leftPath: NodePath<t.Identifier> = nodePath.get("left") as NodePath<t.Identifier>;
+  leftPath.assertIdentifier();
+  const name = leftPath.node.name;
+  const declarationId = functionBuilder.getDeclarationId(name, leftPath);
+  if (declarationId === undefined) {
+    throw new Error(`Variable accessed before declaration: ${name}`);
+  }
 
   // Logical assignments (||=, &&=, ??=) have short-circuit semantics:
   // the right side is only evaluated when the condition requires it.
@@ -63,20 +71,42 @@ function buildIdentifierAssignment(
     return buildLogicalIdentifierAssignment(nodePath, functionBuilder, moduleBuilder, environment);
   }
 
-  const rightPlace = buildAssignmentRight(nodePath, functionBuilder, moduleBuilder, environment);
-  const resultPlace = stabilizeAssignmentResult(
-    rightPlace,
-    nodePath,
-    functionBuilder,
-    environment,
-  );
+  let resultPlace: Place;
+  if (operator === "=") {
+    const rightPlace = buildAssignmentRight(nodePath, functionBuilder, moduleBuilder, environment);
+    resultPlace = stabilizeAssignmentResult(rightPlace, nodePath, functionBuilder, environment);
 
-  const leftPath: NodePath<t.AssignmentExpression["left"]> = nodePath.get("left");
-  leftPath.assertIdentifier();
+    if (functionBuilder.isDeclarationInTDZ(declarationId)) {
+      throwTDZAccessError(functionBuilder.getDeclarationSourceName(declarationId) ?? name);
+    }
+  } else {
+    if (functionBuilder.isDeclarationInTDZ(declarationId)) {
+      throwTDZAccessError(functionBuilder.getDeclarationSourceName(declarationId) ?? name);
+    }
 
-  const declarationId = functionBuilder.getDeclarationId(leftPath.node.name, leftPath);
-  if (declarationId === undefined) {
-    throw new Error(`Variable accessed before declaration: ${leftPath.node.name}`);
+    const currentValuePlace = buildNode(leftPath, functionBuilder, moduleBuilder, environment);
+    if (currentValuePlace === undefined || Array.isArray(currentValuePlace)) {
+      throw new Error("Assignment expression left must be a single place");
+    }
+
+    const rightPath = nodePath.get("right");
+    const rightValuePlace = buildNode(rightPath, functionBuilder, moduleBuilder, environment);
+    if (rightValuePlace === undefined || Array.isArray(rightValuePlace)) {
+      throw new Error("Assignment expression right must be a single place");
+    }
+
+    const computedPlace = environment.createPlace(environment.createIdentifier());
+    functionBuilder.addInstruction(
+      environment.createInstruction(
+        BinaryExpressionInstruction,
+        computedPlace,
+        nodePath,
+        operator.slice(0, -1) as t.BinaryExpression["operator"],
+        currentValuePlace,
+        rightValuePlace,
+      ),
+    );
+    resultPlace = stabilizeAssignmentResult(computedPlace, nodePath, functionBuilder, environment);
   }
 
   const { place: leftPlace } = buildIdentifierAssignmentLeft(
@@ -262,6 +292,12 @@ function buildLogicalIdentifierAssignment(
     throw new Error(`Variable accessed before declaration: ${leftPath.node.name}`);
   }
 
+  if (functionBuilder.isDeclarationInTDZ(declarationId)) {
+    throwTDZAccessError(
+      functionBuilder.getDeclarationSourceName(declarationId) ?? leftPath.node.name,
+    );
+  }
+
   // Load x once.
   const testPlace = buildNode(leftPath, functionBuilder, moduleBuilder, environment);
   if (testPlace === undefined || Array.isArray(testPlace)) {
@@ -294,12 +330,7 @@ function buildLogicalIdentifierAssignment(
   if (rightPlace === undefined || Array.isArray(rightPlace)) {
     throw new Error("Logical assignment right must be a single place");
   }
-  const stabilizedRightPlace = stabilizePlace(
-    rightPlace,
-    nodePath,
-    functionBuilder,
-    environment,
-  );
+  const stabilizedRightPlace = stabilizePlace(rightPlace, nodePath, functionBuilder, environment);
 
   // Store x = y.
   const { place: lvalPlace } = buildIdentifierAssignmentLeft(
@@ -362,7 +393,12 @@ function buildMemberExpressionAssignment(
   if (operator === "=") {
     rightPlace = buildAssignmentRight(nodePath, functionBuilder, moduleBuilder, environment);
   } else {
-    const currentValuePlace = loadMemberReference(reference, nodePath, functionBuilder, environment);
+    const currentValuePlace = loadMemberReference(
+      reference,
+      nodePath,
+      functionBuilder,
+      environment,
+    );
 
     const rightPath = nodePath.get("right");
     const rhsPlace = buildNode(rightPath, functionBuilder, moduleBuilder, environment);
@@ -382,12 +418,7 @@ function buildMemberExpressionAssignment(
       ),
     );
   }
-  const resultPlace = stabilizeAssignmentResult(
-    rightPlace,
-    nodePath,
-    functionBuilder,
-    environment,
-  );
+  const resultPlace = stabilizeAssignmentResult(rightPlace, nodePath, functionBuilder, environment);
 
   emitMemberReferenceStore(reference, nodePath, resultPlace, functionBuilder, environment);
 
@@ -459,12 +490,7 @@ function buildLogicalMemberAssignment(
   if (rightPlace === undefined || Array.isArray(rightPlace)) {
     throw new Error("Logical member assignment right must be a single place");
   }
-  const stabilizedRightPlace = stabilizePlace(
-    rightPlace,
-    nodePath,
-    functionBuilder,
-    environment,
-  );
+  const stabilizedRightPlace = stabilizePlace(rightPlace, nodePath, functionBuilder, environment);
 
   // Store the property.
   const storePlace = environment.createPlace(environment.createIdentifier());
@@ -517,15 +543,14 @@ function buildDestructuringAssignment(
   if (rightPlace === undefined || Array.isArray(rightPlace)) {
     throw new Error("Assignment expression right must be a single place");
   }
-  const resultPlace = stabilizeAssignmentResult(
-    rightPlace,
-    nodePath,
-    functionBuilder,
-    environment,
-  );
+  const resultPlace = stabilizeAssignmentResult(rightPlace, nodePath, functionBuilder, environment);
 
   const leftPath: NodePath<t.AssignmentExpression["left"]> = nodePath.get("left");
   leftPath.assertLVal();
+  const tdzTargetName = findTDZAssignmentTarget(leftPath, nodePath, functionBuilder);
+  if (tdzTargetName !== undefined) {
+    throwTDZAccessError(tdzTargetName);
+  }
   const {
     place: leftPlace,
     instructions,
@@ -937,4 +962,60 @@ function buildAssignmentRight(
   );
 
   return place;
+}
+
+function findTDZAssignmentTarget(
+  leftPath: NodePath<t.LVal>,
+  nodePath: NodePath<t.AssignmentExpression>,
+  functionBuilder: FunctionIRBuilder,
+): string | undefined {
+  if (leftPath.isIdentifier()) {
+    const declarationId = functionBuilder.getDeclarationId(leftPath.node.name, nodePath);
+    if (declarationId !== undefined && functionBuilder.isDeclarationInTDZ(declarationId)) {
+      return functionBuilder.getDeclarationSourceName(declarationId) ?? leftPath.node.name;
+    }
+    return undefined;
+  }
+
+  if (leftPath.isArrayPattern()) {
+    const elementPaths = leftPath.get("elements") as Array<
+      NodePath<t.ArrayPattern["elements"][number]>
+    >;
+    for (const elementPath of elementPaths) {
+      if (!elementPath.hasNode()) continue;
+      if (!elementPath.isLVal()) {
+        throw new Error(`Unsupported array assignment target: ${elementPath.type}`);
+      }
+      const found = findTDZAssignmentTarget(elementPath, nodePath, functionBuilder);
+      if (found !== undefined) return found;
+    }
+    return undefined;
+  }
+
+  if (leftPath.isObjectPattern()) {
+    for (const propertyPath of leftPath.get("properties")) {
+      if (propertyPath.isRestElement()) {
+        const argumentPath = propertyPath.get("argument");
+        const found = findTDZAssignmentTarget(argumentPath, nodePath, functionBuilder);
+        if (found !== undefined) return found;
+      } else if (propertyPath.isObjectProperty()) {
+        const valuePath = propertyPath.get("value");
+        if (valuePath.isLVal()) {
+          const found = findTDZAssignmentTarget(valuePath, nodePath, functionBuilder);
+          if (found !== undefined) return found;
+        }
+      }
+    }
+    return undefined;
+  }
+
+  if (leftPath.isAssignmentPattern()) {
+    return findTDZAssignmentTarget(leftPath.get("left"), nodePath, functionBuilder);
+  }
+
+  if (leftPath.isRestElement()) {
+    return findTDZAssignmentTarget(leftPath.get("argument"), nodePath, functionBuilder);
+  }
+
+  return undefined;
 }

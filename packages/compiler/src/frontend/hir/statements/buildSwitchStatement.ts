@@ -2,6 +2,7 @@ import { NodePath } from "@babel/traverse";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { createInstructionId, JumpTerminal, SwitchTerminal } from "../../../ir";
+import { instantiateScopeBindings } from "../bindings";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -14,6 +15,8 @@ export function buildSwitchStatement(
   label?: string,
 ) {
   const currentBlock = functionBuilder.currentBlock;
+
+  instantiateScopeBindings(nodePath, functionBuilder, environment);
 
   // Build the discriminant expression in the current block.
   const discriminantPath = nodePath.get("discriminant");

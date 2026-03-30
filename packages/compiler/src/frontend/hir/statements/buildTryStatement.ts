@@ -74,6 +74,11 @@ export function buildTryStatement(
         identifier.declarationId,
         handlerPath,
       );
+      functionBuilder.instantiateDeclaration(
+        identifier.declarationId,
+        "catch",
+        paramPath.node.name,
+      );
       handlerPath.scope.rename(paramPath.node.name, identifier.name);
       functionBuilder.registerDeclarationName(
         identifier.name,

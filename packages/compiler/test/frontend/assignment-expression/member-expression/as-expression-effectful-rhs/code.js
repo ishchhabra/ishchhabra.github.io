@@ -3,4 +3,4 @@ function foo() {
 }
 
 let a = { b: 1 };
-const result = a.b = foo();
+const result = (a.b = foo());

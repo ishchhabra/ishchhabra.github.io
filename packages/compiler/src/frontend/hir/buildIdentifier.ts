@@ -34,6 +34,10 @@ export function buildIdentifier(
   }
 }
 
+export function throwTDZAccessError(name: string): never {
+  throw new Error(`Cannot access '${name}' before initialization`);
+}
+
 export function buildBindingIdentifier(
   nodePath: NodePath<t.Identifier>,
   builder: FunctionIRBuilder,
@@ -43,8 +47,8 @@ export function buildBindingIdentifier(
 
   let place: Place | undefined;
   // In case we already have a declaration place, we need to use that, so that
-  // we're using the place that was created when the binding was discovered
-  // in #buildBindings.
+  // we're using the place that was created when the binding was instantiated
+  // for the owning scope.
   const declarationId = builder.getDeclarationId(name, nodePath);
   if (declarationId !== undefined) {
     const latestDeclaration = environment.getLatestDeclaration(declarationId);
@@ -88,6 +92,10 @@ function buildReferencedIdentifier(
     const declarationId = builder.getDeclarationId(name, nodePath);
     if (declarationId === undefined) {
       throw new Error(`Variable accessed before declaration: ${name}`);
+    }
+
+    if (builder.isDeclarationInTDZ(declarationId)) {
+      throwTDZAccessError(builder.getDeclarationSourceName(declarationId) ?? name);
     }
 
     const latestDeclaration = environment.getLatestDeclaration(declarationId);

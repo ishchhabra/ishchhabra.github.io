@@ -9,7 +9,7 @@ import {
   StoreLocalInstruction,
   makeInstructionId,
 } from "../../../ir";
-import { buildBindings } from "../bindings/buildBindings";
+import { instantiateScopeBindings } from "../bindings";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -37,7 +37,7 @@ export function buildForStatement(
       buildExpressionAsStatement(initPath, functionBuilder, moduleBuilder, environment);
     } else {
       initPath.assertStatement();
-      buildBindings(nodePath, functionBuilder, environment);
+      instantiateScopeBindings(nodePath, functionBuilder, environment);
       buildStatement(initPath, functionBuilder, moduleBuilder, environment);
     }
   }
@@ -150,15 +150,15 @@ function buildExpressionAsStatement(
     throw new Error("Expression place is undefined");
   }
 
+  const expressionInstruction = functionBuilder.environment.placeToInstruction.get(
+    expressionPlace.id,
+  );
   if (expressionPath.isAssignmentExpression()) {
     return expressionPlace;
   }
 
   // Assignments already emit a StoreLocalInstruction; wrapping in
   // ExpressionStatementInstruction would duplicate the declaration in codegen.
-  const expressionInstruction = functionBuilder.environment.placeToInstruction.get(
-    expressionPlace.id,
-  );
   if (
     expressionInstruction instanceof StoreLocalInstruction ||
     expressionInstruction instanceof StoreContextInstruction

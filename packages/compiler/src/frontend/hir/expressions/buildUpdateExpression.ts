@@ -8,6 +8,7 @@ import {
   StoreContextInstruction,
   StoreLocalInstruction,
 } from "../../../ir";
+import { throwTDZAccessError } from "../buildIdentifier";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildBinaryExpression } from "./buildBinaryExpression";
@@ -36,6 +37,12 @@ export function buildUpdateExpression(
   const declarationId = functionBuilder.getDeclarationId(argumentPath.node.name, nodePath);
   if (declarationId === undefined) {
     throw new Error(`Variable accessed before declaration: ${argumentPath.node.name}`);
+  }
+
+  if (functionBuilder.isDeclarationInTDZ(declarationId)) {
+    throwTDZAccessError(
+      functionBuilder.getDeclarationSourceName(declarationId) ?? argumentPath.node.name,
+    );
   }
 
   const latestDeclaration = environment.getLatestDeclaration(declarationId)!;

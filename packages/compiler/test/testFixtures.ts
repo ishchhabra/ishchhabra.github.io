@@ -9,9 +9,19 @@ import { fileURLToPath } from "url";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { compile, CompilerOptions, CompilerOptionsSchema } from "../src/compile";
 
+type FixtureExpectation =
+  | {
+      kind: "output";
+      path: string;
+    }
+  | {
+      kind: "error";
+      path: string;
+    };
+
 interface Fixture {
   input: string;
-  output: string;
+  expectation: FixtureExpectation;
 }
 
 interface TreeNode {
@@ -74,17 +84,42 @@ function findFixtures(dir: string): Fixture[] {
       const subdir = join(dir, entry.name);
       fixtures.push(...findFixtures(subdir));
     } else if (entry.name === "code.js") {
-      fixtures.push({ input: join(dir, entry.name), output: join(dir, "output.js") });
+      fixtures.push({
+        input: join(dir, entry.name),
+        expectation: resolveFixtureExpectation(dir, "output.js"),
+      });
     } else if (entry.name === "code.jsx") {
-      fixtures.push({ input: join(dir, entry.name), output: join(dir, "output.jsx") });
+      fixtures.push({
+        input: join(dir, entry.name),
+        expectation: resolveFixtureExpectation(dir, "output.jsx"),
+      });
     }
   }
   return fixtures;
 }
 
+function resolveFixtureExpectation(dir: string, outputFile: string): FixtureExpectation {
+  const outputPath = join(dir, outputFile);
+  const errorPath = join(dir, "error.txt");
+  const hasOutput = existsSync(outputPath);
+  const hasError = existsSync(errorPath);
+
+  if (hasOutput === hasError) {
+    throw new Error(
+      `Fixture directory must contain exactly one of ${outputFile} or error.txt: ${dir}`,
+    );
+  }
+
+  if (hasOutput) {
+    return { kind: "output", path: outputPath };
+  }
+
+  return { kind: "error", path: errorPath };
+}
+
 function buildTreeFromFixtures(dir: string, fixtures: Fixture[]): TreeNode {
   const root: TreeNode = {};
-  for (const { input, output } of fixtures) {
+  for (const { input, expectation } of fixtures) {
     const relPath = relative(dir, input);
     const parts = relPath.split("/");
     parts.pop();
@@ -100,7 +135,7 @@ function buildTreeFromFixtures(dir: string, fixtures: Fixture[]): TreeNode {
     if (!currentNode.__fixtures) {
       currentNode.__fixtures = [];
     }
-    currentNode.__fixtures.push({ input, output });
+    currentNode.__fixtures.push({ input, expectation });
   }
   return root;
 }
@@ -118,20 +153,15 @@ const oxfmtBin = resolve(
   "oxfmt",
 );
 
-/**
- * Pre-compiled and formatted results, keyed by fixture input path.
- * Populated in beforeAll, consumed by individual tests.
- */
-const formattedResults = new Map<string, string>();
-const compileErrors = new Map<string, string>();
-let tmpDir: string | undefined;
-
 async function compileAndBatchFormat(
   allFixtures: Fixture[],
   rootDir: string,
   baseOptions: CompilerOptions,
+  formattedResults: Map<string, string>,
+  compileErrors: Map<string, string>,
 ) {
-  tmpDir = mkdtempSync(join(tmpdir(), "compiler-test-"));
+  const tmpDir = mkdtempSync(join(tmpdir(), "compiler-test-"));
+  let hasCompiledOutputs = false;
 
   // Phase 1: Compile all fixtures and write raw output to temp files.
   for (const { input } of allFixtures) {
@@ -140,13 +170,16 @@ async function compileAndBatchFormat(
       const compiled = compile(input, options);
       const tmpFile = join(tmpDir, encodeURIComponent(input) + ".js");
       writeFileSync(tmpFile, compiled);
+      hasCompiledOutputs = true;
     } catch (e) {
       compileErrors.set(input, e instanceof Error ? e.message : String(e));
     }
   }
 
   // Phase 2: Single oxfmt call formats all files at once.
-  execFileSync(oxfmtBin, ["--write", tmpDir]);
+  if (hasCompiledOutputs) {
+    execFileSync(oxfmtBin, ["--write", tmpDir]);
+  }
 
   // Phase 3: Read back formatted results (skip fixtures that failed compilation).
   for (const { input } of allFixtures) {
@@ -154,11 +187,15 @@ async function compileAndBatchFormat(
     const tmpFile = join(tmpDir, encodeURIComponent(input) + ".js");
     formattedResults.set(input, readFileSync(tmpFile, "utf-8").trim());
   }
+
+  return tmpDir;
 }
 
 function addTestSuites(
   tree: TreeNode,
   baseOptions: CompilerOptions,
+  formattedResults: Map<string, string>,
+  compileErrors: Map<string, string>,
   nodeName?: string,
   rootDir?: string,
   currentDir?: string,
@@ -166,9 +203,19 @@ function addTestSuites(
   const subDirs = Object.keys(tree).filter((k) => k !== "__fixtures");
   const fixtures = tree.__fixtures ?? [];
 
-  const addFixtureTest = ({ input, output }: Fixture, name: string) => {
+  const addFixtureTest = ({ input, expectation }: Fixture, name: string) => {
     test(name, () => {
       const error = compileErrors.get(input);
+      if (expectation.kind === "error") {
+        if (error === undefined) {
+          throw new Error(`Expected compilation to fail for ${input}`);
+        }
+
+        const expectedError = readFileSync(expectation.path, "utf-8").trim();
+        expect(error).toBe(expectedError);
+        return;
+      }
+
       if (error !== undefined) {
         throw new Error(`Compilation failed for ${input}: ${error}`);
       }
@@ -177,12 +224,12 @@ function addTestSuites(
         throw new Error(`No compiled result for ${input}`);
       }
 
-      if (!existsSync(output) && process.env.UPDATE_FIXTURES) {
-        writeFileSync(output, formattedActual + "\n", "utf8");
-        console.info(`[INFO] Created missing fixture file at: ${output}`);
+      if (!existsSync(expectation.path) && process.env.UPDATE_FIXTURES) {
+        writeFileSync(expectation.path, formattedActual + "\n", "utf8");
+        console.info(`[INFO] Created missing fixture file at: ${expectation.path}`);
       }
 
-      const expectedCode = readFileSync(output, "utf-8").trim();
+      const expectedCode = readFileSync(expectation.path, "utf-8").trim();
       expect(formattedActual).toBe(expectedCode);
     });
   };
@@ -199,7 +246,15 @@ function addTestSuites(
       }
       for (const subDir of subDirs) {
         const nextDir = join(currentDir ?? "", subDir);
-        addTestSuites(tree[subDir] as TreeNode, baseOptions, subDir, rootDir, nextDir);
+        addTestSuites(
+          tree[subDir] as TreeNode,
+          baseOptions,
+          formattedResults,
+          compileErrors,
+          subDir,
+          rootDir,
+          nextDir,
+        );
       }
     });
   } else {
@@ -208,7 +263,15 @@ function addTestSuites(
     }
     for (const subDir of subDirs) {
       const nextDir = join(currentDir ?? "", subDir);
-      addTestSuites(tree[subDir] as TreeNode, baseOptions, subDir, rootDir, nextDir);
+      addTestSuites(
+        tree[subDir] as TreeNode,
+        baseOptions,
+        formattedResults,
+        compileErrors,
+        subDir,
+        rootDir,
+        nextDir,
+      );
     }
   }
 }
@@ -219,9 +282,11 @@ function addTestSuites(
  *
  * It will:
  *   1) Find all fixtures under the directory (look for `code.js` or `code.jsx`)
+ *      and require exactly one of `output.js`/`output.jsx` or `error.txt`
  *   2) Build a nested tree structure
  *   3) In beforeAll: compile all fixtures and batch-format with a single oxfmt call
- *   4) Dynamically add describe/test blocks that compare pre-formatted results
+ *   4) Dynamically add describe/test blocks that compare either pre-formatted
+ *      output or the expected compile error
  *   5) If `output.js`/`output.jsx` is missing and `UPDATE_FIXTURES` is set,
  *      create it using the compiled code's actual output.
  */
@@ -231,9 +296,18 @@ export function testFixtures(
 ) {
   const allFixtures = findFixtures(directory);
   const tree = buildTreeFromFixtures(directory, allFixtures);
+  const formattedResults = new Map<string, string>();
+  const compileErrors = new Map<string, string>();
+  let tmpDir: string | undefined;
 
   beforeAll(async () => {
-    await compileAndBatchFormat(allFixtures, directory, baseOptions);
+    tmpDir = await compileAndBatchFormat(
+      allFixtures,
+      directory,
+      baseOptions,
+      formattedResults,
+      compileErrors,
+    );
   });
 
   afterAll(() => {
@@ -242,5 +316,13 @@ export function testFixtures(
     }
   });
 
-  addTestSuites(tree, baseOptions, undefined, directory, directory);
+  addTestSuites(
+    tree,
+    baseOptions,
+    formattedResults,
+    compileErrors,
+    undefined,
+    directory,
+    directory,
+  );
 }

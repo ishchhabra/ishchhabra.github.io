@@ -11,7 +11,7 @@ import {
 } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
-import { buildBindings } from "../bindings";
+import { instantiateScopeBindings } from "../bindings";
 import { buildNode } from "../buildNode";
 import { buildAssignmentLeft } from "../expressions/buildAssignmentExpression";
 import { buildVariableDeclaratorLVal } from "./buildVariableDeclaration";
@@ -37,7 +37,7 @@ export function buildForOfStatement(
   functionBuilder.blocks.set(headerBlock.id, headerBlock);
 
   functionBuilder.currentBlock = headerBlock;
-  buildBindings(nodePath, functionBuilder, environment);
+  instantiateScopeBindings(nodePath, functionBuilder, environment);
 
   // Build the iteration value from the left side.
   const leftPath = nodePath.get("left");
@@ -47,12 +47,16 @@ export function buildForOfStatement(
   if (leftPath.isVariableDeclaration()) {
     // `for (const x of arr)` — new loop-scoped variable.
     const idPath = leftPath.get("declarations")[0].get("id") as NodePath<t.LVal>;
-    ({ place: iterationValuePlace } = buildVariableDeclaratorLVal(
+    const { place, identifiers } = buildVariableDeclaratorLVal(
       idPath,
       functionBuilder,
       moduleBuilder,
       environment,
-    ));
+    );
+    iterationValuePlace = place;
+    identifiers.forEach((identifier) => {
+      functionBuilder.markDeclarationInitialized(identifier.identifier.declarationId);
+    });
   } else {
     // `for (x of arr)` or `for ({a, b} of arr)` — assignment to existing variable(s).
     // Create a fresh loop-scoped place for the iteration value (own declarationId).

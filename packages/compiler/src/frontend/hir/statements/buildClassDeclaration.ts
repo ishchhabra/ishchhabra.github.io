@@ -33,5 +33,6 @@ export function buildClassDeclaration(
   );
   functionBuilder.addInstruction(instruction);
   environment.registerDeclarationInstruction(place, instruction);
+  functionBuilder.markDeclarationInitialized(declarationId);
   return place;
 }

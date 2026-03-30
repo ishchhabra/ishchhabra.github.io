@@ -1,11 +1,7 @@
 import { NodePath } from "@babel/core";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
-import {
-  BinaryExpressionInstruction,
-  LiteralInstruction,
-  Place,
-} from "../../../ir";
+import { BinaryExpressionInstruction, LiteralInstruction, Place } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { materializePlace } from "../materializePlace";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";

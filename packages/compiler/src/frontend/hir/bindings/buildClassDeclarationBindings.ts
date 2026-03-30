@@ -2,7 +2,8 @@ import { NodePath } from "@babel/core";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
-import type { PendingRenames } from "./buildBindings";
+import type { PendingRenames } from "./instantiateScopeBindings";
+import { isBindingOwnedByScope } from "./isBindingOwnedByScope";
 import { isContextVariable } from "./isContextVariable";
 
 export function buildClassDeclarationBindings(
@@ -12,21 +13,21 @@ export function buildClassDeclarationBindings(
   environment: Environment,
   pendingRenames?: PendingRenames,
 ) {
-  const parentPath = nodePath.parentPath;
-  if (!parentPath.isExportDeclaration() && parentPath !== bindingsPath) {
-    return;
-  }
-
   const idNode = nodePath.node.id;
   if (idNode == null) {
     return;
   }
 
+  const binding = nodePath.scope.getBinding(idNode.name);
+  if (!isBindingOwnedByScope(bindingsPath, binding)) {
+    return;
+  }
+
   const identifier = environment.createIdentifier();
   functionBuilder.registerDeclarationName(idNode.name, identifier.declarationId, bindingsPath);
+  functionBuilder.instantiateDeclaration(identifier.declarationId, "class", idNode.name);
 
   // Mark context variables before renaming so SSA can skip them.
-  const binding = bindingsPath.scope.getBinding(idNode.name);
   if (binding && isContextVariable(binding, bindingsPath)) {
     environment.contextDeclarationIds.add(identifier.declarationId);
   }

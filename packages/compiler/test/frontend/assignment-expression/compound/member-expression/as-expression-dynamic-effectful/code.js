@@ -7,4 +7,4 @@ function foo() {
 }
 
 let a = { b: 1 };
-const result = a[key()] += foo();
+const result = (a[key()] += foo());

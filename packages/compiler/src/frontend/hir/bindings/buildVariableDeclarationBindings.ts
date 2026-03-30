@@ -6,8 +6,9 @@ import {
   LiteralInstruction,
   StoreLocalInstruction,
 } from "../../../ir";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
-import type { PendingRenames } from "./buildBindings";
+import { DeclarationKind, FunctionIRBuilder } from "../FunctionIRBuilder";
+import type { PendingRenames } from "./instantiateScopeBindings";
+import { isBindingOwnedByScope } from "./isBindingOwnedByScope";
 import { isContextVariable } from "./isContextVariable";
 
 export function buildVariableDeclarationBindings(
@@ -17,23 +18,32 @@ export function buildVariableDeclarationBindings(
   environment: Environment,
   pendingRenames?: PendingRenames,
 ) {
-  const parentPath = nodePath.parentPath;
-  const isHoistable =
-    nodePath.node.kind === "var" && !hasInterveningFunction(nodePath, bindingsPath);
-  if (!parentPath.isExportDeclaration() && parentPath !== bindingsPath && !isHoistable) {
-    return;
+  if (
+    nodePath.node.kind !== "var" &&
+    nodePath.node.kind !== "let" &&
+    nodePath.node.kind !== "const"
+  ) {
+    throw new Error(`Unsupported variable declaration kind: ${nodePath.node.kind}`);
   }
 
   const declarationPaths = nodePath.get("declarations");
   for (const declarationPath of declarationPaths) {
     const id = declarationPath.get("id") as NodePath<t.LVal>;
-    buildLValBindings(bindingsPath, id, functionBuilder, environment, pendingRenames);
+    buildLValBindings(
+      bindingsPath,
+      id,
+      nodePath.node.kind,
+      functionBuilder,
+      environment,
+      pendingRenames,
+    );
   }
 }
 
 function buildLValBindings(
   bindingsPath: NodePath,
   nodePath: NodePath<t.LVal | t.ObjectProperty>,
+  declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
   pendingRenames?: PendingRenames,
@@ -41,13 +51,21 @@ function buildLValBindings(
   switch (nodePath.type) {
     case "Identifier":
       nodePath.assertIdentifier();
-      buildIdentifierBindings(bindingsPath, nodePath, functionBuilder, environment, pendingRenames);
+      buildIdentifierBindings(
+        bindingsPath,
+        nodePath,
+        declarationKind,
+        functionBuilder,
+        environment,
+        pendingRenames,
+      );
       break;
     case "ArrayPattern":
       nodePath.assertArrayPattern();
       buildArrayPatternBindings(
         bindingsPath,
         nodePath,
+        declarationKind,
         functionBuilder,
         environment,
         pendingRenames,
@@ -58,6 +76,7 @@ function buildLValBindings(
       buildAssignmentPatternBindings(
         bindingsPath,
         nodePath,
+        declarationKind,
         functionBuilder,
         environment,
         pendingRenames,
@@ -68,6 +87,7 @@ function buildLValBindings(
       buildObjectPatternBindings(
         bindingsPath,
         nodePath,
+        declarationKind,
         functionBuilder,
         environment,
         pendingRenames,
@@ -78,6 +98,7 @@ function buildLValBindings(
       buildObjectPropertyBindings(
         bindingsPath,
         nodePath,
+        declarationKind,
         functionBuilder,
         environment,
         pendingRenames,
@@ -88,6 +109,7 @@ function buildLValBindings(
       buildRestElementBindings(
         bindingsPath,
         nodePath,
+        declarationKind,
         functionBuilder,
         environment,
         pendingRenames,
@@ -101,14 +123,20 @@ function buildLValBindings(
 function buildIdentifierBindings(
   bindingsPath: NodePath,
   nodePath: NodePath<t.Identifier>,
+  declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
   pendingRenames?: PendingRenames,
 ) {
   const originalName = nodePath.node.name;
+  const binding = nodePath.scope.getBinding(originalName);
+  if (!isBindingOwnedByScope(bindingsPath, binding)) {
+    return;
+  }
 
   // Skip if already registered in the enclosing function (or program)
-  // scope — a hoisted var processed by an earlier buildBindings call.
+  // scope — for example, a hoisted `var` instantiated when entering the
+  // parent function/program scope.
   // Check that scope's own data directly rather than using getData()
   // which walks the entire scope chain and would incorrectly match a
   // same-named declaration from an enclosing function.
@@ -118,9 +146,9 @@ function buildIdentifierBindings(
 
   const identifier = environment.createIdentifier();
   functionBuilder.registerDeclarationName(originalName, identifier.declarationId, bindingsPath);
+  functionBuilder.instantiateDeclaration(identifier.declarationId, declarationKind, originalName);
 
   // Mark context variables before renaming so SSA can skip them.
-  const binding = bindingsPath.scope.getBinding(originalName);
   if (binding && isContextVariable(binding, bindingsPath)) {
     environment.contextDeclarationIds.add(identifier.declarationId);
   }
@@ -175,6 +203,7 @@ function buildIdentifierBindings(
 function buildArrayPatternBindings(
   bindingsPath: NodePath,
   nodePath: NodePath<t.ArrayPattern>,
+  declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
   pendingRenames?: PendingRenames,
@@ -186,24 +215,40 @@ function buildArrayPatternBindings(
     }
 
     elementPath.assertLVal();
-    buildLValBindings(bindingsPath, elementPath, functionBuilder, environment, pendingRenames);
+    buildLValBindings(
+      bindingsPath,
+      elementPath,
+      declarationKind,
+      functionBuilder,
+      environment,
+      pendingRenames,
+    );
   }
 }
 
 function buildAssignmentPatternBindings(
   bindingsPath: NodePath,
   nodePath: NodePath<t.AssignmentPattern>,
+  declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
   pendingRenames?: PendingRenames,
 ) {
   const leftPath = nodePath.get("left");
-  buildLValBindings(bindingsPath, leftPath, functionBuilder, environment, pendingRenames);
+  buildLValBindings(
+    bindingsPath,
+    leftPath,
+    declarationKind,
+    functionBuilder,
+    environment,
+    pendingRenames,
+  );
 }
 
 function buildObjectPatternBindings(
   bindingsPath: NodePath,
   nodePath: NodePath<t.ObjectPattern>,
+  declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
   pendingRenames?: PendingRenames,
@@ -214,13 +259,21 @@ function buildObjectPatternBindings(
       throw new Error(`Unsupported property type: ${propertyPath.type}`);
     }
 
-    buildLValBindings(bindingsPath, propertyPath, functionBuilder, environment, pendingRenames);
+    buildLValBindings(
+      bindingsPath,
+      propertyPath,
+      declarationKind,
+      functionBuilder,
+      environment,
+      pendingRenames,
+    );
   }
 }
 
 function buildObjectPropertyBindings(
   bindingsPath: NodePath,
   nodePath: NodePath<t.ObjectProperty>,
+  declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
   pendingRenames?: PendingRenames,
@@ -230,26 +283,31 @@ function buildObjectPropertyBindings(
     throw new Error(`Unsupported property type: ${valuePath.type}`);
   }
 
-  buildLValBindings(bindingsPath, valuePath, functionBuilder, environment, pendingRenames);
+  buildLValBindings(
+    bindingsPath,
+    valuePath,
+    declarationKind,
+    functionBuilder,
+    environment,
+    pendingRenames,
+  );
 }
 
 function buildRestElementBindings(
   bindingsPath: NodePath,
   nodePath: NodePath<t.RestElement>,
+  declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
   pendingRenames?: PendingRenames,
 ) {
   const elementPath = nodePath.get("argument");
-  buildLValBindings(bindingsPath, elementPath, functionBuilder, environment, pendingRenames);
-}
-
-function hasInterveningFunction(nodePath: NodePath, bindingsPath: NodePath): boolean {
-  let current = nodePath.parentPath;
-  while (current && current !== bindingsPath) {
-    if (current.isFunction()) return true;
-    current = current.parentPath;
-  }
-
-  return false;
+  buildLValBindings(
+    bindingsPath,
+    elementPath,
+    declarationKind,
+    functionBuilder,
+    environment,
+    pendingRenames,
+  );
 }

@@ -47,6 +47,7 @@ export function buildImportSpecifier(
     bindingIdentifier.declarationId,
     declarationNodePath,
   );
+  functionBuilder.instantiateDeclaration(bindingIdentifier.declarationId, "import", localName);
   environment.registerDeclaration(
     bindingIdentifier.declarationId,
     functionBuilder.currentBlock.id,

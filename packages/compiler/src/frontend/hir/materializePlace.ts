@@ -90,8 +90,10 @@ export function isStablePlace(
   }
 
   if (instruction instanceof UnaryExpressionInstruction) {
-    return !["delete", "throw"].includes(instruction.operator) &&
-      isStablePlace(instruction.argument, environment, seen);
+    return (
+      !["delete", "throw"].includes(instruction.operator) &&
+      isStablePlace(instruction.argument, environment, seen)
+    );
   }
 
   if (instruction instanceof BinaryExpressionInstruction) {

@@ -3,4 +3,4 @@ function foo() {
 }
 
 let a = 0;
-const result = a ||= foo();
+const result = (a ||= foo());

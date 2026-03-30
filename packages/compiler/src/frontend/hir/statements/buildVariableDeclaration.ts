@@ -97,6 +97,7 @@ export function buildVariableDeclaration(
     functionBuilder.addInstruction(instruction);
     lvalIdentifiers.forEach((lvalIdentifier) => {
       environment.registerDeclarationInstruction(lvalIdentifier, instruction);
+      functionBuilder.markDeclarationInitialized(lvalIdentifier.identifier.declarationId);
 
       const declPlaces = environment.declToPlaces.get(lvalIdentifier.identifier.declarationId);
       if (declPlaces) {

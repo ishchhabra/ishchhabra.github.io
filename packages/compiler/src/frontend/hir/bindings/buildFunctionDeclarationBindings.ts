@@ -3,7 +3,8 @@ import * as t from "@babel/types";
 import { getFunctionName } from "../../../babel-utils";
 import { Environment } from "../../../environment";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
-import type { PendingRenames } from "./buildBindings";
+import type { PendingRenames } from "./instantiateScopeBindings";
+import { isBindingOwnedByScope } from "./isBindingOwnedByScope";
 import { isContextVariable } from "./isContextVariable";
 
 export function buildFunctionDeclarationBindings(
@@ -13,16 +14,13 @@ export function buildFunctionDeclarationBindings(
   environment: Environment,
   pendingRenames?: PendingRenames,
 ) {
-  // For function declarations, we only want direct children
-  // of the binding path. The nested function declarations
-  // are not in the scope of the current path.
-  const parentPath = nodePath.parentPath;
-  if (!parentPath.isExportDeclaration() && parentPath !== bindingsPath) {
+  const functionName = getFunctionName(nodePath);
+  if (functionName === null) {
     return;
   }
 
-  const functionName = getFunctionName(nodePath);
-  if (functionName === null) {
+  const binding = nodePath.scope.getBinding(functionName.node.name);
+  if (!isBindingOwnedByScope(bindingsPath, binding)) {
     return;
   }
 
@@ -32,9 +30,13 @@ export function buildFunctionDeclarationBindings(
     identifier.declarationId,
     bindingsPath,
   );
+  functionBuilder.instantiateDeclaration(
+    identifier.declarationId,
+    "function",
+    functionName.node.name,
+  );
 
   // Mark context variables before renaming so SSA can skip them.
-  const binding = bindingsPath.scope.getBinding(functionName.node.name);
   if (binding && isContextVariable(binding, bindingsPath)) {
     environment.contextDeclarationIds.add(identifier.declarationId);
   }

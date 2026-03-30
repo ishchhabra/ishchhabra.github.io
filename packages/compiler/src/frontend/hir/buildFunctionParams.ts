@@ -111,6 +111,7 @@ function buildFunctionIdentifierParam(
   functionBuilder.header.push(instruction);
 
   const declarationId = identifier.declarationId;
+  functionBuilder.instantiateDeclaration(declarationId, "param", name);
 
   // Mark context variables before renaming so SSA can skip them.
   const binding = bodyPath.scope.getBinding(name);

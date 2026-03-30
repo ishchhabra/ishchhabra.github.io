@@ -11,4 +11,4 @@ function foo() {
 }
 
 let a = { b: 0 };
-const result = getObj()[key()] ||= foo();
+const result = (getObj()[key()] ||= foo());

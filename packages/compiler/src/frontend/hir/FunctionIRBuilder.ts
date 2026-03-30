@@ -13,10 +13,28 @@ import {
   ReturnTerminal,
 } from "../../ir";
 import { FunctionIR, makeFunctionIRId } from "../../ir/core/FunctionIR";
-import { buildBindings } from "./bindings";
+import { instantiateScopeBindings } from "./bindings";
 import { buildFunctionParams } from "./buildFunctionParams";
 import { buildNode } from "./buildNode";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
+
+export type DeclarationKind =
+  | "var"
+  | "let"
+  | "const"
+  | "class"
+  | "function"
+  | "param"
+  | "import"
+  | "catch";
+
+export type DeclarationState = "uninitialized" | "initialized";
+
+export interface DeclarationBinding {
+  kind: DeclarationKind;
+  state: DeclarationState;
+  sourceName: string;
+}
 
 export class FunctionIRBuilder {
   public currentBlock: BasicBlock;
@@ -46,6 +64,7 @@ export class FunctionIRBuilder {
    * inlining) never requires modifying the function's blocks.
    */
   public readonly captureParams = new Map<DeclarationId, Place>();
+  public readonly declarationBindings = new Map<DeclarationId, DeclarationBinding>();
 
   constructor(
     public readonly paramPaths: NodePath<t.Identifier | t.RestElement | t.Pattern>[],
@@ -85,7 +104,7 @@ export class FunctionIRBuilder {
         );
       }
     } else {
-      buildBindings(this.bodyPath, this, this.environment);
+      instantiateScopeBindings(this.bodyPath, this, this.environment);
       const bodyPath = this.bodyPath.get("body");
       if (!Array.isArray(bodyPath)) {
         throw new Error("Body path is not an array");
@@ -130,6 +149,53 @@ export class FunctionIRBuilder {
 
   public getDeclarationId(name: string, nodePath: NodePath<t.Node>): DeclarationId | undefined {
     return nodePath.scope.getData(name);
+  }
+
+  public registerDeclarationSourceName(declarationId: DeclarationId, name: string) {
+    const declaration = this.declarationBindings.get(declarationId);
+    if (declaration !== undefined) {
+      declaration.sourceName = name;
+    }
+  }
+
+  public instantiateDeclaration(declarationId: DeclarationId, kind: DeclarationKind, name: string) {
+    if (!this.declarationBindings.has(declarationId)) {
+      this.declarationBindings.set(declarationId, {
+        kind,
+        state: getInitialDeclarationState(kind),
+        sourceName: name,
+      });
+      return;
+    }
+
+    this.registerDeclarationSourceName(declarationId, name);
+  }
+
+  public markDeclarationInitialized(declarationId: DeclarationId) {
+    const declaration = this.declarationBindings.get(declarationId);
+    if (declaration !== undefined) {
+      declaration.state = "initialized";
+    }
+  }
+
+  public isDeclarationInTDZ(declarationId: DeclarationId): boolean {
+    if (!this.isOwnDeclaration(declarationId)) {
+      return false;
+    }
+
+    const declaration = this.declarationBindings.get(declarationId);
+    if (
+      declaration === undefined ||
+      (declaration.kind !== "let" && declaration.kind !== "const" && declaration.kind !== "class")
+    ) {
+      return false;
+    }
+
+    return declaration.state === "uninitialized";
+  }
+
+  public getDeclarationSourceName(declarationId: DeclarationId): string | undefined {
+    return this.declarationBindings.get(declarationId)?.sourceName;
   }
 
   /**
@@ -206,5 +272,16 @@ export class FunctionIRBuilder {
       }
     }
     return undefined;
+  }
+}
+
+function getInitialDeclarationState(kind: DeclarationKind): DeclarationState {
+  switch (kind) {
+    case "let":
+    case "const":
+    case "class":
+      return "uninitialized";
+    default:
+      return "initialized";
   }
 }
