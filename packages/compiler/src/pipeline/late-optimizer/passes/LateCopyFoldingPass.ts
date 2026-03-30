@@ -118,7 +118,11 @@ export class LateCopyFoldingPass extends BaseOptimizationPass {
       );
 
       const indicesToRemove = [adjusted.copyIdx];
-      const expressionStmtIdx = this.findRedundantExpressionStatement(block, adjusted.copyIdx, copy);
+      const expressionStmtIdx = this.findRedundantExpressionStatement(
+        block,
+        adjusted.copyIdx,
+        copy,
+      );
       if (expressionStmtIdx !== undefined) {
         indicesToRemove.push(expressionStmtIdx);
       }

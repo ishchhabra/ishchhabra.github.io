@@ -22,13 +22,31 @@ export function buildBindings(
 
   bindingsPath.traverse({
     ClassDeclaration: (path: NodePath<t.ClassDeclaration>) => {
-      buildClassDeclarationBindings(bindingsPath, path, functionBuilder, environment, pendingRenames);
+      buildClassDeclarationBindings(
+        bindingsPath,
+        path,
+        functionBuilder,
+        environment,
+        pendingRenames,
+      );
     },
     FunctionDeclaration: (path: NodePath<t.FunctionDeclaration>) => {
-      buildFunctionDeclarationBindings(bindingsPath, path, functionBuilder, environment, pendingRenames);
+      buildFunctionDeclarationBindings(
+        bindingsPath,
+        path,
+        functionBuilder,
+        environment,
+        pendingRenames,
+      );
     },
     VariableDeclaration: (path: NodePath<t.VariableDeclaration>) => {
-      buildVariableDeclarationBindings(bindingsPath, path, functionBuilder, environment, pendingRenames);
+      buildVariableDeclarationBindings(
+        bindingsPath,
+        path,
+        functionBuilder,
+        environment,
+        pendingRenames,
+      );
     },
   });
 

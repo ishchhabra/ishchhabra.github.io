@@ -45,23 +45,53 @@ function buildLValBindings(
       break;
     case "ArrayPattern":
       nodePath.assertArrayPattern();
-      buildArrayPatternBindings(bindingsPath, nodePath, functionBuilder, environment, pendingRenames);
+      buildArrayPatternBindings(
+        bindingsPath,
+        nodePath,
+        functionBuilder,
+        environment,
+        pendingRenames,
+      );
       break;
     case "AssignmentPattern":
       nodePath.assertAssignmentPattern();
-      buildAssignmentPatternBindings(bindingsPath, nodePath, functionBuilder, environment, pendingRenames);
+      buildAssignmentPatternBindings(
+        bindingsPath,
+        nodePath,
+        functionBuilder,
+        environment,
+        pendingRenames,
+      );
       break;
     case "ObjectPattern":
       nodePath.assertObjectPattern();
-      buildObjectPatternBindings(bindingsPath, nodePath, functionBuilder, environment, pendingRenames);
+      buildObjectPatternBindings(
+        bindingsPath,
+        nodePath,
+        functionBuilder,
+        environment,
+        pendingRenames,
+      );
       break;
     case "ObjectProperty":
       nodePath.assertObjectProperty();
-      buildObjectPropertyBindings(bindingsPath, nodePath, functionBuilder, environment, pendingRenames);
+      buildObjectPropertyBindings(
+        bindingsPath,
+        nodePath,
+        functionBuilder,
+        environment,
+        pendingRenames,
+      );
       break;
     case "RestElement":
       nodePath.assertRestElement();
-      buildRestElementBindings(bindingsPath, nodePath, functionBuilder, environment, pendingRenames);
+      buildRestElementBindings(
+        bindingsPath,
+        nodePath,
+        functionBuilder,
+        environment,
+        pendingRenames,
+      );
       break;
     default:
       throw new Error(`Unsupported LVal type: ${nodePath.type}`);

@@ -58,11 +58,7 @@ export class LateCopyCoalescingPass extends BaseOptimizationPass {
    * Unsafe when `src` is redefined between the copy and a use of `dst`,
    * since the use would then see the wrong value.
    */
-  private canCoalesce(
-    copyInstr: CopyInstruction,
-    dst: DeclarationId,
-    src: DeclarationId,
-  ): boolean {
+  private canCoalesce(copyInstr: CopyInstruction, dst: DeclarationId, src: DeclarationId): boolean {
     for (const [, block] of this.functionIR.blocks) {
       for (const instr of block.instructions) {
         // dst must have exactly one definition — the Copy we're removing.
@@ -81,10 +77,7 @@ export class LateCopyCoalescingPass extends BaseOptimizationPass {
 
         // If src is redefined anywhere a use of dst could reach, the
         // use would see the wrong value after rewriting.
-        if (
-          instr instanceof StoreLocalInstruction &&
-          instr.lval.identifier.declarationId === src
-        ) {
+        if (instr instanceof StoreLocalInstruction && instr.lval.identifier.declarationId === src) {
           return false;
         }
         if (
