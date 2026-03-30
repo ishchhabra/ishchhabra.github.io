@@ -8,6 +8,7 @@ export {
 } from "./core/Structure";
 export * from "./instructions";
 export { BindingIdentifierInstruction } from "./instructions/BindingIdentifier";
+export { DebuggerStatementInstruction } from "./instructions/DebuggerStatement";
 export { ExpressionStatementInstruction } from "./instructions/ExpressionStatement";
 export { RestElementInstruction } from "./instructions/RestElement";
 export { UnsupportedNodeInstruction } from "./instructions/UnsupportedNode";

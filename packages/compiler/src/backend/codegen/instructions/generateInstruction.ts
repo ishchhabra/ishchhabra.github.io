@@ -3,6 +3,7 @@ import {
   BaseInstruction,
   BindingIdentifierInstruction,
   DeclarationInstruction,
+  DebuggerStatementInstruction,
   ExportSpecifierInstruction,
   ExpressionStatementInstruction,
   FunctionDeclarationInstruction,
@@ -23,6 +24,7 @@ import { CodeGenerator } from "../../CodeGenerator";
 import { generateUnsupportedNode } from "../generateUnsupportedNode";
 import { generateDeclarationInstruction } from "./declaration/generateDeclaration";
 import { generateBindingIdentifierInstruction } from "./generateBindingIdentifier";
+import { generateDebuggerStatementInstruction } from "./generateDebuggerStatement";
 import { generateExpressionStatementInstruction } from "./generateExpressionStatement";
 import { generateRestElementInstruction } from "./generateRestElement";
 import { generateJSXInstruction } from "./jsx/generateJSX";
@@ -40,6 +42,8 @@ export function generateInstruction(
   if (instruction instanceof BindingIdentifierInstruction) {
     generateBindingIdentifierInstruction(instruction, generator);
     return [];
+  } else if (instruction instanceof DebuggerStatementInstruction) {
+    return [generateDebuggerStatementInstruction(instruction, generator)];
   } else if (instruction instanceof DeclarationInstruction) {
     const statement = generateDeclarationInstruction(instruction, generator);
     if (instruction instanceof FunctionDeclarationInstruction && !instruction.emit) {
