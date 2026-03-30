@@ -33,12 +33,13 @@ interface ParamBuildResult {
 
 export function buildFunctionParams(
   paramPaths: NodePath<t.Identifier | t.RestElement | t.Pattern>[],
+  scopePath: NodePath<t.Node>,
   bodyPath: NodePath,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): BuiltFunctionParam[] {
-  instantiateFunctionParamBindings(paramPaths, bodyPath, functionBuilder, environment);
+  instantiateFunctionParamBindings(paramPaths, scopePath, functionBuilder, environment);
 
   return paramPaths.map((paramPath: NodePath<t.Identifier | t.RestElement | t.Pattern>) => {
     const result = buildFunctionParam(

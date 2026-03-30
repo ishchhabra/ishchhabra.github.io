@@ -78,6 +78,7 @@ export class ModuleIRBuilder {
     const functionIR = new FunctionIRBuilder(
       [],
       programPath,
+      programPath,
       this.environment,
       this,
       false,

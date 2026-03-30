@@ -7,23 +7,28 @@ import { isContextVariable } from "./isContextVariable";
 
 export function instantiateFunctionParamBindings(
   paramPaths: NodePath<t.Identifier | t.RestElement | t.Pattern>[],
-  bodyPath: NodePath,
+  scopePath: NodePath<t.Node>,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
   for (const paramPath of paramPaths) {
-    instantiateParamBinding(paramPath as NodePath<t.LVal>, bodyPath, functionBuilder, environment);
+    instantiateParamBinding(
+      paramPath as NodePath<t.LVal>,
+      scopePath,
+      functionBuilder,
+      environment,
+    );
   }
 }
 
 function instantiateParamBinding(
   nodePath: NodePath<t.LVal>,
-  bodyPath: NodePath,
+  scopePath: NodePath,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
   if (nodePath.isIdentifier()) {
-    instantiateIdentifierParamBinding(nodePath, bodyPath, functionBuilder, environment);
+    instantiateIdentifierParamBinding(nodePath, scopePath, functionBuilder, environment);
     return;
   }
 
@@ -35,7 +40,7 @@ function instantiateParamBinding(
 
       instantiateParamBinding(
         elementPath as NodePath<t.LVal>,
-        bodyPath,
+        scopePath,
         functionBuilder,
         environment,
       );
@@ -49,7 +54,7 @@ function instantiateParamBinding(
         const valuePath = propertyPath.get("value");
         instantiateParamBinding(
           valuePath as NodePath<t.LVal>,
-          bodyPath,
+          scopePath,
           functionBuilder,
           environment,
         );
@@ -60,7 +65,7 @@ function instantiateParamBinding(
         const argumentPath = propertyPath.get("argument");
         instantiateParamBinding(
           argumentPath as NodePath<t.LVal>,
-          bodyPath,
+          scopePath,
           functionBuilder,
           environment,
         );
@@ -74,7 +79,7 @@ function instantiateParamBinding(
 
   if (nodePath.isAssignmentPattern()) {
     const leftPath = nodePath.get("left");
-    instantiateParamBinding(leftPath, bodyPath, functionBuilder, environment);
+    instantiateParamBinding(leftPath, scopePath, functionBuilder, environment);
     return;
   }
 
@@ -82,7 +87,7 @@ function instantiateParamBinding(
     const argumentPath = nodePath.get("argument");
     instantiateParamBinding(
       argumentPath as NodePath<t.LVal>,
-      bodyPath,
+      scopePath,
       functionBuilder,
       environment,
     );
@@ -94,28 +99,28 @@ function instantiateParamBinding(
 
 function instantiateIdentifierParamBinding(
   nodePath: NodePath<t.Identifier>,
-  bodyPath: NodePath,
+  scopePath: NodePath,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
   const originalName = nodePath.node.name;
-  if (bodyPath.scope.data[originalName] !== undefined) {
+  if (scopePath.scope.data[originalName] !== undefined) {
     return;
   }
 
-  const binding = bodyPath.scope.getBinding(originalName);
+  const binding = scopePath.scope.getBinding(originalName);
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
 
-  functionBuilder.registerDeclarationName(originalName, identifier.declarationId, bodyPath);
+  functionBuilder.registerDeclarationName(originalName, identifier.declarationId, scopePath);
   functionBuilder.instantiateDeclaration(identifier.declarationId, "param", originalName);
 
-  if (binding && isContextVariable(binding, bodyPath)) {
+  if (binding && isContextVariable(binding, scopePath)) {
     environment.contextDeclarationIds.add(identifier.declarationId);
   }
 
-  bodyPath.scope.rename(originalName, identifier.name);
-  functionBuilder.registerDeclarationName(identifier.name, identifier.declarationId, bodyPath);
+  scopePath.scope.rename(originalName, identifier.name);
+  functionBuilder.registerDeclarationName(identifier.name, identifier.declarationId, scopePath);
   environment.registerDeclaration(
     identifier.declarationId,
     functionBuilder.currentBlock.id,

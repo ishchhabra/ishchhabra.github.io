@@ -26,6 +26,7 @@ export function buildFunctionExpression(
   const functionIRBuilder = new FunctionIRBuilder(
     paramPaths,
     bodyPath,
+    bodyPath,
     functionBuilder.environment,
     moduleBuilder,
     nodePath.node.async,

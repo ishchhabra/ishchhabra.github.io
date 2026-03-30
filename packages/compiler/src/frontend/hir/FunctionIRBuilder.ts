@@ -68,6 +68,7 @@ export class FunctionIRBuilder {
 
   constructor(
     public readonly paramPaths: NodePath<t.Identifier | t.RestElement | t.Pattern>[],
+    public readonly scopePath: NodePath<t.Node>,
     public readonly bodyPath: NodePath<t.Program | t.BlockStatement | t.Expression>,
     public readonly environment: Environment,
     public readonly moduleBuilder: ModuleIRBuilder,
@@ -82,6 +83,7 @@ export class FunctionIRBuilder {
   public build(): FunctionIR {
     const builtParams = buildFunctionParams(
       this.paramPaths,
+      this.scopePath,
       this.bodyPath,
       this,
       this.moduleBuilder,

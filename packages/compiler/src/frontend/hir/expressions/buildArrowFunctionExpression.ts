@@ -14,8 +14,10 @@ export function buildArrowFunctionExpression(
 ): Place {
   const paramPaths = nodePath.get("params");
   const bodyPath = nodePath.get("body");
+  const scopePath = bodyPath.isExpression() ? nodePath : bodyPath;
   const functionIRBuilder = new FunctionIRBuilder(
     paramPaths,
+    scopePath,
     bodyPath,
     functionBuilder.environment,
     moduleBuilder,

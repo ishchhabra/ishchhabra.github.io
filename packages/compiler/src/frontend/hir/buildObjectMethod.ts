@@ -24,6 +24,7 @@ export function buildObjectMethod(
   const functionIRBuilder = new FunctionIRBuilder(
     paramPaths,
     bodyPath,
+    bodyPath,
     environment,
     moduleBuilder,
     nodePath.node.async,
