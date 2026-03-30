@@ -6,6 +6,7 @@ import { ModuleIR } from "../../ir/core/ModuleIR";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { CallGraph } from "../analysis/CallGraph";
 import { AlgebraicSimplificationPass } from "../passes/AlgebraicSimplificationPass";
+import { ExpressionInliningPass } from "../passes/ExpressionInliningPass";
 import { SparseConditionalConstantPropagationPass } from "../passes/SparseConditionalConstantPropagationPass";
 import { FunctionInliningPass } from "../passes/FunctionInliningPass";
 import { CapturePruningPass } from "../passes/CapturePruningPass";
@@ -63,6 +64,18 @@ export class Optimizer {
           this.AM.invalidateFunction(this.functionIR);
         }
         blocks = algebraicSimplificationResult.blocks;
+      }
+
+      if (this.options.enableExpressionInliningPass) {
+        const expressionInliningResult = new ExpressionInliningPass(
+          this.functionIR,
+          this.moduleIR.environment,
+        ).run();
+        if (expressionInliningResult.changed) {
+          changed = true;
+          this.AM.invalidateFunction(this.functionIR);
+        }
+        blocks = expressionInliningResult.blocks;
       }
 
       {

@@ -1,0 +1,12 @@
+{
+  "enableOptimizer": true,
+  "enableConstantPropagationPass": false,
+  "enableAlgebraicSimplificationPass": false,
+  "enableExpressionInliningPass": true,
+  "enableFunctionInliningPass": false,
+  "enableCapturePruningPass": false,
+  "enableDeadCodeEliminationPass": false,
+  "enablePhiOptimizationPass": false,
+  "enableScalarReplacementOfAggregatesPass": false,
+  "enableLateOptimizer": false
+}
