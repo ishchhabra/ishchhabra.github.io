@@ -1,0 +1,16 @@
+true;
+true;
+4;
+10;
+true;
+true;
+true;
+true;
+7;
+32;
+("AB");
+("a%20b");
+0;
+true;
+5;
+console.log(true, true, 4, 10, true, true, true, true, 7, 32, "AB", "a%20b", 0, true, 5);

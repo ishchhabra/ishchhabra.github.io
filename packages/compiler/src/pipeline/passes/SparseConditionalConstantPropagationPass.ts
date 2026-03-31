@@ -30,6 +30,7 @@ import { BaseOptimizationPass } from "../late-optimizer/OptimizationPass";
 import { Phi } from "../ssa/Phi";
 import { SSA } from "../ssa/SSABuilder";
 import type { ResolveConstantContext } from "./resolveConstant";
+import { resolveBuiltinConstant } from "./resolveBuiltinConstant";
 
 // ---------------------------------------------------------------------------
 // Lattice
@@ -124,6 +125,7 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
     this.lattice.clear();
     this.executableEdges.clear();
     this.executableBlocks.clear();
+    this.hookResolved.clear();
     this.ssaWorklist.length = 0;
     this.cfgWorklist.length = 0;
 
@@ -313,22 +315,10 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
   // -------------------------------------------------------------------------
 
   private evaluateInstruction(instr: BaseInstruction): void {
-    if (this.options.resolveConstant) {
-      let resolvedValue: TPrimitiveValue | undefined;
-      let resolved = false;
-      this.resolveConstantCtx.set = (value: TPrimitiveValue) => {
-        resolvedValue = value;
-        resolved = true;
-      };
-      this.options.resolveConstant(instr, this.resolveConstantCtx);
-      this.resolveConstantCtx.set = () => {
-        throw new Error("set() can only be called during resolveConstant hook invocation");
-      };
-      if (resolved) {
-        this.hookResolved.add(instr.place.identifier.id);
-        this.setLattice(instr.place.identifier, resolvedValue);
-        return;
-      }
+    const resolvedValue = this.tryResolveConstant(instr);
+    if (resolvedValue !== undefined || this.hookResolved.has(instr.place.identifier.id)) {
+      this.setLattice(instr.place.identifier, resolvedValue);
+      return;
     }
 
     if (instr instanceof LiteralInstruction) {
@@ -387,6 +377,34 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
     if (instr.getReadPlaces().length > 0) {
       this.setLattice(instr.place.identifier, BOTTOM);
     }
+  }
+
+  private tryResolveConstant(instr: BaseInstruction): TPrimitiveValue | undefined {
+    let resolvedValue: TPrimitiveValue | undefined;
+    let resolved = false;
+
+    this.resolveConstantCtx.set = (value: TPrimitiveValue) => {
+      resolvedValue = value;
+      resolved = true;
+    };
+
+    try {
+      this.options.resolveConstant?.(instr, this.resolveConstantCtx);
+      if (!resolved) {
+        resolveBuiltinConstant(instr, this.moduleUnit, this.resolveConstantCtx);
+      }
+    } finally {
+      this.resolveConstantCtx.set = () => {
+        throw new Error("set() can only be called during resolveConstant hook invocation");
+      };
+    }
+
+    if (resolved) {
+      this.hookResolved.add(instr.place.identifier.id);
+      return resolvedValue;
+    }
+
+    return undefined;
   }
 
   // -------------------------------------------------------------------------
@@ -661,6 +679,11 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
   }
 
   private evaluateUnary(instr: UnaryExpressionInstruction): void {
+    if (instr.operator === "void") {
+      this.setLattice(instr.place.identifier, undefined);
+      return;
+    }
+
     const operand = this.getLattice(instr.argument.identifier.id);
     if (operand === TOP) return;
     if (operand === BOTTOM) {
@@ -680,6 +703,9 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
         break;
       case "+":
         result = +(operand as number);
+        break;
+      case "typeof":
+        result = typeof operand;
         break;
       default:
         this.setLattice(instr.place.identifier, BOTTOM);
