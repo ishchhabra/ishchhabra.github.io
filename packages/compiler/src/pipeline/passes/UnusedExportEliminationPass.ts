@@ -46,6 +46,13 @@ export class UnusedExportEliminationPass {
         continue;
       }
 
+      // Preserve all exports for node_modules: the compiler may not have
+      // visibility into all consumers (barrel files, re-exports within
+      // the same package), so removing exports can break the package.
+      if (modulePath.includes("/node_modules/")) {
+        continue;
+      }
+
       const usedExportNames = importedNames.get(modulePath) ?? new Set();
 
       // Find which export names are unused.

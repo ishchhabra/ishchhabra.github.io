@@ -1,8 +1,16 @@
-import { mkdirSync, readFileSync, writeFileSync } from "fs";
-import { dirname, join, resolve } from "path";
+import {
+  rmSync,
+  readFileSync,
+  mkdirSync,
+  writeFileSync,
+  readdirSync,
+  copyFileSync,
+  statSync,
+} from "fs";
+import { resolve, join, dirname, relative } from "path";
 import { CompilerOptions, CompilerOptionsSchema } from "./compile";
 import { CodeGenerator } from "./backend/CodeGenerator";
-import { ProjectBuilder } from "./frontend/ProjectBuilder";
+import { ProjectBuilder, getNodeModulePackageRoot } from "./frontend/ProjectBuilder";
 import { Pipeline } from "./pipeline/Pipeline";
 import { glob } from "glob";
 
@@ -11,6 +19,8 @@ export interface ProjectCompilerOptions extends CompilerOptions {
   outDir: string;
   exclude?: RegExp[];
   excludeContentPatterns?: string[];
+  includeNodeModules?: boolean;
+  nodeModulesOutDir?: string;
 }
 
 export interface FileResult {
@@ -19,11 +29,40 @@ export interface FileResult {
   error?: string;
 }
 
+export interface NodeModuleMirror {
+  packageRoot: string;
+  mirrorRoot: string;
+}
+
+export interface DetailedCompileResult {
+  files: FileResult[];
+  compiledNodeModulePackages: string[];
+  opaqueNodeModulePackages: string[];
+  nodeModuleMirrors: NodeModuleMirror[];
+}
+
 export function compileProject(options: ProjectCompilerOptions): FileResult[] {
-  const { srcDir, outDir, exclude = [], excludeContentPatterns = [], ...compilerOptions } = options;
+  return compileProjectDetailed(options).files;
+}
+
+export function compileProjectDetailed(options: ProjectCompilerOptions): DetailedCompileResult {
+  const {
+    srcDir,
+    outDir,
+    exclude = [],
+    excludeContentPatterns = [],
+    includeNodeModules = false,
+    nodeModulesOutDir,
+    ...compilerOptions
+  } = options;
 
   const resolvedSrc = resolve(srcDir);
   const resolvedOut = resolve(outDir);
+  const resolvedNodeModulesOut = nodeModulesOutDir ? resolve(nodeModulesOutDir) : undefined;
+
+  if (resolvedNodeModulesOut !== undefined) {
+    rmSync(resolvedNodeModulesOut, { force: true, recursive: true });
+  }
 
   const files = glob.sync("**/*.{ts,tsx,js,jsx}", {
     cwd: resolvedSrc,
@@ -60,7 +99,7 @@ export function compileProject(options: ProjectCompilerOptions): FileResult[] {
   }
 
   // Build the entire project as a single unit
-  const projectBuilder = new ProjectBuilder();
+  const projectBuilder = new ProjectBuilder({ includeNodeModules });
   const builtFiles: string[] = [];
   for (const file of entryFiles) {
     try {
@@ -110,7 +149,12 @@ export function compileProject(options: ProjectCompilerOptions): FileResult[] {
         error: err instanceof Error ? err.message : String(err),
       });
     }
-    return results;
+    return {
+      files: results,
+      compiledNodeModulePackages: projectUnit.compiledNodeModulePackages,
+      opaqueNodeModulePackages: projectUnit.opaqueNodeModulePackages,
+      nodeModuleMirrors: [],
+    };
   }
 
   // Generate code for each source module
@@ -134,5 +178,110 @@ export function compileProject(options: ProjectCompilerOptions): FileResult[] {
     }
   }
 
-  return results;
+  const nodeModuleMirrors =
+    includeNodeModules && resolvedNodeModulesOut !== undefined
+      ? emitCompiledNodeModules(projectUnit, resolvedNodeModulesOut)
+      : [];
+
+  return {
+    files: results,
+    compiledNodeModulePackages: projectUnit.compiledNodeModulePackages,
+    opaqueNodeModulePackages: projectUnit.opaqueNodeModulePackages,
+    nodeModuleMirrors,
+  };
+}
+
+/**
+ * Emits compiled node_module files into a mirror directory.
+ *
+ * For each compiled package: copies the full package tree (so relative imports
+ * still resolve), then overwrites compiled files with optimized output.
+ */
+function emitCompiledNodeModules(
+  projectUnit: ReturnType<ProjectBuilder["getProjectUnit"]>,
+  nodeModulesOutDir: string,
+): NodeModuleMirror[] {
+  const generator = new CodeGenerator("", projectUnit);
+
+  // Group compiled modules by their package root
+  const modulesByPackage = new Map<string, string[]>();
+  for (const modulePath of projectUnit.modules.keys()) {
+    const packageRoot = getNodeModulePackageRoot(modulePath);
+    if (packageRoot === undefined) continue;
+    const list = modulesByPackage.get(packageRoot) ?? [];
+    list.push(modulePath);
+    modulesByPackage.set(packageRoot, list);
+  }
+
+  const mirrors: NodeModuleMirror[] = [];
+
+  for (const packageRoot of projectUnit.compiledNodeModulePackages.slice().sort()) {
+    const mirrorRoot = getMirrorPackageRoot(packageRoot, nodeModulesOutDir);
+
+    // Copy the full package tree so non-compiled files stay intact
+    try {
+      copyPackageTree(packageRoot, mirrorRoot);
+    } catch {
+      rmSync(mirrorRoot, { force: true, recursive: true });
+      continue;
+    }
+
+    // Overwrite compiled files with optimized output
+    let wrote = false;
+    for (const modulePath of modulesByPackage.get(packageRoot) ?? []) {
+      const outputPath = join(mirrorRoot, relative(packageRoot, modulePath));
+      try {
+        const code = generator.generateModule(modulePath);
+        mkdirSync(dirname(outputPath), { recursive: true });
+        writeFileSync(outputPath, code);
+        wrote = true;
+      } catch {
+        // Generation failed for this file — the original copy remains
+      }
+    }
+
+    if (wrote) {
+      mirrors.push({ packageRoot, mirrorRoot });
+    } else {
+      rmSync(mirrorRoot, { force: true, recursive: true });
+    }
+  }
+
+  return mirrors;
+}
+
+function copyPackageTree(sourceDir: string, destinationDir: string): void {
+  mkdirSync(destinationDir, { recursive: true });
+  for (const entry of readdirSync(sourceDir, { withFileTypes: true })) {
+    if (entry.name === "node_modules") continue;
+    const sourcePath = join(sourceDir, entry.name);
+    const destinationPath = join(destinationDir, entry.name);
+    if (entry.isDirectory()) {
+      copyPackageTree(sourcePath, destinationPath);
+    } else if (entry.isFile()) {
+      mkdirSync(dirname(destinationPath), { recursive: true });
+      copyFileSync(sourcePath, destinationPath);
+    } else if (entry.isSymbolicLink()) {
+      const stats = statSync(sourcePath);
+      if (stats.isDirectory()) {
+        copyPackageTree(sourcePath, destinationPath);
+      } else if (stats.isFile()) {
+        mkdirSync(dirname(destinationPath), { recursive: true });
+        copyFileSync(sourcePath, destinationPath);
+      }
+    }
+  }
+}
+
+function getMirrorPackageRoot(packageRoot: string, nodeModulesOutDir: string): string {
+  // Find the top-level node_modules to compute a relative mirror path
+  const normalized = packageRoot.replace(/\\/g, "/");
+  const segments = normalized.split("/");
+  for (let i = 0; i < segments.length; i++) {
+    if (segments[i] === "node_modules") {
+      const topLevel = segments.slice(0, i + 1).join("/");
+      return join(nodeModulesOutDir, relative(topLevel, packageRoot));
+    }
+  }
+  return join(nodeModulesOutDir, packageRoot.replace(/[:/\\]+/g, "__"));
 }

@@ -17,6 +17,8 @@ dist-ssr
 
 # AOT staging (compile-project output for ENABLE_AOT builds)
 .aot-src
+.aot-node-modules
+.aot-node-modules-manifest.json
 
 # Editor directories and files
 .vscode/*

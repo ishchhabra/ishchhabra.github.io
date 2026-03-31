@@ -3,20 +3,36 @@ import { Environment } from "../environment";
 import { ModuleIR } from "../ir/core/ModuleIR";
 import { ModuleIRBuilder } from "./hir/ModuleIRBuilder";
 
+export interface ProjectBuilderOptions {
+  includeNodeModules?: boolean;
+}
+
 export interface ProjectUnit {
   modules: Map<string, ModuleIR>;
   postOrder: string[];
+  compiledNodeModulePackages: string[];
+  opaqueNodeModulePackages: string[];
 }
 
 export class ProjectBuilder {
   private readonly modules: Map<string, ModuleIR> = new Map();
+  private readonly includeNodeModules: boolean;
+  private readonly compiledNodeModulePackages: Set<string> = new Set();
+  private readonly opaqueNodeModulePackages: Set<string> = new Set();
 
-  constructor() {}
+  constructor(options: ProjectBuilderOptions = {}) {
+    this.includeNodeModules = options.includeNodeModules ?? false;
+  }
 
   public build(entryPoint: string): ProjectUnit {
     this.buildModule(entryPoint);
     const postOrder = this.getPostOrder(this.modules.get(entryPoint)!);
-    return { modules: this.modules, postOrder };
+    return {
+      modules: this.modules,
+      postOrder,
+      compiledNodeModulePackages: [...this.compiledNodeModulePackages],
+      opaqueNodeModulePackages: [...this.opaqueNodeModulePackages],
+    };
   }
 
   /**
@@ -35,30 +51,61 @@ export class ProjectBuilder {
       }
     }
 
-    return { modules: this.modules, postOrder: result };
+    return {
+      modules: this.modules,
+      postOrder: result,
+      compiledNodeModulePackages: [...this.compiledNodeModulePackages],
+      opaqueNodeModulePackages: [...this.opaqueNodeModulePackages],
+    };
   }
 
-  private buildModule(path: string): ModuleIR {
+  public markOpaqueNodeModulePackage(packageRoot: string): void {
+    this.opaqueNodeModulePackages.add(packageRoot);
+    this.compiledNodeModulePackages.delete(packageRoot);
+    for (const modulePath of this.modules.keys()) {
+      if (isModuleInPackage(modulePath, packageRoot)) {
+        this.modules.delete(modulePath);
+      }
+    }
+  }
+
+  private buildModule(path: string): ModuleIR | undefined {
     if (this.modules.has(path)) {
       return this.modules.get(path)!;
     }
 
+    const packageRoot = getNodeModulePackageRoot(path);
+    if (packageRoot !== undefined && this.opaqueNodeModulePackages.has(packageRoot)) {
+      return undefined;
+    }
+
     const environment = new Environment();
-    const moduleIR = new ModuleIRBuilder(path, environment).build();
+    let moduleIR: ModuleIR;
+    try {
+      moduleIR = new ModuleIRBuilder(path, environment).build();
+    } catch (error) {
+      if (packageRoot !== undefined && this.includeNodeModules) {
+        this.markOpaqueNodeModulePackage(packageRoot);
+        return undefined;
+      }
+      throw error;
+    }
+
     this.modules.set(path, moduleIR);
+    if (packageRoot !== undefined) {
+      this.compiledNodeModulePackages.add(packageRoot);
+    }
 
     const imports = Array.from(moduleIR.globals.values()).filter(
       (global) => global.kind === "import",
     );
     for (const { source } of imports) {
-      // Skip external packages, unresolvable paths, and node_modules.
-      // node_modules are skipped for now because third-party packages
-      // often use syntax and patterns not yet supported by the compiler.
-      // This filter can be removed once we have broader language coverage.
-      if (!source.startsWith("/") || !existsSync(source) || source.includes("/node_modules/")) {
+      if (!source.startsWith("/") || !existsSync(source)) {
         continue;
       }
-
+      if (!this.includeNodeModules && source.includes("/node_modules/")) {
+        continue;
+      }
       this.buildModule(source);
     }
 
@@ -92,4 +139,32 @@ export class ProjectBuilder {
       this.visitPostOrder(mod, visited, result);
     }
   }
+}
+
+export function getNodeModulePackageRoot(modulePath: string): string | undefined {
+  const normalizedPath = modulePath.replace(/\\/g, "/");
+  const segments = normalizedPath.split("/");
+  for (let i = segments.length - 2; i >= 0; i--) {
+    if (segments[i] !== "node_modules") {
+      continue;
+    }
+    const packageName = segments[i + 1];
+    if (packageName === undefined || packageName === "") {
+      return undefined;
+    }
+    if (packageName.startsWith("@")) {
+      const scopedName = segments[i + 2];
+      if (scopedName === undefined || scopedName === "") {
+        return undefined;
+      }
+      return segments.slice(0, i + 3).join("/");
+    }
+    return segments.slice(0, i + 2).join("/");
+  }
+  return undefined;
+}
+
+function isModuleInPackage(modulePath: string, packageRoot: string): boolean {
+  const normalizedPath = modulePath.replace(/\\/g, "/");
+  return normalizedPath === packageRoot || normalizedPath.startsWith(`${packageRoot}/`);
 }
