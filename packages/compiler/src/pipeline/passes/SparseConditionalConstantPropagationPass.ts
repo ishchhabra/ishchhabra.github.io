@@ -29,8 +29,8 @@ import { TemplateLiteralInstruction } from "../../ir/instructions/value/Template
 import { BaseOptimizationPass } from "../late-optimizer/OptimizationPass";
 import { Phi } from "../ssa/Phi";
 import { SSA } from "../ssa/SSABuilder";
-import type { ResolveConstantContext } from "./resolveConstant";
 import { resolveBuiltinConstant } from "./resolveBuiltinConstant";
+import type { ResolveConstantContext } from "./resolveConstant";
 
 // ---------------------------------------------------------------------------
 // Lattice
@@ -446,7 +446,11 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
         const canReplace =
           this.hookResolved.has(instr.place.identifier.id) ||
           instr instanceof BinaryExpressionInstruction ||
-          instr instanceof UnaryExpressionInstruction ||
+          // UnaryExpression is replaceable only when pure. `void expr`
+          // propagates side effects from its operand, so `void fetch()`
+          // must not be replaced with `undefined` (that drops the fetch).
+          (instr instanceof UnaryExpressionInstruction &&
+            !instr.hasSideEffects(this.moduleUnit.environment)) ||
           instr instanceof LogicalExpressionInstruction ||
           instr instanceof LoadLocalInstruction ||
           instr instanceof LoadPhiInstruction ||

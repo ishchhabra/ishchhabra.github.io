@@ -48,7 +48,19 @@ export class UnaryExpressionInstruction extends ValueInstruction {
     return [this.argument];
   }
 
-  public override hasSideEffects(): boolean {
-    return ["throw", "delete"].includes(this.operator);
+  public override hasSideEffects(environment: Environment): boolean {
+    if (["throw", "delete"].includes(this.operator)) {
+      return true;
+    }
+
+    // `void expr` evaluates its operand then discards the result.
+    // The void itself is pure, but if the operand is side-effectful
+    // (e.g. `void fetch(url)`) the overall expression is too.
+    if (this.operator === "void") {
+      const argInstr = environment.placeToInstruction.get(this.argument.id);
+      return argInstr ? argInstr.hasSideEffects(environment) : false;
+    }
+
+    return false;
   }
 }
