@@ -2,7 +2,9 @@ import { NodePath } from "@babel/core";
 import * as t from "@babel/types";
 import { getFunctionName } from "../../../babel-utils";
 import { Environment } from "../../../environment";
+import { BindingIdentifierInstruction } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { getDeclarationOwningPath } from "../getDeclarationOwningPath";
 import type { PendingRenames } from "./instantiateScopeBindings";
 import { isBindingOwnedByScope } from "./isBindingOwnedByScope";
 import { isContextVariable } from "./isContextVariable";
@@ -19,7 +21,8 @@ export function buildFunctionDeclarationBindings(
     return;
   }
 
-  const binding = nodePath.scope.getBinding(functionName.node.name);
+  const owningPath = getDeclarationOwningPath(nodePath);
+  const binding = owningPath.scope.getBinding(functionName.node.name);
   if (!isBindingOwnedByScope(bindingsPath, binding)) {
     return;
   }
@@ -53,5 +56,8 @@ export function buildFunctionDeclarationBindings(
     identifier.declarationId,
     functionBuilder.currentBlock.id,
     place.id,
+  );
+  functionBuilder.addInstruction(
+    environment.createInstruction(BindingIdentifierInstruction, place, functionName),
   );
 }

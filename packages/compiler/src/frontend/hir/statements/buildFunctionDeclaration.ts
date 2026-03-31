@@ -1,10 +1,9 @@
 import { NodePath } from "@babel/traverse";
 import * as t from "@babel/types";
-import { getFunctionName } from "../../../babel-utils";
 import { Environment } from "../../../environment";
 import { FunctionDeclarationInstruction } from "../../../ir";
-import { buildIdentifier } from "../buildIdentifier";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { getDeclarationOwningPath } from "../getDeclarationOwningPath";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildFunctionDeclaration(
@@ -17,8 +16,6 @@ export function buildFunctionDeclaration(
   if (!idPath.isIdentifier()) {
     throw new Error("Invalid function declaration");
   }
-
-  const identifierPlace = buildIdentifier(idPath, functionBuilder, environment);
 
   const paramPaths = nodePath.get("params");
   const bodyPath = nodePath.get("body");
@@ -36,14 +33,18 @@ export function buildFunctionDeclaration(
   functionBuilder.propagateCapturesFrom(functionIRBuilder);
   const capturedPlaces = [...functionIRBuilder.captures.values()];
 
-  const functionName = getFunctionName(nodePath);
-  if (functionName === null) {
-    throw new Error("Invalid function declaration");
+  const declarationId = functionBuilder.getDeclarationId(
+    idPath.node.name,
+    getDeclarationOwningPath(nodePath),
+  );
+  if (declarationId === undefined) {
+    throw new Error(`Function declaration binding was not instantiated: ${idPath.node.name}`);
   }
 
-  const declarationId = functionBuilder.getDeclarationId(functionName.node.name, nodePath);
-  if (declarationId === undefined) {
-    throw new Error(`Function accessed before declaration: ${functionName.node.name}`);
+  const latestDeclaration = environment.getLatestDeclaration(declarationId);
+  const identifierPlace = environment.places.get(latestDeclaration.placeId);
+  if (identifierPlace === undefined) {
+    throw new Error(`Unable to find the place for ${idPath.node.name} (${declarationId})`);
   }
 
   const place = environment.createPlace(environment.createIdentifier(declarationId));

@@ -1,7 +1,9 @@
 import { NodePath } from "@babel/core";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
+import { BindingIdentifierInstruction } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { getDeclarationOwningPath } from "../getDeclarationOwningPath";
 import type { PendingRenames } from "./instantiateScopeBindings";
 import { isBindingOwnedByScope } from "./isBindingOwnedByScope";
 import { isContextVariable } from "./isContextVariable";
@@ -13,12 +15,14 @@ export function buildClassDeclarationBindings(
   environment: Environment,
   pendingRenames?: PendingRenames,
 ) {
-  const idNode = nodePath.node.id;
-  if (idNode == null) {
+  const idPath = nodePath.get("id");
+  if (!idPath.isIdentifier()) {
     return;
   }
+  const idNode = idPath.node;
 
-  const binding = nodePath.scope.getBinding(idNode.name);
+  const owningPath = getDeclarationOwningPath(nodePath);
+  const binding = owningPath.scope.getBinding(idNode.name);
   if (!isBindingOwnedByScope(bindingsPath, binding)) {
     return;
   }
@@ -44,5 +48,8 @@ export function buildClassDeclarationBindings(
     identifier.declarationId,
     functionBuilder.currentBlock.id,
     place.id,
+  );
+  functionBuilder.addInstruction(
+    environment.createInstruction(BindingIdentifierInstruction, place, idPath),
   );
 }

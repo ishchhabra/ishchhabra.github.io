@@ -2,8 +2,8 @@ import { NodePath } from "@babel/traverse";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { ClassDeclarationInstruction } from "../../../ir/instructions/declaration/Class";
-import { buildIdentifier } from "../buildIdentifier";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { getDeclarationOwningPath } from "../getDeclarationOwningPath";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildClassDeclaration(
@@ -17,11 +17,18 @@ export function buildClassDeclaration(
     throw new Error("Invalid class declaration: missing id");
   }
 
-  const identifierPlace = buildIdentifier(idPath, functionBuilder, environment);
-
-  const declarationId = functionBuilder.getDeclarationId(idPath.node.name, nodePath);
+  const declarationId = functionBuilder.getDeclarationId(
+    idPath.node.name,
+    getDeclarationOwningPath(nodePath),
+  );
   if (declarationId === undefined) {
-    throw new Error(`Class accessed before declaration: ${idPath.node.name}`);
+    throw new Error(`Class declaration binding was not instantiated: ${idPath.node.name}`);
+  }
+
+  const latestDeclaration = environment.getLatestDeclaration(declarationId);
+  const identifierPlace = environment.places.get(latestDeclaration.placeId);
+  if (identifierPlace === undefined) {
+    throw new Error(`Unable to find the place for ${idPath.node.name} (${declarationId})`);
   }
 
   const place = environment.createPlace(environment.createIdentifier(declarationId));
