@@ -16,6 +16,7 @@ import {
   makeIdentifierId,
 } from "./ir/core/Identifier";
 import { makePlaceId, Place, PlaceId } from "./ir/core/Place";
+import { ProjectEnvironment } from "./ProjectEnvironment";
 
 // oxlint-disable-next-line typescript/no-explicit-any
 type OmitFirst<T extends unknown[]> = T extends [any, ...infer Rest] ? Rest : never;
@@ -61,11 +62,12 @@ export class Environment {
   contextDeclarationIds: Set<DeclarationId> = new Set();
 
   nextFunctionId = 0;
-  nextBlockId = 0;
   nextDeclarationId = 0;
   nextIdentifierId = 0;
   nextInstructionId = 0;
   nextPlaceId = 0;
+
+  constructor(private readonly projectEnvironment: ProjectEnvironment) {}
 
   public createIdentifier(declarationId?: DeclarationId): Identifier {
     declarationId ??= makeDeclarationId(this.nextDeclarationId++);
@@ -97,7 +99,7 @@ export class Environment {
   }
 
   public createBlock(): BasicBlock {
-    const blockId = makeBlockId(this.nextBlockId++);
+    const blockId = makeBlockId(this.projectEnvironment.nextBlockId++);
     const block = new BasicBlock(blockId, [], undefined);
     this.blocks.set(blockId, block);
     return block;

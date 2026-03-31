@@ -1,5 +1,6 @@
 import { existsSync } from "fs";
 import { Environment } from "../environment";
+import { ProjectEnvironment } from "../ProjectEnvironment";
 import { ModuleIR } from "../ir/core/ModuleIR";
 import { ModuleIRBuilder } from "./hir/ModuleIRBuilder";
 
@@ -19,6 +20,7 @@ export class ProjectBuilder {
   private readonly includeNodeModules: boolean;
   private readonly compiledNodeModulePackages: Set<string> = new Set();
   private readonly opaqueNodeModulePackages: Set<string> = new Set();
+  private readonly projectEnvironment = new ProjectEnvironment();
 
   constructor(options: ProjectBuilderOptions = {}) {
     this.includeNodeModules = options.includeNodeModules ?? false;
@@ -79,7 +81,7 @@ export class ProjectBuilder {
       return undefined;
     }
 
-    const environment = new Environment();
+    const environment = new Environment(this.projectEnvironment);
     let moduleIR: ModuleIR;
     try {
       moduleIR = new ModuleIRBuilder(path, environment).build();
