@@ -118,17 +118,25 @@ function buildIdentifierAssignment(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const StoreClass = environment.contextDeclarationIds.has(declarationId)
-    ? StoreContextInstruction
-    : StoreLocalInstruction;
-  const instruction = environment.createInstruction(
-    StoreClass,
-    place,
-    nodePath,
-    leftPlace,
-    resultPlace,
-    "const",
-  );
+  const isContext = environment.contextDeclarationIds.has(declarationId);
+  const instruction = isContext
+    ? environment.createInstruction(
+        StoreContextInstruction,
+        place,
+        nodePath,
+        leftPlace,
+        resultPlace,
+        "let",
+        "assignment",
+      )
+    : environment.createInstruction(
+        StoreLocalInstruction,
+        place,
+        nodePath,
+        leftPlace,
+        resultPlace,
+        "const",
+      );
   functionBuilder.addInstruction(instruction);
   return resultPlace;
 }
@@ -339,18 +347,26 @@ function buildLogicalIdentifierAssignment(
     functionBuilder,
     environment,
   );
-  const StoreClass = environment.contextDeclarationIds.has(declarationId)
-    ? StoreContextInstruction
-    : StoreLocalInstruction;
+  const isContext = environment.contextDeclarationIds.has(declarationId);
   functionBuilder.addInstruction(
-    environment.createInstruction(
-      StoreClass,
-      environment.createPlace(environment.createIdentifier()),
-      nodePath,
-      lvalPlace,
-      stabilizedRightPlace,
-      "const",
-    ),
+    isContext
+      ? environment.createInstruction(
+          StoreContextInstruction,
+          environment.createPlace(environment.createIdentifier()),
+          nodePath,
+          lvalPlace,
+          stabilizedRightPlace,
+          "let",
+          "assignment",
+        )
+      : environment.createInstruction(
+          StoreLocalInstruction,
+          environment.createPlace(environment.createIdentifier()),
+          nodePath,
+          lvalPlace,
+          stabilizedRightPlace,
+          "const",
+        ),
   );
 
   // _result = y;
@@ -560,16 +576,26 @@ function buildDestructuringAssignment(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const StoreClass = hasContext ? StoreContextInstruction : StoreLocalInstruction;
-  const instruction = environment.createInstruction(
-    StoreClass,
-    place,
-    nodePath,
-    leftPlace,
-    resultPlace,
-    "const",
-    identifiers,
-  );
+  const instruction = hasContext
+    ? environment.createInstruction(
+        StoreContextInstruction,
+        place,
+        nodePath,
+        leftPlace,
+        resultPlace,
+        "let",
+        "assignment",
+        identifiers,
+      )
+    : environment.createInstruction(
+        StoreLocalInstruction,
+        place,
+        nodePath,
+        leftPlace,
+        resultPlace,
+        "const",
+        identifiers,
+      );
   functionBuilder.addInstruction(instruction);
 
   for (const instruction of instructions) {

@@ -73,6 +73,7 @@ export function buildVariableDeclaration(
           lvalPlace,
           valuePlace,
           "let",
+          lvalMode === "var-reassignment" ? "assignment" : "declaration",
           isPattern ? lvalIdentifiers : [],
         )
       : environment.createInstruction(

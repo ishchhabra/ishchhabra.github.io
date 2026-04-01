@@ -116,17 +116,25 @@ export function buildUpdateExpression(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const StoreClass = environment.contextDeclarationIds.has(declarationId)
-    ? StoreContextInstruction
-    : StoreLocalInstruction;
-  const instruction = environment.createInstruction(
-    StoreClass,
-    place,
-    nodePath,
-    lvalPlace,
-    valuePlace,
-    "const",
-  );
+  const isContext = environment.contextDeclarationIds.has(declarationId);
+  const instruction = isContext
+    ? environment.createInstruction(
+        StoreContextInstruction,
+        place,
+        nodePath,
+        lvalPlace,
+        valuePlace,
+        "let",
+        "assignment",
+      )
+    : environment.createInstruction(
+        StoreLocalInstruction,
+        place,
+        nodePath,
+        lvalPlace,
+        valuePlace,
+        "const",
+      );
   functionBuilder.addInstruction(instruction);
   environment.registerDeclaration(declarationId, functionBuilder.currentBlock.id, lvalPlace.id);
 

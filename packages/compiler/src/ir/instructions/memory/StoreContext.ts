@@ -4,6 +4,8 @@ import { Environment } from "../../../environment";
 import { InstructionId, MemoryInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
 
+export type StoreContextKind = "declaration" | "assignment";
+
 /**
  * Represents a memory instruction that stores a value to a context variable —
  * a mutable variable captured across closure boundaries. Semantically identical
@@ -20,7 +22,8 @@ export class StoreContextInstruction extends MemoryInstruction {
     public readonly nodePath: NodePath<t.Node> | undefined,
     public readonly lval: Place,
     public readonly value: Place,
-    public readonly type: "let" | "const" | "var",
+    public readonly type: "let" | "var",
+    public readonly kind: StoreContextKind,
     public readonly bindings: Place[] = [],
   ) {
     super(id, place, nodePath);
@@ -36,6 +39,7 @@ export class StoreContextInstruction extends MemoryInstruction {
       this.lval,
       this.value,
       this.type,
+      this.kind,
       this.bindings,
     );
   }
@@ -64,6 +68,7 @@ export class StoreContextInstruction extends MemoryInstruction {
       lval,
       value,
       this.type,
+      this.kind,
       bindings,
     );
   }

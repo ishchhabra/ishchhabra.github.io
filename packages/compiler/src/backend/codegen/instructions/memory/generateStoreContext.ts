@@ -15,16 +15,13 @@ export function generateStoreContextInstruction(
   const value = generator.places.get(instruction.value.id);
   t.assertExpression(value);
 
-  // Context variable declarations use "let"; reassignments use "const" as a
-  // sentinel. For reassignments, emit an assignment expression instead of a
-  // new variable declaration.
-  if (instruction.type === "let" || instruction.type === "var") {
+  if (instruction.kind === "declaration") {
     const node = t.variableDeclaration(instruction.type, [t.variableDeclarator(lval, value)]);
     generator.places.set(instruction.place.id, node);
     return node;
   }
 
-  // Reassignment — emit `lval = value`
+  // Assignment — emit `lval = value`
   const assignment = t.assignmentExpression("=", lval, value);
   const node = t.expressionStatement(assignment);
   generator.places.set(instruction.place.id, assignment);

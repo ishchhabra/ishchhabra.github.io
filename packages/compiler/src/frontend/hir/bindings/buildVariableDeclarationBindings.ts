@@ -169,8 +169,11 @@ function buildIdentifierBindings(
     place.id,
   );
 
-  // Emit hoisted `const <binding> = undefined` for var declarations.
+  // Emit hoisted `<kind> <binding> = undefined` for var declarations.
+  // Context variables use "let" (they will be reassigned via StoreContext);
+  // non-context variables use "const" (SSA ensures each name is assigned once).
   if (binding?.kind === "var") {
+    const isContext = environment.contextDeclarationIds.has(identifier.declarationId);
     const hoistId = environment.createIdentifier(identifier.declarationId);
     hoistId.name = identifier.name;
     const hoistPlace = environment.createPlace(hoistId);
@@ -189,7 +192,7 @@ function buildIdentifierBindings(
         nodePath,
         hoistPlace,
         undefPlace,
-        "const" as const,
+        isContext ? ("let" as const) : ("const" as const),
         [],
       ),
     );
