@@ -46,12 +46,14 @@ export function buildForInStatement(
 
   if (leftPath.isVariableDeclaration()) {
     // `for (const x in obj)` — new loop-scoped variable.
+    const lvalMode = leftPath.node.kind === "var" ? "var-reassignment" : "declaration";
     const idPath = leftPath.get("declarations")[0].get("id") as NodePath<t.LVal>;
     const { place, identifiers } = buildVariableDeclaratorLVal(
       idPath,
       functionBuilder,
       moduleBuilder,
       environment,
+      lvalMode,
     );
     iterationValuePlace = place;
     identifiers.forEach((identifier) => {

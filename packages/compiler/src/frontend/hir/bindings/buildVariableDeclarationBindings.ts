@@ -172,6 +172,7 @@ function buildIdentifierBindings(
   // Emit hoisted `const <binding> = undefined` for var declarations.
   if (binding?.kind === "var") {
     const hoistId = environment.createIdentifier(identifier.declarationId);
+    hoistId.name = identifier.name;
     const hoistPlace = environment.createPlace(hoistId);
     functionBuilder.addInstruction(
       environment.createInstruction(BindingIdentifierInstruction, hoistPlace, nodePath),

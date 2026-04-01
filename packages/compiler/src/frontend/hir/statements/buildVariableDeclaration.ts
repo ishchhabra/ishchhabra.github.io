@@ -19,6 +19,8 @@ import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { getValueFromStaticKey } from "../getValueFromStaticKey";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
+type VariableDeclaratorLValMode = "declaration" | "var-reassignment";
+
 export function buildVariableDeclaration(
   nodePath: NodePath<t.VariableDeclaration>,
   functionBuilder: FunctionIRBuilder,
@@ -42,28 +44,15 @@ export function buildVariableDeclaration(
       throw new Error("Value place must be a single place");
     }
 
-    let { place: lvalPlace, identifiers: lvalIdentifiers } = buildVariableDeclaratorLVal(
+    const lvalMode: VariableDeclaratorLValMode =
+      nodePath.node.kind === "var" ? "var-reassignment" : "declaration";
+    const { place: lvalPlace, identifiers: lvalIdentifiers } = buildVariableDeclaratorLVal(
       id,
       functionBuilder,
       moduleBuilder,
       environment,
+      lvalMode,
     );
-
-    // var declarations have a hoisted `undefined` init from the bindings
-    // pass. Create a fresh SSA Place (like an assignment) so this store
-    // is a distinct definition from the hoisted one.
-    if (nodePath.node.kind === "var" && id.isIdentifier()) {
-      const declId = functionBuilder.getDeclarationId(id.node.name, id);
-      if (declId !== undefined) {
-        const newPlace = environment.createPlace(environment.createIdentifier(declId));
-        functionBuilder.addInstruction(
-          environment.createInstruction(BindingIdentifierInstruction, newPlace, nodePath),
-        );
-        environment.registerDeclaration(declId, functionBuilder.currentBlock.id, newPlace.id);
-        lvalPlace = newPlace;
-        lvalIdentifiers = [newPlace];
-      }
-    }
 
     if (lvalPlace === undefined || Array.isArray(lvalPlace)) {
       throw new Error("Lval place must be a single place");
@@ -119,9 +108,12 @@ export function buildVariableDeclaratorLVal(
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
+  mode: VariableDeclaratorLValMode = "declaration",
 ): { place: Place; identifiers: Place[] } {
   if (nodePath.isIdentifier()) {
-    return buildIdentifierVariableDeclaratorLVal(nodePath, functionBuilder, environment);
+    return mode === "var-reassignment"
+      ? buildVarReassignmentIdentifierVariableDeclaratorLVal(nodePath, functionBuilder, environment)
+      : buildIdentifierVariableDeclaratorLVal(nodePath, functionBuilder, environment);
   }
   if (nodePath.isArrayPattern()) {
     return buildArrayPatternVariableDeclaratorLVal(
@@ -129,6 +121,7 @@ export function buildVariableDeclaratorLVal(
       functionBuilder,
       moduleBuilder,
       environment,
+      mode,
     );
   }
   if (nodePath.isObjectPattern()) {
@@ -137,6 +130,7 @@ export function buildVariableDeclaratorLVal(
       functionBuilder,
       moduleBuilder,
       environment,
+      mode,
     );
   }
   if (nodePath.isAssignmentPattern()) {
@@ -145,6 +139,7 @@ export function buildVariableDeclaratorLVal(
       functionBuilder,
       moduleBuilder,
       environment,
+      mode,
     );
   }
   if (nodePath.isRestElement()) {
@@ -153,6 +148,7 @@ export function buildVariableDeclaratorLVal(
       functionBuilder,
       moduleBuilder,
       environment,
+      mode,
     );
   }
 
@@ -169,11 +165,42 @@ function buildIdentifierVariableDeclaratorLVal(
   return { place, identifiers: [place] };
 }
 
+function buildVarReassignmentIdentifierVariableDeclaratorLVal(
+  nodePath: NodePath<t.Identifier>,
+  functionBuilder: FunctionIRBuilder,
+  environment: Environment,
+): { place: Place; identifiers: Place[] } {
+  const declarationId = functionBuilder.getDeclarationId(nodePath.node.name, nodePath);
+  if (declarationId === undefined) {
+    throw new Error(`Variable accessed before declaration: ${nodePath.node.name}`);
+  }
+
+  if (environment.contextDeclarationIds.has(declarationId)) {
+    const latestDeclaration = environment.getLatestDeclaration(declarationId);
+    const existingPlace = environment.places.get(latestDeclaration.placeId);
+    if (existingPlace === undefined) {
+      throw new Error(`Unable to find the place for ${nodePath.node.name} (${declarationId})`);
+    }
+
+    functionBuilder.markDeclarationInitialized(declarationId);
+    return { place: existingPlace, identifiers: [existingPlace] };
+  }
+
+  const place = environment.createPlace(environment.createIdentifier(declarationId));
+  functionBuilder.addInstruction(
+    environment.createInstruction(BindingIdentifierInstruction, place, nodePath),
+  );
+  environment.registerDeclaration(declarationId, functionBuilder.currentBlock.id, place.id);
+  functionBuilder.markDeclarationInitialized(declarationId);
+  return { place, identifiers: [place] };
+}
+
 function buildArrayPatternVariableDeclaratorLVal(
   nodePath: NodePath<t.ArrayPattern>,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
+  mode: VariableDeclaratorLValMode,
 ): { place: Place; identifiers: Place[] } {
   const identifiers: Place[] = [];
 
@@ -190,6 +217,7 @@ function buildArrayPatternVariableDeclaratorLVal(
         functionBuilder,
         moduleBuilder,
         environment,
+        mode,
       );
       identifiers.push(...elementIdentifiers);
       return place;
@@ -214,6 +242,7 @@ function buildObjectPatternVariableDeclaratorLVal(
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
+  mode: VariableDeclaratorLValMode,
 ): { place: Place; identifiers: Place[] } {
   const identifiers: Place[] = [];
 
@@ -246,6 +275,7 @@ function buildObjectPatternVariableDeclaratorLVal(
         functionBuilder,
         moduleBuilder,
         environment,
+        mode,
       );
       identifiers.push(...valueIdentifiers);
 
@@ -268,7 +298,13 @@ function buildObjectPatternVariableDeclaratorLVal(
     if (propertyPath.isRestElement()) {
       const argumentPath = propertyPath.get("argument");
       const { place: argumentPlace, identifiers: argumentIdentifiers } =
-        buildVariableDeclaratorLVal(argumentPath, functionBuilder, moduleBuilder, environment);
+        buildVariableDeclaratorLVal(
+          argumentPath,
+          functionBuilder,
+          moduleBuilder,
+          environment,
+          mode,
+        );
       identifiers.push(...argumentIdentifiers);
 
       const identifier = environment.createIdentifier();
@@ -327,6 +363,7 @@ function buildAssignmentPatternVariableDeclaratorLVal(
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
+  mode: VariableDeclaratorLValMode,
 ): { place: Place; identifiers: Place[] } {
   const rightPath = nodePath.get("right");
   const rightPlace = buildNode(rightPath, functionBuilder, moduleBuilder, environment);
@@ -340,6 +377,7 @@ function buildAssignmentPatternVariableDeclaratorLVal(
     functionBuilder,
     moduleBuilder,
     environment,
+    mode,
   );
 
   const identifier = environment.createIdentifier();
@@ -361,6 +399,7 @@ function buildRestElementVariableDeclaratorLVal(
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
+  mode: VariableDeclaratorLValMode,
 ): { place: Place; identifiers: Place[] } {
   const argumentPath = nodePath.get("argument");
   const { place: argumentPlace, identifiers: argumentIdentifiers } = buildVariableDeclaratorLVal(
@@ -368,6 +407,7 @@ function buildRestElementVariableDeclaratorLVal(
     functionBuilder,
     moduleBuilder,
     environment,
+    mode,
   );
 
   const identifier = environment.createIdentifier();

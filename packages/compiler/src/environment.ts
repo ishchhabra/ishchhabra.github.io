@@ -61,18 +61,45 @@ export class Environment {
    */
   contextDeclarationIds: Set<DeclarationId> = new Set();
 
+  /**
+   * Per-module counter for function IDs. Unlike other counters, FunctionIRId
+   * stays per-module because the codegen assumes the entry function is always
+   * ID 0 within each module (see {@link CodeGenerator.entryFunction}).
+   */
   nextFunctionId = 0;
-  nextDeclarationId = 0;
-  nextIdentifierId = 0;
-  nextInstructionId = 0;
-  nextPlaceId = 0;
 
   constructor(private readonly projectEnvironment: ProjectEnvironment) {}
 
-  public createIdentifier(declarationId?: DeclarationId): Identifier {
-    declarationId ??= makeDeclarationId(this.nextDeclarationId++);
+  /** Proxy getters/setters — delegates to ProjectEnvironment for global uniqueness. */
+  get nextDeclarationId() {
+    return this.projectEnvironment.nextDeclarationId;
+  }
+  set nextDeclarationId(v: number) {
+    this.projectEnvironment.nextDeclarationId = v;
+  }
+  get nextIdentifierId() {
+    return this.projectEnvironment.nextIdentifierId;
+  }
+  set nextIdentifierId(v: number) {
+    this.projectEnvironment.nextIdentifierId = v;
+  }
+  get nextInstructionId() {
+    return this.projectEnvironment.nextInstructionId;
+  }
+  set nextInstructionId(v: number) {
+    this.projectEnvironment.nextInstructionId = v;
+  }
+  get nextPlaceId() {
+    return this.projectEnvironment.nextPlaceId;
+  }
+  set nextPlaceId(v: number) {
+    this.projectEnvironment.nextPlaceId = v;
+  }
 
-    const identifierId = makeIdentifierId(this.nextIdentifierId++);
+  public createIdentifier(declarationId?: DeclarationId): Identifier {
+    declarationId ??= makeDeclarationId(this.projectEnvironment.nextDeclarationId++);
+
+    const identifierId = makeIdentifierId(this.projectEnvironment.nextIdentifierId++);
     const version = this.declToPlaces.get(declarationId)?.length ?? 0;
     const identifier = new Identifier(identifierId, `${version}`, declarationId);
     this.identifiers.set(identifierId, identifier);
@@ -80,7 +107,7 @@ export class Environment {
   }
 
   public createPlace(identifier: Identifier): Place {
-    const placeId = makePlaceId(this.nextPlaceId++);
+    const placeId = makePlaceId(this.projectEnvironment.nextPlaceId++);
     const place = new Place(placeId, identifier);
     this.places.set(placeId, place);
     return place;
@@ -91,7 +118,7 @@ export class Environment {
     Class: C,
     ...args: OmitFirst<ConstructorParameters<C>>
   ): InstanceType<C> {
-    const instructionId = makeInstructionId(this.nextInstructionId++);
+    const instructionId = makeInstructionId(this.projectEnvironment.nextInstructionId++);
     const instruction = new Class(instructionId, ...args);
     this.instructions.set(instructionId, instruction);
     this.placeToInstruction.set(instruction.place.id, instruction);

@@ -46,12 +46,14 @@ export function buildForOfStatement(
 
   if (leftPath.isVariableDeclaration()) {
     // `for (const x of arr)` — new loop-scoped variable.
+    const lvalMode = leftPath.node.kind === "var" ? "var-reassignment" : "declaration";
     const idPath = leftPath.get("declarations")[0].get("id") as NodePath<t.LVal>;
     const { place, identifiers } = buildVariableDeclaratorLVal(
       idPath,
       functionBuilder,
       moduleBuilder,
       environment,
+      lvalMode,
     );
     iterationValuePlace = place;
     identifiers.forEach((identifier) => {
