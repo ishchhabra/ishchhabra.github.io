@@ -10,7 +10,7 @@ export class FunctionExpressionInstruction extends ValueInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.FunctionExpression> | undefined,
+    public readonly nodePath: NodePath<t.FunctionExpression | t.FunctionDeclaration> | undefined,
     public readonly identifier: Place | null,
     public readonly functionIR: FunctionIR,
     public readonly generator: boolean,
@@ -62,7 +62,7 @@ export class FunctionExpressionInstruction extends ValueInstruction {
   }
 
   public override getWrittenPlaces(): Place[] {
-    return this.identifier ? [this.place, this.identifier] : [this.place];
+    return [this.place];
   }
 
   public override hasSideEffects(): boolean {

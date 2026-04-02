@@ -1,7 +1,7 @@
-export function HighlightedCode({ code: $6_0, lang: $7_0 }) {
-  const $50_0 = $6_0;
-  const $51_0 = $7_0;
-  const $13_0 = $50_0 + $51_0;
+export const HighlightedCode = function HighlightedCode({ code: $7_0, lang: $8_0 }) {
+  const $53_0 = $7_0;
+  const $54_0 = $8_0;
+  const $14_0 = $53_0 + $54_0;
   return (
     <pre>
       <code
@@ -9,12 +9,12 @@ export function HighlightedCode({ code: $6_0, lang: $7_0 }) {
           fontFamily: "mono",
         }}
         dangerouslySetInnerHTML={{
-          __html: $13_0,
+          __html: $14_0,
         }}
       />
     </pre>
   );
-}
-export function Example() {
+};
+export const Example = function Example() {
   return <HighlightedCode code="x" lang="js" />;
-}
+};

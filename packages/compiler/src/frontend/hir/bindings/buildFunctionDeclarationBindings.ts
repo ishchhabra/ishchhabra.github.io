@@ -2,7 +2,8 @@ import { NodePath } from "@babel/core";
 import * as t from "@babel/types";
 import { getFunctionName } from "../../../babel-utils";
 import { Environment } from "../../../environment";
-import { DeclareLocalInstruction, FunctionDeclarationInstruction } from "../../../ir";
+import { DeclareLocalInstruction, StoreLocalInstruction } from "../../../ir";
+import { FunctionExpressionInstruction } from "../../../ir/instructions/value/FunctionExpression";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { getDeclarationOwningPath } from "../getDeclarationOwningPath";
@@ -69,7 +70,7 @@ export function registerFunctionDeclarationBinding(
 }
 
 /**
- * Phase 2: Build the function body and emit the FunctionDeclarationInstruction.
+ * Phase 2: Build the function body and emit a FunctionExpressionInstruction + StoreLocal.
  * Per ECMA-262 §10.2.11, InstantiateFunctionObject runs after ALL bindings in
  * the scope have been created, so this must be called after all register*
  * functions have completed.
@@ -126,7 +127,7 @@ export function initializeFunctionDeclaration(
 
   const fnPlace = environment.createPlace(environment.createIdentifier(declarationId));
   const instruction = environment.createInstruction(
-    FunctionDeclarationInstruction,
+    FunctionExpressionInstruction,
     fnPlace,
     nodePath,
     identifierPlace,
@@ -137,4 +138,18 @@ export function initializeFunctionDeclaration(
   );
   functionBuilder.addInstruction(instruction);
   environment.registerDeclarationInstruction(fnPlace, instruction);
+
+  const isContext = environment.contextDeclarationIds.has(declarationId);
+  const storePlace = environment.createPlace(environment.createIdentifier());
+  functionBuilder.addInstruction(
+    environment.createInstruction(
+      StoreLocalInstruction,
+      storePlace,
+      nodePath,
+      identifierPlace,
+      fnPlace,
+      isContext ? ("let" as const) : ("const" as const),
+      [],
+    ),
+  );
 }

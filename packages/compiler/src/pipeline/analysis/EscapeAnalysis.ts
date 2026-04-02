@@ -18,7 +18,6 @@ import {
 import { StoreStaticPropertyInstruction } from "../../ir/instructions/memory/StoreStaticProperty";
 import { StoreDynamicPropertyInstruction } from "../../ir/instructions/memory/StoreDynamicProperty";
 import { FunctionIR } from "../../ir/core/FunctionIR";
-import { FunctionDeclarationInstruction } from "../../ir/instructions/declaration/Function";
 import { ArrowFunctionExpressionInstruction } from "../../ir/instructions/value/ArrowFunctionExpression";
 import { FunctionExpressionInstruction } from "../../ir/instructions/value/FunctionExpression";
 import { YieldExpressionInstruction } from "../../ir/instructions/value/YieldExpression";
@@ -173,7 +172,6 @@ export class EscapeAnalysis extends FunctionAnalysis<EscapeAnalysisResult> {
         }
 
         if (
-          instr instanceof FunctionDeclarationInstruction ||
           instr instanceof ArrowFunctionExpressionInstruction ||
           instr instanceof FunctionExpressionInstruction
         ) {

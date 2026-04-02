@@ -1,13 +1,13 @@
-function $0_0($1_0) {
+const $0_0 = function $0_0($1_0) {
   let $2_0 = "default";
-  let $12_phi_17 = undefined;
-  $12_phi_17 = $2_0;
+  let $13_phi_18 = undefined;
+  $13_phi_18 = $2_0;
   try {
     $2_1 = JSON.parse($1_0);
-    $12_phi_17 = $2_1;
+    $13_phi_18 = $2_1;
   } catch ($9_0) {
     $2_2 = "error";
-    $12_phi_17 = $2_2;
+    $13_phi_18 = $2_2;
   }
-  return $12_phi_17;
-}
+  return $13_phi_18;
+};

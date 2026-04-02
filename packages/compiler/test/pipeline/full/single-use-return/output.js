@@ -1,3 +1,3 @@
-const $22_0 = globalThis.getA();
-const $27_0 = globalThis.getB();
-console.log($22_0 + $27_0);
+const $23_0 = globalThis.getA();
+const $28_0 = globalThis.getB();
+console.log($23_0 + $28_0);

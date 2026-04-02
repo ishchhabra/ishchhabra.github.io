@@ -1,1 +1,1 @@
-export { FunctionDeclarationInstruction } from "./Function";
+export {};

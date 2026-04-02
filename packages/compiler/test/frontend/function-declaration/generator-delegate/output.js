@@ -1,8 +1,8 @@
-function* $0_0() {
+const $0_0 = function* $0_0() {
   yield 1;
   yield 2;
-}
-function* $1_0() {
+};
+const $1_0 = function* $1_0() {
   yield* $0_0();
   yield 3;
-}
+};

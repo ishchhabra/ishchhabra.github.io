@@ -1,7 +1,7 @@
-export function App() {
+export const App = function App() {
   return (
     <div>
-      <span>{$32_0}</span>
+      <span>{$34_0}</span>
     </div>
   );
-}
+};

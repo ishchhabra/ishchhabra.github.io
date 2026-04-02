@@ -1,2 +1,2 @@
-const { a: $13_0 = 1 } = {};
-console.log($13_0);
+const { a: $14_0 = 1 } = {};
+console.log($14_0);

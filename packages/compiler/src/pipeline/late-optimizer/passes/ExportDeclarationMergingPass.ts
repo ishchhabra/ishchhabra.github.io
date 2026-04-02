@@ -3,7 +3,6 @@ import {
   DeclareLocalInstruction,
   ExportDefaultDeclarationInstruction,
   ExportNamedDeclarationInstruction,
-  FunctionDeclarationInstruction,
   StoreLocalInstruction,
 } from "../../../ir";
 import { ExportSpecifierInstruction } from "../../../ir/instructions/module/ExportSpecifier";
@@ -152,18 +151,14 @@ export class ExportDeclarationMergingPass extends BaseOptimizationPass {
   }
 
   /**
-   * Finds the declaration instruction that uses the given BI as its binding.
-   * This can be either a StoreLocal (lval) or a FunctionDeclaration (identifier).
+   * Finds the StoreLocal instruction that writes to the given binding.
    */
   private findDeclaration(
     instrs: readonly import("../../../ir").BaseInstruction[],
     bi: DeclareLocalInstruction,
-  ): StoreLocalInstruction | FunctionDeclarationInstruction | undefined {
+  ): StoreLocalInstruction | undefined {
     for (const instr of instrs) {
       if (instr instanceof StoreLocalInstruction && instr.lval.id === bi.place.id) {
-        return instr;
-      }
-      if (instr instanceof FunctionDeclarationInstruction && instr.identifier.id === bi.place.id) {
         return instr;
       }
     }

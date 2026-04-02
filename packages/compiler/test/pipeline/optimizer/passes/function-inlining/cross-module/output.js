@@ -1,4 +1,4 @@
-async function $0_0($1_0) {
+const $0_0 = async function $0_0($1_0) {
   try {
     const $2_0 = await $1_0.json();
     const $3_0 = getDb();
@@ -7,5 +7,5 @@ async function $0_0($1_0) {
   } catch {
     return new Response("error");
   }
-}
+};
 import { getDb } from "./helper.js";

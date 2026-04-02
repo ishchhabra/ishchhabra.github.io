@@ -1,11 +1,11 @@
-export function f($1_0) {
+export const f = function f($1_0) {
   let $3_0 = $1_0.x;
-  let $15_phi_18 = undefined;
-  $15_phi_18 = $3_0;
+  let $16_phi_19 = undefined;
+  $16_phi_19 = $3_0;
   if ($3_0 == null) {
     $1_0.x = 30;
     $3_1 = 30;
-    $15_phi_18 = $3_1;
+    $16_phi_19 = $3_1;
   }
-  return $15_phi_18;
-}
+  return $16_phi_19;
+};

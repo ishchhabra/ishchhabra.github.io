@@ -57,8 +57,8 @@ export abstract class BaseInstruction {
    * Return the places that this instruction *defines* (writes to).
    *
    * Most instructions define only their own `place`. Instructions that
-   * introduce additional bindings (e.g. StoreLocal's lval,
-   * FunctionDeclaration's identifier) override this to include them.
+   * introduce additional bindings (e.g. StoreLocal's lval) override
+   * this to include them.
    */
   getWrittenPlaces(): Place[] {
     return [this.place];
@@ -128,19 +128,14 @@ export abstract class BaseInstruction {
 
 /**
  * Declaration instructions represent operations that introduce new named entities
- * in the program, such as functions and classes.
+ * in the program, such as classes.
  *
  * Examples:
- * - FunctionDeclarationInstruction: Represents function declarations
- *   e.g., `function foo() {}`
- *
  * - ClassDeclarationInstruction: Represents class declarations
  *   e.g., `class Bar {}`
  *
- * Note: Variable declarations (e.g., `let x = 5`) are not represented by a dedicated
- * declaration instruction, but rather use StoreLocal memory instructions.
- * If support for declaring multiple variables in a single statement (e.g., `let x = 1, y = 2`)
- * becomes necessary, a dedicated instruction may be introduced in the future.
+ * Note: Function and variable declarations are represented by their respective
+ * value instructions (FunctionExpressionInstruction) combined with StoreLocal.
  */
 export abstract class DeclarationInstruction extends BaseInstruction {}
 

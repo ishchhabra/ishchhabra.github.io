@@ -2,9 +2,10 @@ import { ProjectUnit } from "../../frontend/ProjectBuilder";
 import {
   CallExpressionInstruction,
   DeclarationId,
-  FunctionDeclarationInstruction,
   LoadGlobalInstruction,
+  StoreLocalInstruction,
 } from "../../ir";
+import { FunctionExpressionInstruction } from "../../ir/instructions/value/FunctionExpression";
 import { FunctionIRId } from "../../ir/core/FunctionIR";
 import { ModuleGlobal, ModuleIR } from "../../ir/core/ModuleIR";
 import { ExportFromInstruction } from "../../ir/instructions/module/ExportFrom";
@@ -72,10 +73,15 @@ export class CallGraph {
     for (const [, funcIR] of moduleIR.functions) {
       for (const block of funcIR.blocks.values()) {
         for (const instr of block.instructions) {
-          if (!(instr instanceof FunctionDeclarationInstruction)) {
+          // Find StoreLocal instructions whose value is a FunctionExpressionInstruction.
+          if (!(instr instanceof StoreLocalInstruction)) {
             continue;
           }
-          moduleDecls.set(instr.identifier.identifier.declarationId, instr.functionIR.id);
+          const definer = instr.value.identifier.definer;
+          if (!(definer instanceof FunctionExpressionInstruction)) {
+            continue;
+          }
+          moduleDecls.set(instr.lval.identifier.declarationId, definer.functionIR.id);
         }
       }
     }
@@ -241,7 +247,7 @@ export class CallGraph {
     const funcDeclInstr = moduleIR.environment.placeToInstruction.get(
       exportPlace.declaration.place.id,
     );
-    if (!(funcDeclInstr instanceof FunctionDeclarationInstruction)) {
+    if (!(funcDeclInstr instanceof FunctionExpressionInstruction)) {
       return undefined;
     }
 

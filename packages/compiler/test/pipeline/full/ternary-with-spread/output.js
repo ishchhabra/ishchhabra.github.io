@@ -1,4 +1,4 @@
-function $0_0($1_0) {
+const $0_0 = function $0_0($1_0) {
   const $2_0 = [
     {
       name: "title",
@@ -19,5 +19,5 @@ function $0_0($1_0) {
       links: $3_0,
     }),
   };
-}
+};
 console.log($0_0("/about"));

@@ -1,9 +1,5 @@
 import { Environment } from "../../../environment";
-import {
-  BaseInstruction,
-  FunctionDeclarationInstruction,
-  StoreLocalInstruction,
-} from "../../../ir";
+import { BaseInstruction, StoreLocalInstruction } from "../../../ir";
 import { FunctionIR } from "../../../ir/core/FunctionIR";
 import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
 
@@ -33,9 +29,7 @@ export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
         const instr = block.instructions[i];
         if (instr.hasSideEffects(this.environment)) continue;
 
-        if (instr instanceof FunctionDeclarationInstruction) {
-          if (instr.identifier.identifier.uses.size > 0) continue;
-        } else if (instr instanceof StoreLocalInstruction) {
+        if (instr instanceof StoreLocalInstruction) {
           if (instr.getWrittenPlaces().some((p) => p.identifier.uses.size > 0)) continue;
           const definer = instr.value.identifier.definer;
           if (definer instanceof BaseInstruction && !definer.isPure(this.environment)) continue;

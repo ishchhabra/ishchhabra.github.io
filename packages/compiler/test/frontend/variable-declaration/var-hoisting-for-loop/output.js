@@ -1,15 +1,15 @@
-function $0_0() {
+const $0_0 = function $0_0() {
   const $1_0 = undefined;
   const $4_0 = undefined;
   $1_0 = 0;
-  let $19_phi_27 = undefined;
-  $19_phi_27 = $1_0;
-  while ($19_phi_27 < 3) {
-    $4_0 = $19_phi_27;
-    const $12_0 = $19_phi_27;
-    $1_2 = $19_phi_27 + 1;
+  let $20_phi_28 = undefined;
+  $20_phi_28 = $1_0;
+  while ($20_phi_28 < 3) {
+    $4_0 = $20_phi_28;
+    const $12_0 = $20_phi_28;
+    $1_2 = $20_phi_28 + 1;
     $12_0;
-    $19_phi_27 = $1_2;
+    $20_phi_28 = $1_2;
   }
   return $4_0;
-}
+};

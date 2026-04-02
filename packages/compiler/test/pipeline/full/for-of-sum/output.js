@@ -1,8 +1,8 @@
-function $0_0($1_0) {
-  let $14_phi_21 = 0;
+const $0_0 = function $0_0($1_0) {
+  let $15_phi_22 = 0;
   for (const $5_0 of $1_0) {
-    $14_phi_21 = $14_phi_21 + $5_0;
+    $15_phi_22 = $15_phi_22 + $5_0;
   }
-  return $14_phi_21;
-}
+  return $15_phi_22;
+};
 console.log($0_0(numbers));

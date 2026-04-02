@@ -5,7 +5,6 @@ import {
   DebuggerStatementInstruction,
   ExportSpecifierInstruction,
   ExpressionStatementInstruction,
-  FunctionDeclarationInstruction,
   ImportSpecifierInstruction,
   JSXInstruction,
   MemoryInstruction,
@@ -43,9 +42,6 @@ export function generateInstruction(
     return [generateDebuggerStatementInstruction(instruction, generator)];
   } else if (instruction instanceof DeclarationInstruction) {
     const statement = generateDeclarationInstruction(instruction, generator);
-    if (instruction instanceof FunctionDeclarationInstruction && !instruction.emit) {
-      return [];
-    }
     return [statement];
   } else if (instruction instanceof ExpressionStatementInstruction) {
     const statement = generateExpressionStatementInstruction(instruction, generator);
