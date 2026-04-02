@@ -17,12 +17,25 @@ export function LabCard({ project }: { project: LabProject }) {
   const titleTransitionName = !project.external ? `lab-${project.slug}-title` : undefined;
   const descTransitionName = !project.external ? `lab-${project.slug}-description` : undefined;
 
-  const inner = (
-    <>
+  const cardLink = project.external ? (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="absolute inset-0 z-0"
+      aria-label={project.title}
+    />
+  ) : (
+    <Link to={href} className="absolute inset-0 z-0" aria-label={project.title} />
+  );
+
+  return (
+    <div className="group relative overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50/80 p-7 transition-all duration-300 hover:border-zinc-300 hover:bg-zinc-100/80 dark:border-white/5 dark:bg-white/2 dark:hover:border-white/10 dark:hover:bg-white/4">
+      {cardLink}
       <div
         className={`pointer-events-none absolute inset-0 bg-linear-to-br opacity-0 transition-opacity duration-500 group-hover:opacity-100 ${accentGradients[project.accent] ?? ""}`}
       />
-      <div className="relative flex h-full flex-col">
+      <div className="pointer-events-none relative flex h-full flex-col">
         <div className="mb-3 flex items-center gap-2.5">
           <h3
             className="text-lg font-semibold text-zinc-900 dark:text-white"
@@ -47,7 +60,7 @@ export function LabCard({ project }: { project: LabProject }) {
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="relative z-10 ml-auto inline-flex items-center gap-1.5 text-xs text-zinc-400 transition-colors hover:text-violet-400 dark:text-zinc-500 dark:hover:text-violet-400"
+              className="pointer-events-auto relative z-10 ml-auto inline-flex items-center gap-1.5 text-xs text-zinc-400 transition-colors hover:text-violet-400 dark:text-zinc-500 dark:hover:text-violet-400"
             >
               {link.live && (
                 <span className="relative flex h-1.5 w-1.5">
@@ -84,22 +97,6 @@ export function LabCard({ project }: { project: LabProject }) {
           </svg>
         </span>
       </div>
-    </>
-  );
-
-  const cls =
-    "group relative overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50/80 p-7 transition-all duration-300 hover:border-zinc-300 hover:bg-zinc-100/80 dark:border-white/5 dark:bg-white/2 dark:hover:border-white/10 dark:hover:bg-white/4";
-
-  if (project.external) {
-    return (
-      <a href={href} target="_blank" rel="noopener noreferrer" className={cls}>
-        {inner}
-      </a>
-    );
-  }
-  return (
-    <Link to={href} className={cls}>
-      {inner}
-    </Link>
+    </div>
   );
 }
