@@ -1,6 +1,6 @@
 import {
   BasicBlock,
-  BindingIdentifierInstruction,
+  DeclareLocalInstruction,
   ExportDefaultDeclarationInstruction,
   ExportNamedDeclarationInstruction,
   FunctionDeclarationInstruction,
@@ -82,16 +82,15 @@ export class ExportDeclarationMergingPass extends BaseOptimizationPass {
 
     // For each ExportSpecifier, try to merge with its declaration.
     for (const exportSpec of exportSpecifiers) {
-      // Find the BI that defines the local place.
+      // Find the binding instruction that defines the local place.
       const bi = instrs.find(
-        (instr): instr is BindingIdentifierInstruction =>
-          instr instanceof BindingIdentifierInstruction &&
-          instr.place.id === exportSpec.localPlace.id,
+        (instr): instr is DeclareLocalInstruction =>
+          instr instanceof DeclareLocalInstruction && instr.place.id === exportSpec.localPlace.id,
       );
       if (bi === undefined) continue;
 
-      // Find the declaration that uses this BI — either a StoreLocal (for
-      // variables/constants) or a FunctionDeclaration (for named functions).
+      // Find the declaration that uses this binding — either a StoreLocal
+      // (for variables/constants) or a FunctionDeclaration (for named functions).
       const decl = this.findDeclaration(instrs, bi);
       if (decl === undefined) continue;
 
@@ -158,7 +157,7 @@ export class ExportDeclarationMergingPass extends BaseOptimizationPass {
    */
   private findDeclaration(
     instrs: readonly import("../../../ir").BaseInstruction[],
-    bi: BindingIdentifierInstruction,
+    bi: DeclareLocalInstruction,
   ): StoreLocalInstruction | FunctionDeclarationInstruction | undefined {
     for (const instr of instrs) {
       if (instr instanceof StoreLocalInstruction && instr.lval.id === bi.place.id) {

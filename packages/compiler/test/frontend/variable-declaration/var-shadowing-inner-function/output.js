@@ -1,13 +1,13 @@
 const $0_0 = undefined;
-const $0_2 = 1;
+$0_0 = 1;
 export function f() {
   const $6_0 = undefined;
-  const $6_2 = 2;
-  let $18_phi_25 = undefined;
-  $18_phi_25 = $6_2;
+  $6_0 = 2;
+  let $18_phi_23 = undefined;
+  $18_phi_23 = $6_0;
   if (Math.random()) {
-    const $6_3 = 3;
-    $18_phi_25 = $6_3;
+    $6_2 = 3;
+    $18_phi_23 = $6_2;
   }
-  return $18_phi_25;
+  return $18_phi_23;
 }

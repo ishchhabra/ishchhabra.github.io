@@ -1,3 +1,3 @@
 import { value } from "./constants";
-42;
-50;
+value;
+value + 8;

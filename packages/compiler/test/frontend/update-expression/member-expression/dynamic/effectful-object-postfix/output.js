@@ -4,7 +4,7 @@ function $0_0() {
 function $1_0() {
   return 0;
 }
-const $2_0 = [10];
+let $2_0 = [10];
 const $9_0 = $0_0();
 const $12_0 = $1_0();
 const $15_0 = $9_0[$12_0];

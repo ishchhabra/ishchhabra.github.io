@@ -6,9 +6,11 @@ export function generateRestElementInstruction(
   instruction: RestElementInstruction,
   generator: CodeGenerator,
 ) {
-  const argument = generator.places.get(instruction.argument.id);
+  let argument = generator.places.get(instruction.argument.id);
   if (argument === undefined) {
-    throw new Error(`Place ${instruction.argument.id} not found`);
+    const name = instruction.argument.identifier.name ?? `$${instruction.argument.identifier.id}`;
+    argument = t.identifier(name);
+    generator.places.set(instruction.argument.id, argument);
   }
   t.assertLVal(argument);
 

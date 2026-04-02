@@ -1,7 +1,7 @@
 function $0_0() {
   return 3;
 }
-const $1_0 = {
+let $1_0 = {
   b: 1,
 };
 const $12_0 = $1_0.b + $0_0();

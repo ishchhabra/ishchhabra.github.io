@@ -2,7 +2,7 @@ import { NodePath } from "@babel/traverse";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import {
-  BindingIdentifierInstruction,
+  DeclareLocalInstruction,
   createInstructionId,
   JumpTerminal,
   TryTerminal,
@@ -86,12 +86,12 @@ export function buildTryStatement(
         handlerPath,
       );
 
-      // Create BindingIdentifier for the catch parameter.
+      // Create DeclareLocal for the catch parameter.
       // No StoreLocal needed — the catch clause syntax provides the binding,
       // similar to how function parameters work.
       const bindingPlace = environment.createPlace(identifier);
       functionBuilder.addInstruction(
-        environment.createInstruction(BindingIdentifierInstruction, bindingPlace, handlerPath),
+        environment.createInstruction(DeclareLocalInstruction, bindingPlace, handlerPath, "const"),
       );
 
       environment.registerDeclaration(

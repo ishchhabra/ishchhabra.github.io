@@ -1,4 +1,4 @@
-const $0_0 = {
+let $0_0 = {
   nested: {
     value: 1,
   },

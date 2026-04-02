@@ -20,9 +20,11 @@ export function generateObjectPropertyInstruction(
     key = t.identifier(key.value);
   }
 
-  const value = generator.places.get(instruction.value.id);
+  let value = generator.places.get(instruction.value.id);
   if (value === undefined) {
-    throw new Error(`Place ${instruction.value.id} not found`);
+    const name = instruction.value.identifier.name ?? `$${instruction.value.identifier.id}`;
+    value = t.identifier(name);
+    generator.places.set(instruction.value.id, value);
   }
 
   t.assertExpression(key);

@@ -1,7 +1,7 @@
 import { NodePath } from "@babel/core";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
-import { BindingIdentifierInstruction } from "../../../ir";
+import { DeclareLocalInstruction } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { getDeclarationOwningPath } from "../getDeclarationOwningPath";
 import type { PendingRenames } from "./instantiateScopeBindings";
@@ -50,6 +50,6 @@ export function buildClassDeclarationBindings(
     place.id,
   );
   functionBuilder.addInstruction(
-    environment.createInstruction(BindingIdentifierInstruction, place, idPath),
+    environment.createInstruction(DeclareLocalInstruction, place, idPath, "const"),
   );
 }

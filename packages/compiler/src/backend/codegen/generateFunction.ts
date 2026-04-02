@@ -1,10 +1,10 @@
 import * as t from "@babel/types";
-import { BindingIdentifierInstruction } from "../../ir";
+import { DeclareLocalInstruction } from "../../ir";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { Place } from "../../ir/core/Place";
 import { CodeGenerator } from "../CodeGenerator";
 import { generateBlock } from "./generateBlock";
-import { generateBindingIdentifierInstruction } from "./instructions/generateBindingIdentifier";
+import { generateDeclareLocalInstruction } from "./instructions/memory/generateDeclareLocal";
 import { generateInstruction } from "./instructions/generateInstruction";
 
 /**
@@ -45,15 +45,15 @@ export function generateFunction(
   // This ensures closures defined in earlier blocks can reference variables
   // declared in later blocks (e.g. phi variables in merge blocks).
   for (const instruction of functionIR.header) {
-    if (instruction instanceof BindingIdentifierInstruction) {
-      generateBindingIdentifierInstruction(instruction, generator);
+    if (instruction instanceof DeclareLocalInstruction) {
+      generateDeclareLocalInstruction(instruction, generator);
     }
   }
 
   for (const [, block] of functionIR.blocks) {
     for (const instruction of block.instructions) {
-      if (instruction instanceof BindingIdentifierInstruction) {
-        generateBindingIdentifierInstruction(instruction, generator);
+      if (instruction instanceof DeclareLocalInstruction) {
+        generateDeclareLocalInstruction(instruction, generator);
       }
     }
   }

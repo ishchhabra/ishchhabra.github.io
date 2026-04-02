@@ -11,9 +11,11 @@ export function generateArrayPatternInstruction(
       return null;
     }
 
-    const node = generator.places.get(element.id);
+    let node = generator.places.get(element.id);
     if (node === undefined) {
-      throw new Error(`Place ${element.id} not found`);
+      const name = element.identifier.name ?? `$${element.identifier.id}`;
+      node = t.identifier(name);
+      generator.places.set(element.id, node);
     }
 
     t.assertLVal(node);

@@ -2,7 +2,6 @@ import { NodePath } from "@babel/traverse";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import {
-  BindingIdentifierInstruction,
   ForInStructure,
   JumpTerminal,
   Place,
@@ -14,7 +13,7 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { instantiateScopeBindings } from "../bindings";
 import { buildNode } from "../buildNode";
 import { buildAssignmentLeft } from "../expressions/buildAssignmentExpression";
-import { buildVariableDeclaratorLVal } from "./buildVariableDeclaration";
+import { buildLVal } from "../buildLVal";
 
 export function buildForInStatement(
   nodePath: NodePath<t.ForInStatement>,
@@ -46,26 +45,27 @@ export function buildForInStatement(
 
   if (leftPath.isVariableDeclaration()) {
     // `for (const x in obj)` — new loop-scoped variable.
-    const lvalMode = leftPath.node.kind === "var" ? "var-reassignment" : "declaration";
+    const kind = leftPath.node.kind;
+    if (kind !== "var" && kind !== "let" && kind !== "const") {
+      throw new Error(`Unsupported variable declaration kind: ${kind}`);
+    }
     const idPath = leftPath.get("declarations")[0].get("id") as NodePath<t.LVal>;
-    const { place, identifiers } = buildVariableDeclaratorLVal(
+    iterationValuePlace = buildLVal(
       idPath,
       functionBuilder,
       moduleBuilder,
       environment,
-      lvalMode,
-    );
-    iterationValuePlace = place;
-    identifiers.forEach((identifier) => {
-      functionBuilder.markDeclarationInitialized(identifier.identifier.declarationId);
-    });
+      kind,
+    ).place;
   } else {
     // `for (x in obj)` — assignment to existing variable.
-    const iterIdentifier = environment.createIdentifier();
-    iterationValuePlace = environment.createPlace(iterIdentifier);
-    functionBuilder.addInstruction(
-      environment.createInstruction(BindingIdentifierInstruction, iterationValuePlace, leftPath),
-    );
+    iterationValuePlace = buildLVal(
+      leftPath as NodePath<t.LVal>,
+      functionBuilder,
+      moduleBuilder,
+      environment,
+      null,
+    ).place;
     bareLVal = leftPath as NodePath<t.LVal>;
   }
 
@@ -78,11 +78,13 @@ export function buildForInStatement(
   // For bare LVal, copy the iteration value into new version(s) of the
   // outer variable(s) at the start of the body.
   if (bareLVal !== undefined) {
-    const {
-      place: outerPlace,
-      instructions,
-      identifiers,
-    } = buildAssignmentLeft(bareLVal, nodePath as any, functionBuilder, moduleBuilder, environment);
+    const { place: outerPlace, instructions } = buildAssignmentLeft(
+      bareLVal,
+      nodePath as any,
+      functionBuilder,
+      moduleBuilder,
+      environment,
+    );
 
     const storePlace = environment.createPlace(environment.createIdentifier());
     functionBuilder.addInstruction(
@@ -93,7 +95,7 @@ export function buildForInStatement(
         outerPlace,
         iterationValuePlace,
         "const",
-        identifiers,
+        [],
       ),
     );
 

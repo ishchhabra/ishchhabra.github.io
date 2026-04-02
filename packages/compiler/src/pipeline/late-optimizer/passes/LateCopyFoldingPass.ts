@@ -1,7 +1,7 @@
 import {
   BaseInstruction,
-  BindingIdentifierInstruction,
   CopyInstruction,
+  DeclareLocalInstruction,
   ExpressionStatementInstruction,
   IdentifierId,
   LoadLocalInstruction,
@@ -279,7 +279,7 @@ export class LateCopyFoldingPass extends BaseOptimizationPass {
 
     const previous = block.instructions[storeIdx - 1];
     if (
-      previous instanceof BindingIdentifierInstruction &&
+      previous instanceof DeclareLocalInstruction &&
       previous.place.identifier.id === store.lval.identifier.id &&
       previous.place.identifier.uses.size === 0
     ) {

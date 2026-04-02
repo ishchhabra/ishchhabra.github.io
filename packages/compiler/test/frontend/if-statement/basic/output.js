@@ -1,4 +1,4 @@
-const $0_0 = 5;
+let $0_0 = 5;
 if ($0_0 > 0) {
   console.log("number is positive");
 } else {

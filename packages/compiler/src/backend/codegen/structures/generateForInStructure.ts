@@ -22,9 +22,12 @@ export function generateForInStructure(
   }
 
   // Look up the iteration value (left side) from the places map.
-  const iterationValue = generator.places.get(structure.iterationValue.id);
+  let iterationValue = generator.places.get(structure.iterationValue.id);
   if (iterationValue === undefined) {
-    throw new Error(`Place ${structure.iterationValue.id} not found`);
+    const name =
+      structure.iterationValue.identifier.name ?? `$${structure.iterationValue.identifier.id}`;
+    iterationValue = t.identifier(name);
+    generator.places.set(structure.iterationValue.id, iterationValue);
   }
   t.assertLVal(iterationValue);
 

@@ -2,7 +2,7 @@ import { NodePath } from "@babel/core";
 import * as t from "@babel/types";
 import { getFunctionName } from "../../../babel-utils";
 import { Environment } from "../../../environment";
-import { BindingIdentifierInstruction } from "../../../ir";
+import { DeclareLocalInstruction } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { getDeclarationOwningPath } from "../getDeclarationOwningPath";
 import type { PendingRenames } from "./instantiateScopeBindings";
@@ -58,6 +58,6 @@ export function buildFunctionDeclarationBindings(
     place.id,
   );
   functionBuilder.addInstruction(
-    environment.createInstruction(BindingIdentifierInstruction, place, functionName),
+    environment.createInstruction(DeclareLocalInstruction, place, functionName, "const"),
   );
 }

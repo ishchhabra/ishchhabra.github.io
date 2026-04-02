@@ -1,7 +1,7 @@
-const $0_0 = 5;
+let $0_0 = 5;
 let $18_phi_25 = 5;
 while ($18_phi_25 > 0) {
-  const $6_0 = 3;
+  let $6_0 = 3;
   let $19_phi_26 = 3;
   let $20_phi_27 = undefined;
   while ($19_phi_26 > 0) {

@@ -1,11 +1,17 @@
 import _generate from "@babel/generator";
 import * as t from "@babel/types";
 import { ProjectUnit } from "../frontend/ProjectBuilder";
-import { BindingIdentifierInstruction, BlockId, type ControlContext, PlaceId } from "../ir";
+import {
+  DeclareLocalInstruction,
+  BlockId,
+  type ControlContext,
+  DeclarationId,
+  PlaceId,
+} from "../ir";
 import { FunctionIR, makeFunctionIRId } from "../ir/core/FunctionIR";
 import { ModuleIR } from "../ir/core/ModuleIR";
 import { generateFunction } from "./codegen/generateFunction";
-import { generateBindingIdentifierInstruction } from "./codegen/instructions/generateBindingIdentifier";
+import { generateDeclareLocalInstruction } from "./codegen/instructions/memory/generateDeclareLocal";
 
 const generate =
   typeof _generate === "function"
@@ -20,6 +26,11 @@ export class CodeGenerator {
   public readonly blockToStatements: Map<BlockId, Array<t.Statement>> = new Map();
   public generatedBlocks: Set<BlockId> = new Set();
   public readonly controlStack: ControlContext[] = [];
+
+  /** Maps declarationId → kind from DeclareLocal instructions. */
+  public readonly declarationKinds: Map<DeclarationId, "var" | "let" | "const"> = new Map();
+  /** Tracks which declarations have already emitted their first variable statement. */
+  public readonly declaredDeclarations: Set<DeclarationId> = new Set();
 
   /**
    * Returns the label to use for a `break` statement targeting the given block.
@@ -122,10 +133,15 @@ export class CodeGenerator {
    */
   private preRegisterBindingIdentifiers(moduleIR: ModuleIR): void {
     for (const [, functionIR] of moduleIR.functions) {
+      for (const instruction of functionIR.header) {
+        if (instruction instanceof DeclareLocalInstruction) {
+          generateDeclareLocalInstruction(instruction, this);
+        }
+      }
       for (const [, block] of functionIR.blocks) {
         for (const instruction of block.instructions) {
-          if (instruction instanceof BindingIdentifierInstruction) {
-            generateBindingIdentifierInstruction(instruction, this);
+          if (instruction instanceof DeclareLocalInstruction) {
+            generateDeclareLocalInstruction(instruction, this);
           }
         }
       }

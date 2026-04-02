@@ -7,19 +7,19 @@ function $0_0($1_0) {
       typeof $4_0.column === "number" &&
       $4_0.column > 0
     ) {
-      const $46_0 = undefined;
-      let $51_phi_74 = undefined;
+      let $46_0 = undefined;
+      let $53_phi_74 = undefined;
       if (typeof $4_0.offset === "number" && $4_0.offset > -1) {
-        const $46_1 = $4_0.offset;
-        $51_phi_74 = $46_1;
+        $46_1 = $4_0.offset;
+        $53_phi_74 = $46_1;
       } else {
-        const $46_2 = undefined;
-        $51_phi_74 = $46_2;
+        $46_2 = undefined;
+        $53_phi_74 = $46_2;
       }
       return {
         line: $4_0.line,
         column: $4_0.column,
-        offset: $51_phi_74,
+        offset: $53_phi_74,
       };
     }
   }

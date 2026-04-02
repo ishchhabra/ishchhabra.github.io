@@ -1,5 +1,5 @@
-const $0_0 = 0;
-const $3_0 = 0;
+let $0_0 = 0;
+let $3_0 = 0;
 let $19_phi_26 = undefined;
 let $20_phi_27 = 0;
 let $21_phi_28 = 0;

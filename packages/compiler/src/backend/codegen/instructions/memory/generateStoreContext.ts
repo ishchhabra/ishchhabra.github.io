@@ -6,9 +6,11 @@ export function generateStoreContextInstruction(
   instruction: StoreContextInstruction,
   generator: CodeGenerator,
 ): t.Statement {
-  const lval = generator.places.get(instruction.lval.id);
+  let lval = generator.places.get(instruction.lval.id);
   if (lval === undefined || lval === null) {
-    throw new Error(`Place ${instruction.lval.id} not found for StoreContext lval`);
+    const name = instruction.lval.identifier.name ?? `$${instruction.lval.identifier.id}`;
+    lval = t.identifier(name);
+    generator.places.set(instruction.lval.id, lval);
   }
   t.assertLVal(lval);
 

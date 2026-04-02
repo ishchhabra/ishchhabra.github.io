@@ -1,4 +1,5 @@
 export { CopyInstruction } from "./CopyInstruction";
+export { DeclareLocalInstruction } from "./DeclareLocal";
 export { LoadContextInstruction } from "./LoadContext";
 export { LoadDynamicPropertyInstruction } from "./LoadDynamicProperty";
 export { LoadGlobalInstruction } from "./LoadGlobal";

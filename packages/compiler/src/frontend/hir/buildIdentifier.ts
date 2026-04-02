@@ -2,7 +2,7 @@ import { NodePath } from "@babel/core";
 import * as t from "@babel/types";
 import { Environment } from "../../environment";
 import {
-  BindingIdentifierInstruction,
+  DeclareLocalInstruction,
   ImportSpecifierInstruction,
   LoadContextInstruction,
   LoadGlobalInstruction,
@@ -62,7 +62,12 @@ export function buildBindingIdentifier(
 
   place.identifier.name = name;
 
-  const instruction = environment.createInstruction(BindingIdentifierInstruction, place, nodePath);
+  const instruction = environment.createInstruction(
+    DeclareLocalInstruction,
+    place,
+    nodePath,
+    "const",
+  );
   builder.addInstruction(instruction);
 
   return place;

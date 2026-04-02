@@ -1,7 +1,7 @@
 import { NodePath } from "@babel/core";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
-import { BindingIdentifierInstruction } from "../../../ir";
+import { DeclareLocalInstruction } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { isContextVariable } from "./isContextVariable";
 
@@ -122,6 +122,6 @@ function instantiateIdentifierParamBinding(
     place.id,
   );
   functionBuilder.header.push(
-    environment.createInstruction(BindingIdentifierInstruction, place, nodePath),
+    environment.createInstruction(DeclareLocalInstruction, place, nodePath, "const"),
   );
 }

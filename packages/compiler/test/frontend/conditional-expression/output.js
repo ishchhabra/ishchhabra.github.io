@@ -1,10 +1,10 @@
-const $6_0 = undefined;
-let $10_phi_16 = undefined;
+let $6_0 = undefined;
+let $12_phi_16 = undefined;
 if (Math.random() > 0.5) {
-  const $6_1 = 10;
-  $10_phi_16 = $6_1;
+  $6_1 = 10;
+  $12_phi_16 = $6_1;
 } else {
-  const $6_2 = 20;
-  $10_phi_16 = $6_2;
+  $6_2 = 20;
+  $12_phi_16 = $6_2;
 }
-const $0_0 = $10_phi_16;
+const $0_0 = $12_phi_16;

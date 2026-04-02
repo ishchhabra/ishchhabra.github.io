@@ -7,7 +7,7 @@ function $1_0() {
 function $2_0() {
   return 3;
 }
-const $3_0 = {
+let $3_0 = {
   b: 1,
 };
 const $13_0 = $0_0();

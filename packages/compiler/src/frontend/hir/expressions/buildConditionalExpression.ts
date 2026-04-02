@@ -2,9 +2,9 @@ import { NodePath } from "@babel/traverse";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import {
-  BindingIdentifierInstruction,
   BranchTerminal,
   createInstructionId,
+  DeclareLocalInstruction,
   JumpTerminal,
   LiteralInstruction,
   Place,
@@ -104,7 +104,7 @@ function buildTemporaryIdentifier(
   const bindingIdentifier = environment.createIdentifier();
   const bindingPlace = environment.createPlace(bindingIdentifier);
   functionBuilder.addInstruction(
-    environment.createInstruction(BindingIdentifierInstruction, bindingPlace, nodePath),
+    environment.createInstruction(DeclareLocalInstruction, bindingPlace, nodePath, "let"),
   );
   functionBuilder.registerDeclarationName(
     bindingIdentifier.name,
@@ -153,20 +153,12 @@ function buildBranchExpression(
 
   const lvalIdentifier = environment.createIdentifier(resultPlace.identifier.declarationId);
   const lvalPlace = environment.createPlace(lvalIdentifier);
-  const lvalInstruction = environment.createInstruction(
-    BindingIdentifierInstruction,
-    lvalPlace,
-    nodePath,
-  );
-  functionBuilder.addInstruction(lvalInstruction);
   environment.registerDeclaration(
-    lvalIdentifier.declarationId,
+    resultPlace.identifier.declarationId,
     functionBuilder.currentBlock.id,
     lvalPlace.id,
   );
-
-  const storeIdentifier = environment.createIdentifier(lvalIdentifier.declarationId);
-  const storePlace = environment.createPlace(storeIdentifier);
+  const storePlace = environment.createPlace(environment.createIdentifier());
   const storeInstruction = environment.createInstruction(
     StoreLocalInstruction,
     storePlace,

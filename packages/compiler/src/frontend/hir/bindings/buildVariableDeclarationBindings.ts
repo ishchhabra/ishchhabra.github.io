@@ -1,11 +1,7 @@
 import { NodePath } from "@babel/core";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
-import {
-  BindingIdentifierInstruction,
-  LiteralInstruction,
-  StoreLocalInstruction,
-} from "../../../ir";
+import { DeclareLocalInstruction, LiteralInstruction, StoreLocalInstruction } from "../../../ir";
 import { DeclarationKind, FunctionIRBuilder } from "../FunctionIRBuilder";
 import type { PendingRenames } from "./instantiateScopeBindings";
 import { isBindingOwnedByScope } from "./isBindingOwnedByScope";
@@ -178,7 +174,12 @@ function buildIdentifierBindings(
     hoistId.name = identifier.name;
     const hoistPlace = environment.createPlace(hoistId);
     functionBuilder.addInstruction(
-      environment.createInstruction(BindingIdentifierInstruction, hoistPlace, nodePath),
+      environment.createInstruction(
+        DeclareLocalInstruction,
+        hoistPlace,
+        nodePath,
+        isContext ? ("let" as const) : ("const" as const),
+      ),
     );
     const undefPlace = environment.createPlace(environment.createIdentifier());
     functionBuilder.addInstruction(

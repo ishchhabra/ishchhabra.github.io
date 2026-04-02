@@ -1,8 +1,8 @@
 import {
   BasicBlock,
-  BindingIdentifierInstruction,
   BlockId,
   CopyInstruction,
+  DeclareLocalInstruction,
   ExpressionStatementInstruction,
   LiteralInstruction,
   LoadLocalInstruction,
@@ -53,9 +53,10 @@ export class SSAEliminator {
     const declarationBlock = this.functionIR.getBlock(declaration.blockId);
 
     const bindingInstr = this.moduleIR.environment.createInstruction(
-      BindingIdentifierInstruction,
+      DeclareLocalInstruction,
       phi.place,
       undefined,
+      "let",
     );
     declarationBlock.appendInstruction(bindingInstr);
     this.moduleIR.environment.placeToInstruction.set(phi.place.id, bindingInstr);

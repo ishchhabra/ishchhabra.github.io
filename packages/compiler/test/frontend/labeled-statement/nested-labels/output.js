@@ -1,7 +1,7 @@
-const $0_0 = 0;
+let $0_0 = 0;
 let $34_phi_45 = 0;
 outer: while ($34_phi_45 < 5) {
-  const $5_0 = 0;
+  let $5_0 = 0;
   let $35_phi_46 = 0;
   let $36_phi_47 = undefined;
   let $37_phi_48 = undefined;

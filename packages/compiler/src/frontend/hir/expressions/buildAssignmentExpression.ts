@@ -5,9 +5,9 @@ import {
   ArrayPatternInstruction,
   BaseInstruction,
   BinaryExpressionInstruction,
-  BindingIdentifierInstruction,
   BranchTerminal,
   createInstructionId,
+  DeclareLocalInstruction,
   ExpressionStatementInstruction,
   JumpTerminal,
   LiteralInstruction,
@@ -195,7 +195,7 @@ function emitResultVariable(
 ): { bindingPlace: Place; storePlace: Place } {
   const bindingPlace = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
-    environment.createInstruction(BindingIdentifierInstruction, bindingPlace, undefined),
+    environment.createInstruction(DeclareLocalInstruction, bindingPlace, undefined, "let"),
   );
   environment.registerDeclaration(
     bindingPlace.identifier.declarationId,
@@ -228,9 +228,6 @@ function emitResultUpdate(
 ): void {
   const updateBinding = environment.createPlace(
     environment.createIdentifier(bindingPlace.identifier.declarationId),
-  );
-  functionBuilder.addInstruction(
-    environment.createInstruction(BindingIdentifierInstruction, updateBinding, undefined),
   );
   environment.registerDeclaration(
     bindingPlace.identifier.declarationId,
@@ -684,8 +681,6 @@ function buildIdentifierAssignmentLeft(
 
   const identifier = environment.createIdentifier(declarationId);
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(BindingIdentifierInstruction, place, nodePath);
-  functionBuilder.addInstruction(instruction);
   environment.registerDeclaration(declarationId, functionBuilder.currentBlock.id, place.id);
   return { place, instructions: [], identifiers: [place], hasContext: false };
 }
@@ -699,8 +694,9 @@ function buildMemberExpressionAssignmentLeft(
 ): { place: Place; instructions: BaseInstruction[]; identifiers: Place[]; hasContext: boolean } {
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(BindingIdentifierInstruction, place, nodePath);
-  functionBuilder.addInstruction(instruction);
+  functionBuilder.addInstruction(
+    environment.createInstruction(DeclareLocalInstruction, place, nodePath, "const"),
+  );
   environment.registerDeclaration(
     identifier.declarationId,
     functionBuilder.currentBlock.id,

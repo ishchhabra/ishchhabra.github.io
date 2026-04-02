@@ -5,10 +5,10 @@ import {
   ArrayExpressionInstruction,
   AwaitExpressionInstruction,
   BinaryExpressionInstruction,
-  BindingIdentifierInstruction,
   CallExpressionInstruction,
   ClassExpressionInstruction,
   CopyInstruction,
+  DeclareLocalInstruction,
   ImportExpressionInstruction,
   LiteralInstruction,
   LoadContextInstruction,
@@ -44,7 +44,7 @@ export function materializePlace<T extends t.Node>(
 ): Place {
   const bindingPlace = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
-    environment.createInstruction(BindingIdentifierInstruction, bindingPlace, nodePath),
+    environment.createInstruction(DeclareLocalInstruction, bindingPlace, nodePath, "const"),
   );
   environment.registerDeclaration(
     bindingPlace.identifier.declarationId,
@@ -78,7 +78,7 @@ export function isStablePlace(
   }
 
   if (
-    instruction instanceof BindingIdentifierInstruction ||
+    instruction instanceof DeclareLocalInstruction ||
     instruction instanceof LoadLocalInstruction ||
     instruction instanceof LoadContextInstruction ||
     instruction instanceof LoadPhiInstruction ||

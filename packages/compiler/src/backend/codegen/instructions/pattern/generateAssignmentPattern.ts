@@ -6,9 +6,11 @@ export function generateAssignmentPatternInstruction(
   instruction: AssignmentPatternInstruction,
   generator: CodeGenerator,
 ): t.AssignmentPattern {
-  const left = generator.places.get(instruction.left.id);
+  let left = generator.places.get(instruction.left.id);
   if (left === undefined) {
-    throw new Error(`Place ${instruction.left.id} not found`);
+    const name = instruction.left.identifier.name ?? `$${instruction.left.identifier.id}`;
+    left = t.identifier(name);
+    generator.places.set(instruction.left.id, left);
   }
 
   const right = generator.places.get(instruction.right.id);

@@ -1,7 +1,7 @@
 import { NodePath } from "@babel/core";
 import * as t from "@babel/types";
 import { Environment } from "../../environment";
-import { BindingIdentifierInstruction, ImportSpecifierInstruction } from "../../ir";
+import { DeclareLocalInstruction, ImportSpecifierInstruction } from "../../ir";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
 import { resolveModulePath } from "./resolveModulePath";
@@ -36,9 +36,10 @@ export function buildImportSpecifier(
   bindingIdentifier.name = localName;
   const bindingPlace = environment.createPlace(bindingIdentifier);
   const bindingInstruction = environment.createInstruction(
-    BindingIdentifierInstruction,
+    DeclareLocalInstruction,
     bindingPlace,
     specifierNodePath,
+    "const",
   );
   functionBuilder.addInstruction(bindingInstruction);
 

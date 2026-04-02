@@ -6,9 +6,11 @@ export function generateLoadLocalInstruction(
   instruction: LoadLocalInstruction,
   generator: CodeGenerator,
 ): t.Expression {
-  const maybeNode = generator.places.get(instruction.value.id);
+  let maybeNode = generator.places.get(instruction.value.id);
   if (!maybeNode) {
-    throw new Error("Could not find a node for the value");
+    const name = instruction.value.identifier.name ?? `$${instruction.value.identifier.id}`;
+    maybeNode = t.identifier(name);
+    generator.places.set(instruction.value.id, maybeNode);
   }
 
   t.assertExpression(maybeNode);

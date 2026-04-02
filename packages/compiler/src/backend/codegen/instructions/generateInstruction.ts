@@ -1,7 +1,6 @@
 import * as t from "@babel/types";
 import {
   BaseInstruction,
-  BindingIdentifierInstruction,
   DeclarationInstruction,
   DebuggerStatementInstruction,
   ExportSpecifierInstruction,
@@ -14,6 +13,7 @@ import {
   PatternInstruction,
   RestElementInstruction,
   SpreadElementInstruction,
+  DeclareLocalInstruction,
   StoreContextInstruction,
   StoreLocalInstruction,
   UnsupportedNodeInstruction,
@@ -23,11 +23,11 @@ import { FunctionIR } from "../../../ir/core/FunctionIR";
 import { CodeGenerator } from "../../CodeGenerator";
 import { generateUnsupportedNode } from "../generateUnsupportedNode";
 import { generateDeclarationInstruction } from "./declaration/generateDeclaration";
-import { generateBindingIdentifierInstruction } from "./generateBindingIdentifier";
 import { generateDebuggerStatementInstruction } from "./generateDebuggerStatement";
 import { generateExpressionStatementInstruction } from "./generateExpressionStatement";
 import { generateRestElementInstruction } from "./generateRestElement";
 import { generateJSXInstruction } from "./jsx/generateJSX";
+import { generateDeclareLocalInstruction } from "./memory/generateDeclareLocal";
 import { generateMemoryInstruction } from "./memory/generateMemory";
 import { generateModuleInstruction } from "./module/generateModule";
 import { generatePatternInstruction } from "./pattern/generatePattern";
@@ -39,10 +39,7 @@ export function generateInstruction(
   functionIR: FunctionIR,
   generator: CodeGenerator,
 ): Array<t.Statement> {
-  if (instruction instanceof BindingIdentifierInstruction) {
-    generateBindingIdentifierInstruction(instruction, generator);
-    return [];
-  } else if (instruction instanceof DebuggerStatementInstruction) {
+  if (instruction instanceof DebuggerStatementInstruction) {
     return [generateDebuggerStatementInstruction(instruction, generator)];
   } else if (instruction instanceof DeclarationInstruction) {
     const statement = generateDeclarationInstruction(instruction, generator);
@@ -58,6 +55,9 @@ export function generateInstruction(
     return [statement];
   } else if (instruction instanceof JSXInstruction) {
     generateJSXInstruction(instruction, generator);
+    return [];
+  } else if (instruction instanceof DeclareLocalInstruction) {
+    generateDeclareLocalInstruction(instruction, generator);
     return [];
   } else if (instruction instanceof MemoryInstruction) {
     const statement = generateMemoryInstruction(instruction, generator);

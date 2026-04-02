@@ -2,7 +2,7 @@ import { NodePath } from "@babel/traverse";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import {
-  BindingIdentifierInstruction,
+  DeclareLocalInstruction,
   LoadLocalInstruction,
   Place,
   StoreContextInstruction,
@@ -60,7 +60,7 @@ export function buildUpdateExpression(
     const oldValBinding = environment.createIdentifier();
     const oldValBindingPlace = environment.createPlace(oldValBinding);
     functionBuilder.addInstruction(
-      environment.createInstruction(BindingIdentifierInstruction, oldValBindingPlace, nodePath),
+      environment.createInstruction(DeclareLocalInstruction, oldValBindingPlace, nodePath, "const"),
     );
     const oldValStorePlace = environment.createPlace(environment.createIdentifier());
     functionBuilder.addInstruction(
@@ -90,9 +90,6 @@ export function buildUpdateExpression(
   } else {
     const lvalIdentifier = environment.createIdentifier(declarationId);
     lvalPlace = environment.createPlace(lvalIdentifier);
-    functionBuilder.addInstruction(
-      environment.createInstruction(BindingIdentifierInstruction, lvalPlace, nodePath),
-    );
   }
 
   const rightLiteral = t.numericLiteral(1);
