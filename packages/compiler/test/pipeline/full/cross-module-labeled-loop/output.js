@@ -9,8 +9,8 @@ function $27_0($17_0) {
   }
 }
 const $0_0 = $27_0;
-export function f($2_0) {
-  if ($2_0) {
-    $0_0($2_0);
+export function f($9_0) {
+  if ($9_0) {
+    $0_0($9_0);
   }
 }
