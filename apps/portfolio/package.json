@@ -23,6 +23,9 @@
     "sync-to-hashnode": "pnpm dlx vite-node --config scripts/vite.scripts.config.ts scripts/sync-to-hashnode.ts"
   },
   "dependencies": {
+    "@fontsource-variable/dm-sans": "^5.2.8",
+    "@fontsource-variable/jetbrains-mono": "^5.2.8",
+    "@fontsource-variable/syne": "^5.2.7",
     "@fontsource/noto-sans": "^5.2.10",
     "@fontsource/noto-sans-mono": "^5.2.10",
     "@iframe-resizer/child": "^5.5.9",

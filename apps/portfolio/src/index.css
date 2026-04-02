@@ -1,3 +1,6 @@
+@import "@fontsource-variable/syne";
+@import "@fontsource-variable/dm-sans";
+@import "@fontsource-variable/jetbrains-mono";
 @import "@ish/design-overlay/styles.css";
 @plugin "@tailwindcss/typography";
 
@@ -34,9 +37,9 @@
 }
 
 :root {
-  --font-display: "Syne", system-ui, sans-serif;
-  --font-body: "DM Sans", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-display: "Syne Variable", system-ui, sans-serif;
+  --font-body: "DM Sans Variable", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
 
   /* shiki css-variables theme — light */
   --shiki-foreground: #354150;
