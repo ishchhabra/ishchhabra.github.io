@@ -36,7 +36,7 @@ export function LabCard({ project }: { project: LabProject }) {
         className={`pointer-events-none absolute inset-0 bg-linear-to-br opacity-0 transition-opacity duration-500 group-hover:opacity-100 ${accentGradients[project.accent] ?? ""}`}
       />
       <div className="pointer-events-none relative flex h-full flex-col">
-        <div className="mb-3 flex items-center gap-2.5">
+        <div className="mb-1.5 flex items-center gap-2.5">
           <h3
             className="text-lg font-semibold text-zinc-900 dark:text-white"
             style={{
@@ -53,25 +53,48 @@ export function LabCard({ project }: { project: LabProject }) {
           >
             {project.tag}
           </span>
-          {project.links?.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="pointer-events-auto relative z-10 ml-auto inline-flex items-center gap-1.5 text-xs text-zinc-400 transition-colors hover:text-violet-400 dark:text-zinc-500 dark:hover:text-violet-400"
-            >
-              {link.live && (
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-50" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-violet-400" />
-                </span>
-              )}
-              {link.label}
-            </a>
-          ))}
         </div>
+        {project.links && project.links.length > 0 && (
+          <div className="mb-3 flex items-center gap-1">
+            {project.links.map((link, i) => (
+              <span key={link.href} className="flex items-center">
+                {i > 0 && <span className="mx-1.5 text-zinc-300 dark:text-zinc-600">&middot;</span>}
+                <a
+                  href={link.href}
+                  target={link.href.startsWith("/") ? undefined : "_blank"}
+                  rel={link.href.startsWith("/") ? undefined : "noopener noreferrer"}
+                  onClick={(e) => e.stopPropagation()}
+                  className="pointer-events-auto relative z-10 inline-flex items-center gap-1.5 text-xs font-medium text-zinc-500 underline decoration-zinc-300 underline-offset-2 transition-colors hover:text-violet-500 hover:decoration-violet-400 dark:text-zinc-400 dark:decoration-zinc-600 dark:hover:text-violet-400 dark:hover:decoration-violet-400"
+                >
+                  {link.live ? (
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-50" />
+                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-violet-400" />
+                    </span>
+                  ) : (
+                    <svg
+                      width="11"
+                      height="11"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="opacity-60"
+                      aria-hidden="true"
+                    >
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                      <polyline points="15 3 21 3 21 9" />
+                      <line x1="10" y1="14" x2="21" y2="3" />
+                    </svg>
+                  )}
+                  {link.label}
+                </a>
+              </span>
+            ))}
+          </div>
+        )}
         <p
           className="mb-5 flex-1 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400"
           style={descTransitionName ? { viewTransitionName: descTransitionName } : {}}

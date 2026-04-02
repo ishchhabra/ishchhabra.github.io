@@ -47,4 +47,8 @@ export class ArrayExpressionInstruction extends ValueInstruction {
   public override hasSideEffects(): boolean {
     return false;
   }
+
+  public override print(): string {
+    return `${this.place.print()} = [${this.elements.map((e) => (e ? e.print() : "<hole>")).join(", ")}]`;
+  }
 }

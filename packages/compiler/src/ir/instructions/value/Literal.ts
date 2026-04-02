@@ -42,4 +42,8 @@ export class LiteralInstruction extends ValueInstruction {
   public override hasSideEffects(): boolean {
     return false;
   }
+
+  public override print(): string {
+    return `${this.place.print()} = ${JSON.stringify(this.value)}`;
+  }
 }

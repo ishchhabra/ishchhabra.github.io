@@ -80,4 +80,8 @@ export class StoreLocalInstruction extends MemoryInstruction {
   override asSideEffect(): BaseInstruction | null {
     return new ExpressionStatementInstruction(this.id, this.place, this.nodePath, this.value);
   }
+
+  public override print(): string {
+    return `${this.place.print()} = StoreLocal ${this.lval.print()} = ${this.value.print()}`;
+  }
 }

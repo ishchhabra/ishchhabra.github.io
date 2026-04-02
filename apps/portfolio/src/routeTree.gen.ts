@@ -17,6 +17,7 @@ import { Route as LabIndexRouteImport } from './routes/lab/index'
 import { Route as WritingSsrThemingRouteImport } from './routes/writing/ssr-theming'
 import { Route as WritingPnpmMonorepoRouteImport } from './routes/writing/pnpm-monorepo'
 import { Route as LabSandboxRouteImport } from './routes/lab/sandbox'
+import { Route as LabJsAotTranspilerRouteImport } from './routes/lab/js-aot-transpiler'
 import { Route as LabDesignOverlayRouteImport } from './routes/lab/design-overlay'
 import { Route as DebugFeedRouteImport } from './routes/debug/feed'
 import { Route as ApiSubscribeRouteImport } from './routes/api.subscribe'
@@ -68,6 +69,11 @@ const WritingPnpmMonorepoRoute = WritingPnpmMonorepoRouteImport.update({
 const LabSandboxRoute = LabSandboxRouteImport.update({
   id: '/lab/sandbox',
   path: '/lab/sandbox',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LabJsAotTranspilerRoute = LabJsAotTranspilerRouteImport.update({
+  id: '/lab/js-aot-transpiler',
+  path: '/lab/js-aot-transpiler',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LabDesignOverlayRoute = LabDesignOverlayRouteImport.update({
@@ -146,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/api/subscribe': typeof ApiSubscribeRoute
   '/debug/feed': typeof DebugFeedRoute
   '/lab/design-overlay': typeof LabDesignOverlayRoute
+  '/lab/js-aot-transpiler': typeof LabJsAotTranspilerRoute
   '/lab/sandbox': typeof LabSandboxRoute
   '/writing/pnpm-monorepo': typeof WritingPnpmMonorepoRoute
   '/writing/ssr-theming': typeof WritingSsrThemingRoute
@@ -168,6 +175,7 @@ export interface FileRoutesByTo {
   '/api/subscribe': typeof ApiSubscribeRoute
   '/debug/feed': typeof DebugFeedRoute
   '/lab/design-overlay': typeof LabDesignOverlayRoute
+  '/lab/js-aot-transpiler': typeof LabJsAotTranspilerRoute
   '/lab/sandbox': typeof LabSandboxRoute
   '/writing/pnpm-monorepo': typeof WritingPnpmMonorepoRoute
   '/writing/ssr-theming': typeof WritingSsrThemingRoute
@@ -189,6 +197,7 @@ export interface FileRoutesById {
   '/api/subscribe': typeof ApiSubscribeRoute
   '/debug/feed': typeof DebugFeedRoute
   '/lab/design-overlay': typeof LabDesignOverlayRoute
+  '/lab/js-aot-transpiler': typeof LabJsAotTranspilerRoute
   '/lab/sandbox': typeof LabSandboxRoute
   '/writing/pnpm-monorepo': typeof WritingPnpmMonorepoRoute
   '/writing/ssr-theming': typeof WritingSsrThemingRoute
@@ -213,6 +222,7 @@ export interface FileRouteTypes {
     | '/api/subscribe'
     | '/debug/feed'
     | '/lab/design-overlay'
+    | '/lab/js-aot-transpiler'
     | '/lab/sandbox'
     | '/writing/pnpm-monorepo'
     | '/writing/ssr-theming'
@@ -235,6 +245,7 @@ export interface FileRouteTypes {
     | '/api/subscribe'
     | '/debug/feed'
     | '/lab/design-overlay'
+    | '/lab/js-aot-transpiler'
     | '/lab/sandbox'
     | '/writing/pnpm-monorepo'
     | '/writing/ssr-theming'
@@ -255,6 +266,7 @@ export interface FileRouteTypes {
     | '/api/subscribe'
     | '/debug/feed'
     | '/lab/design-overlay'
+    | '/lab/js-aot-transpiler'
     | '/lab/sandbox'
     | '/writing/pnpm-monorepo'
     | '/writing/ssr-theming'
@@ -278,6 +290,7 @@ export interface RootRouteChildren {
   ApiSubscribeRoute: typeof ApiSubscribeRoute
   DebugFeedRoute: typeof DebugFeedRoute
   LabDesignOverlayRoute: typeof LabDesignOverlayRoute
+  LabJsAotTranspilerRoute: typeof LabJsAotTranspilerRoute
   LabSandboxRoute: typeof LabSandboxRoute
   WritingPnpmMonorepoRoute: typeof WritingPnpmMonorepoRoute
   WritingSsrThemingRoute: typeof WritingSsrThemingRoute
@@ -346,6 +359,13 @@ declare module '@tanstack/react-router' {
       path: '/lab/sandbox'
       fullPath: '/lab/sandbox'
       preLoaderRoute: typeof LabSandboxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lab/js-aot-transpiler': {
+      id: '/lab/js-aot-transpiler'
+      path: '/lab/js-aot-transpiler'
+      fullPath: '/lab/js-aot-transpiler'
+      preLoaderRoute: typeof LabJsAotTranspilerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lab/design-overlay': {
@@ -478,6 +498,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiSubscribeRoute: ApiSubscribeRoute,
   DebugFeedRoute: DebugFeedRoute,
   LabDesignOverlayRoute: LabDesignOverlayRoute,
+  LabJsAotTranspilerRoute: LabJsAotTranspilerRoute,
   LabSandboxRoute: LabSandboxRoute,
   WritingPnpmMonorepoRoute: WritingPnpmMonorepoRoute,
   WritingSsrThemingRoute: WritingSsrThemingRoute,

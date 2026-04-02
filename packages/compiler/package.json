@@ -5,6 +5,10 @@
   "author": "Ish Chhabra",
   "type": "module",
   "main": "dist/cli.js",
+  "exports": {
+    ".": "./dist/cli.js",
+    "./compile": "./dist/compile.js"
+  },
   "scripts": {
     "build": "rollup -c",
     "test": "vitest run",

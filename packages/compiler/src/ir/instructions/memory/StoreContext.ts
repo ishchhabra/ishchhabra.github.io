@@ -80,4 +80,8 @@ export class StoreContextInstruction extends MemoryInstruction {
   override getWrittenPlaces(): Place[] {
     return [this.place, this.lval, ...this.bindings];
   }
+
+  public override print(): string {
+    return `${this.place.print()} = StoreContext ${this.lval.print()} = ${this.value.print()}`;
+  }
 }

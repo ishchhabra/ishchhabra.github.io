@@ -57,8 +57,15 @@ export class ModuleIRBuilder {
     return result.code;
   }
 
+  public buildFromSource(source: string): ModuleIR {
+    return this.buildFromCode(this.preprocess(source));
+  }
+
   public build(): ModuleIR {
-    const code = this.preprocess(readFileSync(this.path, "utf-8"));
+    return this.buildFromCode(this.preprocess(readFileSync(this.path, "utf-8")));
+  }
+
+  private buildFromCode(code: string): ModuleIR {
     const ast = parse(code, {
       sourceType: "module",
       plugins: ["jsx"],

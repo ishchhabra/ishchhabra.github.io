@@ -63,4 +63,8 @@ export class ExpressionStatementInstruction extends BaseInstruction {
   getReadPlaces(): Place[] {
     return [this.expression];
   }
+
+  public override print(): string {
+    return `ExpressionStatement ${this.expression.print()}`;
+  }
 }

@@ -38,4 +38,8 @@ export class LoadGlobalInstruction extends MemoryInstruction {
   public override hasSideEffects(): boolean {
     return false;
   }
+
+  public override print(): string {
+    return `${this.place.print()} = LoadGlobal ${this.name}`;
+  }
 }

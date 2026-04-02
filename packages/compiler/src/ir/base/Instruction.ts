@@ -108,6 +108,10 @@ export abstract class BaseInstruction {
     return null;
   }
 
+  public print(): string {
+    return `${this.place.print()} = ${this.constructor.name}`;
+  }
+
   public toString(): string {
     return JSON.stringify({
       ...this, // oxlint-disable-line typescript/no-misused-spread

@@ -47,4 +47,8 @@ export class ObjectExpressionInstruction extends ValueInstruction {
   public override hasSideEffects(): boolean {
     return false;
   }
+
+  public override print(): string {
+    return `${this.place.print()} = {${this.properties.map((p) => p.print()).join(", ")}}`;
+  }
 }

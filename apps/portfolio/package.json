@@ -28,6 +28,7 @@
     "@fontsource-variable/syne": "^5.2.7",
     "@fontsource/noto-sans": "^5.2.10",
     "@fontsource/noto-sans-mono": "^5.2.10",
+    "@i2-labs/compiler": "workspace:*",
     "@iframe-resizer/child": "^5.5.9",
     "@iframe-resizer/react": "^5.5.9",
     "@ish/design-overlay": "workspace:*",
@@ -61,7 +62,6 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@i2-labs/compiler": "workspace:*",
     "@pnpm/find-workspace-packages": "^6.0.9",
     "@scelar/nodepod": "^1.0.2",
     "@tailwindcss/vite": "catalog:",

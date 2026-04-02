@@ -49,4 +49,8 @@ export class ObjectPatternInstruction extends PatternInstruction {
   override getWrittenPlaces(): Place[] {
     return [this.place, ...this.bindings];
   }
+
+  public override print(): string {
+    return `${this.place.print()} = ObjectPattern {${this.properties.map((p) => p.print()).join(", ")}}`;
+  }
 }

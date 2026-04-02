@@ -50,4 +50,8 @@ export class CallExpressionInstruction extends ValueInstruction {
   getReadPlaces(): Place[] {
     return [this.callee, ...this.args];
   }
+
+  public override print(): string {
+    return `${this.place.print()} = Call ${this.callee.print()}(${this.args.map((a) => a.print()).join(", ")})`;
+  }
 }

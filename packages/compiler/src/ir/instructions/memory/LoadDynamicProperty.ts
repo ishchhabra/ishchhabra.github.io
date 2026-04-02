@@ -47,4 +47,8 @@ export class LoadDynamicPropertyInstruction extends MemoryInstruction {
   getReadPlaces(): Place[] {
     return [this.object, this.property];
   }
+
+  public override print(): string {
+    return `${this.place.print()} = ${this.object.print()}[${this.property.print()}]`;
+  }
 }

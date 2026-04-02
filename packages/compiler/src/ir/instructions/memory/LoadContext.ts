@@ -44,4 +44,8 @@ export class LoadContextInstruction extends MemoryInstruction {
   public override hasSideEffects(): boolean {
     return false;
   }
+
+  public override print(): string {
+    return `${this.place.print()} = LoadContext ${this.value.print()}`;
+  }
 }

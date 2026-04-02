@@ -53,4 +53,8 @@ export class CopyInstruction extends MemoryInstruction {
   public override hasSideEffects(): boolean {
     return false;
   }
+
+  public override print(): string {
+    return `${this.place.print()} = Copy ${this.lval.print()} <- ${this.value.print()}`;
+  }
 }

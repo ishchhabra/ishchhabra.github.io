@@ -69,4 +69,8 @@ export class ObjectPropertyInstruction extends ValueInstruction {
   override getWrittenPlaces(): Place[] {
     return [this.place, ...this.bindings];
   }
+
+  public override print(): string {
+    return `${this.place.print()} = ${this.key.print()}: ${this.value.print()}`;
+  }
 }

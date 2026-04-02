@@ -1,7 +1,9 @@
 import { z } from "zod";
 import { CodeGenerator } from "./backend/CodeGenerator";
 import { ProjectBuilder } from "./frontend/ProjectBuilder";
+import { printModuleIR } from "./ir/printer";
 import { Pipeline } from "./pipeline/Pipeline";
+import { StagedPipeline } from "./pipeline/StagedPipeline";
 import type { ResolveConstantHook } from "./pipeline/passes/resolveConstant";
 
 export const CompilerOptionsSchema = z.object({
@@ -63,4 +65,48 @@ export function compile(
   new Pipeline(projectUnit, options).run();
   const code = new CodeGenerator(entryPoint, projectUnit).generate();
   return code;
+}
+
+export function compileFromSource(
+  source: string,
+  options: CompilerOptions = CompilerOptionsSchema.parse({}),
+) {
+  const virtualPath = "input.js";
+  const projectUnit = new ProjectBuilder().buildFromSource(source, virtualPath);
+  new Pipeline(projectUnit, options).run();
+  const code = new CodeGenerator(virtualPath, projectUnit).generate();
+  return code;
+}
+
+export interface CompilationStages {
+  hir: string;
+  ssa: string;
+  optimized: string;
+  ssaEliminated: string;
+  lateOptimized: string;
+  output: string;
+}
+
+export function compileFromSourceWithStages(
+  source: string,
+  options: CompilerOptions = CompilerOptionsSchema.parse({}),
+): CompilationStages {
+  const virtualPath = "input.js";
+  const projectUnit = new ProjectBuilder().buildFromSource(source, virtualPath);
+  const moduleIR = projectUnit.modules.get(virtualPath)!;
+
+  const hir = printModuleIR(moduleIR);
+
+  const snapshots = new StagedPipeline(projectUnit, options).run();
+
+  const output = new CodeGenerator(virtualPath, projectUnit).generate();
+
+  return {
+    hir,
+    ssa: snapshots.ssa ?? hir,
+    optimized: snapshots.optimized ?? snapshots.ssa ?? hir,
+    ssaEliminated: snapshots.ssaEliminated ?? snapshots.optimized ?? hir,
+    lateOptimized: snapshots.lateOptimized ?? snapshots.ssaEliminated ?? hir,
+    output,
+  };
 }

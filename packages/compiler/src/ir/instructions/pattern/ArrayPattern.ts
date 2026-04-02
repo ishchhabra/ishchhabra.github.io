@@ -56,4 +56,8 @@ export class ArrayPatternInstruction extends PatternInstruction {
   public override hasSideEffects(): boolean {
     return false;
   }
+
+  public override print(): string {
+    return `${this.place.print()} = ArrayPattern [${this.elements.map((e) => (e ? e.print() : "<hole>")).join(", ")}]`;
+  }
 }

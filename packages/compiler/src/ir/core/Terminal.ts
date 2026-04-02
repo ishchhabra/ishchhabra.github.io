@@ -38,6 +38,10 @@ export class BranchTerminal extends BaseTerminal {
   override getJoinTarget(): BlockId {
     return this.fallthrough;
   }
+
+  public override print(): string {
+    return `branch ${this.test.print()} ? bb${this.consequent} : bb${this.alternate}`;
+  }
 }
 
 export class JumpTerminal extends BaseTerminal {
@@ -62,6 +66,10 @@ export class JumpTerminal extends BaseTerminal {
 
   getBlockRefs(): BlockId[] {
     return [this.target];
+  }
+
+  public override print(): string {
+    return `jump bb${this.target}`;
   }
 }
 
@@ -89,6 +97,10 @@ export class ReturnTerminal extends BaseTerminal {
   getBlockRefs(): BlockId[] {
     return [];
   }
+
+  public override print(): string {
+    return `return${this.value ? " " + this.value.print() : ""}`;
+  }
 }
 
 export class ThrowTerminal extends BaseTerminal {
@@ -113,6 +125,10 @@ export class ThrowTerminal extends BaseTerminal {
 
   getBlockRefs(): BlockId[] {
     return [];
+  }
+
+  public override print(): string {
+    return `throw ${this.value.print()}`;
   }
 }
 

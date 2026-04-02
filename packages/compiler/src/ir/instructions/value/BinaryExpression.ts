@@ -53,4 +53,8 @@ export class BinaryExpressionInstruction extends ValueInstruction {
   public override hasSideEffects(): boolean {
     return false;
   }
+
+  public override print(): string {
+    return `${this.place.print()} = ${this.left.print()} ${this.operator} ${this.right.print()}`;
+  }
 }

@@ -47,4 +47,8 @@ export class LoadStaticPropertyInstruction extends MemoryInstruction {
   getReadPlaces(): Place[] {
     return [this.object];
   }
+
+  public override print(): string {
+    return `${this.place.print()} = ${this.object.print()}.${this.property}`;
+  }
 }

@@ -4,7 +4,10 @@ import typescript from "@rollup/plugin-typescript";
 
 /** @type {import('rollup').RollupOptions} */
 const config = {
-  input: "src/cli.ts",
+  input: {
+    cli: "src/cli.ts",
+    compile: "src/compile.ts",
+  },
   output: {
     dir: "dist",
     format: "esm",

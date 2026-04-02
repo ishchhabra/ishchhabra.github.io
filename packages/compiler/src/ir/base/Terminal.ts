@@ -18,4 +18,8 @@ export abstract class BaseTerminal {
   getJoinTarget(): BlockId | null {
     return null;
   }
+
+  public print(): string {
+    return this.constructor.name;
+  }
 }

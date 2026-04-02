@@ -40,11 +40,17 @@ export const LAB_PROJECTS: LabProject[] = [
     title: "JS AOT Compiler",
     description:
       "Ahead-of-time optimizing compiler for JavaScript. SSA-based IR, constant propagation, dead code elimination.",
+    longDescription:
+      "An optimizing ahead-of-time compiler for JavaScript. Write code, see it compiled through SSA-based IR with constant propagation, dead code elimination, copy folding, and more.",
     tag: "Research",
     accent: "violet",
-    external: true,
-    href: "https://github.com/ishchhabra/ishchhabra.github.io/tree/main/packages/compiler",
-    links: [{ label: "Live demo", href: "https://aot.ishchhabra.com", live: true }],
+    links: [
+      { label: "Live demo", href: "https://aot.ishchhabra.com", live: true },
+      {
+        label: "GitHub",
+        href: "https://github.com/ishchhabra/ishchhabra.github.io/tree/main/packages/compiler",
+      },
+    ],
   },
 ];
 

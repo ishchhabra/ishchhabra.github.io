@@ -37,6 +37,18 @@ export class ProjectBuilder {
     };
   }
 
+  public buildFromSource(source: string, virtualPath = "input.js"): ProjectUnit {
+    const environment = new Environment(this.projectEnvironment);
+    const moduleIR = new ModuleIRBuilder(virtualPath, environment).buildFromSource(source);
+    this.modules.set(virtualPath, moduleIR);
+    return {
+      modules: this.modules,
+      postOrder: [virtualPath],
+      compiledNodeModulePackages: [],
+      opaqueNodeModulePackages: [],
+    };
+  }
+
   /**
    * Builds a ProjectUnit from multiple entry points. Each entry point is
    * built independently (discovering its dependencies), and the post-order

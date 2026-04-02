@@ -63,4 +63,8 @@ export class UnaryExpressionInstruction extends ValueInstruction {
 
     return false;
   }
+
+  public override print(): string {
+    return `${this.place.print()} = ${this.operator}${this.argument.print()}`;
+  }
 }

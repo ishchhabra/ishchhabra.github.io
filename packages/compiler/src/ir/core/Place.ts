@@ -23,4 +23,8 @@ export class Place {
   rewrite(values: Map<Identifier, Place>): Place {
     return values.get(this.identifier) ?? this;
   }
+
+  print(): string {
+    return this.identifier.name ?? `$${this.identifier.declarationId}_${this.identifier.version}`;
+  }
 }

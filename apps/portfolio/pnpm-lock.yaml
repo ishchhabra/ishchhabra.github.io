@@ -65,6 +65,9 @@ importers:
       '@fontsource/noto-sans-mono':
         specifier: ^5.2.10
         version: 5.2.10
+      '@i2-labs/compiler':
+        specifier: workspace:*
+        version: file:../../packages/compiler
       '@iframe-resizer/child':
         specifier: ^5.5.9
         version: 5.5.9
@@ -164,9 +167,6 @@ importers:
       '@ish/sandbox':
         injected: true
     devDependencies:
-      '@i2-labs/compiler':
-        specifier: workspace:*
-        version: file:../../packages/compiler
       '@pnpm/find-workspace-packages':
         specifier: ^6.0.9
         version: 6.0.9(@pnpm/logger@5.2.0)
