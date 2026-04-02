@@ -137,12 +137,15 @@ function buildIdentifierBindings(
   // Skip if already registered in the enclosing function (or program)
   // scope — for example, a hoisted `var` instantiated when entering the
   // parent function/program scope.
-  // Check that scope's own data directly rather than using getData()
-  // which walks the entire scope chain and would incorrectly match a
-  // same-named declaration from an enclosing function.
-  const functionScope =
-    bindingsPath.scope.getFunctionParent() ?? bindingsPath.scope.getProgramParent();
-  if (functionScope.data[originalName] !== undefined) return;
+  // This guard only applies to `var` declarations, which are function-scoped
+  // and may have already been registered during the parent scope instantiation.
+  // `let`/`const` are block-scoped, so a same-named declaration in a different
+  // block scope is a completely independent binding and must always be registered.
+  if (declarationKind === "var") {
+    const functionScope =
+      bindingsPath.scope.getFunctionParent() ?? bindingsPath.scope.getProgramParent();
+    if (functionScope.data[originalName] !== undefined) return;
+  }
 
   const identifier = environment.createIdentifier();
   functionBuilder.registerDeclarationName(originalName, identifier.declarationId, bindingsPath);

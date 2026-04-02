@@ -21,6 +21,9 @@ const result = compileProjectDetailed({
   outDir: path.join(portfolioRoot, ".aot-src"),
   includeNodeModules,
   nodeModulesOutDir: includeNodeModules ? nodeModulesOutDir : undefined,
+  // shiki.ts: capture pruning drops the langAliases module-level binding
+  // after inlining resolveLang into highlightCode, leaving a dangling ref.
+  exclude: [/lib\/shiki\.ts$/],
 });
 
 let compiled = 0;
@@ -55,6 +58,8 @@ if (includeNodeModules) {
     "zod",
     "better-call",
     "micromark-core-commonmark",
+    // capture pruning drops inlined function captures
+    "@vercel/speed-insights",
     // @radix-ui compound components trigger a duplicate-identifier codegen bug
     "@radix-ui/react-accordion",
     "@radix-ui/react-alert-dialog",
