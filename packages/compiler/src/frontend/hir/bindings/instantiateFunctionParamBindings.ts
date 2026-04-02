@@ -12,12 +12,7 @@ export function instantiateFunctionParamBindings(
   environment: Environment,
 ) {
   for (const paramPath of paramPaths) {
-    instantiateParamBinding(
-      paramPath as NodePath<t.LVal>,
-      scopePath,
-      functionBuilder,
-      environment,
-    );
+    instantiateParamBinding(paramPath as NodePath<t.LVal>, scopePath, functionBuilder, environment);
   }
 }
 

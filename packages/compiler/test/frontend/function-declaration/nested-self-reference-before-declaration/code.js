@@ -13,8 +13,7 @@ function point(type) {
       return {
         line: point.line,
         column: point.column,
-        offset:
-          typeof point.offset === "number" && point.offset > -1 ? point.offset : undefined,
+        offset: typeof point.offset === "number" && point.offset > -1 ? point.offset : undefined,
       };
     }
   }

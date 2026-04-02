@@ -46,9 +46,7 @@ function aotNodeModulesPlugin(mirrors: MirrorEntry[]): Plugin {
   const sorted = mirrors.slice().sort((a, b) => b.packageRoot.length - a.packageRoot.length);
 
   // Build reverse map: mirrorRoot → packageRoot (for fixing imports from mirrors)
-  const reverseSorted = mirrors
-    .slice()
-    .sort((a, b) => b.mirrorRoot.length - a.mirrorRoot.length);
+  const reverseSorted = mirrors.slice().sort((a, b) => b.mirrorRoot.length - a.mirrorRoot.length);
 
   function findOriginalImporter(importer: string): string | undefined {
     for (const { packageRoot, mirrorRoot } of reverseSorted) {
