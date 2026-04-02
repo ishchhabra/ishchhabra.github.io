@@ -4,7 +4,10 @@ import { Environment } from "../../../environment";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildClassDeclarationBindings } from "./buildClassDeclarationBindings";
-import { buildFunctionDeclarationBindings } from "./buildFunctionDeclarationBindings";
+import {
+  initializeFunctionDeclaration,
+  registerFunctionDeclarationBinding,
+} from "./buildFunctionDeclarationBindings";
 import { buildVariableDeclarationBindings } from "./buildVariableDeclarationBindings";
 
 /**
@@ -22,10 +25,11 @@ export type PendingRenames = Array<[oldName: string, newName: string]>;
  * - lexical scopes (block/switch/loop) own `let`/`const`/`class` and
  *   block-scoped function declarations
  *
- * For `var`/`let`/`const`/`class`, this phase only creates the binding
- * identity; the actual value initialization happens when the declaration
- * statement is lowered. Function declarations are fully initialized here
- * per the ECMA spec (their body is built and emitted during instantiation).
+ * Per ECMA-262 §10.2.11, instantiation proceeds in two phases:
+ *   Phase 1 — Create all bindings (var, let, const, class, function).
+ *   Phase 2 — InstantiateFunctionObject for each function declaration.
+ * This ordering ensures function bodies can reference any binding in the
+ * scope, even those declared after the function in source order.
  */
 export function instantiateScopeBindings(
   bindingsPath: NodePath,
@@ -34,7 +38,9 @@ export function instantiateScopeBindings(
   moduleBuilder: ModuleIRBuilder,
 ) {
   const pendingRenames: PendingRenames = [];
+  const pendingFunctionDeclarations: NodePath<t.FunctionDeclaration>[] = [];
 
+  // Phase 1: Create all bindings.
   bindingsPath.traverse({
     ClassDeclaration: (path: NodePath<t.ClassDeclaration>) => {
       buildClassDeclarationBindings(
@@ -46,14 +52,14 @@ export function instantiateScopeBindings(
       );
     },
     FunctionDeclaration: (path: NodePath<t.FunctionDeclaration>) => {
-      buildFunctionDeclarationBindings(
+      registerFunctionDeclarationBinding(
         bindingsPath,
         path,
         functionBuilder,
         environment,
-        moduleBuilder,
         pendingRenames,
       );
+      pendingFunctionDeclarations.push(path);
     },
     VariableDeclaration: (path: NodePath<t.VariableDeclaration>) => {
       buildVariableDeclarationBindings(
@@ -68,6 +74,13 @@ export function instantiateScopeBindings(
 
   if (pendingRenames.length > 0) {
     applyBatchRenames(bindingsPath, pendingRenames);
+  }
+
+  // Phase 2: InstantiateFunctionObject for each function declaration.
+  // All bindings are now registered, so function bodies can resolve
+  // references to any declaration in the scope.
+  for (const path of pendingFunctionDeclarations) {
+    initializeFunctionDeclaration(bindingsPath, path, functionBuilder, environment, moduleBuilder);
   }
 }
 

@@ -1,4 +1,4 @@
-function $4_0($5_0, $6_0) {
+function $1_0($5_0, $6_0) {
   return $5_0.trim() + ($6_0 ? "\n" : "");
 }
-export default $4_0;
+export default $1_0;

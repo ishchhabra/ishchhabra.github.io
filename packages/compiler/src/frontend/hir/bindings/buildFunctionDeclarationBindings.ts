@@ -10,12 +10,16 @@ import type { PendingRenames } from "./instantiateScopeBindings";
 import { isBindingOwnedByScope } from "./isBindingOwnedByScope";
 import { isContextVariable } from "./isContextVariable";
 
-export function buildFunctionDeclarationBindings(
+/**
+ * Phase 1: Register the function declaration binding in the scope.
+ * Creates the binding identity and emits a DeclareLocal instruction,
+ * but does NOT build the function body yet.
+ */
+export function registerFunctionDeclarationBinding(
   bindingsPath: NodePath<t.Node>,
   nodePath: NodePath<t.FunctionDeclaration>,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
-  moduleBuilder: ModuleIRBuilder,
   pendingRenames?: PendingRenames,
 ) {
   const functionName = getFunctionName(nodePath);
@@ -62,11 +66,48 @@ export function buildFunctionDeclarationBindings(
   functionBuilder.addInstruction(
     environment.createInstruction(DeclareLocalInstruction, place, functionName, "const"),
   );
+}
 
-  // Per the ECMA spec, function declarations are fully initialized during
-  // declaration instantiation — not at their lexical position. Build the
-  // function body and emit the FunctionDeclarationInstruction now so that
-  // the binding is available before the scope body executes.
+/**
+ * Phase 2: Build the function body and emit the FunctionDeclarationInstruction.
+ * Per ECMA-262 §10.2.11, InstantiateFunctionObject runs after ALL bindings in
+ * the scope have been created, so this must be called after all register*
+ * functions have completed.
+ */
+export function initializeFunctionDeclaration(
+  bindingsPath: NodePath<t.Node>,
+  nodePath: NodePath<t.FunctionDeclaration>,
+  functionBuilder: FunctionIRBuilder,
+  environment: Environment,
+  moduleBuilder: ModuleIRBuilder,
+) {
+  const functionName = getFunctionName(nodePath);
+  if (functionName === null) {
+    return;
+  }
+
+  const owningPath = getDeclarationOwningPath(nodePath);
+  const binding = owningPath.scope.getBinding(functionName.node.name);
+  if (!isBindingOwnedByScope(bindingsPath, binding)) {
+    return;
+  }
+
+  const idName = nodePath.get("id");
+  if (!idName.isIdentifier()) {
+    return;
+  }
+
+  const declarationId = functionBuilder.getDeclarationId(idName.node.name, owningPath);
+  if (declarationId === undefined) {
+    throw new Error(`Function declaration binding was not registered: ${idName.node.name}`);
+  }
+
+  const latestDeclaration = environment.getLatestDeclaration(declarationId);
+  const identifierPlace = environment.places.get(latestDeclaration.placeId);
+  if (identifierPlace === undefined) {
+    throw new Error(`Unable to find the place for ${idName.node.name} (${declarationId})`);
+  }
+
   const paramPaths = nodePath.get("params");
   const bodyPath = nodePath.get("body");
   const functionIRBuilder = new FunctionIRBuilder(
@@ -83,12 +124,12 @@ export function buildFunctionDeclarationBindings(
   functionBuilder.propagateCapturesFrom(functionIRBuilder);
   const capturedPlaces = [...functionIRBuilder.captures.values()];
 
-  const fnPlace = environment.createPlace(environment.createIdentifier(identifier.declarationId));
+  const fnPlace = environment.createPlace(environment.createIdentifier(declarationId));
   const instruction = environment.createInstruction(
     FunctionDeclarationInstruction,
     fnPlace,
     nodePath,
-    place,
+    identifierPlace,
     functionIR,
     nodePath.node.generator,
     nodePath.node.async,

@@ -1,7 +1,7 @@
 export function Home() {
   const [$47_0 = 5] = [];
-  const $17_0 = $0_0.slice(0, $47_0).map(($9_0) => ({
-    slug: $9_0.slug,
+  const $17_0 = $0_0.slice(0, $47_0).map(($10_0) => ({
+    slug: $10_0.slug,
   }));
   return (
     <div>
