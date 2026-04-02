@@ -21,9 +21,14 @@ const result = compileProjectDetailed({
   outDir: path.join(portfolioRoot, ".aot-src"),
   includeNodeModules,
   nodeModulesOutDir: includeNodeModules ? nodeModulesOutDir : undefined,
-  // shiki.ts: capture pruning drops the langAliases module-level binding
-  // after inlining resolveLang into highlightCode, leaving a dangling ref.
-  exclude: [/lib\/shiki\.ts$/],
+  // Source files with context-variable codegen bugs (undeclared capture
+  // references after SSA optimization). Copied as-is until the compiler
+  // properly handles context variable SSA renaming.
+  exclude: [
+    /lib\/shiki\.ts$/,
+    /lib\/article-markdown\.ts$/,
+    /cookie-optimistic-client-cache\/route\.tsx$/,
+  ],
 });
 
 let compiled = 0;
@@ -57,33 +62,22 @@ if (includeNodeModules) {
     "clsx",
     "zod",
     "better-call",
-    "micromark-core-commonmark",
-    // capture pruning drops inlined function captures
-    "@vercel/speed-insights",
-    // @radix-ui compound components trigger a duplicate-identifier codegen bug
-    "@radix-ui/react-accordion",
-    "@radix-ui/react-alert-dialog",
-    "@radix-ui/react-avatar",
-    "@radix-ui/react-checkbox",
-    "@radix-ui/react-collapsible",
-    "@radix-ui/react-context-menu",
-    "@radix-ui/react-dialog",
-    "@radix-ui/react-dropdown-menu",
-    "@radix-ui/react-form",
-    "@radix-ui/react-hover-card",
-    "@radix-ui/react-menu",
-    "@radix-ui/react-menubar",
-    "@radix-ui/react-one-time-password-field",
-    "@radix-ui/react-password-toggle-field",
-    "@radix-ui/react-popover",
-    "@radix-ui/react-progress",
-    "@radix-ui/react-roving-focus",
-    "@radix-ui/react-slider",
-    "@radix-ui/react-tabs",
-    "@radix-ui/react-toast",
-    "@radix-ui/react-toggle-group",
-    "@radix-ui/react-toolbar",
-    "@radix-ui/react-tooltip",
+    "micromark",
+    // Context-variable SSA bugs: undeclared capture references after optimization
+    "@floating-ui/",
+    "@iframe-resizer/",
+    "@tanstack/react-query",
+    "@tanstack/router-ssr-query-core",
+    "@tanstack/store",
+    "@vercel/",
+    "mdast-util-from-markdown",
+    "mdast-util-to-hast",
+    "react-markdown",
+    "tslib",
+    "turndown",
+    "use-sidecar",
+    // @radix-ui: compound components and context-variable SSA bugs
+    "@radix-ui/",
   ];
 
   const mirrors = result.nodeModuleMirrors.filter((m) => {
