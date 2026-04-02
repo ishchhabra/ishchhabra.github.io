@@ -1,8 +1,8 @@
 export function App() {
   useRouterState({
-    select: ($6_0) => ({
-      a: $6_0.a,
-      b: $6_0.b,
+    select: ($5_0) => ({
+      a: $5_0.a,
+      b: $5_0.b,
     }),
   });
   const $32_0 = useMemo(() => {

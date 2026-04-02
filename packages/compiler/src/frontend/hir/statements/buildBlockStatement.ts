@@ -19,7 +19,7 @@ export function buildBlockStatement(
   functionBuilder.blocks.set(block.id, block);
   functionBuilder.currentBlock = block;
 
-  instantiateScopeBindings(nodePath, functionBuilder, environment);
+  instantiateScopeBindings(nodePath, functionBuilder, environment, moduleBuilder);
 
   const body = nodePath.get("body");
   buildStatementList(body, functionBuilder, moduleBuilder, environment);

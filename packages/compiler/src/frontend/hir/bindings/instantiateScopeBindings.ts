@@ -2,6 +2,7 @@ import { NodePath } from "@babel/core";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildClassDeclarationBindings } from "./buildClassDeclarationBindings";
 import { buildFunctionDeclarationBindings } from "./buildFunctionDeclarationBindings";
 import { buildVariableDeclarationBindings } from "./buildVariableDeclarationBindings";
@@ -21,14 +22,16 @@ export type PendingRenames = Array<[oldName: string, newName: string]>;
  * - lexical scopes (block/switch/loop) own `let`/`const`/`class` and
  *   block-scoped function declarations
  *
- * The actual runtime initialization still happens when the declaration
- * statement is lowered; this phase only creates the binding identity so
- * later reads/writes resolve to the correct scope.
+ * For `var`/`let`/`const`/`class`, this phase only creates the binding
+ * identity; the actual value initialization happens when the declaration
+ * statement is lowered. Function declarations are fully initialized here
+ * per the ECMA spec (their body is built and emitted during instantiation).
  */
 export function instantiateScopeBindings(
   bindingsPath: NodePath,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
+  moduleBuilder: ModuleIRBuilder,
 ) {
   const pendingRenames: PendingRenames = [];
 
@@ -48,6 +51,7 @@ export function instantiateScopeBindings(
         path,
         functionBuilder,
         environment,
+        moduleBuilder,
         pendingRenames,
       );
     },

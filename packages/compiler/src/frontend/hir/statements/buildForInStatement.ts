@@ -36,7 +36,7 @@ export function buildForInStatement(
   functionBuilder.blocks.set(headerBlock.id, headerBlock);
 
   functionBuilder.currentBlock = headerBlock;
-  instantiateScopeBindings(nodePath, functionBuilder, environment);
+  instantiateScopeBindings(nodePath, functionBuilder, environment, moduleBuilder);
 
   // Build the iteration value from the left side.
   const leftPath = nodePath.get("left");

@@ -37,7 +37,7 @@ export function buildForStatement(
       buildExpressionAsStatement(initPath, functionBuilder, moduleBuilder, environment);
     } else {
       initPath.assertStatement();
-      instantiateScopeBindings(nodePath, functionBuilder, environment);
+      instantiateScopeBindings(nodePath, functionBuilder, environment, moduleBuilder);
       buildStatement(initPath, functionBuilder, moduleBuilder, environment);
     }
   }

@@ -17,7 +17,7 @@ export function buildSwitchStatement(
 ) {
   const currentBlock = functionBuilder.currentBlock;
 
-  instantiateScopeBindings(nodePath, functionBuilder, environment);
+  instantiateScopeBindings(nodePath, functionBuilder, environment, moduleBuilder);
 
   // Build the discriminant expression in the current block.
   const discriminantPath = nodePath.get("discriminant");

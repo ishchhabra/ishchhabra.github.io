@@ -6,12 +6,10 @@ import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 /**
- * Lower a sequence of statements while preserving hoisted function declarations.
- *
- * Once control flow terminates, ordinary statements are unreachable and skipped,
- * but function declarations in the same scope still need to be lowered because
- * their bindings are initialized during scope instantiation rather than at their
- * lexical execution position.
+ * Lower a sequence of statements. Once control flow terminates, remaining
+ * statements are unreachable and skipped. Function declarations no longer
+ * need special handling here because they are fully initialized during
+ * scope instantiation.
  */
 export function buildStatementList(
   statementPaths: Array<NodePath<t.Node>>,
@@ -19,17 +17,11 @@ export function buildStatementList(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  let terminated = functionBuilder.currentBlock.terminal !== undefined;
-
   for (const statementPath of statementPaths) {
-    if (terminated && !statementPath.isFunctionDeclaration()) {
-      continue;
+    if (functionBuilder.currentBlock.terminal !== undefined) {
+      break;
     }
 
     buildNode(statementPath, functionBuilder, moduleBuilder, environment);
-
-    if (!terminated && functionBuilder.currentBlock.terminal !== undefined) {
-      terminated = true;
-    }
   }
 }

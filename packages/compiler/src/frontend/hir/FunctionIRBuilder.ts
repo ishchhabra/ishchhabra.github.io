@@ -107,7 +107,7 @@ export class FunctionIRBuilder {
         );
       }
     } else {
-      instantiateScopeBindings(this.bodyPath, this, this.environment);
+      instantiateScopeBindings(this.bodyPath, this, this.environment, this.moduleBuilder);
       const bodyPath = this.bodyPath.get("body");
       if (!Array.isArray(bodyPath)) {
         throw new Error("Body path is not an array");

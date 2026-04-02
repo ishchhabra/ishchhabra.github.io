@@ -1,7 +1,7 @@
 function $0_0() {
   return typeof window !== "undefined";
 }
-function $1_0() {
+function $5_0() {
   if (!(typeof window !== "undefined")) {
     return;
   }

@@ -2,8 +2,9 @@ import { NodePath } from "@babel/core";
 import * as t from "@babel/types";
 import { getFunctionName } from "../../../babel-utils";
 import { Environment } from "../../../environment";
-import { DeclareLocalInstruction } from "../../../ir";
+import { DeclareLocalInstruction, FunctionDeclarationInstruction } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { getDeclarationOwningPath } from "../getDeclarationOwningPath";
 import type { PendingRenames } from "./instantiateScopeBindings";
 import { isBindingOwnedByScope } from "./isBindingOwnedByScope";
@@ -14,6 +15,7 @@ export function buildFunctionDeclarationBindings(
   nodePath: NodePath<t.FunctionDeclaration>,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
+  moduleBuilder: ModuleIRBuilder,
   pendingRenames?: PendingRenames,
 ) {
   const functionName = getFunctionName(nodePath);
@@ -60,4 +62,38 @@ export function buildFunctionDeclarationBindings(
   functionBuilder.addInstruction(
     environment.createInstruction(DeclareLocalInstruction, place, functionName, "const"),
   );
+
+  // Per the ECMA spec, function declarations are fully initialized during
+  // declaration instantiation — not at their lexical position. Build the
+  // function body and emit the FunctionDeclarationInstruction now so that
+  // the binding is available before the scope body executes.
+  const paramPaths = nodePath.get("params");
+  const bodyPath = nodePath.get("body");
+  const functionIRBuilder = new FunctionIRBuilder(
+    paramPaths,
+    bodyPath,
+    bodyPath,
+    functionBuilder.environment,
+    moduleBuilder,
+    nodePath.node.async,
+    nodePath.node.generator,
+  );
+  const functionIR = functionIRBuilder.build();
+
+  functionBuilder.propagateCapturesFrom(functionIRBuilder);
+  const capturedPlaces = [...functionIRBuilder.captures.values()];
+
+  const fnPlace = environment.createPlace(environment.createIdentifier(identifier.declarationId));
+  const instruction = environment.createInstruction(
+    FunctionDeclarationInstruction,
+    fnPlace,
+    nodePath,
+    place,
+    functionIR,
+    nodePath.node.generator,
+    nodePath.node.async,
+    capturedPlaces,
+  );
+  functionBuilder.addInstruction(instruction);
+  environment.registerDeclarationInstruction(fnPlace, instruction);
 }
