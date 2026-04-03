@@ -9,23 +9,28 @@ export class ClassExpressionInstruction extends ValueInstruction {
     public readonly id: InstructionId,
     public readonly place: Place,
     public readonly nodePath: NodePath<t.ClassExpression> | undefined,
+    public readonly identifier: Place | null = null,
   ) {
     super(id, place, nodePath);
   }
 
   public clone(environment: Environment): ClassExpressionInstruction {
-    const identifier = environment.createIdentifier();
-    const place = environment.createPlace(identifier);
-    return environment.createInstruction(ClassExpressionInstruction, place, this.nodePath);
+    const newIdentifier = environment.createIdentifier();
+    const place = environment.createPlace(newIdentifier);
+    return environment.createInstruction(
+      ClassExpressionInstruction,
+      place,
+      this.nodePath,
+      this.identifier,
+    );
   }
 
   rewrite(values: Map<Identifier, Place>): BaseInstruction {
-    for (const [identifier, place] of values) {
-      const oldName = `$${identifier.declarationId}_0`;
-      const newName = place.identifier.name;
-      this.nodePath?.scope.rename(oldName, newName);
+    const newIdentifier = this.identifier ? this.identifier.rewrite(values) : null;
+    if (newIdentifier === this.identifier) {
+      return this;
     }
-    return this;
+    return new ClassExpressionInstruction(this.id, this.place, this.nodePath, newIdentifier);
   }
 
   getReadPlaces(): Place[] {

@@ -1,5 +1,5 @@
-export default class {
+export default (class {
   greet() {
     return "hello";
   }
-}
+});

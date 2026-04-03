@@ -1,7 +1,8 @@
 import { NodePath } from "@babel/traverse";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
-import { ClassDeclarationInstruction } from "../../../ir/instructions/declaration/Class";
+import { StoreLocalInstruction } from "../../../ir";
+import { ClassExpressionInstruction } from "../../../ir/instructions/value/ClassExpression";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { getDeclarationOwningPath } from "../getDeclarationOwningPath";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -9,7 +10,7 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
 export function buildClassDeclaration(
   nodePath: NodePath<t.ClassDeclaration>,
   functionBuilder: FunctionIRBuilder,
-  moduleBuilder: ModuleIRBuilder,
+  _moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
   const idPath = nodePath.get("id");
@@ -31,15 +32,31 @@ export function buildClassDeclaration(
     throw new Error(`Unable to find the place for ${idPath.node.name} (${declarationId})`);
   }
 
-  const place = environment.createPlace(environment.createIdentifier(declarationId));
+  const classPlace = environment.createPlace(environment.createIdentifier(declarationId));
   const instruction = environment.createInstruction(
-    ClassDeclarationInstruction,
-    place,
-    nodePath,
+    ClassExpressionInstruction,
+    classPlace,
+    nodePath as unknown as NodePath<t.ClassExpression>,
     identifierPlace,
   );
   functionBuilder.addInstruction(instruction);
-  environment.registerDeclarationInstruction(place, instruction);
+  environment.registerDeclarationInstruction(classPlace, instruction);
+
+  // Explicit StoreLocal to bind the class value to the declaration place.
+  const isContext = environment.contextDeclarationIds.has(declarationId);
+  const storePlace = environment.createPlace(environment.createIdentifier());
+  functionBuilder.addInstruction(
+    environment.createInstruction(
+      StoreLocalInstruction,
+      storePlace,
+      nodePath,
+      identifierPlace,
+      classPlace,
+      isContext ? ("let" as const) : ("const" as const),
+      [],
+    ),
+  );
+
   functionBuilder.markDeclarationInitialized(declarationId);
-  return place;
+  return classPlace;
 }

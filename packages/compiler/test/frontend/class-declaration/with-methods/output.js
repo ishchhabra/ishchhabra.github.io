@@ -1,8 +1,8 @@
-class $0_0 {
+const $0_0 = class $0_0 {
   add(a, b) {
     return a + b;
   }
   subtract(a, b) {
     return a - b;
   }
-}
+};
