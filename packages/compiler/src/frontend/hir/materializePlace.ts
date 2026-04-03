@@ -44,7 +44,7 @@ export function materializePlace<T extends t.Node>(
 ): Place {
   const bindingPlace = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
-    environment.createInstruction(DeclareLocalInstruction, bindingPlace, nodePath, "const"),
+    environment.createInstruction(DeclareLocalInstruction, bindingPlace, "const"),
   );
   environment.registerDeclaration(
     bindingPlace.identifier.declarationId,
@@ -55,7 +55,6 @@ export function materializePlace<T extends t.Node>(
     environment.createInstruction(
       StoreLocalInstruction,
       environment.createPlace(environment.createIdentifier()),
-      nodePath,
       bindingPlace,
       valuePlace,
       "const",

@@ -1,5 +1,3 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
@@ -8,10 +6,9 @@ export class SequenceExpressionInstruction extends ValueInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.SequenceExpression> | undefined,
     public readonly expressions: Place[],
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): SequenceExpressionInstruction {
@@ -20,7 +17,6 @@ export class SequenceExpressionInstruction extends ValueInstruction {
     return environment.createInstruction(
       SequenceExpressionInstruction,
       place,
-      this.nodePath,
       this.expressions,
     );
   }
@@ -29,7 +25,6 @@ export class SequenceExpressionInstruction extends ValueInstruction {
     return new SequenceExpressionInstruction(
       this.id,
       this.place,
-      this.nodePath,
       this.expressions.map((expr) => values.get(expr.identifier) ?? expr),
     );
   }

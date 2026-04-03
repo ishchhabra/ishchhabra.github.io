@@ -43,7 +43,6 @@ export function buildExpressionStatement(
       const instruction = environment.createInstruction(
         ExpressionStatementInstruction,
         place,
-        expressionPath,
         expressionPlace,
       );
       functionBuilder.addInstruction(instruction);

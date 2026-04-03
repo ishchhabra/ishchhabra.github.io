@@ -34,7 +34,6 @@ export function buildArrowFunctionExpression(
   const instruction = environment.createInstruction(
     ArrowFunctionExpressionInstruction,
     place,
-    nodePath,
     functionIR,
     nodePath.node.async,
     bodyPath.isExpression(),

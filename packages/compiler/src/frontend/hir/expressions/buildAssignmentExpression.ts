@@ -100,7 +100,6 @@ function buildIdentifierAssignment(
       environment.createInstruction(
         BinaryExpressionInstruction,
         computedPlace,
-        nodePath,
         operator.slice(0, -1) as t.BinaryExpression["operator"],
         currentValuePlace,
         rightValuePlace,
@@ -123,7 +122,6 @@ function buildIdentifierAssignment(
     ? environment.createInstruction(
         StoreContextInstruction,
         place,
-        nodePath,
         leftPlace,
         resultPlace,
         "let",
@@ -132,7 +130,6 @@ function buildIdentifierAssignment(
     : environment.createInstruction(
         StoreLocalInstruction,
         place,
-        nodePath,
         leftPlace,
         resultPlace,
         "const",
@@ -157,7 +154,7 @@ function buildLogicalCondition(
   if (operator === "||=") {
     const place = environment.createPlace(environment.createIdentifier());
     functionBuilder.addInstruction(
-      environment.createInstruction(UnaryExpressionInstruction, place, undefined, "!", valuePlace),
+      environment.createInstruction(UnaryExpressionInstruction, place, "!", valuePlace),
     );
     return place;
   }
@@ -167,14 +164,13 @@ function buildLogicalCondition(
   // ??= : value == null (checks both null and undefined)
   const nullPlace = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
-    environment.createInstruction(LiteralInstruction, nullPlace, undefined, null),
+    environment.createInstruction(LiteralInstruction, nullPlace, null),
   );
   const place = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
     environment.createInstruction(
       BinaryExpressionInstruction,
       place,
-      undefined,
       "==",
       valuePlace,
       nullPlace,
@@ -195,7 +191,7 @@ function emitResultVariable(
 ): { bindingPlace: Place; storePlace: Place } {
   const bindingPlace = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
-    environment.createInstruction(DeclareLocalInstruction, bindingPlace, undefined, "let"),
+    environment.createInstruction(DeclareLocalInstruction, bindingPlace, "let"),
   );
   environment.registerDeclaration(
     bindingPlace.identifier.declarationId,
@@ -207,7 +203,6 @@ function emitResultVariable(
     environment.createInstruction(
       StoreLocalInstruction,
       storePlace,
-      undefined,
       bindingPlace,
       initialValue,
       "let",
@@ -238,7 +233,6 @@ function emitResultUpdate(
     environment.createInstruction(
       StoreLocalInstruction,
       environment.createPlace(environment.createIdentifier()),
-      undefined,
       updateBinding,
       newValue,
       "const",
@@ -350,7 +344,6 @@ function buildLogicalIdentifierAssignment(
       ? environment.createInstruction(
           StoreContextInstruction,
           environment.createPlace(environment.createIdentifier()),
-          nodePath,
           lvalPlace,
           stabilizedRightPlace,
           "let",
@@ -359,7 +352,6 @@ function buildLogicalIdentifierAssignment(
       : environment.createInstruction(
           StoreLocalInstruction,
           environment.createPlace(environment.createIdentifier()),
-          nodePath,
           lvalPlace,
           stabilizedRightPlace,
           "const",
@@ -379,7 +371,7 @@ function buildLogicalIdentifierAssignment(
   functionBuilder.currentBlock = mergeBlock;
   const resultPlace = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
-    environment.createInstruction(LoadLocalInstruction, resultPlace, undefined, bindingPlace),
+    environment.createInstruction(LoadLocalInstruction, resultPlace, bindingPlace),
   );
   return resultPlace;
 }
@@ -424,7 +416,6 @@ function buildMemberExpressionAssignment(
       environment.createInstruction(
         BinaryExpressionInstruction,
         rightPlace,
-        nodePath,
         operator.slice(0, -1) as t.BinaryExpression["operator"],
         currentValuePlace,
         rhsPlace,
@@ -478,7 +469,7 @@ function buildLogicalMemberAssignment(
   // Build the condition from the cached result, not from testPlace.
   const cachedPlace = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
-    environment.createInstruction(LoadLocalInstruction, cachedPlace, undefined, resultBinding),
+    environment.createInstruction(LoadLocalInstruction, cachedPlace, resultBinding),
   );
   const conditionPlace = buildLogicalCondition(operator, cachedPlace, functionBuilder, environment);
 
@@ -522,7 +513,6 @@ function buildLogicalMemberAssignment(
     environment.createInstruction(
       ExpressionStatementInstruction,
       environment.createPlace(environment.createIdentifier()),
-      nodePath,
       storePlace,
     ),
   );
@@ -540,7 +530,7 @@ function buildLogicalMemberAssignment(
   functionBuilder.currentBlock = mergeBlock;
   const resultPlace = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
-    environment.createInstruction(LoadLocalInstruction, resultPlace, undefined, resultBinding),
+    environment.createInstruction(LoadLocalInstruction, resultPlace, resultBinding),
   );
   return resultPlace;
 }
@@ -577,7 +567,6 @@ function buildDestructuringAssignment(
     ? environment.createInstruction(
         StoreContextInstruction,
         place,
-        nodePath,
         leftPlace,
         resultPlace,
         "let",
@@ -587,7 +576,6 @@ function buildDestructuringAssignment(
     : environment.createInstruction(
         StoreLocalInstruction,
         place,
-        nodePath,
         leftPlace,
         resultPlace,
         "const",
@@ -695,7 +683,7 @@ function buildMemberExpressionAssignmentLeft(
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   functionBuilder.addInstruction(
-    environment.createInstruction(DeclareLocalInstruction, place, nodePath, "const"),
+    environment.createInstruction(DeclareLocalInstruction, place, "const"),
   );
   environment.registerDeclaration(
     identifier.declarationId,
@@ -716,7 +704,6 @@ function buildMemberExpressionAssignmentLeft(
   const expressionStatementInstruction = environment.createInstruction(
     ExpressionStatementInstruction,
     expressionStatementPlace,
-    nodePath,
     storePropertyPlace,
   );
 
@@ -767,7 +754,6 @@ function buildArrayPatternAssignmentLeft(
   const instruction = environment.createInstruction(
     ArrayPatternInstruction,
     place,
-    leftPath,
     elementPlaces,
     identifiers,
   );
@@ -800,7 +786,6 @@ function buildObjectPatternAssignmentLeft(
         const keyInstruction = environment.createInstruction(
           LiteralInstruction,
           keyPlace,
-          keyPath,
           keyPath.node.name,
         );
         functionBuilder.addInstruction(keyInstruction);
@@ -828,7 +813,6 @@ function buildObjectPatternAssignmentLeft(
       const instruction = environment.createInstruction(
         ObjectPropertyInstruction,
         place,
-        nodePath,
         keyPlace,
         result.place,
         propertyPath.node.computed,
@@ -857,7 +841,6 @@ function buildObjectPatternAssignmentLeft(
       const instruction = environment.createInstruction(
         RestElementInstruction,
         place,
-        propertyPath,
         result.place,
         result.identifiers,
       );
@@ -873,7 +856,6 @@ function buildObjectPatternAssignmentLeft(
   const instruction = environment.createInstruction(
     ObjectPatternInstruction,
     place,
-    leftPath,
     propertyPlaces,
     identifiers,
   );
@@ -907,7 +889,6 @@ function buildAssignmentPatternAssignmentLeft(
   const instruction = environment.createInstruction(
     AssignmentPatternInstruction,
     place,
-    leftPath,
     leftPlace,
     rightPlace,
     identifiers,
@@ -936,7 +917,6 @@ function buildRestElementAssignmentLeft(
   const instruction = environment.createInstruction(
     RestElementInstruction,
     place,
-    leftPath,
     argumentPlace,
     identifiers,
   );
@@ -976,7 +956,6 @@ function buildAssignmentRight(
     environment.createInstruction(
       BinaryExpressionInstruction,
       place,
-      nodePath,
       binaryOperator as t.BinaryExpression["operator"],
       leftPlace,
       rightPlace,

@@ -171,7 +171,6 @@ function buildExpressionAsStatement(
   const instruction = environment.createInstruction(
     ExpressionStatementInstruction,
     place,
-    expressionPath,
     expressionPlace,
   );
   functionBuilder.addInstruction(instruction);

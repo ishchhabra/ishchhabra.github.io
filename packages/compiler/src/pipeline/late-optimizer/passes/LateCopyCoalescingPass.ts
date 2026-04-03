@@ -105,7 +105,7 @@ export class LateCopyCoalescingPass extends BaseOptimizationPass {
         if (instr instanceof LoadLocalInstruction && instr.value.identifier.declarationId === dst) {
           block.replaceInstruction(
             i,
-            new LoadLocalInstruction(instr.id, instr.place, instr.nodePath, srcPlace),
+            new LoadLocalInstruction(instr.id, instr.place, srcPlace),
           );
         } else if (
           instr instanceof LoadPhiInstruction &&
@@ -113,7 +113,7 @@ export class LateCopyCoalescingPass extends BaseOptimizationPass {
         ) {
           block.replaceInstruction(
             i,
-            new LoadPhiInstruction(instr.id, instr.place, instr.nodePath, srcPlace),
+            new LoadPhiInstruction(instr.id, instr.place, srcPlace),
           );
         } else if (
           instr instanceof CopyInstruction &&
@@ -121,7 +121,7 @@ export class LateCopyCoalescingPass extends BaseOptimizationPass {
         ) {
           block.replaceInstruction(
             i,
-            new CopyInstruction(instr.id, instr.place, instr.nodePath, instr.lval, srcPlace),
+            new CopyInstruction(instr.id, instr.place, instr.lval, srcPlace),
           );
         }
       }

@@ -1,4 +1,3 @@
-import { NodePath } from "@babel/core";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
@@ -15,12 +14,11 @@ export class LogicalExpressionInstruction extends ValueInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.Node> | undefined,
     public readonly operator: t.LogicalExpression["operator"],
     public readonly left: Place,
     public readonly right: Place,
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): LogicalExpressionInstruction {
@@ -29,7 +27,6 @@ export class LogicalExpressionInstruction extends ValueInstruction {
     return environment.createInstruction(
       LogicalExpressionInstruction,
       place,
-      this.nodePath,
       this.operator,
       this.left,
       this.right,
@@ -40,7 +37,6 @@ export class LogicalExpressionInstruction extends ValueInstruction {
     return new LogicalExpressionInstruction(
       this.id,
       this.place,
-      this.nodePath,
       this.operator,
       values.get(this.left.identifier) ?? this.left,
       values.get(this.right.identifier) ?? this.right,

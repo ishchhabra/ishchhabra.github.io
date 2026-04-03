@@ -23,7 +23,6 @@ export function buildObjectProperty(
     const keyInstruction = environment.createInstruction(
       LiteralInstruction,
       keyPlace,
-      keyPath,
       keyPath.node.name,
     );
     functionBuilder.addInstruction(keyInstruction);
@@ -45,7 +44,6 @@ export function buildObjectProperty(
   const instruction = environment.createInstruction(
     ObjectPropertyInstruction,
     place,
-    nodePath,
     keyPlace,
     valuePlace,
     nodePath.node.computed,

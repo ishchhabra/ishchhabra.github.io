@@ -29,7 +29,6 @@ export function buildTaggedTemplateExpression(
   const instruction = environment.createInstruction(
     TaggedTemplateExpressionInstruction,
     place,
-    nodePath,
     tagPlace,
     quasiPlace,
   );

@@ -24,7 +24,6 @@ export function buildJSXSpreadAttribute(
   const instruction = environment.createInstruction(
     JSXSpreadAttributeInstruction,
     place,
-    nodePath,
     argumentPlace,
   );
   functionBuilder.addInstruction(instruction);

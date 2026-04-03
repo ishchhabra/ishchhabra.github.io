@@ -1,5 +1,3 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
@@ -8,11 +6,10 @@ export class TaggedTemplateExpressionInstruction extends ValueInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.TaggedTemplateExpression> | undefined,
     public readonly tag: Place,
     public readonly quasi: Place,
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): TaggedTemplateExpressionInstruction {
@@ -21,7 +18,6 @@ export class TaggedTemplateExpressionInstruction extends ValueInstruction {
     return environment.createInstruction(
       TaggedTemplateExpressionInstruction,
       place,
-      this.nodePath,
       this.tag,
       this.quasi,
     );
@@ -31,7 +27,6 @@ export class TaggedTemplateExpressionInstruction extends ValueInstruction {
     return new TaggedTemplateExpressionInstruction(
       this.id,
       this.place,
-      this.nodePath,
       values.get(this.tag.identifier) ?? this.tag,
       values.get(this.quasi.identifier) ?? this.quasi,
     );

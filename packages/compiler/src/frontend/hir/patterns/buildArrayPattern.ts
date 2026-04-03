@@ -27,7 +27,6 @@ export function buildArrayPattern(
   const instruction = environment.createInstruction(
     ArrayPatternInstruction,
     place,
-    nodePath,
     elementPlaces,
   );
   functionBuilder.addInstruction(instruction);

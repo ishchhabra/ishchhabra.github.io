@@ -1,5 +1,3 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, PatternInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
@@ -14,11 +12,10 @@ export class ArrayPatternInstruction extends PatternInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.ArrayPattern> | undefined,
     public readonly elements: (Place | null)[],
     public readonly bindings: Place[] = [],
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): ArrayPatternInstruction {
@@ -27,7 +24,6 @@ export class ArrayPatternInstruction extends PatternInstruction {
     return environment.createInstruction(
       ArrayPatternInstruction,
       place,
-      this.nodePath,
       this.elements,
       this.bindings,
     );
@@ -37,7 +33,6 @@ export class ArrayPatternInstruction extends PatternInstruction {
     return new ArrayPatternInstruction(
       this.id,
       this.place,
-      this.nodePath,
       this.elements.map((element) =>
         element === null ? null : (values.get(element.identifier) ?? element),
       ),

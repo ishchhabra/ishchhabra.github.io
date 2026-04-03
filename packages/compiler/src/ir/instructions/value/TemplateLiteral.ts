@@ -1,4 +1,3 @@
-import { NodePath } from "@babel/core";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
@@ -8,11 +7,10 @@ export class TemplateLiteralInstruction extends ValueInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.TemplateLiteral> | undefined,
     public readonly quasis: t.TemplateElement[],
     public readonly expressions: Place[],
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): TemplateLiteralInstruction {
@@ -21,7 +19,6 @@ export class TemplateLiteralInstruction extends ValueInstruction {
     return environment.createInstruction(
       TemplateLiteralInstruction,
       place,
-      this.nodePath,
       this.quasis,
       this.expressions,
     );
@@ -31,7 +28,6 @@ export class TemplateLiteralInstruction extends ValueInstruction {
     return new TemplateLiteralInstruction(
       this.id,
       this.place,
-      this.nodePath,
       this.quasis,
       this.expressions.map((expr) => values.get(expr.identifier) ?? expr),
     );

@@ -33,7 +33,7 @@ export function buildJSXIdentifier(
 
   if (/^[a-z]/.test(name)) {
     functionBuilder.addInstruction(
-      environment.createInstruction(LiteralInstruction, valuePlace, nodePath, name),
+      environment.createInstruction(LiteralInstruction, valuePlace, name),
     );
   } else {
     const declarationId = functionBuilder.getDeclarationId(name, nodePath);
@@ -64,25 +64,25 @@ export function buildJSXIdentifier(
           ? LoadContextInstruction
           : LoadLocalInstruction;
         functionBuilder.addInstruction(
-          environment.createInstruction(LoadClass, valuePlace, nodePath, captureParam),
+          environment.createInstruction(LoadClass, valuePlace, captureParam),
         );
       } else {
         const LoadClass = environment.contextDeclarationIds.has(declarationId)
           ? LoadContextInstruction
           : LoadLocalInstruction;
         functionBuilder.addInstruction(
-          environment.createInstruction(LoadClass, valuePlace, nodePath, declarationPlace),
+          environment.createInstruction(LoadClass, valuePlace, declarationPlace),
         );
       }
     } else {
       functionBuilder.addInstruction(
-        environment.createInstruction(LoadGlobalInstruction, valuePlace, nodePath, name),
+        environment.createInstruction(LoadGlobalInstruction, valuePlace, name),
       );
     }
   }
 
   functionBuilder.addInstruction(
-    environment.createInstruction(JSXIdentifierInstruction, outPlace, nodePath, valuePlace),
+    environment.createInstruction(JSXIdentifierInstruction, outPlace, valuePlace),
   );
   return outPlace;
 }

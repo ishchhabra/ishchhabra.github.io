@@ -1,5 +1,3 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, JSXInstruction } from "../../base";
 import { Place } from "../../core";
@@ -14,15 +12,14 @@ export class JSXOpeningFragmentInstruction extends JSXInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.JSXOpeningFragment> | undefined,
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): JSXOpeningFragmentInstruction {
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    return environment.createInstruction(JSXOpeningFragmentInstruction, place, this.nodePath);
+    return environment.createInstruction(JSXOpeningFragmentInstruction, place);
   }
 
   rewrite(): BaseInstruction {

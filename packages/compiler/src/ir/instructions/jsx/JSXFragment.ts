@@ -1,5 +1,3 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { InstructionId, JSXInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
@@ -15,12 +13,11 @@ export class JSXFragmentInstruction extends JSXInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.JSXFragment> | undefined,
     public readonly openingFragment: Place,
     public readonly closingFragment: Place,
     public readonly children: Place[],
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): JSXFragmentInstruction {
@@ -29,7 +26,6 @@ export class JSXFragmentInstruction extends JSXInstruction {
     return environment.createInstruction(
       JSXFragmentInstruction,
       place,
-      this.nodePath,
       this.openingFragment,
       this.closingFragment,
       this.children,
@@ -40,7 +36,6 @@ export class JSXFragmentInstruction extends JSXInstruction {
     return new JSXFragmentInstruction(
       this.id,
       this.place,
-      this.nodePath,
       this.openingFragment,
       this.closingFragment,
       this.children.map((child) => values.get(child.identifier) ?? child),

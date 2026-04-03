@@ -27,7 +27,6 @@ export function buildObjectExpression(
   const instruction = environment.createInstruction(
     ObjectExpressionInstruction,
     place,
-    nodePath,
     propertyPlaces,
   );
   functionBuilder.addInstruction(instruction);

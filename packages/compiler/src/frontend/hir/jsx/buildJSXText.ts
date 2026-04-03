@@ -14,7 +14,6 @@ export function buildJSXText(
   const instruction = environment.createInstruction(
     JSXTextInstruction,
     place,
-    nodePath,
     nodePath.node.value,
   );
   functionBuilder.addInstruction(instruction);

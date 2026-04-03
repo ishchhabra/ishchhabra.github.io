@@ -69,7 +69,7 @@ export class LateCopyFoldingPass extends BaseOptimizationPass {
 
       block.replaceInstruction(
         copyIdx,
-        new CopyInstruction(copy.id, copy.place, copy.nodePath, copy.lval, store.value),
+        new CopyInstruction(copy.id, copy.place, copy.lval, store.value),
       );
 
       const indicesToRemove = [loadIdx, storeIdx];
@@ -109,7 +109,6 @@ export class LateCopyFoldingPass extends BaseOptimizationPass {
         new StoreLocalInstruction(
           store.id,
           store.place,
-          store.nodePath,
           store.lval,
           copy.value,
           store.type,

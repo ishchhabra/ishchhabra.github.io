@@ -91,7 +91,6 @@ export function buildForInStatement(
       environment.createInstruction(
         StoreLocalInstruction,
         storePlace,
-        leftPath,
         outerPlace,
         iterationValuePlace,
         "const",

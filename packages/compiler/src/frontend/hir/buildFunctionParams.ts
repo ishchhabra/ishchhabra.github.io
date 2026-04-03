@@ -156,7 +156,6 @@ function buildFunctionArrayPatternParam(
   const instruction = environment.createInstruction(
     ArrayPatternInstruction,
     place,
-    paramPath,
     places,
     identifiers,
   );
@@ -207,7 +206,6 @@ function buildFunctionObjectPatternParam(
       const instruction = environment.createInstruction(
         ObjectPropertyInstruction,
         place,
-        paramPath,
         keyPlace,
         valueResult.place,
         propertyPath.node.computed,
@@ -234,7 +232,6 @@ function buildFunctionObjectPatternParam(
       const instruction = environment.createInstruction(
         RestElementInstruction,
         place,
-        propertyPath,
         argumentResult.place,
         argumentResult.identifiers,
       );
@@ -250,7 +247,6 @@ function buildFunctionObjectPatternParam(
   const instruction = environment.createInstruction(
     ObjectPatternInstruction,
     place,
-    paramPath,
     propertyPlaces,
     identifiers,
   );
@@ -274,7 +270,6 @@ function buildFunctionObjectPropertyKey(
   const keyInstruction = environment.createInstruction(
     LiteralInstruction,
     keyPlace,
-    keyPath,
     value,
   );
   functionBuilder.header.push(keyInstruction);
@@ -313,7 +308,6 @@ function buildFunctionAssignmentPatternParam(
   const instruction = environment.createInstruction(
     AssignmentPatternInstruction,
     place,
-    paramPath,
     leftResult.place,
     rightPlace,
     leftResult.identifiers,
@@ -347,7 +341,6 @@ function buildFunctionRestElementParam(
   const instruction = environment.createInstruction(
     RestElementInstruction,
     place,
-    paramPath,
     argumentResult.place,
     argumentResult.identifiers,
   );

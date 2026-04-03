@@ -463,7 +463,6 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
           new LiteralInstruction(
             instr.id,
             instr.place,
-            instr.nodePath as LiteralInstruction["nodePath"],
             val,
           ),
         );
@@ -510,7 +509,6 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
           new TemplateLiteralInstruction(
             instr.id,
             instr.place,
-            instr.nodePath,
             newQuasis,
             newExpressions,
           ),
@@ -568,7 +566,7 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
       if (instr instanceof LoadPhiInstruction && phi.place.id === instr.value.id) {
         phiBlock.replaceInstruction(
           i,
-          new LoadLocalInstruction(instr.id, instr.place, instr.nodePath, singleOperandPlace),
+          new LoadLocalInstruction(instr.id, instr.place, singleOperandPlace),
         );
       } else {
         const rewritten = instr.rewrite(rewriteMap);

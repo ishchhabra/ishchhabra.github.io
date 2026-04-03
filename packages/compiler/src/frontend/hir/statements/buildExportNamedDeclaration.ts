@@ -40,7 +40,6 @@ export function buildExportNamedDeclaration(
     const instruction = environment.createInstruction(
       ExportNamedDeclarationInstruction,
       place,
-      nodePath,
       [],
       declarationPlace,
     );
@@ -72,7 +71,6 @@ export function buildExportNamedDeclaration(
     const instruction = environment.createInstruction(
       ExportNamedDeclarationInstruction,
       place,
-      nodePath,
       exportSpecifierPlaces,
       undefined,
     );
@@ -118,7 +116,6 @@ function buildExportFrom(
   const instruction = environment.createInstruction(
     ExportFromInstruction,
     place,
-    nodePath,
     source,
     specifiers,
   );

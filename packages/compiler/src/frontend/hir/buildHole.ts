@@ -10,7 +10,7 @@ export function buildHole(
 ): Place {
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(HoleInstruction, place, expressionPath);
+  const instruction = environment.createInstruction(HoleInstruction, place);
   builder.addInstruction(instruction);
   return place;
 }

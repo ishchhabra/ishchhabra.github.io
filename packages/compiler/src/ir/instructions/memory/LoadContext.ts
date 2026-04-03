@@ -1,5 +1,3 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, MemoryInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
@@ -15,16 +13,15 @@ export class LoadContextInstruction extends MemoryInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.Node> | undefined,
     public readonly value: Place,
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): LoadContextInstruction {
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    return environment.createInstruction(LoadContextInstruction, place, this.nodePath, this.value);
+    return environment.createInstruction(LoadContextInstruction, place, this.value);
   }
 
   rewrite(values: Map<Identifier, Place>): BaseInstruction {
@@ -34,7 +31,7 @@ export class LoadContextInstruction extends MemoryInstruction {
       return this;
     }
 
-    return new LoadContextInstruction(this.id, this.place, this.nodePath, rewrittenTarget);
+    return new LoadContextInstruction(this.id, this.place, rewrittenTarget);
   }
 
   getReadPlaces(): Place[] {

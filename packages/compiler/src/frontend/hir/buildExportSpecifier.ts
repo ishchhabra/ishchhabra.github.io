@@ -40,7 +40,6 @@ export function buildExportSpecifier(
   const instruction = environment.createInstruction(
     ExportSpecifierInstruction,
     place,
-    nodePath,
     localPlace,
     exportedName,
   );

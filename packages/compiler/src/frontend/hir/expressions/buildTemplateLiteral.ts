@@ -31,7 +31,6 @@ export function buildTemplateLiteral(
   const instruction = environment.createInstruction(
     TemplateLiteralInstruction,
     place,
-    nodePath,
     quasis,
     expressionPlaces,
   );

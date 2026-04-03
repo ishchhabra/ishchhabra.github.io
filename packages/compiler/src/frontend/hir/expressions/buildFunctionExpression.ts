@@ -42,7 +42,6 @@ export function buildFunctionExpression(
   const instruction = environment.createInstruction(
     FunctionExpressionInstruction,
     place,
-    nodePath,
     identifierPlace,
     functionIR,
     nodePath.node.generator,

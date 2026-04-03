@@ -1,5 +1,3 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, JSXInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
@@ -15,10 +13,9 @@ export class JSXSpreadAttributeInstruction extends JSXInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.Node> | undefined,
     public readonly argument: Place,
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): JSXSpreadAttributeInstruction {
@@ -27,7 +24,6 @@ export class JSXSpreadAttributeInstruction extends JSXInstruction {
     return environment.createInstruction(
       JSXSpreadAttributeInstruction,
       place,
-      this.nodePath,
       this.argument,
     );
   }
@@ -36,7 +32,6 @@ export class JSXSpreadAttributeInstruction extends JSXInstruction {
     return new JSXSpreadAttributeInstruction(
       this.id,
       this.place,
-      this.nodePath,
       values.get(this.argument.identifier) ?? this.argument,
     );
   }

@@ -1,5 +1,3 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
@@ -8,11 +6,10 @@ export class NewExpressionInstruction extends ValueInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.NewExpression> | undefined,
     public readonly callee: Place,
     public readonly args: Place[],
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): NewExpressionInstruction {
@@ -21,7 +18,6 @@ export class NewExpressionInstruction extends ValueInstruction {
     return environment.createInstruction(
       NewExpressionInstruction,
       place,
-      this.nodePath,
       this.callee,
       this.args,
     );
@@ -31,7 +27,6 @@ export class NewExpressionInstruction extends ValueInstruction {
     return new NewExpressionInstruction(
       this.id,
       this.place,
-      this.nodePath,
       values.get(this.callee.identifier) ?? this.callee,
       this.args.map((arg) => values.get(arg.identifier) ?? arg),
     );

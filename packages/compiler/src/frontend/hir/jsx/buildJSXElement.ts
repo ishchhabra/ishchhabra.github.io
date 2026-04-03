@@ -49,7 +49,6 @@ export function buildJSXElement(
   const instruction = environment.createInstruction(
     JSXElementInstruction,
     place,
-    nodePath,
     openingElement,
     closingElement,
     childrenPlaces,

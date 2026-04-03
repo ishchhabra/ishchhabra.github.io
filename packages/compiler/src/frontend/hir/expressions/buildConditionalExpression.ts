@@ -104,7 +104,7 @@ function buildTemporaryIdentifier(
   const bindingIdentifier = environment.createIdentifier();
   const bindingPlace = environment.createPlace(bindingIdentifier);
   functionBuilder.addInstruction(
-    environment.createInstruction(DeclareLocalInstruction, bindingPlace, nodePath, "let"),
+    environment.createInstruction(DeclareLocalInstruction, bindingPlace, "let"),
   );
   functionBuilder.registerDeclarationName(
     bindingIdentifier.name,
@@ -120,7 +120,7 @@ function buildTemporaryIdentifier(
   const resultValueIdentifier = environment.createIdentifier(bindingIdentifier.declarationId);
   const resultValuePlace = environment.createPlace(resultValueIdentifier);
   functionBuilder.addInstruction(
-    environment.createInstruction(LiteralInstruction, resultValuePlace, nodePath, undefined),
+    environment.createInstruction(LiteralInstruction, resultValuePlace, undefined),
   );
 
   const resultIdentifier = environment.createIdentifier(bindingIdentifier.declarationId);
@@ -129,7 +129,6 @@ function buildTemporaryIdentifier(
     environment.createInstruction(
       StoreLocalInstruction,
       resultPlace,
-      nodePath,
       bindingPlace,
       resultValuePlace,
       "const",
@@ -162,7 +161,6 @@ function buildBranchExpression(
   const storeInstruction = environment.createInstruction(
     StoreLocalInstruction,
     storePlace,
-    nodePath,
     lvalPlace,
     place,
     "const",

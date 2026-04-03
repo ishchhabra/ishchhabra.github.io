@@ -39,7 +39,6 @@ export function buildImportDeclaration(
   const instruction = environment.createInstruction(
     ImportDeclarationInstruction,
     place,
-    nodePath,
     sourceValue,
     resolvedSourceValue,
     specifierPlaces,

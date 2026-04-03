@@ -29,7 +29,6 @@ export function buildJSXAttribute(
   const instruction = environment.createInstruction(
     JSXAttributeInstruction,
     place,
-    nodePath,
     name,
     value,
   );

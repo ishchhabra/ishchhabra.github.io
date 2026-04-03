@@ -11,7 +11,7 @@ export function buildJSXClosingFragment(
 ): Place {
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(JSXClosingFragmentInstruction, place, nodePath);
+  const instruction = environment.createInstruction(JSXClosingFragmentInstruction, place);
   functionBuilder.addInstruction(instruction);
   return place;
 }

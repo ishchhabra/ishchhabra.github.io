@@ -27,7 +27,6 @@ export function buildJSXMemberExpression(
   const instruction = environment.createInstruction(
     JSXMemberExpressionInstruction,
     place,
-    nodePath,
     objectPlace,
     nodePath.node.property.name,
   );

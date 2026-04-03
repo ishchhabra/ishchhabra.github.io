@@ -53,7 +53,6 @@ export class LateConstantPropagationPass extends BaseOptimizationPass {
             const litInstr = new LiteralInstruction(
               instr.id,
               instr.place,
-              instr.nodePath,
               value.value,
             );
 

@@ -29,7 +29,6 @@ function rebuildWithCaptures(
     return new ArrowFunctionExpressionInstruction(
       instr.id,
       instr.place,
-      instr.nodePath,
       instr.functionIR,
       instr.async,
       instr.expression,
@@ -40,7 +39,6 @@ function rebuildWithCaptures(
     return new FunctionExpressionInstruction(
       instr.id,
       instr.place,
-      instr.nodePath,
       instr.identifier,
       instr.functionIR,
       instr.generator,

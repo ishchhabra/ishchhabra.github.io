@@ -1,5 +1,3 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, JSXInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
@@ -15,10 +13,9 @@ export class JSXClosingElementInstruction extends JSXInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.Node> | undefined,
     public readonly tagPlace: Place,
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): JSXClosingElementInstruction {
@@ -27,7 +24,6 @@ export class JSXClosingElementInstruction extends JSXInstruction {
     return environment.createInstruction(
       JSXClosingElementInstruction,
       place,
-      this.nodePath,
       this.tagPlace,
     );
   }
@@ -36,7 +32,6 @@ export class JSXClosingElementInstruction extends JSXInstruction {
     return new JSXClosingElementInstruction(
       this.id,
       this.place,
-      this.nodePath,
       values.get(this.tagPlace.identifier) ?? this.tagPlace,
     );
   }

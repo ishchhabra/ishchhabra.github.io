@@ -14,12 +14,10 @@ import {
   DeclareLocalInstruction,
   StoreContextInstruction,
   StoreLocalInstruction,
-  UnsupportedNodeInstruction,
   ValueInstruction,
 } from "../../../ir";
 import { FunctionIR } from "../../../ir/core/FunctionIR";
 import { CodeGenerator } from "../../CodeGenerator";
-import { generateUnsupportedNode } from "../generateUnsupportedNode";
 import { generateDebuggerStatementInstruction } from "./generateDebuggerStatement";
 import { generateExpressionStatementInstruction } from "./generateExpressionStatement";
 import { generateRestElementInstruction } from "./generateRestElement";
@@ -84,9 +82,6 @@ export function generateInstruction(
     return [];
   } else if (instruction instanceof ValueInstruction) {
     generateValueInstruction(instruction, functionIR, generator);
-    return [];
-  } else if (instruction instanceof UnsupportedNodeInstruction) {
-    generateUnsupportedNode(instruction, generator);
     return [];
   }
 

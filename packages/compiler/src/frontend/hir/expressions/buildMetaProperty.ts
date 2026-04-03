@@ -14,7 +14,6 @@ export function buildMetaProperty(
   const instruction = environment.createInstruction(
     MetaPropertyInstruction,
     place,
-    nodePath,
     nodePath.node.meta.name,
     nodePath.node.property.name,
   );

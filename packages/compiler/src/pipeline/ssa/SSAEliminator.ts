@@ -55,7 +55,6 @@ export class SSAEliminator {
     const bindingInstr = this.moduleIR.environment.createInstruction(
       DeclareLocalInstruction,
       phi.place,
-      undefined,
       "let",
     );
     declarationBlock.appendInstruction(bindingInstr);
@@ -68,7 +67,6 @@ export class SSAEliminator {
     const undefinedInstr = new LiteralInstruction(
       undefinedId,
       undefinedPlace,
-      undefined,
       undefined,
     );
     declarationBlock.appendInstruction(undefinedInstr);
@@ -83,7 +81,6 @@ export class SSAEliminator {
     const instruction = new StoreLocalInstruction(
       instructionId,
       place,
-      undefined,
       phi.place,
       undefinedPlace,
       "let",
@@ -102,7 +99,7 @@ export class SSAEliminator {
       const loadPlace = this.moduleIR.environment.createPlace(
         this.moduleIR.environment.createIdentifier(),
       );
-      const loadInstr = new LoadLocalInstruction(loadId, loadPlace, undefined, place);
+      const loadInstr = new LoadLocalInstruction(loadId, loadPlace, place);
       block.appendInstruction(loadInstr);
       this.moduleIR.environment.placeToInstruction.set(loadPlace.id, loadInstr);
 
@@ -111,7 +108,7 @@ export class SSAEliminator {
       const copyPlace = this.moduleIR.environment.createPlace(
         this.moduleIR.environment.createIdentifier(phi.place.identifier.declarationId),
       );
-      const copyInstr = new CopyInstruction(copyId, copyPlace, undefined, phi.place, loadPlace);
+      const copyInstr = new CopyInstruction(copyId, copyPlace, phi.place, loadPlace);
       block.appendInstruction(copyInstr);
       this.moduleIR.environment.placeToInstruction.set(copyPlace.id, copyInstr);
 
@@ -120,7 +117,7 @@ export class SSAEliminator {
       const exprPlace = this.moduleIR.environment.createPlace(
         this.moduleIR.environment.createIdentifier(),
       );
-      const exprInstr = new ExpressionStatementInstruction(exprId, exprPlace, undefined, copyPlace);
+      const exprInstr = new ExpressionStatementInstruction(exprId, exprPlace, copyPlace);
       block.appendInstruction(exprInstr);
       this.moduleIR.environment.placeToInstruction.set(exprPlace.id, exprInstr);
     }

@@ -16,7 +16,6 @@ export function buildLiteral(
   const instruction = environment.createInstruction(
     LiteralInstruction,
     place,
-    expressionPath,
     value,
   );
   functionBuilder.addInstruction(instruction);

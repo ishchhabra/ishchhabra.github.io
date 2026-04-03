@@ -1,5 +1,3 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
@@ -14,10 +12,9 @@ export class ArrayExpressionInstruction extends ValueInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.ArrayExpression> | undefined,
     public readonly elements: Place[],
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): ArrayExpressionInstruction {
@@ -26,7 +23,6 @@ export class ArrayExpressionInstruction extends ValueInstruction {
     return environment.createInstruction(
       ArrayExpressionInstruction,
       place,
-      this.nodePath,
       this.elements,
     );
   }
@@ -35,7 +31,6 @@ export class ArrayExpressionInstruction extends ValueInstruction {
     return new ArrayExpressionInstruction(
       this.id,
       this.place,
-      this.nodePath,
       this.elements.map((element) => values.get(element.identifier) ?? element),
     );
   }

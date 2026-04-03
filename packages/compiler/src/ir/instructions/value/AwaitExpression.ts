@@ -1,5 +1,3 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
@@ -8,10 +6,9 @@ export class AwaitExpressionInstruction extends ValueInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.AwaitExpression> | undefined,
     public readonly argument: Place,
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): AwaitExpressionInstruction {
@@ -20,7 +17,6 @@ export class AwaitExpressionInstruction extends ValueInstruction {
     return environment.createInstruction(
       AwaitExpressionInstruction,
       place,
-      this.nodePath,
       this.argument,
     );
   }
@@ -29,7 +25,6 @@ export class AwaitExpressionInstruction extends ValueInstruction {
     return new AwaitExpressionInstruction(
       this.id,
       this.place,
-      this.nodePath,
       values.get(this.argument.identifier) ?? this.argument,
     );
   }

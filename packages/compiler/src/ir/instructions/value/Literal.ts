@@ -1,5 +1,3 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
 import { Place } from "../../core";
@@ -18,16 +16,15 @@ export class LiteralInstruction extends ValueInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.Node> | undefined,
     public readonly value: TPrimitiveValue,
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): LiteralInstruction {
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    return environment.createInstruction(LiteralInstruction, place, this.nodePath, this.value);
+    return environment.createInstruction(LiteralInstruction, place, this.value);
   }
 
   rewrite(): BaseInstruction {

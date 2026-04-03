@@ -27,7 +27,6 @@ export function buildArrayExpression(
   const instruction = environment.createInstruction(
     ArrayExpressionInstruction,
     place,
-    nodePath,
     elementPlaces,
   );
   functionBuilder.addInstruction(instruction);

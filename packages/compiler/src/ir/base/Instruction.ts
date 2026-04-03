@@ -1,5 +1,3 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
 import { Environment } from "../../environment";
 import { type Place } from "../core";
 import { type Identifier } from "../core/Identifier";
@@ -25,7 +23,6 @@ export abstract class BaseInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.Node | null> | undefined,
   ) {}
 
   /**
@@ -116,7 +113,6 @@ export abstract class BaseInstruction {
     return JSON.stringify({
       ...this, // oxlint-disable-line typescript/no-misused-spread
       kind: this.constructor.name,
-      nodePath: undefined,
     });
   }
 }

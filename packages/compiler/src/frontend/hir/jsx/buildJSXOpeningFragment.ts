@@ -11,7 +11,7 @@ export function buildJSXOpeningFragment(
 ): Place {
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(JSXOpeningFragmentInstruction, place, nodePath);
+  const instruction = environment.createInstruction(JSXOpeningFragmentInstruction, place);
   functionBuilder.addInstruction(instruction);
   return place;
 }

@@ -50,7 +50,7 @@ export function buildMemberExpressionUpdate(
   // 4. Create literal 1
   const oneIdentifier = environment.createIdentifier();
   const onePlace = environment.createPlace(oneIdentifier);
-  const oneInstruction = environment.createInstruction(LiteralInstruction, onePlace, updatePath, 1);
+  const oneInstruction = environment.createInstruction(LiteralInstruction, onePlace, 1);
   functionBuilder.addInstruction(oneInstruction);
 
   // 5. Compute value +/- 1
@@ -60,7 +60,6 @@ export function buildMemberExpressionUpdate(
   const binaryInstruction = environment.createInstruction(
     BinaryExpressionInstruction,
     resultPlace,
-    updatePath,
     isIncrement ? "+" : "-",
     oldValLoadPlace,
     onePlace,

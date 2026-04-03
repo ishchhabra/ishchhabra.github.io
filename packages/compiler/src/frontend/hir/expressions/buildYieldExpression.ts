@@ -26,7 +26,6 @@ export function buildYieldExpression(
   const instruction = environment.createInstruction(
     YieldExpressionInstruction,
     place,
-    nodePath,
     argumentPlace,
     nodePath.node.delegate,
   );

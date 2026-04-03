@@ -30,7 +30,6 @@ export function buildBinaryExpression(
   const instruction = environment.createInstruction(
     BinaryExpressionInstruction,
     place,
-    nodePath,
     nodePath.node.operator,
     leftPlace,
     rightPlace,

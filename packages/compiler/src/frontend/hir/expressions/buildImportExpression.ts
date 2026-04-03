@@ -28,7 +28,6 @@ export function buildImportExpression(
   const instruction = environment.createInstruction(
     ImportExpressionInstruction,
     place,
-    expressionPath,
     sourcePlace,
   );
   functionBuilder.addInstruction(instruction);

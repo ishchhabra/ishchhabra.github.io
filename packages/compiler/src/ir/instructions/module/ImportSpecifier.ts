@@ -1,5 +1,3 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, ModuleInstruction } from "../../base";
 import { Place } from "../../core";
@@ -14,11 +12,10 @@ export class ImportSpecifierInstruction extends ModuleInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.Node> | undefined,
     public readonly local: string,
     public readonly imported: string,
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): ImportSpecifierInstruction {
@@ -27,7 +24,6 @@ export class ImportSpecifierInstruction extends ModuleInstruction {
     return environment.createInstruction(
       ImportSpecifierInstruction,
       place,
-      this.nodePath,
       this.local,
       this.imported,
     );

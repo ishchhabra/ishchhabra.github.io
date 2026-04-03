@@ -1,5 +1,3 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { InstructionId, MemoryInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
@@ -19,14 +17,13 @@ export class StoreContextInstruction extends MemoryInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.Node> | undefined,
     public readonly lval: Place,
     public readonly value: Place,
     public readonly type: "let" | "var",
     public readonly kind: StoreContextKind,
     public readonly bindings: Place[] = [],
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): StoreContextInstruction {
@@ -35,7 +32,6 @@ export class StoreContextInstruction extends MemoryInstruction {
     return environment.createInstruction(
       StoreContextInstruction,
       place,
-      this.nodePath,
       this.lval,
       this.value,
       this.type,
@@ -64,7 +60,6 @@ export class StoreContextInstruction extends MemoryInstruction {
     return new StoreContextInstruction(
       this.id,
       this.place,
-      this.nodePath,
       lval,
       value,
       this.type,

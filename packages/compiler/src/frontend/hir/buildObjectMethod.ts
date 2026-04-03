@@ -40,7 +40,6 @@ export function buildObjectMethod(
   const instruction = environment.createInstruction(
     ObjectMethodInstruction,
     methodPlace,
-    nodePath,
     keyPlace,
     bodyIR,
     nodePath.node.computed,

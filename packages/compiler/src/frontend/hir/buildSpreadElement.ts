@@ -23,7 +23,6 @@ export function buildSpreadElement(
   const instruction = environment.createInstruction(
     SpreadElementInstruction,
     place,
-    nodePath,
     argumentPlace,
   );
   functionBuilder.addInstruction(instruction);

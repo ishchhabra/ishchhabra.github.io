@@ -1,5 +1,3 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
@@ -19,14 +17,13 @@ export class ObjectPropertyInstruction extends ValueInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.Node> | undefined,
     public readonly key: Place,
     public readonly value: Place,
     public readonly computed: boolean,
     public readonly shorthand: boolean,
     public readonly bindings: Place[] = [],
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): ObjectPropertyInstruction {
@@ -35,7 +32,6 @@ export class ObjectPropertyInstruction extends ValueInstruction {
     return environment.createInstruction(
       ObjectPropertyInstruction,
       place,
-      this.nodePath,
       this.key,
       this.value,
       this.computed,
@@ -48,7 +44,6 @@ export class ObjectPropertyInstruction extends ValueInstruction {
     return new ObjectPropertyInstruction(
       this.id,
       this.place,
-      this.nodePath,
       values.get(this.key.identifier) ?? this.key,
       values.get(this.value.identifier) ?? this.value,
       this.computed,

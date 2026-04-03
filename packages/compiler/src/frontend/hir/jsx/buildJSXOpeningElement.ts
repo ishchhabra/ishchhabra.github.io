@@ -34,7 +34,6 @@ export function buildJSXOpeningElement(
   const instruction = environment.createInstruction(
     JSXOpeningElementInstruction,
     place,
-    nodePath,
     tagPlace,
     attributes,
     selfClosing,

@@ -1,5 +1,3 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
 import { Place } from "../../core";
@@ -15,11 +13,10 @@ export class MetaPropertyInstruction extends ValueInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.MetaProperty> | undefined,
     public readonly meta: string,
     public readonly property: string,
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): MetaPropertyInstruction {
@@ -28,7 +25,6 @@ export class MetaPropertyInstruction extends ValueInstruction {
     return environment.createInstruction(
       MetaPropertyInstruction,
       place,
-      this.nodePath,
       this.meta,
       this.property,
     );

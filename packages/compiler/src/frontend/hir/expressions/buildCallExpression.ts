@@ -51,7 +51,6 @@ export function buildCallExpression(
   const instruction = environment.createInstruction(
     CallExpressionInstruction,
     place,
-    expressionPath,
     calleePlace,
     argumentPlaces,
     optional,

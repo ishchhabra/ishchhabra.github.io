@@ -60,14 +60,13 @@ export function buildUpdateExpression(
     const oldValBinding = environment.createIdentifier();
     const oldValBindingPlace = environment.createPlace(oldValBinding);
     functionBuilder.addInstruction(
-      environment.createInstruction(DeclareLocalInstruction, oldValBindingPlace, nodePath, "const"),
+      environment.createInstruction(DeclareLocalInstruction, oldValBindingPlace, "const"),
     );
     const oldValStorePlace = environment.createPlace(environment.createIdentifier());
     functionBuilder.addInstruction(
       environment.createInstruction(
         StoreLocalInstruction,
         oldValStorePlace,
-        nodePath,
         oldValBindingPlace,
         originalPlace,
         "const",
@@ -78,7 +77,6 @@ export function buildUpdateExpression(
       environment.createInstruction(
         LoadLocalInstruction,
         oldValLoadPlace,
-        nodePath,
         oldValBindingPlace,
       ),
     );
@@ -118,7 +116,6 @@ export function buildUpdateExpression(
     ? environment.createInstruction(
         StoreContextInstruction,
         place,
-        nodePath,
         lvalPlace,
         valuePlace,
         "let",
@@ -127,7 +124,6 @@ export function buildUpdateExpression(
     : environment.createInstruction(
         StoreLocalInstruction,
         place,
-        nodePath,
         lvalPlace,
         valuePlace,
         "const",
@@ -142,7 +138,7 @@ export function buildUpdateExpression(
     const loadIdentifier = environment.createIdentifier(declarationId);
     const loadPlace = environment.createPlace(loadIdentifier);
     functionBuilder.addInstruction(
-      environment.createInstruction(LoadLocalInstruction, loadPlace, nodePath, lvalPlace),
+      environment.createInstruction(LoadLocalInstruction, loadPlace, lvalPlace),
     );
     return loadPlace;
   }

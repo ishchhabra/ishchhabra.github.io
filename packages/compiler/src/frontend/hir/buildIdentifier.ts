@@ -65,7 +65,6 @@ export function buildBindingIdentifier(
   const instruction = environment.createInstruction(
     DeclareLocalInstruction,
     place,
-    nodePath,
     "const",
   );
   builder.addInstruction(instruction);
@@ -91,7 +90,7 @@ function buildReferencedIdentifier(
     (declInstrId !== undefined &&
       environment.instructions.get(declInstrId) instanceof ImportSpecifierInstruction)
   ) {
-    const instruction = environment.createInstruction(LoadGlobalInstruction, place, nodePath, name);
+    const instruction = environment.createInstruction(LoadGlobalInstruction, place, name);
     builder.addInstruction(instruction);
   } else {
     const declarationId = builder.getDeclarationId(name, nodePath);
@@ -124,7 +123,7 @@ function buildReferencedIdentifier(
       const LoadClass = environment.contextDeclarationIds.has(declarationId)
         ? LoadContextInstruction
         : LoadLocalInstruction;
-      const instruction = environment.createInstruction(LoadClass, place, nodePath, captureParam);
+      const instruction = environment.createInstruction(LoadClass, place, captureParam);
       builder.addInstruction(instruction);
     } else {
       const LoadClass = environment.contextDeclarationIds.has(declarationId)
@@ -133,7 +132,6 @@ function buildReferencedIdentifier(
       const instruction = environment.createInstruction(
         LoadClass,
         place,
-        nodePath,
         declarationPlace,
       );
       builder.addInstruction(instruction);

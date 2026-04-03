@@ -92,7 +92,6 @@ export function buildForOfStatement(
       environment.createInstruction(
         StoreLocalInstruction,
         storePlace,
-        leftPath,
         outerPlace,
         iterationValuePlace,
         "const",

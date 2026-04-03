@@ -1,4 +1,3 @@
-import { NodePath } from "@babel/core";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
@@ -15,11 +14,10 @@ export class UnaryExpressionInstruction extends ValueInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.Node> | undefined,
     public readonly operator: t.UnaryExpression["operator"],
     public readonly argument: Place,
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): UnaryExpressionInstruction {
@@ -28,7 +26,6 @@ export class UnaryExpressionInstruction extends ValueInstruction {
     return environment.createInstruction(
       UnaryExpressionInstruction,
       place,
-      this.nodePath,
       this.operator,
       this.argument,
     );
@@ -38,7 +35,6 @@ export class UnaryExpressionInstruction extends ValueInstruction {
     return new UnaryExpressionInstruction(
       this.id,
       this.place,
-      this.nodePath,
       this.operator,
       values.get(this.argument.identifier) ?? this.argument,
     );

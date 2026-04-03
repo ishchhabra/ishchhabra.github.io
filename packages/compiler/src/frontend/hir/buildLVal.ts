@@ -66,7 +66,7 @@ function buildIdentifierLVal(
 
   if (kind !== null && kind !== "var") {
     functionBuilder.addInstruction(
-      environment.createInstruction(DeclareLocalInstruction, place, nodePath, kind),
+      environment.createInstruction(DeclareLocalInstruction, place, kind),
     );
     functionBuilder.markDeclarationInitialized(declarationId);
   }
@@ -102,7 +102,6 @@ function buildArrayPatternLVal(
   const instruction = environment.createInstruction(
     ArrayPatternInstruction,
     place,
-    nodePath,
     elementPlaces,
     bindings,
   );
@@ -157,7 +156,6 @@ function buildObjectPatternLVal(
       const instruction = environment.createInstruction(
         ObjectPropertyInstruction,
         place,
-        nodePath,
         keyPlace,
         result.place,
         propertyPath.node.computed,
@@ -174,7 +172,6 @@ function buildObjectPatternLVal(
   const instruction = environment.createInstruction(
     ObjectPatternInstruction,
     place,
-    nodePath,
     propertyPlaces,
     bindings,
   );
@@ -196,7 +193,6 @@ function buildObjectPropertyStaticKeyLVal(
   const keyInstruction = environment.createInstruction(
     LiteralInstruction,
     keyPlace,
-    nodePath,
     value,
   );
   functionBuilder.addInstruction(keyInstruction);
@@ -223,7 +219,6 @@ function buildAssignmentPatternLVal(
   const instruction = environment.createInstruction(
     AssignmentPatternInstruction,
     place,
-    nodePath,
     result.place,
     rightPlace,
     result.bindings,
@@ -252,7 +247,6 @@ function buildRestElementLVal(
   const instruction = environment.createInstruction(
     RestElementInstruction,
     place,
-    nodePath,
     result.place,
     result.bindings,
   );

@@ -1,5 +1,3 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, JSXInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
@@ -15,12 +13,11 @@ export class JSXOpeningElementInstruction extends JSXInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.Node> | undefined,
     public readonly tagPlace: Place,
     public readonly attributes: Place[],
     public readonly selfClosing: boolean,
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): JSXOpeningElementInstruction {
@@ -29,7 +26,6 @@ export class JSXOpeningElementInstruction extends JSXInstruction {
     return environment.createInstruction(
       JSXOpeningElementInstruction,
       place,
-      this.nodePath,
       this.tagPlace,
       this.attributes,
       this.selfClosing,
@@ -40,7 +36,6 @@ export class JSXOpeningElementInstruction extends JSXInstruction {
     return new JSXOpeningElementInstruction(
       this.id,
       this.place,
-      this.nodePath,
       values.get(this.tagPlace.identifier) ?? this.tagPlace,
       this.attributes.map((attr) => values.get(attr.identifier) ?? attr),
       this.selfClosing,

@@ -11,7 +11,7 @@ export function buildDebuggerStatement(
 ): Place {
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(DebuggerStatementInstruction, place, nodePath);
+  const instruction = environment.createInstruction(DebuggerStatementInstruction, place);
   functionBuilder.addInstruction(instruction);
   return place;
 }

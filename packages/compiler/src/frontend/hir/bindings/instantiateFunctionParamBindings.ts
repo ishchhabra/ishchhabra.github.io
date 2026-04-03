@@ -122,6 +122,6 @@ function instantiateIdentifierParamBinding(
     place.id,
   );
   functionBuilder.header.push(
-    environment.createInstruction(DeclareLocalInstruction, place, nodePath, "const"),
+    environment.createInstruction(DeclareLocalInstruction, place, "const"),
   );
 }

@@ -1,5 +1,3 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
 import { Environment } from "../../environment";
 import { BaseInstruction, InstructionId } from "../base";
 import { Identifier, Place } from "../core";
@@ -15,10 +13,9 @@ export class ExpressionStatementInstruction extends BaseInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.Node> | undefined,
     public readonly expression: Place,
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public override hasSideEffects(environment: Environment): boolean {
@@ -46,7 +43,6 @@ export class ExpressionStatementInstruction extends BaseInstruction {
     return environment.createInstruction(
       ExpressionStatementInstruction,
       place,
-      this.nodePath,
       this.expression,
     );
   }
@@ -55,7 +51,6 @@ export class ExpressionStatementInstruction extends BaseInstruction {
     return new ExpressionStatementInstruction(
       this.id,
       this.place,
-      this.nodePath,
       values.get(this.expression.identifier) ?? this.expression,
     );
   }

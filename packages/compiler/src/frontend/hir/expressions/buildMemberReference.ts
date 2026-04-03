@@ -81,7 +81,6 @@ export function createLoadMemberReferenceInstruction<T extends t.Node>(
     return environment.createInstruction(
       LoadStaticPropertyInstruction,
       place,
-      nodePath,
       reference.object,
       reference.property,
       reference.optional,
@@ -91,7 +90,6 @@ export function createLoadMemberReferenceInstruction<T extends t.Node>(
   return environment.createInstruction(
     LoadDynamicPropertyInstruction,
     place,
-    nodePath,
     reference.object,
     reference.property,
     reference.optional,
@@ -122,7 +120,6 @@ export function createStoreMemberReferenceInstruction<T extends t.Node>(
     return environment.createInstruction(
       StoreStaticPropertyInstruction,
       place,
-      nodePath,
       reference.object,
       reference.property,
       valuePlace,
@@ -132,7 +129,6 @@ export function createStoreMemberReferenceInstruction<T extends t.Node>(
   return environment.createInstruction(
     StoreDynamicPropertyInstruction,
     place,
-    nodePath,
     reference.object,
     reference.property,
     valuePlace,
@@ -171,7 +167,6 @@ export function emitMemberReferenceStore<T extends t.Node>(
     environment.createInstruction(
       ExpressionStatementInstruction,
       environment.createPlace(environment.createIdentifier()),
-      nodePath,
       storePlace,
     ),
   );

@@ -1,5 +1,3 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, JSXInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
@@ -15,10 +13,9 @@ export class JSXIdentifierInstruction extends JSXInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.Node> | undefined,
     public readonly value: Place,
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): JSXIdentifierInstruction {
@@ -27,7 +24,6 @@ export class JSXIdentifierInstruction extends JSXInstruction {
     return environment.createInstruction(
       JSXIdentifierInstruction,
       place,
-      this.nodePath,
       this.value,
     );
   }
@@ -37,7 +33,7 @@ export class JSXIdentifierInstruction extends JSXInstruction {
     if (rewrittenValue === this.value) {
       return this;
     }
-    return new JSXIdentifierInstruction(this.id, this.place, this.nodePath, rewrittenValue);
+    return new JSXIdentifierInstruction(this.id, this.place, rewrittenValue);
   }
 
   getReadPlaces(): Place[] {

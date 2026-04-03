@@ -50,6 +50,6 @@ export function buildClassDeclarationBindings(
     place.id,
   );
   functionBuilder.addInstruction(
-    environment.createInstruction(DeclareLocalInstruction, place, idPath, "const"),
+    environment.createInstruction(DeclareLocalInstruction, place, "const"),
   );
 }

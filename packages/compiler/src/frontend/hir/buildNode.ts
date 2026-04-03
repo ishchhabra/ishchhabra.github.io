@@ -7,7 +7,6 @@ import { buildIdentifier } from "./buildIdentifier";
 import { buildObjectMethod } from "./buildObjectMethod";
 import { buildObjectProperty } from "./buildObjectProperty";
 import { buildSpreadElement } from "./buildSpreadElement";
-import { buildUnsupportedNode } from "./buildUnsupportedNode";
 import { buildHole } from "./expressions";
 import { buildExpression } from "./expressions/buildExpression";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
@@ -64,7 +63,7 @@ export function buildNode(
     return buildExportSpecifier(nodePath, functionBuilder, moduleBuilder, environment);
   }
 
-  return buildUnsupportedNode(nodePath, functionBuilder, environment);
+  throw new Error(`Unsupported node type: ${nodePath.node.type}`);
 }
 
 function assertNull<T extends t.Node>(_path: NodePath<T | null>): asserts _path is NodePath<null> {}

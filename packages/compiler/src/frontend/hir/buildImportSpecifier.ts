@@ -23,7 +23,6 @@ export function buildImportSpecifier(
   const instruction = environment.createInstruction(
     ImportSpecifierInstruction,
     place,
-    specifierNodePath,
     localName,
     importedName,
   );
@@ -38,7 +37,6 @@ export function buildImportSpecifier(
   const bindingInstruction = environment.createInstruction(
     DeclareLocalInstruction,
     bindingPlace,
-    specifierNodePath,
     "const",
   );
   functionBuilder.addInstruction(bindingInstruction);

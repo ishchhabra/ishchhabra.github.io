@@ -1,5 +1,3 @@
-import { NodePath } from "@babel/traverse";
-import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
 import { FunctionIR } from "../../core/FunctionIR";
@@ -10,14 +8,13 @@ export class FunctionExpressionInstruction extends ValueInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.FunctionExpression | t.FunctionDeclaration> | undefined,
     public readonly identifier: Place | null,
     public readonly functionIR: FunctionIR,
     public readonly generator: boolean,
     public readonly async: boolean,
     public readonly captures: Place[] = [],
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): FunctionExpressionInstruction {
@@ -26,7 +23,6 @@ export class FunctionExpressionInstruction extends ValueInstruction {
     return environment.createInstruction(
       FunctionExpressionInstruction,
       place,
-      this.nodePath,
       this.identifier,
       this.functionIR,
       this.generator,
@@ -48,7 +44,6 @@ export class FunctionExpressionInstruction extends ValueInstruction {
     return new FunctionExpressionInstruction(
       this.id,
       this.place,
-      this.nodePath,
       newIdentifier,
       this.functionIR,
       this.generator,

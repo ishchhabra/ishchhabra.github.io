@@ -1,5 +1,3 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { InstructionId, MemoryInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
@@ -13,11 +11,10 @@ export class CopyInstruction extends MemoryInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.Node> | undefined,
     public readonly lval: Place,
     public readonly value: Place,
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): CopyInstruction {
@@ -26,7 +23,6 @@ export class CopyInstruction extends MemoryInstruction {
     return environment.createInstruction(
       CopyInstruction,
       place,
-      this.nodePath,
       this.lval,
       this.value,
     );
@@ -36,7 +32,6 @@ export class CopyInstruction extends MemoryInstruction {
     return new CopyInstruction(
       this.id,
       this.place,
-      this.nodePath,
       values.get(this.lval.identifier) ?? this.lval,
       values.get(this.value.identifier) ?? this.value,
     );

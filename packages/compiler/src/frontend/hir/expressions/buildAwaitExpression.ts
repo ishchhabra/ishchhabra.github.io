@@ -23,7 +23,6 @@ export function buildAwaitExpression(
   const instruction = environment.createInstruction(
     AwaitExpressionInstruction,
     place,
-    nodePath,
     argumentPlace,
   );
   functionBuilder.addInstruction(instruction);

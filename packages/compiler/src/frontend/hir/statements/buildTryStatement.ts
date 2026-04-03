@@ -91,7 +91,7 @@ export function buildTryStatement(
       // similar to how function parameters work.
       const bindingPlace = environment.createPlace(identifier);
       functionBuilder.addInstruction(
-        environment.createInstruction(DeclareLocalInstruction, bindingPlace, handlerPath, "const"),
+        environment.createInstruction(DeclareLocalInstruction, bindingPlace, "const"),
       );
 
       environment.registerDeclaration(

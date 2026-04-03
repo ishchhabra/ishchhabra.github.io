@@ -394,7 +394,6 @@ export class FunctionInliningPass extends BaseOptimizationPass {
         LiteralInstruction,
         environment.createPlace(environment.createIdentifier()),
         undefined,
-        undefined,
       );
       instrs.push(undefinedLiteral);
       returnPlace = undefinedLiteral.place;
@@ -515,7 +514,6 @@ export class FunctionInliningPass extends BaseOptimizationPass {
             LiteralInstruction,
             environment.createPlace(environment.createIdentifier()),
             undefined,
-            undefined,
           );
           instrs.push(undefinedLiteral);
           argPlace = undefinedLiteral.place;
@@ -528,7 +526,6 @@ export class FunctionInliningPass extends BaseOptimizationPass {
           environment.createInstruction(
             StoreLocalInstruction,
             storeLocalPlace,
-            undefined,
             elementPlace,
             argPlace,
             "const",
@@ -554,7 +551,6 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     const leftArrayPattern = environment.createInstruction(
       ArrayPatternInstruction,
       leftArrayPatternPlace,
-      undefined,
       leftElements,
       funcIR.params.flatMap((paramPlace, i) => {
         const leaves = funcIR.paramBindings[i];
@@ -576,7 +572,6 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     const rightArrayPattern = environment.createInstruction(
       ArrayExpressionInstruction,
       rightArrayPatternPlace,
-      undefined,
       rightElements,
     );
 
@@ -585,7 +580,6 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     const storeLocalInstr = environment.createInstruction(
       StoreLocalInstruction,
       storeLocalPlace,
-      undefined,
       leftArrayPatternPlace,
       rightArrayPatternPlace,
       "const",

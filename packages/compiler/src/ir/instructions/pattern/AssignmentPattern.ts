@@ -1,5 +1,3 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, PatternInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
@@ -15,12 +13,11 @@ export class AssignmentPatternInstruction extends PatternInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.Node> | undefined,
     public readonly left: Place,
     public readonly right: Place,
     public readonly bindings: Place[] = [],
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): AssignmentPatternInstruction {
@@ -29,7 +26,6 @@ export class AssignmentPatternInstruction extends PatternInstruction {
     return environment.createInstruction(
       AssignmentPatternInstruction,
       place,
-      this.nodePath,
       this.left,
       this.right,
       this.bindings,
@@ -40,7 +36,6 @@ export class AssignmentPatternInstruction extends PatternInstruction {
     return new AssignmentPatternInstruction(
       this.id,
       this.place,
-      this.nodePath,
       values.get(this.left.identifier) ?? this.left,
       values.get(this.right.identifier) ?? this.right,
       this.bindings.map((binding) => values.get(binding.identifier) ?? binding),

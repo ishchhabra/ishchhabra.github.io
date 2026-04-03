@@ -129,7 +129,6 @@ export class AlgebraicSimplificationPass extends BaseOptimizationPass {
     return new LoadLocalInstruction(
       instruction.id,
       instruction.place,
-      instruction.nodePath as LoadLocalInstruction["nodePath"],
       source,
     );
   }
@@ -138,7 +137,6 @@ export class AlgebraicSimplificationPass extends BaseOptimizationPass {
     return new LiteralInstruction(
       instruction.id,
       instruction.place,
-      instruction.nodePath as LiteralInstruction["nodePath"],
       value,
     );
   }

@@ -118,7 +118,6 @@ export class ExportDeclarationMergingPass extends BaseOptimizationPass {
         instrs[exportDeclIndex] = new ExportDefaultDeclarationInstruction(
           exportDecl.id,
           exportDecl.place,
-          exportDecl.nodePath,
           decl.place,
         );
       } else {
@@ -128,7 +127,6 @@ export class ExportDeclarationMergingPass extends BaseOptimizationPass {
         instrs[exportDeclIndex] = new ExportNamedDeclarationInstruction(
           exportDecl.id,
           exportDecl.place,
-          exportDecl.nodePath,
           [],
           decl.place,
         );

@@ -53,7 +53,6 @@ export function buildJSXFragment(
   const instruction = environment.createInstruction(
     JSXFragmentInstruction,
     place,
-    nodePath,
     openingFragmentPlace,
     closingFragmentPlace,
     childrenPlaces,

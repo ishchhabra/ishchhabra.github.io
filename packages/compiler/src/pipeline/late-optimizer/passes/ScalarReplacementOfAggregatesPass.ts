@@ -154,7 +154,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
           const id = makeInstructionId(this.environment.nextInstructionId++);
           const identifier = this.environment.createIdentifier();
           const place = this.environment.createPlace(identifier);
-          const scalar = new StoreLocalInstruction(id, place, undefined, lval, value, instr.type);
+          const scalar = new StoreLocalInstruction(id, place, lval, value, instr.type);
           block.insertInstructionAt(i + j, scalar);
         }
 

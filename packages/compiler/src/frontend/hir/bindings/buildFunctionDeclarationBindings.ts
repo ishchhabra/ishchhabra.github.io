@@ -65,7 +65,7 @@ export function registerFunctionDeclarationBinding(
     place.id,
   );
   functionBuilder.addInstruction(
-    environment.createInstruction(DeclareLocalInstruction, place, functionName, "const"),
+    environment.createInstruction(DeclareLocalInstruction, place, "const"),
   );
 }
 
@@ -129,7 +129,6 @@ export function initializeFunctionDeclaration(
   const instruction = environment.createInstruction(
     FunctionExpressionInstruction,
     fnPlace,
-    nodePath,
     identifierPlace,
     functionIR,
     nodePath.node.generator,
@@ -145,7 +144,6 @@ export function initializeFunctionDeclaration(
     environment.createInstruction(
       StoreLocalInstruction,
       storePlace,
-      nodePath,
       identifierPlace,
       fnPlace,
       isContext ? ("let" as const) : ("const" as const),

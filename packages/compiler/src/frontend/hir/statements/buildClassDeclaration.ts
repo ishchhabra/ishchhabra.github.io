@@ -36,7 +36,6 @@ export function buildClassDeclaration(
   const instruction = environment.createInstruction(
     ClassExpressionInstruction,
     classPlace,
-    nodePath as unknown as NodePath<t.ClassExpression>,
     identifierPlace,
   );
   functionBuilder.addInstruction(instruction);
@@ -49,7 +48,6 @@ export function buildClassDeclaration(
     environment.createInstruction(
       StoreLocalInstruction,
       storePlace,
-      nodePath,
       identifierPlace,
       classPlace,
       isContext ? ("let" as const) : ("const" as const),

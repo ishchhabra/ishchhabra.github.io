@@ -2,7 +2,6 @@ import { NodePath } from "@babel/core";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
-import { buildUnsupportedNode } from "../buildUnsupportedNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildJSXAttribute } from "./buildJSXAttribute";
@@ -62,6 +61,6 @@ export function buildJSX(
       nodePath.assertJSXExpressionContainer();
       return buildJSXExpressionContainer(nodePath, functionBuilder, moduleBuilder, environment);
     default:
-      return buildUnsupportedNode(nodePath, functionBuilder, environment);
+      throw new Error(`Unsupported node type: ${nodePath.node.type}`);
   }
 }

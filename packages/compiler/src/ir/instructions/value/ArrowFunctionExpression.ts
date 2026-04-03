@@ -1,5 +1,3 @@
-import { NodePath } from "@babel/traverse";
-import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
 import { FunctionIR } from "../../core/FunctionIR";
@@ -19,14 +17,13 @@ export class ArrowFunctionExpressionInstruction extends ValueInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.ArrowFunctionExpression> | undefined,
     public readonly functionIR: FunctionIR,
     public readonly async: boolean,
     public readonly expression: boolean,
     public readonly generator: boolean,
     public readonly captures: Place[] = [],
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): ArrowFunctionExpressionInstruction {
@@ -35,7 +32,6 @@ export class ArrowFunctionExpressionInstruction extends ValueInstruction {
     return environment.createInstruction(
       ArrowFunctionExpressionInstruction,
       place,
-      this.nodePath,
       this.functionIR,
       this.async,
       this.expression,
@@ -55,7 +51,6 @@ export class ArrowFunctionExpressionInstruction extends ValueInstruction {
     return new ArrowFunctionExpressionInstruction(
       this.id,
       this.place,
-      this.nodePath,
       this.functionIR,
       this.async,
       this.expression,

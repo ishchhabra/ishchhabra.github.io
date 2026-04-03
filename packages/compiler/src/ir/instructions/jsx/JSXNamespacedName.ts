@@ -1,5 +1,3 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, JSXInstruction } from "../../base";
 import { Place } from "../../core";
@@ -15,11 +13,10 @@ export class JSXNamespacedNameInstruction extends JSXInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.Node> | undefined,
     public readonly namespace: string,
     public readonly name: string,
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): JSXNamespacedNameInstruction {
@@ -28,7 +25,6 @@ export class JSXNamespacedNameInstruction extends JSXInstruction {
     return environment.createInstruction(
       JSXNamespacedNameInstruction,
       place,
-      this.nodePath,
       this.namespace,
       this.name,
     );

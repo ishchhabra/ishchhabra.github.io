@@ -39,7 +39,7 @@ export function buildDoWhileStatement(
   functionBuilder.currentBlock = testBlock;
   const truePlace = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
-    environment.createInstruction(LiteralInstruction, truePlace, undefined, true),
+    environment.createInstruction(LiteralInstruction, truePlace, true),
   );
   const testBlockTerminus = functionBuilder.currentBlock;
 
@@ -78,7 +78,6 @@ export function buildDoWhileStatement(
     environment.createInstruction(
       UnaryExpressionInstruction,
       notTestPlace,
-      undefined,
       "!",
       doWhileTestPlace,
     ),

@@ -14,7 +14,6 @@ export function buildRegExpLiteral(
   const instruction = environment.createInstruction(
     RegExpLiteralInstruction,
     place,
-    expressionPath,
     expressionPath.node.pattern,
     expressionPath.node.flags,
   );

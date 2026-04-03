@@ -11,7 +11,7 @@ export function buildClassExpression(
 ) {
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(ClassExpressionInstruction, place, nodePath);
+  const instruction = environment.createInstruction(ClassExpressionInstruction, place);
   functionBuilder.addInstruction(instruction);
   return place;
 }

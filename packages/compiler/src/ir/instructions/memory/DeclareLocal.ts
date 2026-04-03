@@ -1,5 +1,3 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId } from "../../base";
 import { Identifier, Place } from "../../core";
@@ -22,16 +20,15 @@ export class DeclareLocalInstruction extends BaseInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.Node> | undefined,
     public readonly kind: "var" | "let" | "const",
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): DeclareLocalInstruction {
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    return environment.createInstruction(DeclareLocalInstruction, place, this.nodePath, this.kind);
+    return environment.createInstruction(DeclareLocalInstruction, place, this.kind);
   }
 
   rewrite(
@@ -41,7 +38,6 @@ export class DeclareLocalInstruction extends BaseInstruction {
     return new DeclareLocalInstruction(
       this.id,
       rewriteDefinitions ? (values.get(this.place.identifier) ?? this.place) : this.place,
-      this.nodePath,
       this.kind,
     );
   }

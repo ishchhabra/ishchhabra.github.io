@@ -23,7 +23,6 @@ export function buildUnaryExpression(
   const instruction = environment.createInstruction(
     UnaryExpressionInstruction,
     place,
-    nodePath,
     nodePath.node.operator,
     argumentPlace,
   );

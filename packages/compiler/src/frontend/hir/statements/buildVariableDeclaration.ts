@@ -53,7 +53,6 @@ export function buildVariableDeclaration(
       ? environment.createInstruction(
           StoreContextInstruction,
           place,
-          nodePath,
           lvalPlace,
           valuePlace,
           "let",
@@ -63,7 +62,6 @@ export function buildVariableDeclaration(
       : environment.createInstruction(
           StoreLocalInstruction,
           place,
-          nodePath,
           lvalPlace,
           valuePlace,
           kind,

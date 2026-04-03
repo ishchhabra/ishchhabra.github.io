@@ -1,4 +1,3 @@
-import { NodePath } from "@babel/core";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
 import { Place } from "../../core";
@@ -14,16 +13,15 @@ export class HoleInstruction extends ValueInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<null> | undefined,
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): HoleInstruction {
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
     const instructionId = createInstructionId(environment);
-    return new HoleInstruction(instructionId, place, this.nodePath);
+    return new HoleInstruction(instructionId, place);
   }
 
   rewrite(): BaseInstruction {

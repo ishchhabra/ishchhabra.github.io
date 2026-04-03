@@ -26,7 +26,6 @@ export function buildSequenceExpression(
   const instruction = environment.createInstruction(
     SequenceExpressionInstruction,
     place,
-    nodePath,
     expressionPlaces,
   );
   functionBuilder.addInstruction(instruction);

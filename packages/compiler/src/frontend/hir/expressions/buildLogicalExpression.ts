@@ -29,7 +29,6 @@ export function buildLogicalExpression(
   const instruction = environment.createInstruction(
     LogicalExpressionInstruction,
     place,
-    nodePath,
     nodePath.node.operator,
     leftPlace,
     rightPlace,

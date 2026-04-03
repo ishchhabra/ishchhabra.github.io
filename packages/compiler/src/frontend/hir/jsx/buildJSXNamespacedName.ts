@@ -14,7 +14,6 @@ export function buildJSXNamespacedName(
   const instruction = environment.createInstruction(
     JSXNamespacedNameInstruction,
     place,
-    nodePath,
     nodePath.node.namespace.name,
     nodePath.node.name.name,
   );

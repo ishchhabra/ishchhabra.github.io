@@ -22,7 +22,6 @@ export function buildJSXClosingElement(
   const instruction = environment.createInstruction(
     JSXClosingElementInstruction,
     place,
-    nodePath,
     tagPlace,
   );
   functionBuilder.addInstruction(instruction);

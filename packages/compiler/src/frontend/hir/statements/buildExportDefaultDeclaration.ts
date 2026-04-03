@@ -48,7 +48,6 @@ export function buildExportDefaultDeclaration(
   const instruction = environment.createInstruction(
     ExportDefaultDeclarationInstruction,
     place,
-    nodePath,
     declarationPlace,
   );
   functionBuilder.addInstruction(instruction);

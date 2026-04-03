@@ -74,7 +74,7 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
           if (resolved && resolved.identifier.declarationId !== srcDecl) {
             block.replaceInstruction(
               i,
-              new LoadLocalInstruction(instr.id, instr.place, instr.nodePath, resolved),
+              new LoadLocalInstruction(instr.id, instr.place, resolved),
             );
 
             changed = true;

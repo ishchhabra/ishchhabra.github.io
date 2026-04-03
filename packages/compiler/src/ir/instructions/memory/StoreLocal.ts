@@ -1,5 +1,3 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, MemoryInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
@@ -25,13 +23,12 @@ export class StoreLocalInstruction extends MemoryInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.Node> | undefined,
     public readonly lval: Place,
     public readonly value: Place,
     public readonly type: "let" | "const" | "var",
     public readonly bindings: Place[] = [],
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): StoreLocalInstruction {
@@ -40,7 +37,6 @@ export class StoreLocalInstruction extends MemoryInstruction {
     return environment.createInstruction(
       StoreLocalInstruction,
       place,
-      this.nodePath,
       this.lval,
       this.value,
       this.type,
@@ -55,7 +51,6 @@ export class StoreLocalInstruction extends MemoryInstruction {
     return new StoreLocalInstruction(
       this.id,
       this.place,
-      this.nodePath,
       rewriteDefinitions ? (values.get(this.lval.identifier) ?? this.lval) : this.lval,
       values.get(this.value.identifier) ?? this.value,
       this.type,
@@ -78,7 +73,7 @@ export class StoreLocalInstruction extends MemoryInstruction {
   }
 
   override asSideEffect(): BaseInstruction | null {
-    return new ExpressionStatementInstruction(this.id, this.place, this.nodePath, this.value);
+    return new ExpressionStatementInstruction(this.id, this.place, this.value);
   }
 
   public override print(): string {

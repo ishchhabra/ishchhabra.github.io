@@ -174,18 +174,17 @@ function buildIdentifierBindings(
     hoistId.name = identifier.name;
     const hoistPlace = environment.createPlace(hoistId);
     functionBuilder.addInstruction(
-      environment.createInstruction(DeclareLocalInstruction, hoistPlace, nodePath, "let"),
+      environment.createInstruction(DeclareLocalInstruction, hoistPlace, "let"),
     );
     const undefPlace = environment.createPlace(environment.createIdentifier());
     functionBuilder.addInstruction(
-      environment.createInstruction(LiteralInstruction, undefPlace, nodePath, undefined),
+      environment.createInstruction(LiteralInstruction, undefPlace, undefined),
     );
     const storePlace = environment.createPlace(environment.createIdentifier());
     functionBuilder.addInstruction(
       environment.createInstruction(
         StoreLocalInstruction,
         storePlace,
-        nodePath,
         hoistPlace,
         undefPlace,
         "let",

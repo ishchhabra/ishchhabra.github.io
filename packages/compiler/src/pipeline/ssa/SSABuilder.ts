@@ -318,7 +318,6 @@ export class SSABuilder {
       return new LoadPhiInstruction(
         instruction.id,
         instruction.place,
-        instruction.nodePath,
         values.get(instruction.value.identifier)!,
       );
     }

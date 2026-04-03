@@ -38,7 +38,6 @@ export function buildNewExpression(
   const instruction = environment.createInstruction(
     NewExpressionInstruction,
     place,
-    expressionPath,
     calleePlace,
     argumentPlaces,
   );

@@ -1,5 +1,3 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
@@ -8,11 +6,10 @@ export class YieldExpressionInstruction extends ValueInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly nodePath: NodePath<t.YieldExpression> | undefined,
     public readonly argument: Place | undefined,
     public readonly delegate: boolean,
   ) {
-    super(id, place, nodePath);
+    super(id, place);
   }
 
   public clone(environment: Environment): YieldExpressionInstruction {
@@ -21,7 +18,6 @@ export class YieldExpressionInstruction extends ValueInstruction {
     return environment.createInstruction(
       YieldExpressionInstruction,
       place,
-      this.nodePath,
       this.argument,
       this.delegate,
     );
@@ -31,7 +27,6 @@ export class YieldExpressionInstruction extends ValueInstruction {
     return new YieldExpressionInstruction(
       this.id,
       this.place,
-      this.nodePath,
       this.argument ? (values.get(this.argument.identifier) ?? this.argument) : undefined,
       this.delegate,
     );

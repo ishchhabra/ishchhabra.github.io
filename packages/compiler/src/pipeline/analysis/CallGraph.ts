@@ -3,6 +3,7 @@ import {
   CallExpressionInstruction,
   DeclarationId,
   LoadGlobalInstruction,
+  LoadLocalInstruction,
   StoreLocalInstruction,
 } from "../../ir";
 import { FunctionExpressionInstruction } from "../../ir/instructions/value/FunctionExpression";
@@ -165,21 +166,10 @@ export class CallGraph {
     moduleIR: ModuleIR,
     callExpression: CallExpressionInstruction,
   ): { modulePath: string; functionIRId: FunctionIRId } | undefined {
-    const nodePath = callExpression.nodePath;
-    if (!nodePath) {
-      return undefined;
-    }
-
-    const calleePath = nodePath.get("callee");
-    if (!calleePath.isIdentifier()) {
-      return undefined;
-    }
-
-    const name = calleePath.node.name;
     const loadInstr = moduleIR.environment.placeToInstruction.get(callExpression.callee.id);
 
     if (loadInstr instanceof LoadGlobalInstruction) {
-      const global = moduleIR.globals.get(name);
+      const global = moduleIR.globals.get(loadInstr.name);
       if (global === undefined) {
         return undefined;
       }
@@ -187,25 +177,29 @@ export class CallGraph {
       return this.resolveGlobalFunctionCall(global);
     }
 
-    const declarationId = calleePath.scope.getData(calleePath.node.name);
-    if (declarationId === undefined) {
-      return undefined;
+    if (loadInstr instanceof LoadLocalInstruction) {
+      const declarationId = loadInstr.value.identifier.declarationId;
+      if (declarationId === undefined) {
+        return undefined;
+      }
+
+      const declMap = this.declarations.get(moduleIR.path);
+      if (!declMap) {
+        return undefined;
+      }
+
+      const funcIRId = declMap.get(declarationId);
+      if (funcIRId === undefined) {
+        return undefined;
+      }
+
+      return {
+        modulePath: moduleIR.path,
+        functionIRId: funcIRId,
+      };
     }
 
-    const declMap = this.declarations.get(moduleIR.path);
-    if (!declMap) {
-      return undefined;
-    }
-
-    const funcIRId = declMap.get(declarationId);
-    if (funcIRId === undefined) {
-      return undefined;
-    }
-
-    return {
-      modulePath: moduleIR.path,
-      functionIRId: funcIRId,
-    };
+    return undefined;
   }
 
   public resolveGlobalFunctionCall(
