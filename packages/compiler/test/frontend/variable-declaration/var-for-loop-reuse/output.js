@@ -1,5 +1,5 @@
 const $0_0 = function $0_0() {
-  const $1_0 = undefined;
+  let $1_0 = undefined;
   $1_0 = 0;
   if (true) {
   }

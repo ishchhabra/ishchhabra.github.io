@@ -1,5 +1,5 @@
 export const App = function App() {
-  useRouterState({
+  const { a: $55_0, b: $58_0 } = useRouterState({
     select: ($6_0) => ({
       a: $6_0.a,
       b: $6_0.b,

@@ -1,7 +1,11 @@
 export const App = function App() {
+  const $31_0 = {
+    name: "hello",
+  };
+  const { name: $35_0 } = $31_0;
   return (
     <div>
-      <span>{$34_0}</span>
+      <span>{$35_0}</span>
     </div>
   );
 };

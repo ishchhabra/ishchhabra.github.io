@@ -1,6 +1,6 @@
 const $0_0 = function $0_0() {
-  const $1_0 = undefined;
-  const $4_0 = undefined;
+  let $1_0 = undefined;
+  let $4_0 = undefined;
   $1_0 = 0;
   let $20_phi_28 = undefined;
   $20_phi_28 = $1_0;

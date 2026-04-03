@@ -8,6 +8,7 @@ const $0_0 = function $0_0($1_0, $2_0, $3_0) {
     $4_2 = $3_0;
     $20_phi_29 = $4_2;
   }
-  return $20_phi_29;
+  const $5_0 = $20_phi_29;
+  return $5_0;
 };
 console.log($0_0(true, 1, 2));

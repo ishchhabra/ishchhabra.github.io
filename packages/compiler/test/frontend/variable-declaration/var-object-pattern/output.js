@@ -1,3 +1,3 @@
-const $0_0 = undefined;
-const { x: $0_0 } = source;
+let $0_0 = undefined;
+var { x: $0_0 } = source;
 console.log($0_0);

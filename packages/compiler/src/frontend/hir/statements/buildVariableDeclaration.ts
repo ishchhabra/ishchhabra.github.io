@@ -45,6 +45,10 @@ export function buildVariableDeclaration(
     );
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
+    // var declarations were already hoisted (DeclareLocal + StoreLocal/StoreContext
+    // with undefined). The write here is an assignment to the existing binding,
+    // not a new declaration.
+    const contextKind = kind === "var" ? "assignment" : "declaration";
     const instruction = isContext
       ? environment.createInstruction(
           StoreContextInstruction,
@@ -53,7 +57,7 @@ export function buildVariableDeclaration(
           lvalPlace,
           valuePlace,
           "let",
-          "declaration",
+          contextKind,
           bindings,
         )
       : environment.createInstruction(
@@ -62,8 +66,8 @@ export function buildVariableDeclaration(
           nodePath,
           lvalPlace,
           valuePlace,
-          "const",
-          [],
+          kind,
+          bindings,
         );
     functionBuilder.addInstruction(instruction);
     return place;

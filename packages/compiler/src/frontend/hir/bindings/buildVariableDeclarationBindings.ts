@@ -165,21 +165,16 @@ function buildIdentifierBindings(
     place.id,
   );
 
-  // Emit hoisted `<kind> <binding> = undefined` for var declarations.
-  // Context variables use "let" (they will be reassigned via StoreContext);
-  // non-context variables use "const" (SSA ensures each name is assigned once).
+  // Emit hoisted `let <binding> = undefined` for var declarations.
+  // The compiler already hoists the declaration to the correct scope,
+  // so we use `let` (not `var`) to avoid re-introducing JS hoisting
+  // semantics in the output.
   if (binding?.kind === "var") {
-    const isContext = environment.contextDeclarationIds.has(identifier.declarationId);
     const hoistId = environment.createIdentifier(identifier.declarationId);
     hoistId.name = identifier.name;
     const hoistPlace = environment.createPlace(hoistId);
     functionBuilder.addInstruction(
-      environment.createInstruction(
-        DeclareLocalInstruction,
-        hoistPlace,
-        nodePath,
-        isContext ? ("let" as const) : ("const" as const),
-      ),
+      environment.createInstruction(DeclareLocalInstruction, hoistPlace, nodePath, "let"),
     );
     const undefPlace = environment.createPlace(environment.createIdentifier());
     functionBuilder.addInstruction(
@@ -193,7 +188,7 @@ function buildIdentifierBindings(
         nodePath,
         hoistPlace,
         undefPlace,
-        isContext ? ("let" as const) : ("const" as const),
+        "let",
         [],
       ),
     );

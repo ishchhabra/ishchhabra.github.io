@@ -1,1 +1,1 @@
-console.log(3 + $1_0);
+console.log(5);
