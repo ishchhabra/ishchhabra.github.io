@@ -162,6 +162,8 @@ importers:
         specifier: ^4.3.6
         version: 4.3.6
     dependenciesMeta:
+      '@i2-labs/compiler':
+        injected: true
       '@ish/design-overlay':
         injected: true
       '@ish/sandbox':

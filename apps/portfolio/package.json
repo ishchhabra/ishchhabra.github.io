@@ -86,6 +86,9 @@
     "vite-tsconfig-paths": "^6.1.0"
   },
   "dependenciesMeta": {
+    "@i2-labs/compiler": {
+      "injected": true
+    },
     "@ish/design-overlay": {
       "injected": true
     },

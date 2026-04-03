@@ -3,6 +3,10 @@
   "description": "JavaScript ahead-of-time compiler",
   "keywords": [],
   "author": "Ish Chhabra",
+  "files": [
+    "dist",
+    "src"
+  ],
   "type": "module",
   "main": "dist/cli.js",
   "exports": {
@@ -11,12 +15,16 @@
   },
   "scripts": {
     "build": "rollup -c",
+    "build:watch": "rollup -c -w",
+    "postbuild": "pnpm-sync copy && echo 'Build complete'",
+    "prepare": "pnpm sync:prepare:portfolio && pnpm build",
     "test": "vitest run",
     "test:update": "UPDATE_FIXTURES=1 vitest run",
     "lint": "oxlint --max-warnings=0 --type-aware --type-check",
     "format": "oxfmt",
     "format-check": "oxfmt --check",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "sync:prepare:portfolio": "pnpm-sync prepare -l ../../apps/portfolio/pnpm-lock.yaml -s ../../apps/portfolio/node_modules/.pnpm"
   },
   "dependencies": {
     "@babel/core": "^7.28.4",
