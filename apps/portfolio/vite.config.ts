@@ -185,6 +185,7 @@ export default defineConfig(async (): Promise<UserConfig> => {
     // (TS 5.7+) and .ts/.tsx in source imports so dist is Node ESM-ready; then remove noExternal.
     ssr: {
       noExternal: workspacePackageNames,
+      external: ["@i2-labs/compiler"],
     },
     // TanStack Start virtual modules and server-only Node modules are not available
     // in the worker build context. Externalize them so the worker bundle doesn't fail.
