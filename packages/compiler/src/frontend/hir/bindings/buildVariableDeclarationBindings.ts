@@ -3,7 +3,6 @@ import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { DeclareLocalInstruction, LiteralInstruction, StoreLocalInstruction } from "../../../ir";
 import { DeclarationKind, FunctionIRBuilder } from "../FunctionIRBuilder";
-import type { PendingRenames } from "./instantiateScopeBindings";
 import { isBindingOwnedByScope } from "./isBindingOwnedByScope";
 import { isContextVariable } from "./isContextVariable";
 
@@ -12,7 +11,6 @@ export function buildVariableDeclarationBindings(
   nodePath: NodePath<t.VariableDeclaration>,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
-  pendingRenames?: PendingRenames,
 ) {
   if (
     nodePath.node.kind !== "var" &&
@@ -31,7 +29,6 @@ export function buildVariableDeclarationBindings(
       nodePath.node.kind,
       functionBuilder,
       environment,
-      pendingRenames,
     );
   }
 }
@@ -42,7 +39,6 @@ function buildLValBindings(
   declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
-  pendingRenames?: PendingRenames,
 ) {
   switch (nodePath.type) {
     case "Identifier":
@@ -53,7 +49,6 @@ function buildLValBindings(
         declarationKind,
         functionBuilder,
         environment,
-        pendingRenames,
       );
       break;
     case "ArrayPattern":
@@ -64,7 +59,6 @@ function buildLValBindings(
         declarationKind,
         functionBuilder,
         environment,
-        pendingRenames,
       );
       break;
     case "AssignmentPattern":
@@ -75,7 +69,6 @@ function buildLValBindings(
         declarationKind,
         functionBuilder,
         environment,
-        pendingRenames,
       );
       break;
     case "ObjectPattern":
@@ -86,7 +79,6 @@ function buildLValBindings(
         declarationKind,
         functionBuilder,
         environment,
-        pendingRenames,
       );
       break;
     case "ObjectProperty":
@@ -97,7 +89,6 @@ function buildLValBindings(
         declarationKind,
         functionBuilder,
         environment,
-        pendingRenames,
       );
       break;
     case "RestElement":
@@ -108,7 +99,6 @@ function buildLValBindings(
         declarationKind,
         functionBuilder,
         environment,
-        pendingRenames,
       );
       break;
     default:
@@ -122,7 +112,6 @@ function buildIdentifierBindings(
   declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
-  pendingRenames?: PendingRenames,
 ) {
   const originalName = nodePath.node.name;
   const binding = nodePath.scope.getBinding(originalName);
@@ -144,19 +133,10 @@ function buildIdentifierBindings(
   functionBuilder.registerDeclarationName(originalName, identifier.declarationId, bindingsPath);
   functionBuilder.instantiateDeclaration(identifier.declarationId, declarationKind, originalName);
 
-  // Mark context variables before renaming so SSA can skip them.
+  // Mark context variables so SSA can skip them.
   if (binding && isContextVariable(binding, bindingsPath)) {
     environment.contextDeclarationIds.add(identifier.declarationId);
   }
-
-  // Collect rename for batch application instead of calling scope.rename()
-  // per-variable (which does O(AST) traversal each time).
-  if (pendingRenames) {
-    pendingRenames.push([originalName, identifier.name]);
-  } else {
-    bindingsPath.scope.rename(originalName, identifier.name);
-  }
-  functionBuilder.registerDeclarationName(identifier.name, identifier.declarationId, bindingsPath);
 
   const place = environment.createPlace(identifier);
   environment.registerDeclaration(
@@ -205,7 +185,6 @@ function buildArrayPatternBindings(
   declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
-  pendingRenames?: PendingRenames,
 ) {
   const elementsPath: NodePath<t.ArrayPattern["elements"][number]>[] = nodePath.get("elements");
   for (const elementPath of elementsPath) {
@@ -220,7 +199,6 @@ function buildArrayPatternBindings(
       declarationKind,
       functionBuilder,
       environment,
-      pendingRenames,
     );
   }
 }
@@ -231,7 +209,6 @@ function buildAssignmentPatternBindings(
   declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
-  pendingRenames?: PendingRenames,
 ) {
   const leftPath = nodePath.get("left");
   buildLValBindings(
@@ -240,7 +217,6 @@ function buildAssignmentPatternBindings(
     declarationKind,
     functionBuilder,
     environment,
-    pendingRenames,
   );
 }
 
@@ -250,7 +226,6 @@ function buildObjectPatternBindings(
   declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
-  pendingRenames?: PendingRenames,
 ) {
   const propertiesPath = nodePath.get("properties");
   for (const propertyPath of propertiesPath) {
@@ -264,7 +239,6 @@ function buildObjectPatternBindings(
       declarationKind,
       functionBuilder,
       environment,
-      pendingRenames,
     );
   }
 }
@@ -275,7 +249,6 @@ function buildObjectPropertyBindings(
   declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
-  pendingRenames?: PendingRenames,
 ) {
   const valuePath = nodePath.get("value");
   if (!(valuePath.isLVal() || valuePath.isObjectProperty())) {
@@ -288,7 +261,6 @@ function buildObjectPropertyBindings(
     declarationKind,
     functionBuilder,
     environment,
-    pendingRenames,
   );
 }
 
@@ -298,7 +270,6 @@ function buildRestElementBindings(
   declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
-  pendingRenames?: PendingRenames,
 ) {
   const elementPath = nodePath.get("argument");
   buildLValBindings(
@@ -307,6 +278,5 @@ function buildRestElementBindings(
     declarationKind,
     functionBuilder,
     environment,
-    pendingRenames,
   );
 }

@@ -1,10 +1,10 @@
-const $0_0 = {
+const Shell = {
   Panel: () => <aside />,
 };
 export const Page = function Page() {
   return (
     <div>
-      <$0_0.Panel />
+      <Shell.Panel />
     </div>
   );
 };

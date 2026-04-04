@@ -1,9 +1,9 @@
-let $0_0 = undefined;
+let last = undefined;
 let $13_phi_16 = undefined;
-$13_phi_16 = $0_0;
-for (const $0_0 of items) {
-  $0_1 = $0_0;
+$13_phi_16 = last;
+for (const last of items) {
+  $0_1 = last;
   console.log($0_1);
   $13_phi_16 = $0_1;
 }
-console.log($0_0);
+console.log(last);

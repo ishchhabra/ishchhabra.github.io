@@ -35,6 +35,15 @@ export function buildExportDefaultDeclaration(
       functionBuilder,
       environment,
     );
+  } else if (declarationPath.isFunctionDeclaration() && declarationPath.node.id != null) {
+    // Named function declarations are already built during scope
+    // instantiation. Look up the existing declaration place.
+    const name = declarationPath.node.id!.name;
+    const declarationId = functionBuilder.getDeclarationId(name, declarationPath);
+    if (declarationId !== undefined) {
+      const latestDeclaration = environment.getLatestDeclaration(declarationId);
+      declarationPlace = environment.places.get(latestDeclaration.placeId);
+    }
   } else {
     declarationPlace = buildNode(declarationPath, functionBuilder, moduleBuilder, environment);
   }

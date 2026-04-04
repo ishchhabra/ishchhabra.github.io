@@ -4,7 +4,6 @@ import { Environment } from "../../../environment";
 import { DeclareLocalInstruction } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { getDeclarationOwningPath } from "../getDeclarationOwningPath";
-import type { PendingRenames } from "./instantiateScopeBindings";
 import { isBindingOwnedByScope } from "./isBindingOwnedByScope";
 import { isContextVariable } from "./isContextVariable";
 
@@ -13,7 +12,6 @@ export function buildClassDeclarationBindings(
   nodePath: NodePath<t.ClassDeclaration>,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
-  pendingRenames?: PendingRenames,
 ) {
   const idPath = nodePath.get("id");
   if (!idPath.isIdentifier()) {
@@ -31,17 +29,10 @@ export function buildClassDeclarationBindings(
   functionBuilder.registerDeclarationName(idNode.name, identifier.declarationId, bindingsPath);
   functionBuilder.instantiateDeclaration(identifier.declarationId, "class", idNode.name);
 
-  // Mark context variables before renaming so SSA can skip them.
+  // Mark context variables so SSA can skip them.
   if (binding && isContextVariable(binding, bindingsPath)) {
     environment.contextDeclarationIds.add(identifier.declarationId);
   }
-
-  if (pendingRenames) {
-    pendingRenames.push([idNode.name, identifier.name]);
-  } else {
-    bindingsPath.scope.rename(idNode.name, identifier.name);
-  }
-  functionBuilder.registerDeclarationName(identifier.name, identifier.declarationId, bindingsPath);
 
   const place = environment.createPlace(identifier);
   environment.registerDeclaration(

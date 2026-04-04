@@ -2,8 +2,8 @@ let $16_phi_18 = undefined;
 if (true) {
   console.log("first");
 }
-let $0_0 = 10;
-$16_phi_18 = $0_0;
+let x = 10;
+$16_phi_18 = x;
 if (true) {
   $0_1 = 20;
   $16_phi_18 = $0_1;

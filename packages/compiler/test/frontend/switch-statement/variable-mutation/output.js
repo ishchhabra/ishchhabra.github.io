@@ -1,8 +1,8 @@
-let $0_0 = "unknown";
-const $1_0 = 2;
+let result = "unknown";
+const x = 2;
 let $18_phi_23 = undefined;
-$18_phi_23 = $0_0;
-switch ($1_0) {
+$18_phi_23 = result;
+switch (x) {
   case 1:
     $0_3 = "one";
     $18_phi_23 = $0_3;

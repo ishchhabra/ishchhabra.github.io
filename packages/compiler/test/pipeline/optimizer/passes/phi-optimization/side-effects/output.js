@@ -1,3 +1,3 @@
-const $0_0 = globalThis.project;
-let $1_0 = undefined;
-console.log(!$0_0.external ? `lab-${$0_0.slug}-title` : undefined);
+const project = globalThis.project;
+let title = undefined;
+console.log(!project.external ? `lab-${project.slug}-title` : undefined);

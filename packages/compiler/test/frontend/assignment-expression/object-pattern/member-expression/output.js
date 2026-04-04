@@ -1,8 +1,8 @@
-let $0_0 = {};
+let obj = {};
 const { a: $11_0, b: $16_0 } = {
   a: 1,
   b: 2,
 };
-$0_0.a = $11_0;
-$0_0.b = $16_0;
-console.log($0_0.a, $0_0.b);
+obj.a = $11_0;
+obj.b = $16_0;
+console.log(obj.a, obj.b);

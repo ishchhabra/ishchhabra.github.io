@@ -53,6 +53,9 @@ export class FunctionExpressionInstruction extends ValueInstruction {
   }
 
   public getOperands(): Place[] {
+    if (this.identifier !== null) {
+      return [this.identifier, ...this.captures];
+    }
     return this.captures;
   }
 

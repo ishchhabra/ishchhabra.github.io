@@ -1,4 +1,4 @@
-const $0_0 = (
+const list = (
   <>
     <li>one</li>
     <li>two</li>

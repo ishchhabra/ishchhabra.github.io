@@ -1,5 +1,5 @@
-let $0_0 = {};
+let obj = {};
 const [$6_0, $9_0] = [1, 2];
-$0_0.a = $6_0;
-$0_0.b = $9_0;
-console.log($0_0.a, $0_0.b);
+obj.a = $6_0;
+obj.b = $9_0;
+console.log(obj.a, obj.b);

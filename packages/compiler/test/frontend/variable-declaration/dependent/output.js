@@ -1,2 +1,2 @@
-const $0_0 = 5;
-const $1_0 = $0_0;
+const number = 5;
+const number2 = number;

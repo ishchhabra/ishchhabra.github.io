@@ -1,7 +1,7 @@
 import { NodePath } from "@babel/core";
 import * as t from "@babel/types";
 import { Environment } from "../../../environment";
-import { ExportNamedDeclarationInstruction } from "../../../ir";
+import { BaseInstruction, ExportNamedDeclarationInstruction, Place, StoreLocalInstruction, StoreContextInstruction } from "../../../ir";
 import { ExportFromInstruction } from "../../../ir/instructions/module/ExportFrom";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -24,15 +24,23 @@ export function buildExportNamedDeclaration(
 
   // An export can have either declaration or specifiers, but not both.
   if (declarationPath.hasNode()) {
-    let declarationPlace = buildNode(declarationPath, functionBuilder, moduleBuilder, environment)!;
-    if (Array.isArray(declarationPlace)) {
-      // TODO: Iterate over all declaration places to split them into multiple instructions.
-      // Example:
-      //   export const a = 1, b = 2;
-      //   =>
-      //   export const a = 1;
-      //   export const b = 2;
-      declarationPlace = declarationPlace[0];
+    let declarationPlace = buildExportDeclaration(
+      declarationPath,
+      functionBuilder,
+      moduleBuilder,
+      environment,
+    );
+
+    // Suppress standalone emission on the StoreLocal/StoreContext so the
+    // export wraps the declaration. Without this, codegen emits the
+    // declaration as a separate statement and the export gets just the
+    // lval identifier (which isn't a Declaration node).
+    const storeInstruction = environment.placeToInstruction.get(declarationPlace.id);
+    if (
+      storeInstruction instanceof StoreLocalInstruction ||
+      storeInstruction instanceof StoreContextInstruction
+    ) {
+      storeInstruction.emit = false;
     }
 
     const identifier = environment.createIdentifier();
@@ -77,6 +85,67 @@ export function buildExportNamedDeclaration(
     functionBuilder.addInstruction(instruction);
     return place;
   }
+}
+
+/**
+ * Builds the declaration inside an `export` statement. Function and class
+ * declarations are already built during scope instantiation, so we look up
+ * their existing StoreLocal place instead of calling buildNode (which
+ * returns undefined for these).
+ */
+function buildExportDeclaration(
+  declarationPath: NodePath<t.Node>,
+  functionBuilder: FunctionIRBuilder,
+  moduleBuilder: ModuleIRBuilder,
+  environment: Environment,
+): Place {
+  // Function declarations are fully built during scope instantiation.
+  // Find the StoreLocal instruction that assigned the function value
+  // to the binding — its place produces a VariableDeclaration in codegen.
+  if (declarationPath.isFunctionDeclaration() && declarationPath.node.id) {
+    const name = declarationPath.node.id.name;
+    const declarationId = functionBuilder.getDeclarationId(name, declarationPath);
+    if (declarationId !== undefined) {
+      const storeInstr = findStoreLocal(functionBuilder, declarationId);
+      if (storeInstr !== undefined) {
+        // Ensure the binding name matches the exported name so
+        // `export function foo()` emits `export const foo = ...`.
+        storeInstr.lval.identifier.name = name;
+        return storeInstr.place;
+      }
+    }
+  }
+
+  let result = buildNode(declarationPath, functionBuilder, moduleBuilder, environment);
+  if (Array.isArray(result)) {
+    // Multi-declarator: `export const a = 1, b = 2;`
+    result = result[0];
+  }
+  if (result === undefined) {
+    throw new Error(`Export declaration produced no place for ${declarationPath.type}`);
+  }
+  return result;
+}
+
+/**
+ * Finds the StoreLocal instruction that writes to a binding with the given
+ * declarationId.
+ */
+function findStoreLocal(
+  functionBuilder: FunctionIRBuilder,
+  declarationId: import("../../../ir").DeclarationId,
+): StoreLocalInstruction | undefined {
+  for (const block of functionBuilder.blocks.values()) {
+    for (const instr of block.instructions as BaseInstruction[]) {
+      if (
+        instr instanceof StoreLocalInstruction &&
+        instr.lval.identifier.declarationId === declarationId
+      ) {
+        return instr;
+      }
+    }
+  }
+  return undefined;
 }
 
 function buildExportFrom(

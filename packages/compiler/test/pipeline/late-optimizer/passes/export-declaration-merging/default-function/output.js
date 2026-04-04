@@ -1,3 +1,4 @@
-export default (function $0_0($1_0, $2_0) {
+const $0_0 = function $0_0($1_0, $2_0) {
   return $1_0 + $2_0;
-});
+};
+export default $0_0;

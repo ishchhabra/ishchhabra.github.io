@@ -1,5 +1,5 @@
 const $2_0 = function $2_0() {
-  return $0_0;
+  return x;
 };
-const $0_0 = 10;
+const x = 10;
 console.log($2_0());

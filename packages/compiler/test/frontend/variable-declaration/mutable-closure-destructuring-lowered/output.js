@@ -1,10 +1,10 @@
 const $0_0 = function $0_0() {
   const $2_0 = function $2_0() {
-    return $1_0;
+    return x;
   };
-  let { x: $1_0 } = {
+  let { x: x } = {
     x: 0,
   };
-  $1_0 = 1;
+  x = 1;
   return $2_0();
 };

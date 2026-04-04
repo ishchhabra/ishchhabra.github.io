@@ -1,3 +1,3 @@
-const $0_0 = globalThis.a;
-const $1_0 = globalThis.b;
-console.log($0_0 > $1_0 ? $0_0 + $1_0 : $0_0 - $1_0);
+const x = globalThis.a;
+const y = globalThis.b;
+console.log(x > y ? x + y : x - y);

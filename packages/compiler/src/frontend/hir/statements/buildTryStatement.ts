@@ -79,13 +79,6 @@ export function buildTryStatement(
         "catch",
         paramPath.node.name,
       );
-      handlerPath.scope.rename(paramPath.node.name, identifier.name);
-      functionBuilder.registerDeclarationName(
-        identifier.name,
-        identifier.declarationId,
-        handlerPath,
-      );
-
       // Create DeclareLocal for the catch parameter.
       // No StoreLocal needed — the catch clause syntax provides the binding,
       // similar to how function parameters work.

@@ -1,3 +1,3 @@
-let $0_0 = undefined;
-let $1_0 = undefined;
+let a = undefined;
+let b = undefined;
 const [$0_1, $1_1] = [1, 2];

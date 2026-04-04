@@ -1,7 +1,7 @@
-const $0_0 = {
+const obj = {
   x: 0,
 };
-$0_0.x = 1;
-$0_0.x = 2;
-$0_0.x = 3;
+obj.x = 1;
+obj.x = 2;
+obj.x = 3;
 console.log(3);

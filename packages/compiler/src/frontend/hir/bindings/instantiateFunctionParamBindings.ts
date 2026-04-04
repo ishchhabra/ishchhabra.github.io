@@ -114,8 +114,6 @@ function instantiateIdentifierParamBinding(
     environment.contextDeclarationIds.add(identifier.declarationId);
   }
 
-  scopePath.scope.rename(originalName, identifier.name);
-  functionBuilder.registerDeclarationName(identifier.name, identifier.declarationId, scopePath);
   environment.registerDeclaration(
     identifier.declarationId,
     functionBuilder.currentBlock.id,

@@ -1,8 +1,8 @@
-const $0_0 = {
+const defaults = {
   a: 1,
   b: 2,
 };
-const $1_0 = {
-  ...$0_0,
+const obj = {
+  ...defaults,
   c: 3,
 };

@@ -1,4 +1,4 @@
-const $0_0 = {
+const obj = {
   _value: 0,
   get value() {
     return this._value;

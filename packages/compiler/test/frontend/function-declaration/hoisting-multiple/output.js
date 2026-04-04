@@ -4,5 +4,5 @@ const $2_0 = function $2_0() {
 const $3_0 = function $3_0() {
   return 2;
 };
-const $0_0 = $2_0();
-const $1_0 = $3_0();
+const a = $2_0();
+const b = $3_0();

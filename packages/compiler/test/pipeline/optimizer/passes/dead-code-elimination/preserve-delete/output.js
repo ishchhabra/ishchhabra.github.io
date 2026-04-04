@@ -1,6 +1,6 @@
-const $0_0 = {
+const obj = {
   x: 1,
   y: 2,
 };
-delete $0_0.x;
+delete obj.x;
 console.log("done");

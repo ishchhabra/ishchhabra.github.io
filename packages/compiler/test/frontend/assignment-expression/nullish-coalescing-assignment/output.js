@@ -1,10 +1,10 @@
-export const f = function f($1_0) {
-  let $4_0 = $1_0;
+export const f = function f(a) {
+  let $4_0 = a;
   let $13_phi_16 = undefined;
-  $13_phi_16 = $1_0;
+  $13_phi_16 = a;
   let $14_phi_17 = undefined;
   $14_phi_17 = $4_0;
-  if ($1_0 == null) {
+  if (a == null) {
     const $1_1 = 30;
     $4_1 = 30;
     $13_phi_16 = $1_1;

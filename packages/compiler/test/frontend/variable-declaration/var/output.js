@@ -1,5 +1,5 @@
-let $0_0 = undefined;
-let $3_0 = undefined;
-$0_0 = 1;
-$3_0 = undefined;
+let x = undefined;
+let y = undefined;
+x = 1;
+y = undefined;
 $3_2 = 2;

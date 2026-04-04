@@ -1,4 +1,4 @@
-const $0_0 = {
+const person = {
   name: "John",
   age: 30,
 };

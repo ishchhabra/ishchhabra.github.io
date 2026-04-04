@@ -1,16 +1,16 @@
 const $0_0 = function $0_0() {
   const $3_0 = async function $3_0() {
-    const $5_0 = await getMarkdown({
-      data: $1_0,
+    const md = await getMarkdown({
+      data: slug,
     });
-    $2_0 = $5_0;
+    markdown = md;
   };
-  const $1_0 = "test";
-  let $2_0 = "";
-  const $4_0 = () => {
-    if (!$2_0) {
+  const slug = "test";
+  let markdown = "";
+  const handler = () => {
+    if (!markdown) {
       void $3_0();
     }
   };
-  $4_0();
+  handler();
 };

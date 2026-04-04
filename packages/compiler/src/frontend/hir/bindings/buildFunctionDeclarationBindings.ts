@@ -7,7 +7,6 @@ import { FunctionExpressionInstruction } from "../../../ir/instructions/value/Fu
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { getDeclarationOwningPath } from "../getDeclarationOwningPath";
-import type { PendingRenames } from "./instantiateScopeBindings";
 import { isBindingOwnedByScope } from "./isBindingOwnedByScope";
 import { isContextVariable } from "./isContextVariable";
 
@@ -21,7 +20,6 @@ export function registerFunctionDeclarationBinding(
   nodePath: NodePath<t.FunctionDeclaration>,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
-  pendingRenames?: PendingRenames,
 ) {
   const functionName = getFunctionName(nodePath);
   if (functionName === null) {
@@ -46,17 +44,10 @@ export function registerFunctionDeclarationBinding(
     functionName.node.name,
   );
 
-  // Mark context variables before renaming so SSA can skip them.
+  // Mark context variables so SSA can skip them.
   if (binding && isContextVariable(binding, bindingsPath)) {
     environment.contextDeclarationIds.add(identifier.declarationId);
   }
-
-  if (pendingRenames) {
-    pendingRenames.push([functionName.node.name, identifier.name]);
-  } else {
-    bindingsPath.scope.rename(functionName.node.name, identifier.name);
-  }
-  functionBuilder.registerDeclarationName(identifier.name, identifier.declarationId, bindingsPath);
 
   const place = environment.createPlace(identifier);
   environment.registerDeclaration(

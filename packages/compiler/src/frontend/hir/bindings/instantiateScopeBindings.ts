@@ -11,12 +11,6 @@ import {
 import { buildVariableDeclarationBindings } from "./buildVariableDeclarationBindings";
 
 /**
- * Pending renames collected during scope instantiation, applied at the end
- * to avoid interleaving rename traversals with declaration discovery.
- */
-export type PendingRenames = Array<[oldName: string, newName: string]>;
-
-/**
  * Instantiates all bindings owned by the current Babel scope before the
  * scope body is lowered. This mirrors JavaScript's environment creation
  * more closely than the old "discover declarations while traversing"
@@ -37,7 +31,6 @@ export function instantiateScopeBindings(
   environment: Environment,
   moduleBuilder: ModuleIRBuilder,
 ) {
-  const pendingRenames: PendingRenames = [];
   const pendingFunctionDeclarations: NodePath<t.FunctionDeclaration>[] = [];
 
   // Phase 1: Create all bindings.
@@ -48,7 +41,6 @@ export function instantiateScopeBindings(
         path,
         functionBuilder,
         environment,
-        pendingRenames,
       );
     },
     FunctionDeclaration: (path: NodePath<t.FunctionDeclaration>) => {
@@ -57,7 +49,6 @@ export function instantiateScopeBindings(
         path,
         functionBuilder,
         environment,
-        pendingRenames,
       );
       pendingFunctionDeclarations.push(path);
     },
@@ -67,104 +58,14 @@ export function instantiateScopeBindings(
         path,
         functionBuilder,
         environment,
-        pendingRenames,
       );
     },
   });
-
-  if (pendingRenames.length > 0) {
-    applyBatchRenames(bindingsPath, pendingRenames);
-  }
 
   // Phase 2: InstantiateFunctionObject for each function declaration.
   // All bindings are now registered, so function bodies can resolve
   // references to any declaration in the scope.
   for (const path of pendingFunctionDeclarations) {
     initializeFunctionDeclaration(bindingsPath, path, functionBuilder, environment, moduleBuilder);
-  }
-}
-
-/**
- * Applies all pending renames. Uses a fast path that directly mutates
- * Babel's tracked binding references for scopes with many renames,
- * falling back to scope.rename() for small scopes where correctness
- * of edge cases (JSX, exports, default params) outweighs the cost.
- *
- * The fast path is O(total_references) instead of O(renames × AST).
- * The threshold is set so that normal application code uses scope.rename()
- * (guaranteed correct), while large bundled files use the fast path to
- * avoid repeated whole-AST traversals.
- */
-function applyBatchRenames(bindingsPath: NodePath, renames: PendingRenames) {
-  if (renames.length < 50) {
-    for (const [oldName, newName] of renames) {
-      bindingsPath.scope.rename(oldName, newName);
-    }
-    return;
-  }
-
-  const scope = bindingsPath.scope;
-
-  for (const [oldName] of renames) {
-    const binding = scope.getBinding(oldName);
-    if (!binding) continue;
-
-    const parentDeclar = binding.path.find(
-      (p: NodePath) => p.isDeclaration() || p.isFunctionExpression() || p.isClassExpression(),
-    );
-    if (parentDeclar) {
-      const maybeExport = parentDeclar.parentPath;
-      if (
-        maybeExport?.isExportDeclaration() &&
-        !maybeExport.isExportDefaultDeclaration() &&
-        !maybeExport.isExportAllDeclaration()
-      ) {
-        (
-          maybeExport as typeof maybeExport & {
-            splitExportDeclaration(): void;
-          }
-        ).splitExportDeclaration();
-      }
-    }
-  }
-
-  for (const [oldName, newName] of renames) {
-    const binding = scope.getBinding(oldName);
-    if (!binding) {
-      scope.rename(oldName, newName);
-      continue;
-    }
-
-    binding.identifier.name = newName;
-
-    for (const refPath of binding.referencePaths) {
-      if (refPath.isIdentifier()) {
-        refPath.node.name = newName;
-      }
-    }
-
-    for (const violation of binding.constantViolations) {
-      if (violation.isAssignmentExpression()) {
-        const left = violation.get("left");
-        if (left.isIdentifier() && left.node.name === oldName) {
-          left.node.name = newName;
-        }
-      } else if (violation.isUpdateExpression()) {
-        const arg = violation.get("argument");
-        if (arg.isIdentifier() && arg.node.name === oldName) {
-          arg.node.name = newName;
-        }
-      }
-    }
-
-    if (binding.path.isDeclaration() || binding.path.isVariableDeclarator()) {
-      const ids = binding.path.getOuterBindingIdentifiers();
-      for (const name in ids) {
-        if (name === oldName) ids[name].name = newName;
-      }
-    }
-
-    scope.removeOwnBinding(oldName);
-    scope.bindings[newName] = binding;
   }
 }

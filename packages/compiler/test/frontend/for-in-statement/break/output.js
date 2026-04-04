@@ -1,6 +1,6 @@
-for (const $1_0 in obj) {
-  if ($1_0 === "stop") {
+for (const key in obj) {
+  if (key === "stop") {
     break;
   }
-  console.log($1_0);
+  console.log(key);
 }

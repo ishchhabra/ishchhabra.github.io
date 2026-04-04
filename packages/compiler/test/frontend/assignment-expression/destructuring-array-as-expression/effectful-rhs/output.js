@@ -1,8 +1,8 @@
 const $0_0 = function $0_0() {
   return [1, 2];
 };
-let $1_0 = undefined;
-let $2_0 = undefined;
+let a = undefined;
+let b = undefined;
 const $13_0 = $0_0();
 const [$1_1, $2_1] = $13_0;
-const $3_0 = $13_0;
+const result = $13_0;

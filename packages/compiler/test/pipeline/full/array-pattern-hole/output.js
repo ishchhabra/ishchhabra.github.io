@@ -1,2 +1,2 @@
-const [$0_0, , $1_0] = [1, 2, 3];
-console.log($0_0, $1_0);
+const [a, , b] = [1, 2, 3];
+console.log(a, b);

@@ -1,7 +1,7 @@
 const $0_0 = function $0_0($1_0) {
-  let $2_0 = undefined;
+  let x = undefined;
   if ($1_0) {
-    $2_0 = 1;
+    x = 1;
   }
-  return $2_0;
+  return x;
 };

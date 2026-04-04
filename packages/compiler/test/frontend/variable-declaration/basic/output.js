@@ -1,1 +1,1 @@
-const $0_0 = 5;
+const number = 5;

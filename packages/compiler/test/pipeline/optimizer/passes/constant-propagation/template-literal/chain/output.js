@@ -1,3 +1,3 @@
-const $0_0 = "lab";
-const $1_0 = "sandbox";
+const a = "lab";
+const b = "sandbox";
 ("lab-sandbox-title");

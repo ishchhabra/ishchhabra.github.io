@@ -1,10 +1,10 @@
 const $0_0 = function $0_0($1_0) {
-  const $2_0 = [
+  const meta = [
     {
       name: "title",
     },
   ];
-  const $3_0 =
+  const links =
     $1_0 !== undefined
       ? [
           {
@@ -14,9 +14,9 @@ const $0_0 = function $0_0($1_0) {
         ]
       : undefined;
   return {
-    meta: $2_0,
-    ...($3_0 && {
-      links: $3_0,
+    meta,
+    ...(links && {
+      links,
     }),
   };
 };

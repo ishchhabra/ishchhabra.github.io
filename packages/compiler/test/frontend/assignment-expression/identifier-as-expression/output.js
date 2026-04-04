@@ -1,3 +1,3 @@
-let $0_0 = undefined;
+let a = undefined;
 $0_1 = 5;
 5 == null;

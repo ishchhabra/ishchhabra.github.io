@@ -1,3 +1,3 @@
-const $0_0 = 1;
-const $1_0 = 2;
+const x = 1;
+const y = 2;
 export const sum = 1 + 2;

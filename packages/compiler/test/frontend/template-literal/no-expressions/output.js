@@ -1,1 +1,1 @@
-const $0_0 = `no expressions here`;
+const s = `no expressions here`;
