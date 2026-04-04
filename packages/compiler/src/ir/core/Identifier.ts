@@ -29,11 +29,11 @@ export function makeDeclarationId(id: number): DeclarationId {
  *
  * This is the element type stored in {@link Identifier.uses}. The
  * constraint is intentionally structural (any object with
- * `getReadPlaces()`) so that BaseInstruction, BaseTerminal, and
+ * `getOperands()`) so that BaseInstruction, BaseTerminal, and
  * BaseStructure all satisfy it without a circular import.
  */
 export type User = {
-  getReadPlaces(): readonly { readonly identifier: Identifier }[];
+  getOperands(): readonly { readonly identifier: Identifier }[];
 };
 
 export class Identifier {

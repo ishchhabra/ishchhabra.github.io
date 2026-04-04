@@ -83,7 +83,7 @@ export class CapturePruningPass extends BaseOptimizationPass {
         // in blocks, so the embedded use-chains don't cover them.
         const headerReadIds = new Set<IdentifierId>();
         for (const headerInstr of innerFunctionIR.header) {
-          for (const place of headerInstr.getReadPlaces()) {
+          for (const place of headerInstr.getOperands()) {
             headerReadIds.add(place.identifier.id);
           }
         }
@@ -91,7 +91,7 @@ export class CapturePruningPass extends BaseOptimizationPass {
         // Also check structure reads.
         const structureReadIds = new Set<IdentifierId>();
         for (const structure of innerFunctionIR.structures.values()) {
-          for (const place of structure.getReadPlaces()) {
+          for (const place of structure.getOperands()) {
             structureReadIds.add(place.identifier.id);
           }
         }

@@ -33,7 +33,7 @@ export class TemplateLiteralInstruction extends ValueInstruction {
     );
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [...this.expressions];
   }
 

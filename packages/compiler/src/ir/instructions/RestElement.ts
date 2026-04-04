@@ -38,11 +38,11 @@ export class RestElementInstruction extends BaseInstruction {
     );
   }
 
-  public getReadPlaces(): Place[] {
+  public getOperands(): Place[] {
     return [];
   }
 
-  public override getWrittenPlaces(): Place[] {
+  public override getDefs(): Place[] {
     return [this.place, ...this.bindings];
   }
 

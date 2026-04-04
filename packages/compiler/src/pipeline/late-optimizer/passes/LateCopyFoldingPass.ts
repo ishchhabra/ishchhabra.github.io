@@ -206,7 +206,7 @@ export class LateCopyFoldingPass extends BaseOptimizationPass {
         return i;
       }
 
-      if (instruction.getReadPlaces().some((place) => place.identifier.id === destinationId)) {
+      if (instruction.getOperands().some((place) => place.identifier.id === destinationId)) {
         return undefined;
       }
     }
@@ -237,7 +237,7 @@ export class LateCopyFoldingPass extends BaseOptimizationPass {
     }
 
     if (valueIdx > storeIdx && valueIdx < copyIdx) {
-      if (definer.getReadPlaces().length > 0) {
+      if (definer.getOperands().length > 0) {
         return undefined;
       }
 

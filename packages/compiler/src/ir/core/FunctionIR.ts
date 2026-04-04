@@ -163,19 +163,19 @@ export class FunctionIR {
   }
 
   private static registerStructure(s: BaseStructure): void {
-    for (const place of s.getReadPlaces()) {
+    for (const place of s.getOperands()) {
       place.identifier.uses.add(s);
     }
-    for (const place of s.getWrittenPlaces()) {
+    for (const place of s.getDefs()) {
       place.identifier.uses.add(s);
     }
   }
 
   private static unregisterStructure(s: BaseStructure): void {
-    for (const place of s.getReadPlaces()) {
+    for (const place of s.getOperands()) {
       place.identifier.uses.delete(s);
     }
-    for (const place of s.getWrittenPlaces()) {
+    for (const place of s.getDefs()) {
       place.identifier.uses.delete(s);
     }
   }

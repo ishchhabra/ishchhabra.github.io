@@ -43,7 +43,7 @@ export class LogicalExpressionInstruction extends ValueInstruction {
     );
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [this.left, this.right];
   }
 

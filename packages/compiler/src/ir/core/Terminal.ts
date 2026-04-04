@@ -15,7 +15,7 @@ export class BranchTerminal extends BaseTerminal {
     super(id);
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [this.test];
   }
 
@@ -52,7 +52,7 @@ export class JumpTerminal extends BaseTerminal {
     super(id);
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [];
   }
 
@@ -81,7 +81,7 @@ export class ReturnTerminal extends BaseTerminal {
     super(id);
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return this.value ? [this.value] : [];
   }
 
@@ -111,7 +111,7 @@ export class ThrowTerminal extends BaseTerminal {
     super(id);
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [this.value];
   }
 
@@ -143,7 +143,7 @@ export class SwitchTerminal extends BaseTerminal {
     super(id);
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     const places = [this.discriminant];
     for (const c of this.cases) {
       if (c.test !== null) {
@@ -195,7 +195,7 @@ export class TryTerminal extends BaseTerminal {
     super(id);
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [];
   }
 

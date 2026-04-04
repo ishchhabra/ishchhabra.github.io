@@ -35,7 +35,7 @@ export class ObjectExpressionInstruction extends ValueInstruction {
     );
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return this.properties;
   }
 

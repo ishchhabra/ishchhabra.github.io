@@ -29,7 +29,7 @@ export class ClassExpressionInstruction extends ValueInstruction {
     return new ClassExpressionInstruction(this.id, this.place, newIdentifier);
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [];
   }
 }

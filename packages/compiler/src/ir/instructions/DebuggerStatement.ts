@@ -24,7 +24,7 @@ export class DebuggerStatementInstruction extends BaseInstruction {
     return this;
   }
 
-  getReadPlaces() {
+  getOperands() {
     return [];
   }
 }

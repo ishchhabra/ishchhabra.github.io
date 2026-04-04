@@ -374,7 +374,7 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
     // we can't fold → BOTTOM. If it reads nothing (e.g. BindingIdentifier),
     // it's a structural declaration whose value comes from a StoreLocal
     // later → leave as TOP until that store executes.
-    if (instr.getReadPlaces().length > 0) {
+    if (instr.getOperands().length > 0) {
       this.setLattice(instr.place.identifier, BOTTOM);
     }
   }

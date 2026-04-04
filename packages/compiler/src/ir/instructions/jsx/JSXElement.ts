@@ -44,7 +44,7 @@ export class JSXElementInstruction extends JSXInstruction {
     );
   }
 
-  public getReadPlaces(): Place[] {
+  public getOperands(): Place[] {
     return [
       this.openingElement,
       ...(this.closingElement ? [this.closingElement] : []),

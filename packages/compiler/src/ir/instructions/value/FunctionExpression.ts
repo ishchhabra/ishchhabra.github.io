@@ -52,11 +52,11 @@ export class FunctionExpressionInstruction extends ValueInstruction {
     );
   }
 
-  public getReadPlaces(): Place[] {
+  public getOperands(): Place[] {
     return this.captures;
   }
 
-  public override getWrittenPlaces(): Place[] {
+  public override getDefs(): Place[] {
     return [this.place];
   }
 

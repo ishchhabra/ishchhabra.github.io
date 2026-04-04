@@ -31,7 +31,7 @@ export class ExportDefaultDeclarationInstruction extends ModuleInstruction {
     return this;
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [this.declaration];
   }
 }

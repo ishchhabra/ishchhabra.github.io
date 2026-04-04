@@ -27,7 +27,7 @@ export class RegExpLiteralInstruction extends ValueInstruction {
     return this;
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [];
   }
 

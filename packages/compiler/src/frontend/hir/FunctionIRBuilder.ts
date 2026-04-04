@@ -48,7 +48,7 @@ export class FunctionIRBuilder {
   /**
    * Places captured from enclosing scopes, keyed by DeclarationId to
    * avoid duplicates when the same variable is referenced multiple times.
-   * Stored on the function instruction so that `getReadPlaces()` exposes
+   * Stored on the function instruction so that `getOperands()` exposes
    * them to optimization passes, preventing DCE from eliminating captured
    * variable definitions in the outer scope.
    */

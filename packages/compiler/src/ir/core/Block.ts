@@ -18,27 +18,27 @@ export function makeBlockId(id: number): BlockId {
 // ---------------------------------------------------------------------------
 
 type UseChainNode = {
-  getReadPlaces(): readonly Place[];
-  getWrittenPlaces?: () => readonly Place[];
+  getOperands(): readonly Place[];
+  getDefs?: () => readonly Place[];
 };
 
 function registerUses(user: UseChainNode): void {
-  for (const place of user.getReadPlaces()) {
+  for (const place of user.getOperands()) {
     place.identifier.uses.add(user);
   }
-  if (user.getWrittenPlaces) {
-    for (const place of user.getWrittenPlaces()) {
+  if (user.getDefs) {
+    for (const place of user.getDefs()) {
       place.identifier.definer = user;
     }
   }
 }
 
 function unregisterUses(user: UseChainNode): void {
-  for (const place of user.getReadPlaces()) {
+  for (const place of user.getOperands()) {
     place.identifier.uses.delete(user);
   }
-  if (user.getWrittenPlaces) {
-    for (const place of user.getWrittenPlaces()) {
+  if (user.getDefs) {
+    for (const place of user.getDefs()) {
       if (place.identifier.definer === user) {
         place.identifier.definer = undefined;
       }

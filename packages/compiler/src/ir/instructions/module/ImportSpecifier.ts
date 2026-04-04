@@ -33,7 +33,7 @@ export class ImportSpecifierInstruction extends ModuleInstruction {
     return this;
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [];
   }
 }

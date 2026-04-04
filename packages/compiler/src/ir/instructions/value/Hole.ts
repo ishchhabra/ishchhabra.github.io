@@ -29,7 +29,7 @@ export class HoleInstruction extends ValueInstruction {
     return this;
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [];
   }
 

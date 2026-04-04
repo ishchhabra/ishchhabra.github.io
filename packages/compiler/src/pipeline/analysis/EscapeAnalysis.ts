@@ -104,7 +104,7 @@ export class EscapeAnalysis extends FunctionAnalysis<EscapeAnalysisResult> {
     for (const block of functionIR.blocks.values()) {
       for (const instr of block.instructions) {
         // Ensure every defined identifier has an entry.
-        for (const place of instr.getWrittenPlaces()) {
+        for (const place of instr.getDefs()) {
           if (!states.has(place.identifier.id)) {
             states.set(place.identifier.id, EscapeState.NoEscape);
           }
@@ -182,14 +182,14 @@ export class EscapeAnalysis extends FunctionAnalysis<EscapeAnalysisResult> {
         }
 
         if (instr instanceof YieldExpressionInstruction) {
-          for (const place of instr.getReadPlaces()) {
+          for (const place of instr.getOperands()) {
             raise(place.identifier.id, EscapeState.GlobalEscape);
           }
           continue;
         }
 
         if (instr instanceof AwaitExpressionInstruction) {
-          for (const place of instr.getReadPlaces()) {
+          for (const place of instr.getOperands()) {
             raise(place.identifier.id, EscapeState.GlobalEscape);
           }
           continue;
@@ -233,7 +233,7 @@ export class EscapeAnalysis extends FunctionAnalysis<EscapeAnalysisResult> {
           raise(block.terminal.value.identifier.id, EscapeState.GlobalEscape);
         }
         if (block.terminal instanceof ThrowTerminal) {
-          for (const place of block.terminal.getReadPlaces()) {
+          for (const place of block.terminal.getOperands()) {
             raise(place.identifier.id, EscapeState.GlobalEscape);
           }
         }

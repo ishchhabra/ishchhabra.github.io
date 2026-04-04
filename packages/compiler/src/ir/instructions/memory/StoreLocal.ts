@@ -60,11 +60,11 @@ export class StoreLocalInstruction extends MemoryInstruction {
     );
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [this.value];
   }
 
-  override getWrittenPlaces(): Place[] {
+  override getDefs(): Place[] {
     return [this.place, this.lval, ...this.bindings];
   }
 

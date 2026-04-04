@@ -35,7 +35,7 @@ export class ImportExpressionInstruction extends ValueInstruction {
     );
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [this.source];
   }
 }

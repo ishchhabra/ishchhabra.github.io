@@ -32,7 +32,7 @@ export class YieldExpressionInstruction extends ValueInstruction {
     );
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return this.argument ? [this.argument] : [];
   }
 }

@@ -34,7 +34,7 @@ export class LoadLocalInstruction extends MemoryInstruction {
     return new LoadLocalInstruction(this.id, this.place, rewrittenTarget);
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [this.value];
   }
 

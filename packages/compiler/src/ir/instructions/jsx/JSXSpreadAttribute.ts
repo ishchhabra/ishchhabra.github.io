@@ -36,7 +36,7 @@ export class JSXSpreadAttributeInstruction extends JSXInstruction {
     );
   }
 
-  public getReadPlaces(): Place[] {
+  public getOperands(): Place[] {
     return [this.argument];
   }
 }

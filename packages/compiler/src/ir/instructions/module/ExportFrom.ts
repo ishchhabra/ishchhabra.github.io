@@ -35,7 +35,7 @@ export class ExportFromInstruction extends ModuleInstruction {
     return this;
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [];
   }
 }

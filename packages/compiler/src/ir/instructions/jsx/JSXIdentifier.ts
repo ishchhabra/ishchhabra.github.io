@@ -36,7 +36,7 @@ export class JSXIdentifierInstruction extends JSXInstruction {
     return new JSXIdentifierInstruction(this.id, this.place, rewrittenValue);
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [this.value];
   }
 

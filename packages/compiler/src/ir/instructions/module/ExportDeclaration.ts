@@ -35,7 +35,7 @@ export class ExportDeclarationInstruction extends ModuleInstruction {
     return this;
   }
 
-  public getReadPlaces(): Place[] {
+  public getOperands(): Place[] {
     return this.specifiers;
   }
 }

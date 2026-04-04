@@ -40,11 +40,11 @@ export class ArrayPatternInstruction extends PatternInstruction {
     );
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [];
   }
 
-  override getWrittenPlaces(): Place[] {
+  override getDefs(): Place[] {
     return [this.place, ...this.bindings];
   }
 

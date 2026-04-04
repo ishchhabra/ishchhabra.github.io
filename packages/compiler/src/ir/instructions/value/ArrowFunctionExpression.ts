@@ -59,7 +59,7 @@ export class ArrowFunctionExpressionInstruction extends ValueInstruction {
     );
   }
 
-  public getReadPlaces(): Place[] {
+  public getOperands(): Place[] {
     return this.captures;
   }
 

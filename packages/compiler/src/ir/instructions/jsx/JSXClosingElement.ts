@@ -36,7 +36,7 @@ export class JSXClosingElementInstruction extends JSXInstruction {
     );
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [this.tagPlace];
   }
 

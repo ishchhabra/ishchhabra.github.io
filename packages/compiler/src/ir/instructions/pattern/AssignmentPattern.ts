@@ -42,11 +42,11 @@ export class AssignmentPatternInstruction extends PatternInstruction {
     );
   }
 
-  public getReadPlaces(): Place[] {
+  public getOperands(): Place[] {
     return [this.right];
   }
 
-  public override getWrittenPlaces(): Place[] {
+  public override getDefs(): Place[] {
     return [this.place, ...this.bindings];
   }
 

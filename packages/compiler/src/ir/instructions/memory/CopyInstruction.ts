@@ -37,11 +37,11 @@ export class CopyInstruction extends MemoryInstruction {
     );
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [this.lval, this.value];
   }
 
-  override getWrittenPlaces(): Place[] {
+  override getDefs(): Place[] {
     return [this.place, this.lval];
   }
 

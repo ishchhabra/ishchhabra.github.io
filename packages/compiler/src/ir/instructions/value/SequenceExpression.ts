@@ -29,7 +29,7 @@ export class SequenceExpressionInstruction extends ValueInstruction {
     );
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [...this.expressions];
   }
 }

@@ -28,7 +28,7 @@ export class LoadGlobalInstruction extends MemoryInstruction {
     return this;
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [];
   }
 

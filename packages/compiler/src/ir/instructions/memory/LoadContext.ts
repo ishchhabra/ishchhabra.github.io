@@ -34,7 +34,7 @@ export class LoadContextInstruction extends MemoryInstruction {
     return new LoadContextInstruction(this.id, this.place, rewrittenTarget);
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [this.value];
   }
 

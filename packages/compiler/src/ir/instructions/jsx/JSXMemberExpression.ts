@@ -39,7 +39,7 @@ export class JSXMemberExpressionInstruction extends JSXInstruction {
     );
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [this.object];
   }
 }

@@ -40,7 +40,7 @@ export class JSXAttributeInstruction extends JSXInstruction {
     );
   }
 
-  public getReadPlaces(): Place[] {
+  public getOperands(): Place[] {
     return this.value ? [this.value] : [];
   }
 

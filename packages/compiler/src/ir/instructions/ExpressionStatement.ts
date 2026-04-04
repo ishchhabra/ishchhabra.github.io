@@ -33,7 +33,7 @@ export class ExpressionStatementInstruction extends BaseInstruction {
     // those definitions.
     return (
       expressionInstruction.hasSideEffects(environment) ||
-      expressionInstruction.getWrittenPlaces().length > 1
+      expressionInstruction.getDefs().length > 1
     );
   }
 
@@ -55,7 +55,7 @@ export class ExpressionStatementInstruction extends BaseInstruction {
     );
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [this.expression];
   }
 

@@ -29,7 +29,7 @@ export class AwaitExpressionInstruction extends ValueInstruction {
     );
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [this.argument];
   }
 }

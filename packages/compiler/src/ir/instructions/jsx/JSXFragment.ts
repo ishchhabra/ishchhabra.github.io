@@ -42,7 +42,7 @@ export class JSXFragmentInstruction extends JSXInstruction {
     );
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [this.openingFragment, this.closingFragment, ...this.children];
   }
 

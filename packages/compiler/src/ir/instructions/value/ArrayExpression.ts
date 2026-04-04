@@ -35,7 +35,7 @@ export class ArrayExpressionInstruction extends ValueInstruction {
     );
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return this.elements;
   }
 

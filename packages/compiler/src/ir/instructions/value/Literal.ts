@@ -32,7 +32,7 @@ export class LiteralInstruction extends ValueInstruction {
     return this;
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [];
   }
 

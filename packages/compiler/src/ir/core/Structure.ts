@@ -18,11 +18,11 @@ export abstract class BaseStructure {
   /** Returns all block IDs referenced by this structure. */
   abstract getBlockRefs(): BlockId[];
 
-  /** Returns places read by this structure (used by DCE to track liveness). */
-  abstract getReadPlaces(): Place[];
+  /** Returns places this structure uses (operands / inputs). */
+  abstract getOperands(): Place[];
 
-  /** Returns places written by this structure. */
-  abstract getWrittenPlaces(): Place[];
+  /** Returns places this structure defines (outputs). */
+  abstract getDefs(): Place[];
 
   /** Returns a new structure with places rewritten per the given map (used by SSA renaming). */
   abstract rewrite(values: Map<Identifier, Place>): BaseStructure;
@@ -67,11 +67,11 @@ export class ForInStructure extends BaseStructure {
     return [this.body, this.fallthrough];
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [this.object];
   }
 
-  getWrittenPlaces(): Place[] {
+  getDefs(): Place[] {
     return [this.iterationValue];
   }
 
@@ -126,11 +126,11 @@ export class ForOfStructure extends BaseStructure {
     return [this.body, this.fallthrough];
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [this.iterable];
   }
 
-  getWrittenPlaces(): Place[] {
+  getDefs(): Place[] {
     return [this.iterationValue];
   }
 
@@ -202,11 +202,11 @@ export class TernaryStructure extends BaseStructure {
     return [this.consequent, this.alternate, this.fallthrough];
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [this.test, this.consequentValue, this.alternateValue];
   }
 
-  getWrittenPlaces(): Place[] {
+  getDefs(): Place[] {
     return [this.resultPlace];
   }
 
@@ -276,11 +276,11 @@ export class LabeledBlockStructure extends BaseStructure {
     return [this.body, this.fallthrough];
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [];
   }
 
-  getWrittenPlaces(): Place[] {
+  getDefs(): Place[] {
     return [];
   }
 

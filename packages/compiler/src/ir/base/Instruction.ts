@@ -46,18 +46,18 @@ export abstract class BaseInstruction {
   ): BaseInstruction;
 
   /**
-   * Return a set of place IDs that this instruction *reads* (uses).
+   * Return the places that this instruction uses (operands / inputs).
    */
-  abstract getReadPlaces(): Place[];
+  abstract getOperands(): Place[];
 
   /**
-   * Return the places that this instruction *defines* (writes to).
+   * Return the places that this instruction defines (outputs).
    *
    * Most instructions define only their own `place`. Instructions that
-   * introduce additional bindings (e.g. StoreLocal's lval) override
+   * introduce additional bindings (e.g. pattern destructuring) override
    * this to include them.
    */
-  getWrittenPlaces(): Place[] {
+  getDefs(): Place[] {
     return [this.place];
   }
 

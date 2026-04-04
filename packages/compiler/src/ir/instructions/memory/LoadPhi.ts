@@ -25,7 +25,7 @@ export class LoadPhiInstruction extends MemoryInstruction {
     );
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [this.value];
   }
 

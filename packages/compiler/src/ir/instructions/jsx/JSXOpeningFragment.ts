@@ -26,7 +26,7 @@ export class JSXOpeningFragmentInstruction extends JSXInstruction {
     return this;
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [];
   }
 

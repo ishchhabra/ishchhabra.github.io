@@ -4,7 +4,7 @@ import { type InstructionId } from "./Instruction";
 export abstract class BaseTerminal {
   constructor(public readonly id: InstructionId) {}
 
-  abstract getReadPlaces(): Place[];
+  abstract getOperands(): Place[];
 
   abstract rewrite(values: Map<Identifier, Place>): BaseTerminal;
 

@@ -34,7 +34,7 @@ export class JSXNamespacedNameInstruction extends JSXInstruction {
     return this;
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [];
   }
 

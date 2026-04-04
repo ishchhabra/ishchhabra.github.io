@@ -60,7 +60,7 @@ export class ObjectMethodInstruction extends ValueInstruction {
     );
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [this.key, ...this.captures];
   }
 }

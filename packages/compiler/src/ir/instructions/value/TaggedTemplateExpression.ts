@@ -32,7 +32,7 @@ export class TaggedTemplateExpressionInstruction extends ValueInstruction {
     );
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [this.tag, this.quasi];
   }
 }

@@ -52,7 +52,7 @@ export class ObjectPropertyInstruction extends ValueInstruction {
     );
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     // In destructuring patterns, the value is a binding target (written, not read).
     // Only include it as a read when it's not one of the bindings.
     if (this.bindings.length > 0) {
@@ -61,7 +61,7 @@ export class ObjectPropertyInstruction extends ValueInstruction {
     return [this.key, this.value];
   }
 
-  override getWrittenPlaces(): Place[] {
+  override getDefs(): Place[] {
     return [this.place, ...this.bindings];
   }
 

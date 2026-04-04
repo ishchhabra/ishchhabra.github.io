@@ -51,12 +51,12 @@ export class LivenessAnalysis extends FunctionAnalysis<LivenessResult> {
     const liveIds = new Set<IdentifierId>();
     for (const block of functionIR.blocks.values()) {
       for (const instr of block.instructions) {
-        for (const place of instr.getReadPlaces()) {
+        for (const place of instr.getOperands()) {
           liveIds.add(place.identifier.id);
         }
       }
       if (block.terminal) {
-        for (const place of block.terminal.getReadPlaces()) {
+        for (const place of block.terminal.getOperands()) {
           liveIds.add(place.identifier.id);
         }
       }
@@ -82,9 +82,9 @@ export class LivenessAnalysis extends FunctionAnalysis<LivenessResult> {
       for (const structure of functionIR.structures.values()) {
         const isLive =
           structure.hasSideEffects() ||
-          structure.getWrittenPlaces().some((p) => liveIds.has(p.identifier.id));
+          structure.getDefs().some((p) => liveIds.has(p.identifier.id));
         if (isLive) {
-          for (const place of structure.getReadPlaces()) {
+          for (const place of structure.getOperands()) {
             if (!liveIds.has(place.identifier.id)) {
               liveIds.add(place.identifier.id);
               changed = true;

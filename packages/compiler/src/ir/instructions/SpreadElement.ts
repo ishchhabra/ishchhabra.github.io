@@ -36,7 +36,7 @@ export class SpreadElementInstruction extends BaseInstruction {
     );
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [this.argument];
   }
 

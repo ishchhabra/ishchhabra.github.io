@@ -168,7 +168,7 @@ export class SSABuilder {
   ): void {
     for (const instr of this.functionIR.header) {
       if (instr instanceof StoreLocalInstruction) {
-        for (const place of instr.getWrittenPlaces()) {
+        for (const place of instr.getDefs()) {
           this.pushIfPhi(place, phiDecls, stacks);
         }
       } else {
@@ -217,7 +217,7 @@ export class SSABuilder {
       const instruction = block.instructions[i];
 
       const rewriteMap = this.buildRewriteMap(
-        instruction.getReadPlaces?.() ?? [],
+        instruction.getOperands?.() ?? [],
         phiDecls,
         stacks,
       );
@@ -228,7 +228,7 @@ export class SSABuilder {
       }
 
       if (instruction instanceof StoreLocalInstruction) {
-        for (const place of instruction.getWrittenPlaces()) {
+        for (const place of instruction.getDefs()) {
           this.pushIfPhi(place, phiDecls, stacks, pushed);
         }
       }
@@ -244,19 +244,19 @@ export class SSABuilder {
     const structure = this.functionIR.structures.get(blockId);
     if (!structure) return;
 
-    const rewriteMap = this.buildRewriteMap(structure.getReadPlaces(), phiDecls, stacks);
+    const rewriteMap = this.buildRewriteMap(structure.getOperands(), phiDecls, stacks);
     if (rewriteMap.size > 0) {
       this.functionIR.setStructure(blockId, structure.rewrite(rewriteMap));
     }
 
-    for (const place of structure.getWrittenPlaces()) {
+    for (const place of structure.getDefs()) {
       this.pushIfPhi(place, phiDecls, stacks, pushed);
     }
   }
 
   private rewriteTerminal(
     block: {
-      terminal?: { getReadPlaces?(): Place[]; rewrite(v: Map<Identifier, Place>): any };
+      terminal?: { getOperands?(): Place[]; rewrite(v: Map<Identifier, Place>): any };
       replaceTerminal(t: any): void;
     },
     phiDecls: Set<DeclarationId>,
@@ -265,7 +265,7 @@ export class SSABuilder {
     if (!block.terminal) return;
 
     const rewriteMap = this.buildRewriteMap(
-      block.terminal.getReadPlaces?.() ?? [],
+      block.terminal.getOperands?.() ?? [],
       phiDecls,
       stacks,
     );

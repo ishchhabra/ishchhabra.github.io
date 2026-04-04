@@ -260,7 +260,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     }
     for (const [, block] of funcIR.blocks) {
       for (const instr of block.instructions) {
-        for (const place of instr.getReadPlaces()) {
+        for (const place of instr.getOperands()) {
           if (!ownPlaceIds.has(place.identifier.id)) {
             return true;
           }
@@ -402,19 +402,19 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     // Splice out the call and insert inlined instructions.
     const removed = callExpressionBlock.instructions[index];
     // Unregister the removed call instruction's uses and definers.
-    for (const place of removed.getReadPlaces()) {
+    for (const place of removed.getOperands()) {
       place.identifier.uses.delete(removed);
     }
-    for (const place of removed.getWrittenPlaces()) {
+    for (const place of removed.getDefs()) {
       if (place.identifier.definer === removed) place.identifier.definer = undefined;
     }
     callExpressionBlock.instructions.splice(index, 1, ...instrs);
     // Register inlined instructions' uses, definers, and placeToInstruction entries.
     for (const instr of instrs) {
-      for (const place of instr.getReadPlaces()) {
+      for (const place of instr.getOperands()) {
         place.identifier.uses.add(instr);
       }
-      for (const place of instr.getWrittenPlaces()) {
+      for (const place of instr.getDefs()) {
         place.identifier.definer = instr;
       }
       environment.placeToInstruction.set(instr.place.id, instr);

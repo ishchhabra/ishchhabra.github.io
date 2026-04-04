@@ -28,7 +28,7 @@ export class JSXTextInstruction extends JSXInstruction {
     return this;
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [];
   }
 

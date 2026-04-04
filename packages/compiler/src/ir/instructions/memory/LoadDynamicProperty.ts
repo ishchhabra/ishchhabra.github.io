@@ -39,7 +39,7 @@ export class LoadDynamicPropertyInstruction extends MemoryInstruction {
     );
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [this.object, this.property];
   }
 

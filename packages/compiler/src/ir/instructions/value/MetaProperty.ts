@@ -34,7 +34,7 @@ export class MetaPropertyInstruction extends ValueInstruction {
     return this;
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [];
   }
 

@@ -40,7 +40,7 @@ export class UnaryExpressionInstruction extends ValueInstruction {
     );
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [this.argument];
   }
 

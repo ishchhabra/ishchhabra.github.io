@@ -20,7 +20,7 @@ import { ModuleIRBuilder } from "./ModuleIRBuilder";
  * Builds an lval, emitting DeclareLocal at the leaf for let/const declarations.
  *
  * @returns place — the top-level Place representing this lval
- * @returns bindings — all leaf identifier Places (for pattern instruction getWrittenPlaces)
+ * @returns bindings — all leaf identifier Places (for pattern instruction getDefs)
  */
 export function buildLVal(
   nodePath: NodePath<t.LVal>,

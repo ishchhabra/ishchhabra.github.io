@@ -30,11 +30,11 @@ export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
         if (instr.hasSideEffects(this.environment)) continue;
 
         if (instr instanceof StoreLocalInstruction) {
-          if (instr.getWrittenPlaces().some((p) => p.identifier.uses.size > 0)) continue;
+          if (instr.getDefs().some((p) => p.identifier.uses.size > 0)) continue;
           const definer = instr.value.identifier.definer;
           if (definer instanceof BaseInstruction && !definer.isPure(this.environment)) continue;
         } else {
-          if (instr.getWrittenPlaces().some((p) => p.identifier.uses.size > 0)) continue;
+          if (instr.getDefs().some((p) => p.identifier.uses.size > 0)) continue;
         }
 
         block.removeInstructionAt(i);

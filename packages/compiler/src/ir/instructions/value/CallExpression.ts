@@ -42,7 +42,7 @@ export class CallExpressionInstruction extends ValueInstruction {
     );
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [this.callee, ...this.args];
   }
 

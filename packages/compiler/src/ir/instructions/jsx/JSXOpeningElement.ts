@@ -42,7 +42,7 @@ export class JSXOpeningElementInstruction extends JSXInstruction {
     );
   }
 
-  public getReadPlaces(): Place[] {
+  public getOperands(): Place[] {
     return [this.tagPlace, ...this.attributes];
   }
 

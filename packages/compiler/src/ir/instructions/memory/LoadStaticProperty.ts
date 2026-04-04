@@ -39,7 +39,7 @@ export class LoadStaticPropertyInstruction extends MemoryInstruction {
     );
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [this.object];
   }
 

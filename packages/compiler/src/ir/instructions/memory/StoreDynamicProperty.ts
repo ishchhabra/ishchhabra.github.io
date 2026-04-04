@@ -39,7 +39,7 @@ export class StoreDynamicPropertyInstruction extends MemoryInstruction {
     );
   }
 
-  getReadPlaces(): Place[] {
+  getOperands(): Place[] {
     return [this.object, this.property, this.value];
   }
 }
