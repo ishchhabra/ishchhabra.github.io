@@ -1,7 +1,7 @@
 import type * as ESTree from "estree";
 import { Environment } from "../../environment";
 import { Place } from "../../ir";
-import { isExpression, isJSX, isPattern, isStatement, type Node } from "../estree";
+import { isExpression, isJSX, isPattern, isStatement } from "../estree";
 import { type Scope } from "../scope/Scope";
 import { buildExportSpecifier } from "./buildExportSpecifier";
 import { buildIdentifier } from "./buildIdentifier";
@@ -33,12 +33,27 @@ export function buildNode(
 
   // ESTree represents object methods as Property nodes with method: true
   // or kind: "get" / "set"
-  if (node.type === "Property" && ((node as ESTree.Property).method || (node as ESTree.Property).kind !== "init")) {
-    return buildObjectMethod(node as ESTree.Property, scope, functionBuilder, moduleBuilder, environment);
+  if (
+    node.type === "Property" &&
+    ((node as ESTree.Property).method || (node as ESTree.Property).kind !== "init")
+  ) {
+    return buildObjectMethod(
+      node as ESTree.Property,
+      scope,
+      functionBuilder,
+      moduleBuilder,
+      environment,
+    );
   }
 
   if (node.type === "Property") {
-    return buildObjectProperty(node as ESTree.Property, scope, functionBuilder, moduleBuilder, environment);
+    return buildObjectProperty(
+      node as ESTree.Property,
+      scope,
+      functionBuilder,
+      moduleBuilder,
+      environment,
+    );
   }
 
   if (isJSX(node)) {
@@ -54,7 +69,13 @@ export function buildNode(
   }
 
   if (node.type === "SpreadElement") {
-    return buildSpreadElement(node as ESTree.SpreadElement, scope, functionBuilder, moduleBuilder, environment);
+    return buildSpreadElement(
+      node as ESTree.SpreadElement,
+      scope,
+      functionBuilder,
+      moduleBuilder,
+      environment,
+    );
   }
 
   if (isPattern(node)) {
@@ -62,7 +83,13 @@ export function buildNode(
   }
 
   if (node.type === "ExportSpecifier") {
-    return buildExportSpecifier(node as ESTree.ExportSpecifier, scope, functionBuilder, moduleBuilder, environment);
+    return buildExportSpecifier(
+      node as ESTree.ExportSpecifier,
+      scope,
+      functionBuilder,
+      moduleBuilder,
+      environment,
+    );
   }
 
   throw new Error(`Unsupported node type: ${node.type}`);

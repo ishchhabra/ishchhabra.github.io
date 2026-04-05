@@ -4,7 +4,7 @@ import { readFileSync } from "fs";
 import { Environment } from "../../environment";
 import { FunctionIR, FunctionIRId } from "../../ir/core/FunctionIR";
 import { ModuleExport, ModuleGlobal, ModuleIR } from "../../ir/core/ModuleIR";
-import { analyzeScopes, type Scope, type ScopeMap } from "../scope/Scope";
+import { analyzeScopes } from "../scope/Scope";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
 
 export class ModuleIRBuilder {
