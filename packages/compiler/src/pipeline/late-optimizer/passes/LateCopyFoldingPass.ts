@@ -180,6 +180,14 @@ export class LateCopyFoldingPass extends BaseOptimizationPass {
       return undefined;
     }
 
+    // The stored variable's lval must have no other users beyond the single
+    // load feeding the copy. Other instruction types (member expressions,
+    // call expressions, etc.) also reference the lval's identifier through
+    // their read places. Removing the StoreLocal would leave those dangling.
+    if (store.lval.identifier.uses.size > 1) {
+      return undefined;
+    }
+
     if (store.place.identifier.uses.size > 0) {
       return undefined;
     }

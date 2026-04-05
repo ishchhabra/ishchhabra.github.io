@@ -1,7 +1,7 @@
 import type * as ESTree from "estree";
 import { Environment } from "../../environment";
 import { Place } from "../../ir";
-import { isExpression, isJSX, isPattern, isStatement } from "../estree";
+import { isExpression, isJSX, isPattern, isStatement, isTSOnlyNode } from "../estree";
 import { type Scope } from "../scope/Scope";
 import { buildExportSpecifier } from "./buildExportSpecifier";
 import { buildIdentifier } from "./buildIdentifier";
@@ -90,6 +90,22 @@ export function buildNode(
       moduleBuilder,
       environment,
     );
+  }
+
+  // TS wrapper expressions (TSAsExpression, TSNonNullExpression, etc.)
+  // have an `.expression` property containing the inner JS expression.
+  // Other TS-only nodes (type aliases, interfaces, etc.) are skipped.
+  if (isTSOnlyNode(node)) {
+    if ("expression" in node) {
+      return buildNode(
+        (node as unknown as { expression: ESTree.Node }).expression,
+        scope,
+        functionBuilder,
+        moduleBuilder,
+        environment,
+      );
+    }
+    return undefined;
   }
 
   throw new Error(`Unsupported node type: ${node.type}`);

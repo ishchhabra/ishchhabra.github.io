@@ -48,7 +48,10 @@ export function generateSwitchTerminal(
 
     generator.generatedBlocks.delete(c.block);
     const caseStatements = generateBlock(c.block, functionIR, generator);
-    switchCases.push(t.switchCase(testNode, caseStatements));
+    // Wrap in a block to isolate const/let declarations across cases.
+    const body =
+      caseStatements.length > 0 ? [t.blockStatement(caseStatements)] : caseStatements;
+    switchCases.push(t.switchCase(testNode, body));
   }
 
   // Pop control stack and generate the fallthrough block.

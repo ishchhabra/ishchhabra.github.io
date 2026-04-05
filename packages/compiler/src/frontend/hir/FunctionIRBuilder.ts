@@ -12,7 +12,7 @@ import {
   ReturnTerminal,
 } from "../../ir";
 import { FunctionIR, makeFunctionIRId } from "../../ir/core/FunctionIR";
-import { isExpression } from "../estree";
+import { isExpression, isTSOnlyNode } from "../estree";
 import { type Scope, type ScopeMap } from "../scope/Scope";
 import { instantiateScopeBindings } from "./bindings";
 import { buildFunctionParams } from "./buildFunctionParams";
@@ -104,7 +104,7 @@ export class FunctionIRBuilder {
 
     const functionId = makeFunctionIRId(this.environment.nextFunctionId++);
 
-    if (isExpression(this.bodyNode)) {
+    if (isExpression(this.bodyNode) || isTSOnlyNode(this.bodyNode)) {
       const resultPlace = buildNode(
         this.bodyNode,
         this.scope,

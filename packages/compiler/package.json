@@ -16,7 +16,7 @@
   "scripts": {
     "build": "rollup -c",
     "build:watch": "rollup -c -w",
-    "postbuild": "pnpm-sync copy && echo 'Build complete'",
+    "postbuild": "pnpm-sync copy 2>/dev/null || (rm -rf ../../apps/*/node_modules/.pnpm/@i2-labs+compiler@*/node_modules/@i2-labs/compiler/dist && pnpm-sync copy) && echo 'Build complete'",
     "prepare": "pnpm sync:prepare:portfolio && pnpm build",
     "test": "vitest run",
     "test:update": "UPDATE_FIXTURES=1 vitest run",

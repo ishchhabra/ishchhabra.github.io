@@ -37,7 +37,20 @@ export class Pipeline {
     // oxlint-disable-next-line typescript/no-explicit-any
     const context = new Map<string, any>();
     const callGraph = new CallGraph(this.projectUnit);
-    for (const moduleName of this.projectUnit.postOrder.toReversed()) {
+
+    // Process modules in reverse post-order (dependencies first), then any
+    // modules not reachable from the entry points. Every module in the
+    // project unit must go through the SSA pipeline — the code generator
+    // emits code for ALL modules (including node_modules mirrors), so
+    // skipping a module here produces raw un-SSA'd IR with block-scoped
+    // variable escape bugs.
+    const postOrderSet = new Set(this.projectUnit.postOrder);
+    const processingOrder = [
+      ...this.projectUnit.postOrder.toReversed(),
+      ...[...this.projectUnit.modules.keys()].filter((m) => !postOrderSet.has(m)),
+    ];
+
+    for (const moduleName of processingOrder) {
       const moduleIR = this.projectUnit.modules.get(moduleName)!;
       for (const functionIR of moduleIR.functions.values()) {
         new CommonJSExportCollectorPass(functionIR, moduleIR).run();

@@ -14,10 +14,24 @@ export function buildImportDeclaration(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
+  // Type-only import: import type { Foo } from './mod'
+  if ((node as any).importKind === "type") {
+    return undefined;
+  }
+
   const sourceValue = node.source.value as string;
   const resolvedSourceValue = resolveModulePath(sourceValue, moduleBuilder.path);
 
-  const specifierPlaces = node.specifiers.map((specifier) => {
+  // Filter out type-only specifiers: import { type Foo, bar } from './mod'
+  const valueSpecifiers = node.specifiers.filter(
+    (specifier) => (specifier as any).importKind !== "type",
+  );
+
+  if (valueSpecifiers.length === 0) {
+    return undefined;
+  }
+
+  const specifierPlaces = valueSpecifiers.map((specifier) => {
     const importSpecifierPlace = buildImportSpecifier(
       specifier,
       node,
