@@ -10,6 +10,11 @@ export function buildExportAllDeclaration(
   _moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
+  // Type-only: export type * from './mod'
+  if ((node as any).exportKind === "type") {
+    return undefined;
+  }
+
   const source = node.source.value as string;
 
   const identifier = environment.createIdentifier();

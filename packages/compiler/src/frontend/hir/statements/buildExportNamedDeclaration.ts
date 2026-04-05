@@ -8,6 +8,7 @@ import {
   StoreContextInstruction,
 } from "../../../ir";
 import { ExportFromInstruction } from "../../../ir/instructions/module/ExportFrom";
+import { isTSOnlyNode } from "../../estree";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -21,6 +22,11 @@ export function buildExportNamedDeclaration(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
+  // Type-only exports: export type { Foo } or export type Foo = ...
+  if ((node as any).exportKind === "type") {
+    return undefined;
+  }
+
   // Re-exports: export { x, y } from './mod'
   if (node.source) {
     return buildExportFrom(node, scope, functionBuilder, moduleBuilder, environment);
@@ -31,13 +37,18 @@ export function buildExportNamedDeclaration(
 
   // An export can have either declaration or specifiers, but not both.
   if (declaration != null) {
-    let declarationPlace = buildExportDeclaration(
+    const declarationPlace = buildExportDeclaration(
       declaration,
       scope,
       functionBuilder,
       moduleBuilder,
       environment,
     );
+
+    // TS-only declaration (type alias, interface) — nothing to export.
+    if (declarationPlace === undefined) {
+      return undefined;
+    }
 
     // Suppress standalone emission on the StoreLocal/StoreContext so the
     // export wraps the declaration. Without this, codegen emits the
@@ -108,7 +119,12 @@ function buildExportDeclaration(
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
+): Place | undefined {
+  // TS-only declarations (type aliases, interfaces) inside exports — skip.
+  if (isTSOnlyNode(declaration)) {
+    return undefined;
+  }
+
   // Function declarations are fully built during scope instantiation.
   // Find the StoreLocal instruction that assigned the function value
   // to the binding — its place produces a VariableDeclaration in codegen.
@@ -175,6 +191,11 @@ function buildExportFrom(
       continue;
     }
 
+    // Skip type-only specifiers: export { type Foo } from './mod'
+    if ((specifier as any).exportKind === "type") {
+      continue;
+    }
+
     const local =
       specifier.local.type === "Identifier" ? specifier.local.name : String(specifier.local.value);
     const exported =
@@ -191,6 +212,11 @@ function buildExportFrom(
       name: local,
       source: resolvedSource,
     });
+  }
+
+  // All specifiers were type-only — nothing to emit.
+  if (specifiers.length === 0) {
+    return undefined;
   }
 
   const identifier = environment.createIdentifier();
