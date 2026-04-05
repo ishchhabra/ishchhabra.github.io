@@ -65,17 +65,10 @@ function buildIdentifierBindings(
     return;
   }
 
-  // Skip if already registered in the enclosing function (or program)
-  // scope -- for example, a hoisted `var` instantiated when entering the
-  // parent function/program scope.
-  // Check this scope's own data directly rather than using getData()
-  // which walks the entire scope chain and would incorrectly match a
-  // same-named declaration from an enclosing function.
-  const functionScope =
-    scope.kind === "function" || scope.kind === "program"
-      ? scope
-      : (scope.getFunctionParent() ?? scope.getProgramParent());
-  if (functionScope.data.get(originalName) !== undefined) return;
+  // Skip if already registered in this scope. Each declaration is visited
+  // exactly once per owning scope via the precomputed inventories, but
+  // duplicate `var x` in the same function still needs deduplication.
+  if (scope.data.get(originalName) !== undefined) return;
 
   const identifier = environment.createIdentifier();
   functionBuilder.registerDeclarationName(originalName, identifier.declarationId, scope);

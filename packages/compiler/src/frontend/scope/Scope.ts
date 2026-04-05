@@ -23,9 +23,49 @@ export interface Binding {
   references: Reference[];
 }
 
+/** A variable declaration entry in a scope's declaration inventory. */
+export interface VarDeclaration {
+  node: ESTree.VariableDeclaration;
+}
+
+/** A lexical (let/const) declaration entry. */
+export interface LexicalDeclaration {
+  kind: "let" | "const";
+  node: ESTree.VariableDeclaration;
+}
+
+/** A class declaration entry. */
+export interface ClassDeclarationEntry {
+  node: ESTree.ClassDeclaration;
+}
+
+/** A function declaration entry, in spec initialization order (last wins). */
+export interface FunctionDeclarationEntry {
+  node: ESTree.FunctionDeclaration;
+}
+
 export class Scope {
   public readonly symbols = new Map<string, Binding>();
   public readonly data = new Map<string, unknown>();
+
+  // ---- Pre-computed declaration inventories (populated during scope analysis) ----
+
+  /** `var` declarations owned by this scope (function/program scopes only). */
+  public readonly varDeclarations: VarDeclaration[] = [];
+
+  /** `let`/`const` declarations owned by this scope. */
+  public readonly lexicalDeclarations: LexicalDeclaration[] = [];
+
+  /** Class declarations owned by this scope. */
+  public readonly classDeclarations: ClassDeclarationEntry[] = [];
+
+  /**
+   * Function declarations to initialize, in spec order (last declaration
+   * of each name wins, per §10.2.11 step 29). For function/program scopes
+   * these are hoisted functions; for block scopes (module/strict mode)
+   * these are block-scoped function declarations.
+   */
+  public readonly functionsToInitialize: FunctionDeclarationEntry[] = [];
 
   constructor(
     public readonly parent: Scope | null,
@@ -190,20 +230,24 @@ function visitStatements(
   scopeMap: ScopeMap,
 ): void {
   // Hoist function declarations first (like JS does).
-  for (const stmt of stmts) {
-    if (stmt.type === "FunctionDeclaration" && stmt.id) {
-      registerBinding(stmt.id.name, "function", scope);
-    } else if (stmt.type === "ExportNamedDeclaration") {
-      const decl = (stmt as ESTree.ExportNamedDeclaration).declaration;
-      if (decl?.type === "FunctionDeclaration" && decl.id) {
-        registerBinding(decl.id.name, "function", scope);
-      }
-    } else if (stmt.type === "ExportDefaultDeclaration") {
-      const decl = (stmt as ESTree.ExportDefaultDeclaration).declaration;
-      if (decl.type === "FunctionDeclaration" && (decl as ESTree.FunctionDeclaration).id) {
-        registerBinding((decl as ESTree.FunctionDeclaration).id!.name, "function", scope);
+  // Per §10.2.11 step 29, collect in reverse order so the last declaration
+  // of each name wins, then reverse back to get spec initialization order.
+  const seenFunctionNames = new Set<string>();
+  const functionsReversed: ESTree.FunctionDeclaration[] = [];
+  for (let i = stmts.length - 1; i >= 0; i--) {
+    const fn = extractFunctionDeclaration(stmts[i]);
+    if (fn?.id) {
+      registerBinding(fn.id.name, "function", scope);
+      if (!seenFunctionNames.has(fn.id.name)) {
+        seenFunctionNames.add(fn.id.name);
+        functionsReversed.push(fn);
       }
     }
+  }
+  // Reverse back to get initialization order (last-wins, but executed
+  // in the order they appear among the unique set).
+  for (let i = functionsReversed.length - 1; i >= 0; i--) {
+    scope.functionsToInitialize.push({ node: functionsReversed[i] });
   }
 
   // Hoist var declarations.
@@ -211,9 +255,57 @@ function visitStatements(
     hoistVars(stmt, scope);
   }
 
+  // Collect lexical (let/const) and class declarations for the inventory.
+  for (const stmt of stmts) {
+    collectLexicalDeclarations(stmt, scope);
+  }
+
   // Visit all statements.
   for (const stmt of stmts) {
     visitNode(stmt, scope, scopeMap);
+  }
+}
+
+/** Extract a FunctionDeclaration from a statement, unwrapping exports. */
+function extractFunctionDeclaration(
+  stmt: ESTree.Statement | ESTree.ModuleDeclaration | ESTree.Directive,
+): ESTree.FunctionDeclaration | undefined {
+  if (stmt.type === "FunctionDeclaration") return stmt;
+  if (stmt.type === "ExportNamedDeclaration") {
+    const decl = (stmt as ESTree.ExportNamedDeclaration).declaration;
+    if (decl?.type === "FunctionDeclaration") return decl;
+  }
+  if (stmt.type === "ExportDefaultDeclaration") {
+    const decl = (stmt as ESTree.ExportDefaultDeclaration).declaration;
+    if (decl.type === "FunctionDeclaration") return decl as ESTree.FunctionDeclaration;
+  }
+  return undefined;
+}
+
+/** Collect let/const/class declarations into the scope's inventories. */
+function collectLexicalDeclarations(
+  stmt: ESTree.Statement | ESTree.ModuleDeclaration | ESTree.Directive,
+  scope: Scope,
+): void {
+  let node: ESTree.Statement | ESTree.Declaration = stmt as ESTree.Statement;
+
+  // Unwrap exports.
+  if (stmt.type === "ExportNamedDeclaration") {
+    const decl = (stmt as ESTree.ExportNamedDeclaration).declaration;
+    if (decl) node = decl;
+    else return;
+  } else if (stmt.type === "ExportDefaultDeclaration") {
+    const decl = (stmt as ESTree.ExportDefaultDeclaration).declaration;
+    if (decl.type === "ClassDeclaration") {
+      scope.classDeclarations.push({ node: decl as ESTree.ClassDeclaration });
+    }
+    return;
+  }
+
+  if (node.type === "VariableDeclaration" && (node.kind === "let" || node.kind === "const")) {
+    scope.lexicalDeclarations.push({ kind: node.kind, node });
+  } else if (node.type === "ClassDeclaration") {
+    scope.classDeclarations.push({ node });
   }
 }
 
@@ -225,6 +317,7 @@ function hoistVars(node: ESTree.Node, scope: Scope): void {
         for (const decl of node.declarations) {
           collectBindingNames(decl.id, "var", scope);
         }
+        scope.varDeclarations.push({ node });
       }
       break;
     case "ForStatement":
@@ -232,6 +325,7 @@ function hoistVars(node: ESTree.Node, scope: Scope): void {
         for (const decl of node.init.declarations) {
           collectBindingNames(decl.id, "var", scope);
         }
+        scope.varDeclarations.push({ node: node.init });
       }
       if (node.body) hoistVars(node.body, scope);
       break;
@@ -241,6 +335,7 @@ function hoistVars(node: ESTree.Node, scope: Scope): void {
         for (const decl of node.left.declarations) {
           collectBindingNames(decl.id, "var", scope);
         }
+        scope.varDeclarations.push({ node: node.left });
       }
       if (node.body) hoistVars(node.body, scope);
       break;
@@ -318,6 +413,11 @@ function visitVariableDeclaration(
     for (const decl of node.declarations) {
       collectBindingNames(decl.id, node.kind, scope);
     }
+    // Add to inventory if not already added by collectLexicalDeclarations
+    // (e.g., for-loop init declarations visited through visitNode).
+    if (!scope.lexicalDeclarations.some((d) => d.node === node)) {
+      scope.lexicalDeclarations.push({ kind: node.kind, node });
+    }
   }
 
   for (const decl of node.declarations) {
@@ -377,19 +477,39 @@ function visitSwitchStatement(
   const switchScope = new Scope(scope, "block");
   scopeMap.set(node, switchScope);
   visitNode(node.discriminant, scope, scopeMap);
-  // Hoist function declarations in switch cases to enclosing function/program scope.
-  for (const c of node.cases) {
-    for (const stmt of c.consequent) {
-      if (stmt.type === "FunctionDeclaration" && stmt.id) {
-        registerBinding(stmt.id.name, "function", scope);
+
+  // In module/strict mode, function declarations in switch cases are
+  // block-scoped to the switch scope (BlockDeclarationInstantiation §14.2.2),
+  // not hoisted to the enclosing function scope (Annex B sloppy behavior).
+  const seenFunctionNames = new Set<string>();
+  const allCaseStmts = node.cases.flatMap((c) => c.consequent);
+  for (let i = allCaseStmts.length - 1; i >= 0; i--) {
+    const stmt = allCaseStmts[i];
+    if (stmt.type === "FunctionDeclaration" && stmt.id) {
+      registerBinding(stmt.id.name, "function", switchScope);
+      if (!seenFunctionNames.has(stmt.id.name)) {
+        seenFunctionNames.add(stmt.id.name);
+        switchScope.functionsToInitialize.push({ node: stmt });
       }
     }
   }
+  // Reverse to get spec initialization order (last-wins among unique names).
+  switchScope.functionsToInitialize.reverse();
+
+  // Hoist var declarations to the enclosing function/program scope.
   for (const c of node.cases) {
     for (const stmt of c.consequent) {
       hoistVars(stmt, scope);
     }
   }
+
+  // Collect lexical declarations for the switch scope.
+  for (const c of node.cases) {
+    for (const stmt of c.consequent) {
+      collectLexicalDeclarations(stmt, switchScope);
+    }
+  }
+
   for (const c of node.cases) {
     if (c.test) visitNode(c.test, switchScope, scopeMap);
     for (const stmt of c.consequent) {

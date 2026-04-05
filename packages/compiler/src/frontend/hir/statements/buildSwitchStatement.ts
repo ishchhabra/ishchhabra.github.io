@@ -57,13 +57,20 @@ export function buildSwitchStatement(
   }> = [];
 
   // First pass: create blocks and evaluate test expressions.
-  // Test expressions must be evaluated in the pre-switch block (current block)
-  // to ensure they're available for the SwitchTerminal.
+  // Test expressions are evaluated in the switch's lexical scope so they
+  // observe the switch block's bindings (including TDZ for let/const/class).
+  // The discriminant was already evaluated in the outer scope above.
   for (const switchCase of switchCases) {
     let testPlace: import("../../../ir").Place | null = null;
 
     if (switchCase.test != null) {
-      const place = buildNode(switchCase.test, scope, functionBuilder, moduleBuilder, environment);
+      const place = buildNode(
+        switchCase.test,
+        switchScope,
+        functionBuilder,
+        moduleBuilder,
+        environment,
+      );
       if (place === undefined || Array.isArray(place)) {
         throw new Error("Switch case test must be a single place");
       }

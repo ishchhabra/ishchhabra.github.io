@@ -1,4 +1,4 @@
-const $2_0 = function $2_0() {
+const $0_0 = function $0_0() {
   return x;
 };
 const x = 10;

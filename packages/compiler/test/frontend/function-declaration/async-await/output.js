@@ -1,5 +1,5 @@
 const $0_0 = function $0_0() {
-  const $3_0 = async function $3_0() {
+  const $1_0 = async function $1_0() {
     const md = await getMarkdown({
       data: slug,
     });
@@ -9,7 +9,7 @@ const $0_0 = function $0_0() {
   let markdown = "";
   const handler = () => {
     if (!markdown) {
-      void $3_0();
+      void $1_0();
     }
   };
   handler();
