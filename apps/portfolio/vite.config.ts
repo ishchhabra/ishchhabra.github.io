@@ -186,6 +186,15 @@ export default defineConfig(async (): Promise<UserConfig> => {
     ssr: {
       noExternal: workspacePackageNames,
     },
+    build: {
+      rollupOptions: {
+        // oxc-parser has platform-specific native bindings and is externalized
+        // from the compiler's own rollup build. When Vite bundles the compiler
+        // (via ssr.noExternal for workspace packages), it encounters the bare
+        // `import "oxc-parser"` and must treat it as external.
+        external: ["oxc-parser"],
+      },
+    },
     // TanStack Start virtual modules and server-only Node modules are not available
     // in the worker build context. Externalize them so the worker bundle doesn't fail.
     worker: {
