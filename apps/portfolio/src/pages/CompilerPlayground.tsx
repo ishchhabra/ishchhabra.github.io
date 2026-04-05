@@ -104,7 +104,7 @@ export function CompilerPlayground() {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
       e.preventDefault();
-      handleCompile();
+      void handleCompile();
     }
     if (e.key === "Tab") {
       e.preventDefault();
