@@ -1,54 +1,57 @@
-import { NodePath } from "@babel/traverse";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import {
+  BinaryExpressionInstruction,
   DeclareLocalInstruction,
+  LiteralInstruction,
   LoadLocalInstruction,
   Place,
   StoreContextInstruction,
   StoreLocalInstruction,
 } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { throwTDZAccessError } from "../buildIdentifier";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
-import { buildBinaryExpression } from "./buildBinaryExpression";
 import { buildMemberExpressionUpdate } from "./buildMemberExpression";
 
 export function buildUpdateExpression(
-  nodePath: NodePath<t.UpdateExpression>,
+  node: ESTree.UpdateExpression,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  const argumentPath = nodePath.get("argument");
-  if (argumentPath.isMemberExpression()) {
+  const argument = node.argument;
+  if (argument.type === "MemberExpression") {
     return buildMemberExpressionUpdate(
-      nodePath,
-      argumentPath,
+      node,
+      argument,
+      scope,
       functionBuilder,
       moduleBuilder,
       environment,
     );
   }
-  if (!argumentPath.isIdentifier()) {
-    throw new Error(`Unsupported argument type: ${argumentPath.type}`);
+  if (argument.type !== "Identifier") {
+    throw new Error(`Unsupported argument type: ${argument.type}`);
   }
 
-  const declarationId = functionBuilder.getDeclarationId(argumentPath.node.name, nodePath);
+  const declarationId = functionBuilder.getDeclarationId(argument.name, scope);
   if (declarationId === undefined) {
-    throw new Error(`Variable accessed before declaration: ${argumentPath.node.name}`);
+    throw new Error(`Variable accessed before declaration: ${argument.name}`);
   }
 
   if (functionBuilder.isDeclarationInTDZ(declarationId)) {
     throwTDZAccessError(
-      functionBuilder.getDeclarationSourceName(declarationId) ?? argumentPath.node.name,
+      functionBuilder.getDeclarationSourceName(declarationId) ?? argument.name,
     );
   }
 
   const latestDeclaration = environment.getLatestDeclaration(declarationId)!;
   const originalPlace = environment.places.get(latestDeclaration.placeId);
   if (originalPlace === undefined) {
-    throw new Error(`Unable to find the place for ${argumentPath.node.name} (${declarationId})`);
+    throw new Error(`Unable to find the place for ${argument.name} (${declarationId})`);
   }
 
   // For postfix operations, snapshot the original value into a temporary
@@ -56,7 +59,7 @@ export function buildUpdateExpression(
   // Without this, in loops with phi nodes the original place gets reassigned
   // before codegen can read the pre-increment value.
   let oldValLoadPlace = originalPlace;
-  if (!nodePath.node.prefix) {
+  if (!node.prefix) {
     const oldValBinding = environment.createIdentifier();
     const oldValBindingPlace = environment.createPlace(oldValBinding);
     functionBuilder.addInstruction(
@@ -90,24 +93,32 @@ export function buildUpdateExpression(
     lvalPlace = environment.createPlace(lvalIdentifier);
   }
 
-  const rightLiteral = t.numericLiteral(1);
-  const isIncrement = nodePath.node.operator === "++";
-  const binaryExpression = t.binaryExpression(
-    isIncrement ? "+" : "-",
-    argumentPath.node,
-    rightLiteral,
+  // Build the binary expression inline instead of creating a synthetic path.
+  // Load the argument value.
+  const argLoadIdentifier = environment.createIdentifier(declarationId);
+  const argLoadPlace = environment.createPlace(argLoadIdentifier);
+  functionBuilder.addInstruction(
+    environment.createInstruction(LoadLocalInstruction, argLoadPlace, originalPlace),
   );
-  const binaryExpressionPath = createSyntheticBinaryPath(nodePath, binaryExpression);
 
-  const valuePlace = buildBinaryExpression(
-    binaryExpressionPath,
-    functionBuilder,
-    moduleBuilder,
-    environment,
+  // Create literal 1
+  const onePlace = environment.createPlace(environment.createIdentifier());
+  functionBuilder.addInstruction(
+    environment.createInstruction(LiteralInstruction, onePlace, 1),
   );
-  if (valuePlace === undefined || Array.isArray(valuePlace)) {
-    throw new Error("Update expression value must be a single place");
-  }
+
+  // Compute value +/- 1
+  const isIncrement = node.operator === "++";
+  const valuePlace = environment.createPlace(environment.createIdentifier());
+  functionBuilder.addInstruction(
+    environment.createInstruction(
+      BinaryExpressionInstruction,
+      valuePlace,
+      isIncrement ? "+" : "-",
+      argLoadPlace,
+      onePlace,
+    ),
+  );
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
@@ -131,7 +142,7 @@ export function buildUpdateExpression(
   functionBuilder.addInstruction(instruction);
   environment.registerDeclaration(declarationId, functionBuilder.currentBlock.id, lvalPlace.id);
 
-  if (nodePath.node.prefix) {
+  if (node.prefix) {
     // For prefix (++i), return a LoadLocal of the stored value so codegen
     // references the named variable ($0_1) instead of re-emitting the
     // binary expression.
@@ -143,21 +154,4 @@ export function buildUpdateExpression(
     return loadPlace;
   }
   return oldValLoadPlace;
-}
-
-function createSyntheticBinaryPath(
-  parentPath: NodePath<t.Node>,
-  binExpr: t.BinaryExpression,
-): NodePath<t.BinaryExpression> {
-  const containerNode = t.expressionStatement(binExpr);
-
-  const newPath = NodePath.get({
-    hub: parentPath.hub,
-    parentPath,
-    parent: parentPath.node,
-    container: containerNode,
-    key: "expression",
-  });
-
-  return newPath as NodePath<t.BinaryExpression>;
 }

@@ -1,11 +1,10 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as JSX from "estree-jsx";
 import { Environment } from "../../../environment";
 import { JSXOpeningFragmentInstruction, Place } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 export function buildJSXOpeningFragment(
-  nodePath: NodePath<t.JSXOpeningFragment>,
+  _node: JSX.JSXOpeningFragment,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {

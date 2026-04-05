@@ -1,20 +1,20 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as JSX from "estree-jsx";
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
 import { JSXSpreadAttributeInstruction } from "../../../ir/instructions/jsx/JSXSpreadAttribute";
+import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildJSXSpreadAttribute(
-  nodePath: NodePath<t.JSXSpreadAttribute>,
+  node: JSX.JSXSpreadAttribute,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
-  const argumentPath = nodePath.get("argument");
-  const argumentPlace = buildNode(argumentPath, functionBuilder, moduleBuilder, environment);
+  const argumentPlace = buildNode(node.argument, scope, functionBuilder, moduleBuilder, environment);
   if (argumentPlace === undefined || Array.isArray(argumentPlace)) {
     throw new Error("JSX spread attribute argument should be a single place");
   }

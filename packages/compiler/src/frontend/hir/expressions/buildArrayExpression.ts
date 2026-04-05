@@ -1,20 +1,20 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { ArrayExpressionInstruction } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildArrayExpression(
-  nodePath: NodePath<t.ArrayExpression>,
+  node: ESTree.ArrayExpression,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  const elementsPath = nodePath.get("elements");
-  const elementPlaces = elementsPath.map((elementPath) => {
-    const elementPlace = buildNode(elementPath, functionBuilder, moduleBuilder, environment);
+  const elementPlaces = node.elements.map((element) => {
+    const elementPlace = buildNode(element, scope, functionBuilder, moduleBuilder, environment);
     if (elementPlace === undefined || Array.isArray(elementPlace)) {
       throw new Error("Array expression element must be a single place");
     }

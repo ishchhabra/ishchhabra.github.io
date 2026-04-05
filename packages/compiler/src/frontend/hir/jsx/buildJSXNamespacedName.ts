@@ -1,11 +1,10 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as JSX from "estree-jsx";
 import { Environment } from "../../../environment";
 import { JSXNamespacedNameInstruction, Place } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 export function buildJSXNamespacedName(
-  nodePath: NodePath<t.JSXNamespacedName>,
+  node: JSX.JSXNamespacedName,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {
@@ -14,8 +13,8 @@ export function buildJSXNamespacedName(
   const instruction = environment.createInstruction(
     JSXNamespacedNameInstruction,
     place,
-    nodePath.node.namespace.name,
-    nodePath.node.name.name,
+    node.namespace.name,
+    node.name.name,
   );
   functionBuilder.addInstruction(instruction);
   return place;

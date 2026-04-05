@@ -1,20 +1,11 @@
-import { transformSync } from "@babel/core";
-import { parse } from "@babel/parser";
-import _traverse, { NodePath } from "@babel/traverse";
-import * as t from "@babel/types";
-import { createRequire } from "module";
+import type * as ESTree from "estree";
+import { parseSync } from "oxc-parser";
 import { readFileSync } from "fs";
 import { Environment } from "../../environment";
 import { FunctionIR, FunctionIRId } from "../../ir/core/FunctionIR";
 import { ModuleExport, ModuleGlobal, ModuleIR } from "../../ir/core/ModuleIR";
+import { analyzeScopes, type Scope, type ScopeMap } from "../scope/Scope";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
-
-const require = createRequire(import.meta.url);
-
-const traverse =
-  typeof _traverse === "function"
-    ? _traverse
-    : (_traverse as unknown as { default: typeof _traverse }).default;
 
 export class ModuleIRBuilder {
   public readonly globals: Map<string, ModuleGlobal> = new Map();
@@ -27,65 +18,35 @@ export class ModuleIRBuilder {
     public readonly environment: Environment,
   ) {}
 
-  private preprocess(code: string): string {
-    const isTSFile = this.path.endsWith(".ts") || this.path.endsWith(".tsx");
-
-    const presets = isTSFile
-      ? [
-          [
-            require.resolve("@babel/preset-typescript"),
-            { isTSX: this.path.endsWith(".tsx"), allExtensions: true },
-          ],
-        ]
-      : [];
-
-    const plugins: string[] = [];
-
-    const isJSXFile = this.path.endsWith(".jsx") || this.path.endsWith(".tsx");
-
-    const result = transformSync(code, {
-      filename: this.path,
-      presets,
-      plugins,
-      parserOpts: { plugins: isJSXFile ? ["jsx"] : [] },
-      configFile: false,
-      babelrc: false,
-    });
-    if (result?.code == null) {
-      throw new Error(`Failed to preprocess ${this.path}`);
-    }
-    return result.code;
-  }
-
   public buildFromSource(source: string): ModuleIR {
-    return this.buildFromCode(this.preprocess(source));
+    return this.buildFromCode(source);
   }
 
   public build(): ModuleIR {
-    return this.buildFromCode(this.preprocess(readFileSync(this.path, "utf-8")));
+    return this.buildFromCode(readFileSync(this.path, "utf-8"));
   }
 
   private buildFromCode(code: string): ModuleIR {
-    const ast = parse(code, {
+    const result = parseSync(this.path, code, {
       sourceType: "module",
-      plugins: ["jsx"],
+      astType: "js",
+      preserveParens: false,
     });
 
-    let programPath: NodePath<t.Program> | undefined;
-    traverse(ast, {
-      Program: (path) => {
-        programPath = path;
-      },
-    });
-
-    if (programPath === undefined) {
-      throw new Error("Program path not found");
+    if (result.errors.length > 0) {
+      const msg = result.errors.map((e) => e.message).join("\n");
+      throw new Error(`Parse errors in ${this.path}:\n${msg}`);
     }
+
+    const program = result.program as unknown as ESTree.Program;
+    const { programScope, scopeMap } = analyzeScopes(program);
 
     const functionIR = new FunctionIRBuilder(
       [],
-      programPath,
-      programPath,
+      program,
+      program,
+      programScope,
+      scopeMap,
       this.environment,
       this,
       false,

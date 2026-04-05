@@ -1,24 +1,19 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { ImportExpressionInstruction, Place } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildImportExpression(
-  expressionPath: NodePath<t.CallExpression>,
+  node: ESTree.ImportExpression,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
-  const argumentsPath = expressionPath.get("arguments");
-  if (argumentsPath.length === 0) {
-    throw new Error("Dynamic import requires a source argument");
-  }
-
-  const sourcePath = argumentsPath[0];
-  const sourcePlace = buildNode(sourcePath, functionBuilder, moduleBuilder, environment);
+  const sourcePlace = buildNode(node.source, scope, functionBuilder, moduleBuilder, environment);
   if (sourcePlace === undefined || Array.isArray(sourcePlace)) {
     throw new Error("Dynamic import source must be a single place");
   }

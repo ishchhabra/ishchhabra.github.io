@@ -1,22 +1,21 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../environment";
 import { DeclareLocalInstruction, ImportSpecifierInstruction } from "../../ir";
+import { type Scope } from "../scope/Scope";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
 import { resolveModulePath } from "./resolveModulePath";
 
 export function buildImportSpecifier(
-  specifierNodePath: NodePath<
-    t.ImportSpecifier | t.ImportDefaultSpecifier | t.ImportNamespaceSpecifier
-  >,
-  declarationNodePath: NodePath<t.ImportDeclaration>,
+  specifierNode: ESTree.ImportSpecifier | ESTree.ImportDefaultSpecifier | ESTree.ImportNamespaceSpecifier,
+  declarationNode: ESTree.ImportDeclaration,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  const localName = getLocalName(specifierNodePath);
-  const importedName = getImportedName(specifierNodePath);
+  const localName = getLocalName(specifierNode);
+  const importedName = getImportedName(specifierNode);
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
@@ -44,7 +43,7 @@ export function buildImportSpecifier(
   functionBuilder.registerDeclarationName(
     localName,
     bindingIdentifier.declarationId,
-    declarationNodePath,
+    scope,
   );
   functionBuilder.instantiateDeclaration(bindingIdentifier.declarationId, "import", localName);
   environment.registerDeclaration(
@@ -54,36 +53,36 @@ export function buildImportSpecifier(
   );
   environment.registerDeclarationInstruction(bindingPlace, instruction);
 
-  const source = declarationNodePath.node.source.value;
+  const source = declarationNode.source.value;
   moduleBuilder.globals.set(localName, {
     kind: "import",
     name: importedName,
-    source: resolveModulePath(source, moduleBuilder.path),
+    source: resolveModulePath(source as string, moduleBuilder.path),
   });
 
   return place;
 }
 
 function getLocalName(
-  nodePath: NodePath<t.ImportSpecifier | t.ImportDefaultSpecifier | t.ImportNamespaceSpecifier>,
+  node: ESTree.ImportSpecifier | ESTree.ImportDefaultSpecifier | ESTree.ImportNamespaceSpecifier,
 ) {
-  return nodePath.node.local.name;
+  return node.local.name;
 }
 
 function getImportedName(
-  nodePath: NodePath<t.ImportSpecifier | t.ImportDefaultSpecifier | t.ImportNamespaceSpecifier>,
+  node: ESTree.ImportSpecifier | ESTree.ImportDefaultSpecifier | ESTree.ImportNamespaceSpecifier,
 ) {
-  const node = nodePath.node;
-  if (t.isImportDefaultSpecifier(node)) {
+  if (node.type === "ImportDefaultSpecifier") {
     return "default";
-  } else if (t.isImportNamespaceSpecifier(node)) {
+  } else if (node.type === "ImportNamespaceSpecifier") {
     return "*";
   } else {
     const importedNode = node.imported;
-    if (t.isIdentifier(importedNode)) {
+    if (importedNode.type === "Identifier") {
       return importedNode.name;
     }
 
-    return importedNode.value;
+    // ESTree Literal with string value
+    return (importedNode as ESTree.Literal).value as string;
   }
 }

@@ -1,11 +1,10 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as JSX from "estree-jsx";
 import { Environment } from "../../../environment";
 import { JSXTextInstruction, Place } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 export function buildJSXText(
-  nodePath: NodePath<t.JSXText>,
+  node: JSX.JSXText,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place | undefined {
@@ -14,7 +13,7 @@ export function buildJSXText(
   const instruction = environment.createInstruction(
     JSXTextInstruction,
     place,
-    nodePath.node.value,
+    node.value,
   );
   functionBuilder.addInstruction(instruction);
   return place;

@@ -1,27 +1,31 @@
-import { NodePath } from "@babel/traverse";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
 import { ArrowFunctionExpressionInstruction } from "../../../ir/instructions/value/ArrowFunctionExpression";
+import { isExpression } from "../../estree";
+import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildArrowFunctionExpression(
-  nodePath: NodePath<t.ArrowFunctionExpression>,
+  node: ESTree.ArrowFunctionExpression,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
-  const paramPaths = nodePath.get("params");
-  const bodyPath = nodePath.get("body");
-  const scopePath = bodyPath.isExpression() ? nodePath : bodyPath;
+  const body = node.body;
+  const scopeNode = isExpression(body) ? node : body;
+  const childScope = functionBuilder.scopeFor(node);
   const functionIRBuilder = new FunctionIRBuilder(
-    paramPaths,
-    scopePath,
-    bodyPath,
+    node.params,
+    scopeNode,
+    body,
+    childScope,
+    functionBuilder.scopeMap,
     functionBuilder.environment,
     moduleBuilder,
-    nodePath.node.async,
+    node.async ?? false,
     false,
   );
   const functionIR = functionIRBuilder.build();
@@ -35,8 +39,8 @@ export function buildArrowFunctionExpression(
     ArrowFunctionExpressionInstruction,
     place,
     functionIR,
-    nodePath.node.async,
-    bodyPath.isExpression(),
+    node.async ?? false,
+    isExpression(body),
     false,
     capturedPlaces,
   );

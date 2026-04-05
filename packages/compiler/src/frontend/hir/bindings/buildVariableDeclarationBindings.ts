@@ -1,32 +1,30 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { DeclareLocalInstruction, LiteralInstruction, StoreLocalInstruction } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { DeclarationKind, FunctionIRBuilder } from "../FunctionIRBuilder";
 import { isBindingOwnedByScope } from "./isBindingOwnedByScope";
 import { isContextVariable } from "./isContextVariable";
 
 export function buildVariableDeclarationBindings(
-  bindingsPath: NodePath<t.Node>,
-  nodePath: NodePath<t.VariableDeclaration>,
+  scope: Scope,
+  node: ESTree.VariableDeclaration,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
   if (
-    nodePath.node.kind !== "var" &&
-    nodePath.node.kind !== "let" &&
-    nodePath.node.kind !== "const"
+    node.kind !== "var" &&
+    node.kind !== "let" &&
+    node.kind !== "const"
   ) {
-    throw new Error(`Unsupported variable declaration kind: ${nodePath.node.kind}`);
+    throw new Error(`Unsupported variable declaration kind: ${node.kind}`);
   }
 
-  const declarationPaths = nodePath.get("declarations");
-  for (const declarationPath of declarationPaths) {
-    const id = declarationPath.get("id") as NodePath<t.LVal>;
+  for (const declarator of node.declarations) {
     buildLValBindings(
-      bindingsPath,
-      id,
-      nodePath.node.kind,
+      scope,
+      declarator.id,
+      node.kind,
       functionBuilder,
       environment,
     );
@@ -34,107 +32,103 @@ export function buildVariableDeclarationBindings(
 }
 
 function buildLValBindings(
-  bindingsPath: NodePath,
-  nodePath: NodePath<t.LVal | t.ObjectProperty>,
+  scope: Scope,
+  node: ESTree.Pattern | ESTree.Property,
   declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
-  switch (nodePath.type) {
+  switch (node.type) {
     case "Identifier":
-      nodePath.assertIdentifier();
       buildIdentifierBindings(
-        bindingsPath,
-        nodePath,
+        scope,
+        node,
         declarationKind,
         functionBuilder,
         environment,
       );
       break;
     case "ArrayPattern":
-      nodePath.assertArrayPattern();
       buildArrayPatternBindings(
-        bindingsPath,
-        nodePath,
+        scope,
+        node,
         declarationKind,
         functionBuilder,
         environment,
       );
       break;
     case "AssignmentPattern":
-      nodePath.assertAssignmentPattern();
       buildAssignmentPatternBindings(
-        bindingsPath,
-        nodePath,
+        scope,
+        node,
         declarationKind,
         functionBuilder,
         environment,
       );
       break;
     case "ObjectPattern":
-      nodePath.assertObjectPattern();
       buildObjectPatternBindings(
-        bindingsPath,
-        nodePath,
+        scope,
+        node,
         declarationKind,
         functionBuilder,
         environment,
       );
       break;
-    case "ObjectProperty":
-      nodePath.assertObjectProperty();
+    case "Property":
       buildObjectPropertyBindings(
-        bindingsPath,
-        nodePath,
+        scope,
+        node,
         declarationKind,
         functionBuilder,
         environment,
       );
       break;
     case "RestElement":
-      nodePath.assertRestElement();
       buildRestElementBindings(
-        bindingsPath,
-        nodePath,
+        scope,
+        node,
         declarationKind,
         functionBuilder,
         environment,
       );
       break;
     default:
-      throw new Error(`Unsupported LVal type: ${nodePath.type}`);
+      throw new Error(`Unsupported LVal type: ${(node as ESTree.Node).type}`);
   }
 }
 
 function buildIdentifierBindings(
-  bindingsPath: NodePath,
-  nodePath: NodePath<t.Identifier>,
+  scope: Scope,
+  node: ESTree.Identifier,
   declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
-  const originalName = nodePath.node.name;
-  const binding = nodePath.scope.getBinding(originalName);
-  if (!isBindingOwnedByScope(bindingsPath, binding)) {
+  const originalName = node.name;
+  const binding = scope.getBinding(originalName);
+  if (!isBindingOwnedByScope(scope, binding)) {
     return;
   }
 
   // Skip if already registered in the enclosing function (or program)
-  // scope — for example, a hoisted `var` instantiated when entering the
+  // scope -- for example, a hoisted `var` instantiated when entering the
   // parent function/program scope.
-  // Check that scope's own data directly rather than using getData()
+  // Check this scope's own data directly rather than using getData()
   // which walks the entire scope chain and would incorrectly match a
   // same-named declaration from an enclosing function.
   const functionScope =
-    bindingsPath.scope.getFunctionParent() ?? bindingsPath.scope.getProgramParent();
-  if (functionScope.data[originalName] !== undefined) return;
+    scope.kind === "function" || scope.kind === "program"
+      ? scope
+      : scope.getFunctionParent() ?? scope.getProgramParent();
+  if (functionScope.data.get(originalName) !== undefined) return;
 
   const identifier = environment.createIdentifier();
-  functionBuilder.registerDeclarationName(originalName, identifier.declarationId, bindingsPath);
+  functionBuilder.registerDeclarationName(originalName, identifier.declarationId, scope);
   functionBuilder.instantiateDeclaration(identifier.declarationId, declarationKind, originalName);
 
   // Mark context variables so SSA can skip them.
-  if (binding && isContextVariable(binding, bindingsPath)) {
+  if (binding && isContextVariable(binding, scope)) {
     environment.contextDeclarationIds.add(identifier.declarationId);
   }
 
@@ -180,22 +174,20 @@ function buildIdentifierBindings(
 }
 
 function buildArrayPatternBindings(
-  bindingsPath: NodePath,
-  nodePath: NodePath<t.ArrayPattern>,
+  scope: Scope,
+  node: ESTree.ArrayPattern,
   declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
-  const elementsPath: NodePath<t.ArrayPattern["elements"][number]>[] = nodePath.get("elements");
-  for (const elementPath of elementsPath) {
-    if (!elementPath.hasNode()) {
+  for (const element of node.elements) {
+    if (element == null) {
       continue;
     }
 
-    elementPath.assertLVal();
     buildLValBindings(
-      bindingsPath,
-      elementPath,
+      scope,
+      element,
       declarationKind,
       functionBuilder,
       environment,
@@ -204,16 +196,15 @@ function buildArrayPatternBindings(
 }
 
 function buildAssignmentPatternBindings(
-  bindingsPath: NodePath,
-  nodePath: NodePath<t.AssignmentPattern>,
+  scope: Scope,
+  node: ESTree.AssignmentPattern,
   declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
-  const leftPath = nodePath.get("left");
   buildLValBindings(
-    bindingsPath,
-    leftPath,
+    scope,
+    node.left,
     declarationKind,
     functionBuilder,
     environment,
@@ -221,21 +212,16 @@ function buildAssignmentPatternBindings(
 }
 
 function buildObjectPatternBindings(
-  bindingsPath: NodePath,
-  nodePath: NodePath<t.ObjectPattern>,
+  scope: Scope,
+  node: ESTree.ObjectPattern,
   declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
-  const propertiesPath = nodePath.get("properties");
-  for (const propertyPath of propertiesPath) {
-    if (!(propertyPath.isLVal() || propertyPath.isObjectProperty())) {
-      throw new Error(`Unsupported property type: ${propertyPath.type}`);
-    }
-
+  for (const property of node.properties) {
     buildLValBindings(
-      bindingsPath,
-      propertyPath,
+      scope,
+      property,
       declarationKind,
       functionBuilder,
       environment,
@@ -244,20 +230,26 @@ function buildObjectPatternBindings(
 }
 
 function buildObjectPropertyBindings(
-  bindingsPath: NodePath,
-  nodePath: NodePath<t.ObjectProperty>,
+  scope: Scope,
+  node: ESTree.Property,
   declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
-  const valuePath = nodePath.get("value");
-  if (!(valuePath.isLVal() || valuePath.isObjectProperty())) {
-    throw new Error(`Unsupported property type: ${valuePath.type}`);
+  const value = node.value;
+  if (
+    value.type !== "Identifier" &&
+    value.type !== "ArrayPattern" &&
+    value.type !== "ObjectPattern" &&
+    value.type !== "AssignmentPattern" &&
+    value.type !== "RestElement"
+  ) {
+    throw new Error(`Unsupported property value type: ${value.type}`);
   }
 
   buildLValBindings(
-    bindingsPath,
-    valuePath,
+    scope,
+    value as ESTree.Pattern,
     declarationKind,
     functionBuilder,
     environment,
@@ -265,16 +257,15 @@ function buildObjectPropertyBindings(
 }
 
 function buildRestElementBindings(
-  bindingsPath: NodePath,
-  nodePath: NodePath<t.RestElement>,
+  scope: Scope,
+  node: ESTree.RestElement,
   declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
-  const elementPath = nodePath.get("argument");
   buildLValBindings(
-    bindingsPath,
-    elementPath,
+    scope,
+    node.argument,
     declarationKind,
     functionBuilder,
     environment,

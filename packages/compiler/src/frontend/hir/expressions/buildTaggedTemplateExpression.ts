@@ -1,25 +1,24 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { TaggedTemplateExpressionInstruction } from "../../../ir/instructions/value/TaggedTemplateExpression";
+import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildTaggedTemplateExpression(
-  nodePath: NodePath<t.TaggedTemplateExpression>,
+  node: ESTree.TaggedTemplateExpression,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  const tagPath = nodePath.get("tag");
-  const tagPlace = buildNode(tagPath, functionBuilder, moduleBuilder, environment);
+  const tagPlace = buildNode(node.tag, scope, functionBuilder, moduleBuilder, environment);
   if (tagPlace === undefined || Array.isArray(tagPlace)) {
     throw new Error("Tagged template tag must be a single place");
   }
 
-  const quasiPath = nodePath.get("quasi");
-  const quasiPlace = buildNode(quasiPath, functionBuilder, moduleBuilder, environment);
+  const quasiPlace = buildNode(node.quasi, scope, functionBuilder, moduleBuilder, environment);
   if (quasiPlace === undefined || Array.isArray(quasiPlace)) {
     throw new Error("Tagged template quasi must be a single place");
   }

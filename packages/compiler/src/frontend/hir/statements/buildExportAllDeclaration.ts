@@ -1,17 +1,16 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { ExportAllInstruction } from "../../../ir/instructions/module/ExportAll";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildExportAllDeclaration(
-  nodePath: NodePath<t.ExportAllDeclaration>,
+  node: ESTree.ExportAllDeclaration,
   functionBuilder: FunctionIRBuilder,
   _moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  const source = nodePath.node.source.value;
+  const source = node.source.value as string;
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);

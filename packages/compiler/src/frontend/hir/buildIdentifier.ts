@@ -1,5 +1,4 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../environment";
 import {
   DeclareLocalInstruction,
@@ -9,29 +8,28 @@ import {
   LoadLocalInstruction,
   Place,
 } from "../../ir";
+import { type Scope } from "../scope/Scope";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
 
 /**
- * Builds a place for an identifier. If the identifier is not a variable declarator,
- * a load instruction is created to load the identifier from the scope. Otherwise,
- * a binding instruction is created.
+ * Builds a place for an identifier. Identifiers reaching this function via
+ * buildNode are reference-position identifiers (binding-position identifiers
+ * are handled by buildLVal, buildImportSpecifier, etc. directly).
  *
- * @param nodePath - The Babel NodePath for the identifier
+ * @param node - The ESTree Identifier node
+ * @param scope - The scope info for this node
  * @param builder - The FunctionIRBuilder managing IR state
  * @param environment - The environment managing IR state
  *
  * @returns The `Place` representing this identifier in the IR
  */
 export function buildIdentifier(
-  nodePath: NodePath<t.Identifier>,
+  node: ESTree.Identifier,
+  scope: Scope,
   builder: FunctionIRBuilder,
   environment: Environment,
 ) {
-  if (nodePath.isReferencedIdentifier()) {
-    return buildReferencedIdentifier(nodePath, builder, environment);
-  } else {
-    return buildBindingIdentifier(nodePath, builder, environment);
-  }
+  return buildReferencedIdentifier(node, scope, builder, environment);
 }
 
 export function throwTDZAccessError(name: string): never {
@@ -39,17 +37,18 @@ export function throwTDZAccessError(name: string): never {
 }
 
 export function buildBindingIdentifier(
-  nodePath: NodePath<t.Identifier>,
+  node: ESTree.Identifier,
+  scope: Scope,
   builder: FunctionIRBuilder,
   environment: Environment,
 ) {
-  const name = nodePath.node.name;
+  const name = node.name;
 
   let place: Place | undefined;
   // In case we already have a declaration place, we need to use that, so that
   // we're using the place that was created when the binding was instantiated
   // for the owning scope.
-  const declarationId = builder.getDeclarationId(name, nodePath);
+  const declarationId = builder.getDeclarationId(name, scope);
   if (declarationId !== undefined) {
     const latestDeclaration = environment.getLatestDeclaration(declarationId);
     place = environment.places.get(latestDeclaration.placeId);
@@ -73,12 +72,13 @@ export function buildBindingIdentifier(
 }
 
 function buildReferencedIdentifier(
-  nodePath: NodePath<t.Identifier>,
+  node: ESTree.Identifier,
+  scope: Scope,
   builder: FunctionIRBuilder,
   environment: Environment,
 ) {
-  const name = nodePath.node.name;
-  const declarationId = builder.getDeclarationId(name, nodePath);
+  const name = node.name;
+  const declarationId = builder.getDeclarationId(name, scope);
 
   const identifier = environment.createIdentifier(declarationId);
   const place = environment.createPlace(identifier);
@@ -93,7 +93,7 @@ function buildReferencedIdentifier(
     const instruction = environment.createInstruction(LoadGlobalInstruction, place, name);
     builder.addInstruction(instruction);
   } else {
-    const declarationId = builder.getDeclarationId(name, nodePath);
+    const declarationId = builder.getDeclarationId(name, scope);
     if (declarationId === undefined) {
       throw new Error(`Variable accessed before declaration: ${name}`);
     }

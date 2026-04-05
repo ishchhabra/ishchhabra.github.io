@@ -1,31 +1,33 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { BaseInstruction, ExportNamedDeclarationInstruction, Place, StoreLocalInstruction, StoreContextInstruction } from "../../../ir";
 import { ExportFromInstruction } from "../../../ir/instructions/module/ExportFrom";
+import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { resolveModulePath } from "../resolveModulePath";
 
 export function buildExportNamedDeclaration(
-  nodePath: NodePath<t.ExportNamedDeclaration>,
+  node: ESTree.ExportNamedDeclaration,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
   // Re-exports: export { x, y } from './mod'
-  if (nodePath.node.source) {
-    return buildExportFrom(nodePath, functionBuilder, moduleBuilder, environment);
+  if (node.source) {
+    return buildExportFrom(node, scope, functionBuilder, moduleBuilder, environment);
   }
 
-  const declarationPath = nodePath.get("declaration");
-  const specifiersPath = nodePath.get("specifiers");
+  const declaration = node.declaration;
+  const specifiers = node.specifiers;
 
   // An export can have either declaration or specifiers, but not both.
-  if (declarationPath.hasNode()) {
+  if (declaration != null) {
     let declarationPlace = buildExportDeclaration(
-      declarationPath,
+      declaration,
+      scope,
       functionBuilder,
       moduleBuilder,
       environment,
@@ -61,9 +63,10 @@ export function buildExportNamedDeclaration(
     });
     return place;
   } else {
-    const exportSpecifierPlaces = specifiersPath.map((specifierPath) => {
+    const exportSpecifierPlaces = specifiers.map((specifier) => {
       const exportSpecifierPlace = buildNode(
-        specifierPath,
+        specifier,
+        scope,
         functionBuilder,
         moduleBuilder,
         environment,
@@ -94,7 +97,8 @@ export function buildExportNamedDeclaration(
  * returns undefined for these).
  */
 function buildExportDeclaration(
-  declarationPath: NodePath<t.Node>,
+  declaration: ESTree.Declaration,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
@@ -102,9 +106,9 @@ function buildExportDeclaration(
   // Function declarations are fully built during scope instantiation.
   // Find the StoreLocal instruction that assigned the function value
   // to the binding — its place produces a VariableDeclaration in codegen.
-  if (declarationPath.isFunctionDeclaration() && declarationPath.node.id) {
-    const name = declarationPath.node.id.name;
-    const declarationId = functionBuilder.getDeclarationId(name, declarationPath);
+  if (declaration.type === "FunctionDeclaration" && declaration.id) {
+    const name = declaration.id.name;
+    const declarationId = functionBuilder.getDeclarationId(name, scope);
     if (declarationId !== undefined) {
       const storeInstr = findStoreLocal(functionBuilder, declarationId);
       if (storeInstr !== undefined) {
@@ -116,13 +120,13 @@ function buildExportDeclaration(
     }
   }
 
-  let result = buildNode(declarationPath, functionBuilder, moduleBuilder, environment);
+  let result = buildNode(declaration, scope, functionBuilder, moduleBuilder, environment);
   if (Array.isArray(result)) {
     // Multi-declarator: `export const a = 1, b = 2;`
     result = result[0];
   }
   if (result === undefined) {
-    throw new Error(`Export declaration produced no place for ${declarationPath.type}`);
+    throw new Error(`Export declaration produced no place for ${declaration.type}`);
   }
   return result;
 }
@@ -149,31 +153,33 @@ function findStoreLocal(
 }
 
 function buildExportFrom(
-  nodePath: NodePath<t.ExportNamedDeclaration>,
+  node: ESTree.ExportNamedDeclaration,
+  _scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  const source = nodePath.node.source!.value;
+  const source = node.source!.value as string;
   const resolvedSource = resolveModulePath(source, moduleBuilder.path);
 
   const specifiers: Array<{ local: string; exported: string }> = [];
 
-  for (const specifier of nodePath.node.specifiers) {
-    if (!t.isExportSpecifier(specifier)) {
+  for (const specifier of node.specifiers) {
+    if (specifier.type !== "ExportSpecifier") {
       continue;
     }
 
-    const local = specifier.local.name;
-    const exported = t.isIdentifier(specifier.exported)
-      ? specifier.exported.name
-      : specifier.exported.value;
+    const local = specifier.local.type === "Identifier" ? specifier.local.name : String(specifier.local.value);
+    const exported =
+      specifier.exported.type === "Identifier"
+        ? specifier.exported.name
+        : String(specifier.exported.value);
 
     specifiers.push({ local, exported });
 
     // Register as an import so ProjectBuilder discovers the source module
     // and CallGraph can resolve through the re-export chain.
-    moduleBuilder.globals.set(exported, {
+    moduleBuilder.globals.set(exported as string, {
       kind: "import",
       name: local,
       source: resolvedSource,

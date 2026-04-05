@@ -15,7 +15,10 @@ export function generateTemplateLiteralInstruction(
     return node;
   });
 
-  const node = t.templateLiteral(instruction.quasis, expressions);
+  const quasis = instruction.quasis.map((q) =>
+    t.templateElement({ raw: q.value.raw, cooked: q.value.cooked ?? q.value.raw }, q.tail),
+  );
+  const node = t.templateLiteral(quasis, expressions);
   generator.places.set(instruction.place.id, node);
   return node;
 }

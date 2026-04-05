@@ -1,29 +1,27 @@
-import { NodePath } from "@babel/traverse";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { ImportDeclarationInstruction } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { buildImportSpecifier } from "../buildImportSpecifier";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { resolveModulePath } from "../resolveModulePath";
 
 export function buildImportDeclaration(
-  nodePath: NodePath<t.ImportDeclaration>,
+  node: ESTree.ImportDeclaration,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  const sourcePath = nodePath.get("source");
-  const sourceValue = sourcePath.node.value;
+  const sourceValue = node.source.value as string;
   const resolvedSourceValue = resolveModulePath(sourceValue, moduleBuilder.path);
 
-  const specifiersPath = nodePath.get("specifiers");
-  const specifierPlaces = specifiersPath.map((specifierPath) => {
+  const specifierPlaces = node.specifiers.map((specifier) => {
     const importSpecifierPlace = buildImportSpecifier(
-      specifierPath as NodePath<
-        t.ImportSpecifier | t.ImportDefaultSpecifier | t.ImportNamespaceSpecifier
-      >,
-      nodePath,
+      specifier,
+      node,
+      scope,
       functionBuilder,
       moduleBuilder,
       environment,

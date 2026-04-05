@@ -1,18 +1,19 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as JSX from "estree-jsx";
 import { Environment } from "../../../environment";
 import { JSXClosingElementInstruction, Place } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildJSXClosingElement(
-  nodePath: NodePath<t.JSXClosingElement>,
+  node: JSX.JSXClosingElement,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
-  const tagPlace = buildNode(nodePath.get("name"), functionBuilder, moduleBuilder, environment);
+  const tagPlace = buildNode(node.name, scope, functionBuilder, moduleBuilder, environment);
   if (tagPlace === undefined || Array.isArray(tagPlace)) {
     throw new Error("JSX closing element tag name should be a single place");
   }

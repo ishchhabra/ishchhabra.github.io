@@ -1,13 +1,14 @@
-import { NodePath } from "@babel/traverse";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { BranchTerminal, createInstructionId, JumpTerminal } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildWhileStatement(
-  nodePath: NodePath<t.WhileStatement>,
+  node: ESTree.WhileStatement,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
@@ -16,12 +17,11 @@ export function buildWhileStatement(
   const currentBlock = functionBuilder.currentBlock;
 
   // Build the test block.
-  const testPath = nodePath.get("test");
   const testBlock = environment.createBlock();
   functionBuilder.blocks.set(testBlock.id, testBlock);
 
   functionBuilder.currentBlock = testBlock;
-  const testPlace = buildNode(testPath, functionBuilder, moduleBuilder, environment);
+  const testPlace = buildNode(node.test, scope, functionBuilder, moduleBuilder, environment);
   if (testPlace === undefined || Array.isArray(testPlace)) {
     throw new Error("While statement test must be a single place");
   }
@@ -32,7 +32,6 @@ export function buildWhileStatement(
   functionBuilder.blocks.set(exitBlock.id, exitBlock);
 
   // Build the body block.
-  const bodyPath = nodePath.get("body");
   const bodyBlock = environment.createBlock();
   functionBuilder.blocks.set(bodyBlock.id, bodyBlock);
 
@@ -46,7 +45,7 @@ export function buildWhileStatement(
   if (label) {
     functionBuilder.blockLabels.set(testBlock.id, label);
   }
-  buildNode(bodyPath, functionBuilder, moduleBuilder, environment);
+  buildNode(node.body, scope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
   const bodyBlockTerminus = functionBuilder.currentBlock;
 

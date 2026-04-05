@@ -1,20 +1,22 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { ArrayPatternInstruction, Place } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildArrayPattern(
-  nodePath: NodePath<t.ArrayPattern>,
+  node: ESTree.ArrayPattern,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
-  const elementPaths = nodePath.get("elements");
-  const elementPlaces = elementPaths.map((elementPath) => {
-    const elementPlace = buildNode(elementPath, functionBuilder, moduleBuilder, environment);
+  const elementPlaces = node.elements.map((element) => {
+    if (element == null) return null;
+
+    const elementPlace = buildNode(element, scope, functionBuilder, moduleBuilder, environment);
     if (elementPlace === undefined || Array.isArray(elementPlace)) {
       throw new Error("Array pattern element must be a single place");
     }

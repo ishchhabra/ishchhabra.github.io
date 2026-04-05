@@ -1,11 +1,11 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { ClassExpressionInstruction } from "../../../ir/instructions/value/ClassExpression";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 export function buildClassExpression(
-  nodePath: NodePath<t.ClassExpression>,
+  _node: ESTree.ClassExpression,
+  _scope: unknown,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {

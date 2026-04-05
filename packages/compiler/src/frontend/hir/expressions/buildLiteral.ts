@@ -1,15 +1,14 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { LiteralInstruction, TPrimitiveValue } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 export function buildLiteral(
-  expressionPath: NodePath<t.Literal>,
+  node: ESTree.Literal,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
-  const value = nodeToValue(expressionPath.node);
+  const value = nodeToValue(node);
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
@@ -23,17 +22,17 @@ export function buildLiteral(
   return place;
 }
 
-function nodeToValue(node: t.Literal): TPrimitiveValue {
-  switch (node.type) {
-    case "BooleanLiteral":
-    case "NumericLiteral":
-    case "StringLiteral":
-      return node.value;
-    case "NullLiteral":
-      return null;
-    case "BigIntLiteral":
-      return BigInt(node.value);
+function nodeToValue(node: ESTree.Literal): TPrimitiveValue {
+  // ESTree BigIntLiteral has a `bigint` property with the string representation
+  if ("bigint" in node && node.bigint !== undefined) {
+    return BigInt(node.bigint);
   }
 
-  throw new Error(`Unsupported literal type: ${node.type}`);
+  // ESTree RegExpLiteral — should not reach here (handled by buildRegExpLiteral)
+  if ("regex" in node) {
+    throw new Error("RegExp literals should be handled by buildRegExpLiteral");
+  }
+
+  // value is string | number | boolean | null
+  return node.value as TPrimitiveValue;
 }

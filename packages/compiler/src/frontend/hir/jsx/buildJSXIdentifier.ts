@@ -1,5 +1,4 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as JSX from "estree-jsx";
 import { Environment } from "../../../environment";
 import {
   JSXIdentifierInstruction,
@@ -9,22 +8,24 @@ import {
   LoadLocalInstruction,
   Place,
 } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { throwTDZAccessError } from "../buildIdentifier";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 /**
  * Lower a JSX tag name. React treats names starting with a lowercase ASCII letter
- * as intrinsic host elements (DOM/SVG), not as references to in-scope bindings —
+ * as intrinsic host elements (DOM/SVG), not as references to in-scope bindings --
  * so `<code>` must stay the tag `code` even when a parameter or local is named `code`.
  * Uppercase / non-intrinsic tags resolve like normal identifiers: local/context load
  * or `LoadGlobal`.
  */
 export function buildJSXIdentifier(
-  nodePath: NodePath<t.JSXIdentifier>,
+  node: JSX.JSXIdentifier,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {
-  const name = nodePath.node.name;
+  const name = node.name;
   const outIdentifier = environment.createIdentifier();
   const outPlace = environment.createPlace(outIdentifier);
 
@@ -36,7 +37,7 @@ export function buildJSXIdentifier(
       environment.createInstruction(LiteralInstruction, valuePlace, name),
     );
   } else {
-    const declarationId = functionBuilder.getDeclarationId(name, nodePath);
+    const declarationId = functionBuilder.getDeclarationId(name, scope);
 
     if (declarationId !== undefined) {
       if (functionBuilder.isDeclarationInTDZ(declarationId)) {

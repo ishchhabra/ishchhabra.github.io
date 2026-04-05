@@ -1,35 +1,32 @@
-import { NodePath } from "@babel/traverse";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { StoreLocalInstruction } from "../../../ir";
 import { ClassExpressionInstruction } from "../../../ir/instructions/value/ClassExpression";
+import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
-import { getDeclarationOwningPath } from "../getDeclarationOwningPath";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildClassDeclaration(
-  nodePath: NodePath<t.ClassDeclaration>,
+  node: ESTree.ClassDeclaration,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   _moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  const idPath = nodePath.get("id");
-  if (!idPath.isIdentifier()) {
+  const id = node.id;
+  if (id == null || id.type !== "Identifier") {
     throw new Error("Invalid class declaration: missing id");
   }
 
-  const declarationId = functionBuilder.getDeclarationId(
-    idPath.node.name,
-    getDeclarationOwningPath(nodePath),
-  );
+  const declarationId = functionBuilder.getDeclarationId(id.name, scope);
   if (declarationId === undefined) {
-    throw new Error(`Class declaration binding was not instantiated: ${idPath.node.name}`);
+    throw new Error(`Class declaration binding was not instantiated: ${id.name}`);
   }
 
   const latestDeclaration = environment.getLatestDeclaration(declarationId);
   const identifierPlace = environment.places.get(latestDeclaration.placeId);
   if (identifierPlace === undefined) {
-    throw new Error(`Unable to find the place for ${idPath.node.name} (${declarationId})`);
+    throw new Error(`Unable to find the place for ${id.name} (${declarationId})`);
   }
 
   const classPlace = environment.createPlace(environment.createIdentifier(declarationId));

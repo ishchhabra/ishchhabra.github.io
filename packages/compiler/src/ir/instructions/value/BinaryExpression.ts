@@ -1,7 +1,11 @@
-import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
+
+export type BinaryOperator =
+  | "==" | "!=" | "===" | "!==" | "<" | "<=" | ">" | ">="
+  | "<<" | ">>" | ">>>" | "+" | "-" | "*" | "/" | "%" | "**"
+  | "|" | "^" | "&" | "in" | "instanceof";
 
 /**
  * Represents a binary expression.
@@ -13,7 +17,7 @@ export class BinaryExpressionInstruction extends ValueInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly operator: t.BinaryExpression["operator"],
+    public readonly operator: BinaryOperator,
     public readonly left: Place,
     public readonly right: Place,
   ) {

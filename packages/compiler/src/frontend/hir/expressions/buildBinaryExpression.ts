@@ -1,26 +1,28 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { BinaryExpressionInstruction } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildBinaryExpression(
-  nodePath: NodePath<t.BinaryExpression>,
+  node: ESTree.BinaryExpression,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  const leftPath: NodePath<t.PrivateName | t.Expression> = nodePath.get("left");
-  leftPath.assertExpression();
-  const leftPlace = buildNode(leftPath, functionBuilder, moduleBuilder, environment);
+  const left = node.left;
+  if (left.type === "PrivateIdentifier") {
+    throw new Error("PrivateIdentifier in binary expression is not supported");
+  }
+  const leftPlace = buildNode(left, scope, functionBuilder, moduleBuilder, environment);
   if (leftPlace === undefined || Array.isArray(leftPlace)) {
     throw new Error("Binary expression left must be a single place");
   }
 
-  const rightPath = nodePath.get("right");
-  const rightPlace = buildNode(rightPath, functionBuilder, moduleBuilder, environment);
+  const rightPlace = buildNode(node.right, scope, functionBuilder, moduleBuilder, environment);
   if (rightPlace === undefined || Array.isArray(rightPlace)) {
     throw new Error("Binary expression right must be a single place");
   }
@@ -30,7 +32,7 @@ export function buildBinaryExpression(
   const instruction = environment.createInstruction(
     BinaryExpressionInstruction,
     place,
-    nodePath.node.operator,
+    node.operator,
     leftPlace,
     rightPlace,
   );

@@ -1,19 +1,19 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { UnaryExpressionInstruction } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildUnaryExpression(
-  nodePath: NodePath<t.UnaryExpression>,
+  node: ESTree.UnaryExpression,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  const argumentPath = nodePath.get("argument");
-  const argumentPlace = buildNode(argumentPath, functionBuilder, moduleBuilder, environment);
+  const argumentPlace = buildNode(node.argument, scope, functionBuilder, moduleBuilder, environment);
   if (argumentPlace === undefined || Array.isArray(argumentPlace)) {
     throw new Error("Unary expression argument must be a single place");
   }
@@ -23,7 +23,7 @@ export function buildUnaryExpression(
   const instruction = environment.createInstruction(
     UnaryExpressionInstruction,
     place,
-    nodePath.node.operator,
+    node.operator,
     argumentPlace,
   );
   functionBuilder.addInstruction(instruction);

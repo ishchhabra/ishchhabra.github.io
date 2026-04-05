@@ -1,14 +1,15 @@
-import { NodePath } from "@babel/traverse";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { JumpTerminal, makeInstructionId } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { instantiateScopeBindings } from "../bindings";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildStatementList } from "./buildStatementList";
 
 export function buildBlockStatement(
-  nodePath: NodePath<t.BlockStatement>,
+  node: ESTree.BlockStatement,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
@@ -19,10 +20,10 @@ export function buildBlockStatement(
   functionBuilder.blocks.set(block.id, block);
   functionBuilder.currentBlock = block;
 
-  instantiateScopeBindings(nodePath, functionBuilder, environment, moduleBuilder);
+  const blockScope = functionBuilder.scopeFor(node);
+  instantiateScopeBindings(node, blockScope, functionBuilder, environment, moduleBuilder);
 
-  const body = nodePath.get("body");
-  buildStatementList(body, functionBuilder, moduleBuilder, environment);
+  buildStatementList(node.body, blockScope, functionBuilder, moduleBuilder, environment);
 
   currentBlock.terminal = new JumpTerminal(
     makeInstructionId(functionBuilder.environment.nextInstructionId++),

@@ -1,22 +1,25 @@
-import { NodePath } from "@babel/traverse";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import {
   BranchTerminal,
   ExpressionStatementInstruction,
   JumpTerminal,
+  LiteralInstruction,
   StoreContextInstruction,
   StoreLocalInstruction,
   makeInstructionId,
 } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { instantiateScopeBindings } from "../bindings";
 import { buildNode } from "../buildNode";
+import { buildAssignmentExpression } from "../expressions/buildAssignmentExpression";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildStatement } from "./buildStatement";
 
 export function buildForStatement(
-  nodePath: NodePath<t.ForStatement>,
+  node: ESTree.ForStatement,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
@@ -25,37 +28,44 @@ export function buildForStatement(
   const currentBlock = functionBuilder.currentBlock;
 
   // Build the init block.
-  const initPath: NodePath<t.ForStatement["init"]> = nodePath.get("init");
   const initBlock = environment.createBlock();
   functionBuilder.blocks.set(initBlock.id, initBlock);
 
   functionBuilder.currentBlock = initBlock;
-  if (initPath.hasNode()) {
-    if (initPath.isExpression()) {
-      // Build expression inits (e.g. `for (i = 0; ...)`) directly since
-      // the statement builder expects a Statement node.
-      buildExpressionAsStatement(initPath, functionBuilder, moduleBuilder, environment);
+  const init = node.init;
+  // If the for-statement has a lexical init, use the for-scope for the entire loop.
+  const forScope =
+    init?.type === "VariableDeclaration" && (init.kind === "let" || init.kind === "const")
+      ? functionBuilder.scopeFor(node)
+      : scope;
+  if (init != null) {
+    if (init.type === "VariableDeclaration") {
+      instantiateScopeBindings(node, forScope, functionBuilder, environment, moduleBuilder);
+      buildStatement(init, forScope, functionBuilder, moduleBuilder, environment);
     } else {
-      initPath.assertStatement();
-      instantiateScopeBindings(nodePath, functionBuilder, environment, moduleBuilder);
-      buildStatement(initPath, functionBuilder, moduleBuilder, environment);
+      // Expression init (e.g. `for (i = 0; ...)`)
+      buildExpressionAsStatement(init, scope, functionBuilder, moduleBuilder, environment);
     }
   }
   const initBlockTerminus = functionBuilder.currentBlock;
 
   // Build the test block.
-  const testPath: NodePath<t.ForStatement["test"]> = nodePath.get("test");
   const testBlock = environment.createBlock();
   functionBuilder.blocks.set(testBlock.id, testBlock);
 
-  // If the test is not provided, it is equivalent to while(true).
-  if (!testPath.hasNode()) {
-    testPath.replaceWith(t.valueToNode(true));
-  }
-  testPath.assertExpression();
-
   functionBuilder.currentBlock = testBlock;
-  const testPlace = buildNode(testPath, functionBuilder, moduleBuilder, environment);
+
+  let testPlace;
+  if (node.test != null) {
+    testPlace = buildNode(node.test, forScope, functionBuilder, moduleBuilder, environment);
+  } else {
+    // If the test is not provided, it is equivalent to while(true).
+    const truePlace = environment.createPlace(environment.createIdentifier());
+    functionBuilder.addInstruction(
+      environment.createInstruction(LiteralInstruction, truePlace, true),
+    );
+    testPlace = truePlace;
+  }
   if (testPlace === undefined || Array.isArray(testPlace)) {
     throw new Error("For statement test place must be a single place");
   }
@@ -66,12 +76,11 @@ export function buildForStatement(
   functionBuilder.blocks.set(exitBlock.id, exitBlock);
 
   // Build the body block.
-  const bodyPath = nodePath.get("body");
   const bodyBlock = environment.createBlock();
   functionBuilder.blocks.set(bodyBlock.id, bodyBlock);
 
-  const updatePath: NodePath<t.ForStatement["update"]> = nodePath.get("update");
-  const updateBlock = updatePath.hasNode() ? environment.createBlock() : undefined;
+  const update = node.update;
+  const updateBlock = update != null ? environment.createBlock() : undefined;
   if (updateBlock !== undefined) {
     functionBuilder.blocks.set(updateBlock.id, updateBlock);
   }
@@ -86,12 +95,12 @@ export function buildForStatement(
   if (label) {
     functionBuilder.blockLabels.set(testBlock.id, label);
   }
-  buildNode(bodyPath, functionBuilder, moduleBuilder, environment);
+  buildNode(node.body, forScope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
 
   // For `continue`, run the update before the test (ECMAScript for-loop semantics).
   // Normal fall-through from the body also reaches the update when present.
-  if (updateBlock !== undefined) {
+  if (updateBlock !== undefined && update != null) {
     if (functionBuilder.currentBlock.terminal === undefined) {
       functionBuilder.currentBlock.terminal = new JumpTerminal(
         makeInstructionId(functionBuilder.environment.nextInstructionId++),
@@ -99,8 +108,7 @@ export function buildForStatement(
       );
     }
     functionBuilder.currentBlock = updateBlock;
-    updatePath.assertExpression();
-    buildExpressionAsStatement(updatePath, functionBuilder, moduleBuilder, environment);
+    buildExpressionAsStatement(update, forScope, functionBuilder, moduleBuilder, environment);
   }
 
   const bodyBlockTerminus = functionBuilder.currentBlock;
@@ -140,12 +148,18 @@ export function buildForStatement(
 }
 
 function buildExpressionAsStatement(
-  expressionPath: NodePath<t.Expression>,
+  expression: ESTree.Expression,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  const expressionPlace = buildNode(expressionPath, functionBuilder, moduleBuilder, environment);
+  // Assignment expressions in for-loop init/update don't need result stabilization.
+  if (expression.type === "AssignmentExpression") {
+    return buildAssignmentExpression(expression, scope, functionBuilder, moduleBuilder, environment, true);
+  }
+
+  const expressionPlace = buildNode(expression, scope, functionBuilder, moduleBuilder, environment);
   if (expressionPlace === undefined || Array.isArray(expressionPlace)) {
     throw new Error("Expression place is undefined");
   }
@@ -153,9 +167,6 @@ function buildExpressionAsStatement(
   const expressionInstruction = functionBuilder.environment.placeToInstruction.get(
     expressionPlace.id,
   );
-  if (expressionPath.isAssignmentExpression()) {
-    return expressionPlace;
-  }
 
   // Assignments already emit a StoreLocalInstruction; wrapping in
   // ExpressionStatementInstruction would duplicate the declaration in codegen.

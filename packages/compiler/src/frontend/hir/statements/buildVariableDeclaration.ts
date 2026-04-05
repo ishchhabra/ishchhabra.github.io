@@ -1,39 +1,48 @@
-import { NodePath } from "@babel/traverse";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { Place, StoreContextInstruction, StoreLocalInstruction } from "../../../ir";
+import { LoadGlobalInstruction } from "../../../ir/instructions/memory/LoadGlobal";
+import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildLVal } from "../buildLVal";
 import { buildNode } from "../buildNode";
 
 export function buildVariableDeclaration(
-  nodePath: NodePath<t.VariableDeclaration>,
+  node: ESTree.VariableDeclaration,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place | Place[] | undefined {
-  const kind = nodePath.node.kind;
+  const kind = node.kind;
   if (kind !== "var" && kind !== "let" && kind !== "const") {
     throw new Error(`Unsupported variable declaration kind: ${kind}`);
   }
 
-  const declarations = nodePath.get("declarations");
-  const declarationPlaces = declarations.map((declaration: NodePath<t.VariableDeclarator>) => {
-    const id = declaration.get("id");
-    const init: NodePath<t.Expression | null | undefined> = declaration.get("init");
+  const declarations = node.declarations;
+  const declarationPlaces = declarations.map((declaration: ESTree.VariableDeclarator) => {
+    const id = declaration.id;
+    const init = declaration.init;
 
-    if (!init.hasNode()) {
-      init.replaceWith(t.identifier("undefined"));
-      init.assertIdentifier({ name: "undefined" });
+    let valuePlace;
+    if (init == null) {
+      // No initializer — emit LoadGlobal("undefined") instead of mutating the AST.
+      const undefinedPlace = environment.createPlace(environment.createIdentifier());
+      functionBuilder.addInstruction(
+        environment.createInstruction(LoadGlobalInstruction, undefinedPlace, "undefined"),
+      );
+      valuePlace = undefinedPlace;
+    } else {
+      valuePlace = buildNode(init, scope, functionBuilder, moduleBuilder, environment);
     }
-    const valuePlace = buildNode(init, functionBuilder, moduleBuilder, environment);
     if (valuePlace === undefined || Array.isArray(valuePlace)) {
       throw new Error("Value place must be a single place");
     }
 
     const { place: lvalPlace, bindings } = buildLVal(
-      id as NodePath<t.LVal>,
+      id as ESTree.Pattern,
+      scope,
       functionBuilder,
       moduleBuilder,
       environment,

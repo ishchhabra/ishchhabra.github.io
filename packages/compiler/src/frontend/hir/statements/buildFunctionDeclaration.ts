@@ -1,5 +1,4 @@
-import { NodePath } from "@babel/traverse";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -10,7 +9,7 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
  * the statement's lexical position.
  */
 export function buildFunctionDeclaration(
-  _nodePath: NodePath<t.FunctionDeclaration>,
+  _node: ESTree.FunctionDeclaration,
   _functionBuilder: FunctionIRBuilder,
   _moduleBuilder: ModuleIRBuilder,
   _environment: Environment,

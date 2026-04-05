@@ -1,36 +1,35 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { DeclareLocalInstruction } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
-import { getDeclarationOwningPath } from "../getDeclarationOwningPath";
 import { isBindingOwnedByScope } from "./isBindingOwnedByScope";
 import { isContextVariable } from "./isContextVariable";
 
 export function buildClassDeclarationBindings(
-  bindingsPath: NodePath<t.Node>,
-  nodePath: NodePath<t.ClassDeclaration>,
+  scope: Scope,
+  node: ESTree.ClassDeclaration,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
-  const idPath = nodePath.get("id");
-  if (!idPath.isIdentifier()) {
+  const idNode = node.id;
+  if (idNode == null || idNode.type !== "Identifier") {
     return;
   }
-  const idNode = idPath.node;
 
-  const owningPath = getDeclarationOwningPath(nodePath);
-  const binding = owningPath.scope.getBinding(idNode.name);
-  if (!isBindingOwnedByScope(bindingsPath, binding)) {
+  // Class declarations create their own inner scope for the class name,
+  // but the binding is owned by the enclosing (parent) scope.
+  const binding = scope.getBinding(idNode.name);
+  if (!isBindingOwnedByScope(scope, binding)) {
     return;
   }
 
   const identifier = environment.createIdentifier();
-  functionBuilder.registerDeclarationName(idNode.name, identifier.declarationId, bindingsPath);
+  functionBuilder.registerDeclarationName(idNode.name, identifier.declarationId, scope);
   functionBuilder.instantiateDeclaration(identifier.declarationId, "class", idNode.name);
 
   // Mark context variables so SSA can skip them.
-  if (binding && isContextVariable(binding, bindingsPath)) {
+  if (binding && isContextVariable(binding, scope)) {
     environment.contextDeclarationIds.add(identifier.declarationId);
   }
 

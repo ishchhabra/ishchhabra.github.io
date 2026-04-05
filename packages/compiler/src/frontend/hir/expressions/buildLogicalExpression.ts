@@ -1,25 +1,24 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { LogicalExpressionInstruction } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildLogicalExpression(
-  nodePath: NodePath<t.LogicalExpression>,
+  node: ESTree.LogicalExpression,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  const leftPath = nodePath.get("left");
-  const leftPlace = buildNode(leftPath, functionBuilder, moduleBuilder, environment);
+  const leftPlace = buildNode(node.left, scope, functionBuilder, moduleBuilder, environment);
   if (leftPlace === undefined || Array.isArray(leftPlace)) {
     throw new Error("Logical expression left must be a single place");
   }
 
-  const rightPath = nodePath.get("right");
-  const rightPlace = buildNode(rightPath, functionBuilder, moduleBuilder, environment);
+  const rightPlace = buildNode(node.right, scope, functionBuilder, moduleBuilder, environment);
   if (rightPlace === undefined || Array.isArray(rightPlace)) {
     throw new Error("Logical expression right must be a single place");
   }
@@ -29,7 +28,7 @@ export function buildLogicalExpression(
   const instruction = environment.createInstruction(
     LogicalExpressionInstruction,
     place,
-    nodePath.node.operator,
+    node.operator,
     leftPlace,
     rightPlace,
   );

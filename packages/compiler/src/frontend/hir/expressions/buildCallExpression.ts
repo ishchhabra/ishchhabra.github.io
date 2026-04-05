@@ -1,44 +1,30 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { CallExpressionInstruction, Place } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
-import { buildImportExpression } from "./buildImportExpression";
 
 export function buildCallExpression(
-  expressionPath: NodePath<t.CallExpression | t.OptionalCallExpression>,
+  node: ESTree.CallExpression | ESTree.SimpleCallExpression,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
-  const optional = expressionPath.isOptionalCallExpression() && expressionPath.node.optional;
-  const calleePath = expressionPath.get("callee");
+  // In ESTree, optional chaining sets `optional: true` on the CallExpression itself
+  // (when it appears inside a ChainExpression).
+  const optional = "optional" in node && node.optional === true;
+  const callee = node.callee;
 
-  // Dynamic import: import("./module")
-  // The callee is an Import node, not an expression.
-  if (calleePath.isImport()) {
-    return buildImportExpression(
-      expressionPath as NodePath<t.CallExpression>,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
-  }
-
-  if (!calleePath.isExpression()) {
-    throw new Error(`Unsupported callee type: ${calleePath.type}`);
-  }
-
-  const calleePlace = buildNode(calleePath, functionBuilder, moduleBuilder, environment);
+  const calleePlace = buildNode(callee, scope, functionBuilder, moduleBuilder, environment);
   if (calleePlace === undefined || Array.isArray(calleePlace)) {
     throw new Error("Call expression callee must be a single place");
   }
 
-  const argumentsPath = expressionPath.get("arguments");
-  const argumentPlaces = argumentsPath.map((argumentPath) => {
-    const argumentPlace = buildNode(argumentPath, functionBuilder, moduleBuilder, environment);
+  const argumentPlaces = node.arguments.map((argument) => {
+    const argumentPlace = buildNode(argument, scope, functionBuilder, moduleBuilder, environment);
     if (argumentPlace === undefined || Array.isArray(argumentPlace)) {
       throw new Error("Call expression argument must be a single place");
     }

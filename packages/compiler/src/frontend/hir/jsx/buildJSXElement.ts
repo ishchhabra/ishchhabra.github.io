@@ -1,40 +1,39 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as JSX from "estree-jsx";
 import { Environment } from "../../../environment";
 import { JSXElementInstruction, Place } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildNode } from "../buildNode";
 import { buildJSXOpeningElement } from "./buildJSXOpeningElement";
 
 export function buildJSXElement(
-  nodePath: NodePath<t.JSXElement>,
+  node: JSX.JSXElement,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place | undefined {
-  const openingElementPath = nodePath.get("openingElement");
   const openingElement = buildJSXOpeningElement(
-    openingElementPath,
+    node.openingElement,
+    scope,
     functionBuilder,
     moduleBuilder,
     environment,
   );
 
   let closingElement;
-  const closingElementPath = nodePath.get("closingElement");
-  if (closingElementPath.hasNode()) {
-    closingElement = buildNode(closingElementPath, functionBuilder, moduleBuilder, environment);
+  if (node.closingElement != null) {
+    closingElement = buildNode(node.closingElement, scope, functionBuilder, moduleBuilder, environment);
   }
   if (Array.isArray(closingElement)) {
     throw new Error("JSXElement closing element should be a single place");
   }
 
-  const children = nodePath.get("children");
   const childrenPlaces: Place[] = [];
-  for (const child of children) {
-    const place = buildNode(child, functionBuilder, moduleBuilder, environment);
-    // JSXEmptyExpression (`{}`, `{/* … */}`) yields no value and no IR child.
+  for (const child of node.children) {
+    const place = buildNode(child as any, scope, functionBuilder, moduleBuilder, environment);
+    // JSXEmptyExpression (`{}`, `{/* ... */}`) yields no value and no IR child.
     if (place === undefined) {
       continue;
     }

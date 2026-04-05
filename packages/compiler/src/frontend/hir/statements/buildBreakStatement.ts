@@ -1,15 +1,14 @@
-import { NodePath } from "@babel/traverse";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { createInstructionId, JumpTerminal } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 export function buildBreakStatement(
-  nodePath: NodePath<t.BreakStatement>,
+  node: ESTree.BreakStatement,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
-  const label = nodePath.node.label?.name;
+  const label = node.label?.name;
   const target = functionBuilder.getBreakTarget(label);
   if (target === undefined) {
     throw new Error(

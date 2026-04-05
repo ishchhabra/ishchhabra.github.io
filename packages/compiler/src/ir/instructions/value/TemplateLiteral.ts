@@ -1,13 +1,22 @@
-import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
+
+export interface TemplateElementValue {
+  raw: string;
+  cooked?: string | null;
+}
+
+export interface TemplateElement {
+  value: TemplateElementValue;
+  tail: boolean;
+}
 
 export class TemplateLiteralInstruction extends ValueInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly quasis: t.TemplateElement[],
+    public readonly quasis: TemplateElement[],
     public readonly expressions: Place[],
   ) {
     super(id, place);

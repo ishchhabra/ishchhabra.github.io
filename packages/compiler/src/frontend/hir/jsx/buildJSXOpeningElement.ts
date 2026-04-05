@@ -1,30 +1,31 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as JSX from "estree-jsx";
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
 import { JSXOpeningElementInstruction } from "../../../ir/instructions/jsx/JSXOpeningElement";
+import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildNode } from "../buildNode";
 
 export function buildJSXOpeningElement(
-  nodePath: NodePath<t.JSXOpeningElement>,
+  node: JSX.JSXOpeningElement,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
-  const selfClosing = nodePath.node.selfClosing;
+  const selfClosing = node.selfClosing;
 
   // Build attributes through buildNode (they may be JSXAttribute, JSXSpreadAttribute, etc.)
-  const attributes = nodePath.get("attributes").map((attrPath) => {
-    const place = buildNode(attrPath, functionBuilder, moduleBuilder, environment);
+  const attributes = node.attributes.map((attr) => {
+    const place = buildNode(attr, scope, functionBuilder, moduleBuilder, environment);
     if (place === undefined || Array.isArray(place)) {
       throw new Error("JSX attribute should be a single place");
     }
     return place;
   });
 
-  const tagPlace = buildNode(nodePath.get("name"), functionBuilder, moduleBuilder, environment);
+  const tagPlace = buildNode(node.name, scope, functionBuilder, moduleBuilder, environment);
   if (tagPlace === undefined || Array.isArray(tagPlace)) {
     throw new Error("JSX tag name should be a single place");
   }

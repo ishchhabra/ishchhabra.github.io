@@ -1,5 +1,4 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { castArray } from "lodash-es";
 import { Environment } from "../../../environment";
 import {
@@ -8,27 +7,35 @@ import {
   StoreContextInstruction,
   StoreLocalInstruction,
 } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildNode } from "../buildNode";
+import { buildAssignmentExpression } from "../expressions/buildAssignmentExpression";
 
 export function buildExpressionStatement(
-  nodePath: NodePath<t.ExpressionStatement>,
+  node: ESTree.ExpressionStatement,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place[] | undefined {
-  const expressionPath = nodePath.get("expression");
-  const expressionPlace = buildNode(expressionPath, functionBuilder, moduleBuilder, environment);
+  const expression = node.expression;
+
+  // Assignment expressions in statement context don't need result stabilization.
+  // Call buildAssignmentExpression directly with statementContext: true to skip it.
+  if (expression.type === "AssignmentExpression") {
+    buildAssignmentExpression(expression, scope, functionBuilder, moduleBuilder, environment, true);
+    return [];
+  }
+
+  const expressionPlace = buildNode(expression, scope, functionBuilder, moduleBuilder, environment);
   const expressionPlaces = castArray(expressionPlace);
   const places = expressionPlaces
-    .map((expressionPlace) => {
+    .map((exprPlace) => {
       const expressionInstruction = functionBuilder.environment.placeToInstruction.get(
-        expressionPlace.id,
+        exprPlace.id,
       );
-      if (expressionPath.isAssignmentExpression()) {
-        return undefined;
-      }
       // For assignments, since we convert them to a memory instruction,
       // we do not need to emit an expression statement instruction.
       if (
@@ -43,7 +50,7 @@ export function buildExpressionStatement(
       const instruction = environment.createInstruction(
         ExpressionStatementInstruction,
         place,
-        expressionPlace,
+        exprPlace,
       );
       functionBuilder.addInstruction(instruction);
       return place;

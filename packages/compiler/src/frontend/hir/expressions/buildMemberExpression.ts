@@ -1,7 +1,7 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { BinaryExpressionInstruction, LiteralInstruction, Place } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { materializePlace } from "../materializePlace";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -12,13 +12,14 @@ import {
 } from "./buildMemberReference";
 
 export function buildMemberExpression(
-  nodePath: NodePath<t.MemberExpression | t.OptionalMemberExpression>,
+  node: ESTree.MemberExpression,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  const reference = buildMemberReference(nodePath, functionBuilder, moduleBuilder, environment);
-  return loadMemberReference(reference, nodePath, functionBuilder, environment);
+  const reference = buildMemberReference(node, scope, functionBuilder, moduleBuilder, environment);
+  return loadMemberReference(reference, functionBuilder, environment);
 }
 
 /**
@@ -32,20 +33,21 @@ export function buildMemberExpression(
  *   4. Return old value (postfix) or new value (prefix)
  */
 export function buildMemberExpressionUpdate(
-  updatePath: NodePath<t.UpdateExpression>,
-  memberPath: NodePath<t.MemberExpression>,
+  updateNode: ESTree.UpdateExpression,
+  memberNode: ESTree.MemberExpression,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
-  const reference = buildMemberReference(memberPath, functionBuilder, moduleBuilder, environment, {
+  const reference = buildMemberReference(memberNode, scope, functionBuilder, moduleBuilder, environment, {
     reusable: true,
   });
-  const loadPlace = loadMemberReference(reference, memberPath, functionBuilder, environment);
+  const loadPlace = loadMemberReference(reference, functionBuilder, environment);
 
   // 3. Materialize old value into a temporary so codegen doesn't
   //    re-read the property after it has been mutated by the store.
-  const oldValLoadPlace = materializePlace(loadPlace, updatePath, functionBuilder, environment);
+  const oldValLoadPlace = materializePlace(loadPlace, functionBuilder, environment);
 
   // 4. Create literal 1
   const oneIdentifier = environment.createIdentifier();
@@ -54,7 +56,7 @@ export function buildMemberExpressionUpdate(
   functionBuilder.addInstruction(oneInstruction);
 
   // 5. Compute value +/- 1
-  const isIncrement = updatePath.node.operator === "++";
+  const isIncrement = updateNode.operator === "++";
   const resultIdentifier = environment.createIdentifier();
   const resultPlace = environment.createPlace(resultIdentifier);
   const binaryInstruction = environment.createInstruction(
@@ -68,11 +70,11 @@ export function buildMemberExpressionUpdate(
 
   // 5b. Materialize the computed value into a named local so codegen
   //     references an identifier rather than re-emitting the binary expression.
-  const newValLoadPlace = materializePlace(resultPlace, updatePath, functionBuilder, environment);
+  const newValLoadPlace = materializePlace(resultPlace, functionBuilder, environment);
 
   // 6. Store the new value back to the property.
-  emitMemberReferenceStore(reference, updatePath, newValLoadPlace, functionBuilder, environment);
+  emitMemberReferenceStore(reference, newValLoadPlace, functionBuilder, environment);
 
   // 8. Return old value (postfix) or new value (prefix)
-  return updatePath.node.prefix ? newValLoadPlace : oldValLoadPlace;
+  return updateNode.prefix ? newValLoadPlace : oldValLoadPlace;
 }

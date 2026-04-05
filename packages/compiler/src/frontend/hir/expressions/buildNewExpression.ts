@@ -1,31 +1,28 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
 import { NewExpressionInstruction } from "../../../ir/instructions/value/NewExpression";
+import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildNewExpression(
-  expressionPath: NodePath<t.NewExpression>,
+  node: ESTree.NewExpression,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
-  const calleePath = expressionPath.get("callee");
-  if (!calleePath.isExpression()) {
-    throw new Error(`Unsupported new expression callee type: ${calleePath.type}`);
-  }
+  const callee = node.callee;
 
-  const calleePlace = buildNode(calleePath, functionBuilder, moduleBuilder, environment);
+  const calleePlace = buildNode(callee, scope, functionBuilder, moduleBuilder, environment);
   if (calleePlace === undefined || Array.isArray(calleePlace)) {
     throw new Error("New expression callee must be a single place");
   }
 
-  const argumentsPath = expressionPath.get("arguments");
-  const argumentPlaces = argumentsPath.map((argumentPath) => {
-    const argumentPlace = buildNode(argumentPath, functionBuilder, moduleBuilder, environment);
+  const argumentPlaces = node.arguments.map((argument) => {
+    const argumentPlace = buildNode(argument, scope, functionBuilder, moduleBuilder, environment);
     if (argumentPlace === undefined || Array.isArray(argumentPlace)) {
       throw new Error("New expression argument must be a single place");
     }

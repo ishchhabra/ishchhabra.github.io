@@ -1,15 +1,14 @@
-import { NodePath } from "@babel/traverse";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { createInstructionId, JumpTerminal } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 export function buildContinueStatement(
-  nodePath: NodePath<t.ContinueStatement>,
+  node: ESTree.ContinueStatement,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
-  const label = nodePath.node.label?.name;
+  const label = node.label?.name;
   const target = functionBuilder.getContinueTarget(label);
   if (target === undefined) {
     throw new Error(

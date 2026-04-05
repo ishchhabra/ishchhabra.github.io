@@ -1,4 +1,3 @@
-import * as t from "@babel/types";
 import { CompilerOptions } from "../../compile";
 import { ProjectUnit } from "../../frontend/ProjectBuilder";
 import {
@@ -25,7 +24,7 @@ import {
 import { BaseTerminal } from "../../ir/base";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { ModuleIR } from "../../ir/core/ModuleIR";
-import { TemplateLiteralInstruction } from "../../ir/instructions/value/TemplateLiteral";
+import { TemplateElement, TemplateLiteralInstruction } from "../../ir/instructions/value/TemplateLiteral";
 import { BaseOptimizationPass } from "../late-optimizer/OptimizationPass";
 import { Phi } from "../ssa/Phi";
 import { SSA } from "../ssa/SSABuilder";
@@ -486,7 +485,7 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
         }
         if (allConstant || !anyConstant) continue;
 
-        const newQuasis: t.TemplateElement[] = [];
+        const newQuasis: TemplateElement[] = [];
         const newExpressions: Place[] = [];
         let pending = instr.quasis[0].value.cooked ?? instr.quasis[0].value.raw;
 
@@ -839,6 +838,6 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
   }
 }
 
-function templateElement(text: string, tail: boolean): t.TemplateElement {
-  return t.templateElement({ raw: text, cooked: text }, tail);
+function templateElement(text: string, tail: boolean): TemplateElement {
+  return { value: { raw: text, cooked: text }, tail };
 }

@@ -1,34 +1,47 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../environment";
 import { ObjectMethodInstruction, Place } from "../../ir";
+import { type Scope } from "../scope/Scope";
 import { buildNode } from "./buildNode";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
 
+/**
+ * Builds an object method from an ESTree Property node with method: true
+ * (or kind: "get" / "set").
+ *
+ * In ESTree, Babel's ObjectMethod is represented as a Property whose value
+ * is a FunctionExpression.
+ */
 export function buildObjectMethod(
-  nodePath: NodePath<t.ObjectMethod>,
+  node: ESTree.Property,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
   // Build the key place
-  const keyPath = nodePath.get("key");
-  const keyPlace = buildNode(keyPath, functionBuilder, moduleBuilder, environment);
+  const keyPlace = buildNode(node.key, scope, functionBuilder, moduleBuilder, environment);
   if (keyPlace === undefined || Array.isArray(keyPlace)) {
-    throw new Error(`Unable to build key place for ${nodePath.type}`);
+    throw new Error(`Unable to build key place for Property (method)`);
   }
 
-  const paramPaths = nodePath.get("params");
-  const bodyPath = nodePath.get("body");
+  // The value of a method Property is a FunctionExpression
+  const fn = node.value as ESTree.FunctionExpression;
+  const params = fn.params;
+  const body = fn.body;
+
+  const fnScope = functionBuilder.scopeFor(fn);
   const functionIRBuilder = new FunctionIRBuilder(
-    paramPaths,
-    bodyPath,
-    bodyPath,
+    params,
+    fn,
+    body,
+    fnScope,
+    functionBuilder.scopeMap,
     environment,
     moduleBuilder,
-    nodePath.node.async,
-    nodePath.node.generator,
+    fn.async ?? false,
+    fn.generator ?? false,
   );
   const bodyIR = functionIRBuilder.build();
 
@@ -42,10 +55,10 @@ export function buildObjectMethod(
     methodPlace,
     keyPlace,
     bodyIR,
-    nodePath.node.computed,
-    nodePath.node.generator,
-    nodePath.node.async,
-    nodePath.node.kind,
+    node.computed,
+    fn.generator ?? false,
+    fn.async ?? false,
+    node.kind === "init" ? "method" : node.kind,
     capturedPlaces,
   );
   functionBuilder.addInstruction(instruction);

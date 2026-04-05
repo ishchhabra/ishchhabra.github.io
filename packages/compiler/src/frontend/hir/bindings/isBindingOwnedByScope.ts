@@ -1,5 +1,5 @@
-import { Binding, NodePath } from "@babel/traverse";
+import { type Binding, type Scope } from "../../scope/Scope";
 
-export function isBindingOwnedByScope(bindingsPath: NodePath, binding: Binding | undefined) {
-  return binding?.scope === bindingsPath.scope;
+export function isBindingOwnedByScope(scope: Scope, binding: Binding | undefined) {
+  return binding?.scope === scope;
 }

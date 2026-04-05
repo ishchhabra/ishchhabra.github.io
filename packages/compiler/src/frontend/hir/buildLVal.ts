@@ -1,5 +1,4 @@
-import { NodePath } from "@babel/traverse";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../environment";
 import {
   ArrayPatternInstruction,
@@ -11,6 +10,7 @@ import {
   Place,
   RestElementInstruction,
 } from "../../ir";
+import { type Scope } from "../scope/Scope";
 import { buildNode } from "./buildNode";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
 import { getValueFromStaticKey } from "./getValueFromStaticKey";
@@ -19,40 +19,42 @@ import { ModuleIRBuilder } from "./ModuleIRBuilder";
 /**
  * Builds an lval, emitting DeclareLocal at the leaf for let/const declarations.
  *
- * @returns place — the top-level Place representing this lval
- * @returns bindings — all leaf identifier Places (for pattern instruction getDefs)
+ * @returns place -- the top-level Place representing this lval
+ * @returns bindings -- all leaf identifier Places (for pattern instruction getDefs)
  */
 export function buildLVal(
-  nodePath: NodePath<t.LVal>,
+  node: ESTree.Pattern,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
   kind: "var" | "let" | "const" | null,
 ): { place: Place; bindings: Place[] } {
-  if (nodePath.isIdentifier()) {
-    const place = buildIdentifierLVal(nodePath, functionBuilder, environment, kind);
+  if (node.type === "Identifier") {
+    const place = buildIdentifierLVal(node, scope, functionBuilder, environment, kind);
     return { place, bindings: [place] };
-  } else if (nodePath.isArrayPattern()) {
-    return buildArrayPatternLVal(nodePath, functionBuilder, moduleBuilder, environment, kind);
-  } else if (nodePath.isObjectPattern()) {
-    return buildObjectPatternLVal(nodePath, functionBuilder, moduleBuilder, environment, kind);
-  } else if (nodePath.isAssignmentPattern()) {
-    return buildAssignmentPatternLVal(nodePath, functionBuilder, moduleBuilder, environment, kind);
-  } else if (nodePath.isRestElement()) {
-    return buildRestElementLVal(nodePath, functionBuilder, moduleBuilder, environment, kind);
+  } else if (node.type === "ArrayPattern") {
+    return buildArrayPatternLVal(node, scope, functionBuilder, moduleBuilder, environment, kind);
+  } else if (node.type === "ObjectPattern") {
+    return buildObjectPatternLVal(node, scope, functionBuilder, moduleBuilder, environment, kind);
+  } else if (node.type === "AssignmentPattern") {
+    return buildAssignmentPatternLVal(node, scope, functionBuilder, moduleBuilder, environment, kind);
+  } else if (node.type === "RestElement") {
+    return buildRestElementLVal(node, scope, functionBuilder, moduleBuilder, environment, kind);
   }
 
-  throw new Error(`Unsupported LVal type: ${nodePath.type}`);
+  throw new Error(`Unsupported LVal type: ${node.type}`);
 }
 
 function buildIdentifierLVal(
-  nodePath: NodePath<t.Identifier>,
+  node: ESTree.Identifier,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
   kind: "var" | "let" | "const" | null,
 ): Place {
-  const name = nodePath.node.name;
-  const declarationId = functionBuilder.getDeclarationId(name, nodePath);
+  const name = node.name;
+  const declarationId = functionBuilder.getDeclarationId(name, scope);
   if (declarationId === undefined) {
     throw new Error(`Variable accessed before declaration: ${name}`);
   }
@@ -75,7 +77,8 @@ function buildIdentifierLVal(
 }
 
 function buildArrayPatternLVal(
-  nodePath: NodePath<t.ArrayPattern>,
+  node: ESTree.ArrayPattern,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
@@ -83,19 +86,15 @@ function buildArrayPatternLVal(
 ): { place: Place; bindings: Place[] } {
   const bindings: Place[] = [];
 
-  const elementPaths = nodePath.get("elements");
-  const elementPlaces = elementPaths.map(
-    (elementPath: NodePath<t.ArrayPattern["elements"][number]>) => {
-      if (!elementPath.hasNode()) {
-        return null;
-      }
+  const elementPlaces = node.elements.map((element) => {
+    if (element == null) {
+      return null;
+    }
 
-      elementPath.assertLVal();
-      const result = buildLVal(elementPath, functionBuilder, moduleBuilder, environment, kind);
-      bindings.push(...result.bindings);
-      return result.place;
-    },
-  );
+    const result = buildLVal(element, scope, functionBuilder, moduleBuilder, environment, kind);
+    bindings.push(...result.bindings);
+    return result.place;
+  });
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
@@ -110,7 +109,8 @@ function buildArrayPatternLVal(
 }
 
 function buildObjectPatternLVal(
-  nodePath: NodePath<t.ObjectPattern>,
+  node: ESTree.ObjectPattern,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
@@ -118,54 +118,50 @@ function buildObjectPatternLVal(
 ): { place: Place; bindings: Place[] } {
   const bindings: Place[] = [];
 
-  const propertyPaths = nodePath.get("properties");
-  const propertyPlaces = propertyPaths.map(
-    (propertyPath: NodePath<t.ObjectPattern["properties"][number]>) => {
-      if (propertyPath.isRestElement()) {
-        const result = buildRestElementLVal(
-          propertyPath,
-          functionBuilder,
-          moduleBuilder,
-          environment,
-          kind,
-        );
-        bindings.push(...result.bindings);
-        return result.place;
-      }
-
-      propertyPath.assertObjectProperty();
-      const keyPath = propertyPath.get("key");
-      let keyPlace;
-      if (propertyPath.node.computed) {
-        const place = buildNode(keyPath, functionBuilder, moduleBuilder, environment);
-        if (place === undefined || Array.isArray(place)) {
-          throw new Error("Object pattern computed key must be a single place");
-        }
-        keyPlace = place;
-      } else {
-        keyPlace = buildObjectPropertyStaticKeyLVal(keyPath, functionBuilder, environment);
-      }
-
-      const valuePath: NodePath<t.ObjectProperty["value"]> = propertyPath.get("value");
-      valuePath.assertLVal();
-      const result = buildLVal(valuePath, functionBuilder, moduleBuilder, environment, kind);
-      bindings.push(...result.bindings);
-
-      const identifier = environment.createIdentifier();
-      const place = environment.createPlace(identifier);
-      const instruction = environment.createInstruction(
-        ObjectPropertyInstruction,
-        place,
-        keyPlace,
-        result.place,
-        propertyPath.node.computed,
-        false,
-        result.bindings,
+  const propertyPlaces = node.properties.map((property) => {
+    if (property.type === "RestElement") {
+      const result = buildRestElementLVal(
+        property,
+        scope,
+        functionBuilder,
+        moduleBuilder,
+        environment,
+        kind,
       );
-      functionBuilder.addInstruction(instruction);
-      return place;
-    },
-  );
+      bindings.push(...result.bindings);
+      return result.place;
+    }
+
+    // ESTree Property (was Babel ObjectProperty)
+    let keyPlace;
+    if (property.computed) {
+      const place = buildNode(property.key, scope, functionBuilder, moduleBuilder, environment);
+      if (place === undefined || Array.isArray(place)) {
+        throw new Error("Object pattern computed key must be a single place");
+      }
+      keyPlace = place;
+    } else {
+      keyPlace = buildObjectPropertyStaticKeyLVal(property.key, functionBuilder, environment);
+    }
+
+    const value = property.value as ESTree.Pattern;
+    const result = buildLVal(value, scope, functionBuilder, moduleBuilder, environment, kind);
+    bindings.push(...result.bindings);
+
+    const identifier = environment.createIdentifier();
+    const place = environment.createPlace(identifier);
+    const instruction = environment.createInstruction(
+      ObjectPropertyInstruction,
+      place,
+      keyPlace,
+      result.place,
+      property.computed,
+      false,
+      result.bindings,
+    );
+    functionBuilder.addInstruction(instruction);
+    return place;
+  });
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
@@ -180,11 +176,11 @@ function buildObjectPatternLVal(
 }
 
 function buildObjectPropertyStaticKeyLVal(
-  nodePath: NodePath<t.ObjectProperty["key"]>,
+  node: ESTree.Expression | ESTree.PrivateIdentifier,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {
-  const value = getValueFromStaticKey(nodePath);
+  const value = getValueFromStaticKey(node);
   if (value === undefined) {
     throw new Error("Unsupported static key type in object pattern destructuring");
   }
@@ -200,19 +196,19 @@ function buildObjectPropertyStaticKeyLVal(
 }
 
 function buildAssignmentPatternLVal(
-  nodePath: NodePath<t.AssignmentPattern>,
+  node: ESTree.AssignmentPattern,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
   kind: "var" | "let" | "const" | null,
 ): { place: Place; bindings: Place[] } {
-  const rightPath = nodePath.get("right");
-  const rightPlace = buildNode(rightPath, functionBuilder, moduleBuilder, environment);
+  const rightPlace = buildNode(node.right, scope, functionBuilder, moduleBuilder, environment);
   if (rightPlace === undefined || Array.isArray(rightPlace)) {
     throw new Error("Right place must be a single place");
   }
 
-  const result = buildLVal(nodePath.get("left"), functionBuilder, moduleBuilder, environment, kind);
+  const result = buildLVal(node.left, scope, functionBuilder, moduleBuilder, environment, kind);
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
@@ -228,14 +224,16 @@ function buildAssignmentPatternLVal(
 }
 
 function buildRestElementLVal(
-  nodePath: NodePath<t.RestElement>,
+  node: ESTree.RestElement,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
   kind: "var" | "let" | "const" | null,
 ): { place: Place; bindings: Place[] } {
   const result = buildLVal(
-    nodePath.get("argument"),
+    node.argument,
+    scope,
     functionBuilder,
     moduleBuilder,
     environment,

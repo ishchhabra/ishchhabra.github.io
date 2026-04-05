@@ -1,7 +1,7 @@
-import { NodePath } from "@babel/traverse";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { JumpTerminal, LabeledBlockStructure, createInstructionId } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildDoWhileStatement } from "./buildDoWhileStatement";
@@ -13,33 +13,34 @@ import { buildSwitchStatement } from "./buildSwitchStatement";
 import { buildWhileStatement } from "./buildWhileStatement";
 
 export function buildLabeledStatement(
-  nodePath: NodePath<t.LabeledStatement>,
+  node: ESTree.LabeledStatement,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  const label = nodePath.node.label.name;
-  const bodyPath = nodePath.get("body");
+  const label = node.label.name;
+  const body = node.body;
 
   // For loops and switches, pass the label directly to the builder
   // so it attaches the label to its own control context.
-  if (bodyPath.isForStatement()) {
-    return buildForStatement(bodyPath, functionBuilder, moduleBuilder, environment, label);
+  if (body.type === "ForStatement") {
+    return buildForStatement(body, scope, functionBuilder, moduleBuilder, environment, label);
   }
-  if (bodyPath.isWhileStatement()) {
-    return buildWhileStatement(bodyPath, functionBuilder, moduleBuilder, environment, label);
+  if (body.type === "WhileStatement") {
+    return buildWhileStatement(body, scope, functionBuilder, moduleBuilder, environment, label);
   }
-  if (bodyPath.isDoWhileStatement()) {
-    return buildDoWhileStatement(bodyPath, functionBuilder, moduleBuilder, environment, label);
+  if (body.type === "DoWhileStatement") {
+    return buildDoWhileStatement(body, scope, functionBuilder, moduleBuilder, environment, label);
   }
-  if (bodyPath.isForInStatement()) {
-    return buildForInStatement(bodyPath, functionBuilder, moduleBuilder, environment, label);
+  if (body.type === "ForInStatement") {
+    return buildForInStatement(body, scope, functionBuilder, moduleBuilder, environment, label);
   }
-  if (bodyPath.isForOfStatement()) {
-    return buildForOfStatement(bodyPath, functionBuilder, moduleBuilder, environment, label);
+  if (body.type === "ForOfStatement") {
+    return buildForOfStatement(body, scope, functionBuilder, moduleBuilder, environment, label);
   }
-  if (bodyPath.isSwitchStatement()) {
-    return buildSwitchStatement(bodyPath, functionBuilder, moduleBuilder, environment, label);
+  if (body.type === "SwitchStatement") {
+    return buildSwitchStatement(body, scope, functionBuilder, moduleBuilder, environment, label);
   }
 
   // Non-loop/non-switch: create a labeled block structure.
@@ -55,7 +56,7 @@ export function buildLabeledStatement(
   const exitBlock = environment.createBlock();
   functionBuilder.blocks.set(exitBlock.id, exitBlock);
 
-  // Wire current block → header block.
+  // Wire current block -> header block.
   currentBlock.terminal = new JumpTerminal(createInstructionId(environment), headerBlock.id);
 
   // Build the body inside a labeled control context.
@@ -65,7 +66,7 @@ export function buildLabeledStatement(
     label,
     breakTarget: exitBlock.id,
   });
-  buildStatement(bodyPath, functionBuilder, moduleBuilder, environment);
+  buildStatement(body, scope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
 
   // If the body didn't terminate, jump to the exit block.

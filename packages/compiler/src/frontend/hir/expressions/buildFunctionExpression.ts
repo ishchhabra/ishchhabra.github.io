@@ -1,36 +1,33 @@
-import { NodePath } from "@babel/traverse";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { FunctionExpressionInstruction } from "../../../ir/instructions/value/FunctionExpression";
+import { type Scope } from "../../scope/Scope";
 import { buildIdentifier } from "../buildIdentifier";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildFunctionExpression(
-  nodePath: NodePath<t.FunctionExpression>,
+  node: ESTree.FunctionExpression,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  const idPath: NodePath<t.FunctionExpression["id"]> = nodePath.get("id");
-  if (idPath.hasNode() && !idPath.isIdentifier()) {
-    throw new Error("Function expression identifier is not an identifier");
-  }
-
-  const identifierPlace = idPath.hasNode()
-    ? buildIdentifier(idPath, functionBuilder, environment)
+  const identifierPlace = node.id != null
+    ? buildIdentifier(node.id, scope, functionBuilder, environment)
     : null;
 
-  const paramPaths = nodePath.get("params");
-  const bodyPath = nodePath.get("body");
+  const childScope = functionBuilder.scopeFor(node);
   const functionIRBuilder = new FunctionIRBuilder(
-    paramPaths,
-    bodyPath,
-    bodyPath,
+    node.params,
+    node.body,
+    node.body,
+    childScope,
+    functionBuilder.scopeMap,
     functionBuilder.environment,
     moduleBuilder,
-    nodePath.node.async,
-    nodePath.node.generator,
+    node.async ?? false,
+    node.generator ?? false,
   );
   const functionIR = functionIRBuilder.build();
 
@@ -44,8 +41,8 @@ export function buildFunctionExpression(
     place,
     identifierPlace,
     functionIR,
-    nodePath.node.generator,
-    nodePath.node.async,
+    node.generator ?? false,
+    node.async ?? false,
     capturedPlaces,
   );
   functionBuilder.addInstruction(instruction);

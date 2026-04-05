@@ -1,7 +1,7 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { ExportDefaultDeclarationInstruction } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { buildClassExpression } from "../expressions/buildClassExpression";
 import { buildFunctionExpression } from "../expressions/buildFunctionExpression";
 import { buildNode } from "../buildNode";
@@ -9,12 +9,13 @@ import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildExportDefaultDeclaration(
-  nodePath: NodePath<t.ExportDefaultDeclaration>,
+  node: ESTree.ExportDefaultDeclaration,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  const declarationPath = nodePath.get("declaration");
+  const declaration = node.declaration;
 
   // `export default function() {}` and `export default class {}` have
   // FunctionDeclaration / ClassDeclaration nodes with id=null.  Route
@@ -22,30 +23,32 @@ export function buildExportDefaultDeclaration(
   // anonymous case, rather than the declaration builders which require
   // a name.
   let declarationPlace;
-  if (declarationPath.isFunctionDeclaration() && declarationPath.node.id === null) {
+  if (declaration.type === "FunctionDeclaration" && declaration.id === null) {
     declarationPlace = buildFunctionExpression(
-      declarationPath as unknown as NodePath<t.FunctionExpression>,
+      declaration as unknown as ESTree.FunctionExpression,
+      scope,
       functionBuilder,
       moduleBuilder,
       environment,
     );
-  } else if (declarationPath.isClassDeclaration() && declarationPath.node.id === null) {
+  } else if (declaration.type === "ClassDeclaration" && declaration.id === null) {
     declarationPlace = buildClassExpression(
-      declarationPath as unknown as NodePath<t.ClassExpression>,
+      declaration as unknown as ESTree.ClassExpression,
+      scope,
       functionBuilder,
       environment,
     );
-  } else if (declarationPath.isFunctionDeclaration() && declarationPath.node.id != null) {
+  } else if (declaration.type === "FunctionDeclaration" && declaration.id != null) {
     // Named function declarations are already built during scope
     // instantiation. Look up the existing declaration place.
-    const name = declarationPath.node.id!.name;
-    const declarationId = functionBuilder.getDeclarationId(name, declarationPath);
+    const name = declaration.id.name;
+    const declarationId = functionBuilder.getDeclarationId(name, scope);
     if (declarationId !== undefined) {
       const latestDeclaration = environment.getLatestDeclaration(declarationId);
       declarationPlace = environment.places.get(latestDeclaration.placeId);
     }
   } else {
-    declarationPlace = buildNode(declarationPath, functionBuilder, moduleBuilder, environment);
+    declarationPlace = buildNode(declaration as ESTree.Node, scope, functionBuilder, moduleBuilder, environment);
   }
 
   if (declarationPlace === undefined || Array.isArray(declarationPlace)) {
@@ -66,13 +69,13 @@ export function buildExportDefaultDeclaration(
   const declarationInstructionId = environment.getDeclarationInstruction(
     declarationPlace.identifier.declarationId,
   );
-  const declaration =
+  const declarationInstr =
     declarationInstructionId !== undefined
       ? environment.instructions.get(declarationInstructionId)
       : environment.placeToInstruction.get(declarationPlace.id);
   moduleBuilder.exports.set("default", {
     instruction,
-    declaration,
+    declaration: declarationInstr,
   });
   return place;
 }

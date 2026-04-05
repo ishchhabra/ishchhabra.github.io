@@ -1,11 +1,10 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { MetaPropertyInstruction } from "../../../ir/instructions/value/MetaProperty";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 export function buildMetaProperty(
-  nodePath: NodePath<t.MetaProperty>,
+  node: ESTree.MetaProperty,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
@@ -14,8 +13,8 @@ export function buildMetaProperty(
   const instruction = environment.createInstruction(
     MetaPropertyInstruction,
     place,
-    nodePath.node.meta.name,
-    nodePath.node.property.name,
+    node.meta.name,
+    node.property.name,
   );
   functionBuilder.addInstruction(instruction);
   return place;

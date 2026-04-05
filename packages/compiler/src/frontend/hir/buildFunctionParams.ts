@@ -1,5 +1,4 @@
-import { NodePath } from "@babel/traverse";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../environment";
 import {
   ArrayPatternInstruction,
@@ -10,6 +9,7 @@ import {
 } from "../../ir";
 import { AssignmentPatternInstruction } from "../../ir/instructions/pattern/AssignmentPattern";
 import { ObjectPatternInstruction } from "../../ir/instructions/pattern/ObjectPattern";
+import { type Scope } from "../scope/Scope";
 import { instantiateFunctionParamBindings } from "./bindings/instantiateFunctionParamBindings";
 import { buildNode } from "./buildNode";
 import { getValueFromStaticKey } from "./getValueFromStaticKey";
@@ -32,19 +32,21 @@ interface ParamBuildResult {
 }
 
 export function buildFunctionParams(
-  paramPaths: NodePath<t.Identifier | t.RestElement | t.Pattern>[],
-  scopePath: NodePath<t.Node>,
-  bodyPath: NodePath,
+  params: ESTree.Pattern[],
+  scopeNode: ESTree.Node,
+  bodyNode: ESTree.Node,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): BuiltFunctionParam[] {
-  instantiateFunctionParamBindings(paramPaths, scopePath, functionBuilder, environment);
+  instantiateFunctionParamBindings(params, scope, functionBuilder, environment);
 
-  return paramPaths.map((paramPath: NodePath<t.Identifier | t.RestElement | t.Pattern>) => {
+  return params.map((param) => {
     const result = buildFunctionParam(
-      paramPath as NodePath<t.LVal>,
-      bodyPath,
+      param,
+      bodyNode,
+      scope,
       functionBuilder,
       moduleBuilder,
       environment,
@@ -54,62 +56,68 @@ export function buildFunctionParams(
 }
 
 function buildFunctionParam(
-  paramPath: NodePath<t.LVal>,
-  bodyPath: NodePath,
+  param: ESTree.Pattern,
+  bodyNode: ESTree.Node,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): ParamBuildResult {
-  if (paramPath.isIdentifier()) {
-    return buildFunctionIdentifierParam(paramPath, functionBuilder, environment);
+  if (param.type === "Identifier") {
+    return buildFunctionIdentifierParam(param, scope, functionBuilder, environment);
   }
-  if (paramPath.isArrayPattern()) {
+  if (param.type === "ArrayPattern") {
     return buildFunctionArrayPatternParam(
-      paramPath,
-      bodyPath,
+      param,
+      bodyNode,
+      scope,
       functionBuilder,
       moduleBuilder,
       environment,
     );
   }
-  if (paramPath.isObjectPattern()) {
+  if (param.type === "ObjectPattern") {
     return buildFunctionObjectPatternParam(
-      paramPath,
-      bodyPath,
+      param,
+      bodyNode,
+      scope,
       functionBuilder,
       moduleBuilder,
       environment,
     );
   }
-  if (paramPath.isAssignmentPattern()) {
+  if (param.type === "AssignmentPattern") {
     return buildFunctionAssignmentPatternParam(
-      paramPath,
-      bodyPath,
+      param,
+      bodyNode,
+      scope,
       functionBuilder,
       moduleBuilder,
       environment,
     );
   }
-  if (paramPath.isRestElement()) {
+  if (param.type === "RestElement") {
     return buildFunctionRestElementParam(
-      paramPath,
-      bodyPath,
+      param,
+      bodyNode,
+      scope,
       functionBuilder,
       moduleBuilder,
       environment,
     );
   }
 
-  throw new Error(`Unsupported param type: ${paramPath.node.type}`);
+  throw new Error(`Unsupported param type: ${(param as ESTree.Node).type}`);
 }
 
 function buildFunctionIdentifierParam(
-  paramPath: NodePath<t.Identifier>,
+  node: ESTree.Identifier,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): ParamBuildResult {
-  const name = paramPath.node.name;
-  const declarationId = functionBuilder.getDeclarationId(name, paramPath);
+  const name = node.name;
+  const declarationId = functionBuilder.getDeclarationId(name, scope);
   if (declarationId === undefined) {
     throw new Error(`Variable accessed before declaration: ${name}`);
   }
@@ -125,24 +133,25 @@ function buildFunctionIdentifierParam(
 }
 
 function buildFunctionArrayPatternParam(
-  paramPath: NodePath<t.ArrayPattern>,
-  bodyPath: NodePath,
+  node: ESTree.ArrayPattern,
+  bodyNode: ESTree.Node,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): ParamBuildResult {
   const identifiers: Place[] = [];
-  const elements = paramPath.get("elements");
-  const places = elements.map((elementPath) => {
+  const places = node.elements.map((element) => {
     // Holes in array patterns (e.g. `function([,b]){}`) are structural markers
     // in the pattern shape, not values in the data-flow graph.
-    if (!elementPath.hasNode()) {
+    if (element == null) {
       return null;
     }
 
     const result = buildFunctionParam(
-      elementPath as NodePath<t.LVal>,
-      bodyPath,
+      element,
+      bodyNode,
+      scope,
       functionBuilder,
       moduleBuilder,
       environment,
@@ -164,23 +173,22 @@ function buildFunctionArrayPatternParam(
 }
 
 function buildFunctionObjectPatternParam(
-  paramPath: NodePath<t.ObjectPattern>,
-  bodyPath: NodePath,
+  node: ESTree.ObjectPattern,
+  bodyNode: ESTree.Node,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): ParamBuildResult {
   const identifiers: Place[] = [];
-  const propertyPaths = paramPath.get("properties");
-  const propertyPlaces = propertyPaths.map((propertyPath) => {
-    if (propertyPath.isObjectProperty()) {
-      const keyPath = propertyPath.get("key");
+  const propertyPlaces = node.properties.map((property) => {
+    if (property.type === "Property") {
       let keyPlace: Place;
-      if (propertyPath.node.computed) {
+      if (property.computed) {
         // Computed keys emit normal value instructions; move them into the
         // function header so param codegen can resolve them during emission.
         const insertPoint = functionBuilder.currentBlock.instructions.length;
-        const p = buildNode(keyPath, functionBuilder, moduleBuilder, environment);
+        const p = buildNode(property.key, scope, functionBuilder, moduleBuilder, environment);
         if (p === undefined || Array.isArray(p)) {
           throw new Error("Object pattern computed key must be a single place");
         }
@@ -188,13 +196,14 @@ function buildFunctionObjectPatternParam(
         functionBuilder.header.push(...keyInstructions);
         keyPlace = p;
       } else {
-        keyPlace = buildFunctionObjectPropertyKey(keyPath, functionBuilder, environment);
+        keyPlace = buildFunctionObjectPropertyKey(property.key, functionBuilder, environment);
       }
 
-      const valuePath = propertyPath.get("value");
+      const value = property.value as ESTree.Pattern;
       const valueResult = buildFunctionParam(
-        valuePath as NodePath<t.LVal>,
-        bodyPath,
+        value,
+        bodyNode,
+        scope,
         functionBuilder,
         moduleBuilder,
         environment,
@@ -208,19 +217,19 @@ function buildFunctionObjectPatternParam(
         place,
         keyPlace,
         valueResult.place,
-        propertyPath.node.computed,
-        propertyPath.node.shorthand,
+        property.computed,
+        property.shorthand,
         valueResult.identifiers,
       );
       functionBuilder.header.push(instruction);
       return place;
     }
 
-    if (propertyPath.isRestElement()) {
-      const argumentPath = propertyPath.get("argument");
+    if (property.type === "RestElement") {
       const argumentResult = buildFunctionParam(
-        argumentPath as NodePath<t.LVal>,
-        bodyPath,
+        property.argument,
+        bodyNode,
+        scope,
         functionBuilder,
         moduleBuilder,
         environment,
@@ -255,13 +264,13 @@ function buildFunctionObjectPatternParam(
 }
 
 function buildFunctionObjectPropertyKey(
-  keyPath: NodePath,
+  keyNode: ESTree.Expression | ESTree.PrivateIdentifier,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {
   // Non-computed parameter destructuring keys are property labels
   // (identifiers, strings, numbers), not variable references.
-  const value = getValueFromStaticKey(keyPath);
+  const value = getValueFromStaticKey(keyNode);
   if (value === undefined) {
     throw new Error("Unsupported static key type in object pattern destructuring");
   }
@@ -277,8 +286,9 @@ function buildFunctionObjectPropertyKey(
 }
 
 function buildFunctionAssignmentPatternParam(
-  paramPath: NodePath<t.AssignmentPattern>,
-  bodyPath: NodePath,
+  node: ESTree.AssignmentPattern,
+  bodyNode: ESTree.Node,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
@@ -286,18 +296,17 @@ function buildFunctionAssignmentPatternParam(
   // buildNode emits instructions into the current block, but parameter default
   // value instructions must live in the function header for codegen.
   const insertPoint = functionBuilder.currentBlock.instructions.length;
-  const rightPath = paramPath.get("right");
-  const rightPlace = buildNode(rightPath, functionBuilder, moduleBuilder, environment);
+  const rightPlace = buildNode(node.right, scope, functionBuilder, moduleBuilder, environment);
   if (rightPlace === undefined || Array.isArray(rightPlace)) {
     throw new Error("Default value must be a single expression");
   }
   const defaultValueInstructions = functionBuilder.currentBlock.instructions.splice(insertPoint);
   functionBuilder.header.push(...defaultValueInstructions);
 
-  const leftPath = paramPath.get("left");
   const leftResult = buildFunctionParam(
-    leftPath as NodePath<t.LVal>,
-    bodyPath,
+    node.left,
+    bodyNode,
+    scope,
     functionBuilder,
     moduleBuilder,
     environment,
@@ -321,16 +330,17 @@ function buildFunctionAssignmentPatternParam(
 }
 
 function buildFunctionRestElementParam(
-  paramPath: NodePath<t.RestElement>,
-  bodyPath: NodePath,
+  node: ESTree.RestElement,
+  bodyNode: ESTree.Node,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): ParamBuildResult {
-  const argumentPath = paramPath.get("argument");
   const argumentResult = buildFunctionParam(
-    argumentPath as NodePath<t.LVal>,
-    bodyPath,
+    node.argument,
+    bodyNode,
+    scope,
     functionBuilder,
     moduleBuilder,
     environment,

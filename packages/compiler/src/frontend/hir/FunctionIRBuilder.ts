@@ -1,5 +1,4 @@
-import { NodePath } from "@babel/traverse";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../environment";
 import {
   BaseInstruction,
@@ -13,6 +12,8 @@ import {
   ReturnTerminal,
 } from "../../ir";
 import { FunctionIR, makeFunctionIRId } from "../../ir/core/FunctionIR";
+import { isExpression } from "../estree";
+import { type Scope, type ScopeMap } from "../scope/Scope";
 import { instantiateScopeBindings } from "./bindings";
 import { buildFunctionParams } from "./buildFunctionParams";
 import { buildNode } from "./buildNode";
@@ -68,9 +69,11 @@ export class FunctionIRBuilder {
   public readonly declarationBindings = new Map<DeclarationId, DeclarationBinding>();
 
   constructor(
-    public readonly paramPaths: NodePath<t.Identifier | t.RestElement | t.Pattern>[],
-    public readonly scopePath: NodePath<t.Node>,
-    public readonly bodyPath: NodePath<t.Program | t.BlockStatement | t.Expression>,
+    public readonly params: ESTree.Pattern[],
+    public readonly scopeNode: ESTree.Node,
+    public readonly bodyNode: ESTree.Program | ESTree.BlockStatement | ESTree.Expression,
+    public readonly scope: Scope,
+    public readonly scopeMap: ScopeMap,
     public readonly environment: Environment,
     public readonly moduleBuilder: ModuleIRBuilder,
     public readonly async: boolean,
@@ -81,11 +84,17 @@ export class FunctionIRBuilder {
     this.currentBlock = entryBlock;
   }
 
+  /** Resolve the scope for a given AST node. */
+  public scopeFor(node: ESTree.Node): Scope {
+    return this.scopeMap.get(node) ?? this.scope;
+  }
+
   public build(): FunctionIR {
     const builtParams = buildFunctionParams(
-      this.paramPaths,
-      this.scopePath,
-      this.bodyPath,
+      this.params,
+      this.scopeNode,
+      this.bodyNode,
+      this.scope,
       this,
       this.moduleBuilder,
       this.environment,
@@ -95,24 +104,19 @@ export class FunctionIRBuilder {
 
     const functionId = makeFunctionIRId(this.environment.nextFunctionId++);
 
-    if (this.bodyPath.isExpression()) {
-      const resultPlace = buildNode(this.bodyPath, this, this.moduleBuilder, this.environment);
+    if (isExpression(this.bodyNode)) {
+      const resultPlace = buildNode(this.bodyNode, this.scope, this, this.moduleBuilder, this.environment);
       if (resultPlace !== undefined && !Array.isArray(resultPlace)) {
-        // Add an explicit ReturnTerminal so the codegen knows what value
-        // the expression body produces, even when the IR has multiple
-        // blocks (e.g. from ternary or logical expressions).
         this.currentBlock.terminal = new ReturnTerminal(
           createInstructionId(this.environment),
           resultPlace,
         );
       }
     } else {
-      instantiateScopeBindings(this.bodyPath, this, this.environment, this.moduleBuilder);
-      const bodyPath = this.bodyPath.get("body");
-      if (!Array.isArray(bodyPath)) {
-        throw new Error("Body path is not an array");
-      }
-      buildStatementList(bodyPath, this, this.moduleBuilder, this.environment);
+      const bodyScope = this.scopeFor(this.bodyNode);
+      instantiateScopeBindings(this.bodyNode, bodyScope, this, this.environment, this.moduleBuilder);
+      const body = (this.bodyNode as ESTree.Program | ESTree.BlockStatement).body;
+      buildStatementList(body as ESTree.Statement[], bodyScope, this, this.moduleBuilder, this.environment);
     }
 
     const functionIR = new FunctionIR(
@@ -139,13 +143,13 @@ export class FunctionIRBuilder {
   public registerDeclarationName(
     name: string,
     declarationId: DeclarationId,
-    nodePath: NodePath<t.Node>,
+    scope: Scope,
   ) {
-    nodePath.scope.setData(name, declarationId);
+    scope.setData(name, declarationId);
   }
 
-  public getDeclarationId(name: string, nodePath: NodePath<t.Node>): DeclarationId | undefined {
-    return nodePath.scope.getData(name);
+  public getDeclarationId(name: string, scope: Scope): DeclarationId | undefined {
+    return scope.getData(name) as DeclarationId | undefined;
   }
 
   public registerDeclarationSourceName(declarationId: DeclarationId, name: string) {
@@ -195,32 +199,12 @@ export class FunctionIRBuilder {
     return this.declarationBindings.get(declarationId)?.sourceName;
   }
 
-  /**
-   * Returns true if the given declaration was created in one of this
-   * function's blocks (i.e. it is an own declaration, not a capture from
-   * an enclosing scope).
-   *
-   * Works by checking which block the declaration was first registered in
-   * (via `declToPlaces[0].blockId`) against this function's block set.
-   */
   public isOwnDeclaration(declarationId: DeclarationId): boolean {
     const entries = this.environment.declToPlaces.get(declarationId);
     if (!entries || entries.length === 0) return false;
     return this.blocks.has(entries[0].blockId);
   }
 
-  /**
-   * Copies captures from a child function builder into this builder,
-   * filtering out declarations owned by this function. This propagates
-   * transitive captures: if a grandchild function captures a variable
-   * from the grandparent scope, all intermediate functions must also
-   * list it as a capture so DCE keeps the definition alive at each level.
-   *
-   * Both `captures` and `captureParams` are populated so the two maps
-   * stay aligned by DeclarationId — consumers iterate them in lockstep
-   * by index to bind each inner capture parameter to the corresponding
-   * outer place.
-   */
   public propagateCapturesFrom(child: FunctionIRBuilder): void {
     for (const [declId, capture] of child.captures) {
       if (!this.isOwnDeclaration(declId)) {
@@ -230,11 +214,6 @@ export class FunctionIRBuilder {
           paramIdentifier.name = capture.identifier.name;
           this.captureParams.set(declId, this.environment.createPlace(paramIdentifier));
         }
-        // Rewrite the child's capture to reference this function's
-        // captureParam so each scope level captures from its immediate
-        // parent rather than the original declaring scope.  This makes
-        // the capture chain explicit in the IR and lets standard
-        // liveness analysis work without special-casing indirection.
         child.captures.set(declId, this.captureParams.get(declId)!);
       }
     }

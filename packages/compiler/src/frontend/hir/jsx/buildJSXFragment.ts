@@ -1,20 +1,21 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as JSX from "estree-jsx";
 import { Environment } from "../../../environment";
 import { JSXFragmentInstruction, Place } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildNode } from "../buildNode";
 
 export function buildJSXFragment(
-  nodePath: NodePath<t.JSXFragment>,
+  node: JSX.JSXFragment,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place | undefined {
-  const openingFragmentPath = nodePath.get("openingFragment");
   const openingFragmentPlace = buildNode(
-    openingFragmentPath,
+    node.openingFragment,
+    scope,
     functionBuilder,
     moduleBuilder,
     environment,
@@ -23,9 +24,9 @@ export function buildJSXFragment(
     throw new Error("JSXFragment: openingFragment should be a single place");
   }
 
-  const closingFragmentPath = nodePath.get("closingFragment");
   const closingFragmentPlace = buildNode(
-    closingFragmentPath,
+    node.closingFragment,
+    scope,
     functionBuilder,
     moduleBuilder,
     environment,
@@ -34,11 +35,10 @@ export function buildJSXFragment(
     throw new Error("JSXFragment: closingFragment should be a single place");
   }
 
-  const children = nodePath.get("children");
   const childrenPlaces: Place[] = [];
-  for (const child of children) {
-    const place = buildNode(child, functionBuilder, moduleBuilder, environment);
-    // JSXEmptyExpression (`{}`, `{/* … */}`) yields no value and no IR child.
+  for (const child of node.children) {
+    const place = buildNode(child as any, scope, functionBuilder, moduleBuilder, environment);
+    // JSXEmptyExpression (`{}`, `{/* ... */}`) yields no value and no IR child.
     if (place === undefined) {
       continue;
     }

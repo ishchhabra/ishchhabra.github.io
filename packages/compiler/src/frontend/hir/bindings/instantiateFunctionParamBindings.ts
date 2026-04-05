@@ -1,41 +1,41 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { DeclareLocalInstruction } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { isContextVariable } from "./isContextVariable";
 
 export function instantiateFunctionParamBindings(
-  paramPaths: NodePath<t.Identifier | t.RestElement | t.Pattern>[],
-  scopePath: NodePath<t.Node>,
+  params: ESTree.Pattern[],
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
-  for (const paramPath of paramPaths) {
-    instantiateParamBinding(paramPath as NodePath<t.LVal>, scopePath, functionBuilder, environment);
+  for (const param of params) {
+    instantiateParamBinding(param, scope, functionBuilder, environment);
   }
 }
 
 function instantiateParamBinding(
-  nodePath: NodePath<t.LVal>,
-  scopePath: NodePath,
+  node: ESTree.Pattern,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
-  if (nodePath.isIdentifier()) {
-    instantiateIdentifierParamBinding(nodePath, scopePath, functionBuilder, environment);
+  if (node.type === "Identifier") {
+    instantiateIdentifierParamBinding(node, scope, functionBuilder, environment);
     return;
   }
 
-  if (nodePath.isArrayPattern()) {
-    for (const elementPath of nodePath.get("elements")) {
-      if (!elementPath.hasNode()) {
+  if (node.type === "ArrayPattern") {
+    for (const element of node.elements) {
+      if (element == null) {
         continue;
       }
 
       instantiateParamBinding(
-        elementPath as NodePath<t.LVal>,
-        scopePath,
+        element,
+        scope,
         functionBuilder,
         environment,
       );
@@ -43,74 +43,70 @@ function instantiateParamBinding(
     return;
   }
 
-  if (nodePath.isObjectPattern()) {
-    for (const propertyPath of nodePath.get("properties")) {
-      if (propertyPath.isObjectProperty()) {
-        const valuePath = propertyPath.get("value");
+  if (node.type === "ObjectPattern") {
+    for (const property of node.properties) {
+      if (property.type === "Property") {
         instantiateParamBinding(
-          valuePath as NodePath<t.LVal>,
-          scopePath,
+          property.value as ESTree.Pattern,
+          scope,
           functionBuilder,
           environment,
         );
         continue;
       }
 
-      if (propertyPath.isRestElement()) {
-        const argumentPath = propertyPath.get("argument");
+      if (property.type === "RestElement") {
         instantiateParamBinding(
-          argumentPath as NodePath<t.LVal>,
-          scopePath,
+          property.argument,
+          scope,
           functionBuilder,
           environment,
         );
         continue;
       }
 
-      throw new Error(`Unsupported object pattern property: ${propertyPath.type}`);
+      throw new Error(`Unsupported object pattern property: ${(property as ESTree.Node).type}`);
     }
     return;
   }
 
-  if (nodePath.isAssignmentPattern()) {
-    const leftPath = nodePath.get("left");
-    instantiateParamBinding(leftPath, scopePath, functionBuilder, environment);
+  if (node.type === "AssignmentPattern") {
+    instantiateParamBinding(node.left, scope, functionBuilder, environment);
     return;
   }
 
-  if (nodePath.isRestElement()) {
-    const argumentPath = nodePath.get("argument");
+  if (node.type === "RestElement") {
     instantiateParamBinding(
-      argumentPath as NodePath<t.LVal>,
-      scopePath,
+      node.argument,
+      scope,
       functionBuilder,
       environment,
     );
     return;
   }
 
-  throw new Error(`Unsupported param type: ${nodePath.type}`);
+  throw new Error(`Unsupported param type: ${(node as ESTree.Node).type}`);
 }
 
 function instantiateIdentifierParamBinding(
-  nodePath: NodePath<t.Identifier>,
-  scopePath: NodePath,
+  node: ESTree.Identifier,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
-  const originalName = nodePath.node.name;
-  if (scopePath.scope.data[originalName] !== undefined) {
+  const originalName = node.name;
+  if (scope.data.get(originalName) !== undefined) {
     return;
   }
 
-  const binding = scopePath.scope.getBinding(originalName);
+  const binding = scope.getBinding(originalName);
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
 
-  functionBuilder.registerDeclarationName(originalName, identifier.declarationId, scopePath);
+  functionBuilder.registerDeclarationName(originalName, identifier.declarationId, scope);
   functionBuilder.instantiateDeclaration(identifier.declarationId, "param", originalName);
 
-  if (binding && isContextVariable(binding, scopePath)) {
+  if (binding && isContextVariable(binding, scope)) {
     environment.contextDeclarationIds.add(identifier.declarationId);
   }
 

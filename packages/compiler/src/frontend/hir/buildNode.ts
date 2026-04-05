@@ -1,7 +1,8 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../environment";
 import { Place } from "../../ir";
+import { isExpression, isJSX, isPattern, isStatement, type Node } from "../estree";
+import { type Scope } from "../scope/Scope";
 import { buildExportSpecifier } from "./buildExportSpecifier";
 import { buildIdentifier } from "./buildIdentifier";
 import { buildObjectMethod } from "./buildObjectMethod";
@@ -16,56 +17,53 @@ import { buildPattern } from "./patterns/buildPattern";
 import { buildStatement } from "./statements/buildStatement";
 
 export function buildNode(
-  nodePath: NodePath<t.Node | null>,
+  node: ESTree.Node | null,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place | Place[] | undefined {
-  if (nodePath.node === null) {
-    assertNull(nodePath);
-    return buildHole(nodePath, functionBuilder, environment);
+  if (node === null) {
+    return buildHole(functionBuilder, environment);
   }
 
-  assertNonNull(nodePath);
-  if (nodePath.isIdentifier()) {
-    return buildIdentifier(nodePath, functionBuilder, environment);
+  if (node.type === "Identifier") {
+    return buildIdentifier(node, scope, functionBuilder, environment);
   }
 
-  if (nodePath.isObjectMethod()) {
-    return buildObjectMethod(nodePath, functionBuilder, moduleBuilder, environment);
+  // ESTree represents object methods as Property nodes with method: true
+  // or kind: "get" / "set"
+  if (node.type === "Property" && ((node as ESTree.Property).method || (node as ESTree.Property).kind !== "init")) {
+    return buildObjectMethod(node as ESTree.Property, scope, functionBuilder, moduleBuilder, environment);
   }
 
-  if (nodePath.isObjectProperty()) {
-    return buildObjectProperty(nodePath, functionBuilder, moduleBuilder, environment);
+  if (node.type === "Property") {
+    return buildObjectProperty(node as ESTree.Property, scope, functionBuilder, moduleBuilder, environment);
   }
 
-  if (nodePath.isJSX()) {
-    return buildJSX(nodePath, functionBuilder, moduleBuilder, environment);
+  if (isJSX(node)) {
+    return buildJSX(node as any, scope, functionBuilder, moduleBuilder, environment);
   }
 
-  if (nodePath.isExpression()) {
-    return buildExpression(nodePath, functionBuilder, moduleBuilder, environment);
+  if (isExpression(node)) {
+    return buildExpression(node, scope, functionBuilder, moduleBuilder, environment);
   }
 
-  if (nodePath.isStatement()) {
-    return buildStatement(nodePath, functionBuilder, moduleBuilder, environment);
+  if (isStatement(node)) {
+    return buildStatement(node, scope, functionBuilder, moduleBuilder, environment);
   }
 
-  if (nodePath.isSpreadElement()) {
-    return buildSpreadElement(nodePath, functionBuilder, moduleBuilder, environment);
+  if (node.type === "SpreadElement") {
+    return buildSpreadElement(node as ESTree.SpreadElement, scope, functionBuilder, moduleBuilder, environment);
   }
 
-  if (nodePath.isPattern()) {
-    return buildPattern(nodePath, functionBuilder, moduleBuilder, environment);
+  if (isPattern(node)) {
+    return buildPattern(node, scope, functionBuilder, moduleBuilder, environment);
   }
 
-  if (nodePath.isExportSpecifier()) {
-    return buildExportSpecifier(nodePath, functionBuilder, moduleBuilder, environment);
+  if (node.type === "ExportSpecifier") {
+    return buildExportSpecifier(node as ESTree.ExportSpecifier, scope, functionBuilder, moduleBuilder, environment);
   }
 
-  throw new Error(`Unsupported node type: ${nodePath.node.type}`);
+  throw new Error(`Unsupported node type: ${node.type}`);
 }
-
-function assertNull<T extends t.Node>(_path: NodePath<T | null>): asserts _path is NodePath<null> {}
-
-function assertNonNull<T extends t.Node>(_path: NodePath<T | null>): asserts _path is NodePath<T> {}

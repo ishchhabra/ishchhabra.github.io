@@ -1,8 +1,7 @@
-import { NodePath } from "@babel/traverse";
-import { Binding } from "@babel/traverse";
+import { type Binding, type Reference, type Scope } from "../../scope/Scope";
 
 /**
- * Determines whether a Babel binding is a "context variable" — a mutable
+ * Determines whether a binding is a "context variable" -- a mutable
  * variable that is captured and/or mutated across closure (nested function)
  * boundaries. Context variables are excluded from SSA renaming.
  *
@@ -10,18 +9,23 @@ import { Binding } from "@babel/traverse";
  *   - It is reassigned inside a nested function, OR
  *   - It is reassigned anywhere AND referenced by a nested function
  */
-export function isContextVariable(binding: Binding, scopePath: NodePath): boolean {
-  // Determine the function that owns this binding. For program-level
-  // bindings, ownerFn is null.
-  const ownerFn = scopePath.getFunctionParent();
+export function isContextVariable(
+  binding: Binding,
+  scope: Scope,
+): boolean {
+  // Determine the function/program scope that owns this binding.
+  const ownerFnScope =
+    scope.kind === "function" || scope.kind === "program"
+      ? scope
+      : scope.getFunctionParent();
 
   let reassigned = false;
   let referencedByInnerFn = false;
   let reassignedByInnerFn = false;
 
-  for (const violation of binding.constantViolations) {
+  for (const mutation of binding.mutations) {
     reassigned = true;
-    if (isInNestedFunction(violation, ownerFn)) {
+    if (isInNestedFunction(mutation, ownerFnScope)) {
       reassignedByInnerFn = true;
     }
   }
@@ -30,8 +34,8 @@ export function isContextVariable(binding: Binding, scopePath: NodePath): boolea
 
   if (reassignedByInnerFn) return true;
 
-  for (const ref of binding.referencePaths) {
-    if (isInNestedFunction(ref, ownerFn)) {
+  for (const ref of binding.references) {
+    if (isInNestedFunction(ref, ownerFnScope)) {
       referencedByInnerFn = true;
       break;
     }
@@ -41,11 +45,16 @@ export function isContextVariable(binding: Binding, scopePath: NodePath): boolea
 }
 
 /**
- * Returns true if `innerPath` is inside a different (nested) function
- * compared to `ownerFn`. If `ownerFn` is null (program-level), any
- * reference inside a function counts as nested.
+ * Returns true if the reference is inside a different (nested) function
+ * compared to `ownerFnScope`.
  */
-function isInNestedFunction(innerPath: NodePath, ownerFn: NodePath | null): boolean {
-  const innerFn = innerPath.getFunctionParent();
-  return innerFn !== ownerFn;
+function isInNestedFunction(
+  ref: Reference,
+  ownerFnScope: Scope | null,
+): boolean {
+  const refFnScope =
+    ref.scope.kind === "function" || ref.scope.kind === "program"
+      ? ref.scope
+      : ref.scope.getFunctionParent();
+  return refFnScope !== ownerFnScope;
 }

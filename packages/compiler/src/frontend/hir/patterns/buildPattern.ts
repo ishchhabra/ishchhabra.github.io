@@ -1,22 +1,22 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildArrayPattern } from "./buildArrayPattern";
 
 export function buildPattern(
-  nodePath: NodePath<t.Pattern | t.SpreadElement>,
+  node: ESTree.Pattern | ESTree.SpreadElement,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
-  switch (nodePath.type) {
+  switch (node.type) {
     case "ArrayPattern":
-      nodePath.assertArrayPattern();
-      return buildArrayPattern(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildArrayPattern(node, scope, functionBuilder, moduleBuilder, environment);
     default:
-      throw new Error(`Unsupported pattern type: ${nodePath.type}`);
+      throw new Error(`Unsupported pattern type: ${node.type}`);
   }
 }

@@ -1,20 +1,20 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../environment";
 import { LiteralInstruction, ObjectPropertyInstruction } from "../../ir";
+import { type Scope } from "../scope/Scope";
 import { buildNode } from "./buildNode";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
 
 export function buildObjectProperty(
-  nodePath: NodePath<t.ObjectProperty>,
+  node: ESTree.Property,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  const keyPath = nodePath.get("key");
   let keyPlace;
-  if (!nodePath.node.computed && keyPath.isIdentifier()) {
+  if (!node.computed && node.key.type === "Identifier") {
     // Non-computed identifier keys are property labels (string literals),
     // not variable references.  Emit a LiteralInstruction so the key
     // survives SSA transformations (clone/rewrite) unchanged.
@@ -23,18 +23,17 @@ export function buildObjectProperty(
     const keyInstruction = environment.createInstruction(
       LiteralInstruction,
       keyPlace,
-      keyPath.node.name,
+      node.key.name,
     );
     functionBuilder.addInstruction(keyInstruction);
   } else {
-    keyPlace = buildNode(keyPath, functionBuilder, moduleBuilder, environment);
+    keyPlace = buildNode(node.key, scope, functionBuilder, moduleBuilder, environment);
     if (keyPlace === undefined || Array.isArray(keyPlace)) {
       throw new Error(`Object property key must be a single place`);
     }
   }
 
-  const valuePath = nodePath.get("value");
-  const valuePlace = buildNode(valuePath, functionBuilder, moduleBuilder, environment);
+  const valuePlace = buildNode(node.value, scope, functionBuilder, moduleBuilder, environment);
   if (valuePlace === undefined || Array.isArray(valuePlace)) {
     throw new Error(`Object property value must be a single place`);
   }
@@ -46,8 +45,8 @@ export function buildObjectProperty(
     place,
     keyPlace,
     valuePlace,
-    nodePath.node.computed,
-    nodePath.node.shorthand,
+    node.computed,
+    node.shorthand,
   );
   functionBuilder.addInstruction(instruction);
   return place;

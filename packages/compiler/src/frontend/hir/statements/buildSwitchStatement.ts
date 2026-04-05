@@ -1,7 +1,7 @@
-import { NodePath } from "@babel/traverse";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { createInstructionId, JumpTerminal, SwitchTerminal } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { instantiateScopeBindings } from "../bindings";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -9,7 +9,8 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildStatementList } from "./buildStatementList";
 
 export function buildSwitchStatement(
-  nodePath: NodePath<t.SwitchStatement>,
+  node: ESTree.SwitchStatement,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
@@ -17,12 +18,13 @@ export function buildSwitchStatement(
 ) {
   const currentBlock = functionBuilder.currentBlock;
 
-  instantiateScopeBindings(nodePath, functionBuilder, environment, moduleBuilder);
+  const switchScope = functionBuilder.scopeFor(node);
+  instantiateScopeBindings(node, switchScope, functionBuilder, environment, moduleBuilder);
 
   // Build the discriminant expression in the current block.
-  const discriminantPath = nodePath.get("discriminant");
   const discriminantPlace = buildNode(
-    discriminantPath,
+    node.discriminant,
+    scope,
     functionBuilder,
     moduleBuilder,
     environment,
@@ -38,7 +40,7 @@ export function buildSwitchStatement(
   // Register switch control context so BreakStatement can jump to fallthrough.
   functionBuilder.controlStack.push({ kind: "switch", label, breakTarget: fallthroughBlock.id });
 
-  const casePaths = nodePath.get("cases");
+  const switchCases = node.cases;
   const cases: Array<{
     test: import("../../../ir").Place | null;
     block: import("../../../ir").BlockId;
@@ -57,12 +59,11 @@ export function buildSwitchStatement(
   // First pass: create blocks and evaluate test expressions.
   // Test expressions must be evaluated in the pre-switch block (current block)
   // to ensure they're available for the SwitchTerminal.
-  for (const casePath of casePaths) {
-    const testPath = casePath.get("test");
+  for (const switchCase of switchCases) {
     let testPlace: import("../../../ir").Place | null = null;
 
-    if (testPath.hasNode()) {
-      const place = buildNode(testPath, functionBuilder, moduleBuilder, environment);
+    if (switchCase.test != null) {
+      const place = buildNode(switchCase.test, scope, functionBuilder, moduleBuilder, environment);
       if (place === undefined || Array.isArray(place)) {
         throw new Error("Switch case test must be a single place");
       }
@@ -77,14 +78,19 @@ export function buildSwitchStatement(
 
   // Second pass: build case bodies in reverse order for fallthrough wiring.
   for (let i = caseEntries.length - 1; i >= 0; i--) {
-    const casePath = casePaths[i];
+    const switchCase = switchCases[i];
     const entry = caseEntries[i];
 
     functionBuilder.currentBlock = entry.block;
 
     // Build the case body statements.
-    const consequentPaths = casePath.get("consequent");
-    buildStatementList(consequentPaths, functionBuilder, moduleBuilder, environment);
+    buildStatementList(
+      switchCase.consequent as ESTree.Statement[],
+      switchScope,
+      functionBuilder,
+      moduleBuilder,
+      environment,
+    );
 
     // If the case body didn't end with a terminal (no break/return/throw),
     // add fallthrough to the next case's block (or the fallthrough block for last case).

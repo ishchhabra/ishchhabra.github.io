@@ -1,25 +1,22 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { TemplateLiteralInstruction } from "../../../ir/instructions/value/TemplateLiteral";
+import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildTemplateLiteral(
-  nodePath: NodePath<t.TemplateLiteral>,
+  node: ESTree.TemplateLiteral,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  const quasis = nodePath.node.quasis;
+  const quasis = node.quasis;
 
-  const expressionPaths = nodePath.get("expressions");
-  const expressionPlaces = expressionPaths.map((exprPath) => {
-    if (!exprPath.isExpression()) {
-      throw new Error(`Unsupported template literal expression type: ${exprPath.type}`);
-    }
-    const exprPlace = buildNode(exprPath, functionBuilder, moduleBuilder, environment);
+  const expressionPlaces = node.expressions.map((expr) => {
+    const exprPlace = buildNode(expr, scope, functionBuilder, moduleBuilder, environment);
     if (exprPlace === undefined || Array.isArray(exprPlace)) {
       throw new Error("Template literal expression must be a single place");
     }
@@ -31,7 +28,7 @@ export function buildTemplateLiteral(
   const instruction = environment.createInstruction(
     TemplateLiteralInstruction,
     place,
-    quasis,
+    quasis as any,
     expressionPlaces,
   );
   functionBuilder.addInstruction(instruction);

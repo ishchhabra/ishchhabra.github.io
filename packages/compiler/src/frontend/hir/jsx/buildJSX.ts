@@ -1,7 +1,7 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as JSX from "estree-jsx";
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildJSXAttribute } from "./buildJSXAttribute";
@@ -17,50 +17,53 @@ import { buildJSXNamespacedName } from "./buildJSXNamespacedName";
 import { buildJSXOpeningFragment } from "./buildJSXOpeningFragment";
 import { buildJSXText } from "./buildJSXText";
 
+type JSXNode =
+  | JSX.JSXElement
+  | JSX.JSXFragment
+  | JSX.JSXText
+  | JSX.JSXClosingElement
+  | JSX.JSXOpeningFragment
+  | JSX.JSXClosingFragment
+  | JSX.JSXIdentifier
+  | JSX.JSXMemberExpression
+  | JSX.JSXNamespacedName
+  | JSX.JSXAttribute
+  | JSX.JSXSpreadAttribute
+  | JSX.JSXExpressionContainer;
+
 export function buildJSX(
-  nodePath: NodePath<t.JSX>,
+  node: JSXNode,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place | undefined {
-  switch (nodePath.type) {
+  switch (node.type) {
     case "JSXElement":
-      nodePath.assertJSXElement();
-      return buildJSXElement(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildJSXElement(node, scope, functionBuilder, moduleBuilder, environment);
     case "JSXFragment":
-      nodePath.assertJSXFragment();
-      return buildJSXFragment(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildJSXFragment(node, scope, functionBuilder, moduleBuilder, environment);
     case "JSXText":
-      nodePath.assertJSXText();
-      return buildJSXText(nodePath, functionBuilder, environment);
+      return buildJSXText(node, functionBuilder, environment);
     case "JSXClosingElement":
-      nodePath.assertJSXClosingElement();
-      return buildJSXClosingElement(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildJSXClosingElement(node, scope, functionBuilder, moduleBuilder, environment);
     case "JSXOpeningFragment":
-      nodePath.assertJSXOpeningFragment();
-      return buildJSXOpeningFragment(nodePath, functionBuilder, environment);
+      return buildJSXOpeningFragment(node, functionBuilder, environment);
     case "JSXClosingFragment":
-      nodePath.assertJSXClosingFragment();
-      return buildJSXClosingFragment(nodePath, functionBuilder, environment);
+      return buildJSXClosingFragment(node, functionBuilder, environment);
     case "JSXIdentifier":
-      nodePath.assertJSXIdentifier();
-      return buildJSXIdentifier(nodePath, functionBuilder, environment);
+      return buildJSXIdentifier(node, scope, functionBuilder, environment);
     case "JSXMemberExpression":
-      nodePath.assertJSXMemberExpression();
-      return buildJSXMemberExpression(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildJSXMemberExpression(node, scope, functionBuilder, moduleBuilder, environment);
     case "JSXNamespacedName":
-      nodePath.assertJSXNamespacedName();
-      return buildJSXNamespacedName(nodePath, functionBuilder, environment);
+      return buildJSXNamespacedName(node, functionBuilder, environment);
     case "JSXAttribute":
-      nodePath.assertJSXAttribute();
-      return buildJSXAttribute(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildJSXAttribute(node, scope, functionBuilder, moduleBuilder, environment);
     case "JSXSpreadAttribute":
-      nodePath.assertJSXSpreadAttribute();
-      return buildJSXSpreadAttribute(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildJSXSpreadAttribute(node, scope, functionBuilder, moduleBuilder, environment);
     case "JSXExpressionContainer":
-      nodePath.assertJSXExpressionContainer();
-      return buildJSXExpressionContainer(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildJSXExpressionContainer(node, scope, functionBuilder, moduleBuilder, environment);
     default:
-      throw new Error(`Unsupported node type: ${nodePath.node.type}`);
+      throw new Error(`Unsupported JSX node type: ${(node as { type: string }).type}`);
   }
 }

@@ -1,7 +1,7 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildAwaitExpression } from "./buildAwaitExpression";
@@ -27,102 +27,79 @@ import { buildUnaryExpression } from "./buildUnaryExpression";
 import { buildThisExpression } from "./buildThisExpression";
 import { buildUpdateExpression } from "./buildUpdateExpression";
 import { buildYieldExpression } from "./buildYieldExpression";
+import { buildImportExpression } from "./buildImportExpression";
 
 export function buildExpression(
-  nodePath: NodePath<t.Expression>,
+  node: ESTree.Expression,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
-  switch (nodePath.type) {
+  switch (node.type) {
     case "AwaitExpression":
-      nodePath.assertAwaitExpression();
-      return buildAwaitExpression(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildAwaitExpression(node, scope, functionBuilder, moduleBuilder, environment);
     case "AssignmentExpression":
-      nodePath.assertAssignmentExpression();
-      return buildAssignmentExpression(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildAssignmentExpression(node, scope, functionBuilder, moduleBuilder, environment);
     case "ArrayExpression":
-      nodePath.assertArrayExpression();
-      return buildArrayExpression(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildArrayExpression(node, scope, functionBuilder, moduleBuilder, environment);
     case "ArrowFunctionExpression":
-      nodePath.assertArrowFunctionExpression();
-      return buildArrowFunctionExpression(nodePath, functionBuilder, moduleBuilder, environment);
-    case "BigIntLiteral":
-      nodePath.assertBigIntLiteral();
-      return buildLiteral(nodePath, functionBuilder, environment);
+      return buildArrowFunctionExpression(node, scope, functionBuilder, moduleBuilder, environment);
     case "BinaryExpression":
-      nodePath.assertBinaryExpression();
-      return buildBinaryExpression(nodePath, functionBuilder, moduleBuilder, environment);
-    case "BooleanLiteral":
-      nodePath.assertBooleanLiteral();
-      return buildLiteral(nodePath, functionBuilder, environment);
+      return buildBinaryExpression(node, scope, functionBuilder, moduleBuilder, environment);
     case "CallExpression":
-      nodePath.assertCallExpression();
-      return buildCallExpression(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildCallExpression(node, scope, functionBuilder, moduleBuilder, environment);
     case "ClassExpression":
-      nodePath.assertClassExpression();
-      return buildClassExpression(nodePath, functionBuilder, environment);
+      return buildClassExpression(node, scope, functionBuilder, environment);
     case "ConditionalExpression":
-      nodePath.assertConditionalExpression();
-      return buildConditionalExpression(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildConditionalExpression(node, scope, functionBuilder, moduleBuilder, environment);
     case "FunctionExpression":
-      nodePath.assertFunctionExpression();
-      return buildFunctionExpression(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildFunctionExpression(node, scope, functionBuilder, moduleBuilder, environment);
     case "LogicalExpression":
-      nodePath.assertLogicalExpression();
-      return buildLogicalExpression(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildLogicalExpression(node, scope, functionBuilder, moduleBuilder, environment);
     case "MemberExpression":
-      nodePath.assertMemberExpression();
-      return buildMemberExpression(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildMemberExpression(node, scope, functionBuilder, moduleBuilder, environment);
     case "MetaProperty":
-      nodePath.assertMetaProperty();
-      return buildMetaProperty(nodePath, functionBuilder, environment);
+      return buildMetaProperty(node, functionBuilder, environment);
     case "NewExpression":
-      nodePath.assertNewExpression();
-      return buildNewExpression(nodePath, functionBuilder, moduleBuilder, environment);
-    case "NullLiteral":
-      nodePath.assertNullLiteral();
-      return buildLiteral(nodePath, functionBuilder, environment);
-    case "NumericLiteral":
-      nodePath.assertNumericLiteral();
-      return buildLiteral(nodePath, functionBuilder, environment);
-    case "OptionalCallExpression":
-      nodePath.assertOptionalCallExpression();
-      return buildCallExpression(nodePath, functionBuilder, moduleBuilder, environment);
-    case "OptionalMemberExpression":
-      nodePath.assertOptionalMemberExpression();
-      return buildMemberExpression(nodePath, functionBuilder, moduleBuilder, environment);
-    case "RegExpLiteral":
-      nodePath.assertRegExpLiteral();
-      return buildRegExpLiteral(nodePath, functionBuilder, environment);
+      return buildNewExpression(node, scope, functionBuilder, moduleBuilder, environment);
     case "ObjectExpression":
-      nodePath.assertObjectExpression();
-      return buildObjectExpression(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildObjectExpression(node, scope, functionBuilder, moduleBuilder, environment);
     case "SequenceExpression":
-      nodePath.assertSequenceExpression();
-      return buildSequenceExpression(nodePath, functionBuilder, moduleBuilder, environment);
-    case "StringLiteral":
-      nodePath.assertStringLiteral();
-      return buildLiteral(nodePath, functionBuilder, environment);
+      return buildSequenceExpression(node, scope, functionBuilder, moduleBuilder, environment);
     case "TemplateLiteral":
-      nodePath.assertTemplateLiteral();
-      return buildTemplateLiteral(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildTemplateLiteral(node, scope, functionBuilder, moduleBuilder, environment);
     case "ThisExpression":
-      nodePath.assertThisExpression();
-      return buildThisExpression(nodePath, functionBuilder, environment);
+      return buildThisExpression(node, functionBuilder, environment);
     case "TaggedTemplateExpression":
-      nodePath.assertTaggedTemplateExpression();
-      return buildTaggedTemplateExpression(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildTaggedTemplateExpression(node, scope, functionBuilder, moduleBuilder, environment);
     case "UnaryExpression":
-      nodePath.assertUnaryExpression();
-      return buildUnaryExpression(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildUnaryExpression(node, scope, functionBuilder, moduleBuilder, environment);
     case "UpdateExpression":
-      nodePath.assertUpdateExpression();
-      return buildUpdateExpression(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildUpdateExpression(node, scope, functionBuilder, moduleBuilder, environment);
     case "YieldExpression":
-      nodePath.assertYieldExpression();
-      return buildYieldExpression(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildYieldExpression(node, scope, functionBuilder, moduleBuilder, environment);
+    case "ChainExpression": {
+      // ESTree wraps optional chaining in ChainExpression.
+      // Unwrap and dispatch to the appropriate builder.
+      const inner = node.expression;
+      if (inner.type === "CallExpression") {
+        return buildCallExpression(inner, scope, functionBuilder, moduleBuilder, environment);
+      }
+      if (inner.type === "MemberExpression") {
+        return buildMemberExpression(inner, scope, functionBuilder, moduleBuilder, environment);
+      }
+      throw new Error(`Unsupported ChainExpression inner type: ${(inner as { type: string }).type}`);
+    }
+    case "ImportExpression":
+      return buildImportExpression(node, scope, functionBuilder, moduleBuilder, environment);
+    case "Literal": {
+      if ("regex" in node) {
+        return buildRegExpLiteral(node as ESTree.RegExpLiteral, functionBuilder, environment);
+      }
+      return buildLiteral(node, functionBuilder, environment);
+    }
     default:
-      throw new Error(`Unsupported node type: ${nodePath.node.type}`);
+      throw new Error(`Unsupported node type: ${node.type}`);
   }
 }

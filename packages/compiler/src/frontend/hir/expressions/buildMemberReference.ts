@@ -1,15 +1,13 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
-import { isStaticMemberAccess } from "../../../babel-utils";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { ExpressionStatementInstruction, Place } from "../../../ir";
 import { LoadDynamicPropertyInstruction } from "../../../ir/instructions/memory/LoadDynamicProperty";
 import { LoadStaticPropertyInstruction } from "../../../ir/instructions/memory/LoadStaticProperty";
 import { StoreDynamicPropertyInstruction } from "../../../ir/instructions/memory/StoreDynamicProperty";
 import { StoreStaticPropertyInstruction } from "../../../ir/instructions/memory/StoreStaticProperty";
+import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
-import { getValueFromStaticKey } from "../getValueFromStaticKey";
 import { stabilizePlace } from "../materializePlace";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
@@ -27,36 +25,70 @@ export type MemberReference =
       optional: boolean;
     };
 
+/**
+ * Check if a member expression has a statically resolvable key.
+ * In ESTree: non-computed keys, or computed keys that are string/number literals.
+ */
+function isStaticMemberAccess(node: ESTree.MemberExpression): boolean {
+  if (!node.computed) {
+    return true;
+  }
+
+  const prop = node.property;
+  if (prop.type === "Literal" && (typeof prop.value === "string" || typeof prop.value === "number")) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Extract the value from a static property key node.
+ */
+function getValueFromStaticKey(node: ESTree.Expression | ESTree.PrivateIdentifier): string | number | undefined {
+  if (node.type === "Identifier") {
+    return node.name;
+  }
+  if (node.type === "Literal" && (typeof node.value === "string" || typeof node.value === "number")) {
+    return node.value;
+  }
+  return undefined;
+}
+
 export function buildMemberReference(
-  nodePath: NodePath<t.MemberExpression | t.OptionalMemberExpression>,
+  node: ESTree.MemberExpression,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
   { reusable = false }: { reusable?: boolean } = {},
 ): MemberReference {
-  const objectPath = nodePath.get("object");
-  const builtObjectPlace = buildNode(objectPath, functionBuilder, moduleBuilder, environment);
+  const builtObjectPlace = buildNode(node.object, scope, functionBuilder, moduleBuilder, environment);
   if (builtObjectPlace === undefined || Array.isArray(builtObjectPlace)) {
     throw new Error("Member expression object must be a single place");
   }
 
   const objectPlace = reusable
-    ? stabilizePlace(builtObjectPlace, nodePath, functionBuilder, environment)
+    ? stabilizePlace(builtObjectPlace, functionBuilder, environment)
     : builtObjectPlace;
-  const optional = nodePath.isOptionalMemberExpression() && nodePath.node.optional;
-  const propertyPath: NodePath<t.MemberExpression["property"]> = nodePath.get("property");
-  propertyPath.assertExpression();
+  // In ESTree, optional chaining sets `optional: true` on the MemberExpression itself.
+  const optional = node.optional === true;
+  const property = node.property;
 
-  if (isStaticMemberAccess(nodePath)) {
+  if (isStaticMemberAccess(node)) {
     return {
       kind: "static",
       object: objectPlace,
-      property: String(getValueFromStaticKey(propertyPath)),
+      property: String(getValueFromStaticKey(property)),
       optional,
     };
   }
 
-  const builtPropertyPlace = buildNode(propertyPath, functionBuilder, moduleBuilder, environment);
+  if (property.type === "PrivateIdentifier") {
+    throw new Error("PrivateIdentifier is not supported in member expressions");
+  }
+
+  const builtPropertyPlace = buildNode(property, scope, functionBuilder, moduleBuilder, environment);
   if (builtPropertyPlace === undefined || Array.isArray(builtPropertyPlace)) {
     throw new Error("Member expression property must be a single place");
   }
@@ -65,16 +97,15 @@ export function buildMemberReference(
     kind: "dynamic",
     object: objectPlace,
     property: reusable
-      ? stabilizePlace(builtPropertyPlace, nodePath, functionBuilder, environment)
+      ? stabilizePlace(builtPropertyPlace, functionBuilder, environment)
       : builtPropertyPlace,
     optional,
   };
 }
 
-export function createLoadMemberReferenceInstruction<T extends t.Node>(
+export function createLoadMemberReferenceInstruction(
   reference: MemberReference,
   place: Place,
-  nodePath: NodePath<T> | undefined,
   environment: Environment,
 ) {
   if (reference.kind === "static") {
@@ -96,23 +127,21 @@ export function createLoadMemberReferenceInstruction<T extends t.Node>(
   );
 }
 
-export function loadMemberReference<T extends t.Node>(
+export function loadMemberReference(
   reference: MemberReference,
-  nodePath: NodePath<T> | undefined,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {
   const place = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
-    createLoadMemberReferenceInstruction(reference, place, nodePath, environment),
+    createLoadMemberReferenceInstruction(reference, place, environment),
   );
   return place;
 }
 
-export function createStoreMemberReferenceInstruction<T extends t.Node>(
+export function createStoreMemberReferenceInstruction(
   reference: MemberReference,
   place: Place,
-  nodePath: NodePath<T> | undefined,
   valuePlace: Place,
   environment: Environment,
 ) {
@@ -135,30 +164,27 @@ export function createStoreMemberReferenceInstruction<T extends t.Node>(
   );
 }
 
-export function storeMemberReference<T extends t.Node>(
+export function storeMemberReference(
   reference: MemberReference,
-  nodePath: NodePath<T> | undefined,
   valuePlace: Place,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {
   const place = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
-    createStoreMemberReferenceInstruction(reference, place, nodePath, valuePlace, environment),
+    createStoreMemberReferenceInstruction(reference, place, valuePlace, environment),
   );
   return place;
 }
 
-export function emitMemberReferenceStore<T extends t.Node>(
+export function emitMemberReferenceStore(
   reference: MemberReference,
-  nodePath: NodePath<T> | undefined,
   valuePlace: Place,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {
   const storePlace = storeMemberReference(
     reference,
-    nodePath,
     valuePlace,
     functionBuilder,
     environment,

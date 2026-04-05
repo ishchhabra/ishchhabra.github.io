@@ -1,7 +1,7 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildBlockStatement } from "./buildBlockStatement";
@@ -29,84 +29,62 @@ import { buildVariableDeclaration } from "./buildVariableDeclaration";
 import { buildWhileStatement } from "./buildWhileStatement";
 
 export function buildStatement(
-  nodePath: NodePath<t.Statement>,
+  node: ESTree.Statement | ESTree.ModuleDeclaration,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place | Place[] | undefined {
-  switch (nodePath.type) {
+  switch (node.type) {
     case "BreakStatement":
-      nodePath.assertBreakStatement();
-      return buildBreakStatement(nodePath, functionBuilder, environment);
+      return buildBreakStatement(node, functionBuilder, environment);
     case "BlockStatement":
-      nodePath.assertBlockStatement();
-      return buildBlockStatement(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildBlockStatement(node, scope, functionBuilder, moduleBuilder, environment);
     case "ContinueStatement":
-      nodePath.assertContinueStatement();
-      return buildContinueStatement(nodePath, functionBuilder, environment);
+      return buildContinueStatement(node, functionBuilder, environment);
     case "ClassDeclaration":
-      nodePath.assertClassDeclaration();
-      return buildClassDeclaration(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildClassDeclaration(node, scope, functionBuilder, moduleBuilder, environment);
     case "DebuggerStatement":
-      nodePath.assertDebuggerStatement();
-      return buildDebuggerStatement(nodePath, functionBuilder, environment);
+      return buildDebuggerStatement(node, functionBuilder, environment);
     case "ExportAllDeclaration":
-      nodePath.assertExportAllDeclaration();
-      return buildExportAllDeclaration(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildExportAllDeclaration(node, functionBuilder, moduleBuilder, environment);
     case "ExportDefaultDeclaration":
-      nodePath.assertExportDefaultDeclaration();
-      return buildExportDefaultDeclaration(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildExportDefaultDeclaration(node, scope, functionBuilder, moduleBuilder, environment);
     case "ExportNamedDeclaration":
-      nodePath.assertExportNamedDeclaration();
-      return buildExportNamedDeclaration(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildExportNamedDeclaration(node, scope, functionBuilder, moduleBuilder, environment);
     case "DoWhileStatement":
-      nodePath.assertDoWhileStatement();
-      return buildDoWhileStatement(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildDoWhileStatement(node, scope, functionBuilder, moduleBuilder, environment);
     case "ForStatement":
-      nodePath.assertForStatement();
-      return buildForStatement(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildForStatement(node, scope, functionBuilder, moduleBuilder, environment);
     case "ForInStatement":
-      nodePath.assertForInStatement();
-      return buildForInStatement(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildForInStatement(node, scope, functionBuilder, moduleBuilder, environment);
     case "ForOfStatement":
-      nodePath.assertForOfStatement();
-      return buildForOfStatement(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildForOfStatement(node, scope, functionBuilder, moduleBuilder, environment);
     case "IfStatement":
-      nodePath.assertIfStatement();
-      return buildIfStatement(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildIfStatement(node, scope, functionBuilder, moduleBuilder, environment);
     case "LabeledStatement":
-      nodePath.assertLabeledStatement();
-      return buildLabeledStatement(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildLabeledStatement(node, scope, functionBuilder, moduleBuilder, environment);
     case "ImportDeclaration":
-      nodePath.assertImportDeclaration();
-      return buildImportDeclaration(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildImportDeclaration(node, scope, functionBuilder, moduleBuilder, environment);
     case "ExpressionStatement":
-      nodePath.assertExpressionStatement();
-      return buildExpressionStatement(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildExpressionStatement(node, scope, functionBuilder, moduleBuilder, environment);
     case "FunctionDeclaration":
-      nodePath.assertFunctionDeclaration();
-      return buildFunctionDeclaration(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildFunctionDeclaration(node, functionBuilder, moduleBuilder, environment);
     case "ReturnStatement":
-      nodePath.assertReturnStatement();
-      return buildReturnStatement(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildReturnStatement(node, scope, functionBuilder, moduleBuilder, environment);
     case "VariableDeclaration":
-      nodePath.assertVariableDeclaration();
-      return buildVariableDeclaration(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildVariableDeclaration(node, scope, functionBuilder, moduleBuilder, environment);
     case "WhileStatement":
-      nodePath.assertWhileStatement();
-      return buildWhileStatement(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildWhileStatement(node, scope, functionBuilder, moduleBuilder, environment);
     case "ThrowStatement":
-      nodePath.assertThrowStatement();
-      return buildThrowStatement(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildThrowStatement(node, scope, functionBuilder, moduleBuilder, environment);
     case "SwitchStatement":
-      nodePath.assertSwitchStatement();
-      return buildSwitchStatement(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildSwitchStatement(node, scope, functionBuilder, moduleBuilder, environment);
     case "TryStatement":
-      nodePath.assertTryStatement();
-      return buildTryStatement(nodePath, functionBuilder, moduleBuilder, environment);
+      return buildTryStatement(node, scope, functionBuilder, moduleBuilder, environment);
     case "EmptyStatement":
       return undefined;
     default:
-      throw new Error(`Unsupported node type: ${nodePath.node.type}`);
+      throw new Error(`Unsupported node type: ${(node as ESTree.Node).type}`);
   }
 }

@@ -1,5 +1,4 @@
-import { NodePath } from "@babel/traverse";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import {
   DeclareLocalInstruction,
@@ -7,20 +6,22 @@ import {
   JumpTerminal,
   TryTerminal,
 } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildTryStatement(
-  nodePath: NodePath<t.TryStatement>,
+  node: ESTree.TryStatement,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
   const currentBlock = functionBuilder.currentBlock;
 
-  const hasHandler = nodePath.node.handler !== null;
-  const hasFinalizer = nodePath.node.finalizer !== null;
+  const hasHandler = node.handler !== null;
+  const hasFinalizer = node.finalizer !== null;
 
   // Create the fallthrough block (continuation after entire try statement).
   const fallthroughBlock = environment.createBlock();
@@ -41,8 +42,7 @@ export function buildTryStatement(
   functionBuilder.blocks.set(tryBlock.id, tryBlock);
 
   functionBuilder.currentBlock = tryBlock;
-  const tryBodyPath = nodePath.get("block");
-  buildNode(tryBodyPath, functionBuilder, moduleBuilder, environment);
+  buildNode(node.block, scope, functionBuilder, moduleBuilder, environment);
 
   if (functionBuilder.currentBlock.terminal === undefined) {
     functionBuilder.currentBlock.terminal = new JumpTerminal(
@@ -57,27 +57,27 @@ export function buildTryStatement(
     block: import("../../../ir").BlockId;
   } | null = null;
   if (hasHandler) {
-    const handlerPath = nodePath.get("handler") as NodePath<t.CatchClause>;
+    const catchClause = node.handler!;
     const handlerBlock = environment.createBlock();
     functionBuilder.blocks.set(handlerBlock.id, handlerBlock);
 
     functionBuilder.currentBlock = handlerBlock;
 
     // Build the catch parameter binding if present.
-    const paramPath = handlerPath.get("param");
     let paramPlace: import("../../../ir").Place | null = null;
-    if (paramPath.hasNode() && paramPath.isIdentifier()) {
+    if (catchClause.param != null && catchClause.param.type === "Identifier") {
+      const catchScope = functionBuilder.scopeFor(catchClause);
       // Create a binding for the catch parameter.
       const identifier = environment.createIdentifier();
       functionBuilder.registerDeclarationName(
-        paramPath.node.name,
+        catchClause.param.name,
         identifier.declarationId,
-        handlerPath,
+        catchScope,
       );
       functionBuilder.instantiateDeclaration(
         identifier.declarationId,
         "catch",
-        paramPath.node.name,
+        catchClause.param.name,
       );
       // Create DeclareLocal for the catch parameter.
       // No StoreLocal needed — the catch clause syntax provides the binding,
@@ -97,8 +97,7 @@ export function buildTryStatement(
     }
 
     // Build the catch body.
-    const handlerBodyPath = handlerPath.get("body");
-    buildNode(handlerBodyPath, functionBuilder, moduleBuilder, environment);
+    buildNode(catchClause.body, scope, functionBuilder, moduleBuilder, environment);
 
     if (functionBuilder.currentBlock.terminal === undefined) {
       functionBuilder.currentBlock.terminal = new JumpTerminal(
@@ -113,8 +112,7 @@ export function buildTryStatement(
   // Build the finally block body if present.
   if (finallyBlock !== null && hasFinalizer) {
     functionBuilder.currentBlock = finallyBlock;
-    const finalizerPath = nodePath.get("finalizer") as NodePath<t.BlockStatement>;
-    buildNode(finalizerPath, functionBuilder, moduleBuilder, environment);
+    buildNode(node.finalizer!, scope, functionBuilder, moduleBuilder, environment);
 
     if (functionBuilder.currentBlock.terminal === undefined) {
       functionBuilder.currentBlock.terminal = new JumpTerminal(

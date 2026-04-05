@@ -1,12 +1,10 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
-import { getFunctionName } from "../../../babel-utils";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { DeclareLocalInstruction, StoreLocalInstruction } from "../../../ir";
 import { FunctionExpressionInstruction } from "../../../ir/instructions/value/FunctionExpression";
+import { type Scope, type ScopeMap } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
-import { getDeclarationOwningPath } from "../getDeclarationOwningPath";
 import { isBindingOwnedByScope } from "./isBindingOwnedByScope";
 import { isContextVariable } from "./isContextVariable";
 
@@ -16,36 +14,38 @@ import { isContextVariable } from "./isContextVariable";
  * but does NOT build the function body yet.
  */
 export function registerFunctionDeclarationBinding(
-  bindingsPath: NodePath<t.Node>,
-  nodePath: NodePath<t.FunctionDeclaration>,
+  scope: Scope,
+  scopeMap: ScopeMap,
+  node: ESTree.FunctionDeclaration,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
-  const functionName = getFunctionName(nodePath);
-  if (functionName === null) {
+  const functionName = node.id;
+  if (functionName == null || functionName.type !== "Identifier") {
     return;
   }
 
-  const owningPath = getDeclarationOwningPath(nodePath);
-  const binding = owningPath.scope.getBinding(functionName.node.name);
-  if (!isBindingOwnedByScope(bindingsPath, binding)) {
+  // Function declarations create their own inner scope, but the binding
+  // is owned by the enclosing scope.
+  const binding = scope.getBinding(functionName.name);
+  if (!isBindingOwnedByScope(scope, binding)) {
     return;
   }
 
   const identifier = environment.createIdentifier();
   functionBuilder.registerDeclarationName(
-    functionName.node.name,
+    functionName.name,
     identifier.declarationId,
-    bindingsPath,
+    scope,
   );
   functionBuilder.instantiateDeclaration(
     identifier.declarationId,
     "function",
-    functionName.node.name,
+    functionName.name,
   );
 
   // Mark context variables so SSA can skip them.
-  if (binding && isContextVariable(binding, bindingsPath)) {
+  if (binding && isContextVariable(binding, scope)) {
     environment.contextDeclarationIds.add(identifier.declarationId);
   }
 
@@ -62,54 +62,52 @@ export function registerFunctionDeclarationBinding(
 
 /**
  * Phase 2: Build the function body and emit a FunctionExpressionInstruction + StoreLocal.
- * Per ECMA-262 §10.2.11, InstantiateFunctionObject runs after ALL bindings in
+ * Per ECMA-262 ss.10.2.11, InstantiateFunctionObject runs after ALL bindings in
  * the scope have been created, so this must be called after all register*
  * functions have completed.
  */
 export function initializeFunctionDeclaration(
-  bindingsPath: NodePath<t.Node>,
-  nodePath: NodePath<t.FunctionDeclaration>,
+  scope: Scope,
+  scopeMap: ScopeMap,
+  node: ESTree.FunctionDeclaration,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
   moduleBuilder: ModuleIRBuilder,
 ) {
-  const functionName = getFunctionName(nodePath);
-  if (functionName === null) {
+  const functionName = node.id;
+  if (functionName == null || functionName.type !== "Identifier") {
     return;
   }
 
-  const owningPath = getDeclarationOwningPath(nodePath);
-  const binding = owningPath.scope.getBinding(functionName.node.name);
-  if (!isBindingOwnedByScope(bindingsPath, binding)) {
+  const binding = scope.getBinding(functionName.name);
+  if (!isBindingOwnedByScope(scope, binding)) {
     return;
   }
 
-  const idName = nodePath.get("id");
-  if (!idName.isIdentifier()) {
-    return;
-  }
-
-  const declarationId = functionBuilder.getDeclarationId(idName.node.name, owningPath);
+  const declarationId = functionBuilder.getDeclarationId(functionName.name, scope);
   if (declarationId === undefined) {
-    throw new Error(`Function declaration binding was not registered: ${idName.node.name}`);
+    throw new Error(`Function declaration binding was not registered: ${functionName.name}`);
   }
 
   const latestDeclaration = environment.getLatestDeclaration(declarationId);
   const identifierPlace = environment.places.get(latestDeclaration.placeId);
   if (identifierPlace === undefined) {
-    throw new Error(`Unable to find the place for ${idName.node.name} (${declarationId})`);
+    throw new Error(`Unable to find the place for ${functionName.name} (${declarationId})`);
   }
 
-  const paramPaths = nodePath.get("params");
-  const bodyPath = nodePath.get("body");
+  const params = node.params;
+  const body = node.body;
+  const fnScope = scopeMap.get(node) ?? scope;
   const functionIRBuilder = new FunctionIRBuilder(
-    paramPaths,
-    bodyPath,
-    bodyPath,
+    params,
+    node,
+    body,
+    fnScope,
+    scopeMap,
     functionBuilder.environment,
     moduleBuilder,
-    nodePath.node.async,
-    nodePath.node.generator,
+    node.async ?? false,
+    node.generator ?? false,
   );
   const functionIR = functionIRBuilder.build();
 
@@ -122,8 +120,8 @@ export function initializeFunctionDeclaration(
     fnPlace,
     identifierPlace,
     functionIR,
-    nodePath.node.generator,
-    nodePath.node.async,
+    node.generator ?? false,
+    node.async ?? false,
     capturedPlaces,
   );
   functionBuilder.addInstruction(instruction);

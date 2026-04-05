@@ -1,5 +1,4 @@
-import { NodePath } from "@babel/traverse";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import {
   BranchTerminal,
@@ -8,6 +7,7 @@ import {
   LiteralInstruction,
   UnaryExpressionInstruction,
 } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -23,7 +23,8 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
  * body, and a conditional break exits the loop when the test is false.
  */
 export function buildDoWhileStatement(
-  nodePath: NodePath<t.DoWhileStatement>,
+  node: ESTree.DoWhileStatement,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
@@ -48,7 +49,6 @@ export function buildDoWhileStatement(
   functionBuilder.blocks.set(exitBlock.id, exitBlock);
 
   // Build the body block.
-  const bodyPath = nodePath.get("body");
   const bodyBlock = environment.createBlock();
   functionBuilder.blocks.set(bodyBlock.id, bodyBlock);
 
@@ -62,11 +62,10 @@ export function buildDoWhileStatement(
   if (label) {
     functionBuilder.blockLabels.set(testBlock.id, label);
   }
-  buildNode(bodyPath, functionBuilder, moduleBuilder, environment);
+  buildNode(node.body, scope, functionBuilder, moduleBuilder, environment);
 
   // After the body, evaluate the do-while test. If false, break.
-  const doWhileTestPath = nodePath.get("test");
-  const doWhileTestPlace = buildNode(doWhileTestPath, functionBuilder, moduleBuilder, environment);
+  const doWhileTestPlace = buildNode(node.test, scope, functionBuilder, moduleBuilder, environment);
   if (doWhileTestPlace === undefined || Array.isArray(doWhileTestPlace)) {
     throw new Error("Do-while statement test must be a single place");
   }
@@ -110,7 +109,7 @@ export function buildDoWhileStatement(
 
   functionBuilder.controlStack.pop();
 
-  // Set the branch terminal for the test block (while(true) → always enter body).
+  // Set the branch terminal for the test block (while(true) -> always enter body).
   testBlockTerminus.terminal = new BranchTerminal(
     createInstructionId(functionBuilder.environment),
     truePlace,

@@ -1,21 +1,21 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { YieldExpressionInstruction } from "../../../ir/instructions/value/YieldExpression";
+import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildYieldExpression(
-  nodePath: NodePath<t.YieldExpression>,
+  node: ESTree.YieldExpression,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  const argumentPath = nodePath.get("argument");
   let argumentPlace;
-  if (argumentPath.hasNode()) {
-    argumentPlace = buildNode(argumentPath, functionBuilder, moduleBuilder, environment);
+  if (node.argument != null) {
+    argumentPlace = buildNode(node.argument, scope, functionBuilder, moduleBuilder, environment);
     if (argumentPlace === undefined || Array.isArray(argumentPlace)) {
       throw new Error("Yield expression argument must be a single place");
     }
@@ -27,7 +27,7 @@ export function buildYieldExpression(
     YieldExpressionInstruction,
     place,
     argumentPlace,
-    nodePath.node.delegate,
+    node.delegate,
   );
   functionBuilder.addInstruction(instruction);
   return place;

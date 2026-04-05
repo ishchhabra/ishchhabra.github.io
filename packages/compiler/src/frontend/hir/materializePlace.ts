@@ -1,5 +1,3 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
 import { Environment } from "../../environment";
 import {
   ArrayExpressionInstruction,
@@ -36,9 +34,8 @@ import { ArrowFunctionExpressionInstruction } from "../../ir/instructions/value/
 import { FunctionExpressionInstruction } from "../../ir/instructions/value/FunctionExpression";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
 
-export function materializePlace<T extends t.Node>(
+export function materializePlace(
   valuePlace: Place,
-  nodePath: NodePath<T> | undefined,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {
@@ -142,9 +139,8 @@ export function isStablePlace(
   return false;
 }
 
-export function stabilizePlace<T extends t.Node>(
+export function stabilizePlace(
   valuePlace: Place,
-  nodePath: NodePath<T> | undefined,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {
@@ -152,5 +148,5 @@ export function stabilizePlace<T extends t.Node>(
     return valuePlace;
   }
 
-  return materializePlace(valuePlace, nodePath, functionBuilder, environment);
+  return materializePlace(valuePlace, functionBuilder, environment);
 }

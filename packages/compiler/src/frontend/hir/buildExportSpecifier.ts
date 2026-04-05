@@ -1,20 +1,21 @@
-import { NodePath } from "@babel/traverse";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../environment";
 import { ExportSpecifierInstruction, Place } from "../../ir";
+import { type Scope } from "../scope/Scope";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
 
 export function buildExportSpecifier(
-  nodePath: NodePath<t.ExportSpecifier>,
+  node: ESTree.ExportSpecifier,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
-  const localName = getLocalName(nodePath);
-  const exportedName = getExportedName(nodePath);
+  const localName = getLocalName(node);
+  const exportedName = getExportedName(node);
 
-  const declarationId = functionBuilder.getDeclarationId(localName, nodePath);
+  const declarationId = functionBuilder.getDeclarationId(localName, scope);
   if (declarationId === undefined) {
     throw new Error(`Export specifier local '${localName}': no declaration id found`);
   }
@@ -52,15 +53,17 @@ export function buildExportSpecifier(
   return place;
 }
 
-function getLocalName(nodePath: NodePath<t.ExportSpecifier>) {
-  return nodePath.node.local.name;
+function getSpecifierName(specifier: ESTree.Identifier | ESTree.Literal): string {
+  if (specifier.type === "Identifier") {
+    return specifier.name;
+  }
+  return specifier.value as string;
 }
 
-function getExportedName(nodePath: NodePath<t.ExportSpecifier>) {
-  const exportedNode = nodePath.node.exported;
-  if (t.isIdentifier(exportedNode)) {
-    return exportedNode.name;
-  }
+function getLocalName(node: ESTree.ExportSpecifier) {
+  return getSpecifierName(node.local);
+}
 
-  return exportedNode.value;
+function getExportedName(node: ESTree.ExportSpecifier) {
+  return getSpecifierName(node.exported);
 }

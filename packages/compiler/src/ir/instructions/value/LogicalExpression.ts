@@ -1,7 +1,8 @@
-import * as t from "@babel/types";
 import { Environment } from "../../../environment";
 import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
+
+export type LogicalOperator = "||" | "&&" | "??";
 
 /**
  * Represents a logical expression.
@@ -14,7 +15,7 @@ export class LogicalExpressionInstruction extends ValueInstruction {
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
-    public readonly operator: t.LogicalExpression["operator"],
+    public readonly operator: LogicalOperator,
     public readonly left: Place,
     public readonly right: Place,
   ) {

@@ -1,19 +1,21 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as JSX from "estree-jsx";
 import { Environment } from "../../../environment";
 import { JSXMemberExpressionInstruction, Place } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildJSXMemberExpression(
-  nodePath: NodePath<t.JSXMemberExpression>,
+  node: JSX.JSXMemberExpression,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
   const objectPlace = buildNode(
-    nodePath.get("object"),
+    node.object,
+    scope,
     functionBuilder,
     moduleBuilder,
     environment,
@@ -28,7 +30,7 @@ export function buildJSXMemberExpression(
     JSXMemberExpressionInstruction,
     place,
     objectPlace,
-    nodePath.node.property.name,
+    node.property.name,
   );
   functionBuilder.addInstruction(instruction);
   return place;

@@ -1,5 +1,4 @@
-import { NodePath } from "@babel/traverse";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import {
   ForInStructure,
@@ -8,6 +7,7 @@ import {
   StoreLocalInstruction,
   makeInstructionId,
 } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { instantiateScopeBindings } from "../bindings";
@@ -16,7 +16,8 @@ import { buildAssignmentLeft } from "../expressions/buildAssignmentExpression";
 import { buildLVal } from "../buildLVal";
 
 export function buildForInStatement(
-  nodePath: NodePath<t.ForInStatement>,
+  node: ESTree.ForInStatement,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
@@ -25,8 +26,7 @@ export function buildForInStatement(
   const currentBlock = functionBuilder.currentBlock;
 
   // Build the object expression in the current block.
-  const rightPath = nodePath.get("right");
-  const objectPlace = buildNode(rightPath, functionBuilder, moduleBuilder, environment);
+  const objectPlace = buildNode(node.right, scope, functionBuilder, moduleBuilder, environment);
   if (objectPlace === undefined || Array.isArray(objectPlace)) {
     throw new Error("For-in object must be a single place");
   }
@@ -36,22 +36,24 @@ export function buildForInStatement(
   functionBuilder.blocks.set(headerBlock.id, headerBlock);
 
   functionBuilder.currentBlock = headerBlock;
-  instantiateScopeBindings(nodePath, functionBuilder, environment, moduleBuilder);
+  const forScope = functionBuilder.scopeFor(node);
+  instantiateScopeBindings(node, forScope, functionBuilder, environment, moduleBuilder);
 
   // Build the iteration value from the left side.
-  const leftPath = nodePath.get("left");
+  const left = node.left;
   let iterationValuePlace: Place;
-  let bareLVal: NodePath<t.LVal> | undefined;
+  let bareLVal: ESTree.Pattern | undefined;
 
-  if (leftPath.isVariableDeclaration()) {
+  if (left.type === "VariableDeclaration") {
     // `for (const x in obj)` — new loop-scoped variable.
-    const kind = leftPath.node.kind;
+    const kind = left.kind;
     if (kind !== "var" && kind !== "let" && kind !== "const") {
       throw new Error(`Unsupported variable declaration kind: ${kind}`);
     }
-    const idPath = leftPath.get("declarations")[0].get("id") as NodePath<t.LVal>;
+    const id = left.declarations[0].id;
     iterationValuePlace = buildLVal(
-      idPath,
+      id as ESTree.Pattern,
+      forScope,
       functionBuilder,
       moduleBuilder,
       environment,
@@ -60,13 +62,14 @@ export function buildForInStatement(
   } else {
     // `for (x in obj)` — assignment to existing variable.
     iterationValuePlace = buildLVal(
-      leftPath as NodePath<t.LVal>,
+      left as ESTree.Pattern,
+      scope,
       functionBuilder,
       moduleBuilder,
       environment,
       null,
     ).place;
-    bareLVal = leftPath as NodePath<t.LVal>;
+    bareLVal = left as ESTree.Pattern;
   }
 
   // Build the body block.
@@ -80,7 +83,8 @@ export function buildForInStatement(
   if (bareLVal !== undefined) {
     const { place: outerPlace, instructions } = buildAssignmentLeft(
       bareLVal,
-      nodePath as any,
+      node as any,
+      scope,
       functionBuilder,
       moduleBuilder,
       environment,
@@ -107,14 +111,13 @@ export function buildForInStatement(
   const exitBlock = environment.createBlock();
   functionBuilder.blocks.set(exitBlock.id, exitBlock);
 
-  const bodyPath = nodePath.get("body");
   functionBuilder.controlStack.push({
     kind: "loop",
     label,
     breakTarget: exitBlock.id,
     continueTarget: headerBlock.id,
   });
-  buildNode(bodyPath, functionBuilder, moduleBuilder, environment);
+  buildNode(node.body, forScope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
   const bodyBlockTerminus = functionBuilder.currentBlock;
 

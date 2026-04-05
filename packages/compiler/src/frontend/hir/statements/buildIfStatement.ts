@@ -1,19 +1,19 @@
-import { NodePath } from "@babel/traverse";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { BasicBlock, BranchTerminal, createInstructionId, JumpTerminal } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildIfStatement(
-  nodePath: NodePath<t.IfStatement>,
+  node: ESTree.IfStatement,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  const testPath = nodePath.get("test");
-  const testPlace = buildNode(testPath, functionBuilder, moduleBuilder, environment);
+  const testPlace = buildNode(node.test, scope, functionBuilder, moduleBuilder, environment);
   if (testPlace === undefined || Array.isArray(testPlace)) {
     throw new Error("If statement test must be a single place");
   }
@@ -25,12 +25,11 @@ export function buildIfStatement(
   functionBuilder.blocks.set(joinBlock.id, joinBlock);
 
   // Build the consequent block
-  const consequentPath = nodePath.get("consequent");
   const consequentBlock = environment.createBlock();
   functionBuilder.blocks.set(consequentBlock.id, consequentBlock);
 
   functionBuilder.currentBlock = consequentBlock;
-  buildNode(consequentPath, functionBuilder, moduleBuilder, environment);
+  buildNode(node.consequent, scope, functionBuilder, moduleBuilder, environment);
 
   // After building the consequent block, we need to set the terminal
   // from the last block to the join block, unless the block already has
@@ -43,14 +42,13 @@ export function buildIfStatement(
   }
 
   // Build the alternate block
-  const alternatePath = nodePath.get("alternate");
   let alternateBlock: BasicBlock | undefined = joinBlock;
-  if (alternatePath.hasNode()) {
+  if (node.alternate != null) {
     alternateBlock = environment.createBlock();
     functionBuilder.blocks.set(alternateBlock.id, alternateBlock);
 
     functionBuilder.currentBlock = alternateBlock;
-    buildNode(alternatePath, functionBuilder, moduleBuilder, environment);
+    buildNode(node.alternate, scope, functionBuilder, moduleBuilder, environment);
   }
 
   // After building the alternate block, we need to set the terminal

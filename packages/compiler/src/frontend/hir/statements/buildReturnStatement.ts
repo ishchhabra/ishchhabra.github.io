@@ -1,19 +1,19 @@
-import { NodePath } from "@babel/traverse";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { createInstructionId, ReturnTerminal } from "../../../ir";
+import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildNode } from "../buildNode";
 
 export function buildReturnStatement(
-  nodePath: NodePath<t.ReturnStatement>,
+  node: ESTree.ReturnStatement,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  const argument = nodePath.get("argument");
-  if (!argument.hasNode()) {
+  if (node.argument == null) {
     functionBuilder.currentBlock.terminal = new ReturnTerminal(
       createInstructionId(functionBuilder.environment),
       null,
@@ -21,7 +21,7 @@ export function buildReturnStatement(
     return undefined;
   }
 
-  const valuePlace = buildNode(argument, functionBuilder, moduleBuilder, environment);
+  const valuePlace = buildNode(node.argument, scope, functionBuilder, moduleBuilder, environment);
   if (valuePlace === undefined || Array.isArray(valuePlace)) {
     throw new Error("Return statement argument must be a single place");
   }

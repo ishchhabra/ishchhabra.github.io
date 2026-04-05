@@ -1,11 +1,10 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { DebuggerStatementInstruction, Place } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 export function buildDebuggerStatement(
-  nodePath: NodePath<t.DebuggerStatement>,
+  _node: ESTree.DebuggerStatement,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {

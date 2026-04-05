@@ -1,11 +1,10 @@
-import { NodePath } from "@babel/core";
-import * as t from "@babel/types";
+import type * as JSX from "estree-jsx";
 import { Environment } from "../../../environment";
 import { JSXClosingFragmentInstruction, Place } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 export function buildJSXClosingFragment(
-  nodePath: NodePath<t.JSXClosingFragment>,
+  _node: JSX.JSXClosingFragment,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {

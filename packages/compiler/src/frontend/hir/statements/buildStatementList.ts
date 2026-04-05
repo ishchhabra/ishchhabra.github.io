@@ -1,6 +1,7 @@
-import { NodePath } from "@babel/traverse";
-import * as t from "@babel/types";
+import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
+import { isTSOnlyNode } from "../../estree";
+import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -12,16 +13,21 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
  * scope instantiation.
  */
 export function buildStatementList(
-  statementPaths: Array<NodePath<t.Node>>,
+  statements: ESTree.Statement[],
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  for (const statementPath of statementPaths) {
+  for (const stmt of statements) {
     if (functionBuilder.currentBlock.terminal !== undefined) {
       break;
     }
 
-    buildNode(statementPath, functionBuilder, moduleBuilder, environment);
+    if (isTSOnlyNode(stmt)) {
+      continue;
+    }
+
+    buildNode(stmt, scope, functionBuilder, moduleBuilder, environment);
   }
 }
