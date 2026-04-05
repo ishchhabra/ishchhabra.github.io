@@ -83,12 +83,12 @@ function findFixtures(dir: string): Fixture[] {
     if (entry.isDirectory()) {
       const subdir = join(dir, entry.name);
       fixtures.push(...findFixtures(subdir));
-    } else if (entry.name === "code.js") {
+    } else if (entry.name === "code.js" || entry.name === "code.ts") {
       fixtures.push({
         input: join(dir, entry.name),
         expectation: resolveFixtureExpectation(dir, "output.js"),
       });
-    } else if (entry.name === "code.jsx") {
+    } else if (entry.name === "code.jsx" || entry.name === "code.tsx") {
       fixtures.push({
         input: join(dir, entry.name),
         expectation: resolveFixtureExpectation(dir, "output.jsx"),
