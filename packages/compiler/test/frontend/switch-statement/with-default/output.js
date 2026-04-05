@@ -1,12 +1,15 @@
 const x = "hello";
 switch (x) {
-  case "a":
+  case "a": {
     console.log("matched a");
     break;
-  case "b":
+  }
+  case "b": {
     console.log("matched b");
     break;
-  default:
+  }
+  default: {
     console.log("default");
     break;
+  }
 }
