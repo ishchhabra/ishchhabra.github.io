@@ -40,11 +40,7 @@ export class ExpressionStatementInstruction extends BaseInstruction {
   public clone(environment: Environment): ExpressionStatementInstruction {
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    return environment.createInstruction(
-      ExpressionStatementInstruction,
-      place,
-      this.expression,
-    );
+    return environment.createInstruction(ExpressionStatementInstruction, place, this.expression);
   }
 
   rewrite(values: Map<Identifier, Place>): BaseInstruction {

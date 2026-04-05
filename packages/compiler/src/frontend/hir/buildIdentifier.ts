@@ -61,11 +61,7 @@ export function buildBindingIdentifier(
 
   place.identifier.name = name;
 
-  const instruction = environment.createInstruction(
-    DeclareLocalInstruction,
-    place,
-    "const",
-  );
+  const instruction = environment.createInstruction(DeclareLocalInstruction, place, "const");
   builder.addInstruction(instruction);
 
   return place;
@@ -129,11 +125,7 @@ function buildReferencedIdentifier(
       const LoadClass = environment.contextDeclarationIds.has(declarationId)
         ? LoadContextInstruction
         : LoadLocalInstruction;
-      const instruction = environment.createInstruction(
-        LoadClass,
-        place,
-        declarationPlace,
-      );
+      const instruction = environment.createInstruction(LoadClass, place, declarationPlace);
       builder.addInstruction(instruction);
     }
   }

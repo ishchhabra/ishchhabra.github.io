@@ -23,12 +23,7 @@ export class JSXAttributeInstruction extends JSXInstruction {
   public clone(environment: Environment): JSXAttributeInstruction {
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    return environment.createInstruction(
-      JSXAttributeInstruction,
-      place,
-      this.name,
-      this.value,
-    );
+    return environment.createInstruction(JSXAttributeInstruction, place, this.name, this.value);
   }
 
   public rewrite(values: Map<Identifier, Place>): BaseInstruction {

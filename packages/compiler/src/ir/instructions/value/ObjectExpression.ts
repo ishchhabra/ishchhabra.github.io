@@ -20,11 +20,7 @@ export class ObjectExpressionInstruction extends ValueInstruction {
   public clone(environment: Environment): ObjectExpressionInstruction {
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    return environment.createInstruction(
-      ObjectExpressionInstruction,
-      place,
-      this.properties,
-    );
+    return environment.createInstruction(ObjectExpressionInstruction, place, this.properties);
   }
 
   rewrite(values: Map<Identifier, Place>): BaseInstruction {

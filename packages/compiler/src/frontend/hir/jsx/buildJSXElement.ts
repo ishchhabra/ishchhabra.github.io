@@ -24,7 +24,13 @@ export function buildJSXElement(
 
   let closingElement;
   if (node.closingElement != null) {
-    closingElement = buildNode(node.closingElement, scope, functionBuilder, moduleBuilder, environment);
+    closingElement = buildNode(
+      node.closingElement,
+      scope,
+      functionBuilder,
+      moduleBuilder,
+      environment,
+    );
   }
   if (Array.isArray(closingElement)) {
     throw new Error("JSXElement closing element should be a single place");

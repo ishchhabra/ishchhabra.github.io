@@ -38,7 +38,14 @@ export function buildLVal(
   } else if (node.type === "ObjectPattern") {
     return buildObjectPatternLVal(node, scope, functionBuilder, moduleBuilder, environment, kind);
   } else if (node.type === "AssignmentPattern") {
-    return buildAssignmentPatternLVal(node, scope, functionBuilder, moduleBuilder, environment, kind);
+    return buildAssignmentPatternLVal(
+      node,
+      scope,
+      functionBuilder,
+      moduleBuilder,
+      environment,
+      kind,
+    );
   } else if (node.type === "RestElement") {
     return buildRestElementLVal(node, scope, functionBuilder, moduleBuilder, environment, kind);
   }
@@ -186,11 +193,7 @@ function buildObjectPropertyStaticKeyLVal(
   }
   const keyIdentifier = environment.createIdentifier();
   const keyPlace = environment.createPlace(keyIdentifier);
-  const keyInstruction = environment.createInstruction(
-    LiteralInstruction,
-    keyPlace,
-    value,
-  );
+  const keyInstruction = environment.createInstruction(LiteralInstruction, keyPlace, value);
   functionBuilder.addInstruction(keyInstruction);
   return keyPlace;
 }
@@ -231,14 +234,7 @@ function buildRestElementLVal(
   environment: Environment,
   kind: "var" | "let" | "const" | null,
 ): { place: Place; bindings: Place[] } {
-  const result = buildLVal(
-    node.argument,
-    scope,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-    kind,
-  );
+  const result = buildLVal(node.argument, scope, functionBuilder, moduleBuilder, environment, kind);
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);

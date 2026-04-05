@@ -74,12 +74,7 @@ export function buildDoWhileStatement(
   // block. When test is true, fall through to the next iteration.
   const notTestPlace = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
-    environment.createInstruction(
-      UnaryExpressionInstruction,
-      notTestPlace,
-      "!",
-      doWhileTestPlace,
-    ),
+    environment.createInstruction(UnaryExpressionInstruction, notTestPlace, "!", doWhileTestPlace),
   );
 
   const breakBlock = environment.createBlock();

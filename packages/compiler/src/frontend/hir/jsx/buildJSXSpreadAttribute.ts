@@ -14,7 +14,13 @@ export function buildJSXSpreadAttribute(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
-  const argumentPlace = buildNode(node.argument, scope, functionBuilder, moduleBuilder, environment);
+  const argumentPlace = buildNode(
+    node.argument,
+    scope,
+    functionBuilder,
+    moduleBuilder,
+    environment,
+  );
   if (argumentPlace === undefined || Array.isArray(argumentPlace)) {
     throw new Error("JSX spread attribute argument should be a single place");
   }

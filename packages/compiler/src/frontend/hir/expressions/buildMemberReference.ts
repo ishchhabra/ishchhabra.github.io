@@ -35,7 +35,10 @@ function isStaticMemberAccess(node: ESTree.MemberExpression): boolean {
   }
 
   const prop = node.property;
-  if (prop.type === "Literal" && (typeof prop.value === "string" || typeof prop.value === "number")) {
+  if (
+    prop.type === "Literal" &&
+    (typeof prop.value === "string" || typeof prop.value === "number")
+  ) {
     return true;
   }
 
@@ -45,11 +48,16 @@ function isStaticMemberAccess(node: ESTree.MemberExpression): boolean {
 /**
  * Extract the value from a static property key node.
  */
-function getValueFromStaticKey(node: ESTree.Expression | ESTree.PrivateIdentifier): string | number | undefined {
+function getValueFromStaticKey(
+  node: ESTree.Expression | ESTree.PrivateIdentifier,
+): string | number | undefined {
   if (node.type === "Identifier") {
     return node.name;
   }
-  if (node.type === "Literal" && (typeof node.value === "string" || typeof node.value === "number")) {
+  if (
+    node.type === "Literal" &&
+    (typeof node.value === "string" || typeof node.value === "number")
+  ) {
     return node.value;
   }
   return undefined;
@@ -63,7 +71,13 @@ export function buildMemberReference(
   environment: Environment,
   { reusable = false }: { reusable?: boolean } = {},
 ): MemberReference {
-  const builtObjectPlace = buildNode(node.object, scope, functionBuilder, moduleBuilder, environment);
+  const builtObjectPlace = buildNode(
+    node.object,
+    scope,
+    functionBuilder,
+    moduleBuilder,
+    environment,
+  );
   if (builtObjectPlace === undefined || Array.isArray(builtObjectPlace)) {
     throw new Error("Member expression object must be a single place");
   }
@@ -88,7 +102,13 @@ export function buildMemberReference(
     throw new Error("PrivateIdentifier is not supported in member expressions");
   }
 
-  const builtPropertyPlace = buildNode(property, scope, functionBuilder, moduleBuilder, environment);
+  const builtPropertyPlace = buildNode(
+    property,
+    scope,
+    functionBuilder,
+    moduleBuilder,
+    environment,
+  );
   if (builtPropertyPlace === undefined || Array.isArray(builtPropertyPlace)) {
     throw new Error("Member expression property must be a single place");
   }
@@ -183,12 +203,7 @@ export function emitMemberReferenceStore(
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {
-  const storePlace = storeMemberReference(
-    reference,
-    valuePlace,
-    functionBuilder,
-    environment,
-  );
+  const storePlace = storeMemberReference(reference, valuePlace, functionBuilder, environment);
   functionBuilder.addInstruction(
     environment.createInstruction(
       ExpressionStatementInstruction,

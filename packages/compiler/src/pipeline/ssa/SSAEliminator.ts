@@ -64,11 +64,7 @@ export class SSAEliminator {
     const undefinedPlace = this.moduleIR.environment.createPlace(
       this.moduleIR.environment.createIdentifier(),
     );
-    const undefinedInstr = new LiteralInstruction(
-      undefinedId,
-      undefinedPlace,
-      undefined,
-    );
+    const undefinedInstr = new LiteralInstruction(undefinedId, undefinedPlace, undefined);
     declarationBlock.appendInstruction(undefinedInstr);
     this.moduleIR.environment.placeToInstruction.set(undefinedPlace.id, undefinedInstr);
 

@@ -13,9 +13,8 @@ export function buildFunctionExpression(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  const identifierPlace = node.id != null
-    ? buildIdentifier(node.id, scope, functionBuilder, environment)
-    : null;
+  const identifierPlace =
+    node.id != null ? buildIdentifier(node.id, scope, functionBuilder, environment) : null;
 
   const childScope = functionBuilder.scopeFor(node);
   const functionIRBuilder = new FunctionIRBuilder(

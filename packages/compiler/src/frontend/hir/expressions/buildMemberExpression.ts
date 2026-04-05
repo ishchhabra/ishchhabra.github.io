@@ -40,9 +40,16 @@ export function buildMemberExpressionUpdate(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
-  const reference = buildMemberReference(memberNode, scope, functionBuilder, moduleBuilder, environment, {
-    reusable: true,
-  });
+  const reference = buildMemberReference(
+    memberNode,
+    scope,
+    functionBuilder,
+    moduleBuilder,
+    environment,
+    {
+      reusable: true,
+    },
+  );
   const loadPlace = loadMemberReference(reference, functionBuilder, environment);
 
   // 3. Materialize old value into a temporary so codegen doesn't

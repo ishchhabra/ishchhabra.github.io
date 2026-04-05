@@ -156,7 +156,14 @@ function buildExpressionAsStatement(
 ) {
   // Assignment expressions in for-loop init/update don't need result stabilization.
   if (expression.type === "AssignmentExpression") {
-    return buildAssignmentExpression(expression, scope, functionBuilder, moduleBuilder, environment, true);
+    return buildAssignmentExpression(
+      expression,
+      scope,
+      functionBuilder,
+      moduleBuilder,
+      environment,
+      true,
+    );
   }
 
   const expressionPlace = buildNode(expression, scope, functionBuilder, moduleBuilder, environment);

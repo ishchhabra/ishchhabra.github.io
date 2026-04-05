@@ -3,9 +3,28 @@ import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
 
 export type BinaryOperator =
-  | "==" | "!=" | "===" | "!==" | "<" | "<=" | ">" | ">="
-  | "<<" | ">>" | ">>>" | "+" | "-" | "*" | "/" | "%" | "**"
-  | "|" | "^" | "&" | "in" | "instanceof";
+  | "=="
+  | "!="
+  | "==="
+  | "!=="
+  | "<"
+  | "<="
+  | ">"
+  | ">="
+  | "<<"
+  | ">>"
+  | ">>>"
+  | "+"
+  | "-"
+  | "*"
+  | "/"
+  | "%"
+  | "**"
+  | "|"
+  | "^"
+  | "&"
+  | "in"
+  | "instanceof";
 
 /**
  * Represents a binary expression.

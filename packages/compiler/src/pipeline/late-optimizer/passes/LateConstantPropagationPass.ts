@@ -50,11 +50,7 @@ export class LateConstantPropagationPass extends BaseOptimizationPass {
           const value = state.get(decl);
 
           if (value && value.kind === "const") {
-            const litInstr = new LiteralInstruction(
-              instr.id,
-              instr.place,
-              value.value,
-            );
+            const litInstr = new LiteralInstruction(instr.id, instr.place, value.value);
 
             block.replaceInstruction(i, litInstr);
 

@@ -13,13 +13,7 @@ export function buildJSXMemberExpression(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
-  const objectPlace = buildNode(
-    node.object,
-    scope,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-  );
+  const objectPlace = buildNode(node.object, scope, functionBuilder, moduleBuilder, environment);
   if (objectPlace === undefined || Array.isArray(objectPlace)) {
     throw new Error("JSX member expression object should be a single place");
   }

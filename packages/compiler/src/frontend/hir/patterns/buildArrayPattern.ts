@@ -26,11 +26,7 @@ export function buildArrayPattern(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    ArrayPatternInstruction,
-    place,
-    elementPlaces,
-  );
+  const instruction = environment.createInstruction(ArrayPatternInstruction, place, elementPlaces);
   functionBuilder.addInstruction(instruction);
   return place;
 }

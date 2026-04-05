@@ -216,11 +216,7 @@ export class SSABuilder {
     for (let i = 0; i < block.instructions.length; i++) {
       const instruction = block.instructions[i];
 
-      const rewriteMap = this.buildRewriteMap(
-        instruction.getOperands?.() ?? [],
-        phiDecls,
-        stacks,
-      );
+      const rewriteMap = this.buildRewriteMap(instruction.getOperands?.() ?? [], phiDecls, stacks);
       if (rewriteMap.size > 0) {
         const rewritten = this.rewriteInstruction(instruction, rewriteMap);
         block.replaceInstruction(i, rewritten);
@@ -264,11 +260,7 @@ export class SSABuilder {
   ): void {
     if (!block.terminal) return;
 
-    const rewriteMap = this.buildRewriteMap(
-      block.terminal.getOperands?.() ?? [],
-      phiDecls,
-      stacks,
-    );
+    const rewriteMap = this.buildRewriteMap(block.terminal.getOperands?.() ?? [], phiDecls, stacks);
     if (rewriteMap.size > 0) {
       block.replaceTerminal(block.terminal.rewrite(rewriteMap));
     }

@@ -22,12 +22,7 @@ export class MetaPropertyInstruction extends ValueInstruction {
   public clone(environment: Environment): MetaPropertyInstruction {
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    return environment.createInstruction(
-      MetaPropertyInstruction,
-      place,
-      this.meta,
-      this.property,
-    );
+    return environment.createInstruction(MetaPropertyInstruction, place, this.meta, this.property);
   }
 
   rewrite(): BaseInstruction {

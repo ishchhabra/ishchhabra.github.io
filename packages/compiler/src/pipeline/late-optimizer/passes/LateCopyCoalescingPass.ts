@@ -103,18 +103,12 @@ export class LateCopyCoalescingPass extends BaseOptimizationPass {
         const instr = block.instructions[i];
 
         if (instr instanceof LoadLocalInstruction && instr.value.identifier.declarationId === dst) {
-          block.replaceInstruction(
-            i,
-            new LoadLocalInstruction(instr.id, instr.place, srcPlace),
-          );
+          block.replaceInstruction(i, new LoadLocalInstruction(instr.id, instr.place, srcPlace));
         } else if (
           instr instanceof LoadPhiInstruction &&
           instr.value.identifier.declarationId === dst
         ) {
-          block.replaceInstruction(
-            i,
-            new LoadPhiInstruction(instr.id, instr.place, srcPlace),
-          );
+          block.replaceInstruction(i, new LoadPhiInstruction(instr.id, instr.place, srcPlace));
         } else if (
           instr instanceof CopyInstruction &&
           instr.value.identifier.declarationId === dst

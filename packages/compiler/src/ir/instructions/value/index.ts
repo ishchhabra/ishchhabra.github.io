@@ -15,7 +15,11 @@ export { ObjectMethodInstruction } from "./ObjectMethod";
 export { ObjectPropertyInstruction } from "./ObjectProperty";
 export { SequenceExpressionInstruction } from "./SequenceExpression";
 export { TaggedTemplateExpressionInstruction } from "./TaggedTemplateExpression";
-export { TemplateLiteralInstruction, type TemplateElement, type TemplateElementValue } from "./TemplateLiteral";
+export {
+  TemplateLiteralInstruction,
+  type TemplateElement,
+  type TemplateElementValue,
+} from "./TemplateLiteral";
 export { ThisExpressionInstruction } from "./ThisExpression";
 export { UnaryExpressionInstruction, type UnaryOperator } from "./UnaryExpression";
 export { YieldExpressionInstruction } from "./YieldExpression";

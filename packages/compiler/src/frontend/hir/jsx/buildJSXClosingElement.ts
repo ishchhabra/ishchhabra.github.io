@@ -20,11 +20,7 @@ export function buildJSXClosingElement(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    JSXClosingElementInstruction,
-    place,
-    tagPlace,
-  );
+  const instruction = environment.createInstruction(JSXClosingElementInstruction, place, tagPlace);
   functionBuilder.addInstruction(instruction);
   return place;
 }

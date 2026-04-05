@@ -126,19 +126,11 @@ export class AlgebraicSimplificationPass extends BaseOptimizationPass {
   }
 
   private forwardPlace(instruction: BaseInstruction, source: Place): BaseInstruction {
-    return new LoadLocalInstruction(
-      instruction.id,
-      instruction.place,
-      source,
-    );
+    return new LoadLocalInstruction(instruction.id, instruction.place, source);
   }
 
   private makeLiteral(instruction: BaseInstruction, value: TPrimitiveValue): LiteralInstruction {
-    return new LiteralInstruction(
-      instruction.id,
-      instruction.place,
-      value,
-    );
+    return new LiteralInstruction(instruction.id, instruction.place, value);
   }
 
   private simplifyBinaryExpression(

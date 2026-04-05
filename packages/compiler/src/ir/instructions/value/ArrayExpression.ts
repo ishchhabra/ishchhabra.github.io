@@ -20,11 +20,7 @@ export class ArrayExpressionInstruction extends ValueInstruction {
   public clone(environment: Environment): ArrayExpressionInstruction {
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    return environment.createInstruction(
-      ArrayExpressionInstruction,
-      place,
-      this.elements,
-    );
+    return environment.createInstruction(ArrayExpressionInstruction, place, this.elements);
   }
 
   rewrite(values: Map<Identifier, Place>): BaseInstruction {

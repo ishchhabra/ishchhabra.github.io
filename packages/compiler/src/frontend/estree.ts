@@ -44,27 +44,19 @@ export function isLiteral(node: Node): node is ESTree.Literal {
   return node.type === "Literal";
 }
 
-export function isStringLiteral(
-  node: Node,
-): node is ESTree.SimpleLiteral & { value: string } {
+export function isStringLiteral(node: Node): node is ESTree.SimpleLiteral & { value: string } {
   return node.type === "Literal" && typeof (node as ESTree.Literal).value === "string";
 }
 
-export function isNumericLiteral(
-  node: Node,
-): node is ESTree.SimpleLiteral & { value: number } {
+export function isNumericLiteral(node: Node): node is ESTree.SimpleLiteral & { value: number } {
   return node.type === "Literal" && typeof (node as ESTree.Literal).value === "number";
 }
 
-export function isBooleanLiteral(
-  node: Node,
-): node is ESTree.SimpleLiteral & { value: boolean } {
+export function isBooleanLiteral(node: Node): node is ESTree.SimpleLiteral & { value: boolean } {
   return node.type === "Literal" && typeof (node as ESTree.Literal).value === "boolean";
 }
 
-export function isNullLiteral(
-  node: Node,
-): node is ESTree.SimpleLiteral & { value: null } {
+export function isNullLiteral(node: Node): node is ESTree.SimpleLiteral & { value: null } {
   return node.type === "Literal" && (node as ESTree.Literal).value === null;
 }
 

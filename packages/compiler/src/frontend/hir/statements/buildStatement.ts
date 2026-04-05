@@ -49,7 +49,13 @@ export function buildStatement(
     case "ExportAllDeclaration":
       return buildExportAllDeclaration(node, functionBuilder, moduleBuilder, environment);
     case "ExportDefaultDeclaration":
-      return buildExportDefaultDeclaration(node, scope, functionBuilder, moduleBuilder, environment);
+      return buildExportDefaultDeclaration(
+        node,
+        scope,
+        functionBuilder,
+        moduleBuilder,
+        environment,
+      );
     case "ExportNamedDeclaration":
       return buildExportNamedDeclaration(node, scope, functionBuilder, moduleBuilder, environment);
     case "DoWhileStatement":

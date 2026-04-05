@@ -21,11 +21,7 @@ export class SpreadElementInstruction extends BaseInstruction {
   public clone(environment: Environment): SpreadElementInstruction {
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    return environment.createInstruction(
-      SpreadElementInstruction,
-      place,
-      this.argument,
-    );
+    return environment.createInstruction(SpreadElementInstruction, place, this.argument);
   }
 
   rewrite(values: Map<Identifier, Place>): BaseInstruction {

@@ -12,11 +12,7 @@ export function buildLiteral(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    LiteralInstruction,
-    place,
-    value,
-  );
+  const instruction = environment.createInstruction(LiteralInstruction, place, value);
   functionBuilder.addInstruction(instruction);
   environment.registerDeclarationInstruction(place, instruction);
   return place;

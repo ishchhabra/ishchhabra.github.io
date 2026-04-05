@@ -7,7 +7,10 @@ import { ModuleIRBuilder } from "./ModuleIRBuilder";
 import { resolveModulePath } from "./resolveModulePath";
 
 export function buildImportSpecifier(
-  specifierNode: ESTree.ImportSpecifier | ESTree.ImportDefaultSpecifier | ESTree.ImportNamespaceSpecifier,
+  specifierNode:
+    | ESTree.ImportSpecifier
+    | ESTree.ImportDefaultSpecifier
+    | ESTree.ImportNamespaceSpecifier,
   declarationNode: ESTree.ImportDeclaration,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
@@ -40,11 +43,7 @@ export function buildImportSpecifier(
   );
   functionBuilder.addInstruction(bindingInstruction);
 
-  functionBuilder.registerDeclarationName(
-    localName,
-    bindingIdentifier.declarationId,
-    scope,
-  );
+  functionBuilder.registerDeclarationName(localName, bindingIdentifier.declarationId, scope);
   functionBuilder.instantiateDeclaration(bindingIdentifier.declarationId, "import", localName);
   environment.registerDeclaration(
     bindingIdentifier.declarationId,

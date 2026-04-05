@@ -15,12 +15,7 @@ export class NewExpressionInstruction extends ValueInstruction {
   public clone(environment: Environment): NewExpressionInstruction {
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    return environment.createInstruction(
-      NewExpressionInstruction,
-      place,
-      this.callee,
-      this.args,
-    );
+    return environment.createInstruction(NewExpressionInstruction, place, this.callee, this.args);
   }
 
   rewrite(values: Map<Identifier, Place>): BaseInstruction {

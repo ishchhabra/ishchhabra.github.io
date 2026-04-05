@@ -48,7 +48,13 @@ export function buildExportDefaultDeclaration(
       declarationPlace = environment.places.get(latestDeclaration.placeId);
     }
   } else {
-    declarationPlace = buildNode(declaration as ESTree.Node, scope, functionBuilder, moduleBuilder, environment);
+    declarationPlace = buildNode(
+      declaration as ESTree.Node,
+      scope,
+      functionBuilder,
+      moduleBuilder,
+      environment,
+    );
   }
 
   if (declarationPlace === undefined || Array.isArray(declarationPlace)) {

@@ -12,22 +12,12 @@ export function buildVariableDeclarationBindings(
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
-  if (
-    node.kind !== "var" &&
-    node.kind !== "let" &&
-    node.kind !== "const"
-  ) {
+  if (node.kind !== "var" && node.kind !== "let" && node.kind !== "const") {
     throw new Error(`Unsupported variable declaration kind: ${node.kind}`);
   }
 
   for (const declarator of node.declarations) {
-    buildLValBindings(
-      scope,
-      declarator.id,
-      node.kind,
-      functionBuilder,
-      environment,
-    );
+    buildLValBindings(scope, declarator.id, node.kind, functionBuilder, environment);
   }
 }
 
@@ -40,58 +30,22 @@ function buildLValBindings(
 ) {
   switch (node.type) {
     case "Identifier":
-      buildIdentifierBindings(
-        scope,
-        node,
-        declarationKind,
-        functionBuilder,
-        environment,
-      );
+      buildIdentifierBindings(scope, node, declarationKind, functionBuilder, environment);
       break;
     case "ArrayPattern":
-      buildArrayPatternBindings(
-        scope,
-        node,
-        declarationKind,
-        functionBuilder,
-        environment,
-      );
+      buildArrayPatternBindings(scope, node, declarationKind, functionBuilder, environment);
       break;
     case "AssignmentPattern":
-      buildAssignmentPatternBindings(
-        scope,
-        node,
-        declarationKind,
-        functionBuilder,
-        environment,
-      );
+      buildAssignmentPatternBindings(scope, node, declarationKind, functionBuilder, environment);
       break;
     case "ObjectPattern":
-      buildObjectPatternBindings(
-        scope,
-        node,
-        declarationKind,
-        functionBuilder,
-        environment,
-      );
+      buildObjectPatternBindings(scope, node, declarationKind, functionBuilder, environment);
       break;
     case "Property":
-      buildObjectPropertyBindings(
-        scope,
-        node,
-        declarationKind,
-        functionBuilder,
-        environment,
-      );
+      buildObjectPropertyBindings(scope, node, declarationKind, functionBuilder, environment);
       break;
     case "RestElement":
-      buildRestElementBindings(
-        scope,
-        node,
-        declarationKind,
-        functionBuilder,
-        environment,
-      );
+      buildRestElementBindings(scope, node, declarationKind, functionBuilder, environment);
       break;
     default:
       throw new Error(`Unsupported LVal type: ${(node as ESTree.Node).type}`);
@@ -120,7 +74,7 @@ function buildIdentifierBindings(
   const functionScope =
     scope.kind === "function" || scope.kind === "program"
       ? scope
-      : scope.getFunctionParent() ?? scope.getProgramParent();
+      : (scope.getFunctionParent() ?? scope.getProgramParent());
   if (functionScope.data.get(originalName) !== undefined) return;
 
   const identifier = environment.createIdentifier();
@@ -185,13 +139,7 @@ function buildArrayPatternBindings(
       continue;
     }
 
-    buildLValBindings(
-      scope,
-      element,
-      declarationKind,
-      functionBuilder,
-      environment,
-    );
+    buildLValBindings(scope, element, declarationKind, functionBuilder, environment);
   }
 }
 
@@ -202,13 +150,7 @@ function buildAssignmentPatternBindings(
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
-  buildLValBindings(
-    scope,
-    node.left,
-    declarationKind,
-    functionBuilder,
-    environment,
-  );
+  buildLValBindings(scope, node.left, declarationKind, functionBuilder, environment);
 }
 
 function buildObjectPatternBindings(
@@ -219,13 +161,7 @@ function buildObjectPatternBindings(
   environment: Environment,
 ) {
   for (const property of node.properties) {
-    buildLValBindings(
-      scope,
-      property,
-      declarationKind,
-      functionBuilder,
-      environment,
-    );
+    buildLValBindings(scope, property, declarationKind, functionBuilder, environment);
   }
 }
 
@@ -247,13 +183,7 @@ function buildObjectPropertyBindings(
     throw new Error(`Unsupported property value type: ${value.type}`);
   }
 
-  buildLValBindings(
-    scope,
-    value as ESTree.Pattern,
-    declarationKind,
-    functionBuilder,
-    environment,
-  );
+  buildLValBindings(scope, value as ESTree.Pattern, declarationKind, functionBuilder, environment);
 }
 
 function buildRestElementBindings(
@@ -263,11 +193,5 @@ function buildRestElementBindings(
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
-  buildLValBindings(
-    scope,
-    node.argument,
-    declarationKind,
-    functionBuilder,
-    environment,
-  );
+  buildLValBindings(scope, node.argument, declarationKind, functionBuilder, environment);
 }

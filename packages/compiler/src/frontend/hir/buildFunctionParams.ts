@@ -276,11 +276,7 @@ function buildFunctionObjectPropertyKey(
   }
   const keyIdentifier = environment.createIdentifier();
   const keyPlace = environment.createPlace(keyIdentifier);
-  const keyInstruction = environment.createInstruction(
-    LiteralInstruction,
-    keyPlace,
-    value,
-  );
+  const keyInstruction = environment.createInstruction(LiteralInstruction, keyPlace, value);
   functionBuilder.header.push(keyInstruction);
   return keyPlace;
 }

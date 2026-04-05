@@ -13,7 +13,13 @@ export function buildThrowStatement(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): undefined {
-  const argumentPlace = buildNode(node.argument, scope, functionBuilder, moduleBuilder, environment);
+  const argumentPlace = buildNode(
+    node.argument,
+    scope,
+    functionBuilder,
+    moduleBuilder,
+    environment,
+  );
   if (argumentPlace === undefined || Array.isArray(argumentPlace)) {
     throw new Error("Throw statement argument must be a single expression");
   }

@@ -1,6 +1,12 @@
 import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
-import { BaseInstruction, ExportNamedDeclarationInstruction, Place, StoreLocalInstruction, StoreContextInstruction } from "../../../ir";
+import {
+  BaseInstruction,
+  ExportNamedDeclarationInstruction,
+  Place,
+  StoreLocalInstruction,
+  StoreContextInstruction,
+} from "../../../ir";
 import { ExportFromInstruction } from "../../../ir/instructions/module/ExportFrom";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
@@ -169,7 +175,8 @@ function buildExportFrom(
       continue;
     }
 
-    const local = specifier.local.type === "Identifier" ? specifier.local.name : String(specifier.local.value);
+    const local =
+      specifier.local.type === "Identifier" ? specifier.local.name : String(specifier.local.value);
     const exported =
       specifier.exported.type === "Identifier"
         ? specifier.exported.name

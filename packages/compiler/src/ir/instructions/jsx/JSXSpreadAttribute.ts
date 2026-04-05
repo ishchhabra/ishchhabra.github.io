@@ -21,11 +21,7 @@ export class JSXSpreadAttributeInstruction extends JSXInstruction {
   public clone(environment: Environment): JSXSpreadAttributeInstruction {
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    return environment.createInstruction(
-      JSXSpreadAttributeInstruction,
-      place,
-      this.argument,
-    );
+    return environment.createInstruction(JSXSpreadAttributeInstruction, place, this.argument);
   }
 
   public rewrite(values: Map<Identifier, Place>): BaseInstruction {

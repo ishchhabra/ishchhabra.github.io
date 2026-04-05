@@ -21,11 +21,7 @@ export class JSXIdentifierInstruction extends JSXInstruction {
   public clone(environment: Environment): JSXIdentifierInstruction {
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    return environment.createInstruction(
-      JSXIdentifierInstruction,
-      place,
-      this.value,
-    );
+    return environment.createInstruction(JSXIdentifierInstruction, place, this.value);
   }
 
   rewrite(values: Map<Identifier, Place>): BaseInstruction {

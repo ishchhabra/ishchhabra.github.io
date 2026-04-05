@@ -33,12 +33,7 @@ function instantiateParamBinding(
         continue;
       }
 
-      instantiateParamBinding(
-        element,
-        scope,
-        functionBuilder,
-        environment,
-      );
+      instantiateParamBinding(element, scope, functionBuilder, environment);
     }
     return;
   }
@@ -56,12 +51,7 @@ function instantiateParamBinding(
       }
 
       if (property.type === "RestElement") {
-        instantiateParamBinding(
-          property.argument,
-          scope,
-          functionBuilder,
-          environment,
-        );
+        instantiateParamBinding(property.argument, scope, functionBuilder, environment);
         continue;
       }
 
@@ -76,12 +66,7 @@ function instantiateParamBinding(
   }
 
   if (node.type === "RestElement") {
-    instantiateParamBinding(
-      node.argument,
-      scope,
-      functionBuilder,
-      environment,
-    );
+    instantiateParamBinding(node.argument, scope, functionBuilder, environment);
     return;
   }
 

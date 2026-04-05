@@ -21,11 +21,7 @@ export class JSXClosingElementInstruction extends JSXInstruction {
   public clone(environment: Environment): JSXClosingElementInstruction {
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    return environment.createInstruction(
-      JSXClosingElementInstruction,
-      place,
-      this.tagPlace,
-    );
+    return environment.createInstruction(JSXClosingElementInstruction, place, this.tagPlace);
   }
 
   rewrite(values: Map<Identifier, Place>): BaseInstruction {

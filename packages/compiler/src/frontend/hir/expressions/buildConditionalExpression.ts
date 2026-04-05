@@ -48,7 +48,14 @@ export function buildConditionalExpression(
   functionBuilder.blocks.set(consequentBlock.id, consequentBlock);
 
   functionBuilder.currentBlock = consequentBlock;
-  buildBranchExpression(node.consequent, scope, functionBuilder, moduleBuilder, environment, resultPlace);
+  buildBranchExpression(
+    node.consequent,
+    scope,
+    functionBuilder,
+    moduleBuilder,
+    environment,
+    resultPlace,
+  );
 
   // After building the consequent block, we need to set the terminal
   // from the last block to the join block.
@@ -62,7 +69,14 @@ export function buildConditionalExpression(
   functionBuilder.blocks.set(alternateBlock.id, alternateBlock);
 
   functionBuilder.currentBlock = alternateBlock;
-  buildBranchExpression(node.alternate, scope, functionBuilder, moduleBuilder, environment, resultPlace);
+  buildBranchExpression(
+    node.alternate,
+    scope,
+    functionBuilder,
+    moduleBuilder,
+    environment,
+    resultPlace,
+  );
 
   // After building the alternate block, we need to set the terminal
   // from the last block to the join block.

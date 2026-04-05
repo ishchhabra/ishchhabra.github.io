@@ -43,9 +43,7 @@ export function buildUpdateExpression(
   }
 
   if (functionBuilder.isDeclarationInTDZ(declarationId)) {
-    throwTDZAccessError(
-      functionBuilder.getDeclarationSourceName(declarationId) ?? argument.name,
-    );
+    throwTDZAccessError(functionBuilder.getDeclarationSourceName(declarationId) ?? argument.name);
   }
 
   const latestDeclaration = environment.getLatestDeclaration(declarationId)!;
@@ -77,11 +75,7 @@ export function buildUpdateExpression(
     );
     oldValLoadPlace = environment.createPlace(environment.createIdentifier());
     functionBuilder.addInstruction(
-      environment.createInstruction(
-        LoadLocalInstruction,
-        oldValLoadPlace,
-        oldValBindingPlace,
-      ),
+      environment.createInstruction(LoadLocalInstruction, oldValLoadPlace, oldValBindingPlace),
     );
   }
 
@@ -103,9 +97,7 @@ export function buildUpdateExpression(
 
   // Create literal 1
   const onePlace = environment.createPlace(environment.createIdentifier());
-  functionBuilder.addInstruction(
-    environment.createInstruction(LiteralInstruction, onePlace, 1),
-  );
+  functionBuilder.addInstruction(environment.createInstruction(LiteralInstruction, onePlace, 1));
 
   // Compute value +/- 1
   const isIncrement = node.operator === "++";
@@ -132,13 +124,7 @@ export function buildUpdateExpression(
         "let",
         "assignment",
       )
-    : environment.createInstruction(
-        StoreLocalInstruction,
-        place,
-        lvalPlace,
-        valuePlace,
-        "const",
-      );
+    : environment.createInstruction(StoreLocalInstruction, place, lvalPlace, valuePlace, "const");
   functionBuilder.addInstruction(instruction);
   environment.registerDeclaration(declarationId, functionBuilder.currentBlock.id, lvalPlace.id);
 

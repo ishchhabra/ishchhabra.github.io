@@ -105,7 +105,13 @@ export class FunctionIRBuilder {
     const functionId = makeFunctionIRId(this.environment.nextFunctionId++);
 
     if (isExpression(this.bodyNode)) {
-      const resultPlace = buildNode(this.bodyNode, this.scope, this, this.moduleBuilder, this.environment);
+      const resultPlace = buildNode(
+        this.bodyNode,
+        this.scope,
+        this,
+        this.moduleBuilder,
+        this.environment,
+      );
       if (resultPlace !== undefined && !Array.isArray(resultPlace)) {
         this.currentBlock.terminal = new ReturnTerminal(
           createInstructionId(this.environment),
@@ -114,9 +120,21 @@ export class FunctionIRBuilder {
       }
     } else {
       const bodyScope = this.scopeFor(this.bodyNode);
-      instantiateScopeBindings(this.bodyNode, bodyScope, this, this.environment, this.moduleBuilder);
+      instantiateScopeBindings(
+        this.bodyNode,
+        bodyScope,
+        this,
+        this.environment,
+        this.moduleBuilder,
+      );
       const body = (this.bodyNode as ESTree.Program | ESTree.BlockStatement).body;
-      buildStatementList(body as ESTree.Statement[], bodyScope, this, this.moduleBuilder, this.environment);
+      buildStatementList(
+        body as ESTree.Statement[],
+        bodyScope,
+        this,
+        this.moduleBuilder,
+        this.environment,
+      );
     }
 
     const functionIR = new FunctionIR(
@@ -140,11 +158,7 @@ export class FunctionIRBuilder {
     this.environment.placeToInstruction.set(instruction.place.id, instruction);
   }
 
-  public registerDeclarationName(
-    name: string,
-    declarationId: DeclarationId,
-    scope: Scope,
-  ) {
+  public registerDeclarationName(name: string, declarationId: DeclarationId, scope: Scope) {
     scope.setData(name, declarationId);
   }
 

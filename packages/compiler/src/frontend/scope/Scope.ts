@@ -449,9 +449,9 @@ function collectBindingNames(
 function registerBinding(name: string, kind: BindingKind, scope: Scope): void {
   const target =
     kind === "var"
-      ? (scope.kind === "function" || scope.kind === "program"
-          ? scope
-          : scope.getFunctionParent() ?? scope.getProgramParent())
+      ? scope.kind === "function" || scope.kind === "program"
+        ? scope
+        : (scope.getFunctionParent() ?? scope.getProgramParent())
       : scope;
 
   if (!target.symbols.has(name)) {
@@ -653,10 +653,7 @@ function collectReferences(node: ESTree.Node, scope: Scope, scopeMap: ScopeMap):
     case "ExportDefaultDeclaration": {
       const exportDefault = node as ESTree.ExportDefaultDeclaration;
       const decl = exportDefault.declaration;
-      if (
-        decl.type === "FunctionDeclaration" ||
-        decl.type === "ClassDeclaration"
-      ) {
+      if (decl.type === "FunctionDeclaration" || decl.type === "ClassDeclaration") {
         collectReferences(decl as ESTree.Node, scope, scopeMap);
       } else {
         collectRefFromExpr(decl as ESTree.Expression, scope, scopeMap);

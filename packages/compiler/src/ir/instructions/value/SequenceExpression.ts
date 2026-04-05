@@ -14,11 +14,7 @@ export class SequenceExpressionInstruction extends ValueInstruction {
   public clone(environment: Environment): SequenceExpressionInstruction {
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    return environment.createInstruction(
-      SequenceExpressionInstruction,
-      place,
-      this.expressions,
-    );
+    return environment.createInstruction(SequenceExpressionInstruction, place, this.expressions);
   }
 
   rewrite(values: Map<Identifier, Place>): BaseInstruction {

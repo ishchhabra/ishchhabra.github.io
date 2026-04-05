@@ -24,7 +24,10 @@ import {
 import { BaseTerminal } from "../../ir/base";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { ModuleIR } from "../../ir/core/ModuleIR";
-import { TemplateElement, TemplateLiteralInstruction } from "../../ir/instructions/value/TemplateLiteral";
+import {
+  TemplateElement,
+  TemplateLiteralInstruction,
+} from "../../ir/instructions/value/TemplateLiteral";
 import { BaseOptimizationPass } from "../late-optimizer/OptimizationPass";
 import { Phi } from "../ssa/Phi";
 import { SSA } from "../ssa/SSABuilder";
@@ -457,14 +460,7 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
           instr instanceof TemplateLiteralInstruction;
         if (!canReplace) continue;
 
-        block.replaceInstruction(
-          i,
-          new LiteralInstruction(
-            instr.id,
-            instr.place,
-            val,
-          ),
-        );
+        block.replaceInstruction(i, new LiteralInstruction(instr.id, instr.place, val));
         changed = true;
       }
 
@@ -505,12 +501,7 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
 
         block.replaceInstruction(
           i,
-          new TemplateLiteralInstruction(
-            instr.id,
-            instr.place,
-            newQuasis,
-            newExpressions,
-          ),
+          new TemplateLiteralInstruction(instr.id, instr.place, newQuasis, newExpressions),
         );
         changed = true;
       }

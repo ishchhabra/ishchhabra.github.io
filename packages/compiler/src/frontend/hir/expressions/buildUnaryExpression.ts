@@ -13,7 +13,13 @@ export function buildUnaryExpression(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  const argumentPlace = buildNode(node.argument, scope, functionBuilder, moduleBuilder, environment);
+  const argumentPlace = buildNode(
+    node.argument,
+    scope,
+    functionBuilder,
+    moduleBuilder,
+    environment,
+  );
   if (argumentPlace === undefined || Array.isArray(argumentPlace)) {
     throw new Error("Unary expression argument must be a single place");
   }

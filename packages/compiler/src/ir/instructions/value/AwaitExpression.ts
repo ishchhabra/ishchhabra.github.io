@@ -14,11 +14,7 @@ export class AwaitExpressionInstruction extends ValueInstruction {
   public clone(environment: Environment): AwaitExpressionInstruction {
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    return environment.createInstruction(
-      AwaitExpressionInstruction,
-      place,
-      this.argument,
-    );
+    return environment.createInstruction(AwaitExpressionInstruction, place, this.argument);
   }
 
   rewrite(values: Map<Identifier, Place>): BaseInstruction {

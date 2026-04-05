@@ -9,15 +9,10 @@ import { type Binding, type Reference, type Scope } from "../../scope/Scope";
  *   - It is reassigned inside a nested function, OR
  *   - It is reassigned anywhere AND referenced by a nested function
  */
-export function isContextVariable(
-  binding: Binding,
-  scope: Scope,
-): boolean {
+export function isContextVariable(binding: Binding, scope: Scope): boolean {
   // Determine the function/program scope that owns this binding.
   const ownerFnScope =
-    scope.kind === "function" || scope.kind === "program"
-      ? scope
-      : scope.getFunctionParent();
+    scope.kind === "function" || scope.kind === "program" ? scope : scope.getFunctionParent();
 
   let reassigned = false;
   let referencedByInnerFn = false;
@@ -48,10 +43,7 @@ export function isContextVariable(
  * Returns true if the reference is inside a different (nested) function
  * compared to `ownerFnScope`.
  */
-function isInNestedFunction(
-  ref: Reference,
-  ownerFnScope: Scope | null,
-): boolean {
+function isInNestedFunction(ref: Reference, ownerFnScope: Scope | null): boolean {
   const refFnScope =
     ref.scope.kind === "function" || ref.scope.kind === "program"
       ? ref.scope

@@ -13,18 +13,20 @@ export function buildSpreadElement(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
-  const argumentPlace = buildNode(node.argument, scope, functionBuilder, moduleBuilder, environment);
+  const argumentPlace = buildNode(
+    node.argument,
+    scope,
+    functionBuilder,
+    moduleBuilder,
+    environment,
+  );
   if (argumentPlace === undefined || Array.isArray(argumentPlace)) {
     throw new Error("Spread element argument must be a single place");
   }
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    SpreadElementInstruction,
-    place,
-    argumentPlace,
-  );
+  const instruction = environment.createInstruction(SpreadElementInstruction, place, argumentPlace);
   functionBuilder.addInstruction(instruction);
   return place;
 }

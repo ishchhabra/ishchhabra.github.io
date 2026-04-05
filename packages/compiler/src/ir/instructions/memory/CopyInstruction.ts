@@ -20,12 +20,7 @@ export class CopyInstruction extends MemoryInstruction {
   public clone(environment: Environment): CopyInstruction {
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    return environment.createInstruction(
-      CopyInstruction,
-      place,
-      this.lval,
-      this.value,
-    );
+    return environment.createInstruction(CopyInstruction, place, this.lval, this.value);
   }
 
   rewrite(values: Map<Identifier, Place>): CopyInstruction {

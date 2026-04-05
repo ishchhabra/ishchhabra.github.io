@@ -15,12 +15,7 @@ export class RegExpLiteralInstruction extends ValueInstruction {
   public clone(environment: Environment): RegExpLiteralInstruction {
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    return environment.createInstruction(
-      RegExpLiteralInstruction,
-      place,
-      this.pattern,
-      this.flags,
-    );
+    return environment.createInstruction(RegExpLiteralInstruction, place, this.pattern, this.flags);
   }
 
   rewrite(): BaseInstruction {

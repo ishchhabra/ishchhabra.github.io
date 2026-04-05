@@ -33,16 +33,8 @@ export function registerFunctionDeclarationBinding(
   }
 
   const identifier = environment.createIdentifier();
-  functionBuilder.registerDeclarationName(
-    functionName.name,
-    identifier.declarationId,
-    scope,
-  );
-  functionBuilder.instantiateDeclaration(
-    identifier.declarationId,
-    "function",
-    functionName.name,
-  );
+  functionBuilder.registerDeclarationName(functionName.name, identifier.declarationId, scope);
+  functionBuilder.instantiateDeclaration(identifier.declarationId, "function", functionName.name);
 
   // Mark context variables so SSA can skip them.
   if (binding && isContextVariable(binding, scope)) {

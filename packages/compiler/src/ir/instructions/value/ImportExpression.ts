@@ -20,11 +20,7 @@ export class ImportExpressionInstruction extends ValueInstruction {
   public clone(environment: Environment): ImportExpressionInstruction {
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    return environment.createInstruction(
-      ImportExpressionInstruction,
-      place,
-      this.source,
-    );
+    return environment.createInstruction(ImportExpressionInstruction, place, this.source);
   }
 
   rewrite(values: Map<Identifier, Place>): BaseInstruction {

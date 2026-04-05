@@ -72,7 +72,13 @@ export function buildExpression(
     case "ThisExpression":
       return buildThisExpression(node, functionBuilder, environment);
     case "TaggedTemplateExpression":
-      return buildTaggedTemplateExpression(node, scope, functionBuilder, moduleBuilder, environment);
+      return buildTaggedTemplateExpression(
+        node,
+        scope,
+        functionBuilder,
+        moduleBuilder,
+        environment,
+      );
     case "UnaryExpression":
       return buildUnaryExpression(node, scope, functionBuilder, moduleBuilder, environment);
     case "UpdateExpression":
@@ -89,7 +95,9 @@ export function buildExpression(
       if (inner.type === "MemberExpression") {
         return buildMemberExpression(inner, scope, functionBuilder, moduleBuilder, environment);
       }
-      throw new Error(`Unsupported ChainExpression inner type: ${(inner as { type: string }).type}`);
+      throw new Error(
+        `Unsupported ChainExpression inner type: ${(inner as { type: string }).type}`,
+      );
     }
     case "ImportExpression":
       return buildImportExpression(node, scope, functionBuilder, moduleBuilder, environment);

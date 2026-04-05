@@ -10,11 +10,7 @@ export function buildJSXText(
 ): Place | undefined {
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    JSXTextInstruction,
-    place,
-    node.value,
-  );
+  const instruction = environment.createInstruction(JSXTextInstruction, place, node.value);
   functionBuilder.addInstruction(instruction);
   return place;
 }
