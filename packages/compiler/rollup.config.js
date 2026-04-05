@@ -1,5 +1,4 @@
-import commonjs from "@rollup/plugin-commonjs";
-import { nodeResolve } from "@rollup/plugin-node-resolve";
+import nodeExternals from "rollup-plugin-node-externals";
 import typescript from "@rollup/plugin-typescript";
 
 /** @type {import('rollup').RollupOptions} */
@@ -15,17 +14,14 @@ const config = {
     preserveModulesRoot: "src",
     sourcemap: true,
   },
-  external: [/@babel\/.*/, "lodash-es", "zod", "commander", "glob"],
   plugins: [
+    nodeExternals(),
     typescript({
-      tsconfig: "./tsconfig.json",
       outputToFilesystem: true,
       compilerOptions: {
         noEmit: true,
       },
     }),
-    nodeResolve({ preferBuiltins: true }),
-    commonjs(),
   ],
 };
 
