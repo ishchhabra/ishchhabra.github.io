@@ -2,16 +2,16 @@ const a = function a({ x: a, ...b }) {
   return b;
 };
 export const f = function f(a) {
-  let k = a;
-  for (const b of [1, 2]) {
-    let l = undefined;
-    if (b) {
-      const { x: p, ...r } = k;
-      l = r;
+  let v = a;
+  for (const j of [1, 2]) {
+    let w = undefined;
+    if (j) {
+      const { x: A, ...C } = v;
+      w = C;
     } else {
-      l = a;
+      w = a;
     }
-    k = l;
+    v = w;
   }
-  return k;
+  return v;
 };

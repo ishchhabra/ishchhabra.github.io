@@ -1,10 +1,10 @@
 let d = 5;
-let n = undefined;
+let r = undefined;
 if (d > 0) {
-  a = 10;
-  n = 10;
+  j = 10;
+  r = 10;
 } else {
-  a = 20;
-  n = 20;
+  m = 20;
+  r = 20;
 }
-const l = n;
+const p = r;

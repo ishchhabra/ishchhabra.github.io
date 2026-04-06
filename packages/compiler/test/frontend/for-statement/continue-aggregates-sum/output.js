@@ -1,20 +1,20 @@
 let c = 0;
-let b = 0;
-let h = undefined;
-let i = 0;
-let j = 0;
-while (j < 10) {
-  if (j === 5) {
-    h = undefined;
-    const f = j;
-    f;
-    i = h;
-    j = j + 1;
+let g = 0;
+let C = undefined;
+let D = 0;
+let E = 0;
+while (E < 10) {
+  if (E === 5) {
+    C = undefined;
+    const t = E;
+    t;
+    D = C;
+    E = E + 1;
     continue;
   }
-  h = i + j;
-  const f = j;
-  f;
-  i = h;
-  j = j + 1;
+  C = D + E;
+  const t = E;
+  t;
+  D = C;
+  E = E + 1;
 }

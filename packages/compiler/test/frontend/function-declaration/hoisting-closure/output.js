@@ -1,5 +1,5 @@
 const a = function a() {
-  return e;
+  return f;
 };
-const e = 2;
-const i = a();
+const f = 2;
+const j = a();

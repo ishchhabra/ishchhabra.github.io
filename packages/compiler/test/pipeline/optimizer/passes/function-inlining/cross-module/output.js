@@ -1,8 +1,8 @@
 const a = async function a(a) {
   try {
-    const f = await a.json();
-    const j = getDb();
-    await j.insert(f);
+    const h = await a.json();
+    const l = getDb();
+    await l.insert(h);
     return new Response("ok");
   } catch {
     return new Response("error");

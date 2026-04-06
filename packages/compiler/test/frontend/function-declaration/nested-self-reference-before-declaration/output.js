@@ -2,19 +2,19 @@ const a = function a(a) {
   const b = function b(a) {
     const n = (a && a.position && a.position[a]) || {};
     if (typeof n.line === "number" && n.line > 0 && typeof n.column === "number" && n.column > 0) {
-      let o = undefined;
-      let R = undefined;
+      let ae = undefined;
+      let aq = undefined;
       if (typeof n.offset === "number" && n.offset > -1) {
-        s = n.offset;
-        R = s;
+        aj = n.offset;
+        aq = aj;
       } else {
-        v = undefined;
-        R = v;
+        am = undefined;
+        aq = am;
       }
       return {
         line: n.line,
         column: n.column,
-        offset: R,
+        offset: aq,
       };
     }
   };

@@ -1,10 +1,10 @@
 const a = function a(a) {
-  const a = function a() {
+  const b = function b() {
     return 1;
   };
   switch (a) {
     case 0: {
-      return a;
+      return b;
     }
     default: {
       return 2;

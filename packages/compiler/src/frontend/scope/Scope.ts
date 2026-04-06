@@ -11,18 +11,28 @@ const RESERVED = new Set(["do", "if", "in", "of"]);
  * Skips JS reserved words (do, if, in, of).
  */
 function toShortName(slot: number): string {
+  const base = CHARS.length; // 52
   let n = slot;
   for (;;) {
     let name: string;
-    if (n < CHARS.length) {
+    if (n < base) {
       name = CHARS[n];
     } else {
-      let remaining = n - CHARS.length;
+      // Multi-char: subtract single-char range, then use fixed-width
+      // positional encoding. 52..2755 → two chars, 2756+ → three chars, etc.
+      let remaining = n - base;
+      let len = 2;
+      let rangeSize = base * base; // 2704 two-char names
+      while (remaining >= rangeSize) {
+        remaining -= rangeSize;
+        len++;
+        rangeSize *= base;
+      }
       name = "";
-      do {
-        name = CHARS[remaining % CHARS.length] + name;
-        remaining = Math.floor(remaining / CHARS.length) - 1;
-      } while (remaining >= 0);
+      for (let i = 0; i < len; i++) {
+        name = CHARS[remaining % base] + name;
+        remaining = Math.floor(remaining / base);
+      }
     }
     if (!RESERVED.has(name)) return name;
     n++;
@@ -103,8 +113,19 @@ export class Scope {
     public readonly kind: "program" | "function" | "block",
   ) {}
 
-  /** Allocate a short output name for a new binding in this scope. */
+  /**
+   * Allocate a short output name for a new binding in this scope.
+   *
+   * All scopes within a function share the enclosing function/program
+   * scope's counter so that block-scoped variables don't collide with
+   * parameter names or other function-level bindings.
+   */
   allocateName(): string {
+    // Delegate to the nearest function/program scope so all names
+    // within a function come from one counter.
+    if (this.kind === "block" && this.parent) {
+      return this.parent.allocateName();
+    }
     return toShortName(this.nextSlot++);
   }
 

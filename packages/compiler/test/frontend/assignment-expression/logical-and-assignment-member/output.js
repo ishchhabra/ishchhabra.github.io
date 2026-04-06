@@ -1,11 +1,11 @@
 export const f = function f(a) {
   let d = a.x;
-  let l = undefined;
-  l = d;
+  let m = undefined;
+  m = d;
   if (d) {
     a.x = 20;
-    $3_1 = 20;
-    l = $3_1;
+    j = 20;
+    m = j;
   }
-  return l;
+  return m;
 };

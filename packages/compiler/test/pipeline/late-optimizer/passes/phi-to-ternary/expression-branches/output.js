@@ -1,10 +1,10 @@
 let f = 10;
 let i = 20;
 let l = undefined;
-let t = undefined;
+let D = undefined;
 if (10 > 20) {
-  t = 10 + 20;
+  D = 10 + 20;
 } else {
-  t = 10 - 20;
+  D = 10 - 20;
 }
-const r = t;
+const B = D;

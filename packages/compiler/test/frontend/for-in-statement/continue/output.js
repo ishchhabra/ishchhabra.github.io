@@ -1,6 +1,6 @@
-for (const b in obj) {
-  if (b === "skip") {
+for (const c in obj) {
+  if (c === "skip") {
     continue;
   }
-  console.log(b);
+  console.log(c);
 }

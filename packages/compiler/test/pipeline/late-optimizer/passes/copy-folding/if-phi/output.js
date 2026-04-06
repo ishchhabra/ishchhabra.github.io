@@ -1,9 +1,9 @@
 const d = 5;
 let g = undefined;
-let p = undefined;
+let t = undefined;
 if (d > 0) {
-  p = 10;
+  t = 10;
 } else {
-  p = 20;
+  t = 20;
 }
-p;
+t;

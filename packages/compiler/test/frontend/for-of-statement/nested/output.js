@@ -1,5 +1,5 @@
-for (const b of matrix) {
-  for (const b of b) {
-    console.log(b);
+for (const c of matrix) {
+  for (const f of c) {
+    console.log(f);
   }
 }

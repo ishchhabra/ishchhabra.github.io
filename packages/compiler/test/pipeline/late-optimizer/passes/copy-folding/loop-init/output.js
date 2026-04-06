@@ -1,4 +1,4 @@
-let i = 0;
-while (i < 3) {
-  i = i + 1;
+let m = 0;
+while (m < 3) {
+  m = m + 1;
 }

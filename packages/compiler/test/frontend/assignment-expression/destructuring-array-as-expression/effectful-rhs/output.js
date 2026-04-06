@@ -1,8 +1,8 @@
 const a = function a() {
   return [1, 2];
 };
-let f = undefined;
-let i = undefined;
-const m = a();
-const [o, p] = m;
-const s = m;
+let g = undefined;
+let j = undefined;
+const n = a();
+const [p, q] = n;
+const t = n;

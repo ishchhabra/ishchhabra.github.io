@@ -4,10 +4,10 @@ const a = function a() {
 const b = function b() {
   return 3;
 };
-let i = {
+let k = {
   b: 1,
 };
-const n = a();
-const t = i[n] + b();
-i[n] = t;
-const x = t;
+const p = a();
+const v = k[p] + b();
+k[p] = v;
+const z = v;

@@ -3,9 +3,9 @@ const a = function a(a, b = 5) {
     slug: a.slug,
   }));
 };
-const e = [];
+const g = [];
 export const Home = function Home() {
-  const [v, x = 5] = [e];
+  const [v, x = 5] = [g];
   const e = v.slice(0, x).map((a) => ({
     slug: a.slug,
   }));

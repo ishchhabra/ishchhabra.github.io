@@ -1,13 +1,13 @@
-let g = 0;
-outer: while (g < 3) {
-  let h = 0;
-  while (h < 3) {
-    if (h === 1) {
-      g = g + 1;
+let P = 0;
+outer: while (P < 3) {
+  let Q = 0;
+  while (Q < 3) {
+    if (Q === 1) {
+      P = P + 1;
       continue outer;
     }
-    console.log(g, h);
-    h = h + 1;
+    console.log(P, Q);
+    Q = Q + 1;
   }
-  g = g + 1;
+  P = P + 1;
 }

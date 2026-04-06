@@ -1,13 +1,13 @@
 let d = 5;
-let p = 5;
-while (p > 0) {
-  let b = 3;
-  let q = 3;
-  let r = undefined;
-  while (q > 0) {
-    q = q - 1;
+let C = 5;
+while (C > 0) {
+  let k = 3;
+  let D = 3;
+  let E = undefined;
+  while (D > 0) {
+    D = D - 1;
   }
-  p = p - 1;
-  r = undefined;
+  C = C - 1;
+  E = undefined;
 }
-const n = p;
+const A = C;

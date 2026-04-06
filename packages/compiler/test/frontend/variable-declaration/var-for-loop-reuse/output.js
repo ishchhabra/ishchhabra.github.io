@@ -1,10 +1,10 @@
 const a = function a() {
-  let c = undefined;
-  c = 0;
+  let e = undefined;
+  e = 0;
   if (true) {
   }
-  g = 0;
+  i = 0;
   if (true) {
   }
-  return g;
+  return i;
 };

@@ -1,8 +1,8 @@
 let c = 0;
-let n = 0;
+let v = 0;
 if (globalThis.cond) {
-  c = globalThis.compute();
-  console.log(c);
-  n = c;
+  j = globalThis.compute();
+  console.log(j);
+  v = j;
 }
-console.log(n);
+console.log(v);

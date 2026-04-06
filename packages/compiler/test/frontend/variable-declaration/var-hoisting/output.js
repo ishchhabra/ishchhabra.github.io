@@ -1,7 +1,7 @@
 const a = function a(a) {
-  let a = undefined;
+  let g = undefined;
   if (a) {
-    a = 1;
+    g = 1;
   }
-  return a;
+  return g;
 };

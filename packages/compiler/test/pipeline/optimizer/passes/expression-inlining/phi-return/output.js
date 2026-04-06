@@ -1,14 +1,14 @@
 const a = function a(a, b, c) {
   let g = undefined;
-  let n = undefined;
+  let t = undefined;
   if (a) {
-    b = b;
-    n = b;
+    k = b;
+    t = k;
   } else {
-    b = c;
-    n = b;
+    n = c;
+    t = n;
   }
-  const k = n;
-  return k;
+  const q = t;
+  return q;
 };
 console.log(a(true, 1, 2));

@@ -1,11 +1,11 @@
-let o = 0;
-let p = undefined;
+let x = 0;
+let y = undefined;
 while (true) {
-  const d = o + 1;
-  if (!(d < 10)) {
-    p = d;
+  const i = x + 1;
+  if (!(i < 10)) {
+    y = i;
     break;
   }
-  o = d;
+  x = i;
 }
-console.log(p);
+console.log(y);

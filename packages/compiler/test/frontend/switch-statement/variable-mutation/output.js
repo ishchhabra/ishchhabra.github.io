@@ -1,22 +1,22 @@
 let d = "unknown";
 const g = 2;
-let t = undefined;
-t = d;
+let z = undefined;
+z = d;
 switch (g) {
   case 1: {
-    e = "one";
-    t = e;
+    s = "one";
+    z = s;
     break;
   }
   case 2: {
-    c = "two";
-    t = c;
+    p = "two";
+    z = p;
     break;
   }
   default: {
-    a = "other";
-    t = a;
+    m = "other";
+    z = m;
     break;
   }
 }
-console.log(t);
+console.log(z);

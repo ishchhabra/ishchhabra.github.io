@@ -1,27 +1,27 @@
 const a = function a(a, b, c) {
-  let Q = undefined;
-  let S = undefined;
   let U = undefined;
+  let W = undefined;
+  let Y = undefined;
   if (a) {
-    let V = undefined;
+    let Z = undefined;
     if (b) {
-      Q = b;
-      S = undefined;
-      V = b;
+      U = b;
+      W = undefined;
+      Z = b;
     } else {
-      Q = undefined;
-      S = c;
-      V = c;
+      U = undefined;
+      W = c;
+      Z = c;
     }
-    U =
-      (V,
+    Y =
+      (Z,
       {
-        x: Q,
-        y: S,
+        x: U,
+        y: W,
       });
   } else {
-    U = {};
+    Y = {};
   }
-  return U;
+  return Y;
 };
 console.log(a(globalThis.c, globalThis.a, globalThis.b));

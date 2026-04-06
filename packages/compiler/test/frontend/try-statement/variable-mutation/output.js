@@ -1,13 +1,13 @@
 const a = function a(a) {
   let d = "default";
-  let j = undefined;
-  j = d;
+  let q = undefined;
+  q = d;
   try {
-    d = JSON.parse(a);
-    j = d;
-  } catch (g) {
-    a = "error";
-    j = a;
+    j = JSON.parse(a);
+    q = j;
+  } catch (l) {
+    n = "error";
+    q = n;
   }
-  return j;
+  return q;
 };

@@ -1,3 +1,3 @@
-let h = undefined;
-console.log(h);
-h = 5;
+let j = undefined;
+console.log(j);
+j = 5;

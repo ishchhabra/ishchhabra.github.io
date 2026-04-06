@@ -1,22 +1,22 @@
-let b = 0;
-let g = 0;
-outer: while (g < 3) {
-  let b = 0;
-  let h = 0;
-  let i = undefined;
-  let j = undefined;
-  while (h < 3) {
-    if (h === 1) {
-      j = undefined;
+let c = 0;
+let P = 0;
+outer: while (P < 3) {
+  let j = 0;
+  let Q = 0;
+  let R = undefined;
+  let S = undefined;
+  while (Q < 3) {
+    if (Q === 1) {
+      S = undefined;
       break outer;
     }
-    console.log(g, h);
-    const f = h;
-    f;
-    h = h + 1;
+    console.log(P, Q);
+    const x = Q;
+    x;
+    Q = Q + 1;
   }
-  const f = g;
-  f;
-  g = g + 1;
-  i = undefined;
+  const G = P;
+  G;
+  P = P + 1;
+  R = undefined;
 }

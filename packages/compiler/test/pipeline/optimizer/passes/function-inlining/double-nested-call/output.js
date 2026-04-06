@@ -7,4 +7,4 @@ const b = function b() {
 const c = function c() {
   return 42;
 };
-const g = 42;
+const j = 42;

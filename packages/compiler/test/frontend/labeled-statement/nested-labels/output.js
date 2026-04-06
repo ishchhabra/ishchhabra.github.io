@@ -1,35 +1,35 @@
-let b = 0;
-let i = 0;
-outer: while (i < 5) {
-  let b = 0;
+let c = 0;
+let V = 0;
+outer: while (V < 5) {
   let j = 0;
-  let k = undefined;
-  let l = undefined;
-  inner: while (j < 5) {
-    if (j === 2) {
-      const f = j;
-      f;
-      j = j + 1;
+  let W = 0;
+  let X = undefined;
+  let Y = undefined;
+  inner: while (W < 5) {
+    if (W === 2) {
+      const D = W;
+      D;
+      W = W + 1;
       continue;
     }
-    if (j === 3) {
-      const f = i;
-      f;
-      i = i + 1;
-      k = j;
+    if (W === 3) {
+      const M = V;
+      M;
+      V = V + 1;
+      X = W;
       continue outer;
     }
-    if (i === 4) {
-      l = undefined;
+    if (V === 4) {
+      Y = undefined;
       break outer;
     }
-    console.log(i, j);
-    const f = j;
-    f;
-    j = j + 1;
+    console.log(V, W);
+    const D = W;
+    D;
+    W = W + 1;
   }
-  const f = i;
-  f;
-  i = i + 1;
-  k = j;
+  const M = V;
+  M;
+  V = V + 1;
+  X = W;
 }

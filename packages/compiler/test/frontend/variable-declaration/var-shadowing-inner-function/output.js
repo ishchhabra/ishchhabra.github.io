@@ -1,13 +1,13 @@
-let d = undefined;
-d = 1;
+let g = undefined;
+g = 1;
 export const f = function f() {
-  let c = undefined;
-  c = 2;
-  let j = undefined;
-  j = c;
+  let e = undefined;
+  e = 2;
+  let n = undefined;
+  n = e;
   if (Math.random()) {
-    a = 3;
-    j = a;
+    k = 3;
+    n = k;
   }
-  return j;
+  return n;
 };

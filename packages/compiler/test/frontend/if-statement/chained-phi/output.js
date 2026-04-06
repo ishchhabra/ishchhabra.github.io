@@ -1,20 +1,20 @@
 let f = 10;
 let i = 20;
 let l = undefined;
-let B = undefined;
-let C = undefined;
+let S = undefined;
+let T = undefined;
 if (f > 5) {
   if (i < 15) {
-    d = f + i;
-    C = d;
+    w = f + i;
+    T = w;
   } else {
-    d = f - i;
-    C = d;
+    B = f - i;
+    T = B;
   }
-  B = C;
+  S = T;
 } else {
-  d = f * i;
-  B = d;
+  G = f * i;
+  S = G;
 }
-let u = B * 2;
-console.log(u);
+let L = S * 2;
+console.log(L);

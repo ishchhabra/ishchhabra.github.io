@@ -1,14 +1,14 @@
-export const f = function f(b) {
-  let c = b;
+export const f = function f(a) {
+  let b = a;
   let j = undefined;
-  j = b;
+  j = a;
   let k = undefined;
-  k = c;
-  if (b) {
-    const f = 20;
-    $2_1 = 20;
-    j = f;
-    k = $2_1;
+  k = b;
+  if (a) {
+    const e = 20;
+    g = 20;
+    j = e;
+    k = g;
   }
   return k;
 };

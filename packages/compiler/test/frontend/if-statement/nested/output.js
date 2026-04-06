@@ -1,17 +1,17 @@
 const d = 100;
 if (d > 50) {
-  const b = 75;
-  if (b > d) {
-    const d = b + 10;
+  const k = 75;
+  if (k > d) {
+    const t = k + 10;
   } else {
-    const d = d - 5;
+    const z = d - 5;
   }
 } else {
-  const b = 25;
-  if (b < d) {
-    const d = b * 2;
+  const D = 25;
+  if (D < d) {
+    const M = D * 2;
   } else {
-    const d = b / 2;
+    const S = D / 2;
   }
 }
-const p = d;
+const V = d;

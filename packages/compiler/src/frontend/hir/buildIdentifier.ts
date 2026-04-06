@@ -55,11 +55,9 @@ export function buildBindingIdentifier(
   }
 
   if (place === undefined) {
-    const identifier = environment.createIdentifier();
+    const identifier = environment.createIdentifier(undefined, scope.allocateName());
     place = environment.createPlace(identifier);
   }
-
-  place.identifier.name = scope.allocateName();
 
   const instruction = environment.createInstruction(DeclareLocalInstruction, place, "const");
   builder.addInstruction(instruction);

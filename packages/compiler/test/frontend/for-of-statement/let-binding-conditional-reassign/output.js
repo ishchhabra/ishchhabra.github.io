@@ -1,11 +1,11 @@
-for (const b of items) {
-  let d = undefined;
-  let e = undefined;
-  d = b;
+for (const c of items) {
+  let o = undefined;
+  let p = undefined;
+  o = c;
   if (condition) {
-    let c = b + 1;
-    d = c;
+    let h = c + 1;
+    o = h;
   }
-  console.log(d);
-  e = d;
+  console.log(o);
+  p = o;
 }

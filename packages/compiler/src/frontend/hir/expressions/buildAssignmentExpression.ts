@@ -268,7 +268,10 @@ function emitResultUpdate(
   environment: Environment,
 ): void {
   const updateBinding = environment.createPlace(
-    environment.createIdentifier(bindingPlace.identifier.declarationId),
+    environment.createIdentifier(
+      bindingPlace.identifier.declarationId,
+      functionBuilder.scope.allocateName(),
+    ),
   );
   environment.registerDeclaration(
     bindingPlace.identifier.declarationId,

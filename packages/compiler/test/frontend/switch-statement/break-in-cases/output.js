@@ -1,22 +1,22 @@
 const d = "greet";
 let g = undefined;
-let t = undefined;
-t = g;
+let z = undefined;
+z = g;
 switch (d) {
   case "greet": {
-    e = "hello";
-    t = e;
+    s = "hello";
+    z = s;
     break;
   }
   case "farewell": {
-    c = "goodbye";
-    t = c;
+    p = "goodbye";
+    z = p;
     break;
   }
   default: {
-    a = "unknown action";
-    t = a;
+    m = "unknown action";
+    z = m;
     break;
   }
 }
-console.log(t);
+console.log(z);

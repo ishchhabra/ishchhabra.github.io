@@ -1,12 +1,12 @@
 const a = function a(a = 5) {
-  return e.slice(0, a).map((a) => ({
+  return g.slice(0, a).map((a) => ({
     slug: a.slug,
   }));
 };
-const e = [];
+const g = [];
 export const Home = function Home() {
   const [u = 5] = [];
-  const d = e.slice(0, u).map((a) => ({
+  const d = g.slice(0, u).map((a) => ({
     slug: a.slug,
   }));
   return (

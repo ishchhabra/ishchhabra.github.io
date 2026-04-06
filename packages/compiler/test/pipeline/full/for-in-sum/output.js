@@ -1,8 +1,8 @@
 const a = function a(a) {
-  let i = 0;
-  for (const b in a) {
-    i = i + 1;
+  let o = 0;
+  for (const h in a) {
+    o = o + 1;
   }
-  return i;
+  return o;
 };
 console.log(a(myObj));

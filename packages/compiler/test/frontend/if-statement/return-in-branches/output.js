@@ -5,5 +5,5 @@ const a = function a(a) {
     return -1;
   }
 };
-const f = a(5);
-console.log(f);
+const g = a(5);
+console.log(g);

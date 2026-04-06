@@ -1,11 +1,11 @@
 const c = function* () {
   let c = 0;
-  let f = undefined;
-  f = c;
+  let p = undefined;
+  p = c;
   while (true) {
-    const a = f;
-    d = f + 1;
-    yield a;
-    f = d;
+    const f = p;
+    i = p + 1;
+    yield f;
+    p = i;
   }
 };

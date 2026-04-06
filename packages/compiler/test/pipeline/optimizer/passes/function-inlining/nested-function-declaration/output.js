@@ -4,7 +4,7 @@ const a = function a() {
   };
   return a;
 };
-const h = function h() {
+const i = function i() {
   return 1;
 };
-console.log(h);
+console.log(i);

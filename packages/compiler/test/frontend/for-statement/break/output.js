@@ -1,11 +1,11 @@
-let b = 0;
-let e = 0;
-while (e < 10) {
-  if (e === 5) {
+let c = 0;
+let y = 0;
+while (y < 10) {
+  if (y === 5) {
     break;
   }
-  console.log(e);
-  const f = e;
-  f;
-  e = e + 1;
+  console.log(y);
+  const p = y;
+  p;
+  y = y + 1;
 }

@@ -1,17 +1,17 @@
 const a = function a() {
   return 5;
 };
-let g = 0;
-let i = g;
-let u = undefined;
-u = g;
+let f = 0;
+let i = f;
 let v = undefined;
-v = i;
-if (!g) {
+v = f;
+let w = undefined;
+w = i;
+if (!f) {
   const m = a();
   o = m;
-  $8_1 = m;
-  u = o;
-  v = $8_1;
+  q = m;
+  v = o;
+  w = q;
 }
-const s = v;
+const t = w;

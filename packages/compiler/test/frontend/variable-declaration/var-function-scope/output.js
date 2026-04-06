@@ -1,8 +1,8 @@
 const a = function a() {
-  let d = undefined;
-  let g = undefined;
-  d = 1;
-  g = undefined;
-  j = 2;
-  return d + j;
+  let h = undefined;
+  let k = undefined;
+  h = 1;
+  k = undefined;
+  n = 2;
+  return h + n;
 };

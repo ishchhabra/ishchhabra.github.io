@@ -1,3 +1,3 @@
-let d = undefined;
-var { x: d } = source;
-console.log(d);
+let f = undefined;
+var { x: f } = source;
+console.log(f);

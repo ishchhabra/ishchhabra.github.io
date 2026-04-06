@@ -1,9 +1,9 @@
 const a = function a() {
   return 3;
 };
-let h = {
+let i = {
   b: 1,
 };
-const o = h.b + a();
-h.b = o;
-const s = o;
+const p = i.b + a();
+i.b = p;
+const t = p;

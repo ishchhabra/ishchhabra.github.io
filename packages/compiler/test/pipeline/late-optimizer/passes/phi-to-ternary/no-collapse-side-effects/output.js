@@ -1,11 +1,11 @@
 let d = undefined;
-let n = undefined;
+let u = undefined;
 if (true) {
   console.log("side effect");
-  d = 1;
-  n = 1;
+  m = 1;
+  u = 1;
 } else {
-  a = 2;
-  n = 2;
+  p = 2;
+  u = 2;
 }
-const l = n;
+const s = u;

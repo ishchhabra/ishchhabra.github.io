@@ -91,17 +91,20 @@ function buildIdentifierBindings(
   // so we use `let` (not `var`) to avoid re-introducing JS hoisting
   // semantics in the output.
   if (binding?.kind === "var") {
-    const hoistId = environment.createIdentifier(identifier.declarationId);
-    hoistId.name = identifier.name;
+    const hoistId = environment.createIdentifier(identifier.declarationId, identifier.name);
     const hoistPlace = environment.createPlace(hoistId);
     functionBuilder.addInstruction(
       environment.createInstruction(DeclareLocalInstruction, hoistPlace, "let"),
     );
-    const undefPlace = environment.createPlace(environment.createIdentifier());
+    const undefPlace = environment.createPlace(
+      environment.createIdentifier(undefined, scope.allocateName()),
+    );
     functionBuilder.addInstruction(
       environment.createInstruction(LiteralInstruction, undefPlace, undefined),
     );
-    const storePlace = environment.createPlace(environment.createIdentifier());
+    const storePlace = environment.createPlace(
+      environment.createIdentifier(undefined, scope.allocateName()),
+    );
     functionBuilder.addInstruction(
       environment.createInstruction(
         StoreLocalInstruction,

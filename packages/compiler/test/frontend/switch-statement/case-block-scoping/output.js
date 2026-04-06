@@ -1,24 +1,24 @@
 const a = function a(a) {
   switch (a.type) {
     case "comment": {
-      const c = a;
+      const F = a;
       return {
         type: "comment",
-        value: c.data,
+        value: F.data,
       };
     }
     case "text": {
-      const c = a;
+      const t = a;
       return {
         type: "text",
-        value: c.value,
+        value: t.value,
       };
     }
     default: {
-      const c = a;
+      const h = a;
       return {
         type: "element",
-        tag: c.tagName,
+        tag: h.tagName,
       };
     }
   }

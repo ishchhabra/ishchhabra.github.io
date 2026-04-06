@@ -1,10 +1,10 @@
 const a = function a(a) {
   let d = 0;
-  let h = undefined;
-  h = d;
-  for (const b of a) {
-    d = h + b;
-    h = d;
+  let o = undefined;
+  o = d;
+  for (const h of a) {
+    l = o + h;
+    o = l;
   }
-  return h;
+  return o;
 };

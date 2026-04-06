@@ -3,7 +3,7 @@ const a = function a() {
     x: 1,
   };
 };
-let e = undefined;
-const i = a();
-const { x: l } = i;
-const p = i;
+let f = undefined;
+const j = a();
+const { x: m } = j;
+const q = j;

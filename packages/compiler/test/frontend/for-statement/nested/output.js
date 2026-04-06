@@ -1,17 +1,17 @@
-let b = 0;
-let f = 0;
-while (f < 10) {
-  let b = 0;
-  let g = 0;
-  let h = undefined;
-  while (g < 10) {
-    console.log(f, g);
-    const f = g;
-    f;
-    g = g + 1;
+let c = 0;
+let M = 0;
+while (M < 10) {
+  let j = 0;
+  let N = 0;
+  let O = undefined;
+  while (N < 10) {
+    console.log(M, N);
+    const u = N;
+    u;
+    N = N + 1;
   }
-  const f = f;
-  f;
-  f = f + 1;
-  h = undefined;
+  const D = M;
+  D;
+  M = M + 1;
+  O = undefined;
 }

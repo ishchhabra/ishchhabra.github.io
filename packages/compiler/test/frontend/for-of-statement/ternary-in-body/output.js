@@ -1,21 +1,21 @@
 const a = function a(a) {
-  for (const [c, d] of Object.entries(a)) {
-    i = j;
-    if (c !== "x") {
-      let c = j;
-      let h = undefined;
-      let i = undefined;
-      let j = undefined;
-      if (d) {
-        f = "";
-        h = f;
+  for (const [h, i] of Object.entries(a)) {
+    D = E;
+    if (h !== "x") {
+      let p = E;
+      let C = undefined;
+      let D = undefined;
+      let E = undefined;
+      if (i) {
+        t = "";
+        C = t;
       } else {
-        k = String(d);
-        h = k;
+        y = String(i);
+        C = y;
       }
-      g(h);
-      i = h;
+      g(C);
+      D = C;
     }
-    j = i;
+    E = D;
   }
 };

@@ -1,13 +1,13 @@
 const a = function a() {
-  return g;
+  return i;
 };
 const b = function b() {
   return 0;
 };
-let g = [10];
-const k = a();
-const o = b();
-const r = k[o];
-const v = r + 1;
-k[o] = v;
-const z = r;
+let i = [10];
+const m = a();
+const q = b();
+const t = m[q];
+const x = t + 1;
+m[q] = x;
+const B = t;

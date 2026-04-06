@@ -1,8 +1,8 @@
 const a = function a() {
   const a = function a() {
-    return d;
+    return e;
   };
-  let d = 0;
-  d = 1;
+  let e = 0;
+  e = 1;
   return a();
 };

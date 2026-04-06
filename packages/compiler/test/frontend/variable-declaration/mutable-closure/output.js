@@ -1,11 +1,11 @@
 const a = function a() {
   const a = function a() {
-    e = e + 1;
+    g = g + 1;
   };
   const b = function b() {
-    return e;
+    return g;
   };
-  let e = 0;
+  let g = 0;
   a();
   return b();
 };

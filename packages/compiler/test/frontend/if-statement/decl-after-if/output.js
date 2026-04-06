@@ -1,11 +1,11 @@
-let o = undefined;
+let t = undefined;
 if (true) {
   console.log("first");
 }
-let f = 10;
-o = f;
+let i = 10;
+t = i;
 if (true) {
-  a = 20;
-  o = a;
+  m = 20;
+  t = m;
 }
-console.log(o);
+console.log(t);

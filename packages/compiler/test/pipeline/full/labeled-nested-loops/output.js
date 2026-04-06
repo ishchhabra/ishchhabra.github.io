@@ -1,20 +1,20 @@
-let i = 0;
-outer: while (i < 5) {
-  let j = 0;
-  inner: while (j < 5) {
-    if (j === 2) {
-      j = j + 1;
+let V = 0;
+outer: while (V < 5) {
+  let W = 0;
+  inner: while (W < 5) {
+    if (W === 2) {
+      W = W + 1;
       continue;
     }
-    if (j === 3) {
-      i = i + 1;
+    if (W === 3) {
+      V = V + 1;
       continue outer;
     }
-    if (i === 4) {
+    if (V === 4) {
       break outer;
     }
-    console.log(i, j);
-    j = j + 1;
+    console.log(V, W);
+    W = W + 1;
   }
-  i = i + 1;
+  V = V + 1;
 }

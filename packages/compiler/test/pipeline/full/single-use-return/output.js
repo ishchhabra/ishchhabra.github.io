@@ -4,7 +4,7 @@ const a = function a() {
   const q = g + l;
   return q;
 };
-const k = globalThis.getA();
-const p = globalThis.getB();
-const u = k + p;
-console.log(u);
+const l = globalThis.getA();
+const q = globalThis.getB();
+const v = l + q;
+console.log(v);

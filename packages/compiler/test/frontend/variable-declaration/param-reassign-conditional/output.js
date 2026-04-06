@@ -1,9 +1,9 @@
 const a = function a(a) {
-  let g = undefined;
-  g = a;
+  let i = undefined;
+  i = a;
   if (a > 5) {
-    const a = 5;
-    g = a;
+    const f = 5;
+    i = f;
   }
-  return g;
+  return i;
 };

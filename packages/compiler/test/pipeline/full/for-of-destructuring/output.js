@@ -1,3 +1,3 @@
-for (const { x: c, y: e } of points) {
-  console.log(c, e);
+for (const { x: e, y: h } of points) {
+  console.log(e, h);
 }

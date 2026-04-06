@@ -1,8 +1,8 @@
 const a = function a(a) {
-  const a = function a() {};
+  const b = function b() {};
   switch (a) {
     case "a": {
-      return a;
+      return b;
     }
   }
 };

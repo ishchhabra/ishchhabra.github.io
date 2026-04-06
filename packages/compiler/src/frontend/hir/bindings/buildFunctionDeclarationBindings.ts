@@ -106,7 +106,9 @@ export function initializeFunctionDeclaration(
   functionBuilder.propagateCapturesFrom(functionIRBuilder);
   const capturedPlaces = [...functionIRBuilder.captures.values()];
 
-  const fnPlace = environment.createPlace(environment.createIdentifier(declarationId));
+  const fnPlace = environment.createPlace(
+    environment.createIdentifier(declarationId, identifierPlace.identifier.name),
+  );
   const instruction = environment.createInstruction(
     FunctionExpressionInstruction,
     fnPlace,
@@ -120,7 +122,9 @@ export function initializeFunctionDeclaration(
   environment.registerDeclarationInstruction(fnPlace, instruction);
 
   const isContext = environment.contextDeclarationIds.has(declarationId);
-  const storePlace = environment.createPlace(environment.createIdentifier());
+  const storePlace = environment.createPlace(
+    environment.createIdentifier(undefined, scope.allocateName()),
+  );
   functionBuilder.addInstruction(
     environment.createInstruction(
       StoreLocalInstruction,

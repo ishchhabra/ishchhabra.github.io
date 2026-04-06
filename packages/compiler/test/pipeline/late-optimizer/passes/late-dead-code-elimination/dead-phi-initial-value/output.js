@@ -1,5 +1,5 @@
-let m = 0;
+let q = 0;
 if (globalThis.cond) {
-  m = globalThis.compute();
+  q = globalThis.compute();
 }
-console.log(m);
+console.log(q);

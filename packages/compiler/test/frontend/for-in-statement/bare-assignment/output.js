@@ -1,8 +1,8 @@
 let f = undefined;
-let j = undefined;
-j = f;
+let n = undefined;
+n = f;
 for (const f in obj) {
   g = f;
   console.log(g);
-  j = g;
+  n = g;
 }

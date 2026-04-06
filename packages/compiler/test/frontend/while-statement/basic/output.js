@@ -1,5 +1,5 @@
 let c = 5;
-let i = 5;
-while (i > 0) {
-  i = i - 1;
+let m = 5;
+while (m > 0) {
+  m = m - 1;
 }

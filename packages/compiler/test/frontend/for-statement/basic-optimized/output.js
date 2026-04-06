@@ -1,6 +1,6 @@
-let b = 0;
-let d = 0;
-while (d < 3) {
-  console.log(d);
-  d = d + 1;
+let c = 0;
+let v = 0;
+while (v < 3) {
+  console.log(v);
+  v = v + 1;
 }

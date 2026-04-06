@@ -1,3 +1,3 @@
 let d = 10;
-a = 20;
-const n = 40;
+m = 20;
+const r = 40;

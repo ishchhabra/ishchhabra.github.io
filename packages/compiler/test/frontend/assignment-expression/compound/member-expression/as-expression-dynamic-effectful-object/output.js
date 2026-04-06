@@ -1,5 +1,5 @@
 const a = function a() {
-  return j;
+  return m;
 };
 const b = function b() {
   return "b";
@@ -7,11 +7,11 @@ const b = function b() {
 const c = function c() {
   return 3;
 };
-let j = {
+let m = {
   b: 1,
 };
-const n = a();
-const r = b();
-const x = n[r] + c();
-n[r] = x;
-const B = x;
+const q = a();
+const u = b();
+const A = q[u] + c();
+q[u] = A;
+const E = A;

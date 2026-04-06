@@ -1,9 +1,9 @@
 let f = undefined;
-let o = undefined;
-o = f;
+let s = undefined;
+s = f;
 for (const f of items) {
   g = f;
   console.log(g);
-  o = g;
+  s = g;
 }
 console.log(f);
