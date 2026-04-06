@@ -2,6 +2,7 @@ import type * as ESTree from "estree";
 import { Environment } from "../../environment";
 import {
   ArrayPatternInstruction,
+  DeclareLocalInstruction,
   LiteralInstruction,
   ObjectPropertyInstruction,
   Place,
@@ -129,6 +130,10 @@ function buildFunctionIdentifierParam(
   }
 
   functionBuilder.markDeclarationInitialized(declarationId);
+
+  const declareInstr = environment.createInstruction(DeclareLocalInstruction, place, "const");
+  functionBuilder.header.push(declareInstr);
+
   return { place, identifiers: [place], paramBindings: [] };
 }
 

@@ -5,8 +5,8 @@ const $0_0 = function $0_0($3_0 = 5) {
 };
 const ARTICLES = [];
 export const Home = function Home() {
-  const [$48_0 = 5] = [];
-  const articles = ARTICLES.slice(0, $48_0).map(($10_0) => ({
+  const [$50_0 = 5] = [];
+  const articles = ARTICLES.slice(0, $50_0).map(($10_0) => ({
     slug: $10_0.slug,
   }));
   return (

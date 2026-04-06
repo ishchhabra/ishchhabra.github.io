@@ -6,8 +6,8 @@ export const f = function f($9_0) {
   for (const k of [1, 2]) {
     let $24_0 = undefined;
     if (k) {
-      const { x: $25_0, ...$26_0 } = $23_phi_35;
-      $24_0 = $26_0;
+      const { x: $28_0, ...$30_0 } = $23_phi_35;
+      $24_0 = $30_0;
     } else {
       $24_0 = $9_0;
     }
