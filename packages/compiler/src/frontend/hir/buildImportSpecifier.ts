@@ -20,7 +20,10 @@ export function buildImportSpecifier(
   const localName = getLocalName(specifierNode);
   const importedName = getImportedName(specifierNode);
 
-  const identifier = environment.createIdentifier(undefined, scope.allocateName());
+  // Import bindings keep their source name (must match the export).
+  // Reserve the name so allocateName() skips it for local bindings.
+  scope.reserveName(localName);
+  const identifier = environment.createIdentifier(undefined, localName);
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(
     ImportSpecifierInstruction,
@@ -33,8 +36,7 @@ export function buildImportSpecifier(
   // Register the import as a declaration so that export specifiers (and any
   // other consumer that looks up declarations by name) can find it through
   // the uniform getDeclarationId path.
-  const bindingIdentifier = environment.createIdentifier(undefined, scope.allocateName());
-  bindingIdentifier.name = localName;
+  const bindingIdentifier = environment.createIdentifier(undefined, localName);
   const bindingPlace = environment.createPlace(bindingIdentifier);
   const bindingInstruction = environment.createInstruction(
     DeclareLocalInstruction,

@@ -58,16 +58,19 @@ export function buildExportNamedDeclaration(
 
     // Exported declarations must keep their source name since they face
     // external consumers. Restore the source name on the lval after
-    // scope-based naming assigned a short name.
+    // scope-based naming assigned a short name, and reserve it so
+    // allocateName() skips it for other bindings.
     const storeInstruction2 = environment.placeToInstruction.get(declarationPlace.id);
     if (storeInstruction2 instanceof StoreLocalInstruction) {
       if (declaration.type === "VariableDeclaration") {
         const firstDeclarator = declaration.declarations[0];
         if (firstDeclarator?.id.type === "Identifier") {
           storeInstruction2.lval.identifier.name = firstDeclarator.id.name;
+          scope.reserveName(firstDeclarator.id.name);
         }
       } else if (declaration.type === "ClassDeclaration" && declaration.id) {
         storeInstruction2.lval.identifier.name = declaration.id.name;
+        scope.reserveName(declaration.id.name);
       }
     }
 
@@ -153,6 +156,7 @@ function buildExportDeclaration(
         // Ensure the binding name matches the exported name so
         // `export function foo()` emits `export const foo = ...`.
         storeInstr.lval.identifier.name = name;
+        scope.reserveName(name);
         return storeInstr.place;
       }
     }

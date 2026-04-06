@@ -1,2 +1,2 @@
 import increment from "./utils";
-const h = 5 + 1;
+const f = 5 + 1;

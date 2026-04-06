@@ -108,10 +108,22 @@ export class Scope {
   /** Counter for scope-based name allocation. */
   private nextSlot: number = 0;
 
+  /** Names reserved by imports/exports that must not be reused. */
+  private readonly reservedNames: Set<string> = new Set();
+
   constructor(
     public readonly parent: Scope | null,
     public readonly kind: "program" | "function" | "block",
   ) {}
+
+  /** Reserve a name so that allocateName() skips it. */
+  reserveName(name: string): void {
+    if (this.kind === "block" && this.parent) {
+      this.parent.reserveName(name);
+    } else {
+      this.reservedNames.add(name);
+    }
+  }
 
   /**
    * Allocate a short output name for a new binding in this scope.
@@ -126,7 +138,11 @@ export class Scope {
     if (this.kind === "block" && this.parent) {
       return this.parent.allocateName();
     }
-    return toShortName(this.nextSlot++);
+    let name: string;
+    do {
+      name = toShortName(this.nextSlot++);
+    } while (this.reservedNames.has(name));
+    return name;
   }
 
   /** Look up a binding by name, walking the scope chain. */
