@@ -1,5 +1,5 @@
-let c = undefined;
-c = undefined;
-c = "log";
-const d = ("log", () => c);
-console.log(d());
+let d = undefined;
+d = undefined;
+d = "log";
+const j = ("log", () => d);
+console.log(j());

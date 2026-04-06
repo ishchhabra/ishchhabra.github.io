@@ -1,1 +1,1 @@
-const b = class {};
+const c = class {};

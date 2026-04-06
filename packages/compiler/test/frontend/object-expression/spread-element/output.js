@@ -1,8 +1,8 @@
-const c = {
+const j = {
   a: 1,
   b: 2,
 };
-const d = {
-  ...c,
+const r = {
+  ...j,
   c: 3,
 };

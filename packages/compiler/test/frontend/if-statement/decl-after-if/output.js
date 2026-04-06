@@ -1,11 +1,11 @@
-let $16_phi_18 = undefined;
+let o = undefined;
 if (true) {
   console.log("first");
 }
-let b = 10;
-$16_phi_18 = b;
+let f = 10;
+o = f;
 if (true) {
-  $0_1 = 20;
-  $16_phi_18 = $0_1;
+  a = 20;
+  o = a;
 }
-console.log($16_phi_18);
+console.log(o);

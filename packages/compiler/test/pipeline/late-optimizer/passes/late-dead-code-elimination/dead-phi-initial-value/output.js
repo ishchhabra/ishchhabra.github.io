@@ -1,5 +1,5 @@
-let $13_phi_15 = 0;
+let m = 0;
 if (globalThis.cond) {
-  $13_phi_15 = globalThis.compute();
+  m = globalThis.compute();
 }
-console.log($13_phi_15);
+console.log(m);

@@ -1,6 +1,6 @@
-let c = undefined;
 let d = undefined;
-const { a: $0_1, b: $1_1 } = {
+let g = undefined;
+const { a: q, b: t } = {
   a: 1,
   b: 2,
 };

@@ -1,5 +1,5 @@
 const a = function a() {
-  return d;
+  return e;
 };
-const d = 10;
+const e = 10;
 console.log(a());

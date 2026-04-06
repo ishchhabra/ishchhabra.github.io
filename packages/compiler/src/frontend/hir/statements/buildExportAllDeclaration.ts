@@ -12,7 +12,7 @@ export function buildExportAllDeclaration(
 ) {
   const source = node.source.value as string;
 
-  const identifier = environment.createIdentifier();
+  const identifier = environment.createIdentifier(undefined, functionBuilder.scope.allocateName());
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(ExportAllInstruction, place, source);
   functionBuilder.addInstruction(instruction);

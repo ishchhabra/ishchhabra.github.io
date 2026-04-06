@@ -1,17 +1,17 @@
 let b = 0;
-let $28_phi_36 = 0;
-while ($28_phi_36 < 10) {
+let f = 0;
+while (f < 10) {
   let b = 0;
-  let $29_phi_37 = 0;
-  let $30_phi_38 = undefined;
-  while ($29_phi_37 < 10) {
-    console.log($28_phi_36, $29_phi_37);
-    const $14_0 = $29_phi_37;
-    $14_0;
-    $29_phi_37 = $29_phi_37 + 1;
+  let g = 0;
+  let h = undefined;
+  while (g < 10) {
+    console.log(f, g);
+    const f = g;
+    f;
+    g = g + 1;
   }
-  const $21_0 = $28_phi_36;
-  $21_0;
-  $28_phi_36 = $28_phi_36 + 1;
-  $30_phi_38 = undefined;
+  const f = f;
+  f;
+  f = f + 1;
+  h = undefined;
 }

@@ -1,2 +1,2 @@
-const c = 1;
-const d = 2;
+const d = 1;
+const g = 2;

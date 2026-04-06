@@ -8,7 +8,7 @@ export function buildJSXOpeningFragment(
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {
-  const identifier = environment.createIdentifier();
+  const identifier = environment.createIdentifier(undefined, functionBuilder.scope.allocateName());
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(JSXOpeningFragmentInstruction, place);
   functionBuilder.addInstruction(instruction);

@@ -1,4 +1,4 @@
-const b = async (a) => {
-  const c = await fetch(a);
-  return c;
+const c = async (a) => {
+  const g = await fetch(a);
+  return g;
 };

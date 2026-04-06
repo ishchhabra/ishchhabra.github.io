@@ -1,4 +1,4 @@
-const b = {
+const j = {
   _value: 0,
   get value() {
     return this._value;

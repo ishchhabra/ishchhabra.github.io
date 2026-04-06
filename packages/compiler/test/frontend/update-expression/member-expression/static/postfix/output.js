@@ -1,7 +1,7 @@
-const c = {
+const g = {
   count: 0,
 };
-const $8_0 = c.count;
-const $12_0 = $8_0 + 1;
-c.count = $12_0;
-const d = $8_0;
+const k = g.count;
+const o = k + 1;
+g.count = o;
+const s = k;

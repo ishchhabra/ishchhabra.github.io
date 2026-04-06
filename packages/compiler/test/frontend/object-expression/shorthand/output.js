@@ -1,6 +1,6 @@
-const d = 1;
-const e = 2;
-const f = {
-  x: d,
-  y: e,
+const e = 1;
+const h = 2;
+const q = {
+  x: e,
+  y: h,
 };

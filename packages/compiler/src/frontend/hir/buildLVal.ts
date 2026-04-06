@@ -103,7 +103,7 @@ function buildArrayPatternLVal(
     return result.place;
   });
 
-  const identifier = environment.createIdentifier();
+  const identifier = environment.createIdentifier(undefined, scope.allocateName());
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(
     ArrayPatternInstruction,
@@ -155,7 +155,7 @@ function buildObjectPatternLVal(
     const result = buildLVal(value, scope, functionBuilder, moduleBuilder, environment, kind);
     bindings.push(...result.bindings);
 
-    const identifier = environment.createIdentifier();
+    const identifier = environment.createIdentifier(undefined, scope.allocateName());
     const place = environment.createPlace(identifier);
     const instruction = environment.createInstruction(
       ObjectPropertyInstruction,
@@ -170,7 +170,7 @@ function buildObjectPatternLVal(
     return place;
   });
 
-  const identifier = environment.createIdentifier();
+  const identifier = environment.createIdentifier(undefined, scope.allocateName());
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(
     ObjectPatternInstruction,
@@ -191,7 +191,10 @@ function buildObjectPropertyStaticKeyLVal(
   if (value === undefined) {
     throw new Error("Unsupported static key type in object pattern destructuring");
   }
-  const keyIdentifier = environment.createIdentifier();
+  const keyIdentifier = environment.createIdentifier(
+    undefined,
+    functionBuilder.scope.allocateName(),
+  );
   const keyPlace = environment.createPlace(keyIdentifier);
   const keyInstruction = environment.createInstruction(LiteralInstruction, keyPlace, value);
   functionBuilder.addInstruction(keyInstruction);
@@ -213,7 +216,7 @@ function buildAssignmentPatternLVal(
 
   const result = buildLVal(node.left, scope, functionBuilder, moduleBuilder, environment, kind);
 
-  const identifier = environment.createIdentifier();
+  const identifier = environment.createIdentifier(undefined, scope.allocateName());
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(
     AssignmentPatternInstruction,
@@ -236,7 +239,7 @@ function buildRestElementLVal(
 ): { place: Place; bindings: Place[] } {
   const result = buildLVal(node.argument, scope, functionBuilder, moduleBuilder, environment, kind);
 
-  const identifier = environment.createIdentifier();
+  const identifier = environment.createIdentifier(undefined, scope.allocateName());
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(
     RestElementInstruction,

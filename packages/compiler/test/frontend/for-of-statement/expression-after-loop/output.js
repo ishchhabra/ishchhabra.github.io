@@ -1,10 +1,10 @@
 const a = function a(a) {
-  let c = 0;
-  let $9_phi_15 = undefined;
-  $9_phi_15 = c;
+  let d = 0;
+  let h = undefined;
+  h = d;
   for (const b of a) {
-    $2_1 = $9_phi_15 + b;
-    $9_phi_15 = $2_1;
+    d = h + b;
+    h = d;
   }
-  return $9_phi_15;
+  return h;
 };

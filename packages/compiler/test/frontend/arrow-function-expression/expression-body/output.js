@@ -1,1 +1,1 @@
-const b = (a, b) => a + b;
+const c = (a, b) => a + b;

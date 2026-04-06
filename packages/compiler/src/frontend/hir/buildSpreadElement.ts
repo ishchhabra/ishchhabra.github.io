@@ -24,7 +24,7 @@ export function buildSpreadElement(
     throw new Error("Spread element argument must be a single place");
   }
 
-  const identifier = environment.createIdentifier();
+  const identifier = environment.createIdentifier(undefined, scope.allocateName());
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(SpreadElementInstruction, place, argumentPlace);
   functionBuilder.addInstruction(instruction);

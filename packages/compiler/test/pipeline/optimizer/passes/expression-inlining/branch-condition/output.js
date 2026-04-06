@@ -1,6 +1,6 @@
 const a = function a(a, b) {
-  const d = a > b;
-  if (d) {
+  const g = a > b;
+  if (g) {
     return a;
   }
   return b;

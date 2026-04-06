@@ -1,6 +1,6 @@
-const b = {
+const i = {
   a: 1,
   b: 2,
 };
-b.a = 10;
+i.a = 10;
 console.log(10);

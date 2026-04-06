@@ -1,2 +1,2 @@
 import add from "./math";
-const b = add(1, 2);
+const i = add(1, 2);

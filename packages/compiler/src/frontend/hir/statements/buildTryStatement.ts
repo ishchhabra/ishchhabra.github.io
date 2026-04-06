@@ -68,7 +68,7 @@ export function buildTryStatement(
     if (catchClause.param != null && catchClause.param.type === "Identifier") {
       const catchScope = functionBuilder.scopeFor(catchClause);
       // Create a binding for the catch parameter.
-      const identifier = environment.createIdentifier();
+      const identifier = environment.createIdentifier(undefined, scope.allocateName());
       functionBuilder.registerDeclarationName(
         catchClause.param.name,
         identifier.declarationId,

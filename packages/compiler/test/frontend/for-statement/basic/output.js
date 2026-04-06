@@ -1,8 +1,8 @@
 let b = 0;
-let $16_phi_20 = 0;
-while ($16_phi_20 < 10) {
-  console.log($16_phi_20);
-  const $9_0 = $16_phi_20;
-  $9_0;
-  $16_phi_20 = $16_phi_20 + 1;
+let d = 0;
+while (d < 10) {
+  console.log(d);
+  const f = d;
+  f;
+  d = d + 1;
 }

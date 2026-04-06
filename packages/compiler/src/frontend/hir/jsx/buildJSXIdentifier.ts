@@ -26,10 +26,10 @@ export function buildJSXIdentifier(
   environment: Environment,
 ): Place {
   const name = node.name;
-  const outIdentifier = environment.createIdentifier();
+  const outIdentifier = environment.createIdentifier(undefined, scope.allocateName());
   const outPlace = environment.createPlace(outIdentifier);
 
-  const valueIdentifier = environment.createIdentifier();
+  const valueIdentifier = environment.createIdentifier(undefined, scope.allocateName());
   const valuePlace = environment.createPlace(valueIdentifier);
 
   if (/^[a-z]/.test(name)) {
@@ -53,7 +53,7 @@ export function buildJSXIdentifier(
       if (!functionBuilder.isOwnDeclaration(declarationId)) {
         functionBuilder.captures.set(declarationId, declarationPlace);
         if (!functionBuilder.captureParams.has(declarationId)) {
-          const paramIdentifier = environment.createIdentifier(declarationId);
+          const paramIdentifier = environment.createIdentifier(declarationId, scope.allocateName());
           paramIdentifier.name = declarationPlace.identifier.name;
           functionBuilder.captureParams.set(
             declarationId,

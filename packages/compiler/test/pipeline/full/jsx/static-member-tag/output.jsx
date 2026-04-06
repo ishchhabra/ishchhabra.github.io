@@ -1,10 +1,10 @@
-const c = {
+const g = {
   Panel: () => <aside />,
 };
 export const Page = function Page() {
   return (
     <div>
-      <c.Panel />
+      <g.Panel />
     </div>
   );
 };

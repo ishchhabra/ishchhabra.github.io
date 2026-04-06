@@ -70,8 +70,7 @@ function buildIdentifierBindings(
   // duplicate `var x` in the same function still needs deduplication.
   if (scope.data.get(originalName) !== undefined) return;
 
-  const identifier = environment.createIdentifier();
-  identifier.name = scope.allocateName();
+  const identifier = environment.createIdentifier(undefined, scope.allocateName());
   functionBuilder.registerDeclarationName(originalName, identifier.declarationId, scope);
   functionBuilder.instantiateDeclaration(identifier.declarationId, declarationKind, originalName);
 

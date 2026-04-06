@@ -1,4 +1,4 @@
 const a = function a(a) {
-  const [, d, e = d] = a;
-  return e;
+  const [, e, g = e] = a;
+  return g;
 };

@@ -1,9 +1,9 @@
-const c = 5;
-let d = undefined;
-let $13_phi_17 = undefined;
-if (c > 0) {
-  $13_phi_17 = 10;
+const d = 5;
+let g = undefined;
+let p = undefined;
+if (d > 0) {
+  p = 10;
 } else {
-  $13_phi_17 = 20;
+  p = 20;
 }
-$13_phi_17;
+p;

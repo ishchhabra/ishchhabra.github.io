@@ -25,7 +25,7 @@ export function buildJSXSpreadAttribute(
     throw new Error("JSX spread attribute argument should be a single place");
   }
 
-  const identifier = environment.createIdentifier();
+  const identifier = environment.createIdentifier(undefined, scope.allocateName());
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(
     JSXSpreadAttributeInstruction,

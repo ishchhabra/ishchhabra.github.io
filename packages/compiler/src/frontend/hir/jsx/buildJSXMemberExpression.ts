@@ -18,7 +18,7 @@ export function buildJSXMemberExpression(
     throw new Error("JSX member expression object should be a single place");
   }
 
-  const identifier = environment.createIdentifier();
+  const identifier = environment.createIdentifier(undefined, scope.allocateName());
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(
     JSXMemberExpressionInstruction,

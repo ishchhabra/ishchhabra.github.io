@@ -1,22 +1,22 @@
-let c = "unknown";
-const d = 2;
-let $18_phi_23 = undefined;
-$18_phi_23 = c;
-switch (d) {
+let d = "unknown";
+const g = 2;
+let t = undefined;
+t = d;
+switch (g) {
   case 1: {
-    $0_3 = "one";
-    $18_phi_23 = $0_3;
+    e = "one";
+    t = e;
     break;
   }
   case 2: {
-    $0_2 = "two";
-    $18_phi_23 = $0_2;
+    c = "two";
+    t = c;
     break;
   }
   default: {
-    $0_1 = "other";
-    $18_phi_23 = $0_1;
+    a = "other";
+    t = a;
     break;
   }
 }
-console.log($18_phi_23);
+console.log(t);

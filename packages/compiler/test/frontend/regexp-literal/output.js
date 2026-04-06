@@ -1,3 +1,3 @@
-const c = /hello/;
-const d = /world/gi;
+const d = /hello/;
+const g = /world/gi;
 "test".match(/foo(\d+)/);

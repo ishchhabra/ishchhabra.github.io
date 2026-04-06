@@ -10,7 +10,7 @@ export function buildLiteral(
 ) {
   const value = nodeToValue(node);
 
-  const identifier = environment.createIdentifier();
+  const identifier = environment.createIdentifier(undefined, functionBuilder.scope.allocateName());
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(LiteralInstruction, place, value);
   functionBuilder.addInstruction(instruction);

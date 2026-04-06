@@ -32,8 +32,7 @@ export function registerFunctionDeclarationBinding(
     return;
   }
 
-  const identifier = environment.createIdentifier();
-  identifier.name = scope.allocateName();
+  const identifier = environment.createIdentifier(undefined, scope.allocateName());
   functionBuilder.registerDeclarationName(functionName.name, identifier.declarationId, scope);
   functionBuilder.instantiateDeclaration(identifier.declarationId, "function", functionName.name);
 

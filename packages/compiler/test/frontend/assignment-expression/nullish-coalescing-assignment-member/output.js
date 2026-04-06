@@ -1,11 +1,11 @@
 export const f = function f(a) {
-  let $3_0 = a.x;
-  let $16_phi_19 = undefined;
-  $16_phi_19 = $3_0;
-  if ($3_0 == null) {
+  let d = a.x;
+  let n = undefined;
+  n = d;
+  if (d == null) {
     a.x = 30;
     $3_1 = 30;
-    $16_phi_19 = $3_1;
+    n = $3_1;
   }
-  return $16_phi_19;
+  return n;
 };

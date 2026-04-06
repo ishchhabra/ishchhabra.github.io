@@ -1,27 +1,27 @@
 const a = function a(a, b, c) {
-  let $41_phi_61 = undefined;
-  let $43_phi_63 = undefined;
-  let $45_phi_65 = undefined;
+  let Q = undefined;
+  let S = undefined;
+  let U = undefined;
   if (a) {
-    let $46_phi_66 = undefined;
+    let V = undefined;
     if (b) {
-      $41_phi_61 = b;
-      $43_phi_63 = undefined;
-      $46_phi_66 = b;
+      Q = b;
+      S = undefined;
+      V = b;
     } else {
-      $41_phi_61 = undefined;
-      $43_phi_63 = c;
-      $46_phi_66 = c;
+      Q = undefined;
+      S = c;
+      V = c;
     }
-    $45_phi_65 =
-      ($46_phi_66,
+    U =
+      (V,
       {
-        x: $41_phi_61,
-        y: $43_phi_63,
+        x: Q,
+        y: S,
       });
   } else {
-    $45_phi_65 = {};
+    U = {};
   }
-  return $45_phi_65;
+  return U;
 };
 console.log(a(globalThis.c, globalThis.a, globalThis.b));

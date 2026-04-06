@@ -1,8 +1,8 @@
-let b = 0;
-let $17_phi_20 = 0;
+let c = 0;
+let n = 0;
 if (globalThis.cond) {
-  $0_1 = globalThis.compute();
-  console.log($0_1);
-  $17_phi_20 = $0_1;
+  c = globalThis.compute();
+  console.log(c);
+  n = c;
 }
-console.log($17_phi_20);
+console.log(n);

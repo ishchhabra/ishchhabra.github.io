@@ -1,7 +1,7 @@
-const b = {
+const f = {
   x: 0,
 };
-b.x = 1;
-b.x = 2;
-b.x = 3;
+f.x = 1;
+f.x = 2;
+f.x = 3;
 console.log(3);

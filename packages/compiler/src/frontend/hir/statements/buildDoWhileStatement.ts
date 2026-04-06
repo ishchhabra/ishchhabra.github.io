@@ -38,7 +38,9 @@ export function buildDoWhileStatement(
 
   // Emit `true` as the while condition.
   functionBuilder.currentBlock = testBlock;
-  const truePlace = environment.createPlace(environment.createIdentifier());
+  const truePlace = environment.createPlace(
+    environment.createIdentifier(undefined, scope.allocateName()),
+  );
   functionBuilder.addInstruction(
     environment.createInstruction(LiteralInstruction, truePlace, true),
   );
@@ -72,7 +74,9 @@ export function buildDoWhileStatement(
 
   // Emit: if (!test) break — negate the test, then branch to a break
   // block. When test is true, fall through to the next iteration.
-  const notTestPlace = environment.createPlace(environment.createIdentifier());
+  const notTestPlace = environment.createPlace(
+    environment.createIdentifier(undefined, scope.allocateName()),
+  );
   functionBuilder.addInstruction(
     environment.createInstruction(UnaryExpressionInstruction, notTestPlace, "!", doWhileTestPlace),
   );

@@ -57,14 +57,14 @@ export function buildMemberExpressionUpdate(
   const oldValLoadPlace = materializePlace(loadPlace, functionBuilder, environment);
 
   // 4. Create literal 1
-  const oneIdentifier = environment.createIdentifier();
+  const oneIdentifier = environment.createIdentifier(undefined, scope.allocateName());
   const onePlace = environment.createPlace(oneIdentifier);
   const oneInstruction = environment.createInstruction(LiteralInstruction, onePlace, 1);
   functionBuilder.addInstruction(oneInstruction);
 
   // 5. Compute value +/- 1
   const isIncrement = updateNode.operator === "++";
-  const resultIdentifier = environment.createIdentifier();
+  const resultIdentifier = environment.createIdentifier(undefined, scope.allocateName());
   const resultPlace = environment.createPlace(resultIdentifier);
   const binaryInstruction = environment.createInstruction(
     BinaryExpressionInstruction,

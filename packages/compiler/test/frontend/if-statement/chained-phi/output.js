@@ -1,20 +1,20 @@
-let e = 10;
-let f = 20;
-let g = undefined;
-let $27_phi_40 = undefined;
-let $28_phi_41 = undefined;
-if (e > 5) {
-  if (f < 15) {
-    $2_1 = e + f;
-    $28_phi_41 = $2_1;
+let f = 10;
+let i = 20;
+let l = undefined;
+let B = undefined;
+let C = undefined;
+if (f > 5) {
+  if (i < 15) {
+    d = f + i;
+    C = d;
   } else {
-    $2_2 = e - f;
-    $28_phi_41 = $2_2;
+    d = f - i;
+    C = d;
   }
-  $27_phi_40 = $28_phi_41;
+  B = C;
 } else {
-  $2_3 = e * f;
-  $27_phi_40 = $2_3;
+  d = f * i;
+  B = d;
 }
-let h = $27_phi_40 * 2;
-console.log(h);
+let u = B * 2;
+console.log(u);

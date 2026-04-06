@@ -4,5 +4,5 @@ const a = function a() {
 const b = function b() {
   return 2;
 };
-const e = a();
-const f = b();
+const g = a();
+const k = b();

@@ -29,7 +29,9 @@ export function buildClassDeclaration(
     throw new Error(`Unable to find the place for ${id.name} (${declarationId})`);
   }
 
-  const classPlace = environment.createPlace(environment.createIdentifier(declarationId));
+  const classPlace = environment.createPlace(
+    environment.createIdentifier(declarationId, scope.allocateName()),
+  );
   const instruction = environment.createInstruction(
     ClassExpressionInstruction,
     classPlace,
@@ -40,7 +42,9 @@ export function buildClassDeclaration(
 
   // Explicit StoreLocal to bind the class value to the declaration place.
   const isContext = environment.contextDeclarationIds.has(declarationId);
-  const storePlace = environment.createPlace(environment.createIdentifier());
+  const storePlace = environment.createPlace(
+    environment.createIdentifier(undefined, scope.allocateName()),
+  );
   functionBuilder.addInstruction(
     environment.createInstruction(
       StoreLocalInstruction,

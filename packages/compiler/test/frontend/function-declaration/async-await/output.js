@@ -1,16 +1,16 @@
 const a = function a() {
   const a = async function a() {
-    const b = await getMarkdown({
-      data: e,
+    const i = await getMarkdown({
+      data: f,
     });
-    f = b;
+    i = i;
   };
-  const e = "test";
-  let f = "";
-  const g = () => {
-    if (!f) {
+  const f = "test";
+  let i = "";
+  const l = () => {
+    if (!i) {
       void a();
     }
   };
-  g();
+  l();
 };

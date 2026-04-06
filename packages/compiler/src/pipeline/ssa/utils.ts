@@ -8,5 +8,9 @@ export function createPhiIdentifier(
   declarationId ??= makeDeclarationId(environment.nextDeclarationId++);
 
   const identifierId = makeIdentifierId(environment.nextIdentifierId++);
-  return new Identifier(identifierId, `phi_${identifierId}`, declarationId);
+  const identifier = new Identifier(identifierId, `phi_${identifierId}`, declarationId);
+  if (environment.allocateName !== undefined) {
+    identifier.name = environment.allocateName();
+  }
+  return identifier;
 }

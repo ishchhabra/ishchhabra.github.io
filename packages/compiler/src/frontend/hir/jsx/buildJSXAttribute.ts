@@ -24,7 +24,7 @@ export function buildJSXAttribute(
     value = valuePlace;
   }
 
-  const identifier = environment.createIdentifier();
+  const identifier = environment.createIdentifier(undefined, scope.allocateName());
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(JSXAttributeInstruction, place, name, value);
   functionBuilder.addInstruction(instruction);

@@ -1,14 +1,14 @@
 const a = function a(a, b, c) {
-  let f = undefined;
-  let $20_phi_29 = undefined;
+  let g = undefined;
+  let n = undefined;
   if (a) {
-    $4_1 = b;
-    $20_phi_29 = $4_1;
+    b = b;
+    n = b;
   } else {
-    $4_2 = c;
-    $20_phi_29 = $4_2;
+    b = c;
+    n = b;
   }
-  const g = $20_phi_29;
-  return g;
+  const k = n;
+  return k;
 };
 console.log(a(true, 1, 2));

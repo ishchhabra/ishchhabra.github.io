@@ -1,6 +1,6 @@
-const b = {
+const f = {
   a: 1,
 };
-b.a = 10;
-console.log(b);
-console.log(b.a);
+f.a = 10;
+console.log(f);
+console.log(f.a);

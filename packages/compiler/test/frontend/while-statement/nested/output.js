@@ -1,13 +1,13 @@
-let c = 5;
-let $18_phi_25 = 5;
-while ($18_phi_25 > 0) {
+let d = 5;
+let p = 5;
+while (p > 0) {
   let b = 3;
-  let $19_phi_26 = 3;
-  let $20_phi_27 = undefined;
-  while ($19_phi_26 > 0) {
-    $19_phi_26 = $19_phi_26 - 1;
+  let q = 3;
+  let r = undefined;
+  while (q > 0) {
+    q = q - 1;
   }
-  $18_phi_25 = $18_phi_25 - 1;
-  $20_phi_27 = undefined;
+  p = p - 1;
+  r = undefined;
 }
-const d = $18_phi_25;
+const n = p;

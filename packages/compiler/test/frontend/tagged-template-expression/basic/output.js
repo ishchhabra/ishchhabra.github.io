@@ -1,2 +1,2 @@
-const c = "Alice";
-const d = String.raw`Hello ${c}\n`;
+const d = "Alice";
+const k = String.raw`Hello ${d}\n`;

@@ -10,4 +10,4 @@ const b = function b(a) {
   }
   return a(a - 1);
 };
-const d = a(4);
+const g = a(4);

@@ -1,10 +1,10 @@
 const a = function a() {
   const a = function a() {
-    return c;
+    return h;
   };
-  let { x: c } = {
+  let { x: h } = {
     x: 0,
   };
-  c = 1;
+  h = 1;
   return a();
 };

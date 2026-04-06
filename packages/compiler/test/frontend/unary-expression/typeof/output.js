@@ -1,2 +1,2 @@
-const c = 42;
-const d = typeof c;
+const d = 42;
+const h = typeof d;

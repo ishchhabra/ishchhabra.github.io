@@ -1,2 +1,2 @@
-const { "foo-bar": b } = obj;
-console.log(b);
+const { "foo-bar": d } = obj;
+console.log(d);

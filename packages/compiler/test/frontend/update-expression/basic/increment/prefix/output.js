@@ -1,3 +1,3 @@
-let c = 0;
-$0_1 = c + 1;
-const d = $0_1;
+let d = 0;
+f = d + 1;
+const l = f;

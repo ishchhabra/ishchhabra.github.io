@@ -76,7 +76,7 @@ function buildReferencedIdentifier(
   const name = node.name;
   const declarationId = builder.getDeclarationId(name, scope);
 
-  const identifier = environment.createIdentifier(declarationId);
+  const identifier = environment.createIdentifier(declarationId, scope.allocateName());
   const place = environment.createPlace(identifier);
 
   const declInstrId =
@@ -111,8 +111,10 @@ function buildReferencedIdentifier(
     if (!builder.isOwnDeclaration(declarationId)) {
       builder.captures.set(declarationId, declarationPlace);
       if (!builder.captureParams.has(declarationId)) {
-        const paramIdentifier = environment.createIdentifier(declarationId);
-        paramIdentifier.name = declarationPlace.identifier.name;
+        const paramIdentifier = environment.createIdentifier(
+          declarationId,
+          declarationPlace.identifier.name,
+        );
         builder.captureParams.set(declarationId, environment.createPlace(paramIdentifier));
       }
       const captureParam = builder.captureParams.get(declarationId)!;

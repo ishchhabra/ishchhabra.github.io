@@ -1,4 +1,4 @@
-const b = {
+const g = {
   add(a, b) {
     return a + b;
   },

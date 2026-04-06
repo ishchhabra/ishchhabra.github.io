@@ -28,7 +28,9 @@ export function buildVariableDeclaration(
     let valuePlace;
     if (init == null) {
       // No initializer — emit LoadGlobal("undefined") instead of mutating the AST.
-      const undefinedPlace = environment.createPlace(environment.createIdentifier());
+      const undefinedPlace = environment.createPlace(
+        environment.createIdentifier(undefined, scope.allocateName()),
+      );
       functionBuilder.addInstruction(
         environment.createInstruction(LoadGlobalInstruction, undefinedPlace, "undefined"),
       );
@@ -52,7 +54,7 @@ export function buildVariableDeclaration(
     const isContext = bindings.some((p) =>
       environment.contextDeclarationIds.has(p.identifier.declarationId),
     );
-    const identifier = environment.createIdentifier();
+    const identifier = environment.createIdentifier(undefined, scope.allocateName());
     const place = environment.createPlace(identifier);
     // var declarations were already hoisted (DeclareLocal + StoreLocal/StoreContext
     // with undefined). The write here is an assignment to the existing binding,

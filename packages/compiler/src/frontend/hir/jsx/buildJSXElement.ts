@@ -49,7 +49,7 @@ export function buildJSXElement(
     childrenPlaces.push(place);
   }
 
-  const identifier = environment.createIdentifier();
+  const identifier = environment.createIdentifier(undefined, scope.allocateName());
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(
     JSXElementInstruction,

@@ -1,2 +1,2 @@
-const b = (a) => a * 2;
-console.log(b(5));
+const c = (a) => a * 2;
+console.log(c(5));

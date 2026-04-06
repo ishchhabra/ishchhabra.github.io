@@ -1,2 +1,2 @@
-const c = null;
-const d = c || "default";
+const d = null;
+const i = d || "default";

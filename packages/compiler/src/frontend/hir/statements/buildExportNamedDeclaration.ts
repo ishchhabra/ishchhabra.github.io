@@ -83,7 +83,7 @@ export function buildExportNamedDeclaration(
       storeInstruction.emit = false;
     }
 
-    const identifier = environment.createIdentifier();
+    const identifier = environment.createIdentifier(undefined, scope.allocateName());
     const place = environment.createPlace(identifier);
     const instruction = environment.createInstruction(
       ExportNamedDeclarationInstruction,
@@ -115,7 +115,7 @@ export function buildExportNamedDeclaration(
       return exportSpecifierPlace;
     });
 
-    const identifier = environment.createIdentifier();
+    const identifier = environment.createIdentifier(undefined, scope.allocateName());
     const place = environment.createPlace(identifier);
     const instruction = environment.createInstruction(
       ExportNamedDeclarationInstruction,
@@ -192,7 +192,7 @@ function findStoreLocal(
 
 function buildExportFrom(
   node: ESTree.ExportNamedDeclaration,
-  _scope: Scope,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
@@ -233,7 +233,7 @@ function buildExportFrom(
     });
   }
 
-  const identifier = environment.createIdentifier();
+  const identifier = environment.createIdentifier(undefined, scope.allocateName());
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(
     ExportFromInstruction,

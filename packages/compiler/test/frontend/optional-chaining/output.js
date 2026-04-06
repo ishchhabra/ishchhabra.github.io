@@ -1,10 +1,10 @@
-const g = {
+const n = {
   a: {
     b: 1,
   },
 };
-const h = g?.a;
-const i = g?.a?.b;
-const j = g?.[0];
-const k = g?.method();
-const l = g?.a.b;
+const r = n?.a;
+const w = n?.a?.b;
+const A = n?.[0];
+const F = n?.method();
+const K = n?.a.b;

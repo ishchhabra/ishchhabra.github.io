@@ -1,4 +1,4 @@
-const b = {
+const i = {
   name: "John",
   age: 30,
 };

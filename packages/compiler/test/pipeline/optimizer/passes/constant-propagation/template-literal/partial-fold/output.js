@@ -1,2 +1,2 @@
-const b = "prefix";
+const c = "prefix";
 `prefix-${getDynamic()}-end`;

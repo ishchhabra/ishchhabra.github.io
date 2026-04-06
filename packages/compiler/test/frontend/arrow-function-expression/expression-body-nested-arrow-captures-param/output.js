@@ -1,1 +1,1 @@
-const b = (a) => () => a;
+const c = (a) => () => a;

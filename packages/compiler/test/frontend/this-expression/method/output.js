@@ -1,4 +1,4 @@
-const b = {
+const h = {
   name: "foo",
   greet() {
     return this.name;

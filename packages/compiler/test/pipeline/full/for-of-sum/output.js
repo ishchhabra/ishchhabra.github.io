@@ -1,8 +1,8 @@
 const a = function a(a) {
-  let $15_phi_22 = 0;
+  let h = 0;
   for (const b of a) {
-    $15_phi_22 = $15_phi_22 + b;
+    h = h + b;
   }
-  return $15_phi_22;
+  return h;
 };
 console.log(a(numbers));

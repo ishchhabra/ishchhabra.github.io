@@ -58,12 +58,14 @@ export function buildUpdateExpression(
   // before codegen can read the pre-increment value.
   let oldValLoadPlace = originalPlace;
   if (!node.prefix) {
-    const oldValBinding = environment.createIdentifier();
+    const oldValBinding = environment.createIdentifier(undefined, scope.allocateName());
     const oldValBindingPlace = environment.createPlace(oldValBinding);
     functionBuilder.addInstruction(
       environment.createInstruction(DeclareLocalInstruction, oldValBindingPlace, "const"),
     );
-    const oldValStorePlace = environment.createPlace(environment.createIdentifier());
+    const oldValStorePlace = environment.createPlace(
+      environment.createIdentifier(undefined, scope.allocateName()),
+    );
     functionBuilder.addInstruction(
       environment.createInstruction(
         StoreLocalInstruction,
@@ -73,7 +75,9 @@ export function buildUpdateExpression(
         "const",
       ),
     );
-    oldValLoadPlace = environment.createPlace(environment.createIdentifier());
+    oldValLoadPlace = environment.createPlace(
+      environment.createIdentifier(undefined, scope.allocateName()),
+    );
     functionBuilder.addInstruction(
       environment.createInstruction(LoadLocalInstruction, oldValLoadPlace, oldValBindingPlace),
     );
@@ -83,25 +87,29 @@ export function buildUpdateExpression(
   if (environment.contextDeclarationIds.has(declarationId)) {
     lvalPlace = originalPlace;
   } else {
-    const lvalIdentifier = environment.createIdentifier(declarationId);
+    const lvalIdentifier = environment.createIdentifier(declarationId, scope.allocateName());
     lvalPlace = environment.createPlace(lvalIdentifier);
   }
 
   // Build the binary expression inline instead of creating a synthetic path.
   // Load the argument value.
-  const argLoadIdentifier = environment.createIdentifier(declarationId);
+  const argLoadIdentifier = environment.createIdentifier(declarationId, scope.allocateName());
   const argLoadPlace = environment.createPlace(argLoadIdentifier);
   functionBuilder.addInstruction(
     environment.createInstruction(LoadLocalInstruction, argLoadPlace, originalPlace),
   );
 
   // Create literal 1
-  const onePlace = environment.createPlace(environment.createIdentifier());
+  const onePlace = environment.createPlace(
+    environment.createIdentifier(undefined, scope.allocateName()),
+  );
   functionBuilder.addInstruction(environment.createInstruction(LiteralInstruction, onePlace, 1));
 
   // Compute value +/- 1
   const isIncrement = node.operator === "++";
-  const valuePlace = environment.createPlace(environment.createIdentifier());
+  const valuePlace = environment.createPlace(
+    environment.createIdentifier(undefined, scope.allocateName()),
+  );
   functionBuilder.addInstruction(
     environment.createInstruction(
       BinaryExpressionInstruction,
@@ -112,7 +120,7 @@ export function buildUpdateExpression(
     ),
   );
 
-  const identifier = environment.createIdentifier();
+  const identifier = environment.createIdentifier(undefined, scope.allocateName());
   const place = environment.createPlace(identifier);
   const isContext = environment.contextDeclarationIds.has(declarationId);
   const instruction = isContext
@@ -132,7 +140,7 @@ export function buildUpdateExpression(
     // For prefix (++i), return a LoadLocal of the stored value so codegen
     // references the named variable ($0_1) instead of re-emitting the
     // binary expression.
-    const loadIdentifier = environment.createIdentifier(declarationId);
+    const loadIdentifier = environment.createIdentifier(declarationId, scope.allocateName());
     const loadPlace = environment.createPlace(loadIdentifier);
     functionBuilder.addInstruction(
       environment.createInstruction(LoadLocalInstruction, loadPlace, lvalPlace),

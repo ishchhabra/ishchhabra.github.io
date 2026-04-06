@@ -1,8 +1,8 @@
-let b = {};
-const { a: $11_0, b: $16_0 } = {
+let c = {};
+const { a: m, b: s } = {
   a: 1,
   b: 2,
 };
-b.a = $11_0;
-b.b = $16_0;
-console.log(b.a, b.b);
+c.a = m;
+c.b = s;
+console.log(c.a, c.b);

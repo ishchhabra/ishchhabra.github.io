@@ -1,22 +1,22 @@
-const c = "greet";
-let d = undefined;
-let $18_phi_23 = undefined;
-$18_phi_23 = d;
-switch (c) {
+const d = "greet";
+let g = undefined;
+let t = undefined;
+t = g;
+switch (d) {
   case "greet": {
-    $1_3 = "hello";
-    $18_phi_23 = $1_3;
+    e = "hello";
+    t = e;
     break;
   }
   case "farewell": {
-    $1_2 = "goodbye";
-    $18_phi_23 = $1_2;
+    c = "goodbye";
+    t = c;
     break;
   }
   default: {
-    $1_1 = "unknown action";
-    $18_phi_23 = $1_1;
+    a = "unknown action";
+    t = a;
     break;
   }
 }
-console.log($18_phi_23);
+console.log(t);

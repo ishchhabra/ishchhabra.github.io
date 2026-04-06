@@ -1,2 +1,2 @@
-const c = foo();
-const d = c;
+const e = foo();
+const j = e;

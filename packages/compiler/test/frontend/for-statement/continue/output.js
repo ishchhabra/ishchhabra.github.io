@@ -1,14 +1,14 @@
 let b = 0;
-let $18_phi_23 = 0;
-while ($18_phi_23 < 10) {
-  if ($18_phi_23 === 5) {
-    const $11_0 = $18_phi_23;
-    $11_0;
-    $18_phi_23 = $18_phi_23 + 1;
+let e = 0;
+while (e < 10) {
+  if (e === 5) {
+    const f = e;
+    f;
+    e = e + 1;
     continue;
   }
-  console.log($18_phi_23);
-  const $11_0 = $18_phi_23;
-  $11_0;
-  $18_phi_23 = $18_phi_23 + 1;
+  console.log(e);
+  const f = e;
+  f;
+  e = e + 1;
 }

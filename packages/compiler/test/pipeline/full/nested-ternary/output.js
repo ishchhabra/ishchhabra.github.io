@@ -1,2 +1,2 @@
-const c = globalThis.x;
-console.log(c > 0 ? "positive" : c < 0 ? "negative" : "zero");
+const e = globalThis.x;
+console.log(e > 0 ? "positive" : e < 0 ? "negative" : "zero");

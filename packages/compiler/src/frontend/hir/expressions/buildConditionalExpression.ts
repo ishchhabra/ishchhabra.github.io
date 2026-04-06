@@ -105,7 +105,7 @@ function buildTemporaryIdentifier(
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
-  const bindingIdentifier = environment.createIdentifier();
+  const bindingIdentifier = environment.createIdentifier(undefined, scope.allocateName());
   const bindingPlace = environment.createPlace(bindingIdentifier);
   functionBuilder.addInstruction(
     environment.createInstruction(DeclareLocalInstruction, bindingPlace, "let"),
@@ -121,13 +121,19 @@ function buildTemporaryIdentifier(
     bindingPlace.id,
   );
 
-  const resultValueIdentifier = environment.createIdentifier(bindingIdentifier.declarationId);
+  const resultValueIdentifier = environment.createIdentifier(
+    bindingIdentifier.declarationId,
+    scope.allocateName(),
+  );
   const resultValuePlace = environment.createPlace(resultValueIdentifier);
   functionBuilder.addInstruction(
     environment.createInstruction(LiteralInstruction, resultValuePlace, undefined),
   );
 
-  const resultIdentifier = environment.createIdentifier(bindingIdentifier.declarationId);
+  const resultIdentifier = environment.createIdentifier(
+    bindingIdentifier.declarationId,
+    scope.allocateName(),
+  );
   const resultPlace = environment.createPlace(resultIdentifier);
   functionBuilder.addInstruction(
     environment.createInstruction(
@@ -155,14 +161,19 @@ function buildBranchExpression(
     throw new Error("Conditional expression consequent must be a single place");
   }
 
-  const lvalIdentifier = environment.createIdentifier(resultPlace.identifier.declarationId);
+  const lvalIdentifier = environment.createIdentifier(
+    resultPlace.identifier.declarationId,
+    scope.allocateName(),
+  );
   const lvalPlace = environment.createPlace(lvalIdentifier);
   environment.registerDeclaration(
     resultPlace.identifier.declarationId,
     functionBuilder.currentBlock.id,
     lvalPlace.id,
   );
-  const storePlace = environment.createPlace(environment.createIdentifier());
+  const storePlace = environment.createPlace(
+    environment.createIdentifier(undefined, scope.allocateName()),
+  );
   const storeInstruction = environment.createInstruction(
     StoreLocalInstruction,
     storePlace,

@@ -1,10 +1,10 @@
-let e = 10;
-let f = 20;
-let g = undefined;
-let $16_phi_25 = undefined;
+let f = 10;
+let i = 20;
+let l = undefined;
+let t = undefined;
 if (10 > 20) {
-  $16_phi_25 = 10 + 20;
+  t = 10 + 20;
 } else {
-  $16_phi_25 = 10 - 20;
+  t = 10 - 20;
 }
-const h = $16_phi_25;
+const r = t;

@@ -101,6 +101,8 @@ export class FunctionIR {
      * - `SwitchTerminal.label`
      */
     public readonly blockLabels: Map<BlockId, string> = new Map(),
+    /** Allocate a short output name for a temporary in this function's scope. */
+    public readonly allocateName: () => string = () => `$${id}`,
   ) {
     this.computeCFG();
     // Register use-chains for structures passed in at construction time.

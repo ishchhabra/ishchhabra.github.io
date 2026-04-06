@@ -1,6 +1,6 @@
 let b = 0;
-let $16_phi_20 = 0;
-while ($16_phi_20 < 3) {
-  console.log($16_phi_20);
-  $16_phi_20 = $16_phi_20 + 1;
+let d = 0;
+while (d < 3) {
+  console.log(d);
+  d = d + 1;
 }

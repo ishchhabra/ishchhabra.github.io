@@ -1,4 +1,4 @@
-const { a: c, b: d } = {
+const { a: k, b: n } = {
   a: 1,
   b: 2,
 };

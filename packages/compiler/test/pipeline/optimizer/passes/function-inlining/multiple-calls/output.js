@@ -1,8 +1,8 @@
 const a = function a(a) {
-  const c = a;
-  return c;
+  const d = a;
+  return d;
 };
-const $17_0 = 1;
-const d = $17_0;
-const $24_0 = 2;
-const e = $24_0;
+const r = 1;
+const g = r;
+const y = 2;
+const l = y;

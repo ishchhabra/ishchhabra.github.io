@@ -1,3 +1,3 @@
-const c = 1;
-const d = 2;
-export { c as foo, d as bar };
+const d = 1;
+const g = 2;
+export { d as foo, g as bar };

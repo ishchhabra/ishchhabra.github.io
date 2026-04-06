@@ -1,5 +1,5 @@
-const f = 10 - 3;
-const g = 4 * 5;
-const h = 10 / 3;
-const i = 10 % 3;
-const j = 2 ** 8;
+const i = 10 - 3;
+const n = 4 * 5;
+const s = 10 / 3;
+const x = 10 % 3;
+const C = 2 ** 8;

@@ -1,9 +1,9 @@
 const a = function a(a) {
-  let $7_phi_11 = undefined;
-  $7_phi_11 = a;
+  let g = undefined;
+  g = a;
   if (a > 5) {
-    const $1_1 = 5;
-    $7_phi_11 = $1_1;
+    const a = 5;
+    g = a;
   }
-  return $7_phi_11;
+  return g;
 };

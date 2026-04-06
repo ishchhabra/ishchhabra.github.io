@@ -1,4 +1,4 @@
-let $8_phi_11 = 0;
-while ($8_phi_11 < 3) {
-  $8_phi_11 = $8_phi_11 + 1;
+let i = 0;
+while (i < 3) {
+  i = i + 1;
 }

@@ -8,7 +8,7 @@ export function buildThisExpression(
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
-  const identifier = environment.createIdentifier();
+  const identifier = environment.createIdentifier(undefined, functionBuilder.scope.allocateName());
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(ThisExpressionInstruction, place);
   functionBuilder.addInstruction(instruction);

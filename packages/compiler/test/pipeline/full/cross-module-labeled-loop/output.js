@@ -1,7 +1,7 @@
 import { create } from "./helper.js";
-const c = create(console.log);
+const j = create(console.log);
 export const f = function f(a) {
   if (a) {
-    c(a);
+    j(a);
   }
 };

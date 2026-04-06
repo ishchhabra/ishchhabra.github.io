@@ -1,2 +1,2 @@
-const c = 0 / 0;
-const d = false;
+const f = 0 / 0;
+const k = false;

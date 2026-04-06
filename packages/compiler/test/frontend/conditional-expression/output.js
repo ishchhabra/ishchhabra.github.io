@@ -1,10 +1,10 @@
-let $6_0 = undefined;
-let $12_phi_16 = undefined;
+let g = undefined;
+let r = undefined;
 if (Math.random() > 0.5) {
-  $6_1 = 10;
-  $12_phi_16 = $6_1;
+  k = 10;
+  r = k;
 } else {
-  $6_2 = 20;
-  $12_phi_16 = $6_2;
+  n = 20;
+  r = n;
 }
-const b = $12_phi_16;
+const p = r;

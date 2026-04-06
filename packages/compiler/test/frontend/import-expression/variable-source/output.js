@@ -1,2 +1,2 @@
-const b = "./module";
-import(b).then((a) => console.log(a));
+const c = "./module";
+import(c).then((a) => console.log(a));

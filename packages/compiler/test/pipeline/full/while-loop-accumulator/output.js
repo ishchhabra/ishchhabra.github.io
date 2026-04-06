@@ -1,5 +1,5 @@
-let $12_phi_16 = 0;
-while ($12_phi_16 < 10) {
-  $12_phi_16 = $12_phi_16 + 1;
+let n = 0;
+while (n < 10) {
+  n = n + 1;
 }
-console.log($12_phi_16);
+console.log(n);

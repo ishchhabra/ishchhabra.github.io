@@ -1,4 +1,4 @@
-const c = "a";
-const { [c]: d } = {
+const d = "a";
+const { [d]: k } = {
   a: 1,
 };

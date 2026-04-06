@@ -2,9 +2,9 @@ const a = function a(a, b) {
   return a + b;
 };
 export const HighlightedCode = function HighlightedCode({ code: a, lang: b }) {
-  const $53_0 = a;
-  const $54_0 = b;
-  const d = $53_0 + $54_0;
+  const N = a;
+  const O = b;
+  const m = N + O;
   return (
     <pre>
       <code
@@ -12,7 +12,7 @@ export const HighlightedCode = function HighlightedCode({ code: a, lang: b }) {
           fontFamily: "mono",
         }}
         dangerouslySetInnerHTML={{
-          __html: d,
+          __html: m,
         }}
       />
     </pre>

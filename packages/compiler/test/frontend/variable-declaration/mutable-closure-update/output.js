@@ -1,11 +1,11 @@
 const a = function a() {
-  let d = 0;
-  const e = () => {
-    const $6_0 = d;
-    d = d + 1;
-    return $6_0;
+  let e = 0;
+  const h = () => {
+    const a = e;
+    e = e + 1;
+    return a;
   };
-  const f = () => d;
-  e();
-  return f();
+  const k = () => e;
+  h();
+  return k();
 };

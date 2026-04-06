@@ -1,2 +1,2 @@
-const c = 42;
-const d = <span>{c}</span>;
+const d = 42;
+const n = <span>{d}</span>;

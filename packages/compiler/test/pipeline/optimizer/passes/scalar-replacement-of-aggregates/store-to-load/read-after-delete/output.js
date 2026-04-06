@@ -1,7 +1,7 @@
-const b = {
+const l = {
   a: 1,
   b: 2,
   c: 3,
 };
-delete b.a;
+delete l.a;
 console.log(2, 3);

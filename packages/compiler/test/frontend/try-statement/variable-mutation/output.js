@@ -1,13 +1,13 @@
 const a = function a(a) {
-  let c = "default";
-  let $13_phi_18 = undefined;
-  $13_phi_18 = c;
+  let d = "default";
+  let j = undefined;
+  j = d;
   try {
-    $2_1 = JSON.parse(a);
-    $13_phi_18 = $2_1;
-  } catch ($9_0) {
-    $2_2 = "error";
-    $13_phi_18 = $2_2;
+    d = JSON.parse(a);
+    j = d;
+  } catch (g) {
+    a = "error";
+    j = a;
   }
-  return $13_phi_18;
+  return j;
 };

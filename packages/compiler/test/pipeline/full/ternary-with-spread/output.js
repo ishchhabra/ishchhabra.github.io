@@ -1,10 +1,10 @@
 const a = function a(a) {
-  const d = [
+  const i = [
     {
       name: "title",
     },
   ];
-  const e =
+  const Q =
     a !== undefined
       ? [
           {
@@ -14,9 +14,9 @@ const a = function a(a) {
         ]
       : undefined;
   return {
-    meta: d,
-    ...(e && {
-      links: e,
+    meta: i,
+    ...(Q && {
+      links: Q,
     }),
   };
 };

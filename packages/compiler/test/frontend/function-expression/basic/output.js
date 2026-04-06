@@ -1,3 +1,3 @@
-const b = function (a, b) {
+const c = function (a, b) {
   return a + b;
 };

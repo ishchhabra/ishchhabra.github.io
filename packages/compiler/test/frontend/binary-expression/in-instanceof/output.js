@@ -1,5 +1,5 @@
-const d = {
+const h = {
   x: 1,
 };
-const e = "x" in d;
-const f = [] instanceof Array;
+const m = "x" in h;
+const r = [] instanceof Array;

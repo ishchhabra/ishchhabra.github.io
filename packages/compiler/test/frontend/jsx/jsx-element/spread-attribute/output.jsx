@@ -1,4 +1,4 @@
-const c = {
+const g = {
   className: "foo",
 };
-const d = <div {...c} />;
+const o = <div {...g} />;

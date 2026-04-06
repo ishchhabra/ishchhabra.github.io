@@ -33,7 +33,7 @@ export function buildArrowFunctionExpression(
   functionBuilder.propagateCapturesFrom(functionIRBuilder);
 
   const capturedPlaces = [...functionIRBuilder.captures.values()];
-  const identifier = environment.createIdentifier();
+  const identifier = environment.createIdentifier(undefined, scope.allocateName());
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(
     ArrowFunctionExpressionInstruction,

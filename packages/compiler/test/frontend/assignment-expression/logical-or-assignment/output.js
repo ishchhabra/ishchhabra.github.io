@@ -1,14 +1,14 @@
 export const f = function f(b) {
-  let $3_0 = b;
-  let $12_phi_15 = undefined;
-  $12_phi_15 = b;
-  let $13_phi_16 = undefined;
-  $13_phi_16 = $3_0;
+  let d = b;
+  let k = undefined;
+  k = b;
+  let l = undefined;
+  l = d;
   if (!b) {
-    const $1_1 = 10;
+    const g = 10;
     $3_1 = 10;
-    $12_phi_15 = $1_1;
-    $13_phi_16 = $3_1;
+    k = g;
+    l = $3_1;
   }
-  return $13_phi_16;
+  return l;
 };

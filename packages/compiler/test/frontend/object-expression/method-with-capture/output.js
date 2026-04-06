@@ -1,6 +1,6 @@
-const c = 1;
-const d = {
+const d = 1;
+const i = {
   foo() {
-    return c;
+    return d;
   },
 };
