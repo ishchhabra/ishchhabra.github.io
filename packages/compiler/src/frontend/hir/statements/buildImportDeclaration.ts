@@ -1,4 +1,5 @@
 import type * as ESTree from "estree";
+import type { ImportOrExportKind } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { ImportDeclarationInstruction } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -14,10 +15,24 @@ export function buildImportDeclaration(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
+  // Type-only imports (import type { X }) are erased at runtime.
+  // OXC extends ESTree with importKind when parsing with astType:"ts".
+  if ((node as ESTree.ImportDeclaration & { importKind?: ImportOrExportKind }).importKind === "type") {
+    return undefined;
+  }
+
   const sourceValue = node.source.value as string;
   const resolvedSourceValue = resolveModulePath(sourceValue, moduleBuilder.path);
 
-  const specifierPlaces = node.specifiers.map((specifier) => {
+  // Filter out per-specifier type imports: import { value, type TypeOnly }
+  const valueSpecifiers = node.specifiers.filter(
+    (s) => (s as ESTree.Node & { importKind?: ImportOrExportKind }).importKind !== "type",
+  );
+  if (valueSpecifiers.length === 0) {
+    return undefined;
+  }
+
+  const specifierPlaces = valueSpecifiers.map((specifier) => {
     const importSpecifierPlace = buildImportSpecifier(
       specifier,
       node,

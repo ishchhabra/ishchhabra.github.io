@@ -1,4 +1,5 @@
 import type * as ESTree from "estree";
+import type { ImportOrExportKind } from "oxc-parser";
 import { Environment } from "../../../environment";
 import {
   BaseInstruction,
@@ -13,6 +14,7 @@ import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { resolveModulePath } from "../resolveModulePath";
+import { isTSOnlyNode } from "../../estree";
 
 export function buildExportNamedDeclaration(
   node: ESTree.ExportNamedDeclaration,
@@ -21,6 +23,12 @@ export function buildExportNamedDeclaration(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
+  // Type-only exports (export type { X }, export type X = ...) are erased.
+  // OXC extends ESTree with exportKind when parsing with astType:"ts".
+  if ((node as ESTree.ExportNamedDeclaration & { exportKind?: ImportOrExportKind }).exportKind === "type") {
+    return undefined;
+  }
+
   // Re-exports: export { x, y } from './mod'
   if (node.source) {
     return buildExportFrom(node, scope, functionBuilder, moduleBuilder, environment);
@@ -30,6 +38,12 @@ export function buildExportNamedDeclaration(
   const specifiers = node.specifiers;
 
   // An export can have either declaration or specifiers, but not both.
+  // TS-only exported declarations (export type, export interface) are erased.
+  // This catches cases where exportKind is "value" but the declaration itself
+  // is a TS-only node (e.g. `export interface Foo {}`).
+  if (declaration != null && isTSOnlyNode(declaration as ESTree.Node)) {
+    return undefined;
+  }
   if (declaration != null) {
     let declarationPlace = buildExportDeclaration(
       declaration,
@@ -172,6 +186,11 @@ function buildExportFrom(
 
   for (const specifier of node.specifiers) {
     if (specifier.type !== "ExportSpecifier") {
+      continue;
+    }
+
+    // Skip per-specifier type exports: export { value, type TypeOnly } from "mod"
+    if ((specifier as ESTree.ExportSpecifier & { exportKind?: ImportOrExportKind }).exportKind === "type") {
       continue;
     }
 

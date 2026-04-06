@@ -29,7 +29,7 @@ export class ModuleIRBuilder {
   private buildFromCode(code: string): ModuleIR {
     const result = parseSync(this.path, code, {
       sourceType: "module",
-      astType: "js",
+      astType: "ts",
       preserveParens: false,
     });
 
