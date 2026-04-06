@@ -1,4 +1,4 @@
-const g = {
+const props = {
   className: "foo",
 };
-const o = <div {...g} />;
+const el = <div {...props} />;

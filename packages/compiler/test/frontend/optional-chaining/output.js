@@ -1,10 +1,10 @@
-const n = {
+const obj = {
   a: {
     b: 1,
   },
 };
-const r = n?.a;
-const w = n?.a?.b;
-const A = n?.[0];
-const F = n?.method();
-const K = n?.a.b;
+const x = obj?.a;
+const y = obj?.a?.b;
+const z = obj?.[0];
+const w = obj?.method();
+const v = obj?.a.b;

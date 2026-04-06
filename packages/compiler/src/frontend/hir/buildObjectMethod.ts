@@ -48,7 +48,7 @@ export function buildObjectMethod(
   functionBuilder.propagateCapturesFrom(functionIRBuilder);
 
   const capturedPlaces = [...functionIRBuilder.captures.values()];
-  const methodIdentifier = environment.createIdentifier(undefined, scope.allocateName());
+  const methodIdentifier = environment.createIdentifier();
   const methodPlace = environment.createPlace(methodIdentifier);
   const instruction = environment.createInstruction(
     ObjectMethodInstruction,

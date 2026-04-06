@@ -1,13 +1,13 @@
-const a = function a() {
+const $0_0 = function $0_0() {
   return "b";
 };
-const b = function b() {
+const $1_0 = function $1_0() {
   return 3;
 };
-let k = {
+let a = {
   b: 1,
 };
-const p = a();
-const v = k[p] + b();
-k[p] = v;
-const z = v;
+const $14_0 = $0_0();
+const $19_0 = a[$14_0] + $1_0();
+a[$14_0] = $19_0;
+const result = $19_0;

@@ -9,7 +9,7 @@ export function buildClassExpression(
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
-  const identifier = environment.createIdentifier(undefined, functionBuilder.scope.allocateName());
+  const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(ClassExpressionInstruction, place);
   functionBuilder.addInstruction(instruction);

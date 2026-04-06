@@ -1,2 +1,2 @@
-const q = 4;
-console.log(q);
+const d = 4;
+console.log(d);

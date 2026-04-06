@@ -1,14 +1,14 @@
-export const f = function f(a) {
-  let C = undefined;
-  let D = a;
-  for (const j of [1, 2]) {
-    if (j) {
-      const { x: p, ...r } = D;
-      C = r;
+export const f = function f($1_0) {
+  let $20_phi_29 = undefined;
+  let $21_phi_30 = $1_0;
+  for (const k of [1, 2]) {
+    if (k) {
+      const { x: x, ...rest } = $21_phi_30;
+      $20_phi_29 = rest;
     } else {
-      C = a;
+      $20_phi_29 = $1_0;
     }
-    D = C;
+    $21_phi_30 = $20_phi_29;
   }
-  return D;
+  return $21_phi_30;
 };

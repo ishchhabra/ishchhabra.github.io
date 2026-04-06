@@ -1,5 +1,5 @@
-let g = {
+let a = {
   b: 1,
 };
-let j = "b";
-g[j] = 3;
+let key = "b";
+a[key] = 3;

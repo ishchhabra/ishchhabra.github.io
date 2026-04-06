@@ -1,8 +1,8 @@
-const a = function a() {
-  let h = undefined;
-  let k = undefined;
-  h = 1;
-  k = undefined;
-  n = 2;
-  return h + n;
+const $0_0 = function $0_0() {
+  let x = undefined;
+  let y = undefined;
+  x = 1;
+  y = undefined;
+  $4_2 = 2;
+  return x + $4_2;
 };

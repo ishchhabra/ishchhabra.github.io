@@ -55,9 +55,11 @@ export function buildBindingIdentifier(
   }
 
   if (place === undefined) {
-    const identifier = environment.createIdentifier(undefined, scope.allocateName());
+    const identifier = environment.createIdentifier();
     place = environment.createPlace(identifier);
   }
+
+  place.identifier.name = name;
 
   const instruction = environment.createInstruction(DeclareLocalInstruction, place, "const");
   builder.addInstruction(instruction);
@@ -74,7 +76,7 @@ function buildReferencedIdentifier(
   const name = node.name;
   const declarationId = builder.getDeclarationId(name, scope);
 
-  const identifier = environment.createIdentifier(declarationId, scope.allocateName());
+  const identifier = environment.createIdentifier(declarationId);
   const place = environment.createPlace(identifier);
 
   const declInstrId =
@@ -109,10 +111,8 @@ function buildReferencedIdentifier(
     if (!builder.isOwnDeclaration(declarationId)) {
       builder.captures.set(declarationId, declarationPlace);
       if (!builder.captureParams.has(declarationId)) {
-        const paramIdentifier = environment.createIdentifier(
-          declarationId,
-          declarationPlace.identifier.name,
-        );
+        const paramIdentifier = environment.createIdentifier(declarationId);
+        paramIdentifier.name = declarationPlace.identifier.name;
         builder.captureParams.set(declarationId, environment.createPlace(paramIdentifier));
       }
       const captureParam = builder.captureParams.get(declarationId)!;

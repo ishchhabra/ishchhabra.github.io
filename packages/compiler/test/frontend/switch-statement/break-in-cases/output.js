@@ -1,22 +1,22 @@
-const d = "greet";
-let g = undefined;
-let z = undefined;
-z = g;
-switch (d) {
+const action = "greet";
+let message = undefined;
+let $18_phi_23 = undefined;
+$18_phi_23 = message;
+switch (action) {
   case "greet": {
-    s = "hello";
-    z = s;
+    $1_3 = "hello";
+    $18_phi_23 = $1_3;
     break;
   }
   case "farewell": {
-    p = "goodbye";
-    z = p;
+    $1_2 = "goodbye";
+    $18_phi_23 = $1_2;
     break;
   }
   default: {
-    m = "unknown action";
-    z = m;
+    $1_1 = "unknown action";
+    $18_phi_23 = $1_1;
     break;
   }
 }
-console.log(z);
+console.log($18_phi_23);

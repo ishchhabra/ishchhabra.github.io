@@ -1,4 +1,4 @@
-let f = {
+let a = {
   b: 1,
 };
-f.b = f.b + 3;
+a.b = a.b + 3;

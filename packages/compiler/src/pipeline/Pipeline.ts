@@ -40,8 +40,6 @@ export class Pipeline {
     for (const moduleName of this.projectUnit.postOrder.toReversed()) {
       const moduleIR = this.projectUnit.modules.get(moduleName)!;
       for (const functionIR of moduleIR.functions.values()) {
-        // Set the name allocator so optimizer-created identifiers get short names.
-        moduleIR.environment.allocateName = functionIR.allocateName;
         new CommonJSExportCollectorPass(functionIR, moduleIR).run();
         new CFGSimplificationPass(functionIR, moduleIR).run();
 

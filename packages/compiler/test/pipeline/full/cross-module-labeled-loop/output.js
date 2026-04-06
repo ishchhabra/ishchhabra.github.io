@@ -1,7 +1,7 @@
 import { create } from "./helper.js";
-const i = create(console.log);
-export const f = function f(a) {
-  if (a) {
-    i(a);
+const run = create(console.log);
+export const f = function f($2_0) {
+  if ($2_0) {
+    run($2_0);
   }
 };

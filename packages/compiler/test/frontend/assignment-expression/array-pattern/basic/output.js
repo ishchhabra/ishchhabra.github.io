@@ -1,3 +1,3 @@
-let d = undefined;
-let g = undefined;
-const [l, m] = [1, 2];
+let a = undefined;
+let b = undefined;
+const [$0_1, $1_1] = [1, 2];

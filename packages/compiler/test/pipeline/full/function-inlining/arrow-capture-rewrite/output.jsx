@@ -1,9 +1,9 @@
-const a = function a() {
-  const d = getValue();
-  return useMemo(() => d + 1, [d]);
+const $0_0 = function $0_0() {
+  const x = getValue();
+  return useMemo(() => x + 1, [x]);
 };
 export const App = function App() {
-  const p = getValue();
-  const d = useMemo(() => p + 1, [p]);
-  return <div>{d}</div>;
+  const $27_0 = getValue();
+  const result = useMemo(() => $27_0 + 1, [$27_0]);
+  return <div>{result}</div>;
 };

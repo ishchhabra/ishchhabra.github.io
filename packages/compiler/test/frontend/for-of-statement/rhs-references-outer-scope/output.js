@@ -1,4 +1,4 @@
-const f = [1, 2, 3];
-for (const j of f) {
-  console.log(j);
+const x = [1, 2, 3];
+for (const x of x) {
+  console.log(x);
 }

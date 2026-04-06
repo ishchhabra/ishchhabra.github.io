@@ -32,7 +32,7 @@ export function registerFunctionDeclarationBinding(
     return;
   }
 
-  const identifier = environment.createIdentifier(undefined, scope.allocateName());
+  const identifier = environment.createIdentifier();
   functionBuilder.registerDeclarationName(functionName.name, identifier.declarationId, scope);
   functionBuilder.instantiateDeclaration(identifier.declarationId, "function", functionName.name);
 
@@ -106,9 +106,7 @@ export function initializeFunctionDeclaration(
   functionBuilder.propagateCapturesFrom(functionIRBuilder);
   const capturedPlaces = [...functionIRBuilder.captures.values()];
 
-  const fnPlace = environment.createPlace(
-    environment.createIdentifier(declarationId, identifierPlace.identifier.name),
-  );
+  const fnPlace = environment.createPlace(environment.createIdentifier(declarationId));
   const instruction = environment.createInstruction(
     FunctionExpressionInstruction,
     fnPlace,
@@ -122,9 +120,7 @@ export function initializeFunctionDeclaration(
   environment.registerDeclarationInstruction(fnPlace, instruction);
 
   const isContext = environment.contextDeclarationIds.has(declarationId);
-  const storePlace = environment.createPlace(
-    environment.createIdentifier(undefined, scope.allocateName()),
-  );
+  const storePlace = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
     environment.createInstruction(
       StoreLocalInstruction,

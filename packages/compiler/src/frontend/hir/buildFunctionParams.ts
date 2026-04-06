@@ -165,7 +165,7 @@ function buildFunctionArrayPatternParam(
     return result.place;
   });
 
-  const identifier = environment.createIdentifier(undefined, scope.allocateName());
+  const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(
     ArrayPatternInstruction,
@@ -215,7 +215,7 @@ function buildFunctionObjectPatternParam(
       );
       identifiers.push(...valueResult.identifiers);
 
-      const identifier = environment.createIdentifier(undefined, scope.allocateName());
+      const identifier = environment.createIdentifier();
       const place = environment.createPlace(identifier);
       const instruction = environment.createInstruction(
         ObjectPropertyInstruction,
@@ -241,7 +241,7 @@ function buildFunctionObjectPatternParam(
       );
       identifiers.push(...argumentResult.identifiers);
 
-      const identifier = environment.createIdentifier(undefined, scope.allocateName());
+      const identifier = environment.createIdentifier();
       const place = environment.createPlace(identifier);
       const instruction = environment.createInstruction(
         RestElementInstruction,
@@ -256,7 +256,7 @@ function buildFunctionObjectPatternParam(
     throw new Error("Unsupported object pattern property");
   });
 
-  const identifier = environment.createIdentifier(undefined, scope.allocateName());
+  const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(
     ObjectPatternInstruction,
@@ -279,10 +279,7 @@ function buildFunctionObjectPropertyKey(
   if (value === undefined) {
     throw new Error("Unsupported static key type in object pattern destructuring");
   }
-  const keyIdentifier = environment.createIdentifier(
-    undefined,
-    functionBuilder.scope.allocateName(),
-  );
+  const keyIdentifier = environment.createIdentifier();
   const keyPlace = environment.createPlace(keyIdentifier);
   const keyInstruction = environment.createInstruction(LiteralInstruction, keyPlace, value);
   functionBuilder.header.push(keyInstruction);
@@ -316,7 +313,7 @@ function buildFunctionAssignmentPatternParam(
     environment,
   );
 
-  const identifier = environment.createIdentifier(undefined, scope.allocateName());
+  const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(
     AssignmentPatternInstruction,
@@ -350,7 +347,7 @@ function buildFunctionRestElementParam(
     environment,
   );
 
-  const identifier = environment.createIdentifier(undefined, scope.allocateName());
+  const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(
     RestElementInstruction,

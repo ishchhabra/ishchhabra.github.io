@@ -1,1 +1,1 @@
-const f = (1, 2, 3);
+const result = (1, 2, 3);

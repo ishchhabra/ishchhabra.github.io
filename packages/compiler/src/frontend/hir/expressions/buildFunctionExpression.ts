@@ -33,7 +33,7 @@ export function buildFunctionExpression(
   functionBuilder.propagateCapturesFrom(functionIRBuilder);
 
   const capturedPlaces = [...functionIRBuilder.captures.values()];
-  const identifier = environment.createIdentifier(undefined, scope.allocateName());
+  const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(
     FunctionExpressionInstruction,

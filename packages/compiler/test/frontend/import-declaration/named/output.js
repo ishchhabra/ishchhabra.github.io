@@ -1,2 +1,2 @@
 import { foo, bar } from "./utils";
-const h = foo() + bar();
+const result = foo() + bar();

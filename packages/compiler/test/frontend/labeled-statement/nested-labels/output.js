@@ -1,35 +1,35 @@
-let c = 0;
-let V = 0;
-outer: while (V < 5) {
+let i = 0;
+let $34_phi_45 = 0;
+outer: while ($34_phi_45 < 5) {
   let j = 0;
-  let W = 0;
-  let X = undefined;
-  let Y = undefined;
-  inner: while (W < 5) {
-    if (W === 2) {
-      const D = W;
-      D;
-      W = W + 1;
+  let $35_phi_46 = 0;
+  let $36_phi_47 = undefined;
+  let $37_phi_48 = undefined;
+  inner: while ($35_phi_46 < 5) {
+    if ($35_phi_46 === 2) {
+      const $20_0 = $35_phi_46;
+      $20_0;
+      $35_phi_46 = $35_phi_46 + 1;
       continue;
     }
-    if (W === 3) {
-      const M = V;
-      M;
-      V = V + 1;
-      X = W;
+    if ($35_phi_46 === 3) {
+      const $27_0 = $34_phi_45;
+      $27_0;
+      $34_phi_45 = $34_phi_45 + 1;
+      $36_phi_47 = $35_phi_46;
       continue outer;
     }
-    if (V === 4) {
-      Y = undefined;
+    if ($34_phi_45 === 4) {
+      $37_phi_48 = undefined;
       break outer;
     }
-    console.log(V, W);
-    const D = W;
-    D;
-    W = W + 1;
+    console.log($34_phi_45, $35_phi_46);
+    const $20_0 = $35_phi_46;
+    $20_0;
+    $35_phi_46 = $35_phi_46 + 1;
   }
-  const M = V;
-  M;
-  V = V + 1;
-  X = W;
+  const $27_0 = $34_phi_45;
+  $27_0;
+  $34_phi_45 = $34_phi_45 + 1;
+  $36_phi_47 = $35_phi_46;
 }

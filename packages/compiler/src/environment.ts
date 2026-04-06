@@ -96,25 +96,12 @@ export class Environment {
     this.projectEnvironment.nextPlaceId = v;
   }
 
-  /**
-   * Optional name allocator for the current function being processed.
-   * Set by the pipeline before running optimizer passes so that
-   * `createIdentifier()` produces short names even for temporaries
-   * created during optimization (phi elimination, inlining, etc.).
-   */
-  public allocateName: (() => string) | undefined;
-
-  public createIdentifier(declarationId?: DeclarationId, name?: string): Identifier {
+  public createIdentifier(declarationId?: DeclarationId): Identifier {
     declarationId ??= makeDeclarationId(this.projectEnvironment.nextDeclarationId++);
 
     const identifierId = makeIdentifierId(this.projectEnvironment.nextIdentifierId++);
     const version = this.declToPlaces.get(declarationId)?.length ?? 0;
     const identifier = new Identifier(identifierId, `${version}`, declarationId);
-    if (name !== undefined) {
-      identifier.name = name;
-    } else if (this.allocateName !== undefined) {
-      identifier.name = this.allocateName();
-    }
     this.identifiers.set(identifierId, identifier);
     return identifier;
   }

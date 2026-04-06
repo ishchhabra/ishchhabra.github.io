@@ -1,2 +1,2 @@
-const d = null;
-const i = d ?? "fallback";
+const a = null;
+const b = a ?? "fallback";

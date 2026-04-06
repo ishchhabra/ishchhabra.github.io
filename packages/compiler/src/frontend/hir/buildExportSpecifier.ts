@@ -36,7 +36,7 @@ export function buildExportSpecifier(
     throw new Error(`Export specifier local '${localName}': binding place not found`);
   }
 
-  const identifier = environment.createIdentifier(undefined, scope.allocateName());
+  const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(
     ExportSpecifierInstruction,

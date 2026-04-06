@@ -1,10 +1,10 @@
-let i = {
+let obj = {
   nested: {
     value: 1,
   },
 };
-const { value: p } = {
+const { value: $14_0 } = {
   value: 2,
 };
-i.nested.value = p;
-console.log(i.nested.value);
+obj.nested.value = $14_0;
+console.log(obj.nested.value);

@@ -70,7 +70,7 @@ function buildIdentifierBindings(
   // duplicate `var x` in the same function still needs deduplication.
   if (scope.data.get(originalName) !== undefined) return;
 
-  const identifier = environment.createIdentifier(undefined, scope.allocateName());
+  const identifier = environment.createIdentifier();
   functionBuilder.registerDeclarationName(originalName, identifier.declarationId, scope);
   functionBuilder.instantiateDeclaration(identifier.declarationId, declarationKind, originalName);
 
@@ -91,20 +91,17 @@ function buildIdentifierBindings(
   // so we use `let` (not `var`) to avoid re-introducing JS hoisting
   // semantics in the output.
   if (binding?.kind === "var") {
-    const hoistId = environment.createIdentifier(identifier.declarationId, identifier.name);
+    const hoistId = environment.createIdentifier(identifier.declarationId);
+    hoistId.name = identifier.name;
     const hoistPlace = environment.createPlace(hoistId);
     functionBuilder.addInstruction(
       environment.createInstruction(DeclareLocalInstruction, hoistPlace, "let"),
     );
-    const undefPlace = environment.createPlace(
-      environment.createIdentifier(undefined, scope.allocateName()),
-    );
+    const undefPlace = environment.createPlace(environment.createIdentifier());
     functionBuilder.addInstruction(
       environment.createInstruction(LiteralInstruction, undefPlace, undefined),
     );
-    const storePlace = environment.createPlace(
-      environment.createIdentifier(undefined, scope.allocateName()),
-    );
+    const storePlace = environment.createPlace(environment.createIdentifier());
     functionBuilder.addInstruction(
       environment.createInstruction(
         StoreLocalInstruction,

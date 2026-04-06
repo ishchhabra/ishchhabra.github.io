@@ -1,13 +1,13 @@
-const a = function a() {
-  return i;
+const $0_0 = function $0_0() {
+  return arr;
 };
-const b = function b() {
+const $1_0 = function $1_0() {
   return 0;
 };
-let i = [10];
-const m = a();
-const q = b();
-const t = m[q];
-const x = t + 1;
-m[q] = x;
-const B = t;
+let arr = [10];
+const $11_0 = $0_0();
+const $14_0 = $1_0();
+const $17_0 = $11_0[$14_0];
+const $21_0 = $17_0 + 1;
+$11_0[$14_0] = $21_0;
+const result = $17_0;

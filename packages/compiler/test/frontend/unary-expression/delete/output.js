@@ -1,5 +1,5 @@
-const i = {
+const obj = {
   x: 1,
   y: 2,
 };
-delete i.x;
+delete obj.x;

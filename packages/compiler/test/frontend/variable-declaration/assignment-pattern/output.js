@@ -1,3 +1,3 @@
-const [g = 1, j = 2] = [];
-const { c: q = 3 } = {};
-const [{ e: z = "default" } = {}] = [];
+const [a = 1, b = 2] = [];
+const { c = 3 } = {};
+const [{ e = "default" } = {}] = [];

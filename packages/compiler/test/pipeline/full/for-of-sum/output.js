@@ -1,8 +1,8 @@
-const a = function a(a) {
-  let o = 0;
-  for (const h of a) {
-    o = o + h;
+const $0_0 = function $0_0($1_0) {
+  let $15_phi_22 = 0;
+  for (const item of $1_0) {
+    $15_phi_22 = $15_phi_22 + item;
   }
-  return o;
+  return $15_phi_22;
 };
-console.log(a(numbers));
+console.log($0_0(numbers));

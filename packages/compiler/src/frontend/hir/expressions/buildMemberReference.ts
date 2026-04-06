@@ -152,9 +152,7 @@ export function loadMemberReference(
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {
-  const place = environment.createPlace(
-    environment.createIdentifier(undefined, functionBuilder.scope.allocateName()),
-  );
+  const place = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
     createLoadMemberReferenceInstruction(reference, place, environment),
   );
@@ -192,9 +190,7 @@ export function storeMemberReference(
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {
-  const place = environment.createPlace(
-    environment.createIdentifier(undefined, functionBuilder.scope.allocateName()),
-  );
+  const place = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
     createStoreMemberReferenceInstruction(reference, place, valuePlace, environment),
   );
@@ -211,9 +207,7 @@ export function emitMemberReferenceStore(
   functionBuilder.addInstruction(
     environment.createInstruction(
       ExpressionStatementInstruction,
-      environment.createPlace(
-        environment.createIdentifier(undefined, functionBuilder.scope.allocateName()),
-      ),
+      environment.createPlace(environment.createIdentifier()),
       storePlace,
     ),
   );

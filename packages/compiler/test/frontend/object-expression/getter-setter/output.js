@@ -1,9 +1,9 @@
-const j = {
+const obj = {
   _value: 0,
   get value() {
     return this._value;
   },
-  set value(a) {
-    this._value = a;
+  set value($9_0) {
+    this._value = $9_0;
   },
 };

@@ -1,12 +1,12 @@
-let P = 0;
-outer: while (P < 3) {
-  let Q = 0;
-  while (Q < 3) {
-    if (Q === 1) {
+let $30_phi_39 = 0;
+outer: while ($30_phi_39 < 3) {
+  let $31_phi_40 = 0;
+  while ($31_phi_40 < 3) {
+    if ($31_phi_40 === 1) {
       break outer;
     }
-    console.log(P, Q);
-    Q = Q + 1;
+    console.log($30_phi_39, $31_phi_40);
+    $31_phi_40 = $31_phi_40 + 1;
   }
-  P = P + 1;
+  $30_phi_39 = $30_phi_39 + 1;
 }

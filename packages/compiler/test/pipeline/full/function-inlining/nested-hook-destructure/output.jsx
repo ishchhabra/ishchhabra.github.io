@@ -1,25 +1,23 @@
-const a = function a() {
-  const { a: j, b: m } = useRouterState({
-    select: (a) => ({
-      a: a.a,
-      b: a.b,
+const $0_0 = function $0_0() {
+  const { a: a, b: b } = useRouterState({
+    select: ($6_0) => ({
+      a: $6_0.a,
+      b: $6_0.b,
     }),
   });
   return useMemo(() => {
-    let b = undefined;
-    return j ? b : null;
-  }, [j, m]);
+    return a ? b : null;
+  }, [a, b]);
 };
 export const App = function App() {
-  const { a: u, b: x } = useRouterState({
-    select: (a) => ({
-      a: a.a,
-      b: a.b,
+  const { a: $54_0, b: $57_0 } = useRouterState({
+    select: ($6_0) => ({
+      a: $6_0.a,
+      b: $6_0.b,
     }),
   });
-  const d = useMemo(() => {
-    b = undefined;
-    return u ? b : null;
-  }, [u, x]);
-  return <div>{d}</div>;
+  const loc = useMemo(() => {
+    return $54_0 ? $57_0 : null;
+  }, [$54_0, $57_0]);
+  return <div>{loc}</div>;
 };

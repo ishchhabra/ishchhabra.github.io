@@ -1,2 +1,2 @@
-const f = new Error("oops");
-const j = new Map();
+const err = new Error("oops");
+const map = new Map();

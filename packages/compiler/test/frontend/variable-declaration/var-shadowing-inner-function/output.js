@@ -1,13 +1,13 @@
-let g = undefined;
-g = 1;
+let a = undefined;
+a = 1;
 export const f = function f() {
-  let e = undefined;
-  e = 2;
-  let n = undefined;
-  n = e;
+  let a = undefined;
+  a = 2;
+  let $19_phi_24 = undefined;
+  $19_phi_24 = a;
   if (Math.random()) {
-    k = 3;
-    n = k;
+    $4_2 = 3;
+    $19_phi_24 = $4_2;
   }
-  return n;
+  return $19_phi_24;
 };

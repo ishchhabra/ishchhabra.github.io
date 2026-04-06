@@ -148,7 +148,6 @@ export class FunctionIRBuilder {
       this.structures,
       [...this.captureParams.values()],
       this.blockLabels,
-      () => this.scope.allocateName(),
     );
     this.moduleBuilder.functions.set(functionIR.id, functionIR);
     return functionIR;
@@ -225,10 +224,8 @@ export class FunctionIRBuilder {
       if (!this.isOwnDeclaration(declId)) {
         this.captures.set(declId, capture);
         if (!this.captureParams.has(declId)) {
-          const paramIdentifier = this.environment.createIdentifier(
-            declId,
-            capture.identifier.name,
-          );
+          const paramIdentifier = this.environment.createIdentifier(declId);
+          paramIdentifier.name = capture.identifier.name;
           this.captureParams.set(declId, this.environment.createPlace(paramIdentifier));
         }
         child.captures.set(declId, this.captureParams.get(declId)!);

@@ -1,2 +1,2 @@
-const e = import.meta.url;
-const j = import.meta.env.MODE;
+const url = import.meta.url;
+const mode = import.meta.env.MODE;

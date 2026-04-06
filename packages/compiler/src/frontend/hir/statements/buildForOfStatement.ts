@@ -91,9 +91,7 @@ export function buildForOfStatement(
       environment,
     );
 
-    const storePlace = environment.createPlace(
-      environment.createIdentifier(undefined, scope.allocateName()),
-    );
+    const storePlace = environment.createPlace(environment.createIdentifier());
     functionBuilder.addInstruction(
       environment.createInstruction(
         StoreLocalInstruction,

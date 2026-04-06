@@ -1,4 +1,4 @@
-const d = false;
-let g = undefined;
-n = "release";
-const p = n;
+const x = false;
+let $4_0 = undefined;
+$4_2 = "release";
+const y = $4_2;

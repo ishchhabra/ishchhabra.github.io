@@ -1,9 +1,9 @@
-let f = undefined;
-let i = undefined;
-let l = undefined;
-let o = undefined;
-const [[x, y], [A, B]] = [
+let x = undefined;
+let y = undefined;
+let z = undefined;
+let w = undefined;
+const [[$0_1, $1_1], [$2_1, $3_1]] = [
   [1, 2],
   [3, 4],
 ];
-console.log(x, y, A, B);
+console.log($0_1, $1_1, $2_1, $3_1);

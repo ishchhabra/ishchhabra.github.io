@@ -1,3 +1,3 @@
-let d = 0;
-f = d + 1;
-const l = f;
+let value = 0;
+$0_1 = value + 1;
+const result = $0_1;

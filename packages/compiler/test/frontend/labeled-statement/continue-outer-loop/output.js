@@ -1,24 +1,24 @@
-let c = 0;
-let P = 0;
-outer: while (P < 3) {
+let i = 0;
+let $30_phi_39 = 0;
+outer: while ($30_phi_39 < 3) {
   let j = 0;
-  let Q = 0;
-  let R = undefined;
-  while (Q < 3) {
-    if (Q === 1) {
-      const G = P;
-      G;
-      P = P + 1;
-      R = Q;
+  let $31_phi_40 = 0;
+  let $32_phi_41 = undefined;
+  while ($31_phi_40 < 3) {
+    if ($31_phi_40 === 1) {
+      const $23_0 = $30_phi_39;
+      $23_0;
+      $30_phi_39 = $30_phi_39 + 1;
+      $32_phi_41 = $31_phi_40;
       continue outer;
     }
-    console.log(P, Q);
-    const x = Q;
-    x;
-    Q = Q + 1;
+    console.log($30_phi_39, $31_phi_40);
+    const $16_0 = $31_phi_40;
+    $16_0;
+    $31_phi_40 = $31_phi_40 + 1;
   }
-  const G = P;
-  G;
-  P = P + 1;
-  R = Q;
+  const $23_0 = $30_phi_39;
+  $23_0;
+  $30_phi_39 = $30_phi_39 + 1;
+  $32_phi_41 = $31_phi_40;
 }

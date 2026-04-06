@@ -1,6 +1,6 @@
-for (const c in obj) {
-  if (c === "skip") {
+for (const key in obj) {
+  if (key === "skip") {
     continue;
   }
-  console.log(c);
+  console.log(key);
 }

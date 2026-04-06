@@ -1,2 +1,2 @@
-const d = "world";
-const h = `Hello, ${d}!`;
+const name = "world";
+const greeting = `Hello, ${name}!`;

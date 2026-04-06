@@ -1,5 +1,5 @@
 try {
-  const f = JSON.parse("{}");
+  const result = JSON.parse("{}");
 } finally {
   console.log("done");
 }

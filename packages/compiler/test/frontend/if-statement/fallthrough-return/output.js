@@ -1,12 +1,12 @@
-const a = function a(a) {
-  let e = undefined;
-  let n = undefined;
-  if (a > 0) {
-    i = "positive";
-    n = i;
+const $0_0 = function $0_0($1_0) {
+  let $4_0 = undefined;
+  let $10_phi_16 = undefined;
+  if ($1_0 > 0) {
+    $4_1 = "positive";
+    $10_phi_16 = $4_1;
   } else {
-    l = "negative";
-    n = l;
+    $4_2 = "negative";
+    $10_phi_16 = $4_2;
   }
-  return n;
+  return $10_phi_16;
 };

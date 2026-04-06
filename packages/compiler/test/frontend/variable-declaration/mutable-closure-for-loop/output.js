@@ -1,15 +1,15 @@
-const a = function a() {
-  let d = 0;
-  const g = () => d;
-  let k = 0;
-  let D = undefined;
-  D = k;
-  while (D < 3) {
-    d = d + D;
-    const s = D;
-    v = D + 1;
-    s;
-    D = v;
+const $0_0 = function $0_0() {
+  let sum = 0;
+  const add = () => sum;
+  let i = 0;
+  let $23_phi_31 = undefined;
+  $23_phi_31 = i;
+  while ($23_phi_31 < 3) {
+    sum = sum + $23_phi_31;
+    const $14_0 = $23_phi_31;
+    $7_1 = $23_phi_31 + 1;
+    $14_0;
+    $23_phi_31 = $7_1;
   }
-  return g();
+  return add();
 };

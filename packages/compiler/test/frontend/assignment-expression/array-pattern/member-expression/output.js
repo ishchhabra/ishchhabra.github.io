@@ -1,5 +1,5 @@
-let c = {};
-const [h, l] = [1, 2];
-c.a = h;
-c.b = l;
-console.log(c.a, c.b);
+let obj = {};
+const [$6_0, $9_0] = [1, 2];
+obj.a = $6_0;
+obj.b = $9_0;
+console.log(obj.a, obj.b);

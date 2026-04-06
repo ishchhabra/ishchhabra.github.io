@@ -1,18 +1,18 @@
-const a = function a(a = 5) {
-  return g.slice(0, a).map((a) => ({
-    slug: a.slug,
+const $0_0 = function $0_0($3_0 = 5) {
+  return ARTICLES.slice(0, $3_0).map(($10_0) => ({
+    slug: $10_0.slug,
   }));
 };
-const g = [];
+const ARTICLES = [];
 export const Home = function Home() {
-  const [u = 5] = [];
-  const d = g.slice(0, u).map((a) => ({
-    slug: a.slug,
+  const [$50_0 = 5] = [];
+  const articles = ARTICLES.slice(0, $50_0).map(($10_0) => ({
+    slug: $10_0.slug,
   }));
   return (
     <div>
-      {d.map((a) => (
-        <span key={a.slug}>{a.slug}</span>
+      {articles.map(($29_0) => (
+        <span key={$29_0.slug}>{$29_0.slug}</span>
       ))}
     </div>
   );

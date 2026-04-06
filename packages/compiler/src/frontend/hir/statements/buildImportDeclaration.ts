@@ -17,9 +17,7 @@ export function buildImportDeclaration(
 ) {
   // Type-only imports (import type { X }) are erased at runtime.
   // OXC extends ESTree with importKind when parsing with astType:"ts".
-  if (
-    (node as ESTree.ImportDeclaration & { importKind?: ImportOrExportKind }).importKind === "type"
-  ) {
+  if ((node as ESTree.ImportDeclaration & { importKind?: ImportOrExportKind }).importKind === "type") {
     return undefined;
   }
 
@@ -49,7 +47,7 @@ export function buildImportDeclaration(
     return importSpecifierPlace;
   });
 
-  const identifier = environment.createIdentifier(undefined, scope.allocateName());
+  const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(
     ImportDeclarationInstruction,

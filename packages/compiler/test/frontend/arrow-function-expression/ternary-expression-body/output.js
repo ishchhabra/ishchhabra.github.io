@@ -1,12 +1,12 @@
-const c = (a) => {
-  let e = undefined;
-  let n = undefined;
-  if (a > 0) {
-    i = "positive";
-    n = i;
+const classify = ($1_0) => {
+  let $4_0 = undefined;
+  let $11_phi_16 = undefined;
+  if ($1_0 > 0) {
+    $4_1 = "positive";
+    $11_phi_16 = $4_1;
   } else {
-    l = "negative";
-    n = l;
+    $4_2 = "negative";
+    $11_phi_16 = $4_2;
   }
-  return n;
+  return $11_phi_16;
 };

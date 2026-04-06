@@ -1,5 +1,5 @@
-const a = function a(...a) {
-  return a.reduce((a, b) => a + b, 0);
+const $0_0 = function $0_0(...$2_0) {
+  return $2_0.reduce(($5_0, $6_0) => $5_0 + $6_0, 0);
 };
-const [...n] = [1, 2, 3, 4, 5];
-const k = n.reduce((a, b) => a + b, 0);
+const [...$20_0] = [1, 2, 3, 4, 5];
+const a = $20_0.reduce(($5_0, $6_0) => $5_0 + $6_0, 0);

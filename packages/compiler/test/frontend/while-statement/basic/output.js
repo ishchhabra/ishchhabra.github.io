@@ -1,5 +1,5 @@
-let c = 5;
-let m = 5;
-while (m > 0) {
-  m = m - 1;
+let number = 5;
+let $8_phi_11 = 5;
+while ($8_phi_11 > 0) {
+  $8_phi_11 = $8_phi_11 - 1;
 }

@@ -39,9 +39,7 @@ export function materializePlace(
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {
-  const bindingPlace = environment.createPlace(
-    environment.createIdentifier(undefined, functionBuilder.scope.allocateName()),
-  );
+  const bindingPlace = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
     environment.createInstruction(DeclareLocalInstruction, bindingPlace, "const"),
   );
@@ -53,9 +51,7 @@ export function materializePlace(
   functionBuilder.addInstruction(
     environment.createInstruction(
       StoreLocalInstruction,
-      environment.createPlace(
-        environment.createIdentifier(undefined, functionBuilder.scope.allocateName()),
-      ),
+      environment.createPlace(environment.createIdentifier()),
       bindingPlace,
       valuePlace,
       "const",

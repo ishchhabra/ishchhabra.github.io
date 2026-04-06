@@ -138,9 +138,7 @@ function buildIdentifierAssignment(
       throw new Error("Assignment expression right must be a single place");
     }
 
-    const computedPlace = environment.createPlace(
-      environment.createIdentifier(undefined, scope.allocateName()),
-    );
+    const computedPlace = environment.createPlace(environment.createIdentifier());
     functionBuilder.addInstruction(
       environment.createInstruction(
         BinaryExpressionInstruction,
@@ -163,7 +161,7 @@ function buildIdentifierAssignment(
     environment,
   );
 
-  const identifier = environment.createIdentifier(undefined, scope.allocateName());
+  const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   const isContext = environment.contextDeclarationIds.has(declarationId);
   const instruction = isContext
@@ -194,9 +192,7 @@ function buildLogicalCondition(
   environment: Environment,
 ): Place {
   if (operator === "||=") {
-    const place = environment.createPlace(
-      environment.createIdentifier(undefined, functionBuilder.scope.allocateName()),
-    );
+    const place = environment.createPlace(environment.createIdentifier());
     functionBuilder.addInstruction(
       environment.createInstruction(UnaryExpressionInstruction, place, "!", valuePlace),
     );
@@ -206,15 +202,11 @@ function buildLogicalCondition(
     return valuePlace;
   }
   // ??= : value == null (checks both null and undefined)
-  const nullPlace = environment.createPlace(
-    environment.createIdentifier(undefined, functionBuilder.scope.allocateName()),
-  );
+  const nullPlace = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
     environment.createInstruction(LiteralInstruction, nullPlace, null),
   );
-  const place = environment.createPlace(
-    environment.createIdentifier(undefined, functionBuilder.scope.allocateName()),
-  );
+  const place = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
     environment.createInstruction(BinaryExpressionInstruction, place, "==", valuePlace, nullPlace),
   );
@@ -231,9 +223,7 @@ function emitResultVariable(
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): { bindingPlace: Place; storePlace: Place } {
-  const bindingPlace = environment.createPlace(
-    environment.createIdentifier(undefined, functionBuilder.scope.allocateName()),
-  );
+  const bindingPlace = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
     environment.createInstruction(DeclareLocalInstruction, bindingPlace, "let"),
   );
@@ -242,9 +232,7 @@ function emitResultVariable(
     functionBuilder.currentBlock.id,
     bindingPlace.id,
   );
-  const storePlace = environment.createPlace(
-    environment.createIdentifier(undefined, functionBuilder.scope.allocateName()),
-  );
+  const storePlace = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
     environment.createInstruction(
       StoreLocalInstruction,
@@ -268,10 +256,7 @@ function emitResultUpdate(
   environment: Environment,
 ): void {
   const updateBinding = environment.createPlace(
-    environment.createIdentifier(
-      bindingPlace.identifier.declarationId,
-      functionBuilder.scope.allocateName(),
-    ),
+    environment.createIdentifier(bindingPlace.identifier.declarationId),
   );
   environment.registerDeclaration(
     bindingPlace.identifier.declarationId,
@@ -281,9 +266,7 @@ function emitResultUpdate(
   functionBuilder.addInstruction(
     environment.createInstruction(
       StoreLocalInstruction,
-      environment.createPlace(
-        environment.createIdentifier(undefined, functionBuilder.scope.allocateName()),
-      ),
+      environment.createPlace(environment.createIdentifier()),
       updateBinding,
       newValue,
       "const",
@@ -362,7 +345,7 @@ function buildLogicalIdentifierAssignment(
     isContext
       ? environment.createInstruction(
           StoreContextInstruction,
-          environment.createPlace(environment.createIdentifier(undefined, scope.allocateName())),
+          environment.createPlace(environment.createIdentifier()),
           lvalPlace,
           stabilizedRightPlace,
           "let",
@@ -370,7 +353,7 @@ function buildLogicalIdentifierAssignment(
         )
       : environment.createInstruction(
           StoreLocalInstruction,
-          environment.createPlace(environment.createIdentifier(undefined, scope.allocateName())),
+          environment.createPlace(environment.createIdentifier()),
           lvalPlace,
           stabilizedRightPlace,
           "const",
@@ -388,9 +371,7 @@ function buildLogicalIdentifierAssignment(
   // Load _result at the merge block. SSA creates a phi merging the
   // initial value (skip path) and the updated value (assign path).
   functionBuilder.currentBlock = mergeBlock;
-  const resultPlace = environment.createPlace(
-    environment.createIdentifier(undefined, scope.allocateName()),
-  );
+  const resultPlace = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
     environment.createInstruction(LoadLocalInstruction, resultPlace, bindingPlace),
   );
@@ -427,9 +408,7 @@ function buildMemberExpressionAssignment(
       throw new Error("Assignment expression right must be a single place");
     }
 
-    rightPlace = environment.createPlace(
-      environment.createIdentifier(undefined, scope.allocateName()),
-    );
+    rightPlace = environment.createPlace(environment.createIdentifier());
     functionBuilder.addInstruction(
       environment.createInstruction(
         BinaryExpressionInstruction,
@@ -488,9 +467,7 @@ function buildLogicalMemberAssignment(
   );
 
   // Build the condition from the cached result, not from testPlace.
-  const cachedPlace = environment.createPlace(
-    environment.createIdentifier(undefined, scope.allocateName()),
-  );
+  const cachedPlace = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
     environment.createInstruction(LoadLocalInstruction, cachedPlace, resultBinding),
   );
@@ -519,9 +496,7 @@ function buildLogicalMemberAssignment(
   const stabilizedRightPlace = stabilizePlace(rightPlace, functionBuilder, environment);
 
   // Store the property.
-  const storePlace = environment.createPlace(
-    environment.createIdentifier(undefined, scope.allocateName()),
-  );
+  const storePlace = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
     createStoreMemberReferenceInstruction(reference, storePlace, stabilizedRightPlace, environment),
   );
@@ -530,7 +505,7 @@ function buildLogicalMemberAssignment(
   functionBuilder.addInstruction(
     environment.createInstruction(
       ExpressionStatementInstruction,
-      environment.createPlace(environment.createIdentifier(undefined, scope.allocateName())),
+      environment.createPlace(environment.createIdentifier()),
       storePlace,
     ),
   );
@@ -546,9 +521,7 @@ function buildLogicalMemberAssignment(
   // Load _result at the merge block. SSA creates a phi merging the
   // initial value (skip path) and the updated value (assign path).
   functionBuilder.currentBlock = mergeBlock;
-  const resultPlace = environment.createPlace(
-    environment.createIdentifier(undefined, scope.allocateName()),
-  );
+  const resultPlace = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
     environment.createInstruction(LoadLocalInstruction, resultPlace, resultBinding),
   );
@@ -583,7 +556,7 @@ function buildDestructuringAssignment(
     hasContext,
   } = buildAssignmentLeft(left, node, scope, functionBuilder, moduleBuilder, environment);
 
-  const identifier = environment.createIdentifier(undefined, scope.allocateName());
+  const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   const instruction = hasContext
     ? environment.createInstruction(
@@ -696,7 +669,7 @@ function buildIdentifierAssignmentLeft(
     };
   }
 
-  const identifier = environment.createIdentifier(declarationId, scope.allocateName());
+  const identifier = environment.createIdentifier(declarationId);
   const place = environment.createPlace(identifier);
   environment.registerDeclaration(declarationId, functionBuilder.currentBlock.id, place.id);
   return { place, instructions: [], identifiers: [place], hasContext: false };
@@ -710,7 +683,7 @@ function buildMemberExpressionAssignmentLeft(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): { place: Place; instructions: BaseInstruction[]; identifiers: Place[]; hasContext: boolean } {
-  const identifier = environment.createIdentifier(undefined, scope.allocateName());
+  const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   functionBuilder.addInstruction(
     environment.createInstruction(DeclareLocalInstruction, place, "const"),
@@ -721,9 +694,7 @@ function buildMemberExpressionAssignmentLeft(
     place.id,
   );
   const reference = buildMemberReference(left, scope, functionBuilder, moduleBuilder, environment);
-  const storePropertyPlace = environment.createPlace(
-    environment.createIdentifier(undefined, scope.allocateName()),
-  );
+  const storePropertyPlace = environment.createPlace(environment.createIdentifier());
   const storePropertyInstruction = createStoreMemberReferenceInstruction(
     reference,
     storePropertyPlace,
@@ -731,9 +702,7 @@ function buildMemberExpressionAssignmentLeft(
     environment,
   );
 
-  const expressionStatementPlace = environment.createPlace(
-    environment.createIdentifier(undefined, scope.allocateName()),
-  );
+  const expressionStatementPlace = environment.createPlace(environment.createIdentifier());
   const expressionStatementInstruction = environment.createInstruction(
     ExpressionStatementInstruction,
     expressionStatementPlace,
@@ -779,7 +748,7 @@ function buildArrayPatternAssignmentLeft(
     return result.place;
   });
 
-  const identifier = environment.createIdentifier(undefined, scope.allocateName());
+  const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(
     ArrayPatternInstruction,
@@ -811,7 +780,7 @@ function buildObjectPatternAssignmentLeft(
         // Non-computed identifier keys are property labels (string literals),
         // not variable references.  Emit a LiteralInstruction so the key
         // survives SSA transformations (clone/rewrite) unchanged.
-        const keyIdentifier = environment.createIdentifier(undefined, scope.allocateName());
+        const keyIdentifier = environment.createIdentifier();
         keyPlace = environment.createPlace(keyIdentifier);
         const keyInstruction = environment.createInstruction(
           LiteralInstruction,
@@ -839,7 +808,7 @@ function buildObjectPatternAssignmentLeft(
       identifiers.push(...result.identifiers);
       if (result.hasContext) hasContext = true;
 
-      const identifier = environment.createIdentifier(undefined, scope.allocateName());
+      const identifier = environment.createIdentifier();
       const place = environment.createPlace(identifier);
       const instruction = environment.createInstruction(
         ObjectPropertyInstruction,
@@ -868,7 +837,7 @@ function buildObjectPatternAssignmentLeft(
       identifiers.push(...result.identifiers);
       if (result.hasContext) hasContext = true;
 
-      const identifier = environment.createIdentifier(undefined, scope.allocateName());
+      const identifier = environment.createIdentifier();
       const place = environment.createPlace(identifier);
       const instruction = environment.createInstruction(
         RestElementInstruction,
@@ -883,7 +852,7 @@ function buildObjectPatternAssignmentLeft(
     throw new Error("Unsupported object pattern property");
   });
 
-  const identifier = environment.createIdentifier(undefined, scope.allocateName());
+  const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(
     ObjectPatternInstruction,
@@ -915,7 +884,7 @@ function buildAssignmentPatternAssignmentLeft(
     throw new Error("Assignment pattern right must be a single place");
   }
 
-  const identifier = environment.createIdentifier(undefined, scope.allocateName());
+  const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(
     AssignmentPatternInstruction,
@@ -943,7 +912,7 @@ function buildRestElementAssignmentLeft(
     hasContext,
   } = buildAssignmentLeft(left.argument, node, scope, functionBuilder, moduleBuilder, environment);
 
-  const identifier = environment.createIdentifier(undefined, scope.allocateName());
+  const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(
     RestElementInstruction,
@@ -979,7 +948,7 @@ function buildAssignmentRight(
     throw new Error("Assignment expression left must be a single place");
   }
 
-  const identifier = environment.createIdentifier(undefined, scope.allocateName());
+  const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   functionBuilder.addInstruction(
     environment.createInstruction(

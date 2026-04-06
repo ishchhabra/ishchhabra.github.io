@@ -1,5 +1,5 @@
-let f = {
+let a = {
   b: 1,
 };
-f.b = 3;
+a.b = 3;
 3 == null;

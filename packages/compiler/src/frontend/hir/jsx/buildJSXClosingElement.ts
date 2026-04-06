@@ -18,7 +18,7 @@ export function buildJSXClosingElement(
     throw new Error("JSX closing element tag name should be a single place");
   }
 
-  const identifier = environment.createIdentifier(undefined, scope.allocateName());
+  const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(JSXClosingElementInstruction, place, tagPlace);
   functionBuilder.addInstruction(instruction);

@@ -25,10 +25,7 @@ export function buildExportNamedDeclaration(
 ) {
   // Type-only exports (export type { X }, export type X = ...) are erased.
   // OXC extends ESTree with exportKind when parsing with astType:"ts".
-  if (
-    (node as ESTree.ExportNamedDeclaration & { exportKind?: ImportOrExportKind }).exportKind ===
-    "type"
-  ) {
+  if ((node as ESTree.ExportNamedDeclaration & { exportKind?: ImportOrExportKind }).exportKind === "type") {
     return undefined;
   }
 
@@ -56,24 +53,6 @@ export function buildExportNamedDeclaration(
       environment,
     );
 
-    // Exported declarations must keep their source name since they face
-    // external consumers. Restore the source name on the lval after
-    // scope-based naming assigned a short name, and reserve it so
-    // allocateName() skips it for other bindings.
-    const storeInstruction2 = environment.placeToInstruction.get(declarationPlace.id);
-    if (storeInstruction2 instanceof StoreLocalInstruction) {
-      if (declaration.type === "VariableDeclaration") {
-        const firstDeclarator = declaration.declarations[0];
-        if (firstDeclarator?.id.type === "Identifier") {
-          storeInstruction2.lval.identifier.name = firstDeclarator.id.name;
-          scope.reserveName(firstDeclarator.id.name);
-        }
-      } else if (declaration.type === "ClassDeclaration" && declaration.id) {
-        storeInstruction2.lval.identifier.name = declaration.id.name;
-        scope.reserveName(declaration.id.name);
-      }
-    }
-
     // Suppress standalone emission on the StoreLocal/StoreContext so the
     // export wraps the declaration. Without this, codegen emits the
     // declaration as a separate statement and the export gets just the
@@ -86,7 +65,7 @@ export function buildExportNamedDeclaration(
       storeInstruction.emit = false;
     }
 
-    const identifier = environment.createIdentifier(undefined, scope.allocateName());
+    const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
     const instruction = environment.createInstruction(
       ExportNamedDeclarationInstruction,
@@ -118,7 +97,7 @@ export function buildExportNamedDeclaration(
       return exportSpecifierPlace;
     });
 
-    const identifier = environment.createIdentifier(undefined, scope.allocateName());
+    const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
     const instruction = environment.createInstruction(
       ExportNamedDeclarationInstruction,
@@ -156,7 +135,6 @@ function buildExportDeclaration(
         // Ensure the binding name matches the exported name so
         // `export function foo()` emits `export const foo = ...`.
         storeInstr.lval.identifier.name = name;
-        scope.reserveName(name);
         return storeInstr.place;
       }
     }
@@ -196,7 +174,7 @@ function findStoreLocal(
 
 function buildExportFrom(
   node: ESTree.ExportNamedDeclaration,
-  scope: Scope,
+  _scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
@@ -212,10 +190,7 @@ function buildExportFrom(
     }
 
     // Skip per-specifier type exports: export { value, type TypeOnly } from "mod"
-    if (
-      (specifier as ESTree.ExportSpecifier & { exportKind?: ImportOrExportKind }).exportKind ===
-      "type"
-    ) {
+    if ((specifier as ESTree.ExportSpecifier & { exportKind?: ImportOrExportKind }).exportKind === "type") {
       continue;
     }
 
@@ -237,7 +212,7 @@ function buildExportFrom(
     });
   }
 
-  const identifier = environment.createIdentifier(undefined, scope.allocateName());
+  const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(
     ExportFromInstruction,

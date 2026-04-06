@@ -61,7 +61,7 @@ export function buildExportDefaultDeclaration(
     throw new Error("Export default declaration must be a single place");
   }
 
-  const identifier = environment.createIdentifier(undefined, scope.allocateName());
+  const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(
     ExportDefaultDeclarationInstruction,

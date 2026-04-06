@@ -1,3 +1,3 @@
-const f = globalThis.a;
-const j = globalThis.b;
-console.log(f > j ? f + j : f - j);
+const x = globalThis.a;
+const y = globalThis.b;
+console.log(x > y ? x + y : x - y);

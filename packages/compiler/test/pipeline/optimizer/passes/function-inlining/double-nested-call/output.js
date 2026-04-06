@@ -1,10 +1,10 @@
-const a = function a() {
+const $0_0 = function $0_0() {
   return 42;
 };
-const b = function b() {
+const $1_0 = function $1_0() {
   return 42;
 };
-const c = function c() {
+const $2_0 = function $2_0() {
   return 42;
 };
-const j = 42;
+const result = 42;

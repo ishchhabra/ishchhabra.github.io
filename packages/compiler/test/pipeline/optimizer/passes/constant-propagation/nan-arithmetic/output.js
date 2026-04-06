@@ -1,3 +1,3 @@
-const g = 0 / 0;
-const l = 0 / 0;
-const p = 0 / 0;
+const a = 0 / 0;
+const b = 0 / 0;
+const c = 0 / 0;

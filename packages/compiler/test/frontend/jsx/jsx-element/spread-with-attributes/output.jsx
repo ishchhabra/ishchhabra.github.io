@@ -1,4 +1,4 @@
-const g = {
+const props = {
   id: "main",
 };
-const r = <div className="container" {...g} disabled />;
+const el = <div className="container" {...props} disabled />;

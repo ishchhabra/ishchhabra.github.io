@@ -1,17 +1,17 @@
-const a = function a() {
-  return m;
+const $0_0 = function $0_0() {
+  return a;
 };
-const b = function b() {
+const $1_0 = function $1_0() {
   return "b";
 };
-const c = function c() {
+const $2_0 = function $2_0() {
   return 3;
 };
-let m = {
+let a = {
   b: 1,
 };
-const q = a();
-const u = b();
-const A = q[u] + c();
-q[u] = A;
-const E = A;
+const $16_0 = $0_0();
+const $19_0 = $1_0();
+const $24_0 = $16_0[$19_0] + $2_0();
+$16_0[$19_0] = $24_0;
+const result = $24_0;

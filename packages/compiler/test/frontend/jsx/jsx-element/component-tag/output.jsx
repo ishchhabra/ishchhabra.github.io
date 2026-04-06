@@ -1,4 +1,4 @@
-const a = function a() {
+const $0_0 = function $0_0() {
   return <div />;
 };
-const h = <a />;
+const el = <$0_0 />;

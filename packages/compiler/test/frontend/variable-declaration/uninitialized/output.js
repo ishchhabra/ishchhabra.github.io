@@ -1,1 +1,1 @@
-let c = undefined;
+let value = undefined;

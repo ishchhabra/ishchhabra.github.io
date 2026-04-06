@@ -45,7 +45,7 @@ export function buildExpressionStatement(
         return undefined;
       }
 
-      const identifier = environment.createIdentifier(undefined, scope.allocateName());
+      const identifier = environment.createIdentifier();
       const place = environment.createPlace(identifier);
       const instruction = environment.createInstruction(
         ExpressionStatementInstruction,

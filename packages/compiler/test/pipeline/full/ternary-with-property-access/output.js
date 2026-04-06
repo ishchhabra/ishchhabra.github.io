@@ -1,3 +1,3 @@
-const e = globalThis.project;
-const u = !e.external ? `lab-${e.slug}-title` : undefined;
-console.log(u);
+const project = globalThis.project;
+const title = !project.external ? `lab-${project.slug}-title` : undefined;
+console.log(title);

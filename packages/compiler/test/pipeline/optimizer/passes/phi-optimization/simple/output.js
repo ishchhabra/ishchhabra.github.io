@@ -1,4 +1,4 @@
-const f = globalThis.x;
-const j = globalThis.y;
-let m = undefined;
-console.log(f > j ? f + j : f - j);
+const x = globalThis.x;
+const y = globalThis.y;
+let result = undefined;
+console.log(x > y ? x + y : x - y);

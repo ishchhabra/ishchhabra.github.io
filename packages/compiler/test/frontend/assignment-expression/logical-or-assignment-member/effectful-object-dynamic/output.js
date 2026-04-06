@@ -1,24 +1,24 @@
-const a = function a() {
-  return m;
+const $0_0 = function $0_0() {
+  return a;
 };
-const b = function b() {
+const $1_0 = function $1_0() {
   return "b";
 };
-const c = function c() {
+const $2_0 = function $2_0() {
   return 3;
 };
-let m = {
+let a = {
   b: 0,
 };
-const q = a();
-const u = b();
-let x = q[u];
-let M = undefined;
-M = x;
-if (!x) {
-  const D = c();
-  q[u] = D;
-  H = D;
-  M = H;
+const $16_0 = $0_0();
+const $19_0 = $1_0();
+let $22_0 = $16_0[$19_0];
+let $34_phi_43 = undefined;
+$34_phi_43 = $22_0;
+if (!$22_0) {
+  const $27_0 = $2_0();
+  $16_0[$19_0] = $27_0;
+  $22_1 = $27_0;
+  $34_phi_43 = $22_1;
 }
-const K = M;
+const result = $34_phi_43;

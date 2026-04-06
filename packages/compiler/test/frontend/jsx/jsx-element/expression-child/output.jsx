@@ -1,2 +1,2 @@
-const d = 42;
-const n = <span>{d}</span>;
+const count = 42;
+const el = <span>{count}</span>;

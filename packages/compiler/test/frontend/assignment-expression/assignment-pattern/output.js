@@ -1,7 +1,7 @@
-let f = undefined;
-let i = undefined;
-const [l = 1, o = 2] = [];
-let u = undefined;
-const { c: y = 3 } = {};
-let F = undefined;
-const [{ e: J = "default" } = {}] = [];
+let a = undefined;
+let b = undefined;
+const [$0_1 = 1, $1_1 = 2] = [];
+let c = undefined;
+const { c: $2_1 = 3 } = {};
+let e = undefined;
+const [{ e: $3_1 = "default" } = {}] = [];

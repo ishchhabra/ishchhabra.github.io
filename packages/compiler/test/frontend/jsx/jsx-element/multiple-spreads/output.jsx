@@ -1,7 +1,7 @@
-const h = {
+const a = {
   id: "x",
 };
-const n = {
+const b = {
   className: "y",
 };
-const x = <div {...h} {...n} />;
+const el = <div {...a} {...b} />;

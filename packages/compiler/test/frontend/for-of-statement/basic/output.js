@@ -1,3 +1,3 @@
-for (const c of items) {
-  console.log(c);
+for (const item of items) {
+  console.log(item);
 }

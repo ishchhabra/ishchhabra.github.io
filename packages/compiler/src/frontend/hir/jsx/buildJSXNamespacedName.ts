@@ -8,7 +8,7 @@ export function buildJSXNamespacedName(
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {
-  const identifier = environment.createIdentifier(undefined, functionBuilder.scope.allocateName());
+  const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(
     JSXNamespacedNameInstruction,

@@ -1,7 +1,7 @@
-const a = function a(a) {
-  return a.trim();
+const $0_0 = function $0_0($2_0) {
+  return $2_0.trim();
 };
-const b = function b(a, b) {
-  return a.trim() + (b ? "\n" : "");
+const $1_0 = function $1_0($6_0, $7_0) {
+  return $6_0.trim() + ($7_0 ? "\n" : "");
 };
-export default b;
+export default $1_0;

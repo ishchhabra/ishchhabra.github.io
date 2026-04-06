@@ -1,10 +1,10 @@
-const a = function a() {
-  const a = function a() {
-    return i;
+const $0_0 = function $0_0() {
+  const $1_0 = function $1_0() {
+    return x;
   };
-  let { x: i } = {
+  let { x: x } = {
     x: 0,
   };
-  i = 1;
-  return a();
+  x = 1;
+  return $1_0();
 };

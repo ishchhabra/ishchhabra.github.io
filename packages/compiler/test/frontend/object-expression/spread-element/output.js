@@ -1,8 +1,8 @@
-const j = {
+const defaults = {
   a: 1,
   b: 2,
 };
-const r = {
-  ...j,
+const obj = {
+  ...defaults,
   c: 3,
 };

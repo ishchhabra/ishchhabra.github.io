@@ -1,4 +1,4 @@
-const a = function a() {
+const $0_0 = function $0_0() {
   return 1;
 };
-const f = a();
+const x = $0_0();

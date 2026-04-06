@@ -1,9 +1,9 @@
-const a = function a(a) {
-  switch (a) {
+const $0_0 = function $0_0($1_0) {
+  switch ($1_0) {
     case "a": {
-      let f = "";
-      j = f + "x";
-      return j;
+      let q = "";
+      $2_1 = q + "x";
+      return $2_1;
     }
   }
 };

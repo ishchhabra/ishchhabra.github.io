@@ -1,5 +1,5 @@
-const a = function a(a, b) {
-  const g = a + b;
-  return g;
+const $0_0 = function $0_0($1_0, $2_0) {
+  const sum = $1_0 + $2_0;
+  return sum;
 };
-console.log(a(1, 2));
+console.log($0_0(1, 2));

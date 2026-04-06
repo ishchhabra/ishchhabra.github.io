@@ -1,11 +1,11 @@
-const c = function* () {
-  let c = 0;
-  let p = undefined;
-  p = c;
+const counter = function* () {
+  let i = 0;
+  let $15_phi_17 = undefined;
+  $15_phi_17 = i;
   while (true) {
-    const f = p;
-    i = p + 1;
-    yield f;
-    p = i;
+    const $5_0 = $15_phi_17;
+    $1_1 = $15_phi_17 + 1;
+    yield $5_0;
+    $15_phi_17 = $1_1;
   }
 };

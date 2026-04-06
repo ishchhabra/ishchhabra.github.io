@@ -32,7 +32,7 @@ export function buildCallExpression(
     return argumentPlace;
   });
 
-  const identifier = environment.createIdentifier(undefined, scope.allocateName());
+  const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(
     CallExpressionInstruction,

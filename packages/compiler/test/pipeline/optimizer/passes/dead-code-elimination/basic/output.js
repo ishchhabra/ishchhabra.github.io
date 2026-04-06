@@ -1,2 +1,2 @@
-const g = 2;
-console.log(g);
+const y = 2;
+console.log(y);

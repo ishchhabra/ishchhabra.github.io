@@ -24,7 +24,7 @@ export function buildClassDeclarationBindings(
     return;
   }
 
-  const identifier = environment.createIdentifier(undefined, scope.allocateName());
+  const identifier = environment.createIdentifier();
   functionBuilder.registerDeclarationName(idNode.name, identifier.declarationId, scope);
   functionBuilder.instantiateDeclaration(identifier.declarationId, "class", idNode.name);
 

@@ -1,20 +1,20 @@
-let V = 0;
-outer: while (V < 5) {
-  let W = 0;
-  inner: while (W < 5) {
-    if (W === 2) {
-      W = W + 1;
+let $34_phi_45 = 0;
+outer: while ($34_phi_45 < 5) {
+  let $35_phi_46 = 0;
+  inner: while ($35_phi_46 < 5) {
+    if ($35_phi_46 === 2) {
+      $35_phi_46 = $35_phi_46 + 1;
       continue;
     }
-    if (W === 3) {
-      V = V + 1;
+    if ($35_phi_46 === 3) {
+      $34_phi_45 = $34_phi_45 + 1;
       continue outer;
     }
-    if (V === 4) {
+    if ($34_phi_45 === 4) {
       break outer;
     }
-    console.log(V, W);
-    W = W + 1;
+    console.log($34_phi_45, $35_phi_46);
+    $35_phi_46 = $35_phi_46 + 1;
   }
-  V = V + 1;
+  $34_phi_45 = $34_phi_45 + 1;
 }

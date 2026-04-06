@@ -1,17 +1,17 @@
-const a = function a({ x: a, ...b }) {
-  return b;
+const $0_0 = function $0_0({ x: $2_0, ...$3_0 }) {
+  return $3_0;
 };
-export const f = function f(a) {
-  let v = a;
-  for (const j of [1, 2]) {
-    let w = undefined;
-    if (j) {
-      const { x: A, ...C } = v;
-      w = C;
+export const f = function f($9_0) {
+  let $23_phi_35 = $9_0;
+  for (const k of [1, 2]) {
+    let $24_0 = undefined;
+    if (k) {
+      const { x: $28_0, ...$30_0 } = $23_phi_35;
+      $24_0 = $30_0;
     } else {
-      w = a;
+      $24_0 = $9_0;
     }
-    v = w;
+    $23_phi_35 = $24_0;
   }
-  return v;
+  return $23_phi_35;
 };

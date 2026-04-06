@@ -18,7 +18,7 @@ export function buildObjectProperty(
     // Non-computed identifier keys are property labels (string literals),
     // not variable references.  Emit a LiteralInstruction so the key
     // survives SSA transformations (clone/rewrite) unchanged.
-    const keyIdentifier = environment.createIdentifier(undefined, scope.allocateName());
+    const keyIdentifier = environment.createIdentifier();
     keyPlace = environment.createPlace(keyIdentifier);
     const keyInstruction = environment.createInstruction(
       LiteralInstruction,
@@ -38,7 +38,7 @@ export function buildObjectProperty(
     throw new Error(`Object property value must be a single place`);
   }
 
-  const identifier = environment.createIdentifier(undefined, scope.allocateName());
+  const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(
     ObjectPropertyInstruction,

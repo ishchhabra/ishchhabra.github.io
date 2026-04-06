@@ -1,10 +1,10 @@
-let d = 5;
-let r = undefined;
-if (d > 0) {
-  j = 10;
-  r = 10;
+let number = 5;
+let $11_phi_15 = undefined;
+if (number > 0) {
+  $0_1 = 10;
+  $11_phi_15 = 10;
 } else {
-  m = 20;
-  r = 20;
+  $0_2 = 20;
+  $11_phi_15 = 20;
 }
-const p = r;
+const number2 = $11_phi_15;

@@ -60,9 +60,7 @@ export function buildForStatement(
     testPlace = buildNode(node.test, forScope, functionBuilder, moduleBuilder, environment);
   } else {
     // If the test is not provided, it is equivalent to while(true).
-    const truePlace = environment.createPlace(
-      environment.createIdentifier(undefined, scope.allocateName()),
-    );
+    const truePlace = environment.createPlace(environment.createIdentifier());
     functionBuilder.addInstruction(
       environment.createInstruction(LiteralInstruction, truePlace, true),
     );
@@ -186,7 +184,7 @@ function buildExpressionAsStatement(
     return expressionPlace;
   }
 
-  const identifier = environment.createIdentifier(undefined, scope.allocateName());
+  const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(
     ExpressionStatementInstruction,

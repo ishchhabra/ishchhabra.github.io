@@ -1,3 +1,3 @@
-for (const c in obj) {
-  console.log(c);
+for (const key in obj) {
+  console.log(key);
 }

@@ -1,6 +1,6 @@
-const e = 1;
-const h = 2;
-const q = {
-  x: e,
-  y: h,
+const x = 1;
+const y = 2;
+const obj = {
+  x,
+  y,
 };

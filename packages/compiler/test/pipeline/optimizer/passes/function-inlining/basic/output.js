@@ -1,4 +1,4 @@
-const a = function a(a) {
-  return a + 1;
+const $0_0 = function $0_0($2_0) {
+  return $2_0 + 1;
 };
-const g = 5 + 1;
+const a = 5 + 1;

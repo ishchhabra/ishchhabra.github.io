@@ -1,6 +1,6 @@
-const a = function a(a) {
-  console.log(a);
+const $0_0 = function $0_0($1_0) {
+  console.log($1_0);
 };
-const h = "world";
-console.log(h);
+const $11_0 = "world";
+console.log($11_0);
 undefined;

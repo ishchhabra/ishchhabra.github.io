@@ -1,4 +1,4 @@
-const a = function a(a) {
+const $0_0 = function $0_0($1_0) {
   debugger;
-  return a + 1;
+  return $1_0 + 1;
 };

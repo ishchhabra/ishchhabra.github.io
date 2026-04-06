@@ -1,3 +1,3 @@
-const d = /hello/;
-const g = /world/gi;
+const pattern = /hello/;
+const withFlags = /world/gi;
 "test".match(/foo(\d+)/);

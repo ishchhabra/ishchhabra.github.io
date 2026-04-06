@@ -8,7 +8,7 @@ export function buildJSXText(
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place | undefined {
-  const identifier = environment.createIdentifier(undefined, functionBuilder.scope.allocateName());
+  const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   const instruction = environment.createInstruction(JSXTextInstruction, place, node.value);
   functionBuilder.addInstruction(instruction);

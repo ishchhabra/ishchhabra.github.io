@@ -1,17 +1,17 @@
-let c = 0;
-let M = 0;
-while (M < 10) {
+let i = 0;
+let $28_phi_36 = 0;
+while ($28_phi_36 < 10) {
   let j = 0;
-  let N = 0;
-  let O = undefined;
-  while (N < 10) {
-    console.log(M, N);
-    const u = N;
-    u;
-    N = N + 1;
+  let $29_phi_37 = 0;
+  let $30_phi_38 = undefined;
+  while ($29_phi_37 < 10) {
+    console.log($28_phi_36, $29_phi_37);
+    const $14_0 = $29_phi_37;
+    $14_0;
+    $29_phi_37 = $29_phi_37 + 1;
   }
-  const D = M;
-  D;
-  M = M + 1;
-  O = undefined;
+  const $21_0 = $28_phi_36;
+  $21_0;
+  $28_phi_36 = $28_phi_36 + 1;
+  $30_phi_38 = undefined;
 }

@@ -1,27 +1,27 @@
-const a = function a(a, b, c) {
-  let U = undefined;
-  let W = undefined;
-  let Y = undefined;
-  if (a) {
-    let Z = undefined;
-    if (b) {
-      U = b;
-      W = undefined;
-      Z = b;
+const $0_0 = function $0_0($1_0, $2_0, $3_0) {
+  let $41_phi_61 = undefined;
+  let $43_phi_63 = undefined;
+  let $45_phi_65 = undefined;
+  if ($1_0) {
+    let $46_phi_66 = undefined;
+    if ($2_0) {
+      $41_phi_61 = $2_0;
+      $43_phi_63 = undefined;
+      $46_phi_66 = $2_0;
     } else {
-      U = undefined;
-      W = c;
-      Z = c;
+      $41_phi_61 = undefined;
+      $43_phi_63 = $3_0;
+      $46_phi_66 = $3_0;
     }
-    Y =
-      (Z,
+    $45_phi_65 =
+      ($46_phi_66,
       {
-        x: U,
-        y: W,
+        x: $41_phi_61,
+        y: $43_phi_63,
       });
   } else {
-    Y = {};
+    $45_phi_65 = {};
   }
-  return Y;
+  return $45_phi_65;
 };
-console.log(a(globalThis.c, globalThis.a, globalThis.b));
+console.log($0_0(globalThis.c, globalThis.a, globalThis.b));

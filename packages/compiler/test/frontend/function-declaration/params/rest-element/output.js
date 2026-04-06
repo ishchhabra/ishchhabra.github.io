@@ -1,3 +1,3 @@
-const a = function a(...a) {
-  return a.reduce((a, b) => a + b, 0);
+const $0_0 = function $0_0(...$1_0) {
+  return $1_0.reduce(($4_0, $5_0) => $4_0 + $5_0, 0);
 };

@@ -1,5 +1,5 @@
-const a = function a([a, b]) {
-  return a + b;
+const $0_0 = function $0_0([$2_0, $3_0]) {
+  return $2_0 + $3_0;
 };
-const [m, n] = [1, 2];
-const i = m + n;
+const [$14_0, $15_0] = [1, 2];
+const a = $14_0 + $15_0;

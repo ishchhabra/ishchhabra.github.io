@@ -1,17 +1,17 @@
-const d = 100;
-if (d > 50) {
-  const k = 75;
-  if (k > d) {
-    const t = k + 10;
+const value = 100;
+if (value > 50) {
+  const threshold = 75;
+  if (threshold > value) {
+    const result = threshold + 10;
   } else {
-    const z = d - 5;
+    const result = value - 5;
   }
 } else {
-  const D = 25;
-  if (D < d) {
-    const M = D * 2;
+  const minimum = 25;
+  if (minimum < value) {
+    const result = minimum * 2;
   } else {
-    const S = D / 2;
+    const result = minimum / 2;
   }
 }
-const V = d;
+const finalValue = value;

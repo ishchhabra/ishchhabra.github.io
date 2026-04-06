@@ -1,29 +1,29 @@
-const a = function a(a) {
-  switch (a.type) {
+const $0_0 = function $0_0($2_0) {
+  switch ($2_0.type) {
     case "comment": {
-      const F = a;
+      const ref = $2_0;
       return {
         type: "comment",
-        value: F.data,
+        value: ref.data,
       };
     }
     case "text": {
-      const t = a;
+      const ref = $2_0;
       return {
         type: "text",
-        value: t.value,
+        value: ref.value,
       };
     }
     default: {
-      const h = a;
+      const ref = $2_0;
       return {
         type: "element",
-        tag: h.tagName,
+        tag: ref.tagName,
       };
     }
   }
 };
-export const result = a({
+export const result = $0_0({
   type: "text",
   value: "hello",
 });

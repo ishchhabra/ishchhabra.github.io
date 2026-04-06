@@ -1,5 +1,5 @@
-const a = function a() {
-  return f;
+const $0_0 = function $0_0() {
+  return x;
 };
-const f = 10;
-console.log(a());
+const x = 10;
+console.log($0_0());

@@ -1,5 +1,5 @@
-let h = undefined;
-let k = undefined;
-h = 1;
-k = undefined;
-n = 2;
+let x = undefined;
+let y = undefined;
+x = 1;
+y = undefined;
+$3_2 = 2;

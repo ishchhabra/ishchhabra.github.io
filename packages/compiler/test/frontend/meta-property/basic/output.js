@@ -1,1 +1,1 @@
-const c = import.meta;
+const meta = import.meta;

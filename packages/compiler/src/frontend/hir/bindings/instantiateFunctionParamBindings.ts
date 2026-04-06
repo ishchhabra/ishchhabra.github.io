@@ -85,7 +85,7 @@ function instantiateIdentifierParamBinding(
   }
 
   const binding = scope.getBinding(originalName);
-  const identifier = environment.createIdentifier(undefined, scope.allocateName());
+  const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
 
   functionBuilder.registerDeclarationName(originalName, identifier.declarationId, scope);

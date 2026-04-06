@@ -1,5 +1,5 @@
-for (const c of matrix) {
-  for (const f of c) {
-    console.log(f);
+for (const row of matrix) {
+  for (const cell of row) {
+    console.log(cell);
   }
 }

@@ -1,2 +1,2 @@
-const d = 5;
-const g = d;
+const number = 5;
+const number2 = number;

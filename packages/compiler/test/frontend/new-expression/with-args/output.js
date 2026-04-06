@@ -1,1 +1,1 @@
-const g = new Array(1, 2, 3);
+const arr = new Array(1, 2, 3);

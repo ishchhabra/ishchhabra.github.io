@@ -1,4 +1,4 @@
-const a = async function a() {
-  const e = await import("./module");
-  return e["default"];
+const $0_0 = async function $0_0() {
+  const mod = await import("./module");
+  return mod["default"];
 };

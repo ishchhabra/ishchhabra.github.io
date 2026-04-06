@@ -1,9 +1,9 @@
-const a = function a() {
+const $0_0 = function $0_0() {
   return 3;
 };
-let i = {
+let a = {
   b: 1,
 };
-const n = a();
-i.b = n;
-const r = n;
+const $11_0 = $0_0();
+a.b = $11_0;
+const result = $11_0;

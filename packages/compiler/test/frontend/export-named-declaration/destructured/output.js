@@ -1,1 +1,1 @@
-export const { foo: f, bar: i } = createClient();
+export const { foo: foo, bar: bar } = createClient();
