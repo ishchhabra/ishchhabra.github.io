@@ -55,30 +55,10 @@ if (includeNodeModules) {
     "zod",
     "better-call",
     "micromark-core-commonmark",
+    // duplicate-identifier codegen bug
+    "@iframe-resizer/core",
     // @radix-ui compound components trigger a duplicate-identifier codegen bug
-    "@radix-ui/react-accordion",
-    "@radix-ui/react-alert-dialog",
-    "@radix-ui/react-avatar",
-    "@radix-ui/react-checkbox",
-    "@radix-ui/react-collapsible",
-    "@radix-ui/react-context-menu",
-    "@radix-ui/react-dialog",
-    "@radix-ui/react-dropdown-menu",
-    "@radix-ui/react-form",
-    "@radix-ui/react-hover-card",
-    "@radix-ui/react-menu",
-    "@radix-ui/react-menubar",
-    "@radix-ui/react-one-time-password-field",
-    "@radix-ui/react-password-toggle-field",
-    "@radix-ui/react-popover",
-    "@radix-ui/react-progress",
-    "@radix-ui/react-roving-focus",
-    "@radix-ui/react-slider",
-    "@radix-ui/react-tabs",
-    "@radix-ui/react-toast",
-    "@radix-ui/react-toggle-group",
-    "@radix-ui/react-toolbar",
-    "@radix-ui/react-tooltip",
+    "@radix-ui/react-",
   ];
 
   const mirrors = result.nodeModuleMirrors.filter((m) => {
