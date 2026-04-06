@@ -48,7 +48,16 @@ export function generateSwitchTerminal(
 
     generator.generatedBlocks.delete(c.block);
     const caseStatements = generateBlock(c.block, functionIR, generator);
-    switchCases.push(t.switchCase(testNode, caseStatements));
+    // Wrap case body in a block so const/let declarations are properly scoped
+    // and don't collide with same-named declarations in other cases.
+    // TODO: Remove once Scope assigns names unique within each lexical scope.
+    // The IR treats each case as a separate basic block, but the emitted
+    // switch shares a single lexical scope per the spec. Scope-based name
+    // allocation during HIR building would prevent collisions, making this
+    // wrapper unnecessary.
+    const body =
+      caseStatements.length > 0 ? [t.blockStatement(caseStatements)] : caseStatements;
+    switchCases.push(t.switchCase(testNode, body));
   }
 
   // Pop control stack and generate the fallthrough block.
