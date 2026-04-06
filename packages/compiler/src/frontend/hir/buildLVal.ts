@@ -71,7 +71,7 @@ function buildIdentifierLVal(
   if (place === undefined) {
     throw new Error(`Unable to find the place for ${name} (${declarationId})`);
   }
-  place.identifier.name = name;
+  place.identifier.name = scope.allocateName();
 
   if (kind !== null && kind !== "var") {
     functionBuilder.addInstruction(

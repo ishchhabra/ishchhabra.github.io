@@ -1,2 +1,2 @@
-const [a, , b] = [1, 2, 3];
-console.log(a, b);
+const [c, , d] = [1, 2, 3];
+console.log(c, d);

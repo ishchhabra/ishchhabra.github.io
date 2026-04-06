@@ -1,10 +1,10 @@
-const $0_0 = function $0_0($3_0, $4_0) {
-  return $3_0 + $4_0;
+const a = function a(a, b) {
+  return a + b;
 };
-export const HighlightedCode = function HighlightedCode({ code: $7_0, lang: $8_0 }) {
-  const $53_0 = $7_0;
-  const $54_0 = $8_0;
-  const html = $53_0 + $54_0;
+export const HighlightedCode = function HighlightedCode({ code: a, lang: b }) {
+  const $53_0 = a;
+  const $54_0 = b;
+  const d = $53_0 + $54_0;
   return (
     <pre>
       <code
@@ -12,7 +12,7 @@ export const HighlightedCode = function HighlightedCode({ code: $7_0, lang: $8_0
           fontFamily: "mono",
         }}
         dangerouslySetInnerHTML={{
-          __html: html,
+          __html: d,
         }}
       />
     </pre>

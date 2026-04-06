@@ -1,3 +1,3 @@
-const $0_0 = function $0_0() {
+const a = function a() {
   return this.name;
 };

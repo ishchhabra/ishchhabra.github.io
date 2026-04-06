@@ -1,11 +1,11 @@
-const $0_0 = function $0_0() {
-  let count = 0;
-  const increment = () => {
-    const $6_0 = count;
-    count = count + 1;
+const a = function a() {
+  let d = 0;
+  const e = () => {
+    const $6_0 = d;
+    d = d + 1;
     return $6_0;
   };
-  const get = () => count;
-  increment();
-  return get();
+  const f = () => d;
+  e();
+  return f();
 };

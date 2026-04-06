@@ -1,17 +1,17 @@
-const value = 100;
-if (value > 50) {
-  const threshold = 75;
-  if (threshold > value) {
-    const result = threshold + 10;
+const c = 100;
+if (c > 50) {
+  const b = 75;
+  if (b > c) {
+    const b = b + 10;
   } else {
-    const result = value - 5;
+    const b = c - 5;
   }
 } else {
-  const minimum = 25;
-  if (minimum < value) {
-    const result = minimum * 2;
+  const b = 25;
+  if (b < c) {
+    const b = b * 2;
   } else {
-    const result = minimum / 2;
+    const b = b / 2;
   }
 }
-const finalValue = value;
+const d = c;

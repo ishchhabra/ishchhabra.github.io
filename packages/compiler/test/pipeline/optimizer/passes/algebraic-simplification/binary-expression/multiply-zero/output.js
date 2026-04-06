@@ -1,2 +1,2 @@
-const x = foo();
-const y = x * 0;
+const c = foo();
+const d = c * 0;

@@ -17,7 +17,9 @@ export function buildImportDeclaration(
 ) {
   // Type-only imports (import type { X }) are erased at runtime.
   // OXC extends ESTree with importKind when parsing with astType:"ts".
-  if ((node as ESTree.ImportDeclaration & { importKind?: ImportOrExportKind }).importKind === "type") {
+  if (
+    (node as ESTree.ImportDeclaration & { importKind?: ImportOrExportKind }).importKind === "type"
+  ) {
     return undefined;
   }
 

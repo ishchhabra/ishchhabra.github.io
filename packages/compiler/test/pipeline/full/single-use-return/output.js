@@ -1,8 +1,8 @@
-const $0_0 = function $0_0() {
-  const a = globalThis.getA();
-  const b = globalThis.getB();
-  const result = a + b;
-  return result;
+const a = function a() {
+  const d = globalThis.getA();
+  const e = globalThis.getB();
+  const f = d + e;
+  return f;
 };
 const $23_0 = globalThis.getA();
 const $28_0 = globalThis.getB();

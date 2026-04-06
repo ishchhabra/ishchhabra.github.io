@@ -1,3 +1,3 @@
-for (const [a, b] of pairs) {
-  console.log(a, b);
+for (const [c, d] of pairs) {
+  console.log(c, d);
 }

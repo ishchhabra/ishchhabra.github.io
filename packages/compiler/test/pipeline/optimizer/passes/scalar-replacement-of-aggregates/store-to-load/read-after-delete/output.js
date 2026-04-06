@@ -1,7 +1,7 @@
-const obj = {
+const b = {
   a: 1,
   b: 2,
   c: 3,
 };
-delete obj.a;
+delete b.a;
 console.log(2, 3);

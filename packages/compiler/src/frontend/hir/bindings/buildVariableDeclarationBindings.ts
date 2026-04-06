@@ -71,6 +71,7 @@ function buildIdentifierBindings(
   if (scope.data.get(originalName) !== undefined) return;
 
   const identifier = environment.createIdentifier();
+  identifier.name = scope.allocateName();
   functionBuilder.registerDeclarationName(originalName, identifier.declarationId, scope);
   functionBuilder.instantiateDeclaration(identifier.declarationId, declarationKind, originalName);
 

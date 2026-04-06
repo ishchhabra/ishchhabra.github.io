@@ -1,4 +1,4 @@
-const $0_0 = function $0_0($1_0) {
-  const [, theirName, myName = theirName] = $1_0;
-  return myName;
+const a = function a(a) {
+  const [, d, e = d] = a;
+  return e;
 };

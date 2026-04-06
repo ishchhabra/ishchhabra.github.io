@@ -1,4 +1,4 @@
-const key = "foo";
-const obj = {
-  [key]: 1,
+const c = "foo";
+const d = {
+  [c]: 1,
 };

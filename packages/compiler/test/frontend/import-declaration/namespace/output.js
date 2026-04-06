@@ -1,2 +1,2 @@
 import * as utils from "./utils";
-const x = utils.foo();
+const b = utils.foo();

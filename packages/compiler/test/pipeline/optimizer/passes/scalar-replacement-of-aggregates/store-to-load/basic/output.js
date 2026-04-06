@@ -1,6 +1,6 @@
-const obj = {
+const b = {
   a: 1,
   b: 2,
 };
-obj.a = 10;
+b.a = 10;
 console.log(10);

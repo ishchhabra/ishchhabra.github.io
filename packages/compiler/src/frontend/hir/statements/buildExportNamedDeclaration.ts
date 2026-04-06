@@ -25,7 +25,10 @@ export function buildExportNamedDeclaration(
 ) {
   // Type-only exports (export type { X }, export type X = ...) are erased.
   // OXC extends ESTree with exportKind when parsing with astType:"ts".
-  if ((node as ESTree.ExportNamedDeclaration & { exportKind?: ImportOrExportKind }).exportKind === "type") {
+  if (
+    (node as ESTree.ExportNamedDeclaration & { exportKind?: ImportOrExportKind }).exportKind ===
+    "type"
+  ) {
     return undefined;
   }
 
@@ -52,6 +55,21 @@ export function buildExportNamedDeclaration(
       moduleBuilder,
       environment,
     );
+
+    // Exported declarations must keep their source name since they face
+    // external consumers. Restore the source name on the lval after
+    // scope-based naming assigned a short name.
+    const storeInstruction2 = environment.placeToInstruction.get(declarationPlace.id);
+    if (storeInstruction2 instanceof StoreLocalInstruction) {
+      if (declaration.type === "VariableDeclaration") {
+        const firstDeclarator = declaration.declarations[0];
+        if (firstDeclarator?.id.type === "Identifier") {
+          storeInstruction2.lval.identifier.name = firstDeclarator.id.name;
+        }
+      } else if (declaration.type === "ClassDeclaration" && declaration.id) {
+        storeInstruction2.lval.identifier.name = declaration.id.name;
+      }
+    }
 
     // Suppress standalone emission on the StoreLocal/StoreContext so the
     // export wraps the declaration. Without this, codegen emits the
@@ -190,7 +208,10 @@ function buildExportFrom(
     }
 
     // Skip per-specifier type exports: export { value, type TypeOnly } from "mod"
-    if ((specifier as ESTree.ExportSpecifier & { exportKind?: ImportOrExportKind }).exportKind === "type") {
+    if (
+      (specifier as ESTree.ExportSpecifier & { exportKind?: ImportOrExportKind }).exportKind ===
+      "type"
+    ) {
       continue;
     }
 

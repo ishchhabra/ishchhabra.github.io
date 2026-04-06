@@ -1,5 +1,5 @@
-const obj = {
+const b = {
   a: 1,
 };
-obj.b = 2;
+b.b = 2;
 console.log(1, 2);

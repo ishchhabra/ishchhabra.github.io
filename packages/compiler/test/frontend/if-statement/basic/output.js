@@ -1,5 +1,5 @@
-let number = 5;
-if (number > 0) {
+let b = 5;
+if (b > 0) {
   console.log("number is positive");
 } else {
   console.log("number is negative");

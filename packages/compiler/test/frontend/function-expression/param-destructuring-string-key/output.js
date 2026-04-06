@@ -1,3 +1,3 @@
-const $0_0 = function $0_0({ "foo-bar": $1_0 }) {
-  console.log($1_0);
+const a = function a({ "foo-bar": a }) {
+  console.log(a);
 };

@@ -1,7 +1,7 @@
-let i = 0;
+let b = 0;
 let $28_phi_36 = 0;
 while ($28_phi_36 < 10) {
-  let j = 0;
+  let b = 0;
   let $29_phi_37 = 0;
   let $30_phi_38 = undefined;
   while ($29_phi_37 < 10) {

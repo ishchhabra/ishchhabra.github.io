@@ -1,8 +1,8 @@
-const obj = {
+const d = {
   a: 1,
 };
-obj.a = 100;
-const x = 100;
-obj.a = 200;
-const y = 200;
-console.log(x, y);
+d.a = 100;
+const e = 100;
+d.a = 200;
+const f = 200;
+console.log(e, f);

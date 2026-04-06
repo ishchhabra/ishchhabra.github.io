@@ -1,7 +1,7 @@
-const obj = {
+const c = {
   count: 0,
 };
-const $8_0 = obj.count;
+const $8_0 = c.count;
 const $12_0 = $8_0 + 1;
-obj.count = $12_0;
-const result = $12_0;
+c.count = $12_0;
+const d = $12_0;

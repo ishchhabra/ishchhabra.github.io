@@ -1,4 +1,4 @@
-let x = 0;
+let b = 0;
 let $17_phi_20 = 0;
 if (globalThis.cond) {
   $0_1 = globalThis.compute();

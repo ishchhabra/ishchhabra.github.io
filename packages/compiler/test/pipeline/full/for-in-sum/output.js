@@ -1,8 +1,8 @@
-const $0_0 = function $0_0($1_0) {
+const a = function a(a) {
   let $16_phi_22 = 0;
-  for (const key in $1_0) {
+  for (const b in a) {
     $16_phi_22 = $16_phi_22 + 1;
   }
   return $16_phi_22;
 };
-console.log($0_0(myObj));
+console.log(a(myObj));

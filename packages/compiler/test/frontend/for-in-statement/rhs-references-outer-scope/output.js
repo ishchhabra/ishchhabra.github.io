@@ -1,7 +1,7 @@
-const obj = {
+const b = {
   a: 1,
   b: 2,
 };
-for (const obj in obj) {
-  console.log(obj);
+for (const b in b) {
+  console.log(b);
 }

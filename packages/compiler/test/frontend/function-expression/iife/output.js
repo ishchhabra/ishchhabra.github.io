@@ -1,3 +1,3 @@
-const result = (function () {
+const b = (function () {
   return 42;
 })();

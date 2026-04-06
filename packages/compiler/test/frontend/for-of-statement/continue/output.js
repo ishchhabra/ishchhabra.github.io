@@ -1,6 +1,6 @@
-for (const item of items) {
-  if (item === skip) {
+for (const b of items) {
+  if (b === skip) {
     continue;
   }
-  console.log(item);
+  console.log(b);
 }

@@ -1,8 +1,8 @@
-const $0_0 = function $0_0($1_0, $2_0) {
-  const cond = $1_0 > $2_0;
-  if (cond) {
-    return $1_0;
+const a = function a(a, b) {
+  const d = a > b;
+  if (d) {
+    return a;
   }
-  return $2_0;
+  return b;
 };
-console.log($0_0(1, 2));
+console.log(a(1, 2));

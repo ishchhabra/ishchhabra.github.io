@@ -1,2 +1,2 @@
-const d = 3;
-console.log(d);
+const h = 3;
+console.log(h);

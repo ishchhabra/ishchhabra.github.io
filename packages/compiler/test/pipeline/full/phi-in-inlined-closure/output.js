@@ -1,17 +1,17 @@
-const $1_0 = function $1_0() {
-  const a = globalThis.getA();
-  const b = globalThis.getB();
+const b = function b() {
+  const c = globalThis.getA();
+  const d = globalThis.getB();
   return globalThis.useMemo(() => {
-    result = a ? (b ?? "default") : "fallback";
-    return result;
-  }, [a, b]);
+    b = c ? (d ?? "default") : "fallback";
+    return b;
+  }, [c, d]);
 };
 export const Component = function Component() {
   const $34_0 = globalThis.getA();
   const $39_0 = globalThis.getB();
-  const value = globalThis.useMemo(() => {
-    const result = $34_0 ? ($39_0 ?? "default") : "fallback";
-    return result;
+  const b = globalThis.useMemo(() => {
+    const b = $34_0 ? ($39_0 ?? "default") : "fallback";
+    return b;
   }, [$34_0, $39_0]);
-  return value;
+  return b;
 };

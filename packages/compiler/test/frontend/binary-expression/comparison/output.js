@@ -1,4 +1,4 @@
-const a = 1 < 2;
-const b = 3 >= 3;
-const c = "foo" === "foo";
-const d = null !== undefined;
+const e = 1 < 2;
+const f = 3 >= 3;
+const g = "foo" === "foo";
+const h = null !== undefined;

@@ -1,2 +1,2 @@
-const name = "Alice";
-const result = String.raw`Hello ${name}\n`;
+const c = "Alice";
+const d = String.raw`Hello ${c}\n`;

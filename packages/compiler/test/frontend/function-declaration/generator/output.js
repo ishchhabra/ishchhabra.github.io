@@ -1,4 +1,4 @@
-const $0_0 = function* $0_0() {
+const a = function* a() {
   yield 0;
   yield 1;
   yield 1;

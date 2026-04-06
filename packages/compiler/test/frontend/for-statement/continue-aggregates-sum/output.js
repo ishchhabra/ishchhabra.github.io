@@ -1,5 +1,5 @@
-let sum = 0;
-let i = 0;
+let b = 0;
+let b = 0;
 let $19_phi_26 = undefined;
 let $20_phi_27 = 0;
 let $21_phi_28 = 0;

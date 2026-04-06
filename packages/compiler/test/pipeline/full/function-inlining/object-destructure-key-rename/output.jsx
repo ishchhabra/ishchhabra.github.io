@@ -1,6 +1,6 @@
-const $0_0 = function $0_0($2_0) {
-  const { name: name } = $2_0;
-  return <span>{name}</span>;
+const a = function a(a) {
+  const { name: c } = a;
+  return <span>{c}</span>;
 };
 export const App = function App() {
   const $31_0 = {

@@ -1,17 +1,17 @@
-const $0_0 = function $0_0() {
+const a = function a() {
   return 5;
 };
-let a = 0;
-let $8_0 = a;
+let e = 0;
+let $8_0 = e;
 let $17_phi_21 = undefined;
-$17_phi_21 = a;
+$17_phi_21 = e;
 let $18_phi_22 = undefined;
 $18_phi_22 = $8_0;
-if (!a) {
-  const $11_0 = $0_0();
+if (!e) {
+  const $11_0 = a();
   $1_1 = $11_0;
   $8_1 = $11_0;
   $17_phi_21 = $1_1;
   $18_phi_22 = $8_1;
 }
-const result = $18_phi_22;
+const f = $18_phi_22;

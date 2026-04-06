@@ -1,17 +1,17 @@
-const $0_0 = function $0_0($1_0, $2_0, $3_0) {
+const a = function a(a, b, c) {
   let $41_phi_61 = undefined;
   let $43_phi_63 = undefined;
   let $45_phi_65 = undefined;
-  if ($1_0) {
+  if (a) {
     let $46_phi_66 = undefined;
-    if ($2_0) {
-      $41_phi_61 = $2_0;
+    if (b) {
+      $41_phi_61 = b;
       $43_phi_63 = undefined;
-      $46_phi_66 = $2_0;
+      $46_phi_66 = b;
     } else {
       $41_phi_61 = undefined;
-      $43_phi_63 = $3_0;
-      $46_phi_66 = $3_0;
+      $43_phi_63 = c;
+      $46_phi_66 = c;
     }
     $45_phi_65 =
       ($46_phi_66,
@@ -24,4 +24,4 @@ const $0_0 = function $0_0($1_0, $2_0, $3_0) {
   }
   return $45_phi_65;
 };
-console.log($0_0(globalThis.c, globalThis.a, globalThis.b));
+console.log(a(globalThis.c, globalThis.a, globalThis.b));

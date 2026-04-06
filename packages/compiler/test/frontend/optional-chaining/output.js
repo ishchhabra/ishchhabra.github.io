@@ -1,10 +1,10 @@
-const obj = {
+const g = {
   a: {
     b: 1,
   },
 };
-const x = obj?.a;
-const y = obj?.a?.b;
-const z = obj?.[0];
-const w = obj?.method();
-const v = obj?.a.b;
+const h = g?.a;
+const i = g?.a?.b;
+const j = g?.[0];
+const k = g?.method();
+const l = g?.a.b;

@@ -1,6 +1,6 @@
-const $0_0 = function $0_0() {
-  let i = undefined;
-  i = 0;
+const a = function a() {
+  let b = undefined;
+  b = 0;
   if (true) {
   }
   $1_2 = 0;

@@ -1,23 +1,23 @@
-const $0_0 = function $0_0($1_0) {
-  const meta = [
+const a = function a(a) {
+  const d = [
     {
       name: "title",
     },
   ];
-  const links =
-    $1_0 !== undefined
+  const e =
+    a !== undefined
       ? [
           {
             rel: "canonical",
-            href: `/${$1_0.startsWith("/") ? $1_0 : $1_0}`,
+            href: `/${a.startsWith("/") ? a : a}`,
           },
         ]
       : undefined;
   return {
-    meta,
-    ...(links && {
-      links,
+    meta: d,
+    ...(e && {
+      links: e,
     }),
   };
 };
-console.log($0_0("/about"));
+console.log(a("/about"));

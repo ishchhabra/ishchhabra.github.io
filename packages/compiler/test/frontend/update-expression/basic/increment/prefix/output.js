@@ -1,3 +1,3 @@
-let value = 0;
-$0_1 = value + 1;
-const result = $0_1;
+let c = 0;
+$0_1 = c + 1;
+const d = $0_1;

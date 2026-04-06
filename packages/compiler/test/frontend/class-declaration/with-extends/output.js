@@ -1,2 +1,2 @@
-const $0_0 = class $0_0 {};
-const $1_0 = class $1_0 {};
+const a = class a {};
+const b = class b {};

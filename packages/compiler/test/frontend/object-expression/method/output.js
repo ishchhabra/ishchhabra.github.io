@@ -1,8 +1,8 @@
-const calculator = {
-  add($2_0, $3_0) {
-    return $2_0 + $3_0;
+const b = {
+  add(a, b) {
+    return a + b;
   },
-  subtract($7_0, $8_0) {
-    return $7_0 - $8_0;
+  subtract(a, b) {
+    return a - b;
   },
 };

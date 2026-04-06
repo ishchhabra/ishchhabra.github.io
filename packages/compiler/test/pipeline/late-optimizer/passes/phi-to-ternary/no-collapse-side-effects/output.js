@@ -1,4 +1,4 @@
-let x = undefined;
+let c = undefined;
 let $15_phi_18 = undefined;
 if (true) {
   console.log("side effect");
@@ -8,4 +8,4 @@ if (true) {
   $0_2 = 2;
   $15_phi_18 = 2;
 }
-const y = $15_phi_18;
+const d = $15_phi_18;

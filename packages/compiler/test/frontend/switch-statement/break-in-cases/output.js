@@ -1,8 +1,8 @@
-const action = "greet";
-let message = undefined;
+const c = "greet";
+let d = undefined;
 let $18_phi_23 = undefined;
-$18_phi_23 = message;
-switch (action) {
+$18_phi_23 = d;
+switch (c) {
   case "greet": {
     $1_3 = "hello";
     $18_phi_23 = $1_3;

@@ -1,2 +1,2 @@
-const env = "production";
-const isProd = true;
+const c = "production";
+const d = true;

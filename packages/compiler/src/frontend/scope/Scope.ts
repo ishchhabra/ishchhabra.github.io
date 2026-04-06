@@ -1,6 +1,34 @@
 import { KEYS } from "eslint-visitor-keys";
 import type * as ESTree from "estree";
 
+// a-z (0-25), A-Z (26-51), then two-char: aa, ab, ...
+const CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const RESERVED = new Set(["do", "if", "in", "of"]);
+
+/**
+ * Converts a numeric slot index to a short variable name.
+ * 0→a, 1→b, ..., 25→z, 26→A, ..., 51→Z, 52→aa, 53→ab, ...
+ * Skips JS reserved words (do, if, in, of).
+ */
+function toShortName(slot: number): string {
+  let n = slot;
+  for (;;) {
+    let name: string;
+    if (n < CHARS.length) {
+      name = CHARS[n];
+    } else {
+      let remaining = n - CHARS.length;
+      name = "";
+      do {
+        name = CHARS[remaining % CHARS.length] + name;
+        remaining = Math.floor(remaining / CHARS.length) - 1;
+      } while (remaining >= 0);
+    }
+    if (!RESERVED.has(name)) return name;
+    n++;
+  }
+}
+
 // -----------------------------------------------------------------------
 // Public types
 // -----------------------------------------------------------------------
@@ -67,10 +95,18 @@ export class Scope {
    */
   public readonly functionsToInitialize: FunctionDeclarationEntry[] = [];
 
+  /** Counter for scope-based name allocation. */
+  private nextSlot: number = 0;
+
   constructor(
     public readonly parent: Scope | null,
     public readonly kind: "program" | "function" | "block",
   ) {}
+
+  /** Allocate a short output name for a new binding in this scope. */
+  allocateName(): string {
+    return toShortName(this.nextSlot++);
+  }
 
   /** Look up a binding by name, walking the scope chain. */
   getBinding(name: string): Binding | undefined {

@@ -1,5 +1,5 @@
-const $0_0 = function $0_0() {
-  return x;
+const a = function a() {
+  return d;
 };
-const x = 10;
+const d = 10;
 console.log(10);

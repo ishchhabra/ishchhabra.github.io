@@ -1,1 +1,1 @@
-export const [first, second] = getItems();
+export const [c, d] = getItems();

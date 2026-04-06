@@ -1,8 +1,8 @@
-const $0_0 = function $0_0($1_0) {
-  switch ($1_0) {
+const a = function a(a) {
+  switch (a) {
     case "a": {
-      let q = "";
-      $2_1 = q + "x";
+      let c = "";
+      $2_1 = c + "x";
       return $2_1;
     }
   }

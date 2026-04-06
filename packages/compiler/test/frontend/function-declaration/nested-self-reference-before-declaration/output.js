@@ -1,27 +1,22 @@
-const $0_0 = function $0_0($1_0) {
-  const $2_0 = function $2_0($3_0) {
-    const point = ($3_0 && $3_0.position && $3_0.position[$1_0]) || {};
-    if (
-      typeof point.line === "number" &&
-      point.line > 0 &&
-      typeof point.column === "number" &&
-      point.column > 0
-    ) {
+const a = function a(a) {
+  const b = function b(a) {
+    const c = (a && a.position && a.position[a]) || {};
+    if (typeof c.line === "number" && c.line > 0 && typeof c.column === "number" && c.column > 0) {
       let $46_0 = undefined;
       let $55_phi_76 = undefined;
-      if (typeof point.offset === "number" && point.offset > -1) {
-        $46_1 = point.offset;
+      if (typeof c.offset === "number" && c.offset > -1) {
+        $46_1 = c.offset;
         $55_phi_76 = $46_1;
       } else {
         $46_2 = undefined;
         $55_phi_76 = $46_2;
       }
       return {
-        line: point.line,
-        column: point.column,
+        line: c.line,
+        column: c.column,
         offset: $55_phi_76,
       };
     }
   };
-  return $2_0;
+  return b;
 };

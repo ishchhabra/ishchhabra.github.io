@@ -1,5 +1,5 @@
-const obj = {
+const d = {
   x: 1,
 };
-const hasX = "x" in obj;
-const isArr = [] instanceof Array;
+const e = "x" in d;
+const f = [] instanceof Array;

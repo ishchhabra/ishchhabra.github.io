@@ -1,3 +1,3 @@
-const dev = false;
-const env = "production";
-const sum = "falseproduction";
+const d = false;
+const e = "production";
+const f = "falseproduction";

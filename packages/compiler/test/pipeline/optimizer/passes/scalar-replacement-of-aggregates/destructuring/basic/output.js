@@ -1,3 +1,3 @@
-const a = 2;
-const b = 3;
-console.log(a, b);
+const c = 2;
+const d = 3;
+console.log(c, d);

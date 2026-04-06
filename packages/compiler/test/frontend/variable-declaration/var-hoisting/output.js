@@ -1,7 +1,7 @@
-const $0_0 = function $0_0($1_0) {
-  let x = undefined;
-  if ($1_0) {
-    x = 1;
+const a = function a(a) {
+  let a = undefined;
+  if (a) {
+    a = 1;
   }
-  return x;
+  return a;
 };

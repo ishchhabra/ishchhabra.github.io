@@ -1,7 +1,7 @@
-const $0_0 = function $0_0() {
+const a = function a() {
   return typeof window !== "undefined";
 };
-const $1_0 = function $1_0() {
+const b = function b() {
   if (!(typeof window !== "undefined")) {
     return;
   }

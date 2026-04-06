@@ -1,16 +1,16 @@
-const $0_0 = function $0_0($1_0) {
-  for (const [key, value] of Object.entries($1_0)) {
+const a = function a(a) {
+  for (const [c, d] of Object.entries(a)) {
     $21_phi_30 = $22_phi_31;
-    if (key !== "x") {
+    if (c !== "x") {
       let $11_0 = $22_phi_31;
       let $20_phi_29 = undefined;
       let $21_phi_30 = undefined;
       let $22_phi_31 = undefined;
-      if (value) {
+      if (d) {
         $11_1 = "";
         $20_phi_29 = $11_1;
       } else {
-        $11_2 = String(value);
+        $11_2 = String(d);
         $20_phi_29 = $11_2;
       }
       g($20_phi_29);

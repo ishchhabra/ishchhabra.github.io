@@ -1,10 +1,10 @@
-const $0_0 = function $0_0({ to: $2_0, label: $3_0 }) {
-  return <a href={$2_0}>{$3_0}</a>;
+const a = function a({ to: a, label: b }) {
+  return <a href={a}>{b}</a>;
 };
 export const Header = function Header() {
   return (
     <nav>
-      <$0_0 to="/" label="Home" />
+      <a to="/" label="Home" />
     </nav>
   );
 };

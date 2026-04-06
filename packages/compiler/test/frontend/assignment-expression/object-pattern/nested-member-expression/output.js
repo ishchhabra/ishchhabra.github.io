@@ -1,4 +1,4 @@
-let obj = {
+let b = {
   nested: {
     value: 1,
   },
@@ -6,5 +6,5 @@ let obj = {
 const { value: $14_0 } = {
   value: 2,
 };
-obj.nested.value = $14_0;
-console.log(obj.nested.value);
+b.nested.value = $14_0;
+console.log(b.nested.value);

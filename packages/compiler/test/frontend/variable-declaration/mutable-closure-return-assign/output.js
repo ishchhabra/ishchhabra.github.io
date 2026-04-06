@@ -1,8 +1,8 @@
-const $0_0 = function $0_0() {
-  const $1_0 = function $1_0() {
-    return x;
+const a = function a() {
+  const a = function a() {
+    return c;
   };
-  let x = 0;
-  x = 1;
+  let c = 0;
+  c = 1;
   return 1;
 };

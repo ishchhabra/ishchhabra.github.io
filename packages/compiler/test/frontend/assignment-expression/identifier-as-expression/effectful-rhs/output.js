@@ -1,7 +1,7 @@
-const $0_0 = function $0_0() {
+const a = function a() {
   return 5;
 };
-let a = undefined;
-const $8_0 = $0_0();
+let d = undefined;
+const $8_0 = a();
 $1_1 = $8_0;
-const result = $8_0;
+const e = $8_0;

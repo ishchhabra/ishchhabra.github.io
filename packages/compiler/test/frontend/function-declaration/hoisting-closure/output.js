@@ -1,5 +1,5 @@
-const $0_0 = function $0_0() {
-  return y;
+const a = function a() {
+  return d;
 };
-const y = 2;
-const x = $0_0();
+const d = 2;
+const e = a();

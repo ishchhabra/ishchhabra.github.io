@@ -1,7 +1,7 @@
-const $0_0 = function $0_0() {
+const a = function a() {
   return 42;
 };
-const $1_0 = function $1_0() {
+const b = function b() {
   return 42;
 };
-const a = 42;
+const d = 42;

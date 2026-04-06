@@ -1,10 +1,10 @@
-const $0_0 = function $0_0($1_0) {
-  const $2_0 = function $2_0() {
+const a = function a(a) {
+  const a = function a() {
     return 1;
   };
-  switch ($1_0) {
+  switch (a) {
     case 0: {
-      return $2_0;
+      return a;
     }
     default: {
       return 2;

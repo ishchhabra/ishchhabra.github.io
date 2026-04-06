@@ -1,2 +1,2 @@
-const area = 100 * 200;
-console.log(area);
+const d = 100 * 200;
+console.log(d);

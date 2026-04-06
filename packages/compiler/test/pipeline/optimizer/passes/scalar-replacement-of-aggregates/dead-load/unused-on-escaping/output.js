@@ -1,6 +1,6 @@
-const obj = {
+const b = {
   a: 1,
   b: 2,
 };
-console.log(obj);
-obj.a;
+console.log(b);
+b.a;

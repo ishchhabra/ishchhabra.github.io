@@ -55,8 +55,7 @@ export function generateSwitchTerminal(
     // switch shares a single lexical scope per the spec. Scope-based name
     // allocation during HIR building would prevent collisions, making this
     // wrapper unnecessary.
-    const body =
-      caseStatements.length > 0 ? [t.blockStatement(caseStatements)] : caseStatements;
+    const body = caseStatements.length > 0 ? [t.blockStatement(caseStatements)] : caseStatements;
     switchCases.push(t.switchCase(testNode, body));
   }
 

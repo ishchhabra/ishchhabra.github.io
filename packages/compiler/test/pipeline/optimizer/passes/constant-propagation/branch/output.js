@@ -1,3 +1,3 @@
-let x = 10;
+let c = 10;
 $0_2 = 20;
-const result = 40;
+const d = 40;
