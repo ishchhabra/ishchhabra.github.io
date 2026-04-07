@@ -18,7 +18,6 @@ export interface ProjectUnit {
 export class ProjectBuilder {
   private readonly modules: Map<string, ModuleIR> = new Map();
   private readonly includeNodeModules: boolean;
-  private readonly compiledNodeModulePackages: Set<string> = new Set();
   private readonly opaqueNodeModulePackages: Set<string> = new Set();
   private readonly projectEnvironment = new ProjectEnvironment();
 
@@ -28,25 +27,14 @@ export class ProjectBuilder {
 
   public build(entryPoint: string): ProjectUnit {
     this.buildModule(entryPoint);
-    const postOrder = this.getPostOrder(this.modules.get(entryPoint)!);
-    return {
-      modules: this.modules,
-      postOrder,
-      compiledNodeModulePackages: [...this.compiledNodeModulePackages],
-      opaqueNodeModulePackages: [...this.opaqueNodeModulePackages],
-    };
+    return this.createProjectUnit(this.getPostOrder(this.modules.get(entryPoint)!));
   }
 
   public buildFromSource(source: string, virtualPath = "input.js"): ProjectUnit {
     const environment = new Environment(this.projectEnvironment);
     const moduleIR = new ModuleIRBuilder(virtualPath, environment).buildFromSource(source);
     this.modules.set(virtualPath, moduleIR);
-    return {
-      modules: this.modules,
-      postOrder: [virtualPath],
-      compiledNodeModulePackages: [],
-      opaqueNodeModulePackages: [],
-    };
+    return this.createProjectUnit([virtualPath]);
   }
 
   /**
@@ -65,17 +53,36 @@ export class ProjectBuilder {
       }
     }
 
+    return this.createProjectUnit(result);
+  }
+
+  private createProjectUnit(postOrder: string[]): ProjectUnit {
+    const modules = new Map<string, ModuleIR>();
+    const compiledNodeModulePackages = new Set<string>();
+
+    for (const modulePath of postOrder) {
+      const moduleIR = this.modules.get(modulePath);
+      if (moduleIR === undefined) {
+        continue;
+      }
+      modules.set(modulePath, moduleIR);
+
+      const packageRoot = getNodeModulePackageRoot(modulePath);
+      if (packageRoot !== undefined) {
+        compiledNodeModulePackages.add(packageRoot);
+      }
+    }
+
     return {
-      modules: this.modules,
-      postOrder: result,
-      compiledNodeModulePackages: [...this.compiledNodeModulePackages],
+      modules,
+      postOrder,
+      compiledNodeModulePackages: [...compiledNodeModulePackages],
       opaqueNodeModulePackages: [...this.opaqueNodeModulePackages],
     };
   }
 
   public markOpaqueNodeModulePackage(packageRoot: string): void {
     this.opaqueNodeModulePackages.add(packageRoot);
-    this.compiledNodeModulePackages.delete(packageRoot);
     for (const modulePath of this.modules.keys()) {
       if (isModuleInPackage(modulePath, packageRoot)) {
         this.modules.delete(modulePath);
@@ -106,9 +113,6 @@ export class ProjectBuilder {
     }
 
     this.modules.set(path, moduleIR);
-    if (packageRoot !== undefined) {
-      this.compiledNodeModulePackages.add(packageRoot);
-    }
 
     const imports = Array.from(moduleIR.globals.values()).filter(
       (global) => global.kind === "import",
