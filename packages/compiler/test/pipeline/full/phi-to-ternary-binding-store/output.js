@@ -1,14 +1,15 @@
-export const f = function f($1_0) {
-  let $20_phi_29 = undefined;
-  let $21_phi_30 = $1_0;
+function $0_0($1_0) {
+  let $19_phi_27 = undefined;
+  let $20_phi_28 = $1_0;
   for (const k of [1, 2]) {
     if (k) {
-      const { x: x, ...rest } = $21_phi_30;
-      $20_phi_29 = rest;
+      const { x: x, ...rest } = $20_phi_28;
+      $19_phi_27 = rest;
     } else {
-      $20_phi_29 = $1_0;
+      $19_phi_27 = $1_0;
     }
-    $21_phi_30 = $20_phi_29;
+    $20_phi_28 = $19_phi_27;
   }
-  return $21_phi_30;
-};
+  return $20_phi_28;
+}
+export { $0_0 as f };

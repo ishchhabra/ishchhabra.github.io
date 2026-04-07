@@ -2,6 +2,7 @@ import { ProjectUnit } from "../../frontend/ProjectBuilder";
 import {
   CallExpressionInstruction,
   DeclarationId,
+  FunctionDeclarationInstruction,
   LoadGlobalInstruction,
   LoadLocalInstruction,
   StoreLocalInstruction,
@@ -74,6 +75,11 @@ export class CallGraph {
     for (const [, funcIR] of moduleIR.functions) {
       for (const block of funcIR.blocks.values()) {
         for (const instr of block.instructions) {
+          if (instr instanceof FunctionDeclarationInstruction) {
+            moduleDecls.set(instr.place.identifier.declarationId, instr.functionIR.id);
+            continue;
+          }
+
           // Find StoreLocal instructions whose value is a FunctionExpressionInstruction.
           if (!(instr instanceof StoreLocalInstruction)) {
             continue;
@@ -241,6 +247,13 @@ export class CallGraph {
     const funcDeclInstr = moduleIR.environment.placeToInstruction.get(
       exportPlace.declaration.place.id,
     );
+    if (funcDeclInstr instanceof FunctionDeclarationInstruction) {
+      return {
+        modulePath: source,
+        functionIRId: funcDeclInstr.functionIR.id,
+      };
+    }
+
     if (!(funcDeclInstr instanceof FunctionExpressionInstruction)) {
       return undefined;
     }

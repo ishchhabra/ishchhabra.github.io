@@ -1,7 +1,7 @@
-export const List = function List() {
+export function List() {
   return (
     <>
       <li>one</li>
     </>
   );
-};
+}

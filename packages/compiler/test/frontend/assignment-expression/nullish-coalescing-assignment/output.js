@@ -1,14 +1,15 @@
-export const f = function f(a) {
+function $0_0(a) {
   let $4_0 = a;
-  let $13_phi_16 = undefined;
-  $13_phi_16 = a;
-  let $14_phi_17 = undefined;
-  $14_phi_17 = $4_0;
+  let $12_phi_14 = undefined;
+  $12_phi_14 = a;
+  let $13_phi_15 = undefined;
+  $13_phi_15 = $4_0;
   if (a == null) {
     const $1_1 = 30;
     $4_1 = 30;
-    $13_phi_16 = $1_1;
-    $14_phi_17 = $4_1;
+    $12_phi_14 = $1_1;
+    $13_phi_15 = $4_1;
   }
-  return $14_phi_17;
-};
+  return $13_phi_15;
+}
+export { $0_0 as f };

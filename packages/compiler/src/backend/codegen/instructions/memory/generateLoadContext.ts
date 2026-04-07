@@ -11,7 +11,8 @@ export function generateLoadContextInstruction(
     throw new Error(`Place ${instruction.value.id} not found for LoadContext value`);
   }
 
-  t.assertExpression(node);
-  generator.places.set(instruction.place.id, node);
-  return node;
+  const expression = t.isFunctionDeclaration(node) ? node.id : node;
+  t.assertExpression(expression);
+  generator.places.set(instruction.place.id, expression);
+  return expression;
 }

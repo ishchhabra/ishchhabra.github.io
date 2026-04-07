@@ -1,17 +1,18 @@
-const $0_0 = function $0_0({ x: $2_0, ...$3_0 }) {
+function $0_0({ x: $2_0, ...$3_0 }) {
   return $3_0;
-};
-export const f = function f($9_0) {
-  let $23_phi_35 = $9_0;
+}
+function $1_0($8_0) {
+  let $21_phi_31 = $8_0;
   for (const k of [1, 2]) {
-    let $24_0 = undefined;
+    let $22_0 = undefined;
     if (k) {
-      const { x: $28_0, ...$30_0 } = $23_phi_35;
-      $24_0 = $30_0;
+      const { x: $26_0, ...$28_0 } = $21_phi_31;
+      $22_0 = $28_0;
     } else {
-      $24_0 = $9_0;
+      $22_0 = $8_0;
     }
-    $23_phi_35 = $24_0;
+    $21_phi_31 = $22_0;
   }
-  return $23_phi_35;
-};
+  return $21_phi_31;
+}
+export { $1_0 as f };

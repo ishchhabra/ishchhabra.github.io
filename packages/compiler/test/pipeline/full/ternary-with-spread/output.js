@@ -1,4 +1,4 @@
-const $0_0 = function $0_0($1_0) {
+function $0_0($1_0) {
   const meta = [
     {
       name: "title",
@@ -19,5 +19,5 @@ const $0_0 = function $0_0($1_0) {
       links,
     }),
   };
-};
+}
 console.log($0_0("/about"));

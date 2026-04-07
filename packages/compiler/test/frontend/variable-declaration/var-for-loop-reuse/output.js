@@ -1,4 +1,4 @@
-const $0_0 = function $0_0() {
+function $0_0() {
   let i = undefined;
   i = 0;
   if (true) {
@@ -7,4 +7,4 @@ const $0_0 = function $0_0() {
   if (true) {
   }
   return $1_2;
-};
+}

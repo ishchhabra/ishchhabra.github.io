@@ -2,6 +2,8 @@ import * as t from "@babel/types";
 import {
   BaseInstruction,
   DebuggerStatementInstruction,
+  DeclarationInstruction,
+  DeclareLocalInstruction,
   ExportSpecifierInstruction,
   ExpressionStatementInstruction,
   ImportSpecifierInstruction,
@@ -11,13 +13,14 @@ import {
   PatternInstruction,
   RestElementInstruction,
   SpreadElementInstruction,
-  DeclareLocalInstruction,
   StoreContextInstruction,
   StoreLocalInstruction,
   ValueInstruction,
 } from "../../../ir";
 import { FunctionIR } from "../../../ir/core/FunctionIR";
+import { FunctionDeclarationInstruction } from "../../../ir/instructions/declaration/FunctionDeclaration";
 import { CodeGenerator } from "../../CodeGenerator";
+import { generateDeclarationInstruction } from "./declaration/generateDeclaration";
 import { generateDebuggerStatementInstruction } from "./generateDebuggerStatement";
 import { generateExpressionStatementInstruction } from "./generateExpressionStatement";
 import { generateRestElementInstruction } from "./generateRestElement";
@@ -36,6 +39,13 @@ export function generateInstruction(
 ): Array<t.Statement> {
   if (instruction instanceof DebuggerStatementInstruction) {
     return [generateDebuggerStatementInstruction(instruction, generator)];
+  } else if (instruction instanceof DeclarationInstruction) {
+    const statement = generateDeclarationInstruction(instruction, generator);
+    if (instruction instanceof FunctionDeclarationInstruction && !instruction.emit) {
+      return [];
+    }
+
+    return [statement];
   } else if (instruction instanceof ExpressionStatementInstruction) {
     const statement = generateExpressionStatementInstruction(instruction, generator);
     if (statement === undefined) {

@@ -1,3 +1,3 @@
-export const foo = function foo() {
+export function foo() {
   return 42;
-};
+}

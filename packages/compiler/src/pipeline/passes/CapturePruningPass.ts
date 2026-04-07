@@ -1,11 +1,13 @@
 import { BaseInstruction, IdentifierId } from "../../ir";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { Place } from "../../ir/core/Place";
+import { FunctionDeclarationInstruction } from "../../ir/instructions/declaration/FunctionDeclaration";
 import { ArrowFunctionExpressionInstruction } from "../../ir/instructions/value/ArrowFunctionExpression";
 import { FunctionExpressionInstruction } from "../../ir/instructions/value/FunctionExpression";
 import { BaseOptimizationPass, OptimizationResult } from "../late-optimizer/OptimizationPass";
 
 type FunctionBearingInstruction =
+  | FunctionDeclarationInstruction
   | ArrowFunctionExpressionInstruction
   | FunctionExpressionInstruction;
 
@@ -13,6 +15,7 @@ function getFunctionBearingFields(
   instr: BaseInstruction,
 ): { functionIR: FunctionIR; captures: Place[] } | undefined {
   if (
+    instr instanceof FunctionDeclarationInstruction ||
     instr instanceof ArrowFunctionExpressionInstruction ||
     instr instanceof FunctionExpressionInstruction
   ) {
@@ -25,7 +28,17 @@ function rebuildWithCaptures(
   instr: FunctionBearingInstruction,
   newCaptures: Place[],
 ): BaseInstruction {
-  if (instr instanceof ArrowFunctionExpressionInstruction) {
+  if (instr instanceof FunctionDeclarationInstruction) {
+    return new FunctionDeclarationInstruction(
+      instr.id,
+      instr.place,
+      instr.functionIR,
+      instr.generator,
+      instr.async,
+      newCaptures,
+      instr.emit,
+    );
+  } else if (instr instanceof ArrowFunctionExpressionInstruction) {
     return new ArrowFunctionExpressionInstruction(
       instr.id,
       instr.place,

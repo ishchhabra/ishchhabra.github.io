@@ -1,15 +1,15 @@
-const $0_0 = function $0_0($2_0) {
+function $0_0($2_0) {
   const { name: name } = $2_0;
   return <span>{name}</span>;
-};
-export const App = function App() {
-  const $31_0 = {
+}
+export function App() {
+  const $29_0 = {
     name: "hello",
   };
-  const { name: $35_0 } = $31_0;
+  const { name: $33_0 } = $29_0;
   return (
     <div>
-      <span>{$35_0}</span>
+      <span>{$33_0}</span>
     </div>
   );
-};
+}

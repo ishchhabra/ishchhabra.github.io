@@ -1,7 +1,6 @@
 import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
-import { DeclareLocalInstruction, StoreLocalInstruction } from "../../../ir";
-import { FunctionExpressionInstruction } from "../../../ir/instructions/value/FunctionExpression";
+import { FunctionDeclarationInstruction } from "../../../ir/instructions/declaration/FunctionDeclaration";
 import { type Scope, type ScopeMap } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -10,12 +9,12 @@ import { isContextVariable } from "./isContextVariable";
 
 /**
  * Phase 1: Register the function declaration binding in the scope.
- * Creates the binding identity and emits a DeclareLocal instruction,
- * but does NOT build the function body yet.
+ * Creates the binding identity and binding place, but does NOT build
+ * the function body yet.
  */
 export function registerFunctionDeclarationBinding(
   scope: Scope,
-  scopeMap: ScopeMap,
+  _scopeMap: ScopeMap,
   node: ESTree.FunctionDeclaration,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
@@ -47,13 +46,10 @@ export function registerFunctionDeclarationBinding(
     functionBuilder.currentBlock.id,
     place.id,
   );
-  functionBuilder.addInstruction(
-    environment.createInstruction(DeclareLocalInstruction, place, "const"),
-  );
 }
 
 /**
- * Phase 2: Build the function body and emit a FunctionExpressionInstruction + StoreLocal.
+ * Phase 2: Build the function body and emit a dedicated FunctionDeclarationInstruction.
  * Per ECMA-262 ss.10.2.11, InstantiateFunctionObject runs after ALL bindings in
  * the scope have been created, so this must be called after all register*
  * functions have completed.
@@ -106,10 +102,8 @@ export function initializeFunctionDeclaration(
   functionBuilder.propagateCapturesFrom(functionIRBuilder);
   const capturedPlaces = [...functionIRBuilder.captures.values()];
 
-  const fnPlace = environment.createPlace(environment.createIdentifier(declarationId));
   const instruction = environment.createInstruction(
-    FunctionExpressionInstruction,
-    fnPlace,
+    FunctionDeclarationInstruction,
     identifierPlace,
     functionIR,
     node.generator ?? false,
@@ -117,18 +111,5 @@ export function initializeFunctionDeclaration(
     capturedPlaces,
   );
   functionBuilder.addInstruction(instruction);
-  environment.registerDeclarationInstruction(fnPlace, instruction);
-
-  const isContext = environment.contextDeclarationIds.has(declarationId);
-  const storePlace = environment.createPlace(environment.createIdentifier());
-  functionBuilder.addInstruction(
-    environment.createInstruction(
-      StoreLocalInstruction,
-      storePlace,
-      identifierPlace,
-      fnPlace,
-      isContext ? ("let" as const) : ("const" as const),
-      [],
-    ),
-  );
+  environment.registerDeclarationInstruction(identifierPlace, instruction);
 }

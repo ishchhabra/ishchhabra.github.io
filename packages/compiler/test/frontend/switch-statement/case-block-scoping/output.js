@@ -1,4 +1,4 @@
-const $0_0 = function $0_0($2_0) {
+function $0_0($2_0) {
   switch ($2_0.type) {
     case "comment": {
       const ref = $2_0;
@@ -22,7 +22,7 @@ const $0_0 = function $0_0($2_0) {
       };
     }
   }
-};
+}
 export const result = $0_0({
   type: "text",
   value: "hello",

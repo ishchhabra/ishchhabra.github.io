@@ -1,6 +1,7 @@
 import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import { ExportDefaultDeclarationInstruction } from "../../../ir";
+import { FunctionDeclarationInstruction } from "../../../ir/instructions/declaration/FunctionDeclaration";
 import { type Scope } from "../../scope/Scope";
 import { buildClassExpression } from "../expressions/buildClassExpression";
 import { buildFunctionExpression } from "../expressions/buildFunctionExpression";
@@ -40,12 +41,19 @@ export function buildExportDefaultDeclaration(
     );
   } else if (declaration.type === "FunctionDeclaration" && declaration.id != null) {
     // Named function declarations are already built during scope
-    // instantiation. Look up the existing declaration place.
+    // instantiation. Reuse the existing declaration node directly.
     const name = declaration.id.name;
     const declarationId = functionBuilder.getDeclarationId(name, scope);
     if (declarationId !== undefined) {
-      const latestDeclaration = environment.getLatestDeclaration(declarationId);
-      declarationPlace = environment.places.get(latestDeclaration.placeId);
+      const declarationInstructionId = environment.getDeclarationInstruction(declarationId);
+      const declarationInstruction =
+        declarationInstructionId !== undefined
+          ? environment.instructions.get(declarationInstructionId)
+          : undefined;
+      if (declarationInstruction instanceof FunctionDeclarationInstruction) {
+        declarationInstruction.emit = false;
+        declarationPlace = declarationInstruction.place;
+      }
     }
   } else {
     declarationPlace = buildNode(

@@ -6,6 +6,7 @@ import {
   BlockId,
   type ControlContext,
   DeclarationId,
+  FunctionDeclarationInstruction,
   PlaceId,
   LexicalScope,
   type LexicalScopeId,
@@ -146,12 +147,16 @@ export class CodeGenerator {
       for (const instruction of functionIR.header) {
         if (instruction instanceof DeclareLocalInstruction) {
           generateDeclareLocalInstruction(instruction, this);
+        } else if (instruction instanceof FunctionDeclarationInstruction) {
+          this.places.set(instruction.place.id, t.identifier(instruction.place.identifier.name));
         }
       }
       for (const [, block] of functionIR.blocks) {
         for (const instruction of block.instructions) {
           if (instruction instanceof DeclareLocalInstruction) {
             generateDeclareLocalInstruction(instruction, this);
+          } else if (instruction instanceof FunctionDeclarationInstruction) {
+            this.places.set(instruction.place.id, t.identifier(instruction.place.identifier.name));
           }
         }
       }

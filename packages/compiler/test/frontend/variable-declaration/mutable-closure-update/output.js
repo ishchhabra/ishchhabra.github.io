@@ -1,4 +1,4 @@
-const $0_0 = function $0_0() {
+function $0_0() {
   let count = 0;
   const increment = () => {
     const $6_0 = count;
@@ -8,4 +8,4 @@ const $0_0 = function $0_0() {
   const get = () => count;
   increment();
   return get();
-};
+}

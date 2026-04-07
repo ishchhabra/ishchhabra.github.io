@@ -13,6 +13,10 @@ export function generateLoadLocalInstruction(
     generator.places.set(instruction.value.id, maybeNode);
   }
 
+  if (t.isFunctionDeclaration(maybeNode)) {
+    maybeNode = maybeNode.id;
+  }
+
   t.assertExpression(maybeNode);
   generator.places.set(instruction.place.id, maybeNode);
   return maybeNode;

@@ -1,27 +1,27 @@
-const $0_0 = function $0_0($1_0, $2_0, $3_0) {
-  let $41_phi_61 = undefined;
-  let $43_phi_63 = undefined;
-  let $45_phi_65 = undefined;
+function $0_0($1_0, $2_0, $3_0) {
+  let $40_phi_59 = undefined;
+  let $42_phi_61 = undefined;
+  let $44_phi_63 = undefined;
   if ($1_0) {
-    let $46_phi_66 = undefined;
+    let $45_phi_64 = undefined;
     if ($2_0) {
-      $41_phi_61 = $2_0;
-      $43_phi_63 = undefined;
-      $46_phi_66 = $2_0;
+      $40_phi_59 = $2_0;
+      $42_phi_61 = undefined;
+      $45_phi_64 = $2_0;
     } else {
-      $41_phi_61 = undefined;
-      $43_phi_63 = $3_0;
-      $46_phi_66 = $3_0;
+      $40_phi_59 = undefined;
+      $42_phi_61 = $3_0;
+      $45_phi_64 = $3_0;
     }
-    $45_phi_65 =
-      ($46_phi_66,
+    $44_phi_63 =
+      ($45_phi_64,
       {
-        x: $41_phi_61,
-        y: $43_phi_63,
+        x: $40_phi_59,
+        y: $42_phi_61,
       });
   } else {
-    $45_phi_65 = {};
+    $44_phi_63 = {};
   }
-  return $45_phi_65;
-};
+  return $44_phi_63;
+}
 console.log($0_0(globalThis.c, globalThis.a, globalThis.b));

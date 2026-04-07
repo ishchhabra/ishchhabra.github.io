@@ -2,12 +2,12 @@ import type * as ESTree from "estree";
 import type { ImportOrExportKind } from "oxc-parser";
 import { Environment } from "../../../environment";
 import {
-  BaseInstruction,
   ExportNamedDeclarationInstruction,
   Place,
   StoreLocalInstruction,
   StoreContextInstruction,
 } from "../../../ir";
+import { FunctionDeclarationInstruction } from "../../../ir/instructions/declaration/FunctionDeclaration";
 import { ExportFromInstruction } from "../../../ir/instructions/module/ExportFrom";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
@@ -53,12 +53,11 @@ export function buildExportNamedDeclaration(
       environment,
     );
 
-    // Suppress standalone emission on the StoreLocal/StoreContext so the
-    // export wraps the declaration. Without this, codegen emits the
-    // declaration as a separate statement and the export gets just the
-    // lval identifier (which isn't a Declaration node).
+    // Suppress standalone emission so the export wraps the declaration.
+    // Without this, codegen emits the declaration as a separate statement.
     const storeInstruction = environment.placeToInstruction.get(declarationPlace.id);
     if (
+      storeInstruction instanceof FunctionDeclarationInstruction ||
       storeInstruction instanceof StoreLocalInstruction ||
       storeInstruction instanceof StoreContextInstruction
     ) {
@@ -113,7 +112,7 @@ export function buildExportNamedDeclaration(
 /**
  * Builds the declaration inside an `export` statement. Function and class
  * declarations are already built during scope instantiation, so we look up
- * their existing StoreLocal place instead of calling buildNode (which
+ * their existing declaration place instead of calling buildNode (which
  * returns undefined for these).
  */
 function buildExportDeclaration(
@@ -124,18 +123,20 @@ function buildExportDeclaration(
   environment: Environment,
 ): Place {
   // Function declarations are fully built during scope instantiation.
-  // Find the StoreLocal instruction that assigned the function value
-  // to the binding — its place produces a VariableDeclaration in codegen.
+  // Reuse the existing FunctionDeclarationInstruction and suppress its
+  // standalone emission so the export wraps it directly.
   if (declaration.type === "FunctionDeclaration" && declaration.id) {
     const name = declaration.id.name;
     const declarationId = functionBuilder.getDeclarationId(name, scope);
     if (declarationId !== undefined) {
-      const storeInstr = findStoreLocal(functionBuilder, declarationId);
-      if (storeInstr !== undefined) {
-        // Ensure the binding name matches the exported name so
-        // `export function foo()` emits `export const foo = ...`.
-        storeInstr.lval.identifier.name = name;
-        return storeInstr.place;
+      const declarationInstructionId = environment.getDeclarationInstruction(declarationId);
+      if (declarationInstructionId !== undefined) {
+        const declarationInstruction = environment.instructions.get(declarationInstructionId);
+        if (declarationInstruction instanceof FunctionDeclarationInstruction) {
+          declarationInstruction.place.identifier.name = name;
+          declarationInstruction.emit = false;
+          return declarationInstruction.place;
+        }
       }
     }
   }
@@ -149,27 +150,6 @@ function buildExportDeclaration(
     throw new Error(`Export declaration produced no place for ${declaration.type}`);
   }
   return result;
-}
-
-/**
- * Finds the StoreLocal instruction that writes to a binding with the given
- * declarationId.
- */
-function findStoreLocal(
-  functionBuilder: FunctionIRBuilder,
-  declarationId: import("../../../ir").DeclarationId,
-): StoreLocalInstruction | undefined {
-  for (const block of functionBuilder.blocks.values()) {
-    for (const instr of block.instructions as BaseInstruction[]) {
-      if (
-        instr instanceof StoreLocalInstruction &&
-        instr.lval.identifier.declarationId === declarationId
-      ) {
-        return instr;
-      }
-    }
-  }
-  return undefined;
 }
 
 function buildExportFrom(

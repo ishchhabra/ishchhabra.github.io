@@ -1,7 +1,7 @@
-export const Foo = function Foo() {
+export function Foo() {
   return (
     <div>
       <span>hi</span>
     </div>
   );
-};
+}

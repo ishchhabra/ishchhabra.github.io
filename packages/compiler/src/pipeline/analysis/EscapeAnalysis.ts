@@ -1,6 +1,7 @@
 import {
   CallExpressionInstruction,
   CopyInstruction,
+  FunctionDeclarationInstruction,
   IdentifierId,
   LoadContextInstruction,
   LoadDynamicPropertyInstruction,
@@ -172,6 +173,7 @@ export class EscapeAnalysis extends FunctionAnalysis<EscapeAnalysisResult> {
         }
 
         if (
+          instr instanceof FunctionDeclarationInstruction ||
           instr instanceof ArrowFunctionExpressionInstruction ||
           instr instanceof FunctionExpressionInstruction
         ) {
