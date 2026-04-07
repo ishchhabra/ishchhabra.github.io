@@ -1,6 +1,7 @@
 import { BaseInstruction, BaseTerminal } from "../base";
 import { Identifier } from "./Identifier";
 import { Place } from "./Place";
+import { type LexicalScopeId } from "./LexicalScope";
 
 /**
  * Simulated opaque type for BlockId to prevent using normal numbers as ids
@@ -55,6 +56,7 @@ export class BasicBlock {
 
   constructor(
     public readonly id: BlockId,
+    public readonly scopeId: LexicalScopeId,
     public instructions: BaseInstruction[],
     terminal: BaseTerminal | undefined,
   ) {

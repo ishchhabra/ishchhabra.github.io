@@ -17,8 +17,10 @@ export function buildSwitchStatement(
   label?: string,
 ) {
   const currentBlock = functionBuilder.currentBlock;
+  const scopeId = functionBuilder.lexicalScopeIdFor(scope);
 
   const switchScope = functionBuilder.scopeFor(node);
+  const switchScopeId = functionBuilder.lexicalScopeIdFor(switchScope, "switch");
   instantiateScopeBindings(node, switchScope, functionBuilder, environment, moduleBuilder);
 
   // Build the discriminant expression in the current block.
@@ -34,7 +36,7 @@ export function buildSwitchStatement(
   }
 
   // Create the fallthrough block (continuation after switch).
-  const fallthroughBlock = environment.createBlock();
+  const fallthroughBlock = environment.createBlock(scopeId);
   functionBuilder.blocks.set(fallthroughBlock.id, fallthroughBlock);
 
   // Register switch control context so BreakStatement can jump to fallthrough.
@@ -77,7 +79,7 @@ export function buildSwitchStatement(
       testPlace = place;
     }
 
-    const caseBlock = environment.createBlock();
+    const caseBlock = environment.createBlock(switchScopeId);
     functionBuilder.blocks.set(caseBlock.id, caseBlock);
 
     caseEntries.push({ test: testPlace, block: caseBlock });

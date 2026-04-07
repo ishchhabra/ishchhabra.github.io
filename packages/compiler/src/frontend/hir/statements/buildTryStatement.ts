@@ -10,6 +10,7 @@ import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
+import { buildOwnedBody } from "./buildOwnedBody";
 
 export function buildTryStatement(
   node: ESTree.TryStatement,
@@ -19,18 +20,21 @@ export function buildTryStatement(
   environment: Environment,
 ) {
   const currentBlock = functionBuilder.currentBlock;
+  const scopeId = functionBuilder.lexicalScopeIdFor(scope);
 
   const hasHandler = node.handler !== null;
   const hasFinalizer = node.finalizer !== null;
 
   // Create the fallthrough block (continuation after entire try statement).
-  const fallthroughBlock = environment.createBlock();
+  const fallthroughBlock = environment.createBlock(scopeId);
   functionBuilder.blocks.set(fallthroughBlock.id, fallthroughBlock);
 
   // Create the finally block if present.
   let finallyBlock = null;
   if (hasFinalizer) {
-    finallyBlock = environment.createBlock();
+    const finalizerScope = functionBuilder.scopeFor(node.finalizer!);
+    const finalizerScopeId = functionBuilder.lexicalScopeIdFor(finalizerScope);
+    finallyBlock = environment.createBlock(finalizerScopeId);
     functionBuilder.blocks.set(finallyBlock.id, finallyBlock);
   }
 
@@ -38,11 +42,13 @@ export function buildTryStatement(
   const jumpTarget = finallyBlock ?? fallthroughBlock;
 
   // Build the try body block.
-  const tryBlock = environment.createBlock();
+  const tryBodyScope = functionBuilder.scopeFor(node.block);
+  const tryBodyScopeId = functionBuilder.lexicalScopeIdFor(tryBodyScope);
+  const tryBlock = environment.createBlock(tryBodyScopeId);
   functionBuilder.blocks.set(tryBlock.id, tryBlock);
 
   functionBuilder.currentBlock = tryBlock;
-  buildNode(node.block, scope, functionBuilder, moduleBuilder, environment);
+  buildOwnedBody(node.block, scope, functionBuilder, moduleBuilder, environment);
 
   if (functionBuilder.currentBlock.terminal === undefined) {
     functionBuilder.currentBlock.terminal = new JumpTerminal(
@@ -58,7 +64,9 @@ export function buildTryStatement(
   } | null = null;
   if (hasHandler) {
     const catchClause = node.handler!;
-    const handlerBlock = environment.createBlock();
+    const catchScope = functionBuilder.scopeFor(catchClause);
+    const catchScopeId = functionBuilder.lexicalScopeIdFor(catchScope, "catch");
+    const handlerBlock = environment.createBlock(catchScopeId);
     functionBuilder.blocks.set(handlerBlock.id, handlerBlock);
 
     functionBuilder.currentBlock = handlerBlock;
@@ -66,7 +74,6 @@ export function buildTryStatement(
     // Build the catch parameter binding if present.
     let paramPlace: import("../../../ir").Place | null = null;
     if (catchClause.param != null && catchClause.param.type === "Identifier") {
-      const catchScope = functionBuilder.scopeFor(catchClause);
       // Create a binding for the catch parameter.
       const identifier = environment.createIdentifier();
       functionBuilder.registerDeclarationName(
@@ -97,7 +104,7 @@ export function buildTryStatement(
     }
 
     // Build the catch body.
-    buildNode(catchClause.body, scope, functionBuilder, moduleBuilder, environment);
+    buildOwnedBody(catchClause.body, scope, functionBuilder, moduleBuilder, environment);
 
     if (functionBuilder.currentBlock.terminal === undefined) {
       functionBuilder.currentBlock.terminal = new JumpTerminal(
@@ -112,7 +119,7 @@ export function buildTryStatement(
   // Build the finally block body if present.
   if (finallyBlock !== null && hasFinalizer) {
     functionBuilder.currentBlock = finallyBlock;
-    buildNode(node.finalizer!, scope, functionBuilder, moduleBuilder, environment);
+    buildOwnedBody(node.finalizer!, scope, functionBuilder, moduleBuilder, environment);
 
     if (functionBuilder.currentBlock.terminal === undefined) {
       functionBuilder.currentBlock.terminal = new JumpTerminal(

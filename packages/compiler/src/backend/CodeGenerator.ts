@@ -7,6 +7,8 @@ import {
   type ControlContext,
   DeclarationId,
   PlaceId,
+  LexicalScope,
+  type LexicalScopeId,
 } from "../ir";
 import { FunctionIR, makeFunctionIRId } from "../ir/core/FunctionIR";
 import { ModuleIR } from "../ir/core/ModuleIR";
@@ -26,6 +28,7 @@ export class CodeGenerator {
   public readonly blockToStatements: Map<BlockId, Array<t.Statement>> = new Map();
   public generatedBlocks: Set<BlockId> = new Set();
   public readonly controlStack: ControlContext[] = [];
+  public readonly scopes: Map<LexicalScopeId, LexicalScope> = new Map();
 
   /** Maps declarationId → kind from DeclareLocal instructions. */
   public readonly declarationKinds: Map<DeclarationId, "var" | "let" | "const"> = new Map();
@@ -101,6 +104,10 @@ export class CodeGenerator {
 
   generate(): string {
     const moduleIR = this.projectUnit.modules.get(this.path)!;
+    // Populate the scope tree so the codegen can detect scope transitions.
+    for (const [id, scope] of moduleIR.environment.scopes) {
+      this.scopes.set(id, scope);
+    }
     this.preRegisterBindingIdentifiers(moduleIR);
     const { statements } = generateFunction(this.entryFunction, [], this);
     const program = t.program(statements);
@@ -118,6 +125,9 @@ export class CodeGenerator {
     }
 
     const generator = new CodeGenerator(modulePath, this.projectUnit);
+    for (const [id, scope] of moduleIR.environment.scopes) {
+      generator.scopes.set(id, scope);
+    }
     generator.preRegisterBindingIdentifiers(moduleIR);
     const entryFunction = moduleIR.functions.get(makeFunctionIRId(0))!;
     const { statements } = generateFunction(entryFunction, [], generator);

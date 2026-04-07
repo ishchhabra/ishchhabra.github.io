@@ -14,6 +14,7 @@ import { instantiateScopeBindings } from "../bindings";
 import { buildNode } from "../buildNode";
 import { buildAssignmentLeft } from "../expressions/buildAssignmentExpression";
 import { buildLVal } from "../buildLVal";
+import { buildOwnedBody } from "./buildOwnedBody";
 
 export function buildForInStatement(
   node: ESTree.ForInStatement,
@@ -32,11 +33,13 @@ export function buildForInStatement(
   }
 
   // Build the header block.
-  const headerBlock = environment.createBlock();
+  const forScope = functionBuilder.scopeFor(node);
+  const forScopeId = functionBuilder.lexicalScopeIdFor(forScope, "for");
+  const scopeId = functionBuilder.lexicalScopeIdFor(scope);
+  const headerBlock = environment.createBlock(forScopeId);
   functionBuilder.blocks.set(headerBlock.id, headerBlock);
 
   functionBuilder.currentBlock = headerBlock;
-  const forScope = functionBuilder.scopeFor(node);
   instantiateScopeBindings(node, forScope, functionBuilder, environment, moduleBuilder);
 
   // Build the iteration value from the left side.
@@ -72,8 +75,13 @@ export function buildForInStatement(
     bareLVal = left as ESTree.Pattern;
   }
 
-  // Build the body block.
-  const bodyBlock = environment.createBlock();
+  // Build the body block. When the body is a BlockStatement (the common
+  // case: `for (x in obj) { ... }`), use the BlockStatement's scope so
+  // it merges with the body block — the loop syntax already provides { }.
+  const bodyScope =
+    node.body.type === "BlockStatement" ? functionBuilder.scopeFor(node.body) : forScope;
+  const bodyScopeId = functionBuilder.lexicalScopeIdFor(bodyScope);
+  const bodyBlock = environment.createBlock(bodyScopeId);
   functionBuilder.blocks.set(bodyBlock.id, bodyBlock);
 
   functionBuilder.currentBlock = bodyBlock;
@@ -108,7 +116,7 @@ export function buildForInStatement(
   }
 
   // Build the exit block (created early so break statements can reference it).
-  const exitBlock = environment.createBlock();
+  const exitBlock = environment.createBlock(scopeId);
   functionBuilder.blocks.set(exitBlock.id, exitBlock);
 
   functionBuilder.controlStack.push({
@@ -117,7 +125,7 @@ export function buildForInStatement(
     breakTarget: exitBlock.id,
     continueTarget: headerBlock.id,
   });
-  buildNode(node.body, forScope, functionBuilder, moduleBuilder, environment);
+  buildOwnedBody(node.body, forScope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
   const bodyBlockTerminus = functionBuilder.currentBlock;
 

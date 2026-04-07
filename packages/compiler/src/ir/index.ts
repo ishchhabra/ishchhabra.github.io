@@ -1,6 +1,7 @@
 export * from "./base";
 export * from "./core";
 export {
+  BlockStructure,
   ForInStructure,
   ForOfStructure,
   LabeledBlockStructure,

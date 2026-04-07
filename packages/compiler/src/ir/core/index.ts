@@ -8,7 +8,8 @@ export {
   type IdentifierId,
 } from "./Identifier";
 export { Place, type PlaceId } from "./Place";
-export { BaseStructure } from "./Structure";
+export { LexicalScope, makeLexicalScopeId, type LexicalScopeId, type LexicalScopeKind } from "./LexicalScope";
+export { BaseStructure, BlockStructure } from "./Structure";
 export {
   BranchTerminal,
   JumpTerminal,

@@ -2,9 +2,10 @@ import type * as ESTree from "estree";
 import { parseSync } from "oxc-parser";
 import { readFileSync } from "fs";
 import { Environment } from "../../environment";
+import type { LexicalScopeId } from "../../ir/core/LexicalScope";
 import { FunctionIR, FunctionIRId } from "../../ir/core/FunctionIR";
 import { ModuleExport, ModuleGlobal, ModuleIR } from "../../ir/core/ModuleIR";
-import { analyzeScopes } from "../scope/Scope";
+import { analyzeScopes, type Scope } from "../scope/Scope";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
 
 export class ModuleIRBuilder {
@@ -12,6 +13,7 @@ export class ModuleIRBuilder {
   public readonly exports: Map<string, ModuleExport> = new Map();
 
   public readonly functions: Map<FunctionIRId, FunctionIR> = new Map();
+  public readonly scopeToLexicalScope: Map<Scope, LexicalScopeId> = new Map();
 
   constructor(
     public readonly path: string,

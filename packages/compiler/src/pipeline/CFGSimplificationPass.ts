@@ -150,6 +150,10 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
       const predBlock = this.functionIR.blocks.get(predId)!;
       const block = this.functionIR.blocks.get(blockId)!;
 
+      // Don't merge blocks with different scope IDs — the scope boundary
+      // represents a source-level { } block that the codegen must emit.
+      if (predBlock.scopeId !== block.scopeId) continue;
+
       // Absorb instructions and terminal. Instructions are moved (not
       // created/deleted), so use-chains stay valid without re-registration.
       // Terminal must be detached from `block` first (unregisters), then

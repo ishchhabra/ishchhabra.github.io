@@ -15,6 +15,7 @@ import { buildNode } from "../buildNode";
 import { buildAssignmentExpression } from "../expressions/buildAssignmentExpression";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
+import { buildOwnedBody } from "./buildOwnedBody";
 import { buildStatement } from "./buildStatement";
 
 export function buildForStatement(
@@ -27,17 +28,23 @@ export function buildForStatement(
 ) {
   const currentBlock = functionBuilder.currentBlock;
 
-  // Build the init block.
-  const initBlock = environment.createBlock();
-  functionBuilder.blocks.set(initBlock.id, initBlock);
-
-  functionBuilder.currentBlock = initBlock;
   const init = node.init;
   // If the for-statement has a lexical init, use the for-scope for the entire loop.
   const forScope =
     init?.type === "VariableDeclaration" && (init.kind === "let" || init.kind === "const")
       ? functionBuilder.scopeFor(node)
       : scope;
+  const forScopeId =
+    forScope !== scope
+      ? functionBuilder.lexicalScopeIdFor(forScope, "for")
+      : functionBuilder.lexicalScopeIdFor(forScope);
+  const scopeId = functionBuilder.lexicalScopeIdFor(scope);
+
+  // Build the init block.
+  const initBlock = environment.createBlock(forScopeId);
+  functionBuilder.blocks.set(initBlock.id, initBlock);
+
+  functionBuilder.currentBlock = initBlock;
   if (init != null) {
     if (init.type === "VariableDeclaration") {
       instantiateScopeBindings(node, forScope, functionBuilder, environment, moduleBuilder);
@@ -50,7 +57,7 @@ export function buildForStatement(
   const initBlockTerminus = functionBuilder.currentBlock;
 
   // Build the test block.
-  const testBlock = environment.createBlock();
+  const testBlock = environment.createBlock(forScopeId);
   functionBuilder.blocks.set(testBlock.id, testBlock);
 
   functionBuilder.currentBlock = testBlock;
@@ -72,15 +79,19 @@ export function buildForStatement(
   const testBlockTerminus = functionBuilder.currentBlock;
 
   // Build the exit block (created early so break statements can reference it).
-  const exitBlock = environment.createBlock();
+  const exitBlock = environment.createBlock(scopeId);
   functionBuilder.blocks.set(exitBlock.id, exitBlock);
 
-  // Build the body block.
-  const bodyBlock = environment.createBlock();
+  // Build the body block. When the body is a BlockStatement, use its
+  // scope so it merges with the body block — the loop syntax provides { }.
+  const bodyScope =
+    node.body.type === "BlockStatement" ? functionBuilder.scopeFor(node.body) : forScope;
+  const bodyScopeId = functionBuilder.lexicalScopeIdFor(bodyScope);
+  const bodyBlock = environment.createBlock(bodyScopeId);
   functionBuilder.blocks.set(bodyBlock.id, bodyBlock);
 
   const update = node.update;
-  const updateBlock = update != null ? environment.createBlock() : undefined;
+  const updateBlock = update != null ? environment.createBlock(forScopeId) : undefined;
   if (updateBlock !== undefined) {
     functionBuilder.blocks.set(updateBlock.id, updateBlock);
   }
@@ -95,7 +106,7 @@ export function buildForStatement(
   if (label) {
     functionBuilder.blockLabels.set(testBlock.id, label);
   }
-  buildNode(node.body, forScope, functionBuilder, moduleBuilder, environment);
+  buildOwnedBody(node.body, forScope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
 
   // For `continue`, run the update before the test (ECMAScript for-loop semantics).

@@ -1,11 +1,10 @@
 import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
-import { JumpTerminal, makeInstructionId } from "../../../ir";
+import { BlockStructure, JumpTerminal, createInstructionId } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
-import { instantiateScopeBindings } from "../bindings";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
-import { buildStatementList } from "./buildStatementList";
+import { buildOwnedBody } from "./buildOwnedBody";
 
 export function buildBlockStatement(
   node: ESTree.BlockStatement,
@@ -16,18 +15,36 @@ export function buildBlockStatement(
 ) {
   const currentBlock = functionBuilder.currentBlock;
 
-  const block = environment.createBlock();
-  functionBuilder.blocks.set(block.id, block);
-  functionBuilder.currentBlock = block;
-
   const blockScope = functionBuilder.scopeFor(node);
-  instantiateScopeBindings(node, blockScope, functionBuilder, environment, moduleBuilder);
+  const scopeId = functionBuilder.lexicalScopeIdFor(scope);
+  const blockScopeId = functionBuilder.lexicalScopeIdFor(blockScope);
 
-  buildStatementList(node.body, blockScope, functionBuilder, moduleBuilder, environment);
+  const headerBlock = environment.createBlock(scopeId);
+  functionBuilder.blocks.set(headerBlock.id, headerBlock);
 
-  currentBlock.terminal = new JumpTerminal(
-    makeInstructionId(functionBuilder.environment.nextInstructionId++),
-    block.id,
+  const bodyBlock = environment.createBlock(blockScopeId);
+  functionBuilder.blocks.set(bodyBlock.id, bodyBlock);
+
+  const exitBlock = environment.createBlock(scopeId);
+  functionBuilder.blocks.set(exitBlock.id, exitBlock);
+
+  currentBlock.terminal = new JumpTerminal(createInstructionId(environment), headerBlock.id);
+
+  functionBuilder.currentBlock = bodyBlock;
+  buildOwnedBody(node, scope, functionBuilder, moduleBuilder, environment);
+
+  if (functionBuilder.currentBlock.terminal === undefined) {
+    functionBuilder.currentBlock.terminal = new JumpTerminal(
+      createInstructionId(environment),
+      exitBlock.id,
+    );
+  }
+
+  functionBuilder.structures.set(
+    headerBlock.id,
+    new BlockStructure(headerBlock.id, bodyBlock.id, exitBlock.id),
   );
+
+  functionBuilder.currentBlock = exitBlock;
   return undefined;
 }

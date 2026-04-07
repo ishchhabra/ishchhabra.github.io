@@ -4,11 +4,11 @@ import { JumpTerminal, LabeledBlockStructure, createInstructionId } from "../../
 import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
+import { buildOwnedBody } from "./buildOwnedBody";
 import { buildDoWhileStatement } from "./buildDoWhileStatement";
 import { buildForInStatement } from "./buildForInStatement";
 import { buildForOfStatement } from "./buildForOfStatement";
 import { buildForStatement } from "./buildForStatement";
-import { buildStatement } from "./buildStatement";
 import { buildSwitchStatement } from "./buildSwitchStatement";
 import { buildWhileStatement } from "./buildWhileStatement";
 
@@ -46,14 +46,17 @@ export function buildLabeledStatement(
   // Non-loop/non-switch: create a labeled block structure.
   // This enables `break label` to exit the block early.
   const currentBlock = functionBuilder.currentBlock;
+  const scopeId = functionBuilder.lexicalScopeIdFor(scope);
 
-  const headerBlock = environment.createBlock();
+  const headerBlock = environment.createBlock(scopeId);
   functionBuilder.blocks.set(headerBlock.id, headerBlock);
 
-  const bodyBlock = environment.createBlock();
+  const bodyScope = body.type === "BlockStatement" ? functionBuilder.scopeFor(body) : scope;
+  const bodyScopeId = functionBuilder.lexicalScopeIdFor(bodyScope);
+  const bodyBlock = environment.createBlock(bodyScopeId);
   functionBuilder.blocks.set(bodyBlock.id, bodyBlock);
 
-  const exitBlock = environment.createBlock();
+  const exitBlock = environment.createBlock(scopeId);
   functionBuilder.blocks.set(exitBlock.id, exitBlock);
 
   // Wire current block -> header block.
@@ -66,7 +69,7 @@ export function buildLabeledStatement(
     label,
     breakTarget: exitBlock.id,
   });
-  buildStatement(body, scope, functionBuilder, moduleBuilder, environment);
+  buildOwnedBody(body, scope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
 
   // If the body didn't terminate, jump to the exit block.

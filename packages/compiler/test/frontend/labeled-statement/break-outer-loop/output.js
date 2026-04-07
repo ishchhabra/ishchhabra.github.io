@@ -18,5 +18,5 @@ outer: while ($30_phi_39 < 3) {
   const $23_0 = $30_phi_39;
   $23_0;
   $30_phi_39 = $30_phi_39 + 1;
-  $32_phi_41 = undefined;
+  $32_phi_41 = $31_phi_40;
 }

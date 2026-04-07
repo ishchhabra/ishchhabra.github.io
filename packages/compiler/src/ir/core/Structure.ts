@@ -42,6 +42,45 @@ export abstract class BaseStructure {
 }
 
 /**
+ * A structure that represents a standalone source-level block statement.
+ */
+export class BlockStructure extends BaseStructure {
+  constructor(
+    public header: BlockId,
+    public body: BlockId,
+    public exit: BlockId,
+  ) {
+    super();
+  }
+
+  getEdges(): Array<[BlockId, BlockId]> {
+    return [[this.header, this.body]];
+  }
+
+  getBlockRefs(): BlockId[] {
+    return [this.body, this.exit];
+  }
+
+  getOperands(): Place[] {
+    return [];
+  }
+
+  getDefs(): Place[] {
+    return [];
+  }
+
+  rewrite(_values: Map<Identifier, Place>): BlockStructure {
+    return this;
+  }
+
+  remap(from: BlockId, to: BlockId): void {
+    if (this.header === from) this.header = to;
+    if (this.body === from) this.body = to;
+    if (this.exit === from) this.exit = to;
+  }
+}
+
+/**
  * A structure that represents a for...in loop.
  */
 export class ForInStructure extends BaseStructure {

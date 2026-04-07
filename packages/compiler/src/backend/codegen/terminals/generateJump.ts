@@ -19,5 +19,6 @@ export function generateJumpTerminal(
     return [t.continueStatement(continueLabel ? t.identifier(continueLabel) : null)];
   }
 
-  return generateBlock(terminal.target, functionIR, generator);
+  const statements = generateBlock(terminal.target, functionIR, generator);
+  return statements;
 }

@@ -5,6 +5,7 @@ import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
+import { buildOwnedBody } from "./buildOwnedBody";
 
 export function buildWhileStatement(
   node: ESTree.WhileStatement,
@@ -15,9 +16,10 @@ export function buildWhileStatement(
   label?: string,
 ) {
   const currentBlock = functionBuilder.currentBlock;
+  const scopeId = functionBuilder.lexicalScopeIdFor(scope);
 
   // Build the test block.
-  const testBlock = environment.createBlock();
+  const testBlock = environment.createBlock(scopeId);
   functionBuilder.blocks.set(testBlock.id, testBlock);
 
   functionBuilder.currentBlock = testBlock;
@@ -28,11 +30,15 @@ export function buildWhileStatement(
   const testBlockTerminus = functionBuilder.currentBlock;
 
   // Build the exit block (created early so break statements can reference it).
-  const exitBlock = environment.createBlock();
+  const exitBlock = environment.createBlock(scopeId);
   functionBuilder.blocks.set(exitBlock.id, exitBlock);
 
-  // Build the body block.
-  const bodyBlock = environment.createBlock();
+  // Build the body block. When the body is a BlockStatement, use its
+  // scope so it merges with the body block — the loop syntax provides { }.
+  const bodyScope =
+    node.body.type === "BlockStatement" ? functionBuilder.scopeFor(node.body) : scope;
+  const bodyScopeId = functionBuilder.lexicalScopeIdFor(bodyScope);
+  const bodyBlock = environment.createBlock(bodyScopeId);
   functionBuilder.blocks.set(bodyBlock.id, bodyBlock);
 
   functionBuilder.currentBlock = bodyBlock;
@@ -45,7 +51,7 @@ export function buildWhileStatement(
   if (label) {
     functionBuilder.blockLabels.set(testBlock.id, label);
   }
-  buildNode(node.body, scope, functionBuilder, moduleBuilder, environment);
+  buildOwnedBody(node.body, scope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
   const bodyBlockTerminus = functionBuilder.currentBlock;
 

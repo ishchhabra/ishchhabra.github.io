@@ -11,6 +11,7 @@ import {
   Place,
   ReturnTerminal,
 } from "../../ir";
+import type { LexicalScopeId, LexicalScopeKind } from "../../ir/core/LexicalScope";
 import { FunctionIR, makeFunctionIRId } from "../../ir/core/FunctionIR";
 import { isExpression } from "../estree";
 import { type Scope, type ScopeMap } from "../scope/Scope";
@@ -79,9 +80,31 @@ export class FunctionIRBuilder {
     public readonly async: boolean,
     public readonly generator: boolean,
   ) {
-    const entryBlock = this.environment.createBlock();
+    const entryScopeId = this.ensureIRScope(scope);
+    const entryBlock = this.environment.createBlock(entryScopeId);
     this.blocks.set(entryBlock.id, entryBlock);
     this.currentBlock = entryBlock;
+  }
+
+  /**
+   * Ensure a frontend Scope has a corresponding IR scope. Creates one
+   * if it doesn't exist yet. The `kind` parameter overrides the frontend
+   * scope's coarse kind with a specific IR ScopeKind (e.g. "switch",
+   * "for", "catch") so the IR keeps the lexical construct kind even
+   * when the frontend scope uses the coarse "block" classification.
+   */
+  public ensureIRScope(frontendScope: Scope, kind?: LexicalScopeKind): LexicalScopeId {
+    const existing = this.moduleBuilder.scopeToLexicalScope.get(frontendScope);
+    if (existing !== undefined) return existing;
+    const parentId = frontendScope.parent ? this.ensureIRScope(frontendScope.parent) : null;
+    const irScope = this.environment.createScope(parentId, kind ?? frontendScope.kind);
+    this.moduleBuilder.scopeToLexicalScope.set(frontendScope, irScope.id);
+    return irScope.id;
+  }
+
+  /** Resolve a frontend scope to its lexical scope id, creating it if needed. */
+  public lexicalScopeIdFor(frontendScope: Scope, kind?: LexicalScopeKind): LexicalScopeId {
+    return this.ensureIRScope(frontendScope, kind);
   }
 
   /** Resolve the scope for a given AST node. */

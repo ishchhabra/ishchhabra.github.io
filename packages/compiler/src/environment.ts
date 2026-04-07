@@ -16,6 +16,7 @@ import {
   makeIdentifierId,
 } from "./ir/core/Identifier";
 import { makePlaceId, Place, PlaceId } from "./ir/core/Place";
+import { LexicalScope, makeLexicalScopeId, type LexicalScopeId, type LexicalScopeKind } from "./ir/core/LexicalScope";
 import { ProjectEnvironment } from "./ProjectEnvironment";
 
 // oxlint-disable-next-line typescript/no-explicit-any
@@ -27,6 +28,16 @@ export class Environment {
   public readonly instructions: Map<InstructionId, BaseInstruction> = new Map();
   public readonly blocks: Map<BlockId, BasicBlock> = new Map();
   public readonly functions: Map<FunctionIRId, FunctionIR> = new Map();
+  public readonly scopes: Map<LexicalScopeId, LexicalScope> = new Map();
+
+  private nextScopeId = 0;
+
+  public createScope(parent: LexicalScopeId | null, kind: LexicalScopeKind): LexicalScope {
+    const id = makeLexicalScopeId(this.nextScopeId++);
+    const scope = new LexicalScope(id, parent, kind);
+    this.scopes.set(id, scope);
+    return scope;
+  }
 
   /**
    * Maps each `DeclarationId` (representing a declared variable or function name)
@@ -125,9 +136,9 @@ export class Environment {
     return instruction;
   }
 
-  public createBlock(): BasicBlock {
+  public createBlock(scopeId: LexicalScopeId): BasicBlock {
     const blockId = makeBlockId(this.projectEnvironment.nextBlockId++);
-    const block = new BasicBlock(blockId, [], undefined);
+    const block = new BasicBlock(blockId, scopeId, [], undefined);
     this.blocks.set(blockId, block);
     return block;
   }

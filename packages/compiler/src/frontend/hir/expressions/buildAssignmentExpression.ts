@@ -309,10 +309,11 @@ function buildLogicalIdentifierAssignment(
 
   // let _result = x; -- holds the expression value across both paths.
   const { bindingPlace } = emitResultVariable(testPlace, functionBuilder, environment);
+  const scopeId = functionBuilder.lexicalScopeIdFor(scope);
 
-  const assignBlock = environment.createBlock();
+  const assignBlock = environment.createBlock(scopeId);
   functionBuilder.blocks.set(assignBlock.id, assignBlock);
-  const mergeBlock = environment.createBlock();
+  const mergeBlock = environment.createBlock(scopeId);
   functionBuilder.blocks.set(mergeBlock.id, mergeBlock);
 
   functionBuilder.currentBlock.terminal = new BranchTerminal(
@@ -472,10 +473,11 @@ function buildLogicalMemberAssignment(
     environment.createInstruction(LoadLocalInstruction, cachedPlace, resultBinding),
   );
   const conditionPlace = buildLogicalCondition(operator, cachedPlace, functionBuilder, environment);
+  const scopeId = functionBuilder.lexicalScopeIdFor(scope);
 
-  const assignBlock = environment.createBlock();
+  const assignBlock = environment.createBlock(scopeId);
   functionBuilder.blocks.set(assignBlock.id, assignBlock);
-  const mergeBlock = environment.createBlock();
+  const mergeBlock = environment.createBlock(scopeId);
   functionBuilder.blocks.set(mergeBlock.id, mergeBlock);
 
   functionBuilder.currentBlock.terminal = new BranchTerminal(

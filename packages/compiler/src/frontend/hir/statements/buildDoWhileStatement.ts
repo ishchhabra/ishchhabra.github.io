@@ -11,6 +11,7 @@ import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
+import { buildOwnedBody } from "./buildOwnedBody";
 
 /**
  * Lowers `do { body } while (test)` to the equivalent:
@@ -31,9 +32,10 @@ export function buildDoWhileStatement(
   label?: string,
 ) {
   const currentBlock = functionBuilder.currentBlock;
+  const scopeId = functionBuilder.lexicalScopeIdFor(scope);
 
   // Build the test block — the `while(true)` header.
-  const testBlock = environment.createBlock();
+  const testBlock = environment.createBlock(scopeId);
   functionBuilder.blocks.set(testBlock.id, testBlock);
 
   // Emit `true` as the while condition.
@@ -45,11 +47,15 @@ export function buildDoWhileStatement(
   const testBlockTerminus = functionBuilder.currentBlock;
 
   // Build the exit block (created early so break statements can reference it).
-  const exitBlock = environment.createBlock();
+  const exitBlock = environment.createBlock(scopeId);
   functionBuilder.blocks.set(exitBlock.id, exitBlock);
 
-  // Build the body block.
-  const bodyBlock = environment.createBlock();
+  // Build the body block. When the body is a BlockStatement, use its
+  // scope so it merges with the body block — the loop syntax provides { }.
+  const bodyScope =
+    node.body.type === "BlockStatement" ? functionBuilder.scopeFor(node.body) : scope;
+  const bodyScopeId = functionBuilder.lexicalScopeIdFor(bodyScope);
+  const bodyBlock = environment.createBlock(bodyScopeId);
   functionBuilder.blocks.set(bodyBlock.id, bodyBlock);
 
   functionBuilder.currentBlock = bodyBlock;
@@ -62,7 +68,7 @@ export function buildDoWhileStatement(
   if (label) {
     functionBuilder.blockLabels.set(testBlock.id, label);
   }
-  buildNode(node.body, scope, functionBuilder, moduleBuilder, environment);
+  buildOwnedBody(node.body, scope, functionBuilder, moduleBuilder, environment);
 
   // After the body, evaluate the do-while test. If false, break.
   const doWhileTestPlace = buildNode(node.test, scope, functionBuilder, moduleBuilder, environment);
@@ -77,14 +83,14 @@ export function buildDoWhileStatement(
     environment.createInstruction(UnaryExpressionInstruction, notTestPlace, "!", doWhileTestPlace),
   );
 
-  const breakBlock = environment.createBlock();
+  const breakBlock = environment.createBlock(scopeId);
   functionBuilder.blocks.set(breakBlock.id, breakBlock);
   breakBlock.terminal = new JumpTerminal(
     createInstructionId(functionBuilder.environment),
     exitBlock.id,
   );
 
-  const loopBackBlock = environment.createBlock();
+  const loopBackBlock = environment.createBlock(scopeId);
   functionBuilder.blocks.set(loopBackBlock.id, loopBackBlock);
   loopBackBlock.terminal = new JumpTerminal(
     createInstructionId(functionBuilder.environment),

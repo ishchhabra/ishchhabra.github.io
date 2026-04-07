@@ -28,6 +28,7 @@ export function buildConditionalExpression(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
+  const scopeId = functionBuilder.lexicalScopeIdFor(scope);
   const testPlace = buildNode(node.test, scope, functionBuilder, moduleBuilder, environment);
   if (testPlace === undefined || Array.isArray(testPlace)) {
     throw new Error("Conditional expression test must be a single place");
@@ -40,11 +41,11 @@ export function buildConditionalExpression(
   const resultPlace = buildTemporaryIdentifier(scope, functionBuilder, environment);
 
   // Create the join block.
-  const joinBlock = environment.createBlock();
+  const joinBlock = environment.createBlock(scopeId);
   functionBuilder.blocks.set(joinBlock.id, joinBlock);
 
   // Build the consequent block.
-  const consequentBlock = environment.createBlock();
+  const consequentBlock = environment.createBlock(scopeId);
   functionBuilder.blocks.set(consequentBlock.id, consequentBlock);
 
   functionBuilder.currentBlock = consequentBlock;
@@ -65,7 +66,7 @@ export function buildConditionalExpression(
   );
 
   // Build the alternate block.
-  const alternateBlock = environment.createBlock();
+  const alternateBlock = environment.createBlock(scopeId);
   functionBuilder.blocks.set(alternateBlock.id, alternateBlock);
 
   functionBuilder.currentBlock = alternateBlock;

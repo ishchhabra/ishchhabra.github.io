@@ -1,7 +1,8 @@
 let sum = 0;
-let i = 0;
 let $19_phi_26 = undefined;
-let $20_phi_27 = 0;
+let $20_phi_27 = undefined;
+let i = 0;
+$20_phi_27 = 0;
 let $21_phi_28 = 0;
 while ($21_phi_28 < 10) {
   if ($21_phi_28 === 5) {
