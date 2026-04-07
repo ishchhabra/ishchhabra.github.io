@@ -12,8 +12,6 @@ export type StoreContextKind = "declaration" | "assignment";
  * (stores are considered side-effecting because closures may observe them).
  */
 export class StoreContextInstruction extends MemoryInstruction {
-  public emit: boolean = true;
-
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
@@ -22,6 +20,7 @@ export class StoreContextInstruction extends MemoryInstruction {
     public readonly type: "let" | "var",
     public readonly kind: StoreContextKind,
     public readonly bindings: Place[] = [],
+    public emit = true,
   ) {
     super(id, place);
   }
@@ -37,6 +36,7 @@ export class StoreContextInstruction extends MemoryInstruction {
       this.type,
       this.kind,
       this.bindings,
+      this.emit,
     );
   }
 
@@ -65,6 +65,7 @@ export class StoreContextInstruction extends MemoryInstruction {
       this.type,
       this.kind,
       bindings,
+      this.emit,
     );
   }
 

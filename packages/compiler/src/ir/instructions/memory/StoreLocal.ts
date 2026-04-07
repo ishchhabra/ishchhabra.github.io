@@ -12,14 +12,6 @@ import { ExpressionStatementInstruction } from "../ExpressionStatement";
  * ```
  */
 export class StoreLocalInstruction extends MemoryInstruction {
-  /**
-   * Whether codegen should emit this as a standalone statement. When `false`,
-   * codegen still populates `generator.places` but does not emit a
-   * VariableDeclaration statement. Set to `false` by ExportDeclarationMergingPass
-   * when the declaration is wrapped inside an ExportNamedDeclaration.
-   */
-  public emit: boolean = true;
-
   constructor(
     public readonly id: InstructionId,
     public readonly place: Place,
@@ -27,6 +19,13 @@ export class StoreLocalInstruction extends MemoryInstruction {
     public readonly value: Place,
     public readonly type: "let" | "const" | "var",
     public readonly bindings: Place[] = [],
+    /**
+     * Whether codegen should emit this as a standalone statement. When `false`,
+     * codegen still populates `generator.places` but does not emit a
+     * VariableDeclaration statement. Set to `false` by export merging when the
+     * declaration is wrapped by an export declaration.
+     */
+    public emit = true,
   ) {
     super(id, place);
   }
@@ -41,6 +40,7 @@ export class StoreLocalInstruction extends MemoryInstruction {
       this.value,
       this.type,
       this.bindings,
+      this.emit,
     );
   }
 
@@ -57,6 +57,7 @@ export class StoreLocalInstruction extends MemoryInstruction {
       rewriteDefinitions
         ? this.bindings.map((binding) => values.get(binding.identifier) ?? binding)
         : this.bindings,
+      this.emit,
     );
   }
 
