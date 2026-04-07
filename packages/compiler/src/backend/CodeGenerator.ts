@@ -21,12 +21,18 @@ const generate =
     ? _generate
     : (_generate as unknown as { default: typeof _generate }).default;
 
+interface FunctionCodegenState {
+  generatedBlocks: Set<BlockId>;
+  blockToStatements: Map<BlockId, Array<t.Statement>>;
+  declaredDeclarations: Set<DeclarationId>;
+}
+
 /**
  * Generates the code from the IR.
  */
 export class CodeGenerator {
   public readonly places: Map<PlaceId, t.Node | null> = new Map();
-  public readonly blockToStatements: Map<BlockId, Array<t.Statement>> = new Map();
+  public blockToStatements: Map<BlockId, Array<t.Statement>> = new Map();
   public generatedBlocks: Set<BlockId> = new Set();
   public readonly controlStack: ControlContext[] = [];
   public readonly scopes: Map<LexicalScopeId, LexicalScope> = new Map();
@@ -34,7 +40,7 @@ export class CodeGenerator {
   /** Maps declarationId → kind from DeclareLocal instructions. */
   public readonly declarationKinds: Map<DeclarationId, "var" | "let" | "const"> = new Map();
   /** Tracks which declarations have already emitted their first variable statement. */
-  public readonly declaredDeclarations: Set<DeclarationId> = new Set();
+  public declaredDeclarations: Set<DeclarationId> = new Set();
 
   /**
    * Returns the label to use for a `break` statement targeting the given block.
@@ -113,6 +119,31 @@ export class CodeGenerator {
     const { statements } = generateFunction(this.entryFunction, [], this);
     const program = t.program(statements);
     return generate(program).code;
+  }
+
+  /**
+   * Runs codegen with a fresh per-function state frame. Nested function
+   * generation reuses module-wide bindings/places but must not share block
+   * visitation or "first declaration emitted" bookkeeping with the caller.
+   */
+  public withFunctionState<T>(fn: () => T): T {
+    const savedState: FunctionCodegenState = {
+      generatedBlocks: this.generatedBlocks,
+      blockToStatements: this.blockToStatements,
+      declaredDeclarations: this.declaredDeclarations,
+    };
+
+    this.generatedBlocks = new Set();
+    this.blockToStatements = new Map();
+    this.declaredDeclarations = new Set();
+
+    try {
+      return fn();
+    } finally {
+      this.generatedBlocks = savedState.generatedBlocks;
+      this.blockToStatements = savedState.blockToStatements;
+      this.declaredDeclarations = savedState.declaredDeclarations;
+    }
   }
 
   /**

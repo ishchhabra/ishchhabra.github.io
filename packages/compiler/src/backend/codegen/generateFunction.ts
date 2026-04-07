@@ -24,48 +24,41 @@ export function generateFunction(
   params: Array<t.Identifier | t.RestElement | t.Pattern>;
   statements: Array<t.Statement>;
 } {
-  // Save and restore generatedBlocks so each function gets a fresh scope.
-  // This is necessary because function inlining can share FunctionIR
-  // objects between the original definition and the inlined call site,
-  // causing blocks to be incorrectly skipped on the second generation.
-  const savedGeneratedBlocks = new Set(generator.generatedBlocks);
-
-  // Bind capture parameters to outer captures so the function body
-  // resolves captured variables through the indirection layer.
-  for (let i = 0; i < functionIR.captureParams.length; i++) {
-    if (i < captures.length) {
-      const outerNode = generator.places.get(captures[i].id);
-      if (outerNode !== undefined) {
-        generator.places.set(functionIR.captureParams[i].id, outerNode);
+  return generator.withFunctionState(() => {
+    // Bind capture parameters to outer captures so the function body
+    // resolves captured variables through the indirection layer.
+    for (let i = 0; i < functionIR.captureParams.length; i++) {
+      if (i < captures.length) {
+        const outerNode = generator.places.get(captures[i].id);
+        if (outerNode !== undefined) {
+          generator.places.set(functionIR.captureParams[i].id, outerNode);
+        }
       }
     }
-  }
 
-  // Pre-register all binding identifiers across ALL blocks of this function.
-  // This ensures closures defined in earlier blocks can reference variables
-  // declared in later blocks (e.g. phi variables in merge blocks).
-  for (const instruction of functionIR.header) {
-    if (instruction instanceof DeclareLocalInstruction) {
-      generateDeclareLocalInstruction(instruction, generator);
-    }
-  }
-
-  for (const [, block] of functionIR.blocks) {
-    for (const instruction of block.instructions) {
+    // Pre-register all binding identifiers across ALL blocks of this function.
+    // This ensures closures defined in earlier blocks can reference variables
+    // declared in later blocks (e.g. phi variables in merge blocks).
+    for (const instruction of functionIR.header) {
       if (instruction instanceof DeclareLocalInstruction) {
         generateDeclareLocalInstruction(instruction, generator);
       }
     }
-  }
 
-  generateHeader(functionIR, generator);
-  const params = generateFunctionParams(functionIR, generator);
+    for (const [, block] of functionIR.blocks) {
+      for (const instruction of block.instructions) {
+        if (instruction instanceof DeclareLocalInstruction) {
+          generateDeclareLocalInstruction(instruction, generator);
+        }
+      }
+    }
 
-  const statements = generateBlock(functionIR.entryBlockId, functionIR, generator);
+    generateHeader(functionIR, generator);
+    const params = generateFunctionParams(functionIR, generator);
 
-  generator.generatedBlocks = savedGeneratedBlocks;
-
-  return { params, statements };
+    const statements = generateBlock(functionIR.entryBlockId, functionIR, generator);
+    return { params, statements };
+  });
 }
 
 function generateFunctionParams(
