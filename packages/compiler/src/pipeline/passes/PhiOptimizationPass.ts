@@ -152,6 +152,14 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
     if (consResult.storeIndex >= 0) consBlock.removeInstructionAt(consResult.storeIndex);
     if (altResult.storeIndex >= 0) altBlock.removeInstructionAt(altResult.storeIndex);
 
+    // Remove deferred trampoline stores (from the structure-through case).
+    if (consResult.trampolineBlock && consResult.trampolineStoreIndex >= 0) {
+      consResult.trampolineBlock.removeInstructionAt(consResult.trampolineStoreIndex);
+    }
+    if (altResult.trampolineBlock && altResult.trampolineStoreIndex >= 0) {
+      altResult.trampolineBlock.removeInstructionAt(altResult.trampolineStoreIndex);
+    }
+
     // Clear arm block terminals — they're owned by the structure now.
     consBlock.replaceTerminal(undefined);
     altBlock.replaceTerminal(undefined);
@@ -250,12 +258,18 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
     phiBlockId: BlockId,
     phi: Phi,
     operandPlace: Place,
-  ): { valuePlace: Place; storeIndex: number; trampolines: BlockId[] } | null {
+  ): {
+    valuePlace: Place;
+    storeIndex: number;
+    trampolines: BlockId[];
+    trampolineBlock: BasicBlock | null;
+    trampolineStoreIndex: number;
+  } | null {
     if (armBlockId === phiBlockId) {
       // Direct case — extract phi store normally.
       const result = this.extractPhiStore(armBlock, phi, operandPlace);
       if (!result) return null;
-      return { ...result, trampolines: [] };
+      return { ...result, trampolines: [], trampolineBlock: null, trampolineStoreIndex: -1 };
     }
 
     // Structure-through case — the arm has an inner TernaryStructure
@@ -271,15 +285,16 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
     const phiStoreResult = this.extractPhiStore(phiBlock, phi, operandPlace);
     if (!phiStoreResult) return null;
 
-    // Remove the phi store from the trampoline block.
-    if (phiStoreResult.storeIndex >= 0) {
-      phiBlock.removeInstructionAt(phiStoreResult.storeIndex);
-    }
-
+    // Return the trampoline store index so tryCollapseDiamond can remove
+    // it after all checks pass. Removing here would be a premature side
+    // effect — if a later check fails, the phi survives but its operand
+    // StoreLocal would be gone, producing invalid IR.
     return {
       valuePlace: phiStoreResult.valuePlace,
-      storeIndex: -1, // already removed from trampoline
+      storeIndex: -1,
       trampolines,
+      trampolineBlock: phiStoreResult.storeIndex >= 0 ? phiBlock : null,
+      trampolineStoreIndex: phiStoreResult.storeIndex,
     };
   }
 
