@@ -1,3 +1,3 @@
-let x = undefined;
+var x = undefined;
 console.log(x);
 x = 5;

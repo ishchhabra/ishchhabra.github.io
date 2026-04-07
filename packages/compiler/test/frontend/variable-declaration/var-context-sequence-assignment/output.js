@@ -1,4 +1,4 @@
-let re = undefined;
+var re = undefined;
 re = undefined;
 re = "log";
 const ae = ("log", () => re);

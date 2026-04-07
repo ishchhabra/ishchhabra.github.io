@@ -1,5 +1,5 @@
 function $0_0() {
-  let i = undefined;
+  var i = undefined;
   i = 0;
   if (true) {
   }

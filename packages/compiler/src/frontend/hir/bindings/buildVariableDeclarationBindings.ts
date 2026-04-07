@@ -86,16 +86,15 @@ function buildIdentifierBindings(
     place.id,
   );
 
-  // Emit hoisted `let <binding> = undefined` for var declarations.
-  // The compiler already hoists the declaration to the correct scope,
-  // so we use `let` (not `var`) to avoid re-introducing JS hoisting
-  // semantics in the output.
-  if (binding?.kind === "var") {
+  // Preserve `var`'s hoisted-and-initialized semantics in the emitted JS.
+  // Reifying this as `let` would introduce TDZ behavior and break both
+  // source-level hoisting and ES module circular import semantics.
+  if (declarationKind === "var") {
     const hoistId = environment.createIdentifier(identifier.declarationId);
     hoistId.name = identifier.name;
     const hoistPlace = environment.createPlace(hoistId);
     functionBuilder.addInstruction(
-      environment.createInstruction(DeclareLocalInstruction, hoistPlace, "let"),
+      environment.createInstruction(DeclareLocalInstruction, hoistPlace, "var"),
     );
     const undefPlace = environment.createPlace(environment.createIdentifier());
     functionBuilder.addInstruction(
@@ -108,7 +107,7 @@ function buildIdentifierBindings(
         storePlace,
         hoistPlace,
         undefPlace,
-        "let",
+        "var",
         [],
       ),
     );

@@ -11,8 +11,8 @@ import {
   Place,
   ReturnTerminal,
 } from "../../ir";
-import type { LexicalScopeId, LexicalScopeKind } from "../../ir/core/LexicalScope";
 import { FunctionIR, makeFunctionIRId } from "../../ir/core/FunctionIR";
+import type { LexicalScopeId, LexicalScopeKind } from "../../ir/core/LexicalScope";
 import { isExpression } from "../estree";
 import { type Scope, type ScopeMap } from "../scope/Scope";
 import { instantiateScopeBindings } from "./bindings";

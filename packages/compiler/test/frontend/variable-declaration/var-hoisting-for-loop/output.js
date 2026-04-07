@@ -1,6 +1,6 @@
 function $0_0() {
-  let i = undefined;
-  let x = undefined;
+  var i = undefined;
+  var x = undefined;
   i = 0;
   let $19_phi_26 = undefined;
   $19_phi_26 = i;
