@@ -13,6 +13,10 @@ export function buildClassDeclaration(
   _moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
+  if (node.body.body.length > 0 || node.superClass != null) {
+    throw new Error("Unsupported: class declarations with bodies or extends clauses");
+  }
+
   const id = node.id;
   if (id == null || id.type !== "Identifier") {
     throw new Error("Invalid class declaration: missing id");
