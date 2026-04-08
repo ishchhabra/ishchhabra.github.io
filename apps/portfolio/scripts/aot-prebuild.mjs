@@ -59,6 +59,8 @@ if (includeNodeModules) {
     "@iframe-resizer/core",
     // @radix-ui compound components trigger a duplicate-identifier codegen bug
     "@radix-ui/react-",
+    // unified/remark ecosystem — duplicate-identifier codegen bug
+    "unist-util-",
   ];
 
   const mirrors = result.nodeModuleMirrors.filter((m) => {

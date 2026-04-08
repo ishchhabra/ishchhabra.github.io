@@ -27,6 +27,25 @@ export function buildNode(
     return buildHole(functionBuilder, environment);
   }
 
+  // OXC with astType:"ts" emits TS type-wrapper nodes that are invisible
+  // at runtime. Unwrap them to their inner expression before dispatching.
+  const nodeType = node.type as string;
+  if (
+    nodeType === "TSAsExpression" ||
+    nodeType === "TSSatisfiesExpression" ||
+    nodeType === "TSNonNullExpression" ||
+    nodeType === "TSTypeAssertion" ||
+    nodeType === "TSInstantiationExpression"
+  ) {
+    return buildNode(
+      (node as unknown as { expression: ESTree.Expression }).expression,
+      scope,
+      functionBuilder,
+      moduleBuilder,
+      environment,
+    );
+  }
+
   if (node.type === "Identifier") {
     return buildIdentifier(node, scope, functionBuilder, environment);
   }

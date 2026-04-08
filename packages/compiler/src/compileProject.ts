@@ -157,9 +157,10 @@ export function compileProjectDetailed(options: ProjectCompilerOptions): Detaile
     };
   }
 
-  // Generate code for each source module
+  // Generate code for each source module (only those that built successfully;
+  // files that failed to parse were already copied as-is above).
   const generator = new CodeGenerator("", projectUnit);
-  for (const file of entryFiles) {
+  for (const file of builtFiles) {
     const absInput = join(resolvedSrc, file);
     const absOutput = join(resolvedOut, file);
     mkdirSync(dirname(absOutput), { recursive: true });
