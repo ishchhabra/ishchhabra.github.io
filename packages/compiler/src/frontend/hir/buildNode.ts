@@ -1,8 +1,8 @@
 import type * as AST from "../estree";
-import type { ExportSpecifier, Expression, Node, SpreadElement } from "oxc-parser";
+import type { ExportSpecifier, Node, SpreadElement } from "oxc-parser";
 import { Environment } from "../../environment";
 import { Place } from "../../ir";
-import { isExpression, isJSX, isPattern, isStatement } from "../estree";
+import { isExpression, isJSX, isPattern, isStatement, unwrapTSTypeWrappers } from "../estree";
 import { type Scope } from "../scope/Scope";
 import { buildExportSpecifier } from "./buildExportSpecifier";
 import { buildIdentifier } from "./buildIdentifier";
@@ -30,21 +30,9 @@ export function buildNode(
 
   // OXC with astType:"ts" emits TS type-wrapper nodes that are invisible
   // at runtime. Unwrap them to their inner expression before dispatching.
-  const nodeType = node.type as string;
-  if (
-    nodeType === "TSAsExpression" ||
-    nodeType === "TSSatisfiesExpression" ||
-    nodeType === "TSNonNullExpression" ||
-    nodeType === "TSTypeAssertion" ||
-    nodeType === "TSInstantiationExpression"
-  ) {
-    return buildNode(
-      (node as unknown as { expression: Expression }).expression,
-      scope,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
+  const unwrapped = unwrapTSTypeWrappers(node);
+  if (unwrapped !== node) {
+    return buildNode(unwrapped, scope, functionBuilder, moduleBuilder, environment);
   }
 
   if (node.type === "Identifier") {

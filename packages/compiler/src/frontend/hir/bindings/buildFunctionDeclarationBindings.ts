@@ -91,7 +91,6 @@ export function initializeFunctionDeclaration(
   const fnScope = scopeMap.get(node) ?? scope;
   const functionIRBuilder = new FunctionIRBuilder(
     params,
-    node,
     body,
     fnScope,
     scopeMap,

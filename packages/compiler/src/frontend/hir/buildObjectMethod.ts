@@ -38,7 +38,6 @@ export function buildObjectMethod(
   const fnScope = functionBuilder.scopeFor(fn);
   const functionIRBuilder = new FunctionIRBuilder(
     params,
-    fn,
     body,
     fnScope,
     functionBuilder.scopeMap,

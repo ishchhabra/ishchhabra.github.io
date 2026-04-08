@@ -2,7 +2,7 @@ import type { ArrowFunctionExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
 import { ArrowFunctionExpressionInstruction } from "../../../ir/instructions/value/ArrowFunctionExpression";
-import { isExpression } from "../../estree";
+import { isExpression, unwrapTSTypeWrappers } from "../../estree";
 import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -15,11 +15,10 @@ export function buildArrowFunctionExpression(
   environment: Environment,
 ): Place {
   const body = node.body;
-  const scopeNode = isExpression(body) ? node : body;
+  const conciseExpressionBody = isExpression(unwrapTSTypeWrappers(body));
   const childScope = functionBuilder.scopeFor(node);
   const functionIRBuilder = new FunctionIRBuilder(
     node.params,
-    scopeNode,
     body,
     childScope,
     functionBuilder.scopeMap,
@@ -40,7 +39,7 @@ export function buildArrowFunctionExpression(
     place,
     functionIR,
     node.async ?? false,
-    isExpression(body),
+    conciseExpressionBody,
     false,
     capturedPlaces,
   );

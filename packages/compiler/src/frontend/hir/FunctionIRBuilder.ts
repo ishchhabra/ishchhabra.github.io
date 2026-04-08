@@ -1,4 +1,3 @@
-import type * as AST from "../estree";
 import type { BlockStatement, Expression, Node, Program, Statement } from "oxc-parser";
 import { Environment } from "../../environment";
 import {
@@ -14,7 +13,8 @@ import {
 } from "../../ir";
 import { FunctionIR, makeFunctionIRId } from "../../ir/core/FunctionIR";
 import type { LexicalScopeId, LexicalScopeKind } from "../../ir/core/LexicalScope";
-import { isExpression } from "../estree";
+import type * as AST from "../estree";
+import { isExpression, unwrapTSTypeWrappers } from "../estree";
 import { type Scope, type ScopeMap } from "../scope/Scope";
 import { instantiateScopeBindings } from "./bindings";
 import { buildFunctionParams } from "./buildFunctionParams";
@@ -72,7 +72,6 @@ export class FunctionIRBuilder {
 
   constructor(
     public readonly params: AST.Pattern[],
-    public readonly scopeNode: Node,
     public readonly bodyNode: Program | BlockStatement | Expression,
     public readonly scope: Scope,
     public readonly scopeMap: ScopeMap,
@@ -116,8 +115,6 @@ export class FunctionIRBuilder {
   public build(): FunctionIR {
     const builtParams = buildFunctionParams(
       this.params,
-      this.scopeNode,
-      this.bodyNode,
       this.scope,
       this,
       this.moduleBuilder,
@@ -128,9 +125,14 @@ export class FunctionIRBuilder {
 
     const functionId = makeFunctionIRId(this.environment.nextFunctionId++);
 
-    if (isExpression(this.bodyNode)) {
+    const effectiveBody = unwrapTSTypeWrappers(this.bodyNode) as
+      | Program
+      | BlockStatement
+      | Expression;
+
+    if (isExpression(effectiveBody)) {
       const resultPlace = buildNode(
-        this.bodyNode,
+        effectiveBody,
         this.scope,
         this,
         this.moduleBuilder,
@@ -143,15 +145,15 @@ export class FunctionIRBuilder {
         );
       }
     } else {
-      const bodyScope = this.scopeFor(this.bodyNode);
+      const bodyScope = this.scopeFor(effectiveBody);
       instantiateScopeBindings(
-        this.bodyNode,
+        effectiveBody,
         bodyScope,
         this,
         this.environment,
         this.moduleBuilder,
       );
-      const body = (this.bodyNode as Program | BlockStatement).body;
+      const body = effectiveBody.body;
       buildStatementList(
         body as Statement[],
         bodyScope,

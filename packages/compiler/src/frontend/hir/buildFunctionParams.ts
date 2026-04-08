@@ -35,8 +35,6 @@ interface ParamBuildResult {
 
 export function buildFunctionParams(
   params: AST.Pattern[],
-  scopeNode: Node,
-  bodyNode: Node,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -45,21 +43,13 @@ export function buildFunctionParams(
   instantiateFunctionParamBindings(params, scope, functionBuilder, environment);
 
   return params.map((param) => {
-    const result = buildFunctionParam(
-      param,
-      bodyNode,
-      scope,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
+    const result = buildFunctionParam(param, scope, functionBuilder, moduleBuilder, environment);
     return { place: result.place, paramBindings: result.paramBindings };
   });
 }
 
 function buildFunctionParam(
   param: AST.Pattern,
-  bodyNode: Node,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -71,7 +61,6 @@ function buildFunctionParam(
   if (param.type === "ArrayPattern") {
     return buildFunctionArrayPatternParam(
       param,
-      bodyNode,
       scope,
       functionBuilder,
       moduleBuilder,
@@ -81,7 +70,6 @@ function buildFunctionParam(
   if (param.type === "ObjectPattern") {
     return buildFunctionObjectPatternParam(
       param,
-      bodyNode,
       scope,
       functionBuilder,
       moduleBuilder,
@@ -91,7 +79,6 @@ function buildFunctionParam(
   if (param.type === "AssignmentPattern") {
     return buildFunctionAssignmentPatternParam(
       param,
-      bodyNode,
       scope,
       functionBuilder,
       moduleBuilder,
@@ -99,14 +86,7 @@ function buildFunctionParam(
     );
   }
   if (param.type === "RestElement") {
-    return buildFunctionRestElementParam(
-      param,
-      bodyNode,
-      scope,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
+    return buildFunctionRestElementParam(param, scope, functionBuilder, moduleBuilder, environment);
   }
 
   throw new Error(`Unsupported param type: ${(param as Node).type}`);
@@ -140,7 +120,6 @@ function buildFunctionIdentifierParam(
 
 function buildFunctionArrayPatternParam(
   node: AST.ArrayPattern,
-  bodyNode: Node,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -154,14 +133,7 @@ function buildFunctionArrayPatternParam(
       return null;
     }
 
-    const result = buildFunctionParam(
-      element,
-      bodyNode,
-      scope,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
+    const result = buildFunctionParam(element, scope, functionBuilder, moduleBuilder, environment);
     identifiers.push(...result.identifiers);
     return result.place;
   });
@@ -180,7 +152,6 @@ function buildFunctionArrayPatternParam(
 
 function buildFunctionObjectPatternParam(
   node: AST.ObjectPattern,
-  bodyNode: Node,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -208,7 +179,6 @@ function buildFunctionObjectPatternParam(
       const value = property.value as AST.Pattern;
       const valueResult = buildFunctionParam(
         value,
-        bodyNode,
         scope,
         functionBuilder,
         moduleBuilder,
@@ -234,7 +204,6 @@ function buildFunctionObjectPatternParam(
     if (property.type === "RestElement") {
       const argumentResult = buildFunctionParam(
         property.argument,
-        bodyNode,
         scope,
         functionBuilder,
         moduleBuilder,
@@ -289,7 +258,6 @@ function buildFunctionObjectPropertyKey(
 
 function buildFunctionAssignmentPatternParam(
   node: AST.AssignmentPattern,
-  bodyNode: Node,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -307,7 +275,6 @@ function buildFunctionAssignmentPatternParam(
 
   const leftResult = buildFunctionParam(
     node.left,
-    bodyNode,
     scope,
     functionBuilder,
     moduleBuilder,
@@ -333,7 +300,6 @@ function buildFunctionAssignmentPatternParam(
 
 function buildFunctionRestElementParam(
   node: AST.RestElement,
-  bodyNode: Node,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -341,7 +307,6 @@ function buildFunctionRestElementParam(
 ): ParamBuildResult {
   const argumentResult = buildFunctionParam(
     node.argument,
-    bodyNode,
     scope,
     functionBuilder,
     moduleBuilder,

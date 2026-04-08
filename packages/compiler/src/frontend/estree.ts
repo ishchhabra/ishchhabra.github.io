@@ -1,5 +1,14 @@
 import type * as Oxc from "oxc-parser";
-import type { Expression, Node, Statement } from "oxc-parser";
+import type {
+  Expression,
+  Node,
+  Statement,
+  TSAsExpression,
+  TSInstantiationExpression,
+  TSNonNullExpression,
+  TSSatisfiesExpression,
+  TSTypeAssertion,
+} from "oxc-parser";
 
 export type Identifier =
   | Oxc.IdentifierName
@@ -87,6 +96,27 @@ export function isRegExpLiteral(node: Node): node is Oxc.RegExpLiteral {
 
 export function isBigIntLiteral(node: Node): node is Oxc.BigIntLiteral {
   return node.type === "Literal" && "bigint" in node;
+}
+
+/** Kinds that wrap a value expression and erase to it in emitted JS (Oxc `astType: "ts"`). */
+const TS_TYPE_EXPRESSION_WRAPPER_KINDS = new Set<string>([
+  "TSAsExpression",
+  "TSSatisfiesExpression",
+  "TSNonNullExpression",
+  "TSTypeAssertion",
+  "TSInstantiationExpression",
+]);
+
+/**
+ * Walk past TypeScript type-syntax wrappers whose runtime value is the inner
+ * `expression`. Aligns with the unwrap pass in `buildNode`.
+ */
+export function unwrapTSTypeWrappers(node: Node): Node {
+  let current: Node = node;
+  while (TS_TYPE_EXPRESSION_WRAPPER_KINDS.has(current.type)) {
+    current = (current as TSAsExpression).expression;
+  }
+  return current;
 }
 
 export function isExpression(node: Node): node is Expression {
@@ -191,6 +221,13 @@ export function isJSX(node: Node): boolean {
   return node.type.startsWith("JSX");
 }
 
-export function isTSOnlyNode(node: Node): boolean {
+export function isTSOnlyNode(
+  node: Node,
+): node is
+  | TSAsExpression
+  | TSSatisfiesExpression
+  | TSNonNullExpression
+  | TSTypeAssertion
+  | TSInstantiationExpression {
   return node.type.startsWith("TS");
 }

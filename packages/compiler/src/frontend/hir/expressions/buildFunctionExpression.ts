@@ -23,7 +23,6 @@ export function buildFunctionExpression(
   const functionIRBuilder = new FunctionIRBuilder(
     node.params,
     node.body,
-    node.body,
     childScope,
     functionBuilder.scopeMap,
     functionBuilder.environment,
