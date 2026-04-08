@@ -105,17 +105,24 @@ export class ExportDeclarationMergingPass extends BaseOptimizationPass {
       // (e.g. `export { a, b }`) would need each specifier handled separately.
       if (exportDecl.specifiers.length !== 1) continue;
 
+      // `export default` captures the value at that point — it is NOT a live
+      // binding. Merging a hoisted var's undefined init into a default export
+      // would permanently export `undefined` instead of the final value.
+      if (exportSpec.exported === "default" && decl.type === "var") continue;
+
       // Suppress the standalone statement for the declaration.
       // Codegen still runs (populating generator.places) but won't emit
       // a standalone statement. The export wraps it instead.
       decl.emit = false;
 
+      const declIndex = instrs.indexOf(decl);
       const exportDeclIndex = instrs.indexOf(exportDecl);
 
+      let merged: ExportDefaultDeclarationInstruction | ExportNamedDeclarationInstruction;
       if (exportSpec.exported === "default") {
         // For default exports, convert to ExportDefaultDeclaration.
         // Don't rename the BI — keeps the function name for debugging/stack traces.
-        instrs[exportDeclIndex] = new ExportDefaultDeclarationInstruction(
+        merged = new ExportDefaultDeclarationInstruction(
           exportDecl.id,
           exportDecl.place,
           decl.place,
@@ -124,12 +131,22 @@ export class ExportDeclarationMergingPass extends BaseOptimizationPass {
         // For named exports, rename the BI and convert to declaration form.
         bi.place.identifier.name = exportSpec.exported;
 
-        instrs[exportDeclIndex] = new ExportNamedDeclarationInstruction(
+        merged = new ExportNamedDeclarationInstruction(
           exportDecl.id,
           exportDecl.place,
           [],
           decl.place,
         );
+      }
+
+      // For hoisted var declarations, the merged export must appear right
+      // after the declaration (at the hoist point), not at the original
+      // export position, to preserve correct statement ordering.
+      if (decl.type === "var" && declIndex < exportDeclIndex) {
+        instrs.splice(exportDeclIndex, 1);
+        instrs.splice(declIndex + 1, 0, merged);
+      } else {
+        instrs[exportDeclIndex] = merged;
       }
 
       // 4. Mark the ExportSpecifier for removal.

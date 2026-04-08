@@ -368,6 +368,11 @@ function hoistVars(node: ESTree.Node, scope: Scope): void {
     case "WithStatement":
       hoistVars(node.body, scope);
       break;
+    case "ExportNamedDeclaration": {
+      const decl = node.declaration;
+      if (decl) hoistVars(decl, scope);
+      break;
+    }
     case "FunctionDeclaration":
     case "FunctionExpression":
     case "ArrowFunctionExpression":

@@ -9,6 +9,7 @@ import {
 } from "../../../ir";
 import { FunctionDeclarationInstruction } from "../../../ir/instructions/declaration/FunctionDeclaration";
 import { ExportFromInstruction } from "../../../ir/instructions/module/ExportFrom";
+import { ExportSpecifierInstruction } from "../../../ir/instructions/module/ExportSpecifier";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -44,6 +45,23 @@ export function buildExportNamedDeclaration(
   if (declaration != null && isTSOnlyNode(declaration as ESTree.Node)) {
     return undefined;
   }
+  // For `export var`, build the declaration normally and create specifiers
+  // so ExportDeclarationMergingPass handles the merge. This avoids wrapping
+  // the value store directly, which conflicts with the hoisted var init.
+  if (
+    declaration != null &&
+    declaration.type === "VariableDeclaration" &&
+    declaration.kind === "var"
+  ) {
+    return buildExportVarAsSpecifiers(
+      declaration,
+      scope,
+      functionBuilder,
+      moduleBuilder,
+      environment,
+    );
+  }
+
   if (declaration != null) {
     let declarationPlace = buildExportDeclaration(
       declaration,
@@ -150,6 +168,89 @@ function buildExportDeclaration(
     throw new Error(`Export declaration produced no place for ${declaration.type}`);
   }
   return result;
+}
+
+/**
+ * Builds `export var x = 1` by emitting the var declaration normally
+ * (which hoists it), then creating export specifiers. This lets
+ * ExportDeclarationMergingPass merge them consistently with the
+ * `var x = 1; export { x }` path.
+ */
+function buildExportVarAsSpecifiers(
+  declaration: ESTree.VariableDeclaration,
+  scope: Scope,
+  functionBuilder: FunctionIRBuilder,
+  moduleBuilder: ModuleIRBuilder,
+  environment: Environment,
+): Place {
+  // Build the var declaration normally (hoisted init + value store).
+  buildNode(declaration, scope, functionBuilder, moduleBuilder, environment);
+
+  // Create export specifiers for each declared name.
+  const specifierPlaces: Place[] = [];
+  for (const declarator of declaration.declarations) {
+    for (const name of collectPatternNames(declarator.id)) {
+      const declarationId = functionBuilder.getDeclarationId(name, scope);
+      if (declarationId === undefined) continue;
+
+      const latestDeclaration = environment.getLatestDeclaration(declarationId);
+      if (latestDeclaration === undefined) continue;
+
+      const localPlace = environment.places.get(latestDeclaration.placeId);
+      if (localPlace === undefined) continue;
+
+      const specId = environment.createIdentifier();
+      const specPlace = environment.createPlace(specId);
+      const specInstruction = environment.createInstruction(
+        ExportSpecifierInstruction,
+        specPlace,
+        localPlace,
+        name,
+      );
+      functionBuilder.addInstruction(specInstruction);
+      specifierPlaces.push(specPlace);
+
+      const declarationInstructionId = environment.getDeclarationInstruction(declarationId);
+      if (declarationInstructionId !== undefined) {
+        moduleBuilder.exports.set(name, {
+          instruction: specInstruction,
+          declaration: environment.instructions.get(declarationInstructionId)!,
+        });
+      }
+    }
+  }
+
+  const identifier = environment.createIdentifier();
+  const place = environment.createPlace(identifier);
+  const instruction = environment.createInstruction(
+    ExportNamedDeclarationInstruction,
+    place,
+    specifierPlaces,
+    undefined,
+  );
+  functionBuilder.addInstruction(instruction);
+  return place;
+}
+
+function collectPatternNames(pattern: ESTree.Pattern): string[] {
+  switch (pattern.type) {
+    case "Identifier":
+      return [pattern.name];
+    case "ArrayPattern":
+      return pattern.elements.flatMap((el) => (el ? collectPatternNames(el) : []));
+    case "ObjectPattern":
+      return pattern.properties.flatMap((prop) =>
+        prop.type === "RestElement"
+          ? collectPatternNames(prop.argument)
+          : collectPatternNames(prop.value as ESTree.Pattern),
+      );
+    case "AssignmentPattern":
+      return collectPatternNames(pattern.left);
+    case "RestElement":
+      return collectPatternNames(pattern.argument);
+    default:
+      return [];
+  }
 }
 
 function buildExportFrom(
