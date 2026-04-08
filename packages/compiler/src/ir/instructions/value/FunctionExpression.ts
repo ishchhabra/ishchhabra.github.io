@@ -24,7 +24,7 @@ export class FunctionExpressionInstruction extends ValueInstruction {
       FunctionExpressionInstruction,
       place,
       this.identifier,
-      this.functionIR,
+      this.functionIR.clone(environment),
       this.generator,
       this.async,
       this.captures,

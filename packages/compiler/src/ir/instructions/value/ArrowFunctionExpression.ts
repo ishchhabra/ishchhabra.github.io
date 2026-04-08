@@ -32,7 +32,7 @@ export class ArrowFunctionExpressionInstruction extends ValueInstruction {
     return environment.createInstruction(
       ArrowFunctionExpressionInstruction,
       place,
-      this.functionIR,
+      this.functionIR.clone(environment),
       this.async,
       this.expression,
       this.generator,
