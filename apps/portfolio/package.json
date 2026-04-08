@@ -12,6 +12,7 @@
     "build:aot-nm": "AOT_NODE_MODULES=1 pnpm aot:compile && ENABLE_AOT=1 pnpm build",
     "build:vercel": "bash scripts/vercel-build.sh",
     "preview": "vite preview",
+    "compare-build-sizes": "node scripts/compare-build-sizes.mjs",
     "format": "oxfmt",
     "format-check": "oxfmt --check",
     "lint": "oxlint --max-warnings=0 --type-aware --type-check",
