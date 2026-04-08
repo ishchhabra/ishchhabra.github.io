@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import type { JSXExpressionContainer } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -7,7 +7,7 @@ import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildJSXExpressionContainer(
-  node: AST.JSXExpressionContainer,
+  node: JSXExpressionContainer,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

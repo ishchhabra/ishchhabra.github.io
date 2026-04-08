@@ -1,4 +1,5 @@
 import type * as AST from "../../estree";
+import type { Node } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { DeclareLocalInstruction } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -50,7 +51,7 @@ function instantiateParamBinding(
         continue;
       }
 
-      throw new Error(`Unsupported object pattern property: ${(property as AST.Node).type}`);
+      throw new Error(`Unsupported object pattern property: ${(property as Node).type}`);
     }
     return;
   }
@@ -65,7 +66,7 @@ function instantiateParamBinding(
     return;
   }
 
-  throw new Error(`Unsupported param type: ${(node as AST.Node).type}`);
+  throw new Error(`Unsupported param type: ${(node as Node).type}`);
 }
 
 function instantiateIdentifierParamBinding(

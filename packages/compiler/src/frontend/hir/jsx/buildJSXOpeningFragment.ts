@@ -1,10 +1,10 @@
-import type * as AST from "../../estree";
+import type { JSXOpeningFragment } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { JSXOpeningFragmentInstruction, Place } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 export function buildJSXOpeningFragment(
-  _node: AST.JSXOpeningFragment,
+  _node: JSXOpeningFragment,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {

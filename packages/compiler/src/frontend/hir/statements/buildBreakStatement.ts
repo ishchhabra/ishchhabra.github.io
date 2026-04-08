@@ -1,10 +1,10 @@
-import type * as AST from "../../estree";
+import type { BreakStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { createInstructionId, JumpTerminal } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 export function buildBreakStatement(
-  node: AST.BreakStatement,
+  node: BreakStatement,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {

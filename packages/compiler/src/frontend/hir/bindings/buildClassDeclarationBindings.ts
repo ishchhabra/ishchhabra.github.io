@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import type { Class } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { DeclareLocalInstruction } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -8,7 +8,7 @@ import { isContextVariable } from "./isContextVariable";
 
 export function buildClassDeclarationBindings(
   scope: Scope,
-  node: AST.ClassDeclaration,
+  node: Class,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {

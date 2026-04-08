@@ -1,4 +1,5 @@
 import type * as AST from "../estree";
+import type { ExportSpecifier, Expression, Node, SpreadElement } from "oxc-parser";
 import { Environment } from "../../environment";
 import { Place } from "../../ir";
 import { isExpression, isJSX, isPattern, isStatement } from "../estree";
@@ -17,7 +18,7 @@ import { buildPattern } from "./patterns/buildPattern";
 import { buildStatement } from "./statements/buildStatement";
 
 export function buildNode(
-  node: AST.Node | null,
+  node: Node | null,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -38,7 +39,7 @@ export function buildNode(
     nodeType === "TSInstantiationExpression"
   ) {
     return buildNode(
-      (node as unknown as { expression: AST.Expression }).expression,
+      (node as unknown as { expression: Expression }).expression,
       scope,
       functionBuilder,
       moduleBuilder,
@@ -89,7 +90,7 @@ export function buildNode(
 
   if (node.type === "SpreadElement") {
     return buildSpreadElement(
-      node as AST.SpreadElement,
+      node as SpreadElement,
       scope,
       functionBuilder,
       moduleBuilder,
@@ -103,7 +104,7 @@ export function buildNode(
 
   if (node.type === "ExportSpecifier") {
     return buildExportSpecifier(
-      node as AST.ExportSpecifier,
+      node as ExportSpecifier,
       scope,
       functionBuilder,
       moduleBuilder,

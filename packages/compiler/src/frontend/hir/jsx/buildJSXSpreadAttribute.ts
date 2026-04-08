@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import type { JSXSpreadAttribute } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
 import { JSXSpreadAttributeInstruction } from "../../../ir/instructions/jsx/JSXSpreadAttribute";
@@ -8,7 +8,7 @@ import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildJSXSpreadAttribute(
-  node: AST.JSXSpreadAttribute,
+  node: JSXSpreadAttribute,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

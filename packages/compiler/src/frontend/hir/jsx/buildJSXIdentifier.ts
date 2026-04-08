@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import type { JSXIdentifier } from "oxc-parser";
 import { Environment } from "../../../environment";
 import {
   JSXIdentifierInstruction,
@@ -20,7 +20,7 @@ import { FunctionIRBuilder } from "../FunctionIRBuilder";
  * or `LoadGlobal`.
  */
 export function buildJSXIdentifier(
-  node: AST.JSXIdentifier,
+  node: JSXIdentifier,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,

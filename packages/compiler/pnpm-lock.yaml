@@ -41,9 +41,6 @@ importers:
       '@babel/types':
         specifier: ^7.28.4
         version: 7.29.0
-      '@oxc-project/types':
-        specifier: ^0.123.0
-        version: 0.123.0
       boxen:
         specifier: ^8.0.1
         version: 8.0.1

@@ -1,4 +1,5 @@
 import type * as AST from "../estree";
+import type { Function } from "oxc-parser";
 import { Environment } from "../../environment";
 import { ObjectMethodInstruction, Place } from "../../ir";
 import { type Scope } from "../scope/Scope";
@@ -27,7 +28,7 @@ export function buildObjectMethod(
   }
 
   // The value of a method Property is a FunctionExpression
-  const fn = node.value as AST.FunctionExpression;
+  const fn = node.value as Function;
   const params = fn.params;
   const body = fn.body;
   if (body == null) {

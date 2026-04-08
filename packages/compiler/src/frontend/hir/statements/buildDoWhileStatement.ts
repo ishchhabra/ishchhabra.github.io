@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import type { DoWhileStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
 import {
   BranchTerminal,
@@ -24,7 +24,7 @@ import { buildOwnedBody } from "./buildOwnedBody";
  * body, and a conditional break exits the loop when the test is false.
  */
 export function buildDoWhileStatement(
-  node: AST.DoWhileStatement,
+  node: DoWhileStatement,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

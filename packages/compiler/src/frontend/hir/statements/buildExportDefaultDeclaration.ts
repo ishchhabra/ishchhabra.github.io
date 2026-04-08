@@ -1,16 +1,16 @@
-import type * as AST from "../../estree";
+import type { ExportDefaultDeclaration } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { ExportDefaultDeclarationInstruction } from "../../../ir";
 import { FunctionDeclarationInstruction } from "../../../ir/instructions/declaration/FunctionDeclaration";
 import { type Scope } from "../../scope/Scope";
+import { buildNode } from "../buildNode";
 import { buildClassExpression } from "../expressions/buildClassExpression";
 import { buildFunctionExpression } from "../expressions/buildFunctionExpression";
-import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildExportDefaultDeclaration(
-  node: AST.ExportDefaultDeclaration,
+  node: ExportDefaultDeclaration,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -26,19 +26,14 @@ export function buildExportDefaultDeclaration(
   let declarationPlace;
   if (declaration.type === "FunctionDeclaration" && declaration.id === null) {
     declarationPlace = buildFunctionExpression(
-      declaration as unknown as AST.FunctionExpression,
+      declaration,
       scope,
       functionBuilder,
       moduleBuilder,
       environment,
     );
   } else if (declaration.type === "ClassDeclaration" && declaration.id === null) {
-    declarationPlace = buildClassExpression(
-      declaration as unknown as AST.ClassExpression,
-      scope,
-      functionBuilder,
-      environment,
-    );
+    declarationPlace = buildClassExpression(declaration, scope, functionBuilder, environment);
   } else if (declaration.type === "FunctionDeclaration" && declaration.id != null) {
     // Named function declarations are already built during scope
     // instantiation. Reuse the existing declaration node directly.
@@ -56,13 +51,7 @@ export function buildExportDefaultDeclaration(
       }
     }
   } else {
-    declarationPlace = buildNode(
-      declaration as AST.Node,
-      scope,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
+    declarationPlace = buildNode(declaration, scope, functionBuilder, moduleBuilder, environment);
   }
 
   if (declarationPlace === undefined || Array.isArray(declarationPlace)) {

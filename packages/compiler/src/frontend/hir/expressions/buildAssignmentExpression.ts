@@ -1,4 +1,5 @@
 import type * as AST from "../../estree";
+import type { AssignmentExpression, MemberExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
 import {
   ArrayPatternInstruction,
@@ -34,7 +35,7 @@ import { stabilizePlace } from "../materializePlace";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildAssignmentExpression(
-  node: AST.AssignmentExpression,
+  node: AssignmentExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -74,7 +75,7 @@ export function buildAssignmentExpression(
 }
 
 function buildIdentifierAssignment(
-  node: AST.AssignmentExpression,
+  node: AssignmentExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -282,7 +283,7 @@ function emitResultUpdate(
  *   // expression value is _result
  */
 function buildLogicalIdentifierAssignment(
-  node: AST.AssignmentExpression,
+  node: AssignmentExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -380,7 +381,7 @@ function buildLogicalIdentifierAssignment(
 }
 
 function buildMemberExpressionAssignment(
-  node: AST.AssignmentExpression,
+  node: AssignmentExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -393,7 +394,7 @@ function buildMemberExpressionAssignment(
     return buildLogicalMemberAssignment(node, scope, functionBuilder, moduleBuilder, environment);
   }
 
-  const left = node.left as AST.MemberExpression;
+  const left = node.left as MemberExpression;
   const reference = buildMemberReference(left, scope, functionBuilder, moduleBuilder, environment, {
     reusable: operator !== "=",
   });
@@ -443,14 +444,14 @@ function buildMemberExpressionAssignment(
  * re-reading the property (which would trigger a getter twice).
  */
 function buildLogicalMemberAssignment(
-  node: AST.AssignmentExpression,
+  node: AssignmentExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
   const operator = node.operator;
-  const left = node.left as AST.MemberExpression;
+  const left = node.left as MemberExpression;
   const reference = buildMemberReference(left, scope, functionBuilder, moduleBuilder, environment, {
     reusable: true,
   });
@@ -531,7 +532,7 @@ function buildLogicalMemberAssignment(
 }
 
 function buildDestructuringAssignment(
-  node: AST.AssignmentExpression,
+  node: AssignmentExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -588,7 +589,7 @@ function buildDestructuringAssignment(
 
 export function buildAssignmentLeft(
   left: AST.Pattern,
-  node: AST.AssignmentExpression,
+  node: AssignmentExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -648,7 +649,7 @@ export function buildAssignmentLeft(
 
 function buildIdentifierAssignmentLeft(
   left: AST.Identifier,
-  node: AST.AssignmentExpression,
+  node: AssignmentExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
@@ -678,8 +679,8 @@ function buildIdentifierAssignmentLeft(
 }
 
 function buildMemberExpressionAssignmentLeft(
-  left: AST.MemberExpression,
-  node: AST.AssignmentExpression,
+  left: MemberExpression,
+  node: AssignmentExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -721,7 +722,7 @@ function buildMemberExpressionAssignmentLeft(
 
 function buildArrayPatternAssignmentLeft(
   left: AST.ArrayPattern,
-  node: AST.AssignmentExpression,
+  node: AssignmentExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -764,7 +765,7 @@ function buildArrayPatternAssignmentLeft(
 
 function buildObjectPatternAssignmentLeft(
   left: AST.ObjectPattern,
-  node: AST.AssignmentExpression,
+  node: AssignmentExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -868,7 +869,7 @@ function buildObjectPatternAssignmentLeft(
 
 function buildAssignmentPatternAssignmentLeft(
   left: AST.AssignmentPattern,
-  node: AST.AssignmentExpression,
+  node: AssignmentExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -901,7 +902,7 @@ function buildAssignmentPatternAssignmentLeft(
 
 function buildRestElementAssignmentLeft(
   left: AST.RestElement,
-  node: AST.AssignmentExpression,
+  node: AssignmentExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -927,7 +928,7 @@ function buildRestElementAssignmentLeft(
 }
 
 function buildAssignmentRight(
-  node: AST.AssignmentExpression,
+  node: AssignmentExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -966,7 +967,7 @@ function buildAssignmentRight(
 }
 
 function findTDZAssignmentTarget(
-  left: AST.Pattern | AST.MemberExpression,
+  left: AST.Pattern | MemberExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
 ): string | undefined {

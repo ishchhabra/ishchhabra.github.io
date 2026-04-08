@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import type { Node } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -30,7 +30,7 @@ import { buildVariableDeclarationBindings } from "./buildVariableDeclarationBind
  * reference any binding regardless of source order.
  */
 export function instantiateScopeBindings(
-  _bodyNode: AST.Node,
+  _bodyNode: Node,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,

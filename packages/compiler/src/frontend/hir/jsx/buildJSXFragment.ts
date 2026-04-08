@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import type { JSXFragment } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { JSXFragmentInstruction, Place } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -7,7 +7,7 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildNode } from "../buildNode";
 
 export function buildJSXFragment(
-  node: AST.JSXFragment,
+  node: JSXFragment,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

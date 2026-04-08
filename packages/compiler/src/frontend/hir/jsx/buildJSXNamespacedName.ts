@@ -1,10 +1,10 @@
-import type * as AST from "../../estree";
+import type { JSXNamespacedName } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { JSXNamespacedNameInstruction, Place } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 export function buildJSXNamespacedName(
-  node: AST.JSXNamespacedName,
+  node: JSXNamespacedName,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {

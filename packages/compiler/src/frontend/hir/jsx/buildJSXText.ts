@@ -1,10 +1,10 @@
-import type * as AST from "../../estree";
+import type { JSXText } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { JSXTextInstruction, Place } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 export function buildJSXText(
-  node: AST.JSXText,
+  node: JSXText,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place | undefined {

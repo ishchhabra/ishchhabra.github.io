@@ -1,4 +1,5 @@
 import type * as AST from "../../estree";
+import type { ForInStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
 import {
   ForInStructure,
@@ -17,7 +18,7 @@ import { buildLVal } from "../buildLVal";
 import { buildOwnedBody } from "./buildOwnedBody";
 
 export function buildForInStatement(
-  node: AST.ForInStatement,
+  node: ForInStatement,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

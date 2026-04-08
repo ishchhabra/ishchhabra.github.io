@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import type { UpdateExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
 import {
   BinaryExpressionInstruction,
@@ -16,7 +16,7 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildMemberExpressionUpdate } from "./buildMemberExpression";
 
 export function buildUpdateExpression(
-  node: AST.UpdateExpression,
+  node: UpdateExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

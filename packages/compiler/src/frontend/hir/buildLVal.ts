@@ -1,4 +1,5 @@
 import type * as AST from "../estree";
+import type { Expression, PrivateIdentifier } from "oxc-parser";
 import { Environment } from "../../environment";
 import {
   ArrayPatternInstruction,
@@ -183,7 +184,7 @@ function buildObjectPatternLVal(
 }
 
 function buildObjectPropertyStaticKeyLVal(
-  node: AST.Expression | AST.PrivateIdentifier,
+  node: Expression | PrivateIdentifier,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {

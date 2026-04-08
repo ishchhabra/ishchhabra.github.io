@@ -1,10 +1,10 @@
-import type * as AST from "../../estree";
+import type { ContinueStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { createInstructionId, JumpTerminal } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 export function buildContinueStatement(
-  node: AST.ContinueStatement,
+  node: ContinueStatement,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {

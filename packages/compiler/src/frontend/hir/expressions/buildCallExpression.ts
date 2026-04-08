@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import { type CallExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { CallExpressionInstruction, Place } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -7,7 +7,7 @@ import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildCallExpression(
-  node: AST.CallExpression | AST.SimpleCallExpression,
+  node: CallExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

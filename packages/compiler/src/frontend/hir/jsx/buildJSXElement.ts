@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import type { JSXElement } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { JSXElementInstruction, Place } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -8,7 +8,7 @@ import { buildNode } from "../buildNode";
 import { buildJSXOpeningElement } from "./buildJSXOpeningElement";
 
 export function buildJSXElement(
-  node: AST.JSXElement,
+  node: JSXElement,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

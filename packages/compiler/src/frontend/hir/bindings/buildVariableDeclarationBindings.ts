@@ -1,4 +1,5 @@
 import type * as AST from "../../estree";
+import type { Node, VariableDeclaration } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { DeclareLocalInstruction, LiteralInstruction, StoreLocalInstruction } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -8,7 +9,7 @@ import { isContextVariable } from "./isContextVariable";
 
 export function buildVariableDeclarationBindings(
   scope: Scope,
-  node: AST.VariableDeclaration,
+  node: VariableDeclaration,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
@@ -48,7 +49,7 @@ function buildLValBindings(
       buildRestElementBindings(scope, node, declarationKind, functionBuilder, environment);
       break;
     default:
-      throw new Error(`Unsupported LVal type: ${(node as AST.Node).type}`);
+      throw new Error(`Unsupported LVal type: ${(node as Node).type}`);
   }
 }
 

@@ -1,11 +1,11 @@
-import type * as AST from "../../estree";
+import type { ExportAllDeclaration } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { ExportAllInstruction } from "../../../ir/instructions/module/ExportAll";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildExportAllDeclaration(
-  node: AST.ExportAllDeclaration,
+  node: ExportAllDeclaration,
   functionBuilder: FunctionIRBuilder,
   _moduleBuilder: ModuleIRBuilder,
   environment: Environment,

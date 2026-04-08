@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import type { TaggedTemplateExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { TaggedTemplateExpressionInstruction } from "../../../ir/instructions/value/TaggedTemplateExpression";
 import { type Scope } from "../../scope/Scope";
@@ -7,7 +7,7 @@ import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildTaggedTemplateExpression(
-  node: AST.TaggedTemplateExpression,
+  node: TaggedTemplateExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

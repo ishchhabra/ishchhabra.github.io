@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import type { ReturnStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { createInstructionId, ReturnTerminal } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -7,7 +7,7 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildNode } from "../buildNode";
 
 export function buildReturnStatement(
-  node: AST.ReturnStatement,
+  node: ReturnStatement,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

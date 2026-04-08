@@ -1,4 +1,5 @@
 import type * as AST from "../../estree";
+import type { SpreadElement } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -7,7 +8,7 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildArrayPattern } from "./buildArrayPattern";
 
 export function buildPattern(
-  node: AST.Pattern | AST.SpreadElement,
+  node: AST.Pattern | SpreadElement,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

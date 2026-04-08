@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import type { ExpressionStatement } from "oxc-parser";
 import { castArray } from "lodash-es";
 import { Environment } from "../../../environment";
 import {
@@ -14,7 +14,7 @@ import { buildNode } from "../buildNode";
 import { buildAssignmentExpression } from "../expressions/buildAssignmentExpression";
 
 export function buildExpressionStatement(
-  node: AST.ExpressionStatement,
+  node: ExpressionStatement,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

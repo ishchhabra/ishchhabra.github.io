@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import type { ArrowFunctionExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
 import { ArrowFunctionExpressionInstruction } from "../../../ir/instructions/value/ArrowFunctionExpression";
@@ -8,7 +8,7 @@ import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildArrowFunctionExpression(
-  node: AST.ArrowFunctionExpression,
+  node: ArrowFunctionExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

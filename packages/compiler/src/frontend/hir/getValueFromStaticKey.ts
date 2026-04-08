@@ -1,13 +1,11 @@
-import type * as AST from "../estree";
-import { isIdentifier, isNumericLiteral, isStringLiteral, type Node } from "../estree";
+import type { Node, PrivateIdentifier } from "oxc-parser";
+import { isIdentifier, isNumericLiteral, isStringLiteral } from "../estree";
 
 /**
  * Extracts the value from a static property key node.
  * Returns `undefined` for dynamic/computed keys that cannot be resolved statically.
  */
-export function getValueFromStaticKey(
-  node: Node | AST.PrivateIdentifier,
-): string | number | undefined {
+export function getValueFromStaticKey(node: Node | PrivateIdentifier): string | number | undefined {
   if (isIdentifier(node)) {
     return node.name;
   } else if (isStringLiteral(node)) {

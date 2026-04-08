@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import type { Statement } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { isTSOnlyNode } from "../../estree";
 import { type Scope } from "../../scope/Scope";
@@ -13,7 +13,7 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
  * scope instantiation.
  */
 export function buildStatementList(
-  statements: AST.Statement[],
+  statements: Statement[],
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

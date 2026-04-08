@@ -1,4 +1,4 @@
-import type * as AST from "../estree";
+import type { Program } from "oxc-parser";
 import { parseSync } from "oxc-parser";
 import { readFileSync } from "fs";
 import { Environment } from "../../environment";
@@ -40,7 +40,7 @@ export class ModuleIRBuilder {
       throw new Error(`Parse errors in ${this.path}:\n${msg}`);
     }
 
-    const program = result.program as unknown as AST.Program;
+    const program = result.program as unknown as Program;
     const { programScope, scopeMap } = analyzeScopes(program);
 
     const functionIR = new FunctionIRBuilder(

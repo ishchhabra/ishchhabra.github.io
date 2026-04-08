@@ -1,4 +1,4 @@
-import type * as AST from "../estree";
+import type { SpreadElement } from "oxc-parser";
 import { Environment } from "../../environment";
 import { Place, SpreadElementInstruction } from "../../ir";
 import { type Scope } from "../scope/Scope";
@@ -7,7 +7,7 @@ import { ModuleIRBuilder } from "./ModuleIRBuilder";
 import { buildNode } from "./buildNode";
 
 export function buildSpreadElement(
-  node: AST.SpreadElement,
+  node: SpreadElement,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

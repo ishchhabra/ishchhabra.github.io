@@ -1,4 +1,5 @@
 import type * as AST from "../../estree";
+import type { VariableDeclaration, VariableDeclarator } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { Place, StoreContextInstruction, StoreLocalInstruction } from "../../../ir";
 import { LoadGlobalInstruction } from "../../../ir/instructions/memory/LoadGlobal";
@@ -9,7 +10,7 @@ import { buildLVal } from "../buildLVal";
 import { buildNode } from "../buildNode";
 
 export function buildVariableDeclaration(
-  node: AST.VariableDeclaration,
+  node: VariableDeclaration,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -21,7 +22,7 @@ export function buildVariableDeclaration(
   }
 
   const declarations = node.declarations;
-  const declarationPlaces = declarations.map((declaration: AST.VariableDeclarator) => {
+  const declarationPlaces = declarations.map((declaration: VariableDeclarator) => {
     const id = declaration.id;
     const init = declaration.init;
 

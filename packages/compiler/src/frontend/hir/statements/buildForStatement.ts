@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import type { Expression, ForStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
 import {
   BranchTerminal,
@@ -19,7 +19,7 @@ import { buildOwnedBody } from "./buildOwnedBody";
 import { buildStatement } from "./buildStatement";
 
 export function buildForStatement(
-  node: AST.ForStatement,
+  node: ForStatement,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -159,7 +159,7 @@ export function buildForStatement(
 }
 
 function buildExpressionAsStatement(
-  expression: AST.Expression,
+  expression: Expression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

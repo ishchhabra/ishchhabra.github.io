@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import { type Function } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -9,7 +9,7 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
  * the statement's lexical position.
  */
 export function buildFunctionDeclaration(
-  _node: AST.FunctionDeclaration,
+  _node: Function,
   _functionBuilder: FunctionIRBuilder,
   _moduleBuilder: ModuleIRBuilder,
   _environment: Environment,

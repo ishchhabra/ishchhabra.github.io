@@ -1,10 +1,10 @@
-import type * as AST from "../../estree";
+import type { JSXClosingFragment } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { JSXClosingFragmentInstruction, Place } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 export function buildJSXClosingFragment(
-  _node: AST.JSXClosingFragment,
+  _node: JSXClosingFragment,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {

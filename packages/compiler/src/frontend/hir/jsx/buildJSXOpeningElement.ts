@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import type { JSXOpeningElement } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
 import { JSXOpeningElementInstruction } from "../../../ir/instructions/jsx/JSXOpeningElement";
@@ -8,7 +8,7 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildNode } from "../buildNode";
 
 export function buildJSXOpeningElement(
-  node: AST.JSXOpeningElement,
+  node: JSXOpeningElement,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

@@ -1,4 +1,17 @@
-import type * as AST from "../../estree";
+import type {
+  JSXAttribute,
+  JSXClosingElement,
+  JSXClosingFragment,
+  JSXElement,
+  JSXExpressionContainer,
+  JSXFragment,
+  JSXIdentifier,
+  JSXMemberExpression,
+  JSXNamespacedName,
+  JSXOpeningFragment,
+  JSXSpreadAttribute,
+  JSXText,
+} from "oxc-parser";
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -18,18 +31,18 @@ import { buildJSXOpeningFragment } from "./buildJSXOpeningFragment";
 import { buildJSXText } from "./buildJSXText";
 
 type JSXNode =
-  | AST.JSXElement
-  | AST.JSXFragment
-  | AST.JSXText
-  | AST.JSXClosingElement
-  | AST.JSXOpeningFragment
-  | AST.JSXClosingFragment
-  | AST.JSXIdentifier
-  | AST.JSXMemberExpression
-  | AST.JSXNamespacedName
-  | AST.JSXAttribute
-  | AST.JSXSpreadAttribute
-  | AST.JSXExpressionContainer;
+  | JSXElement
+  | JSXFragment
+  | JSXText
+  | JSXClosingElement
+  | JSXOpeningFragment
+  | JSXClosingFragment
+  | JSXIdentifier
+  | JSXMemberExpression
+  | JSXNamespacedName
+  | JSXAttribute
+  | JSXSpreadAttribute
+  | JSXExpressionContainer;
 
 export function buildJSX(
   node: JSXNode,

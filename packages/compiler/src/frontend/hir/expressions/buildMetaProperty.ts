@@ -1,10 +1,10 @@
-import type * as AST from "../../estree";
+import type { MetaProperty } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { MetaPropertyInstruction } from "../../../ir/instructions/value/MetaProperty";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 export function buildMetaProperty(
-  node: AST.MetaProperty,
+  node: MetaProperty,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {

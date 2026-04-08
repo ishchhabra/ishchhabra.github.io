@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import type { BlockStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { BlockStructure, JumpTerminal, createInstructionId } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -7,7 +7,7 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildOwnedBody } from "./buildOwnedBody";
 
 export function buildBlockStatement(
-  node: AST.BlockStatement,
+  node: BlockStatement,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

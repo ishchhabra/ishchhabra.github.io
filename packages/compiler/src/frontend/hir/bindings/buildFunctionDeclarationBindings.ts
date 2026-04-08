@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import type { Function } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { FunctionDeclarationInstruction } from "../../../ir/instructions/declaration/FunctionDeclaration";
 import { type Scope, type ScopeMap } from "../../scope/Scope";
@@ -15,7 +15,7 @@ import { isContextVariable } from "./isContextVariable";
 export function registerFunctionDeclarationBinding(
   scope: Scope,
   _scopeMap: ScopeMap,
-  node: AST.FunctionDeclaration,
+  node: Function,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
@@ -57,7 +57,7 @@ export function registerFunctionDeclarationBinding(
 export function initializeFunctionDeclaration(
   scope: Scope,
   scopeMap: ScopeMap,
-  node: AST.FunctionDeclaration,
+  node: Function,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
   moduleBuilder: ModuleIRBuilder,

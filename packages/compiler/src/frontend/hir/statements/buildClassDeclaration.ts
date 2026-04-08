@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import type { Class } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { StoreLocalInstruction } from "../../../ir";
 import { ClassExpressionInstruction } from "../../../ir/instructions/value/ClassExpression";
@@ -7,7 +7,7 @@ import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildClassDeclaration(
-  node: AST.ClassDeclaration,
+  node: Class,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   _moduleBuilder: ModuleIRBuilder,

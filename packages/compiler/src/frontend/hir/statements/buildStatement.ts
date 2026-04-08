@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import type { ModuleDeclaration, Node, Statement } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -29,7 +29,7 @@ import { buildVariableDeclaration } from "./buildVariableDeclaration";
 import { buildWhileStatement } from "./buildWhileStatement";
 
 export function buildStatement(
-  node: AST.Statement | AST.ModuleDeclaration,
+  node: Statement | ModuleDeclaration,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -91,6 +91,6 @@ export function buildStatement(
     case "EmptyStatement":
       return undefined;
     default:
-      throw new Error(`Unsupported node type: ${(node as AST.Node).type}`);
+      throw new Error(`Unsupported node type: ${(node as Node).type}`);
   }
 }

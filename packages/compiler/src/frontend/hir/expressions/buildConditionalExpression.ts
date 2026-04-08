@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import type { ConditionalExpression, Expression } from "oxc-parser";
 import { Environment } from "../../../environment";
 import {
   BranchTerminal,
@@ -22,7 +22,7 @@ import { buildNode } from "../buildNode";
  * conditional expression.
  */
 export function buildConditionalExpression(
-  node: AST.ConditionalExpression,
+  node: ConditionalExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -144,7 +144,7 @@ function buildTemporaryIdentifier(
 }
 
 function buildBranchExpression(
-  node: AST.Expression,
+  node: Expression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

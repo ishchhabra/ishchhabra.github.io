@@ -1,5 +1,25 @@
-import type * as AST from "../estree";
+import type {
+  ArrowFunctionExpression,
+  CatchClause,
+  Class,
+  Declaration,
+  Directive,
+  Expression,
+  ForInStatement,
+  ForOfStatement,
+  ForStatement,
+  Function,
+  JSXElementName,
+  MemberExpression,
+  ModuleDeclaration,
+  Node,
+  Program,
+  Statement,
+  SwitchStatement,
+  VariableDeclaration,
+} from "oxc-parser";
 import { KEYS } from "eslint-visitor-keys";
+import type * as AST from "../estree";
 
 // -----------------------------------------------------------------------
 // Public types
@@ -25,23 +45,23 @@ export interface Binding {
 
 /** A variable declaration entry in a scope's declaration inventory. */
 export interface VarDeclaration {
-  node: AST.VariableDeclaration;
+  node: VariableDeclaration;
 }
 
 /** A lexical (let/const) declaration entry. */
 export interface LexicalDeclaration {
   kind: "let" | "const";
-  node: AST.VariableDeclaration;
+  node: VariableDeclaration;
 }
 
 /** A class declaration entry. */
 export interface ClassDeclarationEntry {
-  node: AST.ClassDeclaration;
+  node: Class;
 }
 
 /** A function declaration entry, in spec initialization order (last wins). */
 export interface FunctionDeclarationEntry {
-  node: AST.FunctionDeclaration;
+  node: Function;
 }
 
 export class Scope {
@@ -122,7 +142,7 @@ export class Scope {
 }
 
 /** Maps scope-creating AST nodes to their Scope. */
-export type ScopeMap = Map<AST.Node, Scope>;
+export type ScopeMap = Map<Node, Scope>;
 
 export interface AnalysisResult {
   programScope: Scope;
@@ -135,7 +155,7 @@ export interface AnalysisResult {
  *   Phase 1 — discover scopes, hoist declarations, register bindings
  *   Phase 2 — collect references and mutations with explicit visitors
  */
-export function analyzeScopes(program: AST.Program): AnalysisResult {
+export function analyzeScopes(program: Program): AnalysisResult {
   const scopeMap: ScopeMap = new Map();
   const programScope = new Scope(null, "program");
   scopeMap.set(program, programScope);
@@ -150,70 +170,68 @@ export function analyzeScopes(program: AST.Program): AnalysisResult {
 // Phase 1: Scope and binding discovery
 // -----------------------------------------------------------------------
 
-function visitNode(node: AST.Node, scope: Scope, scopeMap: ScopeMap): void {
+function visitNode(node: Node, scope: Scope, scopeMap: ScopeMap): void {
   switch (node.type) {
     // ----- Scope-creating nodes -----
 
     case "Program":
-      visitStatements((node as AST.Program).body as AST.Statement[], scope, scopeMap);
+      visitStatements(node.body as Statement[], scope, scopeMap);
       break;
 
     case "BlockStatement": {
       const blockScope = new Scope(scope, "block");
       scopeMap.set(node, blockScope);
-      visitStatements((node as AST.BlockStatement).body, blockScope, scopeMap);
+      visitStatements(node.body, blockScope, scopeMap);
       break;
     }
 
     case "FunctionDeclaration":
     case "FunctionExpression":
     case "ArrowFunctionExpression":
-      visitFunction(node as AST.Function, scope, scopeMap);
+      visitFunction(node, scope, scopeMap);
       break;
 
     case "ClassExpression": {
-      const classExpr = node as AST.ClassExpression;
-      if (classExpr.id) {
+      if (node.id) {
         const classScope = new Scope(scope, "block");
         scopeMap.set(node, classScope);
-        registerBinding(classExpr.id.name, "class", classScope);
-        visitClassBody(classExpr, classScope, scopeMap);
+        registerBinding(node.id.name, "class", classScope);
+        visitClassBody(node, classScope, scopeMap);
       } else {
-        visitClassBody(classExpr, scope, scopeMap);
+        visitClassBody(node, scope, scopeMap);
       }
       break;
     }
 
     case "ClassDeclaration": {
-      const classDecl = node as AST.ClassDeclaration;
-      if (classDecl.id) {
-        registerBinding(classDecl.id.name, "class", scope);
+      if (node.id) {
+        registerBinding(node.id.name, "class", scope);
       }
-      visitClassBody(classDecl, scope, scopeMap);
+      visitClassBody(node, scope, scopeMap);
       break;
     }
 
     case "ForStatement":
-      visitForStatement(node as AST.ForStatement, scope, scopeMap);
+      visitForStatement(node, scope, scopeMap);
       break;
 
     case "ForInStatement":
     case "ForOfStatement":
-      visitForInOfStatement(node as AST.ForInStatement | AST.ForOfStatement, scope, scopeMap);
+      visitForInOfStatement(node, scope, scopeMap);
       break;
 
     case "SwitchStatement":
-      visitSwitchStatement(node as AST.SwitchStatement, scope, scopeMap);
+      visitSwitchStatement(node, scope, scopeMap);
       break;
 
     case "CatchClause":
-      visitCatchClause(node as AST.CatchClause, scope, scopeMap);
+      visitCatchClause(node, scope, scopeMap);
       break;
 
     // ----- Declarations (non-scope-creating) -----
 
     case "VariableDeclaration":
-      visitVariableDeclaration(node as AST.VariableDeclaration, scope, scopeMap);
+      visitVariableDeclaration(node, scope, scopeMap);
       break;
 
     // ----- All other nodes: generic child traversal -----
@@ -225,7 +243,7 @@ function visitNode(node: AST.Node, scope: Scope, scopeMap: ScopeMap): void {
 }
 
 function visitStatements(
-  stmts: (AST.Statement | AST.ModuleDeclaration | AST.Directive)[],
+  stmts: (Statement | ModuleDeclaration | Directive)[],
   scope: Scope,
   scopeMap: ScopeMap,
 ): void {
@@ -233,7 +251,7 @@ function visitStatements(
   // Per §10.2.11 step 29, collect in reverse order so the last declaration
   // of each name wins, then reverse back to get spec initialization order.
   const seenFunctionNames = new Set<string>();
-  const functionsReversed: AST.FunctionDeclaration[] = [];
+  const functionsReversed: Function[] = [];
   for (let i = stmts.length - 1; i >= 0; i--) {
     const fn = extractFunctionDeclaration(stmts[i]);
     if (fn?.id) {
@@ -268,38 +286,39 @@ function visitStatements(
 
 /** Extract a FunctionDeclaration from a statement, unwrapping exports. */
 function extractFunctionDeclaration(
-  stmt: AST.Statement | AST.ModuleDeclaration | AST.Directive,
-): AST.FunctionDeclaration | undefined {
+  stmt: Statement | ModuleDeclaration | Directive,
+): Function | undefined {
   if (stmt.type === "FunctionDeclaration") return stmt;
   if (stmt.type === "ExportNamedDeclaration") {
-    const decl = (stmt as AST.ExportNamedDeclaration).declaration;
+    const decl = stmt.declaration;
     if (decl?.type === "FunctionDeclaration") return decl;
   }
   if (stmt.type === "ExportDefaultDeclaration") {
-    const decl = (stmt as AST.ExportDefaultDeclaration).declaration;
-    if (decl.type === "FunctionDeclaration") return decl as AST.FunctionDeclaration;
+    const decl = stmt.declaration;
+    if (decl.type === "FunctionDeclaration") return decl;
   }
   return undefined;
 }
 
 /** Collect let/const/class declarations into the scope's inventories. */
 function collectLexicalDeclarations(
-  stmt: AST.Statement | AST.ModuleDeclaration | AST.Directive,
+  stmt: Statement | ModuleDeclaration | Directive,
   scope: Scope,
 ): void {
-  let node: AST.Statement | AST.Declaration = stmt as AST.Statement;
+  let node: Statement | Declaration;
 
-  // Unwrap exports.
   if (stmt.type === "ExportNamedDeclaration") {
-    const decl = (stmt as AST.ExportNamedDeclaration).declaration;
+    const decl = stmt.declaration;
     if (decl) node = decl;
     else return;
   } else if (stmt.type === "ExportDefaultDeclaration") {
-    const decl = (stmt as AST.ExportDefaultDeclaration).declaration;
+    const decl = stmt.declaration;
     if (decl.type === "ClassDeclaration") {
-      scope.classDeclarations.push({ node: decl as AST.ClassDeclaration });
+      scope.classDeclarations.push({ node: decl });
     }
     return;
+  } else {
+    node = stmt;
   }
 
   if (node.type === "VariableDeclaration" && (node.kind === "let" || node.kind === "const")) {
@@ -310,7 +329,7 @@ function collectLexicalDeclarations(
 }
 
 /** Hoists `var` declarations to the given scope (function/program scope). */
-function hoistVars(node: AST.Node, scope: Scope): void {
+function hoistVars(node: Node, scope: Scope): void {
   switch (node.type) {
     case "VariableDeclaration":
       if (node.kind === "var") {
@@ -340,12 +359,12 @@ function hoistVars(node: AST.Node, scope: Scope): void {
       if (node.body) hoistVars(node.body, scope);
       break;
     case "BlockStatement":
-      for (const child of (node as AST.BlockStatement).body) {
+      for (const child of node.body) {
         hoistVars(child, scope);
       }
       break;
     case "LabeledStatement":
-      hoistVars((node as AST.LabeledStatement).body, scope);
+      hoistVars(node.body, scope);
       break;
     case "IfStatement":
       hoistVars(node.consequent, scope);
@@ -382,7 +401,11 @@ function hoistVars(node: AST.Node, scope: Scope): void {
   }
 }
 
-function visitFunction(node: AST.Function, parentScope: Scope, scopeMap: ScopeMap): void {
+function visitFunction(
+  node: Function | ArrowFunctionExpression,
+  parentScope: Scope,
+  scopeMap: ScopeMap,
+): void {
   const funcScope = new Scope(parentScope, "function");
   scopeMap.set(node, funcScope);
 
@@ -409,7 +432,7 @@ function visitFunction(node: AST.Function, parentScope: Scope, scopeMap: ScopeMa
 }
 
 function visitVariableDeclaration(
-  node: AST.VariableDeclaration,
+  node: VariableDeclaration,
   scope: Scope,
   scopeMap: ScopeMap,
 ): void {
@@ -432,7 +455,7 @@ function visitVariableDeclaration(
   }
 }
 
-function visitForStatement(node: AST.ForStatement, scope: Scope, scopeMap: ScopeMap): void {
+function visitForStatement(node: ForStatement, scope: Scope, scopeMap: ScopeMap): void {
   if (
     node.init?.type === "VariableDeclaration" &&
     (node.init.kind === "let" || node.init.kind === "const")
@@ -453,7 +476,7 @@ function visitForStatement(node: AST.ForStatement, scope: Scope, scopeMap: Scope
 }
 
 function visitForInOfStatement(
-  node: AST.ForInStatement | AST.ForOfStatement,
+  node: ForInStatement | ForOfStatement,
   scope: Scope,
   scopeMap: ScopeMap,
 ): void {
@@ -474,7 +497,7 @@ function visitForInOfStatement(
   }
 }
 
-function visitSwitchStatement(node: AST.SwitchStatement, scope: Scope, scopeMap: ScopeMap): void {
+function visitSwitchStatement(node: SwitchStatement, scope: Scope, scopeMap: ScopeMap): void {
   const switchScope = new Scope(scope, "block");
   scopeMap.set(node, switchScope);
   visitNode(node.discriminant, scope, scopeMap);
@@ -519,7 +542,7 @@ function visitSwitchStatement(node: AST.SwitchStatement, scope: Scope, scopeMap:
   }
 }
 
-function visitCatchClause(node: AST.CatchClause, scope: Scope, scopeMap: ScopeMap): void {
+function visitCatchClause(node: CatchClause, scope: Scope, scopeMap: ScopeMap): void {
   const catchScope = new Scope(scope, "block");
   scopeMap.set(node, catchScope);
   if (node.param) {
@@ -534,7 +557,7 @@ function visitCatchClause(node: AST.CatchClause, scope: Scope, scopeMap: ScopeMa
 // -----------------------------------------------------------------------
 
 function collectBindingNames(
-  pattern: AST.Pattern | AST.MemberExpression,
+  pattern: AST.Pattern | MemberExpression,
   kind: BindingKind,
   scope: Scope,
 ): void {
@@ -589,7 +612,7 @@ function registerBinding(name: string, kind: BindingKind, scope: Scope): void {
 // Phase 2: Reference and mutation collection (explicit visitors)
 // -----------------------------------------------------------------------
 
-function collectReferences(node: AST.Node, scope: Scope, scopeMap: ScopeMap): void {
+function collectReferences(node: Node, scope: Scope, scopeMap: ScopeMap): void {
   switch (node.type) {
     // ----- Identifier: handled by callers via collectRefFromExpr -----
     case "Identifier":
@@ -599,15 +622,15 @@ function collectReferences(node: AST.Node, scope: Scope, scopeMap: ScopeMap): vo
 
     case "Program": {
       const progScope = scopeMap.get(node) ?? scope;
-      for (const stmt of (node as AST.Program).body) {
-        collectReferences(stmt as AST.Node, progScope, scopeMap);
+      for (const stmt of node.body) {
+        collectReferences(stmt, progScope, scopeMap);
       }
       return;
     }
 
     case "BlockStatement": {
       const blockScope = scopeMap.get(node) ?? scope;
-      for (const stmt of (node as AST.BlockStatement).body) {
+      for (const stmt of node.body) {
         collectReferences(stmt, blockScope, scopeMap);
       }
       return;
@@ -616,72 +639,65 @@ function collectReferences(node: AST.Node, scope: Scope, scopeMap: ScopeMap): vo
     case "FunctionDeclaration":
     case "FunctionExpression":
     case "ArrowFunctionExpression": {
-      const fn = node as AST.Function;
       const fnScope = scopeMap.get(node) ?? scope;
-      for (const param of fn.params) {
+      for (const param of node.params) {
         collectDefaultValueReferences(param, fnScope, scopeMap);
       }
-      if (fn.body) {
-        if (fn.body.type === "BlockStatement") {
-          for (const stmt of fn.body.body) {
+      if (node.body) {
+        if (node.body.type === "BlockStatement") {
+          for (const stmt of node.body.body) {
             collectReferences(stmt, fnScope, scopeMap);
           }
         } else {
-          collectRefFromExpr(fn.body, fnScope, scopeMap);
+          collectRefFromExpr(node.body, fnScope, scopeMap);
         }
       }
       return;
     }
 
     case "ClassExpression": {
-      const classExpr = node as AST.ClassExpression;
       const classScope = scopeMap.get(node) ?? scope;
-      if (classExpr.superClass) {
-        // superClass is evaluated in the outer scope (before the class scope).
-        collectRefFromExpr(classExpr.superClass, scope, scopeMap);
+      if (node.superClass) {
+        collectRefFromExpr(node.superClass, scope, scopeMap);
       }
-      if (classExpr.body) {
-        collectReferences(classExpr.body, classScope, scopeMap);
+      if (node.body) {
+        collectReferences(node.body, classScope, scopeMap);
       }
       return;
     }
 
     case "ForStatement": {
-      const forStmt = node as AST.ForStatement;
       const forScope = scopeMap.get(node) ?? scope;
-      if (forStmt.init) {
-        if (forStmt.init.type === "VariableDeclaration") {
-          collectReferences(forStmt.init, forScope, scopeMap);
+      if (node.init) {
+        if (node.init.type === "VariableDeclaration") {
+          collectReferences(node.init, forScope, scopeMap);
         } else {
-          collectRefFromExpr(forStmt.init, forScope, scopeMap);
+          collectRefFromExpr(node.init, forScope, scopeMap);
         }
       }
-      if (forStmt.test) collectRefFromExpr(forStmt.test, forScope, scopeMap);
-      if (forStmt.update) collectRefFromExpr(forStmt.update, forScope, scopeMap);
-      if (forStmt.body) collectReferences(forStmt.body, forScope, scopeMap);
+      if (node.test) collectRefFromExpr(node.test, forScope, scopeMap);
+      if (node.update) collectRefFromExpr(node.update, forScope, scopeMap);
+      if (node.body) collectReferences(node.body, forScope, scopeMap);
       return;
     }
 
     case "ForInStatement":
     case "ForOfStatement": {
-      const forIn = node as AST.ForInStatement | AST.ForOfStatement;
       const forInScope = scopeMap.get(node) ?? scope;
-      if (forIn.left.type === "VariableDeclaration") {
-        collectReferences(forIn.left, forInScope, scopeMap);
+      if (node.left.type === "VariableDeclaration") {
+        collectReferences(node.left, forInScope, scopeMap);
       } else {
-        // Bare assignment target: `for (x in obj)` — x is a mutation.
-        collectMutationFromPattern(forIn.left as AST.Pattern, scope, scopeMap);
+        collectMutationFromPattern(node.left as AST.Pattern, scope, scopeMap);
       }
-      collectRefFromExpr(forIn.right, scope, scopeMap);
-      collectReferences(forIn.body, forInScope, scopeMap);
+      collectRefFromExpr(node.right, scope, scopeMap);
+      collectReferences(node.body, forInScope, scopeMap);
       return;
     }
 
     case "SwitchStatement": {
-      const switchStmt = node as AST.SwitchStatement;
       const switchScope = scopeMap.get(node) ?? scope;
-      collectRefFromExpr(switchStmt.discriminant, scope, scopeMap);
-      for (const c of switchStmt.cases) {
+      collectRefFromExpr(node.discriminant, scope, scopeMap);
+      for (const c of node.cases) {
         if (c.test) collectRefFromExpr(c.test, switchScope, scopeMap);
         for (const stmt of c.consequent) {
           collectReferences(stmt, switchScope, scopeMap);
@@ -692,78 +708,69 @@ function collectReferences(node: AST.Node, scope: Scope, scopeMap: ScopeMap): vo
 
     case "CatchClause": {
       const catchScope = scopeMap.get(node) ?? scope;
-      collectReferences((node as AST.CatchClause).body, catchScope, scopeMap);
+      collectReferences(node.body, catchScope, scopeMap);
       return;
     }
 
     // ----- Reference/mutation-sensitive nodes -----
 
     case "AssignmentExpression": {
-      const assign = node as AST.AssignmentExpression;
-      // Compound assignments (+=, -=, ||=, etc.) read the left side too.
-      if (assign.operator !== "=") {
-        collectRefFromExpr(assign.left as AST.Expression, scope, scopeMap);
+      if (node.operator !== "=") {
+        collectRefFromExpr(node.left as Expression, scope, scopeMap);
       }
-      collectMutationFromPattern(assign.left, scope, scopeMap);
-      collectRefFromExpr(assign.right, scope, scopeMap);
+      collectMutationFromPattern(node.left, scope, scopeMap);
+      collectRefFromExpr(node.right, scope, scopeMap);
       return;
     }
 
     case "UpdateExpression": {
-      const update = node as AST.UpdateExpression;
-      if (update.argument.type === "Identifier") {
-        addMutation(update.argument, scope);
-        addReference(update.argument, scope);
+      if (node.argument.type === "Identifier") {
+        addMutation(node.argument, scope);
+        addReference(node.argument, scope);
       } else {
-        collectRefFromExpr(update.argument, scope, scopeMap);
+        collectRefFromExpr(node.argument, scope, scopeMap);
       }
       return;
     }
 
     case "MemberExpression": {
-      const member = node as AST.MemberExpression;
-      collectRefFromExpr(member.object, scope, scopeMap);
-      if (member.computed) {
-        collectRefFromExpr(member.property, scope, scopeMap);
+      collectRefFromExpr(node.object, scope, scopeMap);
+      if (node.computed) {
+        collectRefFromExpr(node.property, scope, scopeMap);
       }
       return;
     }
 
     case "Property": {
-      const prop = node as AST.Property;
-      if (prop.computed) {
-        collectRefFromExpr(prop.key as AST.Expression, scope, scopeMap);
+      if (node.computed) {
+        collectRefFromExpr(node.key as Expression, scope, scopeMap);
       }
-      collectReferences(prop.value, scope, scopeMap);
+      collectReferences(node.value, scope, scopeMap);
       return;
     }
 
     case "VariableDeclarator": {
-      const decl = node as AST.VariableDeclarator;
-      // id is a binding site, not a reference. Traverse default values in patterns.
-      collectDefaultValueReferences(decl.id, scope, scopeMap);
-      if (decl.init) collectRefFromExpr(decl.init, scope, scopeMap);
+      collectDefaultValueReferences(node.id, scope, scopeMap);
+      if (node.init) collectRefFromExpr(node.init, scope, scopeMap);
       return;
     }
 
     case "MethodDefinition":
     case "PropertyDefinition": {
-      const member = node as AST.MethodDefinition | AST.PropertyDefinition;
-      if (member.computed && member.key.type !== "PrivateIdentifier") {
-        collectRefFromExpr(member.key as AST.Expression, scope, scopeMap);
+      if (node.computed && node.key.type !== "PrivateIdentifier") {
+        collectRefFromExpr(node.key as Expression, scope, scopeMap);
       }
-      if (member.value) {
-        collectReferences(member.value as AST.Node, scope, scopeMap);
+      if (node.value) {
+        collectReferences(node.value, scope, scopeMap);
       }
       return;
     }
 
     case "ExportNamedDeclaration": {
-      const exportDecl = node as AST.ExportNamedDeclaration;
-      if (exportDecl.declaration) {
-        collectReferences(exportDecl.declaration, scope, scopeMap);
+      if (node.declaration) {
+        collectReferences(node.declaration, scope, scopeMap);
       }
-      for (const spec of exportDecl.specifiers) {
+      for (const spec of node.specifiers) {
         if (spec.local.type === "Identifier") {
           addReference(spec.local, scope);
         }
@@ -772,12 +779,11 @@ function collectReferences(node: AST.Node, scope: Scope, scopeMap: ScopeMap): vo
     }
 
     case "ExportDefaultDeclaration": {
-      const exportDefault = node as AST.ExportDefaultDeclaration;
-      const decl = exportDefault.declaration;
+      const decl = node.declaration;
       if (decl.type === "FunctionDeclaration" || decl.type === "ClassDeclaration") {
-        collectReferences(decl as AST.Node, scope, scopeMap);
+        collectReferences(decl, scope, scopeMap);
       } else {
-        collectRefFromExpr(decl as AST.Expression, scope, scopeMap);
+        collectRefFromExpr(decl, scope, scopeMap);
       }
       return;
     }
@@ -785,17 +791,15 @@ function collectReferences(node: AST.Node, scope: Scope, scopeMap: ScopeMap): vo
     // ----- JSX name resolution -----
 
     case "JSXOpeningElement": {
-      const opening = node as unknown as { name: AST.Node; attributes: AST.Node[] };
-      collectJSXNameReferences(opening.name, scope);
-      for (const attr of opening.attributes) {
+      collectJSXNameReferences(node.name, scope);
+      for (const attr of node.attributes) {
         collectReferences(attr, scope, scopeMap);
       }
       return;
     }
 
     case "JSXMemberExpression": {
-      const jsxMember = node as unknown as { object: AST.Node };
-      collectJSXNameReferences(jsxMember.object, scope);
+      collectJSXNameReferences(node.object, scope);
       return;
     }
 
@@ -829,7 +833,7 @@ function collectDefaultValueReferences(
           collectDefaultValueReferences(prop.argument, scope, scopeMap);
         } else {
           if (prop.computed) {
-            collectRefFromExpr(prop.key as AST.Expression, scope, scopeMap);
+            collectRefFromExpr(prop.key as Expression, scope, scopeMap);
           }
           collectDefaultValueReferences(prop.value as AST.Pattern, scope, scopeMap);
         }
@@ -843,7 +847,7 @@ function collectDefaultValueReferences(
   }
 }
 
-function collectRefFromExpr(node: AST.Node, scope: Scope, scopeMap: ScopeMap): void {
+function collectRefFromExpr(node: Node, scope: Scope, scopeMap: ScopeMap): void {
   if (node.type === "Identifier") {
     addReference(node as AST.Identifier, scope);
     return;
@@ -852,7 +856,7 @@ function collectRefFromExpr(node: AST.Node, scope: Scope, scopeMap: ScopeMap): v
 }
 
 function collectMutationFromPattern(
-  node: AST.Pattern | AST.MemberExpression,
+  node: AST.Pattern | MemberExpression,
   scope: Scope,
   scopeMap: ScopeMap,
 ): void {
@@ -887,9 +891,9 @@ function collectMutationFromPattern(
 }
 
 /** Resolve a JSX element name to variable references (e.g., <Foo.Bar /> → reference to Foo). */
-function collectJSXNameReferences(node: AST.Node, scope: Scope): void {
+function collectJSXNameReferences(node: JSXElementName, scope: Scope): void {
   if (node.type === "JSXIdentifier") {
-    const name = (node as unknown as { name: string }).name;
+    const { name } = node;
     // Only uppercase JSX names are component references; lowercase are HTML tags.
     if (name[0] && name[0] === name[0].toUpperCase() && name[0] !== name[0].toLowerCase()) {
       const binding = scope.getBinding(name);
@@ -898,8 +902,7 @@ function collectJSXNameReferences(node: AST.Node, scope: Scope): void {
       }
     }
   } else if (node.type === "JSXMemberExpression") {
-    const jsxMember = node as unknown as { object: AST.Node };
-    collectJSXNameReferences(jsxMember.object, scope);
+    collectJSXNameReferences(node.object, scope);
   }
 }
 
@@ -917,11 +920,7 @@ function addMutation(id: AST.Identifier, scope: Scope): void {
   }
 }
 
-function visitClassBody(
-  node: AST.ClassDeclaration | AST.ClassExpression,
-  scope: Scope,
-  scopeMap: ScopeMap,
-): void {
+function visitClassBody(node: Class, scope: Scope, scopeMap: ScopeMap): void {
   if (node.superClass) visitNode(node.superClass, scope, scopeMap);
   if (node.body) visitNode(node.body, scope, scopeMap);
 }
@@ -930,7 +929,7 @@ function visitClassBody(
 // Generic child traversal using eslint-visitor-keys
 // -----------------------------------------------------------------------
 
-function visitChildren(node: AST.Node, scope: Scope, scopeMap: ScopeMap): void {
+function visitChildren(node: Node, scope: Scope, scopeMap: ScopeMap): void {
   const keys = KEYS[node.type];
   if (!keys) return;
   for (const key of keys) {
@@ -938,17 +937,17 @@ function visitChildren(node: AST.Node, scope: Scope, scopeMap: ScopeMap): void {
     if (child == null) continue;
     if (Array.isArray(child)) {
       for (const item of child) {
-        if (item && typeof item === "object" && typeof (item as AST.Node).type === "string") {
-          visitNode(item as AST.Node, scope, scopeMap);
+        if (item && typeof item === "object" && typeof (item as Node).type === "string") {
+          visitNode(item as Node, scope, scopeMap);
         }
       }
-    } else if (typeof child === "object" && typeof (child as AST.Node).type === "string") {
-      visitNode(child as AST.Node, scope, scopeMap);
+    } else if (typeof child === "object" && typeof (child as Node).type === "string") {
+      visitNode(child as Node, scope, scopeMap);
     }
   }
 }
 
-function collectReferencesChildren(node: AST.Node, scope: Scope, scopeMap: ScopeMap): void {
+function collectReferencesChildren(node: Node, scope: Scope, scopeMap: ScopeMap): void {
   const keys = KEYS[node.type];
   if (!keys) return;
   for (const key of keys) {
@@ -956,8 +955,8 @@ function collectReferencesChildren(node: AST.Node, scope: Scope, scopeMap: Scope
     if (child == null) continue;
     if (Array.isArray(child)) {
       for (const item of child) {
-        if (item && typeof item === "object" && typeof (item as AST.Node).type === "string") {
-          const childNode = item as AST.Node;
+        if (item && typeof item === "object" && typeof (item as Node).type === "string") {
+          const childNode = item as Node;
           if (childNode.type === "Identifier") {
             addReference(childNode as AST.Identifier, scope);
           } else {
@@ -965,8 +964,8 @@ function collectReferencesChildren(node: AST.Node, scope: Scope, scopeMap: Scope
           }
         }
       }
-    } else if (typeof child === "object" && typeof (child as AST.Node).type === "string") {
-      const childNode = child as AST.Node;
+    } else if (typeof child === "object" && typeof (child as Node).type === "string") {
+      const childNode = child as Node;
       if (childNode.type === "Identifier") {
         addReference(childNode as AST.Identifier, scope);
       } else {

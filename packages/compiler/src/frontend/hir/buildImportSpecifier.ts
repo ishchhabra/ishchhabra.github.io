@@ -1,14 +1,20 @@
-import type * as AST from "../estree";
+import type {
+  ImportDeclaration,
+  ImportDefaultSpecifier,
+  ImportNamespaceSpecifier,
+  ImportSpecifier,
+} from "oxc-parser";
 import { Environment } from "../../environment";
 import { DeclareLocalInstruction, ImportSpecifierInstruction } from "../../ir";
+import type * as AST from "../estree";
 import { type Scope } from "../scope/Scope";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
 import { resolveModulePath } from "./resolveModulePath";
 
 export function buildImportSpecifier(
-  specifierNode: AST.ImportSpecifier | AST.ImportDefaultSpecifier | AST.ImportNamespaceSpecifier,
-  declarationNode: AST.ImportDeclaration,
+  specifierNode: ImportSpecifier | ImportDefaultSpecifier | ImportNamespaceSpecifier,
+  declarationNode: ImportDeclaration,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -59,14 +65,12 @@ export function buildImportSpecifier(
   return place;
 }
 
-function getLocalName(
-  node: AST.ImportSpecifier | AST.ImportDefaultSpecifier | AST.ImportNamespaceSpecifier,
-) {
+function getLocalName(node: ImportSpecifier | ImportDefaultSpecifier | ImportNamespaceSpecifier) {
   return node.local.name;
 }
 
 function getImportedName(
-  node: AST.ImportSpecifier | AST.ImportDefaultSpecifier | AST.ImportNamespaceSpecifier,
+  node: ImportSpecifier | ImportDefaultSpecifier | ImportNamespaceSpecifier,
 ) {
   if (node.type === "ImportDefaultSpecifier") {
     return "default";

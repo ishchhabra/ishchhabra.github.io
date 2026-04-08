@@ -1,4 +1,5 @@
 import type * as AST from "../estree";
+import type { BlockStatement, Expression, Node, Program, Statement } from "oxc-parser";
 import { Environment } from "../../environment";
 import {
   BaseInstruction,
@@ -71,8 +72,8 @@ export class FunctionIRBuilder {
 
   constructor(
     public readonly params: AST.Pattern[],
-    public readonly scopeNode: AST.Node,
-    public readonly bodyNode: AST.Program | AST.BlockStatement | AST.Expression,
+    public readonly scopeNode: Node,
+    public readonly bodyNode: Program | BlockStatement | Expression,
     public readonly scope: Scope,
     public readonly scopeMap: ScopeMap,
     public readonly environment: Environment,
@@ -108,7 +109,7 @@ export class FunctionIRBuilder {
   }
 
   /** Resolve the scope for a given AST node. */
-  public scopeFor(node: AST.Node): Scope {
+  public scopeFor(node: Node): Scope {
     return this.scopeMap.get(node) ?? this.scope;
   }
 
@@ -150,9 +151,9 @@ export class FunctionIRBuilder {
         this.environment,
         this.moduleBuilder,
       );
-      const body = (this.bodyNode as AST.Program | AST.BlockStatement).body;
+      const body = (this.bodyNode as Program | BlockStatement).body;
       buildStatementList(
-        body as AST.Statement[],
+        body as Statement[],
         bodyScope,
         this,
         this.moduleBuilder,

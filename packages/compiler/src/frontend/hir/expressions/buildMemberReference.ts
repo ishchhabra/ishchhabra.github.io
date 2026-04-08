@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import type { Expression, MemberExpression, PrivateIdentifier } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { ExpressionStatementInstruction, Place } from "../../../ir";
 import { LoadDynamicPropertyInstruction } from "../../../ir/instructions/memory/LoadDynamicProperty";
@@ -29,7 +29,7 @@ export type MemberReference =
  * Check if a member expression has a statically resolvable key.
  * In ESTree: non-computed keys, or computed keys that are string/number literals.
  */
-function isStaticMemberAccess(node: AST.MemberExpression): boolean {
+function isStaticMemberAccess(node: MemberExpression): boolean {
   if (!node.computed) {
     return true;
   }
@@ -48,9 +48,7 @@ function isStaticMemberAccess(node: AST.MemberExpression): boolean {
 /**
  * Extract the value from a static property key node.
  */
-function getValueFromStaticKey(
-  node: AST.Expression | AST.PrivateIdentifier,
-): string | number | undefined {
+function getValueFromStaticKey(node: Expression | PrivateIdentifier): string | number | undefined {
   if (node.type === "Identifier") {
     return node.name;
   }
@@ -64,7 +62,7 @@ function getValueFromStaticKey(
 }
 
 export function buildMemberReference(
-  node: AST.MemberExpression,
+  node: MemberExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

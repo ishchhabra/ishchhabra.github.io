@@ -1,12 +1,6 @@
-import type * as Oxc from "@oxc-project/types";
+import type * as Oxc from "oxc-parser";
+import type { Expression, Node, Statement } from "oxc-parser";
 
-export type Node = Oxc.Node;
-export type Program = Oxc.Program;
-export type Statement = Oxc.Statement;
-export type ModuleDeclaration = Oxc.ModuleDeclaration;
-export type Directive = Oxc.Directive;
-export type Declaration = Oxc.Declaration;
-export type Expression = Oxc.Expression;
 export type Identifier =
   | Oxc.IdentifierName
   | Oxc.IdentifierReference
@@ -22,8 +16,6 @@ export type Literal =
   | Oxc.BigIntLiteral
   | Oxc.RegExpLiteral;
 export type SimpleLiteral = Exclude<Literal, Oxc.RegExpLiteral>;
-export type RegExpLiteral = Oxc.RegExpLiteral;
-export type BigIntLiteral = Oxc.BigIntLiteral;
 
 export type Pattern =
   | Oxc.BindingPattern
@@ -38,15 +30,6 @@ export type RestElement =
   | Oxc.BindingRestElement
   | Oxc.AssignmentTargetRest
   | Oxc.FormalParameterRest;
-export type Function = Oxc.Function;
-export type FunctionDeclaration = Oxc.Function;
-export type FunctionExpression = Oxc.Function;
-export type Class = Oxc.Class;
-export type ClassDeclaration = Oxc.Class;
-export type ClassExpression = Oxc.Class;
-export type VariableDeclaration = Oxc.VariableDeclaration;
-export type VariableDeclarator = Oxc.VariableDeclarator;
-export type BlockStatement = Oxc.BlockStatement;
 export type ArrayPattern = Oxc.ArrayPattern | Oxc.ArrayAssignmentTarget;
 export type ObjectPattern = Oxc.ObjectPattern | Oxc.ObjectAssignmentTarget;
 export type AssignmentPattern = Oxc.AssignmentPattern | Oxc.AssignmentTargetWithDefault;
@@ -55,56 +38,7 @@ export type Property =
   | Oxc.BindingProperty
   | Oxc.AssignmentTargetPropertyIdentifier
   | Oxc.AssignmentTargetPropertyProperty;
-export type SpreadElement = Oxc.SpreadElement;
-export type PrivateIdentifier = Oxc.PrivateIdentifier;
-export type MetaProperty = Oxc.MetaProperty;
-export type MemberExpression = Oxc.MemberExpression;
-export type ArrayExpression = Oxc.ArrayExpression;
-export type AssignmentExpression = Oxc.AssignmentExpression;
-export type ArrowFunctionExpression = Oxc.ArrowFunctionExpression;
-export type AwaitExpression = Oxc.AwaitExpression;
 export type BinaryExpression = Oxc.BinaryExpression | Oxc.PrivateInExpression;
-export type CallExpression = Oxc.CallExpression;
-export type SimpleCallExpression = Oxc.CallExpression;
-export type ConditionalExpression = Oxc.ConditionalExpression;
-export type ImportExpression = Oxc.ImportExpression;
-export type LogicalExpression = Oxc.LogicalExpression;
-export type NewExpression = Oxc.NewExpression;
-export type ObjectExpression = Oxc.ObjectExpression;
-export type SequenceExpression = Oxc.SequenceExpression;
-export type TaggedTemplateExpression = Oxc.TaggedTemplateExpression;
-export type TemplateLiteral = Oxc.TemplateLiteral;
-export type ThisExpression = Oxc.ThisExpression;
-export type UnaryExpression = Oxc.UnaryExpression;
-export type UpdateExpression = Oxc.UpdateExpression;
-export type YieldExpression = Oxc.YieldExpression;
-export type BreakStatement = Oxc.BreakStatement;
-export type ContinueStatement = Oxc.ContinueStatement;
-export type DebuggerStatement = Oxc.DebuggerStatement;
-export type DoWhileStatement = Oxc.DoWhileStatement;
-export type ExportAllDeclaration = Oxc.ExportAllDeclaration;
-export type ExportDefaultDeclaration = Oxc.ExportDefaultDeclaration;
-export type ExportNamedDeclaration = Oxc.ExportNamedDeclaration;
-export type ExportSpecifier = Oxc.ExportSpecifier;
-export type ExpressionStatement = Oxc.ExpressionStatement;
-export type ForInStatement = Oxc.ForInStatement;
-export type ForOfStatement = Oxc.ForOfStatement;
-export type ForStatement = Oxc.ForStatement;
-export type IfStatement = Oxc.IfStatement;
-export type ImportDeclaration = Oxc.ImportDeclaration;
-export type ImportOrExportKind = Oxc.ImportOrExportKind;
-export type ImportSpecifier = Oxc.ImportSpecifier;
-export type ImportDefaultSpecifier = Oxc.ImportDefaultSpecifier;
-export type ImportNamespaceSpecifier = Oxc.ImportNamespaceSpecifier;
-export type LabeledStatement = Oxc.LabeledStatement;
-export type ReturnStatement = Oxc.ReturnStatement;
-export type SwitchStatement = Oxc.SwitchStatement;
-export type ThrowStatement = Oxc.ThrowStatement;
-export type TryStatement = Oxc.TryStatement;
-export type WhileStatement = Oxc.WhileStatement;
-export type CatchClause = Oxc.CatchClause;
-export type MethodDefinition = Oxc.MethodDefinition;
-export type PropertyDefinition = Oxc.PropertyDefinition;
 
 export type JSXNode =
   | Oxc.JSXElement
@@ -122,21 +56,6 @@ export type JSXNode =
   | Oxc.JSXNamespacedName
   | Oxc.JSXSpreadChild
   | Oxc.JSXEmptyExpression;
-export type JSXElement = Oxc.JSXElement;
-export type JSXFragment = Oxc.JSXFragment;
-export type JSXOpeningElement = Oxc.JSXOpeningElement;
-export type JSXOpeningFragment = Oxc.JSXOpeningFragment;
-export type JSXClosingElement = Oxc.JSXClosingElement;
-export type JSXClosingFragment = Oxc.JSXClosingFragment;
-export type JSXAttribute = Oxc.JSXAttribute;
-export type JSXSpreadAttribute = Oxc.JSXSpreadAttribute;
-export type JSXExpressionContainer = Oxc.JSXExpressionContainer;
-export type JSXText = Oxc.JSXText;
-export type JSXIdentifier = Oxc.JSXIdentifier;
-export type JSXMemberExpression = Oxc.JSXMemberExpression;
-export type JSXNamespacedName = Oxc.JSXNamespacedName;
-export type JSXSpreadChild = Oxc.JSXSpreadChild;
-export type JSXEmptyExpression = Oxc.JSXEmptyExpression;
 
 export function isIdentifier(node: Node): node is Identifier {
   return node.type === "Identifier";
@@ -260,7 +179,7 @@ export function isLVal(node: Node): node is Pattern {
   return isPattern(node);
 }
 
-export function isFunction(node: Node): node is Function | Oxc.ArrowFunctionExpression {
+export function isFunction(node: Node): node is Oxc.Function | Oxc.ArrowFunctionExpression {
   return (
     node.type === "FunctionDeclaration" ||
     node.type === "FunctionExpression" ||

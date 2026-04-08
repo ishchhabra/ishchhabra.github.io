@@ -1,4 +1,5 @@
 import type * as AST from "../estree";
+import type { ExportSpecifier } from "oxc-parser";
 import { Environment } from "../../environment";
 import { ExportSpecifierInstruction, Place } from "../../ir";
 import { type Scope } from "../scope/Scope";
@@ -6,7 +7,7 @@ import { FunctionIRBuilder } from "./FunctionIRBuilder";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
 
 export function buildExportSpecifier(
-  node: AST.ExportSpecifier,
+  node: ExportSpecifier,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -60,10 +61,10 @@ function getSpecifierName(specifier: AST.Identifier | AST.Literal): string {
   return specifier.value as string;
 }
 
-function getLocalName(node: AST.ExportSpecifier) {
+function getLocalName(node: ExportSpecifier) {
   return getSpecifierName(node.local);
 }
 
-function getExportedName(node: AST.ExportSpecifier) {
+function getExportedName(node: ExportSpecifier) {
   return getSpecifierName(node.exported);
 }

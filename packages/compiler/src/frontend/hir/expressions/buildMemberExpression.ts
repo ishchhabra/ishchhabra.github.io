@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import type { MemberExpression, UpdateExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { BinaryExpressionInstruction, LiteralInstruction, Place } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -12,7 +12,7 @@ import {
 } from "./buildMemberReference";
 
 export function buildMemberExpression(
-  node: AST.MemberExpression,
+  node: MemberExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -33,8 +33,8 @@ export function buildMemberExpression(
  *   4. Return old value (postfix) or new value (prefix)
  */
 export function buildMemberExpressionUpdate(
-  updateNode: AST.UpdateExpression,
-  memberNode: AST.MemberExpression,
+  updateNode: UpdateExpression,
+  memberNode: MemberExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

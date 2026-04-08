@@ -1,4 +1,5 @@
 import type * as AST from "../estree";
+import type { Expression, Node, PrivateIdentifier } from "oxc-parser";
 import { Environment } from "../../environment";
 import {
   ArrayPatternInstruction,
@@ -34,8 +35,8 @@ interface ParamBuildResult {
 
 export function buildFunctionParams(
   params: AST.Pattern[],
-  scopeNode: AST.Node,
-  bodyNode: AST.Node,
+  scopeNode: Node,
+  bodyNode: Node,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -58,7 +59,7 @@ export function buildFunctionParams(
 
 function buildFunctionParam(
   param: AST.Pattern,
-  bodyNode: AST.Node,
+  bodyNode: Node,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -108,7 +109,7 @@ function buildFunctionParam(
     );
   }
 
-  throw new Error(`Unsupported param type: ${(param as AST.Node).type}`);
+  throw new Error(`Unsupported param type: ${(param as Node).type}`);
 }
 
 function buildFunctionIdentifierParam(
@@ -139,7 +140,7 @@ function buildFunctionIdentifierParam(
 
 function buildFunctionArrayPatternParam(
   node: AST.ArrayPattern,
-  bodyNode: AST.Node,
+  bodyNode: Node,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -179,7 +180,7 @@ function buildFunctionArrayPatternParam(
 
 function buildFunctionObjectPatternParam(
   node: AST.ObjectPattern,
-  bodyNode: AST.Node,
+  bodyNode: Node,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -269,7 +270,7 @@ function buildFunctionObjectPatternParam(
 }
 
 function buildFunctionObjectPropertyKey(
-  keyNode: AST.Expression | AST.PrivateIdentifier,
+  keyNode: Expression | PrivateIdentifier,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {
@@ -288,7 +289,7 @@ function buildFunctionObjectPropertyKey(
 
 function buildFunctionAssignmentPatternParam(
   node: AST.AssignmentPattern,
-  bodyNode: AST.Node,
+  bodyNode: Node,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -332,7 +333,7 @@ function buildFunctionAssignmentPatternParam(
 
 function buildFunctionRestElementParam(
   node: AST.RestElement,
-  bodyNode: AST.Node,
+  bodyNode: Node,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

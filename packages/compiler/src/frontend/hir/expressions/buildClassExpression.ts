@@ -1,10 +1,10 @@
-import type * as AST from "../../estree";
+import type { Class } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { ClassExpressionInstruction } from "../../../ir/instructions/value/ClassExpression";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 export function buildClassExpression(
-  node: AST.ClassExpression,
+  node: Class,
   _scope: unknown,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,

@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import type { WhileStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { BranchTerminal, createInstructionId, JumpTerminal } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -8,7 +8,7 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildOwnedBody } from "./buildOwnedBody";
 
 export function buildWhileStatement(
-  node: AST.WhileStatement,
+  node: WhileStatement,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

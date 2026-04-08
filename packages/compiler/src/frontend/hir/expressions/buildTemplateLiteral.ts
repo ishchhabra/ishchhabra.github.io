@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import type { TemplateLiteral } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { TemplateLiteralInstruction } from "../../../ir/instructions/value/TemplateLiteral";
 import { type Scope } from "../../scope/Scope";
@@ -7,7 +7,7 @@ import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildTemplateLiteral(
-  node: AST.TemplateLiteral,
+  node: TemplateLiteral,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

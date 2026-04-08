@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import type { LogicalExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { LogicalExpressionInstruction } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -7,7 +7,7 @@ import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildLogicalExpression(
-  node: AST.LogicalExpression,
+  node: LogicalExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import type { UnaryExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { UnaryExpressionInstruction } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -7,7 +7,7 @@ import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildUnaryExpression(
-  node: AST.UnaryExpression,
+  node: UnaryExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

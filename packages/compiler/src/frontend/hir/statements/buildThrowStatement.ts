@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import type { ThrowStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { createInstructionId, ThrowTerminal } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -7,7 +7,7 @@ import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildThrowStatement(
-  node: AST.ThrowStatement,
+  node: ThrowStatement,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

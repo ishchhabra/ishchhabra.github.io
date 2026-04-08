@@ -1,4 +1,4 @@
-import type * as AST from "../../estree";
+import type { Function } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { FunctionExpressionInstruction } from "../../../ir/instructions/value/FunctionExpression";
 import { type Scope } from "../../scope/Scope";
@@ -7,7 +7,7 @@ import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildFunctionExpression(
-  node: AST.FunctionExpression,
+  node: Function,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
