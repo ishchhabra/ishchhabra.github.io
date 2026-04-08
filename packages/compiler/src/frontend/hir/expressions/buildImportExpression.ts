@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { ImportExpressionInstruction, Place } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -7,7 +7,7 @@ import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildImportExpression(
-  node: ESTree.ImportExpression,
+  node: AST.ImportExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../estree";
 import { Environment } from "../../environment";
 import { DeclareLocalInstruction, ImportSpecifierInstruction } from "../../ir";
 import { type Scope } from "../scope/Scope";
@@ -8,10 +8,10 @@ import { resolveModulePath } from "./resolveModulePath";
 
 export function buildImportSpecifier(
   specifierNode:
-    | ESTree.ImportSpecifier
-    | ESTree.ImportDefaultSpecifier
-    | ESTree.ImportNamespaceSpecifier,
-  declarationNode: ESTree.ImportDeclaration,
+    | AST.ImportSpecifier
+    | AST.ImportDefaultSpecifier
+    | AST.ImportNamespaceSpecifier,
+  declarationNode: AST.ImportDeclaration,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -63,13 +63,13 @@ export function buildImportSpecifier(
 }
 
 function getLocalName(
-  node: ESTree.ImportSpecifier | ESTree.ImportDefaultSpecifier | ESTree.ImportNamespaceSpecifier,
+  node: AST.ImportSpecifier | AST.ImportDefaultSpecifier | AST.ImportNamespaceSpecifier,
 ) {
   return node.local.name;
 }
 
 function getImportedName(
-  node: ESTree.ImportSpecifier | ESTree.ImportDefaultSpecifier | ESTree.ImportNamespaceSpecifier,
+  node: AST.ImportSpecifier | AST.ImportDefaultSpecifier | AST.ImportNamespaceSpecifier,
 ) {
   if (node.type === "ImportDefaultSpecifier") {
     return "default";
@@ -82,6 +82,6 @@ function getImportedName(
     }
 
     // ESTree Literal with string value
-    return (importedNode as ESTree.Literal).value as string;
+    return (importedNode as AST.Literal).value as string;
   }
 }

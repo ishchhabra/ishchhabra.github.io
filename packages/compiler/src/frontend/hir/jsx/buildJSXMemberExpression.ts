@@ -1,4 +1,4 @@
-import type * as JSX from "estree-jsx";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { JSXMemberExpressionInstruction, Place } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -7,7 +7,7 @@ import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildJSXMemberExpression(
-  node: JSX.JSXMemberExpression,
+  node: AST.JSXMemberExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

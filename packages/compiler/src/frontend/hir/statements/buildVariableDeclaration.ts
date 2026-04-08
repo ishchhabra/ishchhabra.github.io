@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { Place, StoreContextInstruction, StoreLocalInstruction } from "../../../ir";
 import { LoadGlobalInstruction } from "../../../ir/instructions/memory/LoadGlobal";
@@ -9,7 +9,7 @@ import { buildLVal } from "../buildLVal";
 import { buildNode } from "../buildNode";
 
 export function buildVariableDeclaration(
-  node: ESTree.VariableDeclaration,
+  node: AST.VariableDeclaration,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -21,7 +21,7 @@ export function buildVariableDeclaration(
   }
 
   const declarations = node.declarations;
-  const declarationPlaces = declarations.map((declaration: ESTree.VariableDeclarator) => {
+  const declarationPlaces = declarations.map((declaration: AST.VariableDeclarator) => {
     const id = declaration.id;
     const init = declaration.init;
 
@@ -41,7 +41,7 @@ export function buildVariableDeclaration(
     }
 
     const { place: lvalPlace, bindings } = buildLVal(
-      id as ESTree.Pattern,
+      id as AST.Pattern,
       scope,
       functionBuilder,
       moduleBuilder,

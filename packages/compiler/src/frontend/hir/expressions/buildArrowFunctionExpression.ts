@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
 import { ArrowFunctionExpressionInstruction } from "../../../ir/instructions/value/ArrowFunctionExpression";
@@ -8,7 +8,7 @@ import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildArrowFunctionExpression(
-  node: ESTree.ArrowFunctionExpression,
+  node: AST.ArrowFunctionExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

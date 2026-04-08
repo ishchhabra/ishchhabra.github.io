@@ -1,11 +1,11 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { ExportAllInstruction } from "../../../ir/instructions/module/ExportAll";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildExportAllDeclaration(
-  node: ESTree.ExportAllDeclaration,
+  node: AST.ExportAllDeclaration,
   functionBuilder: FunctionIRBuilder,
   _moduleBuilder: ModuleIRBuilder,
   environment: Environment,

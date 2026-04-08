@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { createInstructionId, JumpTerminal, SwitchTerminal } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -9,7 +9,7 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildStatementList } from "./buildStatementList";
 
 export function buildSwitchStatement(
-  node: ESTree.SwitchStatement,
+  node: AST.SwitchStatement,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -94,7 +94,7 @@ export function buildSwitchStatement(
 
     // Build the case body statements.
     buildStatementList(
-      switchCase.consequent as ESTree.Statement[],
+      switchCase.consequent as AST.Statement[],
       switchScope,
       functionBuilder,
       moduleBuilder,

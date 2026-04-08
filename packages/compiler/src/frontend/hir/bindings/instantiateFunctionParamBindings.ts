@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { DeclareLocalInstruction } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -6,7 +6,7 @@ import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { isContextVariable } from "./isContextVariable";
 
 export function instantiateFunctionParamBindings(
-  params: ESTree.Pattern[],
+  params: AST.Pattern[],
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
@@ -17,7 +17,7 @@ export function instantiateFunctionParamBindings(
 }
 
 function instantiateParamBinding(
-  node: ESTree.Pattern,
+  node: AST.Pattern,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
@@ -42,7 +42,7 @@ function instantiateParamBinding(
     for (const property of node.properties) {
       if (property.type === "Property") {
         instantiateParamBinding(
-          property.value as ESTree.Pattern,
+          property.value as AST.Pattern,
           scope,
           functionBuilder,
           environment,
@@ -55,7 +55,7 @@ function instantiateParamBinding(
         continue;
       }
 
-      throw new Error(`Unsupported object pattern property: ${(property as ESTree.Node).type}`);
+      throw new Error(`Unsupported object pattern property: ${(property as AST.Node).type}`);
     }
     return;
   }
@@ -70,11 +70,11 @@ function instantiateParamBinding(
     return;
   }
 
-  throw new Error(`Unsupported param type: ${(node as ESTree.Node).type}`);
+  throw new Error(`Unsupported param type: ${(node as AST.Node).type}`);
 }
 
 function instantiateIdentifierParamBinding(
-  node: ESTree.Identifier,
+  node: AST.Identifier,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,

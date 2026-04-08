@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { JumpTerminal, LabeledBlockStructure, createInstructionId } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -13,7 +13,7 @@ import { buildSwitchStatement } from "./buildSwitchStatement";
 import { buildWhileStatement } from "./buildWhileStatement";
 
 export function buildLabeledStatement(
-  node: ESTree.LabeledStatement,
+  node: AST.LabeledStatement,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

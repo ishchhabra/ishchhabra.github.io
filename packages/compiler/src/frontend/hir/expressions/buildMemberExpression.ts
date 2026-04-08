@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { BinaryExpressionInstruction, LiteralInstruction, Place } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -12,7 +12,7 @@ import {
 } from "./buildMemberReference";
 
 export function buildMemberExpression(
-  node: ESTree.MemberExpression,
+  node: AST.MemberExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -33,8 +33,8 @@ export function buildMemberExpression(
  *   4. Return old value (postfix) or new value (prefix)
  */
 export function buildMemberExpressionUpdate(
-  updateNode: ESTree.UpdateExpression,
-  memberNode: ESTree.MemberExpression,
+  updateNode: AST.UpdateExpression,
+  memberNode: AST.MemberExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

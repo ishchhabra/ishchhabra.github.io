@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { BranchTerminal, createInstructionId, JumpTerminal } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -8,7 +8,7 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildOwnedBody } from "./buildOwnedBody";
 
 export function buildWhileStatement(
-  node: ESTree.WhileStatement,
+  node: AST.WhileStatement,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

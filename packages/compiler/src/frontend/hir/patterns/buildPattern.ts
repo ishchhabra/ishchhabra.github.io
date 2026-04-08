@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -7,7 +7,7 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildArrayPattern } from "./buildArrayPattern";
 
 export function buildPattern(
-  node: ESTree.Pattern | ESTree.SpreadElement,
+  node: AST.Pattern | AST.SpreadElement,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

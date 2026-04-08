@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -9,7 +9,7 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
  * the statement's lexical position.
  */
 export function buildFunctionDeclaration(
-  _node: ESTree.FunctionDeclaration,
+  _node: AST.FunctionDeclaration,
   _functionBuilder: FunctionIRBuilder,
   _moduleBuilder: ModuleIRBuilder,
   _environment: Environment,

@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { createInstructionId, ThrowTerminal } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -7,7 +7,7 @@ import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildThrowStatement(
-  node: ESTree.ThrowStatement,
+  node: AST.ThrowStatement,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

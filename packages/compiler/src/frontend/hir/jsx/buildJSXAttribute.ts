@@ -1,4 +1,4 @@
-import type * as JSX from "estree-jsx";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { JSXAttributeInstruction, Place } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -7,7 +7,7 @@ import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildJSXAttribute(
-  node: JSX.JSXAttribute,
+  node: AST.JSXAttribute,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -31,7 +31,7 @@ export function buildJSXAttribute(
   return place;
 }
 
-function getJSXAttributeName(name: JSX.JSXIdentifier | JSX.JSXNamespacedName): string {
+function getJSXAttributeName(name: AST.JSXIdentifier | AST.JSXNamespacedName): string {
   if (name.type === "JSXIdentifier") {
     return name.name;
   }

@@ -1,4 +1,4 @@
-import type * as JSX from "estree-jsx";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
 import { JSXOpeningElementInstruction } from "../../../ir/instructions/jsx/JSXOpeningElement";
@@ -8,7 +8,7 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildNode } from "../buildNode";
 
 export function buildJSXOpeningElement(
-  node: JSX.JSXOpeningElement,
+  node: AST.JSXOpeningElement,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

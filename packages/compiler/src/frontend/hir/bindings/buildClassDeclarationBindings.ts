@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { DeclareLocalInstruction } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -8,7 +8,7 @@ import { isContextVariable } from "./isContextVariable";
 
 export function buildClassDeclarationBindings(
   scope: Scope,
-  node: ESTree.ClassDeclaration,
+  node: AST.ClassDeclaration,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {

@@ -1,10 +1,10 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { MetaPropertyInstruction } from "../../../ir/instructions/value/MetaProperty";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 export function buildMetaProperty(
-  node: ESTree.MetaProperty,
+  node: AST.MetaProperty,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {

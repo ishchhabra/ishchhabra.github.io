@@ -1,10 +1,10 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { createInstructionId, JumpTerminal } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 export function buildContinueStatement(
-  node: ESTree.ContinueStatement,
+  node: AST.ContinueStatement,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {

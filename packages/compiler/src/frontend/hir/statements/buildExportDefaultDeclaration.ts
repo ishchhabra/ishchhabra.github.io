@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { ExportDefaultDeclarationInstruction } from "../../../ir";
 import { FunctionDeclarationInstruction } from "../../../ir/instructions/declaration/FunctionDeclaration";
@@ -10,7 +10,7 @@ import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildExportDefaultDeclaration(
-  node: ESTree.ExportDefaultDeclaration,
+  node: AST.ExportDefaultDeclaration,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -26,7 +26,7 @@ export function buildExportDefaultDeclaration(
   let declarationPlace;
   if (declaration.type === "FunctionDeclaration" && declaration.id === null) {
     declarationPlace = buildFunctionExpression(
-      declaration as unknown as ESTree.FunctionExpression,
+      declaration as unknown as AST.FunctionExpression,
       scope,
       functionBuilder,
       moduleBuilder,
@@ -34,7 +34,7 @@ export function buildExportDefaultDeclaration(
     );
   } else if (declaration.type === "ClassDeclaration" && declaration.id === null) {
     declarationPlace = buildClassExpression(
-      declaration as unknown as ESTree.ClassExpression,
+      declaration as unknown as AST.ClassExpression,
       scope,
       functionBuilder,
       environment,
@@ -57,7 +57,7 @@ export function buildExportDefaultDeclaration(
     }
   } else {
     declarationPlace = buildNode(
-      declaration as ESTree.Node,
+      declaration as AST.Node,
       scope,
       functionBuilder,
       moduleBuilder,

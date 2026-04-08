@@ -1,10 +1,10 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { ThisExpressionInstruction } from "../../../ir/instructions/value/ThisExpression";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 export function buildThisExpression(
-  _node: ESTree.ThisExpression,
+  _node: AST.ThisExpression,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {

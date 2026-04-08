@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../estree";
 import { Environment } from "../../environment";
 import {
   BaseInstruction,
@@ -70,9 +70,9 @@ export class FunctionIRBuilder {
   public readonly declarationBindings = new Map<DeclarationId, DeclarationBinding>();
 
   constructor(
-    public readonly params: ESTree.Pattern[],
-    public readonly scopeNode: ESTree.Node,
-    public readonly bodyNode: ESTree.Program | ESTree.BlockStatement | ESTree.Expression,
+    public readonly params: AST.Pattern[],
+    public readonly scopeNode: AST.Node,
+    public readonly bodyNode: AST.Program | AST.BlockStatement | AST.Expression,
     public readonly scope: Scope,
     public readonly scopeMap: ScopeMap,
     public readonly environment: Environment,
@@ -108,7 +108,7 @@ export class FunctionIRBuilder {
   }
 
   /** Resolve the scope for a given AST node. */
-  public scopeFor(node: ESTree.Node): Scope {
+  public scopeFor(node: AST.Node): Scope {
     return this.scopeMap.get(node) ?? this.scope;
   }
 
@@ -150,9 +150,9 @@ export class FunctionIRBuilder {
         this.environment,
         this.moduleBuilder,
       );
-      const body = (this.bodyNode as ESTree.Program | ESTree.BlockStatement).body;
+      const body = (this.bodyNode as AST.Program | AST.BlockStatement).body;
       buildStatementList(
-        body as ESTree.Statement[],
+        body as AST.Statement[],
         bodyScope,
         this,
         this.moduleBuilder,

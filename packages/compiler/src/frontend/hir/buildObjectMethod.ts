@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../estree";
 import { Environment } from "../../environment";
 import { ObjectMethodInstruction, Place } from "../../ir";
 import { type Scope } from "../scope/Scope";
@@ -14,7 +14,7 @@ import { ModuleIRBuilder } from "./ModuleIRBuilder";
  * is a FunctionExpression.
  */
 export function buildObjectMethod(
-  node: ESTree.Property,
+  node: AST.Property,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -27,9 +27,12 @@ export function buildObjectMethod(
   }
 
   // The value of a method Property is a FunctionExpression
-  const fn = node.value as ESTree.FunctionExpression;
+  const fn = node.value as AST.FunctionExpression;
   const params = fn.params;
   const body = fn.body;
+  if (body == null) {
+    throw new Error("Object methods must have a body");
+  }
 
   const fnScope = functionBuilder.scopeFor(fn);
   const functionIRBuilder = new FunctionIRBuilder(

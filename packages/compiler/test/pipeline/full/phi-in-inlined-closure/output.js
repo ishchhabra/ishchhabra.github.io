@@ -2,7 +2,7 @@ function $1_0() {
   const a = globalThis.getA();
   const b = globalThis.getB();
   return globalThis.useMemo(() => {
-    result = a ? (b ?? "default") : "fallback";
+    const result = a ? (b ?? "default") : "fallback";
     return result;
   }, [a, b]);
 }

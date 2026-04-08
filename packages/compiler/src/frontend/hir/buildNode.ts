@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../estree";
 import { Environment } from "../../environment";
 import { Place } from "../../ir";
 import { isExpression, isJSX, isPattern, isStatement } from "../estree";
@@ -17,7 +17,7 @@ import { buildPattern } from "./patterns/buildPattern";
 import { buildStatement } from "./statements/buildStatement";
 
 export function buildNode(
-  node: ESTree.Node | null,
+  node: AST.Node | null,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -38,7 +38,7 @@ export function buildNode(
     nodeType === "TSInstantiationExpression"
   ) {
     return buildNode(
-      (node as unknown as { expression: ESTree.Expression }).expression,
+      (node as unknown as { expression: AST.Expression }).expression,
       scope,
       functionBuilder,
       moduleBuilder,
@@ -54,10 +54,10 @@ export function buildNode(
   // or kind: "get" / "set"
   if (
     node.type === "Property" &&
-    ((node as ESTree.Property).method || (node as ESTree.Property).kind !== "init")
+    ((node as AST.Property).method || (node as AST.Property).kind !== "init")
   ) {
     return buildObjectMethod(
-      node as ESTree.Property,
+      node as AST.Property,
       scope,
       functionBuilder,
       moduleBuilder,
@@ -67,7 +67,7 @@ export function buildNode(
 
   if (node.type === "Property") {
     return buildObjectProperty(
-      node as ESTree.Property,
+      node as AST.Property,
       scope,
       functionBuilder,
       moduleBuilder,
@@ -89,7 +89,7 @@ export function buildNode(
 
   if (node.type === "SpreadElement") {
     return buildSpreadElement(
-      node as ESTree.SpreadElement,
+      node as AST.SpreadElement,
       scope,
       functionBuilder,
       moduleBuilder,
@@ -103,7 +103,7 @@ export function buildNode(
 
   if (node.type === "ExportSpecifier") {
     return buildExportSpecifier(
-      node as ESTree.ExportSpecifier,
+      node as AST.ExportSpecifier,
       scope,
       functionBuilder,
       moduleBuilder,

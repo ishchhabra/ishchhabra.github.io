@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import {
   ForOfStructure,
@@ -17,7 +17,7 @@ import { buildLVal } from "../buildLVal";
 import { buildOwnedBody } from "./buildOwnedBody";
 
 export function buildForOfStatement(
-  node: ESTree.ForOfStatement,
+  node: AST.ForOfStatement,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -45,7 +45,7 @@ export function buildForOfStatement(
   // Build the iteration value from the left side.
   const left = node.left;
   let iterationValuePlace: Place;
-  let bareLVal: ESTree.Pattern | undefined;
+  let bareLVal: AST.Pattern | undefined;
 
   if (left.type === "VariableDeclaration") {
     // `for (const x of arr)` — new loop-scoped variable.
@@ -55,7 +55,7 @@ export function buildForOfStatement(
     }
     const id = left.declarations[0].id;
     iterationValuePlace = buildLVal(
-      id as ESTree.Pattern,
+      id as AST.Pattern,
       forScope,
       functionBuilder,
       moduleBuilder,
@@ -65,14 +65,14 @@ export function buildForOfStatement(
   } else {
     // `for (x of arr)` or `for ({a, b} of arr)` — assignment to existing variable(s).
     iterationValuePlace = buildLVal(
-      left as ESTree.Pattern,
+      left as AST.Pattern,
       scope,
       functionBuilder,
       moduleBuilder,
       environment,
       null,
     ).place;
-    bareLVal = left as ESTree.Pattern;
+    bareLVal = left as AST.Pattern;
   }
 
   // Build the body block. When the body is a BlockStatement, use its

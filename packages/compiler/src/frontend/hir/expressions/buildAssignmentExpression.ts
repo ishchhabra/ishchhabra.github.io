@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import {
   ArrayPatternInstruction,
@@ -34,7 +34,7 @@ import { stabilizePlace } from "../materializePlace";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildAssignmentExpression(
-  node: ESTree.AssignmentExpression,
+  node: AST.AssignmentExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -74,7 +74,7 @@ export function buildAssignmentExpression(
 }
 
 function buildIdentifierAssignment(
-  node: ESTree.AssignmentExpression,
+  node: AST.AssignmentExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -82,7 +82,7 @@ function buildIdentifierAssignment(
   statementContext: boolean,
 ): Place {
   const operator = node.operator;
-  const left = node.left as ESTree.Identifier;
+  const left = node.left as AST.Identifier;
   const name = left.name;
   const declarationId = functionBuilder.getDeclarationId(name, scope);
   if (declarationId === undefined) {
@@ -143,7 +143,7 @@ function buildIdentifierAssignment(
       environment.createInstruction(
         BinaryExpressionInstruction,
         computedPlace,
-        operator.slice(0, -1) as ESTree.BinaryExpression["operator"],
+        operator.slice(0, -1) as AST.BinaryExpression["operator"],
         currentValuePlace,
         rightValuePlace,
       ),
@@ -282,14 +282,14 @@ function emitResultUpdate(
  *   // expression value is _result
  */
 function buildLogicalIdentifierAssignment(
-  node: ESTree.AssignmentExpression,
+  node: AST.AssignmentExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
   const operator = node.operator;
-  const left = node.left as ESTree.Identifier;
+  const left = node.left as AST.Identifier;
 
   const declarationId = functionBuilder.getDeclarationId(left.name, scope);
   if (declarationId === undefined) {
@@ -380,7 +380,7 @@ function buildLogicalIdentifierAssignment(
 }
 
 function buildMemberExpressionAssignment(
-  node: ESTree.AssignmentExpression,
+  node: AST.AssignmentExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -393,7 +393,7 @@ function buildMemberExpressionAssignment(
     return buildLogicalMemberAssignment(node, scope, functionBuilder, moduleBuilder, environment);
   }
 
-  const left = node.left as ESTree.MemberExpression;
+  const left = node.left as AST.MemberExpression;
   const reference = buildMemberReference(left, scope, functionBuilder, moduleBuilder, environment, {
     reusable: operator !== "=",
   });
@@ -414,7 +414,7 @@ function buildMemberExpressionAssignment(
       environment.createInstruction(
         BinaryExpressionInstruction,
         rightPlace,
-        operator.slice(0, -1) as ESTree.BinaryExpression["operator"],
+        operator.slice(0, -1) as AST.BinaryExpression["operator"],
         currentValuePlace,
         rhsPlace,
       ),
@@ -443,14 +443,14 @@ function buildMemberExpressionAssignment(
  * re-reading the property (which would trigger a getter twice).
  */
 function buildLogicalMemberAssignment(
-  node: ESTree.AssignmentExpression,
+  node: AST.AssignmentExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
   const operator = node.operator;
-  const left = node.left as ESTree.MemberExpression;
+  const left = node.left as AST.MemberExpression;
   const reference = buildMemberReference(left, scope, functionBuilder, moduleBuilder, environment, {
     reusable: true,
   });
@@ -531,7 +531,7 @@ function buildLogicalMemberAssignment(
 }
 
 function buildDestructuringAssignment(
-  node: ESTree.AssignmentExpression,
+  node: AST.AssignmentExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -587,8 +587,8 @@ function buildDestructuringAssignment(
 }
 
 export function buildAssignmentLeft(
-  left: ESTree.Pattern,
-  node: ESTree.AssignmentExpression,
+  left: AST.Pattern,
+  node: AST.AssignmentExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -647,8 +647,8 @@ export function buildAssignmentLeft(
 }
 
 function buildIdentifierAssignmentLeft(
-  left: ESTree.Identifier,
-  node: ESTree.AssignmentExpression,
+  left: AST.Identifier,
+  node: AST.AssignmentExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
@@ -678,8 +678,8 @@ function buildIdentifierAssignmentLeft(
 }
 
 function buildMemberExpressionAssignmentLeft(
-  left: ESTree.MemberExpression,
-  node: ESTree.AssignmentExpression,
+  left: AST.MemberExpression,
+  node: AST.AssignmentExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -720,8 +720,8 @@ function buildMemberExpressionAssignmentLeft(
 }
 
 function buildArrayPatternAssignmentLeft(
-  left: ESTree.ArrayPattern,
-  node: ESTree.AssignmentExpression,
+  left: AST.ArrayPattern,
+  node: AST.AssignmentExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -763,8 +763,8 @@ function buildArrayPatternAssignmentLeft(
 }
 
 function buildObjectPatternAssignmentLeft(
-  left: ESTree.ObjectPattern,
-  node: ESTree.AssignmentExpression,
+  left: AST.ObjectPattern,
+  node: AST.AssignmentExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -799,7 +799,7 @@ function buildObjectPatternAssignmentLeft(
 
       const value = property.value;
       const result = buildAssignmentLeft(
-        value as ESTree.Pattern,
+        value as AST.Pattern,
         node,
         scope,
         functionBuilder,
@@ -867,8 +867,8 @@ function buildObjectPatternAssignmentLeft(
 }
 
 function buildAssignmentPatternAssignmentLeft(
-  left: ESTree.AssignmentPattern,
-  node: ESTree.AssignmentExpression,
+  left: AST.AssignmentPattern,
+  node: AST.AssignmentExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -900,8 +900,8 @@ function buildAssignmentPatternAssignmentLeft(
 }
 
 function buildRestElementAssignmentLeft(
-  left: ESTree.RestElement,
-  node: ESTree.AssignmentExpression,
+  left: AST.RestElement,
+  node: AST.AssignmentExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -927,7 +927,7 @@ function buildRestElementAssignmentLeft(
 }
 
 function buildAssignmentRight(
-  node: ESTree.AssignmentExpression,
+  node: AST.AssignmentExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -956,7 +956,7 @@ function buildAssignmentRight(
     environment.createInstruction(
       BinaryExpressionInstruction,
       place,
-      binaryOperator as ESTree.BinaryExpression["operator"],
+      binaryOperator as AST.BinaryExpression["operator"],
       leftPlace,
       rightPlace,
     ),
@@ -966,7 +966,7 @@ function buildAssignmentRight(
 }
 
 function findTDZAssignmentTarget(
-  left: ESTree.Pattern | ESTree.MemberExpression,
+  left: AST.Pattern | AST.MemberExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
 ): string | undefined {
@@ -999,7 +999,6 @@ function findTDZAssignmentTarget(
           value.type === "ArrayPattern" ||
           value.type === "ObjectPattern" ||
           value.type === "AssignmentPattern" ||
-          value.type === "RestElement" ||
           value.type === "MemberExpression"
         ) {
           const found = findTDZAssignmentTarget(value, scope, functionBuilder);

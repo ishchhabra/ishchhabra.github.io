@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import {
   BranchTerminal,
@@ -22,7 +22,7 @@ import { buildNode } from "../buildNode";
  * conditional expression.
  */
 export function buildConditionalExpression(
-  node: ESTree.ConditionalExpression,
+  node: AST.ConditionalExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -144,7 +144,7 @@ function buildTemporaryIdentifier(
 }
 
 function buildBranchExpression(
-  node: ESTree.Expression,
+  node: AST.Expression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

@@ -1,10 +1,10 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { LiteralInstruction, TPrimitiveValue } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 export function buildLiteral(
-  node: ESTree.Literal,
+  node: AST.Literal,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
@@ -18,7 +18,7 @@ export function buildLiteral(
   return place;
 }
 
-function nodeToValue(node: ESTree.Literal): TPrimitiveValue {
+function nodeToValue(node: AST.Literal): TPrimitiveValue {
   // ESTree BigIntLiteral has a `bigint` property with the string representation
   if ("bigint" in node && node.bigint !== undefined) {
     return BigInt(node.bigint);

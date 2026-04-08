@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -30,7 +30,7 @@ import { buildVariableDeclarationBindings } from "./buildVariableDeclarationBind
  * reference any binding regardless of source order.
  */
 export function instantiateScopeBindings(
-  _bodyNode: ESTree.Node,
+  _bodyNode: AST.Node,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,

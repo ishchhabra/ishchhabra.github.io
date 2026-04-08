@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import {
   BinaryExpressionInstruction,
@@ -16,7 +16,7 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildMemberExpressionUpdate } from "./buildMemberExpression";
 
 export function buildUpdateExpression(
-  node: ESTree.UpdateExpression,
+  node: AST.UpdateExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

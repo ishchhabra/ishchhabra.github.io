@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { FunctionExpressionInstruction } from "../../../ir/instructions/value/FunctionExpression";
 import { type Scope } from "../../scope/Scope";
@@ -7,7 +7,7 @@ import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildFunctionExpression(
-  node: ESTree.FunctionExpression,
+  node: AST.FunctionExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -15,6 +15,9 @@ export function buildFunctionExpression(
 ) {
   const identifierPlace =
     node.id != null ? buildIdentifier(node.id, scope, functionBuilder, environment) : null;
+  if (node.body == null) {
+    throw new Error("Function expressions must have a body");
+  }
 
   const childScope = functionBuilder.scopeFor(node);
   const functionIRBuilder = new FunctionIRBuilder(

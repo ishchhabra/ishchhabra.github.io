@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -30,7 +30,7 @@ import { buildYieldExpression } from "./buildYieldExpression";
 import { buildImportExpression } from "./buildImportExpression";
 
 export function buildExpression(
-  node: ESTree.Expression,
+  node: AST.Expression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -103,7 +103,7 @@ export function buildExpression(
       return buildImportExpression(node, scope, functionBuilder, moduleBuilder, environment);
     case "Literal": {
       if ("regex" in node) {
-        return buildRegExpLiteral(node as ESTree.RegExpLiteral, functionBuilder, environment);
+        return buildRegExpLiteral(node as AST.RegExpLiteral, functionBuilder, environment);
       }
       return buildLiteral(node, functionBuilder, environment);
     }

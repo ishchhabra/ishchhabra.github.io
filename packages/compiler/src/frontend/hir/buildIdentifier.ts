@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../estree";
 import { Environment } from "../../environment";
 import {
   DeclareLocalInstruction,
@@ -24,7 +24,7 @@ import { FunctionIRBuilder } from "./FunctionIRBuilder";
  * @returns The `Place` representing this identifier in the IR
  */
 export function buildIdentifier(
-  node: ESTree.Identifier,
+  node: AST.Identifier,
   scope: Scope,
   builder: FunctionIRBuilder,
   environment: Environment,
@@ -37,7 +37,7 @@ export function throwTDZAccessError(name: string): never {
 }
 
 export function buildBindingIdentifier(
-  node: ESTree.Identifier,
+  node: AST.Identifier,
   scope: Scope,
   builder: FunctionIRBuilder,
   environment: Environment,
@@ -68,7 +68,7 @@ export function buildBindingIdentifier(
 }
 
 function buildReferencedIdentifier(
-  node: ESTree.Identifier,
+  node: AST.Identifier,
   scope: Scope,
   builder: FunctionIRBuilder,
   environment: Environment,

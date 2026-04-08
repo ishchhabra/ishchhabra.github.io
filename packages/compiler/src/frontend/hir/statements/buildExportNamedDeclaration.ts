@@ -1,5 +1,5 @@
-import type * as ESTree from "estree";
-import type { ImportOrExportKind } from "oxc-parser";
+import type * as AST from "../../estree";
+import type { ImportOrExportKind } from "../../estree";
 import { Environment } from "../../../environment";
 import {
   ExportNamedDeclarationInstruction,
@@ -18,7 +18,7 @@ import { resolveModulePath } from "../resolveModulePath";
 import { isTSOnlyNode } from "../../estree";
 
 export function buildExportNamedDeclaration(
-  node: ESTree.ExportNamedDeclaration,
+  node: AST.ExportNamedDeclaration,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -26,7 +26,7 @@ export function buildExportNamedDeclaration(
 ) {
   // Type-only exports (export type { X }, export type X = ...) are erased.
   // OXC extends ESTree with exportKind when parsing with astType:"ts".
-  if ((node as ESTree.ExportNamedDeclaration & { exportKind?: ImportOrExportKind }).exportKind === "type") {
+  if ((node as AST.ExportNamedDeclaration & { exportKind?: ImportOrExportKind }).exportKind === "type") {
     return undefined;
   }
 
@@ -42,7 +42,7 @@ export function buildExportNamedDeclaration(
   // TS-only exported declarations (export type, export interface) are erased.
   // This catches cases where exportKind is "value" but the declaration itself
   // is a TS-only node (e.g. `export interface Foo {}`).
-  if (declaration != null && isTSOnlyNode(declaration as ESTree.Node)) {
+  if (declaration != null && isTSOnlyNode(declaration as AST.Node)) {
     return undefined;
   }
   // For `export var`, build the declaration normally and create specifiers
@@ -134,7 +134,7 @@ export function buildExportNamedDeclaration(
  * returns undefined for these).
  */
 function buildExportDeclaration(
-  declaration: ESTree.Declaration,
+  declaration: AST.Declaration,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -177,7 +177,7 @@ function buildExportDeclaration(
  * `var x = 1; export { x }` path.
  */
 function buildExportVarAsSpecifiers(
-  declaration: ESTree.VariableDeclaration,
+  declaration: AST.VariableDeclaration,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -232,7 +232,7 @@ function buildExportVarAsSpecifiers(
   return place;
 }
 
-function collectPatternNames(pattern: ESTree.Pattern): string[] {
+function collectPatternNames(pattern: AST.Pattern): string[] {
   switch (pattern.type) {
     case "Identifier":
       return [pattern.name];
@@ -242,7 +242,7 @@ function collectPatternNames(pattern: ESTree.Pattern): string[] {
       return pattern.properties.flatMap((prop) =>
         prop.type === "RestElement"
           ? collectPatternNames(prop.argument)
-          : collectPatternNames(prop.value as ESTree.Pattern),
+          : collectPatternNames(prop.value as AST.Pattern),
       );
     case "AssignmentPattern":
       return collectPatternNames(pattern.left);
@@ -254,7 +254,7 @@ function collectPatternNames(pattern: ESTree.Pattern): string[] {
 }
 
 function buildExportFrom(
-  node: ESTree.ExportNamedDeclaration,
+  node: AST.ExportNamedDeclaration,
   _scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -271,7 +271,7 @@ function buildExportFrom(
     }
 
     // Skip per-specifier type exports: export { value, type TypeOnly } from "mod"
-    if ((specifier as ESTree.ExportSpecifier & { exportKind?: ImportOrExportKind }).exportKind === "type") {
+    if ((specifier as AST.ExportSpecifier & { exportKind?: ImportOrExportKind }).exportKind === "type") {
       continue;
     }
 

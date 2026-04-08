@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../estree";
 import { isIdentifier, isNumericLiteral, isStringLiteral, type Node } from "../estree";
 
 /**
@@ -6,7 +6,7 @@ import { isIdentifier, isNumericLiteral, isStringLiteral, type Node } from "../e
  * Returns `undefined` for dynamic/computed keys that cannot be resolved statically.
  */
 export function getValueFromStaticKey(
-  node: Node | ESTree.PrivateIdentifier,
+  node: Node | AST.PrivateIdentifier,
 ): string | number | undefined {
   if (isIdentifier(node)) {
     return node.name;

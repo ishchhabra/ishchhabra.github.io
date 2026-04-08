@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../estree";
 import { Environment } from "../../environment";
 import {
   ArrayPatternInstruction,
@@ -33,9 +33,9 @@ interface ParamBuildResult {
 }
 
 export function buildFunctionParams(
-  params: ESTree.Pattern[],
-  scopeNode: ESTree.Node,
-  bodyNode: ESTree.Node,
+  params: AST.Pattern[],
+  scopeNode: AST.Node,
+  bodyNode: AST.Node,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -57,8 +57,8 @@ export function buildFunctionParams(
 }
 
 function buildFunctionParam(
-  param: ESTree.Pattern,
-  bodyNode: ESTree.Node,
+  param: AST.Pattern,
+  bodyNode: AST.Node,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -108,11 +108,11 @@ function buildFunctionParam(
     );
   }
 
-  throw new Error(`Unsupported param type: ${(param as ESTree.Node).type}`);
+  throw new Error(`Unsupported param type: ${(param as AST.Node).type}`);
 }
 
 function buildFunctionIdentifierParam(
-  node: ESTree.Identifier,
+  node: AST.Identifier,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
@@ -138,8 +138,8 @@ function buildFunctionIdentifierParam(
 }
 
 function buildFunctionArrayPatternParam(
-  node: ESTree.ArrayPattern,
-  bodyNode: ESTree.Node,
+  node: AST.ArrayPattern,
+  bodyNode: AST.Node,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -178,8 +178,8 @@ function buildFunctionArrayPatternParam(
 }
 
 function buildFunctionObjectPatternParam(
-  node: ESTree.ObjectPattern,
-  bodyNode: ESTree.Node,
+  node: AST.ObjectPattern,
+  bodyNode: AST.Node,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -204,7 +204,7 @@ function buildFunctionObjectPatternParam(
         keyPlace = buildFunctionObjectPropertyKey(property.key, functionBuilder, environment);
       }
 
-      const value = property.value as ESTree.Pattern;
+      const value = property.value as AST.Pattern;
       const valueResult = buildFunctionParam(
         value,
         bodyNode,
@@ -269,7 +269,7 @@ function buildFunctionObjectPatternParam(
 }
 
 function buildFunctionObjectPropertyKey(
-  keyNode: ESTree.Expression | ESTree.PrivateIdentifier,
+  keyNode: AST.Expression | AST.PrivateIdentifier,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {
@@ -287,8 +287,8 @@ function buildFunctionObjectPropertyKey(
 }
 
 function buildFunctionAssignmentPatternParam(
-  node: ESTree.AssignmentPattern,
-  bodyNode: ESTree.Node,
+  node: AST.AssignmentPattern,
+  bodyNode: AST.Node,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -331,8 +331,8 @@ function buildFunctionAssignmentPatternParam(
 }
 
 function buildFunctionRestElementParam(
-  node: ESTree.RestElement,
-  bodyNode: ESTree.Node,
+  node: AST.RestElement,
+  bodyNode: AST.Node,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import {
   BranchTerminal,
@@ -19,7 +19,7 @@ import { buildOwnedBody } from "./buildOwnedBody";
 import { buildStatement } from "./buildStatement";
 
 export function buildForStatement(
-  node: ESTree.ForStatement,
+  node: AST.ForStatement,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -159,7 +159,7 @@ export function buildForStatement(
 }
 
 function buildExpressionAsStatement(
-  expression: ESTree.Expression,
+  expression: AST.Expression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

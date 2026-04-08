@@ -1,4 +1,4 @@
-import type * as JSX from "estree-jsx";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
 import { JSXSpreadAttributeInstruction } from "../../../ir/instructions/jsx/JSXSpreadAttribute";
@@ -8,7 +8,7 @@ import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildJSXSpreadAttribute(
-  node: JSX.JSXSpreadAttribute,
+  node: AST.JSXSpreadAttribute,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

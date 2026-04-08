@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -16,7 +16,7 @@ import { type Scope } from "../../scope/Scope";
  * the braces for the body.
  */
 export function buildOwnedBody(
-  node: ESTree.Statement,
+  node: AST.Statement,
   fallbackScope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

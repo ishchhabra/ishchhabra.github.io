@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../estree";
 import { Environment } from "../../environment";
 import { ExportSpecifierInstruction, Place } from "../../ir";
 import { type Scope } from "../scope/Scope";
@@ -6,7 +6,7 @@ import { FunctionIRBuilder } from "./FunctionIRBuilder";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
 
 export function buildExportSpecifier(
-  node: ESTree.ExportSpecifier,
+  node: AST.ExportSpecifier,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -53,17 +53,17 @@ export function buildExportSpecifier(
   return place;
 }
 
-function getSpecifierName(specifier: ESTree.Identifier | ESTree.Literal): string {
+function getSpecifierName(specifier: AST.Identifier | AST.Literal): string {
   if (specifier.type === "Identifier") {
     return specifier.name;
   }
   return specifier.value as string;
 }
 
-function getLocalName(node: ESTree.ExportSpecifier) {
+function getLocalName(node: AST.ExportSpecifier) {
   return getSpecifierName(node.local);
 }
 
-function getExportedName(node: ESTree.ExportSpecifier) {
+function getExportedName(node: AST.ExportSpecifier) {
   return getSpecifierName(node.exported);
 }

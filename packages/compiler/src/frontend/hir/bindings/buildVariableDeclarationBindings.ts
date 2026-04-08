@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { DeclareLocalInstruction, LiteralInstruction, StoreLocalInstruction } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -8,7 +8,7 @@ import { isContextVariable } from "./isContextVariable";
 
 export function buildVariableDeclarationBindings(
   scope: Scope,
-  node: ESTree.VariableDeclaration,
+  node: AST.VariableDeclaration,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
@@ -23,7 +23,7 @@ export function buildVariableDeclarationBindings(
 
 function buildLValBindings(
   scope: Scope,
-  node: ESTree.Pattern | ESTree.Property,
+  node: AST.Pattern | AST.Property,
   declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
@@ -48,13 +48,13 @@ function buildLValBindings(
       buildRestElementBindings(scope, node, declarationKind, functionBuilder, environment);
       break;
     default:
-      throw new Error(`Unsupported LVal type: ${(node as ESTree.Node).type}`);
+      throw new Error(`Unsupported LVal type: ${(node as AST.Node).type}`);
   }
 }
 
 function buildIdentifierBindings(
   scope: Scope,
-  node: ESTree.Identifier,
+  node: AST.Identifier,
   declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
@@ -121,7 +121,7 @@ function buildIdentifierBindings(
 
 function buildArrayPatternBindings(
   scope: Scope,
-  node: ESTree.ArrayPattern,
+  node: AST.ArrayPattern,
   declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
@@ -137,7 +137,7 @@ function buildArrayPatternBindings(
 
 function buildAssignmentPatternBindings(
   scope: Scope,
-  node: ESTree.AssignmentPattern,
+  node: AST.AssignmentPattern,
   declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
@@ -147,7 +147,7 @@ function buildAssignmentPatternBindings(
 
 function buildObjectPatternBindings(
   scope: Scope,
-  node: ESTree.ObjectPattern,
+  node: AST.ObjectPattern,
   declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
@@ -159,7 +159,7 @@ function buildObjectPatternBindings(
 
 function buildObjectPropertyBindings(
   scope: Scope,
-  node: ESTree.Property,
+  node: AST.Property,
   declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
@@ -169,18 +169,17 @@ function buildObjectPropertyBindings(
     value.type !== "Identifier" &&
     value.type !== "ArrayPattern" &&
     value.type !== "ObjectPattern" &&
-    value.type !== "AssignmentPattern" &&
-    value.type !== "RestElement"
+    value.type !== "AssignmentPattern"
   ) {
     throw new Error(`Unsupported property value type: ${value.type}`);
   }
 
-  buildLValBindings(scope, value as ESTree.Pattern, declarationKind, functionBuilder, environment);
+  buildLValBindings(scope, value as AST.Pattern, declarationKind, functionBuilder, environment);
 }
 
 function buildRestElementBindings(
   scope: Scope,
-  node: ESTree.RestElement,
+  node: AST.RestElement,
   declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,

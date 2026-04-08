@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { isTSOnlyNode } from "../../estree";
 import { type Scope } from "../../scope/Scope";
@@ -13,7 +13,7 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
  * scope instantiation.
  */
 export function buildStatementList(
-  statements: ESTree.Statement[],
+  statements: AST.Statement[],
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

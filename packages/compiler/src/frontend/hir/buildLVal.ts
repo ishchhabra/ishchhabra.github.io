@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../estree";
 import { Environment } from "../../environment";
 import {
   ArrayPatternInstruction,
@@ -23,7 +23,7 @@ import { ModuleIRBuilder } from "./ModuleIRBuilder";
  * @returns bindings -- all leaf identifier Places (for pattern instruction getDefs)
  */
 export function buildLVal(
-  node: ESTree.Pattern,
+  node: AST.Pattern,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -54,7 +54,7 @@ export function buildLVal(
 }
 
 function buildIdentifierLVal(
-  node: ESTree.Identifier,
+  node: AST.Identifier,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
@@ -84,7 +84,7 @@ function buildIdentifierLVal(
 }
 
 function buildArrayPatternLVal(
-  node: ESTree.ArrayPattern,
+  node: AST.ArrayPattern,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -116,7 +116,7 @@ function buildArrayPatternLVal(
 }
 
 function buildObjectPatternLVal(
-  node: ESTree.ObjectPattern,
+  node: AST.ObjectPattern,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -151,7 +151,7 @@ function buildObjectPatternLVal(
       keyPlace = buildObjectPropertyStaticKeyLVal(property.key, functionBuilder, environment);
     }
 
-    const value = property.value as ESTree.Pattern;
+    const value = property.value as AST.Pattern;
     const result = buildLVal(value, scope, functionBuilder, moduleBuilder, environment, kind);
     bindings.push(...result.bindings);
 
@@ -183,7 +183,7 @@ function buildObjectPatternLVal(
 }
 
 function buildObjectPropertyStaticKeyLVal(
-  node: ESTree.Expression | ESTree.PrivateIdentifier,
+  node: AST.Expression | AST.PrivateIdentifier,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {
@@ -199,7 +199,7 @@ function buildObjectPropertyStaticKeyLVal(
 }
 
 function buildAssignmentPatternLVal(
-  node: ESTree.AssignmentPattern,
+  node: AST.AssignmentPattern,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
@@ -227,7 +227,7 @@ function buildAssignmentPatternLVal(
 }
 
 function buildRestElementLVal(
-  node: ESTree.RestElement,
+  node: AST.RestElement,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

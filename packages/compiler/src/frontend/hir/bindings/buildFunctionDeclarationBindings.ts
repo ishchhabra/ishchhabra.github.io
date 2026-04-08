@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { FunctionDeclarationInstruction } from "../../../ir/instructions/declaration/FunctionDeclaration";
 import { type Scope, type ScopeMap } from "../../scope/Scope";
@@ -15,7 +15,7 @@ import { isContextVariable } from "./isContextVariable";
 export function registerFunctionDeclarationBinding(
   scope: Scope,
   _scopeMap: ScopeMap,
-  node: ESTree.FunctionDeclaration,
+  node: AST.FunctionDeclaration,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ) {
@@ -57,7 +57,7 @@ export function registerFunctionDeclarationBinding(
 export function initializeFunctionDeclaration(
   scope: Scope,
   scopeMap: ScopeMap,
-  node: ESTree.FunctionDeclaration,
+  node: AST.FunctionDeclaration,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
   moduleBuilder: ModuleIRBuilder,
@@ -85,6 +85,9 @@ export function initializeFunctionDeclaration(
 
   const params = node.params;
   const body = node.body;
+  if (body == null) {
+    throw new Error("Function declarations must have a body");
+  }
   const fnScope = scopeMap.get(node) ?? scope;
   const functionIRBuilder = new FunctionIRBuilder(
     params,

@@ -1,4 +1,4 @@
-import type * as ESTree from "estree";
+import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { BlockStructure, JumpTerminal, createInstructionId } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -7,7 +7,7 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildOwnedBody } from "./buildOwnedBody";
 
 export function buildBlockStatement(
-  node: ESTree.BlockStatement,
+  node: AST.BlockStatement,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,

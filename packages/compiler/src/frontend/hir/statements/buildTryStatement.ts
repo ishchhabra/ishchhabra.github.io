@@ -1,19 +1,18 @@
-import type * as ESTree from "estree";
 import { Environment } from "../../../environment";
 import {
-  DeclareLocalInstruction,
   createInstructionId,
+  DeclareLocalInstruction,
   JumpTerminal,
   TryTerminal,
 } from "../../../ir";
+import type * as AST from "../../estree";
 import { type Scope } from "../../scope/Scope";
-import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildOwnedBody } from "./buildOwnedBody";
 
 export function buildTryStatement(
-  node: ESTree.TryStatement,
+  node: AST.TryStatement,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
