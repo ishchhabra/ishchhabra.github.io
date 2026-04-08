@@ -1,3 +1,4 @@
+import { Environment } from "../../environment";
 import { BaseInstruction, BaseTerminal } from "../base";
 import { Identifier } from "./Identifier";
 import { Place } from "./Place";
@@ -142,6 +143,65 @@ export class BasicBlock {
       if (rewritten !== this._terminal) {
         this.terminal = rewritten;
       }
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  // Deep cloning — phase 1 / phase 2
+  // -----------------------------------------------------------------------
+
+  /**
+   * Phase-1 deep clone. Allocates a new block with the same scope, clones
+   * each instruction (via {@link BaseInstruction.clone}), and clones the
+   * terminal with empty maps so it gets a fresh instruction id but keeps
+   * its old block/identifier references.
+   *
+   * Operands and the terminal still point at OLD identifiers / OLD block
+   * ids. Call {@link rewrite} after the caller has built the cross-block
+   * identifier and block maps to fix the references.
+   */
+  public clone(environment: Environment): BasicBlock {
+    const newBlock = environment.createBlock(this.scopeId);
+    // Push directly without registering use-chains, matching the
+    // BasicBlock constructor's behavior. The temporary use-chain state
+    // (instructions point at old identifiers) is fixed by `rewrite`.
+    for (const instr of this.instructions) {
+      newBlock.instructions.push(instr.clone(environment));
+    }
+    if (this._terminal !== undefined) {
+      const emptyBlockMap = new Map<BlockId, BlockId>();
+      const emptyIdentifierMap = new Map<Identifier, Place>();
+      newBlock.replaceTerminal(
+        this._terminal.clone(environment, emptyBlockMap, emptyIdentifierMap),
+      );
+    }
+    return newBlock;
+  }
+
+  /**
+   * Phase-2 deep clone. Rewrites every instruction's operands (and
+   * optionally definition sites) through `identifierMap`, and re-clones
+   * the terminal through both `blockMap` and `identifierMap` so its block
+   * targets and operand references point at the new entities.
+   *
+   * Use-chains are maintained via {@link replaceInstruction} and
+   * {@link replaceTerminal}.
+   */
+  public rewrite(
+    environment: Environment,
+    blockMap: Map<BlockId, BlockId>,
+    identifierMap: Map<Identifier, Place>,
+    options: { rewriteDefinitions?: boolean } = {},
+  ): void {
+    for (let i = 0; i < this.instructions.length; i++) {
+      const rewritten = this.instructions[i].rewrite(identifierMap, options);
+      if (rewritten !== this.instructions[i]) {
+        this.replaceInstruction(i, rewritten);
+        environment.placeToInstruction.set(rewritten.place.id, rewritten);
+      }
+    }
+    if (this._terminal !== undefined) {
+      this.replaceTerminal(this._terminal.clone(environment, blockMap, identifierMap));
     }
   }
 }

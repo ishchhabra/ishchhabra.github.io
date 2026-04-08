@@ -2,6 +2,10 @@ import { BlockId } from "./Block";
 import { Identifier } from "./Identifier";
 import { Place } from "./Place";
 
+function remapBlock(blockMap: Map<BlockId, BlockId>, blockId: BlockId): BlockId {
+  return blockMap.get(blockId) ?? blockId;
+}
+
 /**
  * Base class for all structures. Structures represent structured control flow
  * constructs that group multiple CFG blocks into a single semantic unit.
@@ -26,6 +30,15 @@ export abstract class BaseStructure {
 
   /** Returns a new structure with places rewritten per the given map (used by SSA renaming). */
   abstract rewrite(values: Map<Identifier, Place>): BaseStructure;
+
+  /**
+   * Deep clone the structure with block refs remapped through `blockMap`
+   * and places rewritten through `identifierMap`.
+   */
+  abstract clone(
+    blockMap: Map<BlockId, BlockId>,
+    identifierMap: Map<Identifier, Place>,
+  ): BaseStructure;
 
   /** Replaces block references to `from` with `to` in place. */
   abstract remap(from: BlockId, to: BlockId): void;
@@ -71,6 +84,17 @@ export class BlockStructure extends BaseStructure {
 
   rewrite(_values: Map<Identifier, Place>): BlockStructure {
     return this;
+  }
+
+  clone(
+    blockMap: Map<BlockId, BlockId>,
+    _identifierMap: Map<Identifier, Place>,
+  ): BlockStructure {
+    return new BlockStructure(
+      remapBlock(blockMap, this.header),
+      remapBlock(blockMap, this.body),
+      remapBlock(blockMap, this.exit),
+    );
   }
 
   remap(from: BlockId, to: BlockId): void {
@@ -131,6 +155,20 @@ export class ForInStructure extends BaseStructure {
     );
   }
 
+  clone(
+    blockMap: Map<BlockId, BlockId>,
+    identifierMap: Map<Identifier, Place>,
+  ): ForInStructure {
+    return new ForInStructure(
+      remapBlock(blockMap, this.header),
+      identifierMap.get(this.iterationValue.identifier) ?? this.iterationValue,
+      identifierMap.get(this.object.identifier) ?? this.object,
+      remapBlock(blockMap, this.body),
+      remapBlock(blockMap, this.fallthrough),
+      this.label,
+    );
+  }
+
   remap(from: BlockId, to: BlockId): void {
     if (this.header === from) this.header = to;
     if (this.body === from) this.body = to;
@@ -186,6 +224,21 @@ export class ForOfStructure extends BaseStructure {
       iterable,
       this.body,
       this.fallthrough,
+      this.isAwait,
+      this.label,
+    );
+  }
+
+  clone(
+    blockMap: Map<BlockId, BlockId>,
+    identifierMap: Map<Identifier, Place>,
+  ): ForOfStructure {
+    return new ForOfStructure(
+      remapBlock(blockMap, this.header),
+      identifierMap.get(this.iterationValue.identifier) ?? this.iterationValue,
+      identifierMap.get(this.iterable.identifier) ?? this.iterable,
+      remapBlock(blockMap, this.body),
+      remapBlock(blockMap, this.fallthrough),
       this.isAwait,
       this.label,
     );
@@ -279,6 +332,22 @@ export class TernaryStructure extends BaseStructure {
     );
   }
 
+  clone(
+    blockMap: Map<BlockId, BlockId>,
+    identifierMap: Map<Identifier, Place>,
+  ): TernaryStructure {
+    return new TernaryStructure(
+      remapBlock(blockMap, this.header),
+      identifierMap.get(this.test.identifier) ?? this.test,
+      remapBlock(blockMap, this.consequent),
+      identifierMap.get(this.consequentValue.identifier) ?? this.consequentValue,
+      remapBlock(blockMap, this.alternate),
+      identifierMap.get(this.alternateValue.identifier) ?? this.alternateValue,
+      remapBlock(blockMap, this.fallthrough),
+      identifierMap.get(this.resultPlace.identifier) ?? this.resultPlace,
+    );
+  }
+
   remap(from: BlockId, to: BlockId): void {
     if (this.header === from) this.header = to;
     if (this.consequent === from) this.consequent = to;
@@ -325,6 +394,18 @@ export class LabeledBlockStructure extends BaseStructure {
 
   rewrite(_values: Map<Identifier, Place>): LabeledBlockStructure {
     return this;
+  }
+
+  clone(
+    blockMap: Map<BlockId, BlockId>,
+    _identifierMap: Map<Identifier, Place>,
+  ): LabeledBlockStructure {
+    return new LabeledBlockStructure(
+      remapBlock(blockMap, this.header),
+      remapBlock(blockMap, this.body),
+      remapBlock(blockMap, this.fallthrough),
+      this.label,
+    );
   }
 
   remap(from: BlockId, to: BlockId): void {

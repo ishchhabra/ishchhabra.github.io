@@ -17,13 +17,19 @@ export class FunctionDeclarationInstruction extends DeclarationInstruction {
   }
 
   public clone(environment: Environment): FunctionDeclarationInstruction {
-    const identifier = environment.createIdentifier(this.place.identifier.declarationId);
-    identifier.name = this.place.identifier.name;
+    // Use a fresh declarationId — the clone is a distinct binding from the
+    // original, not a new SSA version. Don't copy the original name either,
+    // so the cloned function gets its own auto-generated `$<id>` name and
+    // can't collide at codegen time.
+    const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
     return environment.createInstruction(
       FunctionDeclarationInstruction,
       place,
-      this.functionIR,
+      // Deep clone the FunctionIR so the cloned instruction owns an
+      // independent copy. Sharing would cause codegen to emit the same
+      // function body twice (once per FunctionDeclarationInstruction).
+      this.functionIR.clone(environment),
       this.generator,
       this.async,
       this.captures,

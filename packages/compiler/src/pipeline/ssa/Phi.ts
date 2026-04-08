@@ -1,4 +1,4 @@
-import { BlockId, DeclarationId, IdentifierId, Place } from "../../ir";
+import { BlockId, DeclarationId, Identifier, IdentifierId, Place } from "../../ir";
 
 export function makePhiIdentifierName(id: IdentifierId): string {
   return `phi_${id}`;
@@ -15,6 +15,23 @@ export class Phi {
     /** The declaration ID of the variable that this Phi node represents. */
     public readonly declarationId: DeclarationId,
   ) {}
+
+  /**
+   * Deep clone the phi with block refs remapped through `blockMap` and
+   * places rewritten through `identifierMap`.
+   */
+  clone(blockMap: Map<BlockId, BlockId>, identifierMap: Map<Identifier, Place>): Phi {
+    const newBlockId = blockMap.get(this.blockId) ?? this.blockId;
+    const newPlace = identifierMap.get(this.place.identifier) ?? this.place;
+    const newOperands = new Map<BlockId, Place>();
+    for (const [opBlockId, opPlace] of this.operands) {
+      newOperands.set(
+        blockMap.get(opBlockId) ?? opBlockId,
+        identifierMap.get(opPlace.identifier) ?? opPlace,
+      );
+    }
+    return new Phi(newBlockId, newPlace, newOperands, this.declarationId);
+  }
 
   /**
    * Remove the operand from `blockId` and return the resulting state.

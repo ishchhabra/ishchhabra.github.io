@@ -1,3 +1,4 @@
+import { Environment } from "../../environment";
 import {
   getBackEdges,
   getDominanceFrontier,
@@ -178,5 +179,100 @@ export class FunctionIR {
     for (const place of s.getDefs()) {
       place.identifier.uses.delete(s);
     }
+  }
+
+  /**
+   * Deep clone this FunctionIR. Allocates a new FunctionIRId, fresh BlockIds,
+   * fresh InstructionIds, and fresh Identifier/Place pairs for every
+   * definition. All cross-references (operands, terminal targets, structure
+   * block refs, phi operands) are remapped to point at the new entities.
+   *
+   * Used by the function inliner so two FunctionDeclarationInstructions can
+   * own independent FunctionIRs even when one is cloned from the other.
+   *
+   * Two-phase: clone everything first (instructions/blocks/headers get new
+   * ids but still reference old identifiers/blocks), then rewrite the
+   * accumulated maps to fix the references.
+   */
+  public clone(environment: Environment): FunctionIR {
+    const blockMap = new Map<BlockId, BlockId>();
+    const identifierMap = new Map<Identifier, Place>();
+    const newBlocks = new Map<BlockId, BasicBlock>();
+
+    // Phase 1: clone the header. Build identifierMap as we go.
+    const newHeader: BaseInstruction[] = [];
+    for (const instr of this.header) {
+      const cloned = instr.clone(environment);
+      identifierMap.set(instr.place.identifier, cloned.place);
+      newHeader.push(cloned);
+    }
+
+    // Phase 1: clone every block (cloned instructions + cloned terminal,
+    // both still pointing at old refs). Build blockMap and identifierMap.
+    for (const [oldBlockId, oldBlock] of this.blocks) {
+      const newBlock = oldBlock.clone(environment);
+      blockMap.set(oldBlockId, newBlock.id);
+      newBlocks.set(newBlock.id, newBlock);
+      for (let i = 0; i < oldBlock.instructions.length; i++) {
+        identifierMap.set(
+          oldBlock.instructions[i].place.identifier,
+          newBlock.instructions[i].place,
+        );
+      }
+    }
+
+    // Phase 2: rewrite the header and every block through the now-complete
+    // maps. Operand identifiers, definition sites, terminal block targets
+    // and terminal operands are all fixed up here.
+    for (let i = 0; i < newHeader.length; i++) {
+      newHeader[i] = newHeader[i].rewrite(identifierMap, { rewriteDefinitions: true });
+    }
+    for (const newBlock of newBlocks.values()) {
+      newBlock.rewrite(environment, blockMap, identifierMap, { rewriteDefinitions: true });
+    }
+
+    // Clone structures and phis through both maps.
+    const newStructures = new Map<BlockId, BaseStructure>();
+    for (const [oldBlockId, oldStructure] of this.structures) {
+      newStructures.set(
+        blockMap.get(oldBlockId)!,
+        oldStructure.clone(blockMap, identifierMap),
+      );
+    }
+    const newPhis = new Set<Phi>();
+    for (const oldPhi of this.phis) {
+      newPhis.add(oldPhi.clone(blockMap, identifierMap));
+    }
+
+    // Remap params, paramBindings, captureParams (all reference header
+    // instruction places which are now in identifierMap), and block labels.
+    const remapPlace = (place: Place): Place =>
+      identifierMap.get(place.identifier) ?? place;
+    const newParams = this.params.map(remapPlace);
+    const newParamBindings = this.paramBindings.map((bs) => bs.map(remapPlace));
+    const newCaptureParams = this.captureParams.map(remapPlace);
+    const newBlockLabels = new Map<BlockId, string>();
+    for (const [oldBlockId, label] of this.blockLabels) {
+      newBlockLabels.set(blockMap.get(oldBlockId)!, label);
+    }
+
+    // Construct the new FunctionIR. The constructor recomputes the CFG
+    // and registers structure use-chains.
+    const shell = environment.createFunction();
+    const populated = new FunctionIR(
+      shell.id,
+      newHeader,
+      newParams,
+      newParamBindings,
+      this.async,
+      this.generator,
+      newBlocks,
+      newStructures,
+      newCaptureParams,
+      newBlockLabels,
+    );
+    populated.phis = newPhis;
+    environment.functions.set(populated.id, populated);
+    return populated;
   }
 }

@@ -1,8 +1,17 @@
+import { Environment } from "../../environment";
 import { BaseTerminal } from "../base";
-import { InstructionId } from "../base/Instruction";
+import { InstructionId, makeInstructionId } from "../base/Instruction";
 import { BlockId } from "./Block";
 import { Identifier } from "./Identifier";
 import { Place } from "./Place";
+
+function nextInstructionId(environment: Environment): InstructionId {
+  return makeInstructionId(environment.nextInstructionId++);
+}
+
+function remapBlock(blockMap: Map<BlockId, BlockId>, blockId: BlockId): BlockId {
+  return blockMap.get(blockId) ?? blockId;
+}
 
 export class BranchTerminal extends BaseTerminal {
   constructor(
@@ -23,6 +32,20 @@ export class BranchTerminal extends BaseTerminal {
     const test = values.get(this.test.identifier) ?? this.test;
     if (test === this.test) return this;
     return new BranchTerminal(this.id, test, this.consequent, this.alternate, this.fallthrough);
+  }
+
+  clone(
+    environment: Environment,
+    blockMap: Map<BlockId, BlockId>,
+    identifierMap: Map<Identifier, Place>,
+  ): BranchTerminal {
+    return new BranchTerminal(
+      nextInstructionId(environment),
+      identifierMap.get(this.test.identifier) ?? this.test,
+      remapBlock(blockMap, this.consequent),
+      remapBlock(blockMap, this.alternate),
+      remapBlock(blockMap, this.fallthrough),
+    );
   }
 
   remap(from: BlockId, to: BlockId): void {
@@ -60,6 +83,14 @@ export class JumpTerminal extends BaseTerminal {
     return this;
   }
 
+  clone(
+    environment: Environment,
+    blockMap: Map<BlockId, BlockId>,
+    _identifierMap: Map<Identifier, Place>,
+  ): JumpTerminal {
+    return new JumpTerminal(nextInstructionId(environment), remapBlock(blockMap, this.target));
+  }
+
   remap(from: BlockId, to: BlockId): void {
     if (this.target === from) this.target = to;
   }
@@ -92,6 +123,15 @@ export class ReturnTerminal extends BaseTerminal {
     return new ReturnTerminal(this.id, value);
   }
 
+  clone(
+    environment: Environment,
+    _blockMap: Map<BlockId, BlockId>,
+    identifierMap: Map<Identifier, Place>,
+  ): ReturnTerminal {
+    const value = this.value === null ? null : identifierMap.get(this.value.identifier) ?? this.value;
+    return new ReturnTerminal(nextInstructionId(environment), value);
+  }
+
   remap(): void {}
 
   getBlockRefs(): BlockId[] {
@@ -119,6 +159,17 @@ export class ThrowTerminal extends BaseTerminal {
     const value = values.get(this.value.identifier) ?? this.value;
     if (value === this.value) return this;
     return new ThrowTerminal(this.id, value);
+  }
+
+  clone(
+    environment: Environment,
+    _blockMap: Map<BlockId, BlockId>,
+    identifierMap: Map<Identifier, Place>,
+  ): ThrowTerminal {
+    return new ThrowTerminal(
+      nextInstructionId(environment),
+      identifierMap.get(this.value.identifier) ?? this.value,
+    );
   }
 
   remap(): void {}
@@ -168,6 +219,23 @@ export class SwitchTerminal extends BaseTerminal {
     return new SwitchTerminal(this.id, discriminant, cases, this.fallthrough, this.label);
   }
 
+  clone(
+    environment: Environment,
+    blockMap: Map<BlockId, BlockId>,
+    identifierMap: Map<Identifier, Place>,
+  ): SwitchTerminal {
+    return new SwitchTerminal(
+      nextInstructionId(environment),
+      identifierMap.get(this.discriminant.identifier) ?? this.discriminant,
+      this.cases.map((c) => ({
+        test: c.test === null ? null : identifierMap.get(c.test.identifier) ?? c.test,
+        block: remapBlock(blockMap, c.block),
+      })),
+      remapBlock(blockMap, this.fallthrough),
+      this.label,
+    );
+  }
+
   remap(from: BlockId, to: BlockId): void {
     for (const c of this.cases) {
       if (c.block === from) c.block = to;
@@ -201,6 +269,28 @@ export class TryTerminal extends BaseTerminal {
 
   rewrite(_values: Map<Identifier, Place>): TryTerminal {
     return this;
+  }
+
+  clone(
+    environment: Environment,
+    blockMap: Map<BlockId, BlockId>,
+    identifierMap: Map<Identifier, Place>,
+  ): TryTerminal {
+    return new TryTerminal(
+      nextInstructionId(environment),
+      remapBlock(blockMap, this.tryBlock),
+      this.handler === null
+        ? null
+        : {
+            param:
+              this.handler.param === null
+                ? null
+                : identifierMap.get(this.handler.param.identifier) ?? this.handler.param,
+            block: remapBlock(blockMap, this.handler.block),
+          },
+      this.finallyBlock === null ? null : remapBlock(blockMap, this.finallyBlock),
+      remapBlock(blockMap, this.fallthrough),
+    );
   }
 
   remap(from: BlockId, to: BlockId): void {
