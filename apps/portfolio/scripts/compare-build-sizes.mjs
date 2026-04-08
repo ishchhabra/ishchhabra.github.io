@@ -106,7 +106,9 @@ function formatDelta(prodSize, previewSize) {
 }
 
 function printSection(label, prodMap, previewMap, type) {
-  const allKeys = new Set([...prodMap.keys(), ...previewMap.keys()].filter((k) => k.startsWith(`${type}:`)));
+  const allKeys = new Set(
+    [...prodMap.keys(), ...previewMap.keys()].filter((k) => k.startsWith(`${type}:`)),
+  );
 
   if (allKeys.size === 0) return;
 
@@ -142,9 +144,7 @@ function printSection(label, prodMap, previewMap, type) {
   console.log(`\n${"─".repeat(90)}`);
   console.log(`  ${label}`);
   console.log(`${"─".repeat(90)}`);
-  console.log(
-    `  ${"File".padEnd(40)} ${"Prod".padStart(10)} ${"Preview".padStart(10)}   Delta`,
-  );
+  console.log(`  ${"File".padEnd(40)} ${"Prod".padStart(10)} ${"Preview".padStart(10)}   Delta`);
   console.log(`  ${"─".repeat(87)}`);
 
   for (const row of rows) {

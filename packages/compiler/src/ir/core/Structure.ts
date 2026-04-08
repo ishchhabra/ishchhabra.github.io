@@ -86,10 +86,7 @@ export class BlockStructure extends BaseStructure {
     return this;
   }
 
-  clone(
-    blockMap: Map<BlockId, BlockId>,
-    _identifierMap: Map<Identifier, Place>,
-  ): BlockStructure {
+  clone(blockMap: Map<BlockId, BlockId>, _identifierMap: Map<Identifier, Place>): BlockStructure {
     return new BlockStructure(
       remapBlock(blockMap, this.header),
       remapBlock(blockMap, this.body),
@@ -155,10 +152,7 @@ export class ForInStructure extends BaseStructure {
     );
   }
 
-  clone(
-    blockMap: Map<BlockId, BlockId>,
-    identifierMap: Map<Identifier, Place>,
-  ): ForInStructure {
+  clone(blockMap: Map<BlockId, BlockId>, identifierMap: Map<Identifier, Place>): ForInStructure {
     return new ForInStructure(
       remapBlock(blockMap, this.header),
       identifierMap.get(this.iterationValue.identifier) ?? this.iterationValue,
@@ -229,10 +223,7 @@ export class ForOfStructure extends BaseStructure {
     );
   }
 
-  clone(
-    blockMap: Map<BlockId, BlockId>,
-    identifierMap: Map<Identifier, Place>,
-  ): ForOfStructure {
+  clone(blockMap: Map<BlockId, BlockId>, identifierMap: Map<Identifier, Place>): ForOfStructure {
     return new ForOfStructure(
       remapBlock(blockMap, this.header),
       identifierMap.get(this.iterationValue.identifier) ?? this.iterationValue,
@@ -332,10 +323,7 @@ export class TernaryStructure extends BaseStructure {
     );
   }
 
-  clone(
-    blockMap: Map<BlockId, BlockId>,
-    identifierMap: Map<Identifier, Place>,
-  ): TernaryStructure {
+  clone(blockMap: Map<BlockId, BlockId>, identifierMap: Map<Identifier, Place>): TernaryStructure {
     return new TernaryStructure(
       remapBlock(blockMap, this.header),
       identifierMap.get(this.test.identifier) ?? this.test,

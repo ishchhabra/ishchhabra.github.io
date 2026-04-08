@@ -128,7 +128,8 @@ export class ReturnTerminal extends BaseTerminal {
     _blockMap: Map<BlockId, BlockId>,
     identifierMap: Map<Identifier, Place>,
   ): ReturnTerminal {
-    const value = this.value === null ? null : identifierMap.get(this.value.identifier) ?? this.value;
+    const value =
+      this.value === null ? null : (identifierMap.get(this.value.identifier) ?? this.value);
     return new ReturnTerminal(nextInstructionId(environment), value);
   }
 
@@ -228,7 +229,7 @@ export class SwitchTerminal extends BaseTerminal {
       nextInstructionId(environment),
       identifierMap.get(this.discriminant.identifier) ?? this.discriminant,
       this.cases.map((c) => ({
-        test: c.test === null ? null : identifierMap.get(c.test.identifier) ?? c.test,
+        test: c.test === null ? null : (identifierMap.get(c.test.identifier) ?? c.test),
         block: remapBlock(blockMap, c.block),
       })),
       remapBlock(blockMap, this.fallthrough),
@@ -285,7 +286,7 @@ export class TryTerminal extends BaseTerminal {
             param:
               this.handler.param === null
                 ? null
-                : identifierMap.get(this.handler.param.identifier) ?? this.handler.param,
+                : (identifierMap.get(this.handler.param.identifier) ?? this.handler.param),
             block: remapBlock(blockMap, this.handler.block),
           },
       this.finallyBlock === null ? null : remapBlock(blockMap, this.finallyBlock),

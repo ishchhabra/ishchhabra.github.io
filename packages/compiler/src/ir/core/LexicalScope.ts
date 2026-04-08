@@ -21,7 +21,14 @@ export function makeLexicalScopeId(id: number): LexicalScopeId {
  *   - `catch`    — §14.15.2 CatchClauseEvaluation
  *   - `class`    — §15.7.14 ClassDefinitionEvaluation
  */
-export type LexicalScopeKind = "program" | "function" | "block" | "switch" | "for" | "catch" | "class";
+export type LexicalScopeKind =
+  | "program"
+  | "function"
+  | "block"
+  | "switch"
+  | "for"
+  | "catch"
+  | "class";
 
 /**
  * A lexical scope in the IR.

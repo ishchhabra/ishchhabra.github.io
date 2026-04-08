@@ -34,7 +34,10 @@ export type Pattern =
   | Oxc.AssignmentTargetWithDefault
   | Oxc.FormalParameterRest
   | Oxc.ParamPattern;
-export type RestElement = Oxc.BindingRestElement | Oxc.AssignmentTargetRest | Oxc.FormalParameterRest;
+export type RestElement =
+  | Oxc.BindingRestElement
+  | Oxc.AssignmentTargetRest
+  | Oxc.FormalParameterRest;
 export type Function = Oxc.Function;
 export type FunctionDeclaration = Oxc.Function;
 export type FunctionExpression = Oxc.Function;

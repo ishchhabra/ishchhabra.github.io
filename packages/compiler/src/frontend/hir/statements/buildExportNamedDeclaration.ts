@@ -26,7 +26,9 @@ export function buildExportNamedDeclaration(
 ) {
   // Type-only exports (export type { X }, export type X = ...) are erased.
   // OXC extends ESTree with exportKind when parsing with astType:"ts".
-  if ((node as AST.ExportNamedDeclaration & { exportKind?: ImportOrExportKind }).exportKind === "type") {
+  if (
+    (node as AST.ExportNamedDeclaration & { exportKind?: ImportOrExportKind }).exportKind === "type"
+  ) {
     return undefined;
   }
 
@@ -271,7 +273,9 @@ function buildExportFrom(
     }
 
     // Skip per-specifier type exports: export { value, type TypeOnly } from "mod"
-    if ((specifier as AST.ExportSpecifier & { exportKind?: ImportOrExportKind }).exportKind === "type") {
+    if (
+      (specifier as AST.ExportSpecifier & { exportKind?: ImportOrExportKind }).exportKind === "type"
+    ) {
       continue;
     }
 

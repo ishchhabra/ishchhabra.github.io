@@ -41,12 +41,7 @@ function instantiateParamBinding(
   if (node.type === "ObjectPattern") {
     for (const property of node.properties) {
       if (property.type === "Property") {
-        instantiateParamBinding(
-          property.value as AST.Pattern,
-          scope,
-          functionBuilder,
-          environment,
-        );
+        instantiateParamBinding(property.value as AST.Pattern, scope, functionBuilder, environment);
         continue;
       }
 

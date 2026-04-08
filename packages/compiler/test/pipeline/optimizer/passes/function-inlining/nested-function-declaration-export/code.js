@@ -1,5 +1,5 @@
-export const pointEnd = point('end');
-export const pointStart = point('start');
+export const pointEnd = point("end");
+export const pointStart = point("start");
 
 function point(type) {
   return point;

@@ -16,7 +16,12 @@ import {
   makeIdentifierId,
 } from "./ir/core/Identifier";
 import { makePlaceId, Place, PlaceId } from "./ir/core/Place";
-import { LexicalScope, makeLexicalScopeId, type LexicalScopeId, type LexicalScopeKind } from "./ir/core/LexicalScope";
+import {
+  LexicalScope,
+  makeLexicalScopeId,
+  type LexicalScopeId,
+  type LexicalScopeKind,
+} from "./ir/core/LexicalScope";
 import { ProjectEnvironment } from "./ProjectEnvironment";
 
 // oxlint-disable-next-line typescript/no-explicit-any

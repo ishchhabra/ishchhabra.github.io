@@ -234,10 +234,7 @@ export class FunctionIR {
     // Clone structures and phis through both maps.
     const newStructures = new Map<BlockId, BaseStructure>();
     for (const [oldBlockId, oldStructure] of this.structures) {
-      newStructures.set(
-        blockMap.get(oldBlockId)!,
-        oldStructure.clone(blockMap, identifierMap),
-      );
+      newStructures.set(blockMap.get(oldBlockId)!, oldStructure.clone(blockMap, identifierMap));
     }
     const newPhis = new Set<Phi>();
     for (const oldPhi of this.phis) {
@@ -246,8 +243,7 @@ export class FunctionIR {
 
     // Remap params, paramBindings, captureParams (all reference header
     // instruction places which are now in identifierMap), and block labels.
-    const remapPlace = (place: Place): Place =>
-      identifierMap.get(place.identifier) ?? place;
+    const remapPlace = (place: Place): Place => identifierMap.get(place.identifier) ?? place;
     const newParams = this.params.map(remapPlace);
     const newParamBindings = this.paramBindings.map((bs) => bs.map(remapPlace));
     const newCaptureParams = this.captureParams.map(remapPlace);

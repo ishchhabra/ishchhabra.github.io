@@ -474,11 +474,7 @@ function visitForInOfStatement(
   }
 }
 
-function visitSwitchStatement(
-  node: AST.SwitchStatement,
-  scope: Scope,
-  scopeMap: ScopeMap,
-): void {
+function visitSwitchStatement(node: AST.SwitchStatement, scope: Scope, scopeMap: ScopeMap): void {
   const switchScope = new Scope(scope, "block");
   scopeMap.set(node, switchScope);
   visitNode(node.discriminant, scope, scopeMap);

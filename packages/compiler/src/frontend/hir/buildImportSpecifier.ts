@@ -7,10 +7,7 @@ import { ModuleIRBuilder } from "./ModuleIRBuilder";
 import { resolveModulePath } from "./resolveModulePath";
 
 export function buildImportSpecifier(
-  specifierNode:
-    | AST.ImportSpecifier
-    | AST.ImportDefaultSpecifier
-    | AST.ImportNamespaceSpecifier,
+  specifierNode: AST.ImportSpecifier | AST.ImportDefaultSpecifier | AST.ImportNamespaceSpecifier,
   declarationNode: AST.ImportDeclaration,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
