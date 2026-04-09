@@ -1,20 +1,20 @@
 let x = 10;
 let y = 20;
 let z = undefined;
-let $27_phi_40 = undefined;
-let $28_phi_41 = undefined;
+let $27_phi_37 = undefined;
+let $28_phi_38 = undefined;
 if (x > 5) {
   if (y < 15) {
-    $2_1 = x + y;
-    $28_phi_41 = $2_1;
+    z = x + y;
+    $28_phi_38 = z;
   } else {
-    $2_2 = x - y;
-    $28_phi_41 = $2_2;
+    z = x - y;
+    $28_phi_38 = z;
   }
-  $27_phi_40 = $28_phi_41;
+  $27_phi_37 = $28_phi_38;
 } else {
-  $2_3 = x * y;
-  $27_phi_40 = $2_3;
+  z = x * y;
+  $27_phi_37 = z;
 }
-let result = $27_phi_40 * 2;
+let result = $27_phi_37 * 2;
 console.log(result);

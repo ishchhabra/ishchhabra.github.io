@@ -1,17 +1,21 @@
 import type * as AST from "../../estree";
-import type { AssignmentExpression, MemberExpression } from "oxc-parser";
+import type { AssignmentExpression, Expression, MemberExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
 import {
+  ArrayDestructureInstruction,
   ArrayPatternInstruction,
   BaseInstruction,
   BinaryExpressionInstruction,
   BranchTerminal,
   createInstructionId,
   DeclareLocalInstruction,
+  type DestructureObjectProperty,
+  type DestructureTarget,
   ExpressionStatementInstruction,
   JumpTerminal,
   LiteralInstruction,
   LoadLocalInstruction,
+  ObjectDestructureInstruction,
   ObjectPropertyInstruction,
   Place,
   RestElementInstruction,
@@ -174,7 +178,14 @@ function buildIdentifierAssignment(
         "let",
         "assignment",
       )
-    : environment.createInstruction(StoreLocalInstruction, place, leftPlace, resultPlace, "const");
+    : environment.createInstruction(
+        StoreLocalInstruction,
+        place,
+        leftPlace,
+        resultPlace,
+        "const",
+        "assignment",
+      );
   functionBuilder.addInstruction(instruction);
   return resultPlace;
 }
@@ -233,6 +244,7 @@ function emitResultVariable(
     functionBuilder.currentBlock.id,
     bindingPlace.id,
   );
+  environment.ensureSyntheticDeclarationMetadata(bindingPlace.identifier.declarationId, "let", bindingPlace);
   const storePlace = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
     environment.createInstruction(
@@ -241,6 +253,7 @@ function emitResultVariable(
       bindingPlace,
       initialValue,
       "let",
+      "declaration",
     ),
   );
   return { bindingPlace, storePlace };
@@ -271,6 +284,7 @@ function emitResultUpdate(
       updateBinding,
       newValue,
       "const",
+      "assignment",
     ),
   );
 }
@@ -359,6 +373,7 @@ function buildLogicalIdentifierAssignment(
           lvalPlace,
           stabilizedRightPlace,
           "const",
+          "assignment",
         ),
   );
 
@@ -552,39 +567,250 @@ function buildDestructuringAssignment(
   if (tdzTargetName !== undefined) {
     throwTDZAccessError(tdzTargetName);
   }
-  const {
-    place: leftPlace,
-    instructions,
-    identifiers,
-    hasContext,
-  } = buildAssignmentLeft(left, node, scope, functionBuilder, moduleBuilder, environment);
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
-  const instruction = hasContext
-    ? environment.createInstruction(
-        StoreContextInstruction,
-        place,
-        leftPlace,
-        resultPlace,
-        "let",
-        "assignment",
-        identifiers,
-      )
-    : environment.createInstruction(
-        StoreLocalInstruction,
-        place,
-        leftPlace,
-        resultPlace,
-        "const",
-        identifiers,
-      );
-  functionBuilder.addInstruction(instruction);
+  const { target } = buildDestructureAssignmentTarget(
+    left,
+    scope,
+    functionBuilder,
+    moduleBuilder,
+    environment,
+  );
 
-  for (const instruction of instructions) {
-    functionBuilder.addInstruction(instruction);
+  const place = environment.createPlace(environment.createIdentifier());
+  let instruction;
+  if (target.kind === "array") {
+    instruction = environment.createInstruction(
+      ArrayDestructureInstruction,
+      place,
+      target.elements,
+      resultPlace,
+      "assignment",
+      null,
+    );
+  } else if (target.kind === "object") {
+    instruction = environment.createInstruction(
+      ObjectDestructureInstruction,
+      place,
+      target.properties,
+      resultPlace,
+      "assignment",
+      null,
+    );
+  } else {
+    throw new Error(`Unsupported destructure target: ${target.kind}`);
   }
+  functionBuilder.addInstruction(instruction);
   return resultPlace;
+}
+
+function buildDestructureAssignmentTarget(
+  left: AST.Pattern | MemberExpression,
+  scope: Scope,
+  functionBuilder: FunctionIRBuilder,
+  moduleBuilder: ModuleIRBuilder,
+  environment: Environment,
+): { target: DestructureTarget; hasContext: boolean } {
+  switch (left.type) {
+    case "Identifier": {
+      const declarationId = functionBuilder.getDeclarationId(left.name, scope);
+      if (declarationId === undefined) {
+        throw new Error(`Variable accessed before declaration: ${left.name}`);
+      }
+
+      if (environment.contextDeclarationIds.has(declarationId)) {
+        const latestDeclaration = environment.getLatestDeclaration(declarationId);
+        const existingPlace = environment.places.get(latestDeclaration.placeId);
+        if (existingPlace === undefined) {
+          throw new Error(`Unable to find the place for ${left.name} (${declarationId})`);
+        }
+        return {
+          target: { kind: "binding", place: existingPlace, storage: "context" },
+          hasContext: true,
+        };
+      }
+
+      const bindingPlace = environment.getDeclarationBinding(declarationId);
+      if (bindingPlace === undefined) {
+        throw new Error(`Unable to find the binding for ${left.name} (${declarationId})`);
+      }
+      environment.registerDeclaration(declarationId, functionBuilder.currentBlock.id, bindingPlace.id);
+      return {
+        target: { kind: "binding", place: bindingPlace, storage: "local" },
+        hasContext: false,
+      };
+    }
+    case "MemberExpression": {
+      const reference = buildMemberReference(left, scope, functionBuilder, moduleBuilder, environment);
+      return {
+        target:
+          reference.kind === "static"
+            ? {
+                kind: "static-member",
+                object: reference.object,
+                property: reference.property,
+                optional: reference.optional,
+              }
+            : {
+                kind: "dynamic-member",
+                object: reference.object,
+                property: reference.property,
+                optional: reference.optional,
+              },
+        hasContext: false,
+      };
+    }
+    case "ArrayPattern": {
+      let hasContext = false;
+      const elements = left.elements.map((element) => {
+        if (element === null) {
+          return null;
+        }
+        const built = buildDestructureAssignmentTarget(
+          element as AST.Pattern | MemberExpression,
+          scope,
+          functionBuilder,
+          moduleBuilder,
+          environment,
+        );
+        hasContext = hasContext || built.hasContext;
+        return built.target;
+      });
+      return { target: { kind: "array", elements }, hasContext };
+    }
+    case "ObjectPattern": {
+      let hasContext = false;
+      const properties: DestructureObjectProperty[] = left.properties.map((property) => {
+        if (property.type === "RestElement") {
+          const built = buildDestructureAssignmentTarget(
+            property.argument as AST.Pattern | MemberExpression,
+            scope,
+            functionBuilder,
+            moduleBuilder,
+            environment,
+          );
+          hasContext = hasContext || built.hasContext;
+          return {
+            key: "rest",
+            computed: false,
+            shorthand: false,
+            value: { kind: "rest", argument: built.target },
+          };
+        }
+
+        const built = buildDestructureAssignmentTarget(
+          property.value as AST.Pattern | MemberExpression,
+          scope,
+          functionBuilder,
+          moduleBuilder,
+          environment,
+        );
+        hasContext = hasContext || built.hasContext;
+
+        return {
+          key: property.computed
+            ? buildComputedAssignmentPropertyKey(
+                property.key,
+                scope,
+                functionBuilder,
+                moduleBuilder,
+                environment,
+              )
+            : getStaticAssignmentPropertyKey(property.key),
+          computed: property.computed,
+          shorthand: property.shorthand,
+          value: built.target,
+        };
+      });
+      return { target: { kind: "object", properties }, hasContext };
+    }
+    case "AssignmentPattern": {
+      const built = buildDestructureAssignmentTarget(
+        left.left as AST.Pattern | MemberExpression,
+        scope,
+        functionBuilder,
+        moduleBuilder,
+        environment,
+      );
+      return {
+        target: {
+          kind: "assignment",
+          left: built.target,
+          right: buildRequiredAssignmentPlace(
+            left.right,
+            scope,
+            functionBuilder,
+            moduleBuilder,
+            environment,
+            "Assignment pattern right must be a single place",
+          ),
+        },
+        hasContext: built.hasContext,
+      };
+    }
+    case "RestElement": {
+      const built = buildDestructureAssignmentTarget(
+        left.argument as AST.Pattern | MemberExpression,
+        scope,
+        functionBuilder,
+        moduleBuilder,
+        environment,
+      );
+      return {
+        target: { kind: "rest", argument: built.target },
+        hasContext: built.hasContext,
+      };
+    }
+  }
+
+  throw new Error(`Unsupported destructuring assignment target: ${(left as { type: string }).type}`);
+}
+
+function buildRequiredAssignmentPlace(
+  node: Expression,
+  scope: Scope,
+  functionBuilder: FunctionIRBuilder,
+  moduleBuilder: ModuleIRBuilder,
+  environment: Environment,
+  message: string,
+): Place {
+  const place = buildNode(node, scope, functionBuilder, moduleBuilder, environment);
+  if (place === undefined || Array.isArray(place)) {
+    throw new Error(message);
+  }
+  return place;
+}
+
+function getStaticAssignmentPropertyKey(node: AST.Property["key"]): string | number {
+  if (node.type === "PrivateIdentifier") {
+    throw new Error("PrivateIdentifier is not supported in object pattern destructuring");
+  }
+  if (node.type === "Identifier") {
+    return node.name;
+  }
+  if (node.type === "Literal" && (typeof node.value === "string" || typeof node.value === "number")) {
+    return node.value;
+  }
+  throw new Error("Unsupported static key type in object pattern destructuring");
+}
+
+function buildComputedAssignmentPropertyKey(
+  node: AST.Property["key"],
+  scope: Scope,
+  functionBuilder: FunctionIRBuilder,
+  moduleBuilder: ModuleIRBuilder,
+  environment: Environment,
+): Place {
+  if (node.type === "PrivateIdentifier") {
+    throw new Error("PrivateIdentifier is not supported in object pattern destructuring");
+  }
+  return buildRequiredAssignmentPlace(
+    node,
+    scope,
+    functionBuilder,
+    moduleBuilder,
+    environment,
+    "Object pattern key must be a single place",
+  );
 }
 
 export function buildAssignmentLeft(
@@ -672,10 +898,12 @@ function buildIdentifierAssignmentLeft(
     };
   }
 
-  const identifier = environment.createIdentifier(declarationId);
-  const place = environment.createPlace(identifier);
-  environment.registerDeclaration(declarationId, functionBuilder.currentBlock.id, place.id);
-  return { place, instructions: [], identifiers: [place], hasContext: false };
+  const bindingPlace = environment.getDeclarationBinding(declarationId);
+  if (bindingPlace === undefined) {
+    throw new Error(`Unable to find the binding for ${left.name} (${declarationId})`);
+  }
+  environment.registerDeclaration(declarationId, functionBuilder.currentBlock.id, bindingPlace.id);
+  return { place: bindingPlace, instructions: [], identifiers: [bindingPlace], hasContext: false };
 }
 
 function buildMemberExpressionAssignmentLeft(

@@ -84,20 +84,19 @@ export function buildTryStatement(
         identifier.declarationId,
         "catch",
         catchClause.param.name,
+        catchScope,
       );
-      // Create DeclareLocal for the catch parameter.
-      // No StoreLocal needed — the catch clause syntax provides the binding,
-      // similar to how function parameters work.
+      // The catch syntax materializes the binding directly; codegen only needs
+      // the stable declaration metadata and binding place.
+      identifier.name = catchClause.param.name;
       const bindingPlace = environment.createPlace(identifier);
-      functionBuilder.addInstruction(
-        environment.createInstruction(DeclareLocalInstruction, bindingPlace, "const"),
-      );
 
       environment.registerDeclaration(
         identifier.declarationId,
         functionBuilder.currentBlock.id,
         bindingPlace.id,
       );
+      environment.setDeclarationBindingPlace(identifier.declarationId, bindingPlace.id);
 
       paramPlace = bindingPlace;
     }

@@ -1,5 +1,5 @@
 try {
   const result = JSON.parse("{}");
-} catch ($6_0) {
-  console.log($6_0);
+} catch (e) {
+  console.log(e);
 }

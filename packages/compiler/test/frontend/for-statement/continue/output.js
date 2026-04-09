@@ -1,14 +1,17 @@
 let i = 0;
-let $18_phi_23 = 0;
-while ($18_phi_23 < 10) {
-  if ($18_phi_23 === 5) {
-    const $11_0 = $18_phi_23;
-    $11_0;
-    $18_phi_23 = $18_phi_23 + 1;
+let $18_phi_22 = undefined;
+$18_phi_22 = i;
+while ($18_phi_22 < 10) {
+  if ($18_phi_22 === 5) {
+    const $11_0 = $18_phi_22;
+    i = $18_phi_22 + 1;
+    $18_phi_22;
+    $18_phi_22 = i;
     continue;
   }
-  console.log($18_phi_23);
-  const $11_0 = $18_phi_23;
-  $11_0;
-  $18_phi_23 = $18_phi_23 + 1;
+  console.log($18_phi_22);
+  const $11_0 = $18_phi_22;
+  i = $18_phi_22 + 1;
+  $18_phi_22;
+  $18_phi_22 = i;
 }

@@ -3,6 +3,8 @@ import { BaseInstruction, InstructionId, MemoryInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
 import { ExpressionStatementInstruction } from "../ExpressionStatement";
 
+export type StoreLocalKind = "declaration" | "assignment";
+
 /**
  * Represents a memory instruction that stores a value at a given place.
  *
@@ -18,6 +20,7 @@ export class StoreLocalInstruction extends MemoryInstruction {
     public readonly lval: Place,
     public readonly value: Place,
     public readonly type: "let" | "const" | "var",
+    public readonly kind: StoreLocalKind = "assignment",
     public readonly bindings: Place[] = [],
     /**
      * Whether codegen should emit this as a standalone statement. When `false`,
@@ -39,6 +42,7 @@ export class StoreLocalInstruction extends MemoryInstruction {
       this.lval,
       this.value,
       this.type,
+      this.kind,
       this.bindings,
       this.emit,
     );
@@ -54,6 +58,7 @@ export class StoreLocalInstruction extends MemoryInstruction {
       rewriteDefinitions ? (values.get(this.lval.identifier) ?? this.lval) : this.lval,
       values.get(this.value.identifier) ?? this.value,
       this.type,
+      this.kind,
       rewriteDefinitions
         ? this.bindings.map((binding) => values.get(binding.identifier) ?? binding)
         : this.bindings,
@@ -78,6 +83,6 @@ export class StoreLocalInstruction extends MemoryInstruction {
   }
 
   public override print(): string {
-    return `${this.place.print()} = StoreLocal ${this.lval.print()} = ${this.value.print()}`;
+    return `${this.place.print()} = StoreLocal(${this.kind}) ${this.lval.print()} = ${this.value.print()}`;
   }
 }

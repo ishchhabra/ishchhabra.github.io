@@ -5,7 +5,7 @@ import type {
   ImportSpecifier,
 } from "oxc-parser";
 import { Environment } from "../../environment";
-import { DeclareLocalInstruction, ImportSpecifierInstruction } from "../../ir";
+import { ImportSpecifierInstruction } from "../../ir";
 import type * as AST from "../estree";
 import { type Scope } from "../scope/Scope";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
@@ -33,26 +33,20 @@ export function buildImportSpecifier(
   );
   functionBuilder.addInstruction(instruction);
 
-  // Register the import as a declaration so that export specifiers (and any
-  // other consumer that looks up declarations by name) can find it through
-  // the uniform getDeclarationId path.
+  // Register the import binding so later loads/codegen can treat it as a
+  // source declaration without depending on a separate DeclareLocal node.
   const bindingIdentifier = environment.createIdentifier();
   bindingIdentifier.name = localName;
   const bindingPlace = environment.createPlace(bindingIdentifier);
-  const bindingInstruction = environment.createInstruction(
-    DeclareLocalInstruction,
-    bindingPlace,
-    "const",
-  );
-  functionBuilder.addInstruction(bindingInstruction);
 
   functionBuilder.registerDeclarationName(localName, bindingIdentifier.declarationId, scope);
-  functionBuilder.instantiateDeclaration(bindingIdentifier.declarationId, "import", localName);
+  functionBuilder.instantiateDeclaration(bindingIdentifier.declarationId, "import", localName, scope);
   environment.registerDeclaration(
     bindingIdentifier.declarationId,
     functionBuilder.currentBlock.id,
     bindingPlace.id,
   );
+  environment.setDeclarationBindingPlace(bindingIdentifier.declarationId, bindingPlace.id);
   environment.registerDeclarationInstruction(bindingPlace, instruction);
 
   const source = declarationNode.source.value;

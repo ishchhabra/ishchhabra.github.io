@@ -7,6 +7,8 @@ import {
   type ControlContext,
   DeclarationId,
   FunctionDeclarationInstruction,
+  getCodegenDeclarationKind,
+  Place,
   PlaceId,
   LexicalScope,
   type LexicalScopeId,
@@ -32,13 +34,12 @@ interface FunctionCodegenState {
  */
 export class CodeGenerator {
   public readonly places: Map<PlaceId, t.Node | null> = new Map();
+  public readonly declarationIdentifiers: Map<DeclarationId, t.Identifier> = new Map();
   public blockToStatements: Map<BlockId, Array<t.Statement>> = new Map();
   public generatedBlocks: Set<BlockId> = new Set();
   public readonly controlStack: ControlContext[] = [];
   public readonly scopes: Map<LexicalScopeId, LexicalScope> = new Map();
 
-  /** Maps declarationId → kind from DeclareLocal instructions. */
-  public readonly declarationKinds: Map<DeclarationId, "var" | "let" | "const"> = new Map();
   /** Tracks which declarations have already emitted their first variable statement. */
   public declaredDeclarations: Set<DeclarationId> = new Set();
 
@@ -104,18 +105,55 @@ export class CodeGenerator {
     public readonly projectUnit: ProjectUnit,
   ) {}
 
+  public get moduleIR(): ModuleIR {
+    return this.projectUnit.modules.get(this.path)!;
+  }
+
   public get entryFunction(): FunctionIR {
-    const moduleIR = this.projectUnit.modules.get(this.path)!;
-    return moduleIR.functions.get(makeFunctionIRId(0))!;
+    return this.moduleIR.functions.get(makeFunctionIRId(0))!;
+  }
+
+  public getDeclarationMetadata(declarationId: DeclarationId) {
+    return this.moduleIR.environment.getDeclarationMetadata(declarationId);
+  }
+
+  public getPlaceIdentifier(place: Place): t.Identifier {
+    const existing = this.places.get(place.id);
+    if (existing && t.isIdentifier(existing)) {
+      return existing;
+    }
+    if (existing && t.isFunctionDeclaration(existing) && existing.id) {
+      this.places.set(place.id, existing.id);
+      return existing.id;
+    }
+
+    const metadata = this.getDeclarationMetadata(place.identifier.declarationId);
+    const aliasableDeclaration =
+      metadata !== undefined && getCodegenDeclarationKind(metadata.kind) !== undefined;
+    const existingDeclarationIdentifier =
+      aliasableDeclaration
+        ? this.declarationIdentifiers.get(place.identifier.declarationId)
+        : undefined;
+    if (existingDeclarationIdentifier) {
+      this.places.set(place.id, existingDeclarationIdentifier);
+      return existingDeclarationIdentifier;
+    }
+
+    const name = place.identifier.name ?? metadata?.sourceName ?? `$${place.identifier.id}`;
+    const identifier = t.identifier(name);
+    if (aliasableDeclaration) {
+      this.declarationIdentifiers.set(place.identifier.declarationId, identifier);
+    }
+    this.places.set(place.id, identifier);
+    return identifier;
   }
 
   generate(): string {
-    const moduleIR = this.projectUnit.modules.get(this.path)!;
     // Populate the scope tree so the codegen can detect scope transitions.
-    for (const [id, scope] of moduleIR.environment.scopes) {
+    for (const [id, scope] of this.moduleIR.environment.scopes) {
       this.scopes.set(id, scope);
     }
-    this.preRegisterBindingIdentifiers(moduleIR);
+    this.preRegisterBindingIdentifiers(this.moduleIR);
     const { statements } = generateFunction(this.entryFunction, [], this);
     const program = t.program(statements);
     return generate(program).code;
@@ -174,21 +212,28 @@ export class CodeGenerator {
    * resolve the binding's place, regardless of function generation order.
    */
   private preRegisterBindingIdentifiers(moduleIR: ModuleIR): void {
+    for (const [declarationId, metadata] of moduleIR.environment.declarationMetadata) {
+      if (metadata.bindingPlaceId === undefined) {
+        continue;
+      }
+      const place = moduleIR.environment.places.get(metadata.bindingPlaceId);
+      if (place === undefined) {
+        continue;
+      }
+      const identifier = t.identifier(place.identifier.name ?? metadata.sourceName);
+      if (getCodegenDeclarationKind(metadata.kind) !== undefined) {
+        this.declarationIdentifiers.set(declarationId, identifier);
+      }
+      this.places.set(place.id, identifier);
+      if (metadata.kind === "param" || metadata.kind === "import" || metadata.kind === "catch") {
+        this.declaredDeclarations.add(declarationId);
+      }
+    }
+
     for (const [, functionIR] of moduleIR.functions) {
       for (const instruction of functionIR.header) {
-        if (instruction instanceof DeclareLocalInstruction) {
-          generateDeclareLocalInstruction(instruction, this);
-        } else if (instruction instanceof FunctionDeclarationInstruction) {
-          this.places.set(instruction.place.id, t.identifier(instruction.place.identifier.name));
-        }
-      }
-      for (const [, block] of functionIR.blocks) {
-        for (const instruction of block.instructions) {
-          if (instruction instanceof DeclareLocalInstruction) {
-            generateDeclareLocalInstruction(instruction, this);
-          } else if (instruction instanceof FunctionDeclarationInstruction) {
-            this.places.set(instruction.place.id, t.identifier(instruction.place.identifier.name));
-          }
+        if (instruction instanceof FunctionDeclarationInstruction) {
+          this.places.set(instruction.place.id, this.getPlaceIdentifier(instruction.place));
         }
       }
     }

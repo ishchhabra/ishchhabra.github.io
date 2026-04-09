@@ -51,6 +51,10 @@ export function buildUpdateExpression(
   if (originalPlace === undefined) {
     throw new Error(`Unable to find the place for ${argument.name} (${declarationId})`);
   }
+  const bindingPlace = environment.getDeclarationBinding(declarationId);
+  if (bindingPlace === undefined) {
+    throw new Error(`Unable to find the binding for ${argument.name} (${declarationId})`);
+  }
 
   // For postfix operations, snapshot the original value into a temporary
   // so that codegen emits a distinct variable for the pre-increment value.
@@ -71,6 +75,7 @@ export function buildUpdateExpression(
         oldValBindingPlace,
         originalPlace,
         "const",
+        "declaration",
       ),
     );
     oldValLoadPlace = environment.createPlace(environment.createIdentifier());
@@ -83,8 +88,7 @@ export function buildUpdateExpression(
   if (environment.contextDeclarationIds.has(declarationId)) {
     lvalPlace = originalPlace;
   } else {
-    const lvalIdentifier = environment.createIdentifier(declarationId);
-    lvalPlace = environment.createPlace(lvalIdentifier);
+    lvalPlace = bindingPlace;
   }
 
   // Build the binary expression inline instead of creating a synthetic path.
@@ -124,7 +128,14 @@ export function buildUpdateExpression(
         "let",
         "assignment",
       )
-    : environment.createInstruction(StoreLocalInstruction, place, lvalPlace, valuePlace, "const");
+    : environment.createInstruction(
+        StoreLocalInstruction,
+        place,
+        lvalPlace,
+        valuePlace,
+        "const",
+        "assignment",
+      );
   functionBuilder.addInstruction(instruction);
   environment.registerDeclaration(declarationId, functionBuilder.currentBlock.id, lvalPlace.id);
 

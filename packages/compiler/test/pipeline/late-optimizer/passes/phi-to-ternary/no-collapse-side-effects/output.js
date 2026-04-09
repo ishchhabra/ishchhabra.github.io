@@ -1,11 +1,11 @@
 let x = undefined;
-let $15_phi_18 = undefined;
+let $15_phi_16 = undefined;
 if (true) {
   console.log("side effect");
-  $0_1 = 1;
-  $15_phi_18 = 1;
+  x = 1;
+  $15_phi_16 = x;
 } else {
-  $0_2 = 2;
-  $15_phi_18 = 2;
+  x = 2;
+  $15_phi_16 = x;
 }
-const y = $15_phi_18;
+const y = $15_phi_16;

@@ -121,6 +121,7 @@ function buildTemporaryIdentifier(
     functionBuilder.currentBlock.id,
     bindingPlace.id,
   );
+  environment.ensureSyntheticDeclarationMetadata(bindingIdentifier.declarationId, "let", bindingPlace);
 
   const resultValueIdentifier = environment.createIdentifier(bindingIdentifier.declarationId);
   const resultValuePlace = environment.createPlace(resultValueIdentifier);
@@ -137,6 +138,7 @@ function buildTemporaryIdentifier(
       bindingPlace,
       resultValuePlace,
       "const",
+      "declaration",
     ),
   );
 
@@ -170,6 +172,7 @@ function buildBranchExpression(
     lvalPlace,
     place,
     "const",
+    "assignment",
   );
   functionBuilder.addInstruction(storeInstruction);
 

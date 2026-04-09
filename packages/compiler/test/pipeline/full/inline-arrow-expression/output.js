@@ -1,2 +1,1 @@
-const double = ($1_0) => $1_0 * 2;
-console.log(double(5));
+console.log((($1_0) => $1_0 * 2)(5));

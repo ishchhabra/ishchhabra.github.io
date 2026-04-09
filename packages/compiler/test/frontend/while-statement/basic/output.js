@@ -1,5 +1,7 @@
 let number = 5;
-let $8_phi_11 = 5;
-while ($8_phi_11 > 0) {
-  $8_phi_11 = $8_phi_11 - 1;
+let $8_phi_10 = undefined;
+$8_phi_10 = number;
+while ($8_phi_10 > 0) {
+  number = $8_phi_10 - 1;
+  $8_phi_10 = number;
 }

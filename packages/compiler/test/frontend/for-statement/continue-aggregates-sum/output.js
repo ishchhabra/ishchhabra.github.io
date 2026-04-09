@@ -1,21 +1,25 @@
 let sum = 0;
-let $19_phi_26 = undefined;
-let $20_phi_27 = undefined;
+let $19_phi_24 = undefined;
+let $20_phi_25 = undefined;
 let i = 0;
-$20_phi_27 = 0;
-let $21_phi_28 = 0;
-while ($21_phi_28 < 10) {
-  if ($21_phi_28 === 5) {
-    $19_phi_26 = undefined;
-    const $12_0 = $21_phi_28;
-    $12_0;
-    $20_phi_27 = $19_phi_26;
-    $21_phi_28 = $21_phi_28 + 1;
+$20_phi_25 = sum;
+let $21_phi_26 = undefined;
+$21_phi_26 = i;
+while ($21_phi_26 < 10) {
+  if ($21_phi_26 === 5) {
+    $19_phi_24 = $20_phi_25;
+    const $12_0 = $21_phi_26;
+    i = $21_phi_26 + 1;
+    $21_phi_26;
+    $20_phi_25 = $19_phi_24;
+    $21_phi_26 = i;
     continue;
   }
-  $19_phi_26 = $20_phi_27 + $21_phi_28;
-  const $12_0 = $21_phi_28;
-  $12_0;
-  $20_phi_27 = $19_phi_26;
-  $21_phi_28 = $21_phi_28 + 1;
+  sum = $20_phi_25 + $21_phi_26;
+  $19_phi_24 = sum;
+  const $12_0 = $21_phi_26;
+  i = $21_phi_26 + 1;
+  $21_phi_26;
+  $20_phi_25 = $19_phi_24;
+  $21_phi_26 = i;
 }

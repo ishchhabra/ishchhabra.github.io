@@ -9,7 +9,9 @@ import type {
 } from "oxc-parser";
 import { Environment } from "../../../environment";
 import {
+  ArrayDestructureInstruction,
   ExportNamedDeclarationInstruction,
+  ObjectDestructureInstruction,
   Place,
   StoreLocalInstruction,
   StoreContextInstruction,
@@ -85,6 +87,8 @@ export function buildExportNamedDeclaration(
     const storeInstruction = environment.placeToInstruction.get(declarationPlace.id);
     if (
       storeInstruction instanceof FunctionDeclarationInstruction ||
+      storeInstruction instanceof ArrayDestructureInstruction ||
+      storeInstruction instanceof ObjectDestructureInstruction ||
       storeInstruction instanceof StoreLocalInstruction ||
       storeInstruction instanceof StoreContextInstruction
     ) {

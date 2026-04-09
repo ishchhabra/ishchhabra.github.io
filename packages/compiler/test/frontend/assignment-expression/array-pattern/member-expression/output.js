@@ -1,5 +1,3 @@
 let obj = {};
-const [$6_0, $9_0] = [1, 2];
-obj.a = $6_0;
-obj.b = $9_0;
+[obj.a, obj.b] = [1, 2];
 console.log(obj.a, obj.b);

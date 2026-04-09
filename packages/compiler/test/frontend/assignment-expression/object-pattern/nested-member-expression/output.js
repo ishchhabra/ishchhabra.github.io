@@ -3,8 +3,7 @@ let obj = {
     value: 1,
   },
 };
-const { value: $14_0 } = {
+({ value: obj.nested.value } = {
   value: 2,
-};
-obj.nested.value = $14_0;
+});
 console.log(obj.nested.value);

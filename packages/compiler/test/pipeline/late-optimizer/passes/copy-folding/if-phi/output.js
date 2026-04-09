@@ -1,9 +1,11 @@
 const x = 5;
 let y = undefined;
-let $13_phi_17 = undefined;
+let $13_phi_15 = undefined;
 if (x > 0) {
-  $13_phi_17 = 10;
+  y = 10;
+  $13_phi_15 = y;
 } else {
-  $13_phi_17 = 20;
+  y = 20;
+  $13_phi_15 = y;
 }
-$13_phi_17;
+$13_phi_15;

@@ -1,5 +1,8 @@
-let $12_phi_16 = 0;
-while ($12_phi_16 < 10) {
-  $12_phi_16 = $12_phi_16 + 1;
+let count = 0;
+let $12_phi_15 = undefined;
+$12_phi_15 = count;
+while ($12_phi_15 < 10) {
+  count = $12_phi_15 + 1;
+  $12_phi_15 = count;
 }
-console.log($12_phi_16);
+console.log($12_phi_15);

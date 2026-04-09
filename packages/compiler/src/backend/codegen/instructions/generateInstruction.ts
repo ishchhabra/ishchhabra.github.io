@@ -1,5 +1,6 @@
 import * as t from "@babel/types";
 import {
+  ArrayDestructureInstruction,
   BaseInstruction,
   DebuggerStatementInstruction,
   DeclarationInstruction,
@@ -10,6 +11,7 @@ import {
   JSXInstruction,
   MemoryInstruction,
   ModuleInstruction,
+  ObjectDestructureInstruction,
   PatternInstruction,
   RestElementInstruction,
   SpreadElementInstruction,
@@ -63,7 +65,9 @@ export function generateInstruction(
     // TODO: Refactor HIRBuilder to include a property indicating whether
     // the place is temporary or not.
     if (
-      (instruction instanceof StoreLocalInstruction ||
+      (instruction instanceof ArrayDestructureInstruction ||
+        instruction instanceof ObjectDestructureInstruction ||
+        instruction instanceof StoreLocalInstruction ||
         instruction instanceof StoreContextInstruction) &&
       instruction.emit
     ) {

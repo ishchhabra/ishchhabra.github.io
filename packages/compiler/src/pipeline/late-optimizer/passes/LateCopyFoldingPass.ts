@@ -112,6 +112,7 @@ export class LateCopyFoldingPass extends BaseOptimizationPass {
           store.lval,
           copy.value,
           store.type,
+          store.kind,
           store.bindings,
         ),
       );

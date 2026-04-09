@@ -1,11 +1,7 @@
 import {
   BasicBlock,
   BlockId,
-  CopyInstruction,
-  DeclareLocalInstruction,
-  ExpressionStatementInstruction,
   LiteralInstruction,
-  LoadLocalInstruction,
   makeInstructionId,
   StoreLocalInstruction,
 } from "../../ir";
@@ -18,7 +14,7 @@ interface SSAEliminationResult {
 }
 
 /**
- * Eliminates the phis from the HIR by inserting copy instructions.
+ * Eliminates phis by materializing edge assignments into the target binding.
  */
 export class SSAEliminator {
   constructor(
@@ -28,17 +24,12 @@ export class SSAEliminator {
 
   public eliminate(): SSAEliminationResult {
     for (const phi of this.functionIR.phis) {
-      // Single-operand phis are redundant but must still be declared —
-      // SSA renaming already inserted references to them. When the
-      // optimizer is enabled, ConstantPropagation degrades these before
-      // elimination. Without the optimizer, we emit the declaration and
-      // copy; the late optimizer can clean up the redundancy.
       if (phi.operands.size === 0) {
         continue;
       }
 
       this.#insertPhiDeclaration(phi);
-      this.#insertPhiCopies(phi);
+      this.#insertPhiStores(phi);
     }
 
     return { blocks: this.functionIR.blocks };
@@ -51,14 +42,11 @@ export class SSAEliminator {
     }
 
     const declarationBlock = this.functionIR.getBlock(declaration.blockId);
-
-    const bindingInstr = this.moduleIR.environment.createInstruction(
-      DeclareLocalInstruction,
-      phi.place,
+    this.moduleIR.environment.ensureSyntheticDeclarationMetadata(
+      phi.place.identifier.declarationId,
       "let",
+      phi.place,
     );
-    declarationBlock.appendInstruction(bindingInstr);
-    this.moduleIR.environment.placeToInstruction.set(phi.place.id, bindingInstr);
 
     const undefinedId = makeInstructionId(this.moduleIR.environment.nextInstructionId++);
     const undefinedPlace = this.moduleIR.environment.createPlace(
@@ -68,54 +56,39 @@ export class SSAEliminator {
     declarationBlock.appendInstruction(undefinedInstr);
     this.moduleIR.environment.placeToInstruction.set(undefinedPlace.id, undefinedInstr);
 
-    const identifier = this.moduleIR.environment.createIdentifier(
-      phi.place.identifier.declarationId,
+    const storeId = makeInstructionId(this.moduleIR.environment.nextInstructionId++);
+    const storePlace = this.moduleIR.environment.createPlace(
+      this.moduleIR.environment.createIdentifier(phi.place.identifier.declarationId),
     );
-    const place = this.moduleIR.environment.createPlace(identifier);
-
-    const instructionId = makeInstructionId(this.moduleIR.environment.nextInstructionId++);
-    const instruction = new StoreLocalInstruction(
-      instructionId,
-      place,
+    const storeInstr = new StoreLocalInstruction(
+      storeId,
+      storePlace,
       phi.place,
       undefinedPlace,
       "let",
+      "declaration",
     );
-
-    declarationBlock.appendInstruction(instruction);
-    this.moduleIR.environment.placeToInstruction.set(place.id, instruction);
+    declarationBlock.appendInstruction(storeInstr);
+    this.moduleIR.environment.placeToInstruction.set(storePlace.id, storeInstr);
   }
 
-  #insertPhiCopies(phi: Phi) {
+  #insertPhiStores(phi: Phi) {
     for (const [blockId, place] of phi.operands) {
       const block = this.functionIR.getBlock(blockId);
-
-      // Step 1: Load the value of the variable into a place.
-      const loadId = makeInstructionId(this.moduleIR.environment.nextInstructionId++);
-      const loadPlace = this.moduleIR.environment.createPlace(
-        this.moduleIR.environment.createIdentifier(),
-      );
-      const loadInstr = new LoadLocalInstruction(loadId, loadPlace, place);
-      block.appendInstruction(loadInstr);
-      this.moduleIR.environment.placeToInstruction.set(loadPlace.id, loadInstr);
-
-      // Step 2: Create a copy instruction using the loaded value.
-      const copyId = makeInstructionId(this.moduleIR.environment.nextInstructionId++);
-      const copyPlace = this.moduleIR.environment.createPlace(
+      const storeId = makeInstructionId(this.moduleIR.environment.nextInstructionId++);
+      const storePlace = this.moduleIR.environment.createPlace(
         this.moduleIR.environment.createIdentifier(phi.place.identifier.declarationId),
       );
-      const copyInstr = new CopyInstruction(copyId, copyPlace, phi.place, loadPlace);
-      block.appendInstruction(copyInstr);
-      this.moduleIR.environment.placeToInstruction.set(copyPlace.id, copyInstr);
-
-      // Step 3: Wrap the copy instruction in an expression statement.
-      const exprId = makeInstructionId(this.moduleIR.environment.nextInstructionId++);
-      const exprPlace = this.moduleIR.environment.createPlace(
-        this.moduleIR.environment.createIdentifier(),
+      const storeInstr = new StoreLocalInstruction(
+        storeId,
+        storePlace,
+        phi.place,
+        place,
+        "let",
+        "assignment",
       );
-      const exprInstr = new ExpressionStatementInstruction(exprId, exprPlace, copyPlace);
-      block.appendInstruction(exprInstr);
-      this.moduleIR.environment.placeToInstruction.set(exprPlace.id, exprInstr);
+      block.appendInstruction(storeInstr);
+      this.moduleIR.environment.placeToInstruction.set(storePlace.id, storeInstr);
     }
   }
 }

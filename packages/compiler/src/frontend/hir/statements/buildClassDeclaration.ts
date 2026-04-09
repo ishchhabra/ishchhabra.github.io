@@ -78,6 +78,7 @@ export function buildClassDeclaration(
       identifierPlace,
       classPlace,
       isContext ? ("let" as const) : ("const" as const),
+      "declaration",
       [],
     ),
   );

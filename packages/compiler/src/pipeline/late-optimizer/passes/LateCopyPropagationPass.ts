@@ -1,7 +1,6 @@
 import {
   BaseInstruction,
   BlockId,
-  CopyInstruction,
   DeclarationId,
   LoadLocalInstruction,
   Place,
@@ -137,40 +136,21 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
    */
   private transfer(instr: BaseInstruction, state: CopyState): void {
     // ------------------------------------------------------------
-    // Copy instruction
-    //
-    //   x = y
-    //
-    // Kill existing information about x and record x → y.
-    // ------------------------------------------------------------
-
-    if (instr instanceof CopyInstruction) {
-      const x = instr.lval.identifier.declarationId;
-      const y = instr.value.identifier.declarationId;
-
-      this.kill(state, x);
-
-      const resolved = this.resolve(state, y) ?? instr.value;
-
-      if (resolved.identifier.declarationId !== x) {
-        state.set(x, resolved);
-      }
-
-      return;
-    }
-
-    // ------------------------------------------------------------
     // General assignment
     //
     //   x = expr
     //
-    // Any previous copy relationship for x becomes invalid.
+    // Kill any previous relationship for x, then remember the current
+    // SSA value that x now aliases.
     // ------------------------------------------------------------
 
     if (instr instanceof StoreLocalInstruction) {
       const x = instr.lval.identifier.declarationId;
-
       this.kill(state, x);
+      const resolved = this.resolve(state, instr.value.identifier.declarationId) ?? instr.value;
+      if (resolved.identifier.declarationId !== x) {
+        state.set(x, resolved);
+      }
       return;
     }
   }

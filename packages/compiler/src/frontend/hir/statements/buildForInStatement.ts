@@ -107,6 +107,7 @@ export function buildForInStatement(
         outerPlace,
         iterationValuePlace,
         "const",
+        "assignment",
         [],
       ),
     );

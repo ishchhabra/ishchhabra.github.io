@@ -1,1 +1,2 @@
-export const external = 42;
+const internal = 42;
+export { internal as external };

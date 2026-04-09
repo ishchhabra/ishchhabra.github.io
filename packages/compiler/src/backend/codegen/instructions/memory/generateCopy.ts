@@ -8,9 +8,7 @@ export function generateCopyInstruction(
 ): t.Node {
   let lval = generator.places.get(instruction.lval.id);
   if (lval === undefined || lval === null) {
-    const name = instruction.lval.identifier.name ?? `$${instruction.lval.identifier.id}`;
-    lval = t.identifier(name);
-    generator.places.set(instruction.lval.id, lval);
+    lval = generator.getPlaceIdentifier(instruction.lval);
   }
   t.assertLVal(lval);
 

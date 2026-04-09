@@ -3,6 +3,8 @@ import {
   BaseInstruction,
   BasicBlock,
   BlockId,
+  type DeclarationKind,
+  type DeclarationMetadata,
   InstructionId,
   makeBlockId,
   makeInstructionId,
@@ -56,10 +58,16 @@ export class Environment {
   declToPlaces: Map<DeclarationId, Array<{ blockId: BlockId; placeId: PlaceId }>> = new Map();
 
   /**
-   * Maps each `DeclarationId` to the `InstructionId` of the IR instruction responsible
-   * for its *declaration statement*. When multiple variables are declared
-   * together (e.g. `const a = 1, b = 2`), all associated `DeclarationId`s will
-   * map to the *same* StoreLocal instruction.
+   * Source-level metadata for each declaration, keyed by stable DeclarationId.
+   * This is the authoritative source for declaration kind, source name, and
+   * the stable binding place used by codegen.
+   */
+  declarationMetadata: Map<DeclarationId, DeclarationMetadata> = new Map();
+
+  /**
+   * Transitional map from DeclarationId to the instruction that originally
+   * declared or materialized it. Still used by some export/import lowering
+   * paths, but not required for local binding codegen.
    */
   declToDeclInstr: Map<DeclarationId, InstructionId> = new Map();
 
@@ -152,9 +160,73 @@ export class Environment {
     this.declToPlaces.set(declarationId, placeIds);
   }
 
+  public registerDeclarationMetadata(
+    declarationId: DeclarationId,
+    metadata: Pick<DeclarationMetadata, "kind" | "sourceName"> &
+      Partial<Omit<DeclarationMetadata, "kind" | "sourceName">>,
+  ) {
+    const existing = this.declarationMetadata.get(declarationId);
+    if (existing === undefined) {
+      this.declarationMetadata.set(declarationId, { ...metadata });
+      return;
+    }
+
+    existing.kind = metadata.kind;
+    existing.sourceName = metadata.sourceName;
+    if (metadata.scopeId !== undefined) {
+      existing.scopeId = metadata.scopeId;
+    }
+    if (metadata.bindingPlaceId !== undefined) {
+      existing.bindingPlaceId = metadata.bindingPlaceId;
+    }
+  }
+
+  public getDeclarationMetadata(declarationId: DeclarationId): DeclarationMetadata | undefined {
+    return this.declarationMetadata.get(declarationId);
+  }
+
+  public setDeclarationBindingPlace(declarationId: DeclarationId, placeId: PlaceId) {
+    const metadata = this.declarationMetadata.get(declarationId);
+    if (metadata === undefined) {
+      throw new Error(`Declaration metadata not found for ${declarationId}`);
+    }
+    metadata.bindingPlaceId = placeId;
+  }
+
+  public ensureSyntheticDeclarationMetadata(
+    declarationId: DeclarationId,
+    kind: Extract<DeclarationKind, "let" | "const" | "var" | "class">,
+    bindingPlace: Place,
+  ) {
+    if (!this.declarationMetadata.has(declarationId)) {
+      this.registerDeclarationMetadata(declarationId, {
+        kind,
+        sourceName: bindingPlace.identifier.name,
+        bindingPlaceId: bindingPlace.id,
+      });
+      return;
+    }
+
+    const metadata = this.declarationMetadata.get(declarationId)!;
+    if (metadata.bindingPlaceId === undefined) {
+      metadata.bindingPlaceId = bindingPlace.id;
+    }
+  }
+
   public getLatestDeclaration(declarationId: DeclarationId) {
     const placeIds = this.declToPlaces.get(declarationId) ?? [];
     return placeIds[placeIds.length - 1];
+  }
+
+  public getDeclarationBinding(declarationId: DeclarationId): Place | undefined {
+    const bindingPlaceId = this.declarationMetadata.get(declarationId)?.bindingPlaceId;
+    if (bindingPlaceId !== undefined) {
+      return this.places.get(bindingPlaceId);
+    }
+
+    const places = this.declToPlaces.get(declarationId) ?? [];
+    const first = places[0];
+    return first ? this.places.get(first.placeId) : undefined;
   }
 
   public registerDeclarationInstruction(

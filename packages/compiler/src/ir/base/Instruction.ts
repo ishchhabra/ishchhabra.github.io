@@ -64,6 +64,18 @@ export abstract class BaseInstruction {
   abstract getOperands(): Place[];
 
   /**
+   * Return all semantic dependencies of this instruction.
+   *
+   * This is broader than `getOperands()`: it includes non-operand references
+   * that still must stay connected in the use-def graph for liveness/DCE and
+   * late statement materialization (for example, assignment targets and
+   * destructuring subpatterns).
+   */
+  getUses(): Place[] {
+    return this.getOperands();
+  }
+
+  /**
    * Return the places that this instruction defines (outputs).
    *
    * Most instructions define only their own `place`. Instructions that

@@ -107,6 +107,7 @@ export function buildForOfStatement(
         outerPlace,
         iterationValuePlace,
         "const",
+        "assignment",
         [],
       ),
     );

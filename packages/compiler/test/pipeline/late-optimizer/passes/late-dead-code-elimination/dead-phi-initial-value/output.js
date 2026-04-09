@@ -1,5 +1,8 @@
-let $13_phi_15 = 0;
+let val = 0;
+let $13_phi_14 = undefined;
+$13_phi_14 = val;
 if (globalThis.cond) {
-  $13_phi_15 = globalThis.compute();
+  val = globalThis.compute();
+  $13_phi_14 = val;
 }
-console.log($13_phi_15);
+console.log($13_phi_14);

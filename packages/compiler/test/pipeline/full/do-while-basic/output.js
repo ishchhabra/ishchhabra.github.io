@@ -1,11 +1,13 @@
-let $18_phi_22 = 0;
-let $19_phi_23 = undefined;
+let i = 0;
+let $18_phi_21 = undefined;
+$18_phi_21 = i;
+let $19_phi_22 = undefined;
 while (true) {
-  const $0_1 = $18_phi_22 + 1;
-  if (!($0_1 < 10)) {
-    $19_phi_23 = $0_1;
+  i = $18_phi_21 + 1;
+  if (!(i < 10)) {
+    $19_phi_22 = i;
     break;
   }
-  $18_phi_22 = $0_1;
+  $18_phi_21 = i;
 }
-console.log($19_phi_23);
+console.log($19_phi_22);

@@ -1,16 +1,15 @@
-import type * as AST from "../estree";
 import type { Expression, PrivateIdentifier } from "oxc-parser";
 import { Environment } from "../../environment";
 import {
   ArrayPatternInstruction,
   AssignmentPatternInstruction,
-  DeclareLocalInstruction,
   LiteralInstruction,
   ObjectPatternInstruction,
   ObjectPropertyInstruction,
   Place,
   RestElementInstruction,
 } from "../../ir";
+import type * as AST from "../estree";
 import { type Scope } from "../scope/Scope";
 import { buildNode } from "./buildNode";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
@@ -18,7 +17,7 @@ import { getValueFromStaticKey } from "./getValueFromStaticKey";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
 
 /**
- * Builds an lval, emitting DeclareLocal at the leaf for let/const declarations.
+ * Builds an lval for a declaration or assignment target.
  *
  * @returns place -- the top-level Place representing this lval
  * @returns bindings -- all leaf identifier Places (for pattern instruction getDefs)
@@ -72,12 +71,8 @@ function buildIdentifierLVal(
   if (place === undefined) {
     throw new Error(`Unable to find the place for ${name} (${declarationId})`);
   }
-  place.identifier.name = name;
 
   if (kind !== null && kind !== "var") {
-    functionBuilder.addInstruction(
-      environment.createInstruction(DeclareLocalInstruction, place, kind),
-    );
     functionBuilder.markDeclarationInitialized(declarationId);
   }
 

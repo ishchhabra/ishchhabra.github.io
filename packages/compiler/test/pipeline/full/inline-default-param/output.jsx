@@ -5,15 +5,19 @@ function $0_0($3_0 = 5) {
 }
 const ARTICLES = [];
 export function Home() {
-  const [$48_0 = 5] = [];
-  const articles = ARTICLES.slice(0, $48_0).map(($10_0) => ({
+  const [$3_1 = 5] = [];
+  const articles = ARTICLES.slice(0, $3_1).map(($10_0) => ({
     slug: $10_0.slug,
   }));
   return (
     <div>
-      {articles.map(($28_0) => (
-        <span key={$28_0.slug}>{$28_0.slug}</span>
-      ))}
+      {ARTICLES.slice(0, $3_1)
+        .map(($10_0) => ({
+          slug: $10_0.slug,
+        }))
+        .map(($28_0) => (
+          <span key={$28_0.slug}>{$28_0.slug}</span>
+        ))}
     </div>
   );
 }

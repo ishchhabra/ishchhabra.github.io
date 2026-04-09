@@ -1,9 +1,9 @@
 import type * as AST from "../../estree";
 import type { Node, VariableDeclaration } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { DeclareLocalInstruction, LiteralInstruction, StoreLocalInstruction } from "../../../ir";
+import { type DeclarationKind, LiteralInstruction, StoreLocalInstruction } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
-import { DeclarationKind, FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { isBindingOwnedByScope } from "./isBindingOwnedByScope";
 import { isContextVariable } from "./isContextVariable";
 
@@ -72,8 +72,14 @@ function buildIdentifierBindings(
   if (scope.data.get(originalName) !== undefined) return;
 
   const identifier = environment.createIdentifier();
+  identifier.name = originalName;
   functionBuilder.registerDeclarationName(originalName, identifier.declarationId, scope);
-  functionBuilder.instantiateDeclaration(identifier.declarationId, declarationKind, originalName);
+  functionBuilder.instantiateDeclaration(
+    identifier.declarationId,
+    declarationKind,
+    originalName,
+    scope,
+  );
 
   // Mark context variables so SSA can skip them.
   if (binding && isContextVariable(binding, scope)) {
@@ -86,17 +92,12 @@ function buildIdentifierBindings(
     functionBuilder.currentBlock.id,
     place.id,
   );
+  environment.setDeclarationBindingPlace(identifier.declarationId, place.id);
 
   // Preserve `var`'s hoisted-and-initialized semantics in the emitted JS.
   // Reifying this as `let` would introduce TDZ behavior and break both
   // source-level hoisting and ES module circular import semantics.
   if (declarationKind === "var") {
-    const hoistId = environment.createIdentifier(identifier.declarationId);
-    hoistId.name = identifier.name;
-    const hoistPlace = environment.createPlace(hoistId);
-    functionBuilder.addInstruction(
-      environment.createInstruction(DeclareLocalInstruction, hoistPlace, "var"),
-    );
     const undefPlace = environment.createPlace(environment.createIdentifier());
     functionBuilder.addInstruction(
       environment.createInstruction(LiteralInstruction, undefPlace, undefined),
@@ -106,16 +107,12 @@ function buildIdentifierBindings(
       environment.createInstruction(
         StoreLocalInstruction,
         storePlace,
-        hoistPlace,
+        place,
         undefPlace,
         "var",
+        "declaration",
         [],
       ),
-    );
-    environment.registerDeclaration(
-      identifier.declarationId,
-      functionBuilder.currentBlock.id,
-      hoistPlace.id,
     );
   }
 }

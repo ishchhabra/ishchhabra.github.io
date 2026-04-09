@@ -147,6 +147,15 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
       // ternary arms).
       if (this.isReferencedByStructure(blockId)) continue;
 
+      // Structure-owning header blocks are not ordinary CFG blocks: codegen
+      // reconstructs source syntax from the structure attached to that exact
+      // block ID. Merging either direction would move executable instructions
+      // across the structure boundary and change semantics (for example,
+      // sinking pre-block declarations into a lexical block header or loop
+      // preheader work into the loop body).
+      if (this.functionIR.structures.has(blockId)) continue;
+      if (this.functionIR.structures.has(predId)) continue;
+
       const predBlock = this.functionIR.blocks.get(predId)!;
       const block = this.functionIR.blocks.get(blockId)!;
 
@@ -171,14 +180,6 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
             entry.blockId = predId;
           }
         }
-      }
-
-      // Transfer structure ownership (move — no use-chain change needed,
-      // just re-key). Use raw map ops since the structure object is unchanged.
-      const structure = this.functionIR.structures.get(blockId);
-      if (structure) {
-        this.functionIR.structures.delete(blockId);
-        this.functionIR.structures.set(predId, structure);
       }
 
       // Re-key phi operands: blockId → predId.

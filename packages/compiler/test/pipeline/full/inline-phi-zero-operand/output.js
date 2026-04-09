@@ -1,27 +1,37 @@
 function $0_0($1_0, $2_0, $3_0) {
-  let $40_phi_59 = undefined;
-  let $42_phi_61 = undefined;
-  let $44_phi_63 = undefined;
+  var x = undefined;
+  var y = undefined;
+  x = undefined;
+  y = undefined;
+  let $40_phi_55 = undefined;
+  let $42_phi_57 = undefined;
+  let $44_phi_59 = undefined;
   if ($1_0) {
-    let $45_phi_64 = undefined;
+    let $45_phi_60 = undefined;
     if ($2_0) {
-      $40_phi_59 = $2_0;
-      $42_phi_61 = undefined;
-      $45_phi_64 = $2_0;
+      x = $2_0;
+      $15_0 = $2_0;
+      $40_phi_55 = x;
+      $42_phi_57 = y;
+      $45_phi_60 = $15_0;
     } else {
-      $40_phi_59 = undefined;
-      $42_phi_61 = $3_0;
-      $45_phi_64 = $3_0;
+      y = $3_0;
+      $15_0 = $3_0;
+      $40_phi_55 = x;
+      $42_phi_57 = y;
+      $45_phi_60 = $15_0;
     }
-    $44_phi_63 =
-      ($45_phi_64,
+    $14_0 =
+      ($45_phi_60,
       {
-        x: $40_phi_59,
-        y: $42_phi_61,
+        x: $40_phi_55,
+        y: $42_phi_57,
       });
+    $44_phi_59 = $14_0;
   } else {
-    $44_phi_63 = {};
+    $14_0 = {};
+    $44_phi_59 = $14_0;
   }
-  return $44_phi_63;
+  return $44_phi_59;
 }
 console.log($0_0(globalThis.c, globalThis.a, globalThis.b));

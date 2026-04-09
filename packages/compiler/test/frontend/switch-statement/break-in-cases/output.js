@@ -1,19 +1,19 @@
 const action = "greet";
 let message = undefined;
-let $18_phi_23 = undefined;
-$18_phi_23 = message;
+let $18_phi_20 = undefined;
+$18_phi_20 = message;
 switch (action) {
   case "greet":
-    $1_3 = "hello";
-    $18_phi_23 = $1_3;
+    message = "hello";
+    $18_phi_20 = message;
     break;
   case "farewell":
-    $1_2 = "goodbye";
-    $18_phi_23 = $1_2;
+    message = "goodbye";
+    $18_phi_20 = message;
     break;
   default:
-    $1_1 = "unknown action";
-    $18_phi_23 = $1_1;
+    message = "unknown action";
+    $18_phi_20 = message;
     break;
 }
-console.log($18_phi_23);
+console.log($18_phi_20);

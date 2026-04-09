@@ -1,10 +1,10 @@
 let $6_0 = undefined;
 let $12_phi_16 = undefined;
 if (Math.random() > 0.5) {
-  $6_1 = 10;
-  $12_phi_16 = $6_1;
+  $6_0 = 10;
+  $12_phi_16 = $6_0;
 } else {
-  $6_2 = 20;
-  $12_phi_16 = $6_2;
+  $6_0 = 20;
+  $12_phi_16 = $6_0;
 }
 const value = $12_phi_16;

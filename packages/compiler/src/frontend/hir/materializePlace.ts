@@ -55,6 +55,7 @@ export function materializePlace(
       bindingPlace,
       valuePlace,
       "const",
+      "declaration",
     ),
   );
   return bindingPlace;

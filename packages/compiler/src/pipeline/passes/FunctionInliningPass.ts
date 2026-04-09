@@ -250,6 +250,19 @@ export class FunctionInliningPass extends BaseOptimizationPass {
    */
   private hasExternalReferences(funcIR: FunctionIR): boolean {
     const ownPlaceIds = new Set<IdentifierId>();
+
+    for (const param of funcIR.params) {
+      ownPlaceIds.add(param.identifier.id);
+    }
+    for (const bindings of funcIR.paramBindings) {
+      for (const binding of bindings) {
+        ownPlaceIds.add(binding.identifier.id);
+      }
+    }
+    for (const captureParam of funcIR.captureParams) {
+      ownPlaceIds.add(captureParam.identifier.id);
+    }
+
     for (const instr of funcIR.header) {
       ownPlaceIds.add(instr.place.identifier.id);
     }
@@ -258,9 +271,26 @@ export class FunctionInliningPass extends BaseOptimizationPass {
         ownPlaceIds.add(instr.place.identifier.id);
       }
     }
+
+    for (const instr of funcIR.header) {
+      for (const place of instr.getOperands()) {
+        if (!ownPlaceIds.has(place.identifier.id)) {
+          return true;
+        }
+      }
+    }
     for (const [, block] of funcIR.blocks) {
       for (const instr of block.instructions) {
         for (const place of instr.getOperands()) {
+          if (!ownPlaceIds.has(place.identifier.id)) {
+            return true;
+          }
+        }
+      }
+
+      const terminal = block.terminal;
+      if (terminal) {
+        for (const place of terminal.getOperands()) {
           if (!ownPlaceIds.has(place.identifier.id)) {
             return true;
           }
@@ -494,6 +524,24 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     rewriteMap: Map<Identifier, Place>,
   ) {
     const environment = moduleIR.environment;
+
+    const ensureClonedPlace = (place: Place) => {
+      if (rewriteMap.has(place.identifier)) {
+        return;
+      }
+      const identifier = environment.createIdentifier(place.identifier.declarationId);
+      rewriteMap.set(place.identifier, environment.createPlace(identifier));
+    };
+
+    for (const paramPlace of funcIR.params) {
+      ensureClonedPlace(paramPlace);
+    }
+    for (const bindings of funcIR.paramBindings) {
+      for (const binding of bindings) {
+        ensureClonedPlace(binding);
+      }
+    }
+
     for (const instr of funcIR.header) {
       const clonedInstr = instr.clone(moduleIR);
       rewriteMap.set(instr.place.identifier, clonedInstr.place);
@@ -534,6 +582,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
             elementPlace,
             argPlace,
             "const",
+            "declaration",
             bindings,
           ),
         );
@@ -588,6 +637,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
       leftArrayPatternPlace,
       rightArrayPatternPlace,
       "const",
+      "declaration",
       leftArrayPattern.bindings,
     );
 

@@ -8,6 +8,7 @@ import {
   LoadLocalInstruction,
   LoadStaticPropertyInstruction,
   ObjectExpressionInstruction,
+  ObjectDestructureInstruction,
   ObjectPatternInstruction,
   ObjectPropertyInstruction,
   RestElementInstruction,
@@ -132,19 +133,37 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
     for (const block of this.functionIR.blocks.values()) {
       for (let i = 0; i < block.instructions.length; i++) {
         const instr = block.instructions[i];
-        if (!(instr instanceof StoreLocalInstruction)) continue;
-        if (instr.bindings.length === 0) continue;
+        let valuePlace: Place;
+        let storeKind: StoreLocalInstruction["kind"];
+        let declarationKind: StoreLocalInstruction["type"];
+        let pattern: ObjectPatternInstruction | ObjectDestructureInstruction | null = null;
 
-        const pattern = this.findObjectPattern(block, i, instr.lval);
+        if (instr instanceof ObjectDestructureInstruction) {
+          valuePlace = instr.value;
+          storeKind = instr.kind;
+          declarationKind = instr.declarationKind ?? "const";
+          pattern = instr;
+        } else if (instr instanceof StoreLocalInstruction && instr.bindings.length > 0) {
+          valuePlace = instr.value;
+          storeKind = instr.kind;
+          declarationKind = instr.type;
+          pattern = this.findObjectPattern(block, i, instr.lval);
+        } else {
+          continue;
+        }
+
         if (!pattern) continue;
 
-        const objectExpr = instr.value.identifier.definer;
+        const objectExpr = valuePlace.identifier.definer;
         if (!(objectExpr instanceof ObjectExpressionInstruction)) continue;
 
         const objMap = this.buildObjectKeyToValue(objectExpr);
         if (!objMap) continue;
 
-        const replacements = this.matchPatternToObject(pattern, objMap);
+        const replacements =
+          pattern instanceof ObjectDestructureInstruction
+            ? this.matchDestructureToObject(pattern, objMap)
+            : this.matchPatternToObject(pattern, objMap);
         if (!replacements) continue;
 
         block.removeInstructionAt(i);
@@ -154,7 +173,14 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
           const id = makeInstructionId(this.environment.nextInstructionId++);
           const identifier = this.environment.createIdentifier();
           const place = this.environment.createPlace(identifier);
-          const scalar = new StoreLocalInstruction(id, place, lval, value, instr.type);
+          const scalar = new StoreLocalInstruction(
+            id,
+            place,
+            lval,
+            value,
+            declarationKind,
+            storeKind,
+          );
           block.insertInstructionAt(i + j, scalar);
         }
 
@@ -602,6 +628,26 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
       if (objValue === undefined) return null;
 
       replacements.push({ lval: prop.value, value: objValue });
+    }
+
+    return replacements;
+  }
+
+  private matchDestructureToObject(
+    pattern: ObjectDestructureInstruction,
+    objMap: Map<string, Place>,
+  ): Array<{ lval: Place; value: Place }> | null {
+    const replacements: Array<{ lval: Place; value: Place }> = [];
+
+    for (const property of pattern.properties) {
+      if (property.value.kind === "rest") return null;
+      if (property.value.kind === "assignment") return null;
+      if (property.computed || typeof property.key !== "string") return null;
+      if (property.value.kind !== "binding" || property.value.storage !== "local") return null;
+
+      const objValue = objMap.get(property.key);
+      if (objValue === undefined) return null;
+      replacements.push({ lval: property.value.place, value: objValue });
     }
 
     return replacements;

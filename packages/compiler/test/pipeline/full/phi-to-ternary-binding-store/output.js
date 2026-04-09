@@ -1,15 +1,10 @@
 function $0_0($1_0) {
-  let $19_phi_27 = undefined;
-  let $20_phi_28 = $1_0;
+  let result = $1_0;
+  let $16_phi_22 = undefined;
+  $16_phi_22 = result;
   for (const k of [1, 2]) {
-    if (k) {
-      const { x: x, ...rest } = $20_phi_28;
-      $19_phi_27 = rest;
-    } else {
-      $19_phi_27 = $1_0;
-    }
-    $20_phi_28 = $19_phi_27;
+    $16_phi_22 = k ? rest : $1_0;
   }
-  return $20_phi_28;
+  return $16_phi_22;
 }
 export { $0_0 as f };

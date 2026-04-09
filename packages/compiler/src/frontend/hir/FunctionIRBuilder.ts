@@ -7,6 +7,7 @@ import {
   BlockId,
   type ControlContext,
   createInstructionId,
+  type DeclarationKind,
   DeclarationId,
   Place,
   ReturnTerminal,
@@ -22,23 +23,7 @@ import { buildNode } from "./buildNode";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
 import { buildStatementList } from "./statements/buildStatementList";
 
-export type DeclarationKind =
-  | "var"
-  | "let"
-  | "const"
-  | "class"
-  | "function"
-  | "param"
-  | "import"
-  | "catch";
-
 export type DeclarationState = "uninitialized" | "initialized";
-
-export interface DeclarationBinding {
-  kind: DeclarationKind;
-  state: DeclarationState;
-  sourceName: string;
-}
 
 export class FunctionIRBuilder {
   public currentBlock: BasicBlock;
@@ -68,7 +53,7 @@ export class FunctionIRBuilder {
    * inlining) never requires modifying the function's blocks.
    */
   public readonly captureParams = new Map<DeclarationId, Place>();
-  public readonly declarationBindings = new Map<DeclarationId, DeclarationBinding>();
+  public readonly declarationStates = new Map<DeclarationId, DeclarationState>();
 
   constructor(
     public readonly params: AST.Pattern[],
@@ -206,29 +191,33 @@ export class FunctionIRBuilder {
   }
 
   public registerDeclarationSourceName(declarationId: DeclarationId, name: string) {
-    const declaration = this.declarationBindings.get(declarationId);
-    if (declaration !== undefined) {
-      declaration.sourceName = name;
+    const metadata = this.environment.getDeclarationMetadata(declarationId);
+    if (metadata !== undefined) {
+      metadata.sourceName = name;
     }
   }
 
-  public instantiateDeclaration(declarationId: DeclarationId, kind: DeclarationKind, name: string) {
-    if (!this.declarationBindings.has(declarationId)) {
-      this.declarationBindings.set(declarationId, {
-        kind,
-        state: getInitialDeclarationState(kind),
-        sourceName: name,
-      });
+  public instantiateDeclaration(
+    declarationId: DeclarationId,
+    kind: DeclarationKind,
+    name: string,
+    scope?: Scope,
+  ) {
+    this.environment.registerDeclarationMetadata(declarationId, {
+      kind,
+      sourceName: name,
+      scopeId: scope ? this.ensureIRScope(scope) : undefined,
+    });
+    if (!this.declarationStates.has(declarationId)) {
+      this.declarationStates.set(declarationId, getInitialDeclarationState(kind));
       return;
     }
-
     this.registerDeclarationSourceName(declarationId, name);
   }
 
   public markDeclarationInitialized(declarationId: DeclarationId) {
-    const declaration = this.declarationBindings.get(declarationId);
-    if (declaration !== undefined) {
-      declaration.state = "initialized";
+    if (this.declarationStates.has(declarationId)) {
+      this.declarationStates.set(declarationId, "initialized");
     }
   }
 
@@ -237,7 +226,7 @@ export class FunctionIRBuilder {
       return false;
     }
 
-    const declaration = this.declarationBindings.get(declarationId);
+    const declaration = this.environment.getDeclarationMetadata(declarationId);
     if (
       declaration === undefined ||
       (declaration.kind !== "let" && declaration.kind !== "const" && declaration.kind !== "class")
@@ -245,11 +234,11 @@ export class FunctionIRBuilder {
       return false;
     }
 
-    return declaration.state === "uninitialized";
+    return this.declarationStates.get(declarationId) === "uninitialized";
   }
 
   public getDeclarationSourceName(declarationId: DeclarationId): string | undefined {
-    return this.declarationBindings.get(declarationId)?.sourceName;
+    return this.environment.getDeclarationMetadata(declarationId)?.sourceName;
   }
 
   public isOwnDeclaration(declarationId: DeclarationId): boolean {

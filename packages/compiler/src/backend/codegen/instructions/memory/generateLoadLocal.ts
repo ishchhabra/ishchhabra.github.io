@@ -8,9 +8,7 @@ export function generateLoadLocalInstruction(
 ): t.Expression {
   let maybeNode = generator.places.get(instruction.value.id);
   if (!maybeNode) {
-    const name = instruction.value.identifier.name ?? `$${instruction.value.identifier.id}`;
-    maybeNode = t.identifier(name);
-    generator.places.set(instruction.value.id, maybeNode);
+    maybeNode = generator.getPlaceIdentifier(instruction.value);
   }
 
   if (t.isFunctionDeclaration(maybeNode)) {

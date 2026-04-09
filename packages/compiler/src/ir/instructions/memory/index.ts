@@ -6,5 +6,7 @@ export { LoadGlobalInstruction } from "./LoadGlobal";
 export { LoadLocalInstruction } from "./LoadLocal";
 export { LoadPhiInstruction } from "./LoadPhi";
 export { LoadStaticPropertyInstruction } from "./LoadStaticProperty";
+export { ArrayDestructureInstruction } from "./ArrayDestructure";
+export { ObjectDestructureInstruction } from "./ObjectDestructure";
 export { StoreContextInstruction } from "./StoreContext";
 export { StoreLocalInstruction } from "./StoreLocal";

@@ -6,7 +6,5 @@ export function generateDeclareLocalInstruction(
   instruction: DeclareLocalInstruction,
   generator: CodeGenerator,
 ): void {
-  const identifier = t.identifier(instruction.place.identifier.name);
-  generator.places.set(instruction.place.id, identifier);
-  generator.declarationKinds.set(instruction.place.identifier.declarationId, instruction.kind);
+  generator.places.set(instruction.place.id, generator.getPlaceIdentifier(instruction.place));
 }

@@ -1,8 +1,6 @@
 import type * as AST from "../estree";
 import { Environment } from "../../environment";
 import {
-  DeclareLocalInstruction,
-  ImportSpecifierInstruction,
   LoadContextInstruction,
   LoadGlobalInstruction,
   LoadLocalInstruction,
@@ -45,25 +43,15 @@ export function buildBindingIdentifier(
   const name = node.name;
 
   let place: Place | undefined;
-  // In case we already have a declaration place, we need to use that, so that
-  // we're using the place that was created when the binding was instantiated
-  // for the owning scope.
   const declarationId = builder.getDeclarationId(name, scope);
   if (declarationId !== undefined) {
-    const latestDeclaration = environment.getLatestDeclaration(declarationId);
-    place = environment.places.get(latestDeclaration.placeId);
+    place = environment.getDeclarationBinding(declarationId);
   }
 
   if (place === undefined) {
     const identifier = environment.createIdentifier();
     place = environment.createPlace(identifier);
   }
-
-  place.identifier.name = name;
-
-  const instruction = environment.createInstruction(DeclareLocalInstruction, place, "const");
-  builder.addInstruction(instruction);
-
   return place;
 }
 
@@ -79,12 +67,11 @@ function buildReferencedIdentifier(
   const identifier = environment.createIdentifier(declarationId);
   const place = environment.createPlace(identifier);
 
-  const declInstrId =
-    declarationId !== undefined ? environment.getDeclarationInstruction(declarationId) : undefined;
+  const declarationKind =
+    declarationId !== undefined ? environment.getDeclarationMetadata(declarationId)?.kind : undefined;
   if (
     declarationId === undefined ||
-    (declInstrId !== undefined &&
-      environment.instructions.get(declInstrId) instanceof ImportSpecifierInstruction)
+    declarationKind === "import"
   ) {
     const instruction = environment.createInstruction(LoadGlobalInstruction, place, name);
     builder.addInstruction(instruction);

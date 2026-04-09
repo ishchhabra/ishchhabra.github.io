@@ -1,10 +1,10 @@
 let number = 5;
-let $11_phi_15 = undefined;
+let $11_phi_13 = undefined;
 if (number > 0) {
-  $0_1 = 10;
-  $11_phi_15 = 10;
+  number = 10;
+  $11_phi_13 = number;
 } else {
-  $0_2 = 20;
-  $11_phi_15 = 20;
+  number = 20;
+  $11_phi_13 = number;
 }
-const number2 = $11_phi_15;
+const number2 = $11_phi_13;

@@ -1,4 +1,21 @@
 export { BasicBlock, makeBlockId, type BlockId } from "./Block";
+export {
+  getCodegenDeclarationKind,
+  type DeclarationKind,
+  type DeclarationMetadata,
+} from "./Declaration";
+export {
+  destructureTargetHasObservableWrites,
+  getDestructureTargetDefs,
+  getDestructureTargetOperands,
+  rewriteDestructureTarget,
+  type ArrayDestructureTarget,
+  type DestructureBindingStorage,
+  type DestructureBindingTarget,
+  type DestructureObjectProperty,
+  type DestructureTarget,
+  type ObjectDestructureTarget,
+} from "./Destructure";
 export type { ControlContext } from "./ControlContext";
 export {
   Identifier,

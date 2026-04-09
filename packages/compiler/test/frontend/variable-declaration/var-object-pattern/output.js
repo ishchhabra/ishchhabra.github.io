@@ -1,3 +1,3 @@
 var x = undefined;
-var { x: x } = source;
+var { x } = source;
 console.log(x);

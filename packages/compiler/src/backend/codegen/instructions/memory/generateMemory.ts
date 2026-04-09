@@ -1,5 +1,6 @@
 import * as t from "@babel/types";
 import {
+  ArrayDestructureInstruction,
   CopyInstruction,
   LoadContextInstruction,
   LoadDynamicPropertyInstruction,
@@ -7,6 +8,7 @@ import {
   LoadLocalInstruction,
   LoadPhiInstruction,
   MemoryInstruction,
+  ObjectDestructureInstruction,
   StoreContextInstruction,
   StoreLocalInstruction,
 } from "../../../../ir";
@@ -15,12 +17,14 @@ import { StoreDynamicPropertyInstruction } from "../../../../ir/instructions/mem
 import { StoreStaticPropertyInstruction } from "../../../../ir/instructions/memory/StoreStaticProperty";
 import { CodeGenerator } from "../../../CodeGenerator";
 import { generateCopyInstruction } from "./generateCopy";
+import { generateArrayDestructureInstruction } from "./generateArrayDestructure";
 import { generateLoadContextInstruction } from "./generateLoadContext";
 import { generateLoadDynamicPropertyInstruction } from "./generateLoadDynamicProperty";
 import { generateLoadGlobalInstruction } from "./generateLoadGlobal";
 import { generateLoadLocalInstruction } from "./generateLoadLocal";
 import { generateLoadPhiInstruction } from "./generateLoadPhi";
 import { generateLoadStaticPropertyInstruction } from "./generateLoadStaticProperty";
+import { generateObjectDestructureInstruction } from "./generateObjectDestructure";
 import { generateStoreContextInstruction } from "./generateStoreContext";
 import { generateStoreDynamicPropertyInstruction } from "./generateStoreDynamicProperty";
 import { generateStoreLocalInstruction } from "./generateStoreLocal";
@@ -30,7 +34,9 @@ export function generateMemoryInstruction(
   instruction: MemoryInstruction,
   generator: CodeGenerator,
 ): t.Node {
-  if (instruction instanceof CopyInstruction) {
+  if (instruction instanceof ArrayDestructureInstruction) {
+    return generateArrayDestructureInstruction(instruction, generator);
+  } else if (instruction instanceof CopyInstruction) {
     return generateCopyInstruction(instruction, generator);
   } else if (instruction instanceof LoadContextInstruction) {
     return generateLoadContextInstruction(instruction, generator);
@@ -44,6 +50,8 @@ export function generateMemoryInstruction(
     return generateLoadStaticPropertyInstruction(instruction, generator);
   } else if (instruction instanceof LoadDynamicPropertyInstruction) {
     return generateLoadDynamicPropertyInstruction(instruction, generator);
+  } else if (instruction instanceof ObjectDestructureInstruction) {
+    return generateObjectDestructureInstruction(instruction, generator);
   } else if (instruction instanceof StoreContextInstruction) {
     return generateStoreContextInstruction(instruction, generator);
   } else if (instruction instanceof StoreLocalInstruction) {

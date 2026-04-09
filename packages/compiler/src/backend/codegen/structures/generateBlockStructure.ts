@@ -9,6 +9,14 @@ export function generateBlockStructure(
   functionIR: FunctionIR,
   generator: CodeGenerator,
 ): Array<t.Statement> {
+  const headerBlock = functionIR.blocks.get(structure.header);
+  if (headerBlock === undefined) {
+    throw new Error(`Block ${structure.header} not found`);
+  }
+  if (headerBlock.instructions.length > 0) {
+    throw new Error("BlockStructure header must not contain ordinary instructions");
+  }
+
   // Reserve the exit block so the body's fallthrough jump doesn't inline it
   // inside the explicit block statement.
   generator.generatedBlocks.add(structure.exit);

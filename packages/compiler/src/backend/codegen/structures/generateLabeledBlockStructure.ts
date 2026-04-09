@@ -9,6 +9,14 @@ export function generateLabeledBlockStructure(
   functionIR: FunctionIR,
   generator: CodeGenerator,
 ): Array<t.Statement> {
+  const headerBlock = functionIR.blocks.get(structure.header);
+  if (headerBlock === undefined) {
+    throw new Error(`Block ${structure.header} not found`);
+  }
+  if (headerBlock.instructions.length > 0) {
+    throw new Error("LabeledBlockStructure header must not contain ordinary instructions");
+  }
+
   // Reserve the fallthrough (exit) block so that JumpTerminals inside
   // the body emit `break label` instead of inlining the exit block.
   generator.generatedBlocks.add(structure.fallthrough);

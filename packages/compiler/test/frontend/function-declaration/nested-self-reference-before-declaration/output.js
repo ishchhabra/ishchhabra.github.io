@@ -10,11 +10,11 @@ function $0_0($1_0) {
       let $46_0 = undefined;
       let $53_phi_72 = undefined;
       if (typeof point.offset === "number" && point.offset > -1) {
-        $46_1 = point.offset;
-        $53_phi_72 = $46_1;
+        $46_0 = point.offset;
+        $53_phi_72 = $46_0;
       } else {
-        $46_2 = undefined;
-        $53_phi_72 = $46_2;
+        $46_0 = undefined;
+        $53_phi_72 = $46_0;
       }
       return {
         line: point.line,

@@ -1,7 +1,6 @@
 import type * as AST from "../../estree";
 import type { Node } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { DeclareLocalInstruction } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { isContextVariable } from "./isContextVariable";
@@ -85,7 +84,7 @@ function instantiateIdentifierParamBinding(
   const place = environment.createPlace(identifier);
 
   functionBuilder.registerDeclarationName(originalName, identifier.declarationId, scope);
-  functionBuilder.instantiateDeclaration(identifier.declarationId, "param", originalName);
+  functionBuilder.instantiateDeclaration(identifier.declarationId, "param", originalName, scope);
 
   if (binding && isContextVariable(binding, scope)) {
     environment.contextDeclarationIds.add(identifier.declarationId);
@@ -96,7 +95,5 @@ function instantiateIdentifierParamBinding(
     functionBuilder.currentBlock.id,
     place.id,
   );
-  functionBuilder.header.push(
-    environment.createInstruction(DeclareLocalInstruction, place, "const"),
-  );
+  environment.setDeclarationBindingPlace(identifier.declarationId, place.id);
 }

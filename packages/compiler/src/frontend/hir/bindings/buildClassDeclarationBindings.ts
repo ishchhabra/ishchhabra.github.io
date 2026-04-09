@@ -1,6 +1,5 @@
 import type { Class } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { DeclareLocalInstruction } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { isBindingOwnedByScope } from "./isBindingOwnedByScope";
@@ -26,7 +25,7 @@ export function buildClassDeclarationBindings(
 
   const identifier = environment.createIdentifier();
   functionBuilder.registerDeclarationName(idNode.name, identifier.declarationId, scope);
-  functionBuilder.instantiateDeclaration(identifier.declarationId, "class", idNode.name);
+  functionBuilder.instantiateDeclaration(identifier.declarationId, "class", idNode.name, scope);
 
   // Mark context variables so SSA can skip them.
   if (binding && isContextVariable(binding, scope)) {
@@ -39,7 +38,5 @@ export function buildClassDeclarationBindings(
     functionBuilder.currentBlock.id,
     place.id,
   );
-  functionBuilder.addInstruction(
-    environment.createInstruction(DeclareLocalInstruction, place, "const"),
-  );
+  environment.setDeclarationBindingPlace(identifier.declarationId, place.id);
 }

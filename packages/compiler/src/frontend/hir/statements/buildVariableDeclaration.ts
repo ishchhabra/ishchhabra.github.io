@@ -1,9 +1,16 @@
 import type * as AST from "../../estree";
 import type { VariableDeclaration, VariableDeclarator } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { Place, StoreContextInstruction, StoreLocalInstruction } from "../../../ir";
+import {
+  ArrayDestructureInstruction,
+  ObjectDestructureInstruction,
+  Place,
+  StoreContextInstruction,
+  StoreLocalInstruction,
+} from "../../../ir";
 import { LoadGlobalInstruction } from "../../../ir/instructions/memory/LoadGlobal";
 import { type Scope } from "../../scope/Scope";
+import { buildDestructureDeclarationTarget } from "../buildDestructureDeclarationTarget";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildLVal } from "../buildLVal";
@@ -41,6 +48,42 @@ export function buildVariableDeclaration(
       throw new Error("Value place must be a single place");
     }
 
+    if (id.type === "ArrayPattern" || id.type === "ObjectPattern") {
+      const target = buildDestructureDeclarationTarget(
+        id as AST.Pattern,
+        scope,
+        functionBuilder,
+        moduleBuilder,
+        environment,
+        kind,
+      );
+      const place = environment.createPlace(environment.createIdentifier());
+      let instruction;
+      if (target.kind === "array") {
+        instruction = environment.createInstruction(
+          ArrayDestructureInstruction,
+          place,
+          target.elements,
+          valuePlace,
+          "declaration",
+          kind,
+        );
+      } else if (target.kind === "object") {
+        instruction = environment.createInstruction(
+          ObjectDestructureInstruction,
+          place,
+          target.properties,
+          valuePlace,
+          "declaration",
+          kind,
+        );
+      } else {
+        throw new Error(`Unsupported declaration destructure target: ${target.kind}`);
+      }
+      functionBuilder.addInstruction(instruction);
+      return place;
+    }
+
     const { place: lvalPlace, bindings } = buildLVal(
       id as AST.Pattern,
       scope,
@@ -75,6 +118,7 @@ export function buildVariableDeclaration(
           lvalPlace,
           valuePlace,
           kind,
+          contextKind,
           bindings,
         );
     functionBuilder.addInstruction(instruction);

@@ -1,8 +1,9 @@
 let x = 0;
-let $17_phi_20 = 0;
+let $17_phi_19 = undefined;
+$17_phi_19 = x;
 if (globalThis.cond) {
-  $0_1 = globalThis.compute();
-  console.log($0_1);
-  $17_phi_20 = $0_1;
+  x = globalThis.compute();
+  console.log(x);
+  $17_phi_19 = x;
 }
-console.log($17_phi_20);
+console.log($17_phi_19);

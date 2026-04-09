@@ -1,3 +1,2 @@
 let x = 10;
-$0_2 = 20;
-const result = 40;
+const result = (false ? 10 : 20) * 2;
