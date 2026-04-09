@@ -1,9 +1,4 @@
-import type {
-  ClassElement,
-  Function,
-  MethodDefinition,
-  PropertyDefinition,
-} from "oxc-parser";
+import type { ClassElement, Function, MethodDefinition, PropertyDefinition } from "oxc-parser";
 import { Environment } from "../../environment";
 import {
   ClassMethodInstruction,
