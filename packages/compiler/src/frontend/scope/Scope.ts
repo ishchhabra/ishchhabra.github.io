@@ -192,14 +192,15 @@ function visitNode(node: Node, scope: Scope, scopeMap: ScopeMap): void {
       break;
 
     case "ClassExpression": {
+      // ECMA-262: optional BindingIdentifier is scoped to the class (visible in the
+      // body). ClassHeritage is evaluated in the surrounding lexical environment.
+      const outer = scope;
+      const classScope = new Scope(outer, "block");
+      scopeMap.set(node, classScope);
       if (node.id) {
-        const classScope = new Scope(scope, "block");
-        scopeMap.set(node, classScope);
         registerBinding(node.id.name, "class", classScope);
-        visitClassBody(node, classScope, scopeMap);
-      } else {
-        visitClassBody(node, scope, scopeMap);
       }
+      visitClassBody(node, outer, classScope, scopeMap);
       break;
     }
 
@@ -207,7 +208,11 @@ function visitNode(node: Node, scope: Scope, scopeMap: ScopeMap): void {
       if (node.id) {
         registerBinding(node.id.name, "class", scope);
       }
-      visitClassBody(node, scope, scopeMap);
+      // Class body elements use an inner contour so program/function hoisting
+      // inventories on the outer scope are not applied when lowering the body.
+      const classBodyScope = new Scope(scope, "block");
+      scopeMap.set(node.body, classBodyScope);
+      visitClassBody(node, scope, classBodyScope, scopeMap);
       break;
     }
 
@@ -666,6 +671,17 @@ function collectReferences(node: Node, scope: Scope, scopeMap: ScopeMap): void {
       return;
     }
 
+    case "ClassDeclaration": {
+      const classBodyScope = scopeMap.get(node.body) ?? scope;
+      if (node.superClass) {
+        collectRefFromExpr(node.superClass, scope, scopeMap);
+      }
+      if (node.body) {
+        collectReferences(node.body, classBodyScope, scopeMap);
+      }
+      return;
+    }
+
     case "ForStatement": {
       const forScope = scopeMap.get(node) ?? scope;
       if (node.init) {
@@ -920,9 +936,15 @@ function addMutation(id: AST.Identifier, scope: Scope): void {
   }
 }
 
-function visitClassBody(node: Class, scope: Scope, scopeMap: ScopeMap): void {
-  if (node.superClass) visitNode(node.superClass, scope, scopeMap);
-  if (node.body) visitNode(node.body, scope, scopeMap);
+/** ClassHeritage uses `heritageScope`; ClassBody uses `bodyScope` (per ECMA-262). */
+function visitClassBody(
+  node: Class,
+  heritageScope: Scope,
+  bodyScope: Scope,
+  scopeMap: ScopeMap,
+): void {
+  if (node.superClass) visitNode(node.superClass, heritageScope, scopeMap);
+  if (node.body) visitNode(node.body, bodyScope, scopeMap);
 }
 
 // -----------------------------------------------------------------------

@@ -4,6 +4,7 @@ import {
   BinaryExpressionInstruction,
   CallExpressionInstruction,
   ClassMethodInstruction,
+  ClassPropertyInstruction,
   HoleInstruction,
   LiteralInstruction,
   LogicalExpressionInstruction,
@@ -30,6 +31,7 @@ import { CodeGenerator } from "../../../CodeGenerator";
 import { generateArrayExpressionInstruction } from "./generateArrayExpression";
 import { generateClassExpressionInstruction } from "./generateClassExpression";
 import { generateClassMethodInstruction } from "./generateClassMethod";
+import { generateClassPropertyInstruction } from "./generateClassProperty";
 import { generateAwaitExpressionInstruction } from "./generateAwaitExpression";
 import { generateArrowFunctionExpressionInstruction } from "./generateArrowFunctionExpression";
 import { generateBinaryExpressionInstruction } from "./generateBinaryExpression";
@@ -61,11 +63,13 @@ export function generateValueInstruction(
   instruction: ValueInstruction,
   functionIR: FunctionIR,
   generator: CodeGenerator,
-): t.Expression | t.ObjectMethod | t.ObjectProperty | t.ClassMethod | null {
+): t.Expression | t.ObjectMethod | t.ObjectProperty | t.ClassMethod | t.ClassProperty | null {
   if (instruction instanceof ClassExpressionInstruction) {
     return generateClassExpressionInstruction(instruction, generator);
   } else if (instruction instanceof ClassMethodInstruction) {
     return generateClassMethodInstruction(instruction, generator);
+  } else if (instruction instanceof ClassPropertyInstruction) {
+    return generateClassPropertyInstruction(instruction, generator);
   } else if (instruction instanceof ArrayExpressionInstruction) {
     return generateArrayExpressionInstruction(instruction, generator);
   } else if (instruction instanceof AwaitExpressionInstruction) {

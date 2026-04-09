@@ -1,9 +1,9 @@
 const Foo = class {
+  x = 1;
+  constructor($5_0) {
+    this.y = $5_0;
+  }
   getX() {
     return this.x;
-  }
-  constructor($6_0) {
-    this.x = 1;
-    this.y = $6_0;
   }
 };

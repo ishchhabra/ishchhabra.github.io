@@ -44,10 +44,10 @@ export function buildClassDeclaration(
     superClassPlace = built;
   }
 
-  const { elements, staticFieldEmitters } = buildClassBody(
+  const classBodyScope = functionBuilder.scopeFor(node.body);
+  const elements = buildClassBody(
     node.body.body,
-    node.superClass != null,
-    scope,
+    classBodyScope,
     functionBuilder,
     moduleBuilder,
     environment,
@@ -83,11 +83,6 @@ export function buildClassDeclaration(
   );
 
   functionBuilder.markDeclarationInitialized(declarationId);
-
-  // Emit static field stores after the class declaration.
-  for (const emit of staticFieldEmitters) {
-    emit(classPlace);
-  }
 
   return classPlace;
 }

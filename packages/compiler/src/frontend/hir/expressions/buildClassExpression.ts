@@ -19,11 +19,10 @@ export function buildClassExpression(
   }
 
   const classScope = functionBuilder.scopeFor(node);
-  const innerScope = node.id != null ? classScope : scope;
 
   let identifierPlace: Place | null = null;
   if (node.id != null) {
-    const built = buildNode(node.id, innerScope, functionBuilder, moduleBuilder, environment);
+    const built = buildNode(node.id, classScope, functionBuilder, moduleBuilder, environment);
     if (built === undefined || Array.isArray(built)) {
       throw new Error("Class expression identifier must be a single place");
     }
@@ -32,23 +31,16 @@ export function buildClassExpression(
 
   let superClassPlace: Place | null = null;
   if (node.superClass != null) {
-    const built = buildNode(
-      node.superClass,
-      innerScope,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
+    const built = buildNode(node.superClass, scope, functionBuilder, moduleBuilder, environment);
     if (built === undefined || Array.isArray(built)) {
       throw new Error("Class superClass must be a single place");
     }
     superClassPlace = built;
   }
 
-  const { elements, staticFieldEmitters } = buildClassBody(
+  const elements = buildClassBody(
     node.body.body,
-    node.superClass != null,
-    innerScope,
+    classScope,
     functionBuilder,
     moduleBuilder,
     environment,
@@ -64,11 +56,6 @@ export function buildClassExpression(
     elements,
   );
   functionBuilder.addInstruction(instruction);
-
-  // Emit static field stores after the class instruction.
-  for (const emit of staticFieldEmitters) {
-    emit(place);
-  }
 
   return place;
 }
