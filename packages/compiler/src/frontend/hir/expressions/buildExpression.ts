@@ -50,7 +50,7 @@ export function buildExpression(
     case "CallExpression":
       return buildCallExpression(node, scope, functionBuilder, moduleBuilder, environment);
     case "ClassExpression":
-      return buildClassExpression(node, scope, functionBuilder, environment);
+      return buildClassExpression(node, scope, functionBuilder, moduleBuilder, environment);
     case "ConditionalExpression":
       return buildConditionalExpression(node, scope, functionBuilder, moduleBuilder, environment);
     case "FunctionExpression":

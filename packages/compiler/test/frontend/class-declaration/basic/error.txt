@@ -1,1 +1,0 @@
-Unsupported: class declarations with bodies or extends clauses

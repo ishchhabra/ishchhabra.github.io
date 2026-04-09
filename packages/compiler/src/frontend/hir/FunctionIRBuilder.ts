@@ -112,7 +112,15 @@ export class FunctionIRBuilder {
     return this.scopeMap.get(node) ?? this.scope;
   }
 
-  public build(): FunctionIR {
+  /**
+   * Build the function body into a FunctionIR.
+   *
+   * @param preamble - Optional callback invoked after scope bindings are
+   *   instantiated but before the body statements are built. Used by the
+   *   class field desugaring to inject `this.<key> = <value>` instructions
+   *   at the start of a constructor body.
+   */
+  public build(preamble?: (builder: FunctionIRBuilder) => void): FunctionIR {
     const builtParams = buildFunctionParams(
       this.params,
       this.scope,
@@ -153,6 +161,9 @@ export class FunctionIRBuilder {
         this.environment,
         this.moduleBuilder,
       );
+      if (preamble) {
+        preamble(this);
+      }
       const body = effectiveBody.body;
       buildStatementList(
         body as Statement[],

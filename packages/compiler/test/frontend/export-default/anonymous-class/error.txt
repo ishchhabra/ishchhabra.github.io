@@ -1,1 +1,0 @@
-Unsupported: class expressions with bodies or extends clauses

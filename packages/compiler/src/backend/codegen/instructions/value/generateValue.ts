@@ -3,6 +3,7 @@ import {
   ArrayExpressionInstruction,
   BinaryExpressionInstruction,
   CallExpressionInstruction,
+  ClassMethodInstruction,
   HoleInstruction,
   LiteralInstruction,
   LogicalExpressionInstruction,
@@ -28,6 +29,7 @@ import { ClassExpressionInstruction } from "../../../../ir/instructions/value/Cl
 import { CodeGenerator } from "../../../CodeGenerator";
 import { generateArrayExpressionInstruction } from "./generateArrayExpression";
 import { generateClassExpressionInstruction } from "./generateClassExpression";
+import { generateClassMethodInstruction } from "./generateClassMethod";
 import { generateAwaitExpressionInstruction } from "./generateAwaitExpression";
 import { generateArrowFunctionExpressionInstruction } from "./generateArrowFunctionExpression";
 import { generateBinaryExpressionInstruction } from "./generateBinaryExpression";
@@ -48,16 +50,22 @@ import { generateTemplateLiteralInstruction } from "./generateTemplateLiteral";
 import { generateThisExpressionInstruction } from "./generateThisExpression";
 import { generateTaggedTemplateExpressionInstruction } from "./generateTaggedTemplateExpression";
 import { generateUnaryExpressionInstruction } from "./generateUnaryExpression";
+import { SuperCallInstruction } from "../../../../ir/instructions/value/SuperCall";
+import { SuperPropertyInstruction } from "../../../../ir/instructions/value/SuperProperty";
 import { YieldExpressionInstruction } from "../../../../ir/instructions/value/YieldExpression";
+import { generateSuperCallInstruction } from "./generateSuperCall";
+import { generateSuperPropertyInstruction } from "./generateSuperProperty";
 import { generateYieldExpressionInstruction } from "./generateYieldExpression";
 
 export function generateValueInstruction(
   instruction: ValueInstruction,
   functionIR: FunctionIR,
   generator: CodeGenerator,
-): t.Expression | t.ObjectMethod | t.ObjectProperty | null {
+): t.Expression | t.ObjectMethod | t.ObjectProperty | t.ClassMethod | null {
   if (instruction instanceof ClassExpressionInstruction) {
     return generateClassExpressionInstruction(instruction, generator);
+  } else if (instruction instanceof ClassMethodInstruction) {
+    return generateClassMethodInstruction(instruction, generator);
   } else if (instruction instanceof ArrayExpressionInstruction) {
     return generateArrayExpressionInstruction(instruction, generator);
   } else if (instruction instanceof AwaitExpressionInstruction) {
@@ -100,6 +108,10 @@ export function generateValueInstruction(
     return generateTaggedTemplateExpressionInstruction(instruction, generator);
   } else if (instruction instanceof UnaryExpressionInstruction) {
     return generateUnaryExpressionInstruction(instruction, generator);
+  } else if (instruction instanceof SuperCallInstruction) {
+    return generateSuperCallInstruction(instruction, generator);
+  } else if (instruction instanceof SuperPropertyInstruction) {
+    return generateSuperPropertyInstruction(instruction, generator);
   } else if (instruction instanceof YieldExpressionInstruction) {
     return generateYieldExpressionInstruction(instruction, generator);
   }

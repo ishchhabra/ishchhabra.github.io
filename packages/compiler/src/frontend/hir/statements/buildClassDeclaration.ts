@@ -1,8 +1,10 @@
 import type { Class } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { StoreLocalInstruction } from "../../../ir";
+import { Place, StoreLocalInstruction } from "../../../ir";
 import { ClassExpressionInstruction } from "../../../ir/instructions/value/ClassExpression";
 import { type Scope } from "../../scope/Scope";
+import { buildClassBody } from "../buildClassElements";
+import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
@@ -10,11 +12,11 @@ export function buildClassDeclaration(
   node: Class,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
-  _moduleBuilder: ModuleIRBuilder,
+  moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  if (node.body.body.length > 0 || node.superClass != null) {
-    throw new Error("Unsupported: class declarations with bodies or extends clauses");
+  if (node.decorators && node.decorators.length > 0) {
+    throw new Error("Unsupported: class decorators");
   }
 
   const id = node.id;
@@ -33,11 +35,35 @@ export function buildClassDeclaration(
     throw new Error(`Unable to find the place for ${id.name} (${declarationId})`);
   }
 
+  let superClassPlace: Place | null = null;
+  if (node.superClass != null) {
+    const built = buildNode(node.superClass, scope, functionBuilder, moduleBuilder, environment);
+    if (built === undefined || Array.isArray(built)) {
+      throw new Error("Class superClass must be a single place");
+    }
+    superClassPlace = built;
+  }
+
+  const { elements, staticFieldEmitters } = buildClassBody(
+    node.body.body,
+    node.superClass != null,
+    scope,
+    functionBuilder,
+    moduleBuilder,
+    environment,
+  );
+
+  // For class declarations, the binding lives in the enclosing scope and is
+  // wired up by the StoreLocal below. The class expression itself does not
+  // need an inner name binding (named class expressions are only meaningful
+  // when the class body references its own name from a non-enclosing scope).
   const classPlace = environment.createPlace(environment.createIdentifier(declarationId));
   const instruction = environment.createInstruction(
     ClassExpressionInstruction,
     classPlace,
-    identifierPlace,
+    null,
+    superClassPlace,
+    elements,
   );
   functionBuilder.addInstruction(instruction);
   environment.registerDeclarationInstruction(classPlace, instruction);
@@ -57,5 +83,11 @@ export function buildClassDeclaration(
   );
 
   functionBuilder.markDeclarationInitialized(declarationId);
+
+  // Emit static field stores after the class declaration.
+  for (const emit of staticFieldEmitters) {
+    emit(classPlace);
+  }
+
   return classPlace;
 }

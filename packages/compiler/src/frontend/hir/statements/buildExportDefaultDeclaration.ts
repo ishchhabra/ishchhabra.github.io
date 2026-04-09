@@ -33,7 +33,13 @@ export function buildExportDefaultDeclaration(
       environment,
     );
   } else if (declaration.type === "ClassDeclaration" && declaration.id === null) {
-    declarationPlace = buildClassExpression(declaration, scope, functionBuilder, environment);
+    declarationPlace = buildClassExpression(
+      declaration,
+      scope,
+      functionBuilder,
+      moduleBuilder,
+      environment,
+    );
   } else if (declaration.type === "FunctionDeclaration" && declaration.id != null) {
     // Named function declarations are already built during scope
     // instantiation. Reuse the existing declaration node directly.

@@ -1,7 +1,13 @@
 import type { MemberExpression, UpdateExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { BinaryExpressionInstruction, LiteralInstruction, Place } from "../../../ir";
+import {
+  BinaryExpressionInstruction,
+  LiteralInstruction,
+  Place,
+  SuperPropertyInstruction,
+} from "../../../ir";
 import { type Scope } from "../../scope/Scope";
+import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { materializePlace } from "../materializePlace";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -18,8 +24,49 @@ export function buildMemberExpression(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
+  // super.foo or super[expr] — emit a dedicated SuperPropertyInstruction.
+  // `super` is not a value and must not be lowered to a Place.
+  if (node.object.type === "Super") {
+    return buildSuperPropertyAccess(node, scope, functionBuilder, moduleBuilder, environment);
+  }
+
   const reference = buildMemberReference(node, scope, functionBuilder, moduleBuilder, environment);
   return loadMemberReference(reference, functionBuilder, environment);
+}
+
+function buildSuperPropertyAccess(
+  node: MemberExpression,
+  scope: Scope,
+  functionBuilder: FunctionIRBuilder,
+  moduleBuilder: ModuleIRBuilder,
+  environment: Environment,
+): Place {
+  let propertyPlace: Place;
+  if (!node.computed && node.property.type === "Identifier") {
+    // Non-computed key → emit as a LiteralInstruction so the name survives SSA.
+    const keyId = environment.createIdentifier();
+    propertyPlace = environment.createPlace(keyId);
+    functionBuilder.addInstruction(
+      environment.createInstruction(LiteralInstruction, propertyPlace, node.property.name),
+    );
+  } else {
+    const built = buildNode(node.property, scope, functionBuilder, moduleBuilder, environment);
+    if (built === undefined || Array.isArray(built)) {
+      throw new Error("Super property key must be a single place");
+    }
+    propertyPlace = built;
+  }
+
+  const identifier = environment.createIdentifier();
+  const place = environment.createPlace(identifier);
+  const instruction = environment.createInstruction(
+    SuperPropertyInstruction,
+    place,
+    propertyPlace,
+    node.computed,
+  );
+  functionBuilder.addInstruction(instruction);
+  return place;
 }
 
 /**
