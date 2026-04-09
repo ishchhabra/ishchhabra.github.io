@@ -1,4 +1,4 @@
-import { Environment } from "../../environment";
+import type { ModuleIR } from "../core/ModuleIR";
 import { BaseInstruction, InstructionId } from "../base";
 import { Identifier, Place } from "../core";
 
@@ -18,10 +18,10 @@ export class SpreadElementInstruction extends BaseInstruction {
     super(id, place);
   }
 
-  public clone(environment: Environment): SpreadElementInstruction {
-    const identifier = environment.createIdentifier();
-    const place = environment.createPlace(identifier);
-    return environment.createInstruction(SpreadElementInstruction, place, this.argument);
+  public clone(moduleIR: ModuleIR): SpreadElementInstruction {
+    const identifier = moduleIR.environment.createIdentifier();
+    const place = moduleIR.environment.createPlace(identifier);
+    return moduleIR.environment.createInstruction(SpreadElementInstruction, place, this.argument);
   }
 
   rewrite(values: Map<Identifier, Place>): BaseInstruction {

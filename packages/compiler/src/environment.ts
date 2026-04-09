@@ -7,7 +7,6 @@ import {
   makeBlockId,
   makeInstructionId,
 } from "./ir";
-import { FunctionIR, FunctionIRId, makeFunctionIRId } from "./ir/core/FunctionIR";
 import {
   DeclarationId,
   Identifier,
@@ -32,7 +31,6 @@ export class Environment {
   public readonly places: Map<PlaceId, Place> = new Map();
   public readonly instructions: Map<InstructionId, BaseInstruction> = new Map();
   public readonly blocks: Map<BlockId, BasicBlock> = new Map();
-  public readonly functions: Map<FunctionIRId, FunctionIR> = new Map();
   public readonly scopes: Map<LexicalScopeId, LexicalScope> = new Map();
 
   private nextScopeId = 0;
@@ -146,13 +144,6 @@ export class Environment {
     const block = new BasicBlock(blockId, scopeId, [], undefined);
     this.blocks.set(blockId, block);
     return block;
-  }
-
-  public createFunction(): FunctionIR {
-    const functionId = makeFunctionIRId(this.nextFunctionId++);
-    const functionIR = new FunctionIR(functionId, [], [], [], false, false, new Map(), new Map());
-    this.functions.set(functionId, functionIR);
-    return functionIR;
   }
 
   public registerDeclaration(declarationId: DeclarationId, blockId: BlockId, placeId: PlaceId) {

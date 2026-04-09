@@ -1,4 +1,4 @@
-import { Environment } from "../../../environment";
+import type { ModuleIR } from "../../core/ModuleIR";
 import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
 
@@ -11,10 +11,14 @@ export class SequenceExpressionInstruction extends ValueInstruction {
     super(id, place);
   }
 
-  public clone(environment: Environment): SequenceExpressionInstruction {
-    const identifier = environment.createIdentifier();
-    const place = environment.createPlace(identifier);
-    return environment.createInstruction(SequenceExpressionInstruction, place, this.expressions);
+  public clone(moduleIR: ModuleIR): SequenceExpressionInstruction {
+    const identifier = moduleIR.environment.createIdentifier();
+    const place = moduleIR.environment.createPlace(identifier);
+    return moduleIR.environment.createInstruction(
+      SequenceExpressionInstruction,
+      place,
+      this.expressions,
+    );
   }
 
   rewrite(values: Map<Identifier, Place>): BaseInstruction {

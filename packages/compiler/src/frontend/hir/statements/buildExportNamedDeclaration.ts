@@ -103,7 +103,7 @@ export function buildExportNamedDeclaration(
     const declarationInstructionId = environment.getDeclarationInstruction(
       declarationPlace.identifier.declarationId,
     )!;
-    moduleBuilder.exports.set(identifier.name, {
+    moduleBuilder.moduleIR.exports.set(identifier.name, {
       instruction,
       declaration: environment.instructions.get(declarationInstructionId)!,
     });
@@ -221,7 +221,7 @@ function buildExportVarAsSpecifiers(
 
       const declarationInstructionId = environment.getDeclarationInstruction(declarationId);
       if (declarationInstructionId !== undefined) {
-        moduleBuilder.exports.set(name, {
+        moduleBuilder.moduleIR.exports.set(name, {
           instruction: specInstruction,
           declaration: environment.instructions.get(declarationInstructionId)!,
         });
@@ -270,7 +270,7 @@ function buildExportFrom(
   environment: Environment,
 ) {
   const source = node.source!.value as string;
-  const resolvedSource = resolveModulePath(source, moduleBuilder.path);
+  const resolvedSource = resolveModulePath(source, moduleBuilder.moduleIR.path);
 
   const specifiers: Array<{ local: string; exported: string }> = [];
 
@@ -297,7 +297,7 @@ function buildExportFrom(
 
     // Register as an import so ProjectBuilder discovers the source module
     // and CallGraph can resolve through the re-export chain.
-    moduleBuilder.globals.set(exported as string, {
+    moduleBuilder.moduleIR.globals.set(exported as string, {
       kind: "import",
       name: local,
       source: resolvedSource,
@@ -316,7 +316,7 @@ function buildExportFrom(
 
   // Register each re-exported name as an export for UnusedExportEliminationPass.
   for (const { exported } of specifiers) {
-    moduleBuilder.exports.set(exported, {
+    moduleBuilder.moduleIR.exports.set(exported, {
       instruction,
       declaration: instruction,
     });

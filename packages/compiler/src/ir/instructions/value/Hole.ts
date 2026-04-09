@@ -1,4 +1,4 @@
-import { Environment } from "../../../environment";
+import type { ModuleIR } from "../../core/ModuleIR";
 import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
 import { Place } from "../../core";
 import { createInstructionId } from "../../utils";
@@ -17,10 +17,10 @@ export class HoleInstruction extends ValueInstruction {
     super(id, place);
   }
 
-  public clone(environment: Environment): HoleInstruction {
-    const identifier = environment.createIdentifier();
-    const place = environment.createPlace(identifier);
-    const instructionId = createInstructionId(environment);
+  public clone(moduleIR: ModuleIR): HoleInstruction {
+    const identifier = moduleIR.environment.createIdentifier();
+    const place = moduleIR.environment.createPlace(identifier);
+    const instructionId = createInstructionId(moduleIR.environment);
     return new HoleInstruction(instructionId, place);
   }
 

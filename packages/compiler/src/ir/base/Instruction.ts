@@ -1,6 +1,7 @@
 import { Environment } from "../../environment";
 import { type Place } from "../core";
 import { type Identifier } from "../core/Identifier";
+import type { ModuleIR } from "../core/ModuleIR";
 
 /**
  * Simulated opaque type for DeclarationId to prevent using normal numbers as ids
@@ -26,9 +27,21 @@ export abstract class BaseInstruction {
   ) {}
 
   /**
-   * Clones the instruction with a new place.
+   * Clones the instruction into `moduleIR`. The clone allocates fresh
+   * IDs from `moduleIR.environment` and registers itself in that module.
+   *
+   * Most instructions ignore `moduleIR` aside from reading
+   * `moduleIR.environment` to allocate. Instructions that own a nested
+   * {@link FunctionIR} (arrow / function expressions, function
+   * declarations, class/object methods, class properties) thread it into
+   * `this.functionIR.clone(moduleIR)` so the deep-cloned nested function
+   * lands in the correct module's function registry.
+   *
+   * The single-parameter signature avoids the implicit invariant of a
+   * separate `environment` parameter (which must always equal
+   * `moduleIR.environment` and isn't enforceable by the type system).
    */
-  abstract clone(environment: Environment): BaseInstruction;
+  abstract clone(moduleIR: ModuleIR): BaseInstruction;
 
   /**
    * Rewrites the instruction to use values.

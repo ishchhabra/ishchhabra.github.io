@@ -1,4 +1,4 @@
-import { Environment } from "../../../environment";
+import type { ModuleIR } from "../../core/ModuleIR";
 import { BaseInstruction, DeclarationInstruction } from "../../base";
 import { FunctionIR } from "../../core/FunctionIR";
 import { Identifier, Place } from "../../core";
@@ -16,20 +16,19 @@ export class FunctionDeclarationInstruction extends DeclarationInstruction {
     super(id, place);
   }
 
-  public clone(environment: Environment): FunctionDeclarationInstruction {
+  public clone(moduleIR: ModuleIR): FunctionDeclarationInstruction {
     // Use a fresh declarationId — the clone is a distinct binding from the
     // original, not a new SSA version. Don't copy the original name either,
     // so the cloned function gets its own auto-generated `$<id>` name and
     // can't collide at codegen time.
-    const identifier = environment.createIdentifier();
-    const place = environment.createPlace(identifier);
-    return environment.createInstruction(
+    const identifier = moduleIR.environment.createIdentifier();
+    const place = moduleIR.environment.createPlace(identifier);
+    // Recursively deep-clone the nested FunctionIR into the same target
+    // module so the cloned declaration owns an independent body.
+    return moduleIR.environment.createInstruction(
       FunctionDeclarationInstruction,
       place,
-      // Deep clone the FunctionIR so the cloned instruction owns an
-      // independent copy. Sharing would cause codegen to emit the same
-      // function body twice (once per FunctionDeclarationInstruction).
-      this.functionIR.clone(environment),
+      this.functionIR.clone(moduleIR),
       this.generator,
       this.async,
       this.captures,

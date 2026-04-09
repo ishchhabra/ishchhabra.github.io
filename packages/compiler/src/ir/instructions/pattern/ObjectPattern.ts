@@ -1,5 +1,5 @@
 import { BaseInstruction, Identifier, InstructionId, PatternInstruction, Place } from "../..";
-import { Environment } from "../../../environment";
+import type { ModuleIR } from "../../core/ModuleIR";
 
 /**
  * Represents an object pattern in the IR.
@@ -17,10 +17,10 @@ export class ObjectPatternInstruction extends PatternInstruction {
     super(id, place);
   }
 
-  public clone(environment: Environment): ObjectPatternInstruction {
-    const identifier = environment.createIdentifier();
-    const place = environment.createPlace(identifier);
-    return environment.createInstruction(
+  public clone(moduleIR: ModuleIR): ObjectPatternInstruction {
+    const identifier = moduleIR.environment.createIdentifier();
+    const place = moduleIR.environment.createPlace(identifier);
+    return moduleIR.environment.createInstruction(
       ObjectPatternInstruction,
       place,
       this.properties,

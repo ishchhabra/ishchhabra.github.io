@@ -82,7 +82,7 @@ export function buildExportDefaultDeclaration(
     declarationInstructionId !== undefined
       ? environment.instructions.get(declarationInstructionId)
       : environment.placeToInstruction.get(declarationPlace.id);
-  moduleBuilder.exports.set("default", {
+  moduleBuilder.moduleIR.exports.set("default", {
     instruction,
     declaration: declarationInstr,
   });

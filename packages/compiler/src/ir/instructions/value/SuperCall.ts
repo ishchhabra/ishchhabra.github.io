@@ -1,4 +1,4 @@
-import { Environment } from "../../../environment";
+import type { ModuleIR } from "../../core/ModuleIR";
 import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
 
@@ -21,10 +21,10 @@ export class SuperCallInstruction extends ValueInstruction {
     super(id, place);
   }
 
-  public clone(environment: Environment): SuperCallInstruction {
-    const identifier = environment.createIdentifier();
-    const place = environment.createPlace(identifier);
-    return environment.createInstruction(SuperCallInstruction, place, this.args);
+  public clone(moduleIR: ModuleIR): SuperCallInstruction {
+    const identifier = moduleIR.environment.createIdentifier();
+    const place = moduleIR.environment.createPlace(identifier);
+    return moduleIR.environment.createInstruction(SuperCallInstruction, place, this.args);
   }
 
   rewrite(values: Map<Identifier, Place>): BaseInstruction {

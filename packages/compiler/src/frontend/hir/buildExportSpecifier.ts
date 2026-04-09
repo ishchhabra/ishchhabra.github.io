@@ -47,7 +47,7 @@ export function buildExportSpecifier(
   );
   functionBuilder.addInstruction(instruction);
 
-  moduleBuilder.exports.set(exportedName, {
+  moduleBuilder.moduleIR.exports.set(exportedName, {
     instruction,
     declaration: declarationInstruction,
   });

@@ -1,4 +1,4 @@
-import { Environment } from "../../../environment";
+import type { ModuleIR } from "../../core/ModuleIR";
 import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
 import { FunctionIR } from "../../core/FunctionIR";
 import { Identifier } from "../../core/Identifier";
@@ -26,13 +26,16 @@ export class ArrowFunctionExpressionInstruction extends ValueInstruction {
     super(id, place);
   }
 
-  public clone(environment: Environment): ArrowFunctionExpressionInstruction {
-    const identifier = environment.createIdentifier();
-    const place = environment.createPlace(identifier);
-    return environment.createInstruction(
+  public clone(moduleIR: ModuleIR): ArrowFunctionExpressionInstruction {
+    const identifier = moduleIR.environment.createIdentifier();
+    const place = moduleIR.environment.createPlace(identifier);
+    // Recursively deep-clone the nested FunctionIR into the same target
+    // module so the inlined / cloned arrow doesn't share its body with
+    // the source. The clone self-registers in `moduleIR.functions`.
+    return moduleIR.environment.createInstruction(
       ArrowFunctionExpressionInstruction,
       place,
-      this.functionIR.clone(environment),
+      this.functionIR.clone(moduleIR),
       this.async,
       this.expression,
       this.generator,

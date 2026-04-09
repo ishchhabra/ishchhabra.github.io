@@ -1,4 +1,4 @@
-import { Environment } from "../../../environment";
+import type { ModuleIR } from "../../core/ModuleIR";
 import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
 import { Place } from "../../core";
 
@@ -19,10 +19,15 @@ export class MetaPropertyInstruction extends ValueInstruction {
     super(id, place);
   }
 
-  public clone(environment: Environment): MetaPropertyInstruction {
-    const identifier = environment.createIdentifier();
-    const place = environment.createPlace(identifier);
-    return environment.createInstruction(MetaPropertyInstruction, place, this.meta, this.property);
+  public clone(moduleIR: ModuleIR): MetaPropertyInstruction {
+    const identifier = moduleIR.environment.createIdentifier();
+    const place = moduleIR.environment.createPlace(identifier);
+    return moduleIR.environment.createInstruction(
+      MetaPropertyInstruction,
+      place,
+      this.meta,
+      this.property,
+    );
   }
 
   rewrite(): BaseInstruction {

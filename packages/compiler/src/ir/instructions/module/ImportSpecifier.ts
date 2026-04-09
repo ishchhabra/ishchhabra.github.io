@@ -1,4 +1,4 @@
-import { Environment } from "../../../environment";
+import type { ModuleIR } from "../../core/ModuleIR";
 import { BaseInstruction, InstructionId, ModuleInstruction } from "../../base";
 import { Place } from "../../core";
 
@@ -18,10 +18,10 @@ export class ImportSpecifierInstruction extends ModuleInstruction {
     super(id, place);
   }
 
-  public clone(environment: Environment): ImportSpecifierInstruction {
-    const identifier = environment.createIdentifier();
-    const place = environment.createPlace(identifier);
-    return environment.createInstruction(
+  public clone(moduleIR: ModuleIR): ImportSpecifierInstruction {
+    const identifier = moduleIR.environment.createIdentifier();
+    const place = moduleIR.environment.createPlace(identifier);
+    return moduleIR.environment.createInstruction(
       ImportSpecifierInstruction,
       place,
       this.local,

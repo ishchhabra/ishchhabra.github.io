@@ -1,4 +1,4 @@
-import { Environment } from "../../../environment";
+import type { ModuleIR } from "../../core/ModuleIR";
 import { InstructionId, JSXInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
 
@@ -20,10 +20,10 @@ export class JSXFragmentInstruction extends JSXInstruction {
     super(id, place);
   }
 
-  public clone(environment: Environment): JSXFragmentInstruction {
-    const identifier = environment.createIdentifier();
-    const place = environment.createPlace(identifier);
-    return environment.createInstruction(
+  public clone(moduleIR: ModuleIR): JSXFragmentInstruction {
+    const identifier = moduleIR.environment.createIdentifier();
+    const place = moduleIR.environment.createPlace(identifier);
+    return moduleIR.environment.createInstruction(
       JSXFragmentInstruction,
       place,
       this.openingFragment,

@@ -56,10 +56,10 @@ export function buildImportSpecifier(
   environment.registerDeclarationInstruction(bindingPlace, instruction);
 
   const source = declarationNode.source.value;
-  moduleBuilder.globals.set(localName, {
+  moduleBuilder.moduleIR.globals.set(localName, {
     kind: "import",
     name: importedName,
-    source: resolveModulePath(source as string, moduleBuilder.path),
+    source: resolveModulePath(source as string, moduleBuilder.moduleIR.path),
   });
 
   return place;

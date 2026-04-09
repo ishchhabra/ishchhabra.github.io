@@ -1,4 +1,4 @@
-import { Environment } from "../../../environment";
+import type { ModuleIR } from "../../core/ModuleIR";
 import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
 
@@ -11,10 +11,10 @@ export class AwaitExpressionInstruction extends ValueInstruction {
     super(id, place);
   }
 
-  public clone(environment: Environment): AwaitExpressionInstruction {
-    const identifier = environment.createIdentifier();
-    const place = environment.createPlace(identifier);
-    return environment.createInstruction(AwaitExpressionInstruction, place, this.argument);
+  public clone(moduleIR: ModuleIR): AwaitExpressionInstruction {
+    const identifier = moduleIR.environment.createIdentifier();
+    const place = moduleIR.environment.createPlace(identifier);
+    return moduleIR.environment.createInstruction(AwaitExpressionInstruction, place, this.argument);
   }
 
   rewrite(values: Map<Identifier, Place>): BaseInstruction {

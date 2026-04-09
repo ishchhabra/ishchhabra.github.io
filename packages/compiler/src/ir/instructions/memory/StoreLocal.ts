@@ -1,4 +1,4 @@
-import { Environment } from "../../../environment";
+import type { ModuleIR } from "../../core/ModuleIR";
 import { BaseInstruction, InstructionId, MemoryInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
 import { ExpressionStatementInstruction } from "../ExpressionStatement";
@@ -30,10 +30,10 @@ export class StoreLocalInstruction extends MemoryInstruction {
     super(id, place);
   }
 
-  public clone(environment: Environment): StoreLocalInstruction {
-    const identifier = environment.createIdentifier();
-    const place = environment.createPlace(identifier);
-    return environment.createInstruction(
+  public clone(moduleIR: ModuleIR): StoreLocalInstruction {
+    const identifier = moduleIR.environment.createIdentifier();
+    const place = moduleIR.environment.createPlace(identifier);
+    return moduleIR.environment.createInstruction(
       StoreLocalInstruction,
       place,
       this.lval,

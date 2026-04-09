@@ -1,4 +1,4 @@
-import { Environment } from "../../../environment";
+import type { ModuleIR } from "../../core/ModuleIR";
 import { BaseInstruction, InstructionId, MemoryInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
 
@@ -18,10 +18,10 @@ export class LoadLocalInstruction extends MemoryInstruction {
     super(id, place);
   }
 
-  public clone(environment: Environment): LoadLocalInstruction {
-    const identifier = environment.createIdentifier();
-    const place = environment.createPlace(identifier);
-    return environment.createInstruction(LoadLocalInstruction, place, this.value);
+  public clone(moduleIR: ModuleIR): LoadLocalInstruction {
+    const identifier = moduleIR.environment.createIdentifier();
+    const place = moduleIR.environment.createPlace(identifier);
+    return moduleIR.environment.createInstruction(LoadLocalInstruction, place, this.value);
   }
 
   rewrite(values: Map<Identifier, Place>): BaseInstruction {

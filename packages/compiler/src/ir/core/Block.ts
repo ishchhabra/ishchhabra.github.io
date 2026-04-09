@@ -3,6 +3,7 @@ import { BaseInstruction, BaseTerminal } from "../base";
 import { Identifier } from "./Identifier";
 import { Place } from "./Place";
 import { type LexicalScopeId } from "./LexicalScope";
+import type { ModuleIR } from "./ModuleIR";
 
 /**
  * Simulated opaque type for BlockId to prevent using normal numbers as ids
@@ -160,13 +161,14 @@ export class BasicBlock {
    * ids. Call {@link rewrite} after the caller has built the cross-block
    * identifier and block maps to fix the references.
    */
-  public clone(environment: Environment): BasicBlock {
+  public clone(moduleIR: ModuleIR): BasicBlock {
+    const environment = moduleIR.environment;
     const newBlock = environment.createBlock(this.scopeId);
     // Push directly without registering use-chains, matching the
     // BasicBlock constructor's behavior. The temporary use-chain state
     // (instructions point at old identifiers) is fixed by `rewrite`.
     for (const instr of this.instructions) {
-      newBlock.instructions.push(instr.clone(environment));
+      newBlock.instructions.push(instr.clone(moduleIR));
     }
     if (this._terminal !== undefined) {
       const emptyBlockMap = new Map<BlockId, BlockId>();

@@ -1,4 +1,4 @@
-import { Environment } from "../../environment";
+import type { ModuleIR } from "../core/ModuleIR";
 import { BaseInstruction, InstructionId } from "../base";
 import { Place } from "../core";
 
@@ -14,10 +14,10 @@ export class DebuggerStatementInstruction extends BaseInstruction {
     return true;
   }
 
-  public clone(environment: Environment): DebuggerStatementInstruction {
-    const identifier = environment.createIdentifier();
-    const place = environment.createPlace(identifier);
-    return environment.createInstruction(DebuggerStatementInstruction, place);
+  public clone(moduleIR: ModuleIR): DebuggerStatementInstruction {
+    const identifier = moduleIR.environment.createIdentifier();
+    const place = moduleIR.environment.createPlace(identifier);
+    return moduleIR.environment.createInstruction(DebuggerStatementInstruction, place);
   }
 
   rewrite(): BaseInstruction {

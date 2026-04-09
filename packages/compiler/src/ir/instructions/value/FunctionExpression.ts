@@ -1,4 +1,4 @@
-import { Environment } from "../../../environment";
+import type { ModuleIR } from "../../core/ModuleIR";
 import { BaseInstruction, InstructionId, ValueInstruction } from "../../base";
 import { FunctionIR } from "../../core/FunctionIR";
 import { Identifier } from "../../core/Identifier";
@@ -17,14 +17,16 @@ export class FunctionExpressionInstruction extends ValueInstruction {
     super(id, place);
   }
 
-  public clone(environment: Environment): FunctionExpressionInstruction {
-    const identifier = environment.createIdentifier();
-    const place = environment.createPlace(identifier);
-    return environment.createInstruction(
+  public clone(moduleIR: ModuleIR): FunctionExpressionInstruction {
+    const identifier = moduleIR.environment.createIdentifier();
+    const place = moduleIR.environment.createPlace(identifier);
+    // Recursively deep-clone the nested FunctionIR into the same target
+    // module so the cloned function expression owns an independent body.
+    return moduleIR.environment.createInstruction(
       FunctionExpressionInstruction,
       place,
       this.identifier,
-      this.functionIR.clone(environment),
+      this.functionIR.clone(moduleIR),
       this.generator,
       this.async,
       this.captures,

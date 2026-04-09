@@ -1,4 +1,3 @@
-import { Environment } from "../../environment";
 import {
   getBackEdges,
   getDominanceFrontier,
@@ -12,6 +11,7 @@ import { BasicBlock, BlockId } from "./Block";
 import { Identifier } from "./Identifier";
 import { Place } from "./Place";
 import { BaseStructure } from "./Structure";
+import { ModuleIR } from "./ModuleIR";
 import type { Phi } from "../../pipeline/ssa/Phi";
 
 /**
@@ -62,6 +62,19 @@ export class FunctionIR {
   }
 
   constructor(
+    /**
+     * The {@link ModuleIR} this function belongs to. Set at construction
+     * and never changed: a function's owning module is a primary fact
+     * about it, the same way a block belongs to a function. Cloning into
+     * a different module produces a new {@link FunctionIR} with its own
+     * `moduleIR` set to the target — the source's `moduleIR` is never
+     * mutated.
+     *
+     * The constructor self-registers `this` in `moduleIR.functions`, so
+     * any `new FunctionIR(...)` is automatically visible to the pipeline
+     * and to {@link CodeGenerator}. There is no separate "register" step.
+     */
+    public readonly moduleIR: ModuleIR,
     public readonly id: FunctionIRId,
     /**
      * A list of instructions executed at the very start of the function. These
@@ -108,6 +121,9 @@ export class FunctionIR {
     for (const structure of this.structures.values()) {
       FunctionIR.registerStructure(structure);
     }
+    // Self-register in the owning module so the pipeline and codegen
+    // can find this function via `moduleIR.functions`.
+    moduleIR.functions.set(id, this);
   }
 
   private computeCFG() {
@@ -182,27 +198,43 @@ export class FunctionIR {
   }
 
   /**
-   * Deep clone this FunctionIR. Allocates a new FunctionIRId, fresh BlockIds,
-   * fresh InstructionIds, and fresh Identifier/Place pairs for every
-   * definition. All cross-references (operands, terminal targets, structure
-   * block refs, phi operands) are remapped to point at the new entities.
+   * Deep clone this FunctionIR into `targetModule`. Allocates a new
+   * FunctionIRId, fresh BlockIds, fresh InstructionIds, and fresh
+   * Identifier/Place pairs for every definition. All cross-references
+   * (operands, terminal targets, structure block refs, phi operands) are
+   * remapped to point at the new entities. The clone's
+   * {@link FunctionIR.moduleIR} is set to `targetModule` and the clone
+   * self-registers in `targetModule.functions` (via the constructor).
    *
-   * Used by the function inliner so two FunctionDeclarationInstructions can
-   * own independent FunctionIRs even when one is cloned from the other.
+   * `targetModule` defaults to `this.moduleIR`, which is the right answer
+   * for intra-module cloning. Cross-module inlining passes the *target*
+   * module explicitly so the clone lands in the consumer's registry, not
+   * the source's.
    *
-   * Two-phase: clone everything first (instructions/blocks/headers get new
-   * ids but still reference old identifiers/blocks), then rewrite the
-   * accumulated maps to fix the references.
+   * Two phases:
+   *
+   *  1. Clone every header/block instruction via `instr.clone(targetModule)`.
+   *     Each instruction's clone allocates fresh IDs in
+   *     `targetModule.environment` and (for instructions that own a nested
+   *     FunctionIR — arrow / function expressions, function declarations)
+   *     recursively deep-clones the nested FunctionIR into the same
+   *     target module. Cloned instructions still reference old identifiers
+   *     and block IDs at this point.
+   *  2. Rewrite the accumulated identifier and block maps so the cloned
+   *     instructions point at the new entities.
    */
-  public clone(environment: Environment): FunctionIR {
+  public clone(targetModule: ModuleIR = this.moduleIR): FunctionIR {
+    const environment = targetModule.environment;
     const blockMap = new Map<BlockId, BlockId>();
     const identifierMap = new Map<Identifier, Place>();
     const newBlocks = new Map<BlockId, BasicBlock>();
 
-    // Phase 1: clone the header. Build identifierMap as we go.
+    // Phase 1: clone the header. Build identifierMap as we go. Each
+    // instruction's clone allocates fresh IDs in `targetModule.environment`
+    // and recursively deep-clones any nested FunctionIR into targetModule.
     const newHeader: BaseInstruction[] = [];
     for (const instr of this.header) {
-      const cloned = instr.clone(environment);
+      const cloned = instr.clone(targetModule);
       identifierMap.set(instr.place.identifier, cloned.place);
       newHeader.push(cloned);
     }
@@ -210,7 +242,7 @@ export class FunctionIR {
     // Phase 1: clone every block (cloned instructions + cloned terminal,
     // both still pointing at old refs). Build blockMap and identifierMap.
     for (const [oldBlockId, oldBlock] of this.blocks) {
-      const newBlock = oldBlock.clone(environment);
+      const newBlock = oldBlock.clone(targetModule);
       blockMap.set(oldBlockId, newBlock.id);
       newBlocks.set(newBlock.id, newBlock);
       for (let i = 0; i < oldBlock.instructions.length; i++) {
@@ -252,11 +284,13 @@ export class FunctionIR {
       newBlockLabels.set(blockMap.get(oldBlockId)!, label);
     }
 
-    // Construct the new FunctionIR. The constructor recomputes the CFG
-    // and registers structure use-chains.
-    const shell = environment.createFunction();
+    // Construct the new FunctionIR. The constructor recomputes the CFG,
+    // registers structure use-chains, and self-registers the clone in
+    // targetModule.functions.
+    const newId = makeFunctionIRId(environment.nextFunctionId++);
     const populated = new FunctionIR(
-      shell.id,
+      targetModule,
+      newId,
       newHeader,
       newParams,
       newParamBindings,
@@ -268,7 +302,7 @@ export class FunctionIR {
       newBlockLabels,
     );
     populated.phis = newPhis;
-    environment.functions.set(populated.id, populated);
+
     return populated;
   }
 }

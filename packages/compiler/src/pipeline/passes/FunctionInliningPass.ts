@@ -363,11 +363,15 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     }
 
     const instrs: BaseInstruction[] = [];
-    this.inlineFunctionParams(funcIR, callExpressionInstr, environment, instrs, rewriteMap);
+    this.inlineFunctionParams(funcIR, callExpressionInstr, this.moduleIR, instrs, rewriteMap);
 
     const block = funcIR.blocks.values().next().value!;
     for (const instr of block.instructions) {
-      const clonedInstr = instr.clone(environment);
+      // instr.clone(this.moduleIR) recursively deep-clones any nested
+      // FunctionIR into the caller's module — function-owning instruction
+      // clones (Arrow/Function expression, FunctionDeclaration) call
+      // `this.functionIR.clone(moduleIR)` internally.
+      const clonedInstr = instr.clone(this.moduleIR);
       rewriteMap.set(instr.place.identifier, clonedInstr.place);
       instrs.push(clonedInstr.rewrite(rewriteMap, { rewriteDefinitions: true }));
     }
@@ -485,12 +489,13 @@ export class FunctionInliningPass extends BaseOptimizationPass {
   private inlineFunctionParams(
     funcIR: FunctionIR,
     callExpressionInstr: CallExpressionInstruction,
-    environment: Environment,
+    moduleIR: ModuleIR,
     instrs: BaseInstruction[],
     rewriteMap: Map<Identifier, Place>,
   ) {
+    const environment = moduleIR.environment;
     for (const instr of funcIR.header) {
-      const clonedInstr = instr.clone(environment);
+      const clonedInstr = instr.clone(moduleIR);
       rewriteMap.set(instr.place.identifier, clonedInstr.place);
       instrs.push(clonedInstr.rewrite(rewriteMap));
     }

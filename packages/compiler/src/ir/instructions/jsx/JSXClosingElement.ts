@@ -1,4 +1,4 @@
-import { Environment } from "../../../environment";
+import type { ModuleIR } from "../../core/ModuleIR";
 import { BaseInstruction, InstructionId, JSXInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
 
@@ -18,10 +18,14 @@ export class JSXClosingElementInstruction extends JSXInstruction {
     super(id, place);
   }
 
-  public clone(environment: Environment): JSXClosingElementInstruction {
-    const identifier = environment.createIdentifier();
-    const place = environment.createPlace(identifier);
-    return environment.createInstruction(JSXClosingElementInstruction, place, this.tagPlace);
+  public clone(moduleIR: ModuleIR): JSXClosingElementInstruction {
+    const identifier = moduleIR.environment.createIdentifier();
+    const place = moduleIR.environment.createPlace(identifier);
+    return moduleIR.environment.createInstruction(
+      JSXClosingElementInstruction,
+      place,
+      this.tagPlace,
+    );
   }
 
   rewrite(values: Map<Identifier, Place>): BaseInstruction {

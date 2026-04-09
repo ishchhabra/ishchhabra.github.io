@@ -174,7 +174,10 @@ export class FunctionIRBuilder {
       );
     }
 
+    // The constructor self-registers in moduleIR.functions, so no explicit
+    // registration step is needed here.
     const functionIR = new FunctionIR(
+      this.moduleBuilder.moduleIR,
       functionId,
       this.header,
       params,
@@ -186,7 +189,6 @@ export class FunctionIRBuilder {
       [...this.captureParams.values()],
       this.blockLabels,
     );
-    this.moduleBuilder.functions.set(functionIR.id, functionIR);
     return functionIR;
   }
 

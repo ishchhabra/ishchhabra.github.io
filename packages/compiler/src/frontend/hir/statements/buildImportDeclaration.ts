@@ -21,7 +21,7 @@ export function buildImportDeclaration(
   }
 
   const sourceValue = node.source.value as string;
-  const resolvedSourceValue = resolveModulePath(sourceValue, moduleBuilder.path);
+  const resolvedSourceValue = resolveModulePath(sourceValue, moduleBuilder.moduleIR.path);
 
   // Filter out per-specifier type imports: import { value, type TypeOnly }
   const valueSpecifiers = node.specifiers.filter(
