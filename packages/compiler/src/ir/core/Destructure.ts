@@ -120,7 +120,9 @@ export function destructureTargetHasObservableWrites(target: DestructureTarget):
         (element) => element !== null && destructureTargetHasObservableWrites(element),
       );
     case "object":
-      return target.properties.some((property) => destructureTargetHasObservableWrites(property.value));
+      return target.properties.some((property) =>
+        destructureTargetHasObservableWrites(property.value),
+      );
   }
 }
 
@@ -178,5 +180,43 @@ export function rewriteDestructureTarget(
           value: rewriteDestructureTarget(property.value, values, { rewriteDefinitions }),
         })),
       };
+  }
+}
+
+export function printDestructureTarget(target: DestructureTarget): string {
+  switch (target.kind) {
+    case "binding":
+      return target.place.print();
+    case "static-member":
+      return `${target.object.print()}.${String(target.property)}`;
+    case "dynamic-member":
+      return `${target.object.print()}[${target.property.print()}]`;
+    case "assignment":
+      return `${printDestructureTarget(target.left)} = ${target.right.print()}`;
+    case "rest":
+      return `...${printDestructureTarget(target.argument)}`;
+    case "array":
+      return `[${target.elements
+        .map((element) => (element === null ? "<hole>" : printDestructureTarget(element)))
+        .join(", ")}]`;
+    case "object":
+      return `{${target.properties
+        .map((property) => {
+          if (property.value.kind === "rest") {
+            return `...${printDestructureTarget(property.value.argument)}`;
+          }
+          let keyLabel: string;
+          if (property.computed && property.key instanceof Place) {
+            keyLabel = `[${property.key.print()}]`;
+          } else if (typeof property.key === "number") {
+            keyLabel = String(property.key);
+          } else if (typeof property.key === "string") {
+            keyLabel = property.key;
+          } else {
+            keyLabel = property.key.print();
+          }
+          return `${keyLabel}: ${printDestructureTarget(property.value)}`;
+        })
+        .join(", ")}}`;
   }
 }

@@ -1,9 +1,5 @@
 import * as t from "@babel/types";
-import {
-  type DestructureObjectProperty,
-  type DestructureTarget,
-  Place,
-} from "../../../../ir";
+import { type DestructureObjectProperty, type DestructureTarget, Place } from "../../../../ir";
 import { CodeGenerator } from "../../../CodeGenerator";
 
 type PatternLVal = t.Identifier | t.MemberExpression | t.ArrayPattern | t.ObjectPattern;
@@ -26,7 +22,9 @@ function generateObjectProperty(
   generator: CodeGenerator,
 ): t.ObjectProperty | t.RestElement {
   if (property.value.kind === "rest") {
-    return t.restElement(generateDestructureTarget(property.value.argument, generator) as PatternLVal);
+    return t.restElement(
+      generateDestructureTarget(property.value.argument, generator) as PatternLVal,
+    );
   }
 
   const value = generateDestructureTarget(property.value, generator);
@@ -40,15 +38,14 @@ function generateObjectProperty(
     key = t.identifier(property.key);
   } else if (typeof property.key === "number") {
     key = t.numericLiteral(property.key);
+  } else if (typeof property.key === "string") {
+    key = t.stringLiteral(property.key);
   } else {
-    key = t.stringLiteral(String(property.key));
+    throw new Error("Non-computed object destructure key must be string or number");
   }
 
   const shorthand =
-    property.shorthand &&
-    t.isIdentifier(key) &&
-    t.isIdentifier(value) &&
-    key.name === value.name;
+    property.shorthand && t.isIdentifier(key) && t.isIdentifier(value) && key.name === value.name;
 
   return t.objectProperty(key, value as t.Expression | t.PatternLike, property.computed, shorthand);
 }
@@ -86,10 +83,14 @@ export function generateDestructureTarget(
     case "array":
       return t.arrayPattern(
         target.elements.map((element) =>
-          element === null ? null : (generateDestructureTarget(element, generator) as t.PatternLike),
+          element === null
+            ? null
+            : (generateDestructureTarget(element, generator) as t.PatternLike),
         ),
       );
     case "object":
-      return t.objectPattern(target.properties.map((property) => generateObjectProperty(property, generator)));
+      return t.objectPattern(
+        target.properties.map((property) => generateObjectProperty(property, generator)),
+      );
   }
 }

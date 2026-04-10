@@ -23,7 +23,10 @@ export function generateArrayDestructureInstruction(
     if (instruction.declarationKind === null) {
       throw new Error("Array destructure declarations require a declaration kind");
     }
-    for (const place of getDestructureTargetDefs({ kind: "array", elements: instruction.elements })) {
+    for (const place of getDestructureTargetDefs({
+      kind: "array",
+      elements: instruction.elements,
+    })) {
       generator.declaredDeclarations.add(place.identifier.declarationId);
     }
     node = t.variableDeclaration(instruction.declarationKind, [

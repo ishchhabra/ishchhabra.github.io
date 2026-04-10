@@ -1,31 +1,24 @@
 import type * as AST from "../../estree";
-import type { AssignmentExpression, Expression, MemberExpression } from "oxc-parser";
+import type { AssignmentExpression, MemberExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
 import {
   ArrayDestructureInstruction,
-  ArrayPatternInstruction,
-  BaseInstruction,
   BinaryExpressionInstruction,
   BranchTerminal,
   createInstructionId,
   DeclareLocalInstruction,
-  type DestructureObjectProperty,
-  type DestructureTarget,
   ExpressionStatementInstruction,
   JumpTerminal,
   LiteralInstruction,
   LoadLocalInstruction,
   ObjectDestructureInstruction,
-  ObjectPropertyInstruction,
   Place,
-  RestElementInstruction,
   StoreContextInstruction,
   StoreLocalInstruction,
   UnaryExpressionInstruction,
 } from "../../../ir";
-import { AssignmentPatternInstruction } from "../../../ir/instructions/pattern/AssignmentPattern";
-import { ObjectPatternInstruction } from "../../../ir/instructions/pattern/ObjectPattern";
 import { type Scope } from "../../scope/Scope";
+import { buildLVal } from "../buildLVal";
 import { buildNode } from "../buildNode";
 import { buildBindingIdentifier, throwTDZAccessError } from "../buildIdentifier";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -158,13 +151,17 @@ function buildIdentifierAssignment(
       : stabilizePlace(computedPlace, functionBuilder, environment);
   }
 
-  const { place: leftPlace } = buildIdentifierAssignmentLeft(
-    left,
-    node,
+  const target = buildLVal(
+    left as AST.Pattern,
     scope,
     functionBuilder,
+    moduleBuilder,
     environment,
+    { kind: "assignment" },
   );
+  if (target.kind !== "binding") {
+    throw new Error(`Expected binding assignment target, got: ${target.kind}`);
+  }
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
@@ -173,7 +170,7 @@ function buildIdentifierAssignment(
     ? environment.createInstruction(
         StoreContextInstruction,
         place,
-        leftPlace,
+        target.place,
         resultPlace,
         "let",
         "assignment",
@@ -181,7 +178,7 @@ function buildIdentifierAssignment(
     : environment.createInstruction(
         StoreLocalInstruction,
         place,
-        leftPlace,
+        target.place,
         resultPlace,
         "const",
         "assignment",
@@ -244,7 +241,11 @@ function emitResultVariable(
     functionBuilder.currentBlock.id,
     bindingPlace.id,
   );
-  environment.ensureSyntheticDeclarationMetadata(bindingPlace.identifier.declarationId, "let", bindingPlace);
+  environment.ensureSyntheticDeclarationMetadata(
+    bindingPlace.identifier.declarationId,
+    "let",
+    bindingPlace,
+  );
   const storePlace = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
     environment.createInstruction(
@@ -349,20 +350,24 @@ function buildLogicalIdentifierAssignment(
   const stabilizedRightPlace = stabilizePlace(rightPlace, functionBuilder, environment);
 
   // Store x = y.
-  const { place: lvalPlace } = buildIdentifierAssignmentLeft(
-    left,
-    node,
+  const target = buildLVal(
+    left as AST.Pattern,
     scope,
     functionBuilder,
+    moduleBuilder,
     environment,
+    { kind: "assignment" },
   );
+  if (target.kind !== "binding") {
+    throw new Error(`Expected binding assignment target, got: ${target.kind}`);
+  }
   const isContext = environment.contextDeclarationIds.has(declarationId);
   functionBuilder.addInstruction(
     isContext
       ? environment.createInstruction(
           StoreContextInstruction,
           environment.createPlace(environment.createIdentifier()),
-          lvalPlace,
+          target.place,
           stabilizedRightPlace,
           "let",
           "assignment",
@@ -370,7 +375,7 @@ function buildLogicalIdentifierAssignment(
       : environment.createInstruction(
           StoreLocalInstruction,
           environment.createPlace(environment.createIdentifier()),
-          lvalPlace,
+          target.place,
           stabilizedRightPlace,
           "const",
           "assignment",
@@ -568,12 +573,13 @@ function buildDestructuringAssignment(
     throwTDZAccessError(tdzTargetName);
   }
 
-  const { target } = buildDestructureAssignmentTarget(
-    left,
+  const target = buildLVal(
+    left as AST.Pattern,
     scope,
     functionBuilder,
     moduleBuilder,
     environment,
+    { kind: "assignment" },
   );
 
   const place = environment.createPlace(environment.createIdentifier());
@@ -601,558 +607,6 @@ function buildDestructuringAssignment(
   }
   functionBuilder.addInstruction(instruction);
   return resultPlace;
-}
-
-function buildDestructureAssignmentTarget(
-  left: AST.Pattern | MemberExpression,
-  scope: Scope,
-  functionBuilder: FunctionIRBuilder,
-  moduleBuilder: ModuleIRBuilder,
-  environment: Environment,
-): { target: DestructureTarget; hasContext: boolean } {
-  switch (left.type) {
-    case "Identifier": {
-      const declarationId = functionBuilder.getDeclarationId(left.name, scope);
-      if (declarationId === undefined) {
-        throw new Error(`Variable accessed before declaration: ${left.name}`);
-      }
-
-      if (environment.contextDeclarationIds.has(declarationId)) {
-        const latestDeclaration = environment.getLatestDeclaration(declarationId);
-        const existingPlace = environment.places.get(latestDeclaration.placeId);
-        if (existingPlace === undefined) {
-          throw new Error(`Unable to find the place for ${left.name} (${declarationId})`);
-        }
-        return {
-          target: { kind: "binding", place: existingPlace, storage: "context" },
-          hasContext: true,
-        };
-      }
-
-      const bindingPlace = environment.getDeclarationBinding(declarationId);
-      if (bindingPlace === undefined) {
-        throw new Error(`Unable to find the binding for ${left.name} (${declarationId})`);
-      }
-      environment.registerDeclaration(declarationId, functionBuilder.currentBlock.id, bindingPlace.id);
-      return {
-        target: { kind: "binding", place: bindingPlace, storage: "local" },
-        hasContext: false,
-      };
-    }
-    case "MemberExpression": {
-      const reference = buildMemberReference(left, scope, functionBuilder, moduleBuilder, environment);
-      return {
-        target:
-          reference.kind === "static"
-            ? {
-                kind: "static-member",
-                object: reference.object,
-                property: reference.property,
-                optional: reference.optional,
-              }
-            : {
-                kind: "dynamic-member",
-                object: reference.object,
-                property: reference.property,
-                optional: reference.optional,
-              },
-        hasContext: false,
-      };
-    }
-    case "ArrayPattern": {
-      let hasContext = false;
-      const elements = left.elements.map((element) => {
-        if (element === null) {
-          return null;
-        }
-        const built = buildDestructureAssignmentTarget(
-          element as AST.Pattern | MemberExpression,
-          scope,
-          functionBuilder,
-          moduleBuilder,
-          environment,
-        );
-        hasContext = hasContext || built.hasContext;
-        return built.target;
-      });
-      return { target: { kind: "array", elements }, hasContext };
-    }
-    case "ObjectPattern": {
-      let hasContext = false;
-      const properties: DestructureObjectProperty[] = left.properties.map((property) => {
-        if (property.type === "RestElement") {
-          const built = buildDestructureAssignmentTarget(
-            property.argument as AST.Pattern | MemberExpression,
-            scope,
-            functionBuilder,
-            moduleBuilder,
-            environment,
-          );
-          hasContext = hasContext || built.hasContext;
-          return {
-            key: "rest",
-            computed: false,
-            shorthand: false,
-            value: { kind: "rest", argument: built.target },
-          };
-        }
-
-        const built = buildDestructureAssignmentTarget(
-          property.value as AST.Pattern | MemberExpression,
-          scope,
-          functionBuilder,
-          moduleBuilder,
-          environment,
-        );
-        hasContext = hasContext || built.hasContext;
-
-        return {
-          key: property.computed
-            ? buildComputedAssignmentPropertyKey(
-                property.key,
-                scope,
-                functionBuilder,
-                moduleBuilder,
-                environment,
-              )
-            : getStaticAssignmentPropertyKey(property.key),
-          computed: property.computed,
-          shorthand: property.shorthand,
-          value: built.target,
-        };
-      });
-      return { target: { kind: "object", properties }, hasContext };
-    }
-    case "AssignmentPattern": {
-      const built = buildDestructureAssignmentTarget(
-        left.left as AST.Pattern | MemberExpression,
-        scope,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
-      return {
-        target: {
-          kind: "assignment",
-          left: built.target,
-          right: buildRequiredAssignmentPlace(
-            left.right,
-            scope,
-            functionBuilder,
-            moduleBuilder,
-            environment,
-            "Assignment pattern right must be a single place",
-          ),
-        },
-        hasContext: built.hasContext,
-      };
-    }
-    case "RestElement": {
-      const built = buildDestructureAssignmentTarget(
-        left.argument as AST.Pattern | MemberExpression,
-        scope,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
-      return {
-        target: { kind: "rest", argument: built.target },
-        hasContext: built.hasContext,
-      };
-    }
-  }
-
-  throw new Error(`Unsupported destructuring assignment target: ${(left as { type: string }).type}`);
-}
-
-function buildRequiredAssignmentPlace(
-  node: Expression,
-  scope: Scope,
-  functionBuilder: FunctionIRBuilder,
-  moduleBuilder: ModuleIRBuilder,
-  environment: Environment,
-  message: string,
-): Place {
-  const place = buildNode(node, scope, functionBuilder, moduleBuilder, environment);
-  if (place === undefined || Array.isArray(place)) {
-    throw new Error(message);
-  }
-  return place;
-}
-
-function getStaticAssignmentPropertyKey(node: AST.Property["key"]): string | number {
-  if (node.type === "PrivateIdentifier") {
-    throw new Error("PrivateIdentifier is not supported in object pattern destructuring");
-  }
-  if (node.type === "Identifier") {
-    return node.name;
-  }
-  if (node.type === "Literal" && (typeof node.value === "string" || typeof node.value === "number")) {
-    return node.value;
-  }
-  throw new Error("Unsupported static key type in object pattern destructuring");
-}
-
-function buildComputedAssignmentPropertyKey(
-  node: AST.Property["key"],
-  scope: Scope,
-  functionBuilder: FunctionIRBuilder,
-  moduleBuilder: ModuleIRBuilder,
-  environment: Environment,
-): Place {
-  if (node.type === "PrivateIdentifier") {
-    throw new Error("PrivateIdentifier is not supported in object pattern destructuring");
-  }
-  return buildRequiredAssignmentPlace(
-    node,
-    scope,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-    "Object pattern key must be a single place",
-  );
-}
-
-export function buildAssignmentLeft(
-  left: AST.Pattern,
-  node: AssignmentExpression,
-  scope: Scope,
-  functionBuilder: FunctionIRBuilder,
-  moduleBuilder: ModuleIRBuilder,
-  environment: Environment,
-): { place: Place; instructions: BaseInstruction[]; identifiers: Place[]; hasContext: boolean } {
-  if (left.type === "Identifier") {
-    return buildIdentifierAssignmentLeft(left, node, scope, functionBuilder, environment);
-  } else if (left.type === "MemberExpression") {
-    return buildMemberExpressionAssignmentLeft(
-      left,
-      node,
-      scope,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
-  } else if (left.type === "ArrayPattern") {
-    return buildArrayPatternAssignmentLeft(
-      left,
-      node,
-      scope,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
-  } else if (left.type === "ObjectPattern") {
-    return buildObjectPatternAssignmentLeft(
-      left,
-      node,
-      scope,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
-  } else if (left.type === "AssignmentPattern") {
-    return buildAssignmentPatternAssignmentLeft(
-      left,
-      node,
-      scope,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
-  } else if (left.type === "RestElement") {
-    return buildRestElementAssignmentLeft(
-      left,
-      node,
-      scope,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
-  }
-
-  throw new Error("Unsupported assignment left");
-}
-
-function buildIdentifierAssignmentLeft(
-  left: AST.Identifier,
-  node: AssignmentExpression,
-  scope: Scope,
-  functionBuilder: FunctionIRBuilder,
-  environment: Environment,
-): { place: Place; instructions: BaseInstruction[]; identifiers: Place[]; hasContext: boolean } {
-  const declarationId = functionBuilder.getDeclarationId(left.name, scope);
-  if (declarationId === undefined) {
-    throw new Error(`Variable accessed before declaration: ${left.name}`);
-  }
-
-  // For context variables, reuse the original place rather than creating a
-  // new SSA version -- context variables are not renamed by SSA.
-  if (environment.contextDeclarationIds.has(declarationId)) {
-    const latestDeclaration = environment.getLatestDeclaration(declarationId);
-    const existingPlace = environment.places.get(latestDeclaration.placeId)!;
-    return {
-      place: existingPlace,
-      instructions: [],
-      identifiers: [existingPlace],
-      hasContext: true,
-    };
-  }
-
-  const bindingPlace = environment.getDeclarationBinding(declarationId);
-  if (bindingPlace === undefined) {
-    throw new Error(`Unable to find the binding for ${left.name} (${declarationId})`);
-  }
-  environment.registerDeclaration(declarationId, functionBuilder.currentBlock.id, bindingPlace.id);
-  return { place: bindingPlace, instructions: [], identifiers: [bindingPlace], hasContext: false };
-}
-
-function buildMemberExpressionAssignmentLeft(
-  left: MemberExpression,
-  node: AssignmentExpression,
-  scope: Scope,
-  functionBuilder: FunctionIRBuilder,
-  moduleBuilder: ModuleIRBuilder,
-  environment: Environment,
-): { place: Place; instructions: BaseInstruction[]; identifiers: Place[]; hasContext: boolean } {
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
-  functionBuilder.addInstruction(
-    environment.createInstruction(DeclareLocalInstruction, place, "const"),
-  );
-  environment.registerDeclaration(
-    identifier.declarationId,
-    functionBuilder.currentBlock.id,
-    place.id,
-  );
-  const reference = buildMemberReference(left, scope, functionBuilder, moduleBuilder, environment);
-  const storePropertyPlace = environment.createPlace(environment.createIdentifier());
-  const storePropertyInstruction = createStoreMemberReferenceInstruction(
-    reference,
-    storePropertyPlace,
-    place,
-    environment,
-  );
-
-  const expressionStatementPlace = environment.createPlace(environment.createIdentifier());
-  const expressionStatementInstruction = environment.createInstruction(
-    ExpressionStatementInstruction,
-    expressionStatementPlace,
-    storePropertyPlace,
-  );
-
-  return {
-    place,
-    instructions: [storePropertyInstruction, expressionStatementInstruction],
-    identifiers: [place],
-    hasContext: false,
-  };
-}
-
-function buildArrayPatternAssignmentLeft(
-  left: AST.ArrayPattern,
-  node: AssignmentExpression,
-  scope: Scope,
-  functionBuilder: FunctionIRBuilder,
-  moduleBuilder: ModuleIRBuilder,
-  environment: Environment,
-): { place: Place; instructions: BaseInstruction[]; identifiers: Place[]; hasContext: boolean } {
-  const instructions: BaseInstruction[] = [];
-  const identifiers: Place[] = [];
-  let hasContext = false;
-
-  const elementPlaces = left.elements.map((element) => {
-    if (element == null) {
-      return null;
-    }
-
-    const result = buildAssignmentLeft(
-      element,
-      node,
-      scope,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
-    instructions.push(...result.instructions);
-    identifiers.push(...result.identifiers);
-    if (result.hasContext) hasContext = true;
-    return result.place;
-  });
-
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    ArrayPatternInstruction,
-    place,
-    elementPlaces,
-    identifiers,
-  );
-  functionBuilder.addInstruction(instruction);
-  return { place, instructions, identifiers, hasContext };
-}
-
-function buildObjectPatternAssignmentLeft(
-  left: AST.ObjectPattern,
-  node: AssignmentExpression,
-  scope: Scope,
-  functionBuilder: FunctionIRBuilder,
-  moduleBuilder: ModuleIRBuilder,
-  environment: Environment,
-): { place: Place; instructions: BaseInstruction[]; identifiers: Place[]; hasContext: boolean } {
-  const instructions: BaseInstruction[] = [];
-  const identifiers: Place[] = [];
-  let hasContext = false;
-
-  const propertyPlaces = left.properties.map((property) => {
-    if (property.type === "Property") {
-      const key = property.key;
-      let keyPlace;
-      if (!property.computed && key.type === "Identifier") {
-        // Non-computed identifier keys are property labels (string literals),
-        // not variable references.  Emit a LiteralInstruction so the key
-        // survives SSA transformations (clone/rewrite) unchanged.
-        const keyIdentifier = environment.createIdentifier();
-        keyPlace = environment.createPlace(keyIdentifier);
-        const keyInstruction = environment.createInstruction(
-          LiteralInstruction,
-          keyPlace,
-          key.name,
-        );
-        functionBuilder.addInstruction(keyInstruction);
-      } else {
-        keyPlace = buildNode(key, scope, functionBuilder, moduleBuilder, environment);
-        if (keyPlace === undefined || Array.isArray(keyPlace)) {
-          throw new Error("Object pattern key must be a single place");
-        }
-      }
-
-      const value = property.value;
-      const result = buildAssignmentLeft(
-        value as AST.Pattern,
-        node,
-        scope,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
-      instructions.push(...result.instructions);
-      identifiers.push(...result.identifiers);
-      if (result.hasContext) hasContext = true;
-
-      const identifier = environment.createIdentifier();
-      const place = environment.createPlace(identifier);
-      const instruction = environment.createInstruction(
-        ObjectPropertyInstruction,
-        place,
-        keyPlace,
-        result.place,
-        property.computed,
-        property.shorthand,
-        result.identifiers,
-      );
-      functionBuilder.addInstruction(instruction);
-      return place;
-    }
-
-    if (property.type === "RestElement") {
-      const argument = property.argument;
-      const result = buildAssignmentLeft(
-        argument,
-        node,
-        scope,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-      );
-      instructions.push(...result.instructions);
-      identifiers.push(...result.identifiers);
-      if (result.hasContext) hasContext = true;
-
-      const identifier = environment.createIdentifier();
-      const place = environment.createPlace(identifier);
-      const instruction = environment.createInstruction(
-        RestElementInstruction,
-        place,
-        result.place,
-        result.identifiers,
-      );
-      functionBuilder.addInstruction(instruction);
-      return place;
-    }
-
-    throw new Error("Unsupported object pattern property");
-  });
-
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    ObjectPatternInstruction,
-    place,
-    propertyPlaces,
-    identifiers,
-  );
-  functionBuilder.addInstruction(instruction);
-  return { place, instructions, identifiers, hasContext };
-}
-
-function buildAssignmentPatternAssignmentLeft(
-  left: AST.AssignmentPattern,
-  node: AssignmentExpression,
-  scope: Scope,
-  functionBuilder: FunctionIRBuilder,
-  moduleBuilder: ModuleIRBuilder,
-  environment: Environment,
-): { place: Place; instructions: BaseInstruction[]; identifiers: Place[]; hasContext: boolean } {
-  const {
-    place: leftPlace,
-    instructions,
-    identifiers,
-    hasContext,
-  } = buildAssignmentLeft(left.left, node, scope, functionBuilder, moduleBuilder, environment);
-
-  const rightPlace = buildNode(left.right, scope, functionBuilder, moduleBuilder, environment);
-  if (rightPlace === undefined || Array.isArray(rightPlace)) {
-    throw new Error("Assignment pattern right must be a single place");
-  }
-
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    AssignmentPatternInstruction,
-    place,
-    leftPlace,
-    rightPlace,
-    identifiers,
-  );
-  functionBuilder.addInstruction(instruction);
-  return { place, instructions, identifiers, hasContext };
-}
-
-function buildRestElementAssignmentLeft(
-  left: AST.RestElement,
-  node: AssignmentExpression,
-  scope: Scope,
-  functionBuilder: FunctionIRBuilder,
-  moduleBuilder: ModuleIRBuilder,
-  environment: Environment,
-): { place: Place; instructions: BaseInstruction[]; identifiers: Place[]; hasContext: boolean } {
-  const {
-    place: argumentPlace,
-    instructions: argumentInstructions,
-    identifiers,
-    hasContext,
-  } = buildAssignmentLeft(left.argument, node, scope, functionBuilder, moduleBuilder, environment);
-
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    RestElementInstruction,
-    place,
-    argumentPlace,
-    identifiers,
-  );
-  functionBuilder.addInstruction(instruction);
-  return { place, instructions: [...argumentInstructions], identifiers, hasContext };
 }
 
 function buildAssignmentRight(

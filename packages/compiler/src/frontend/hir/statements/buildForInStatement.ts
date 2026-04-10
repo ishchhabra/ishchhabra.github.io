@@ -1,20 +1,23 @@
 import type * as AST from "../../estree";
-import type { ForInStatement } from "oxc-parser";
+import type { ForInStatement, MemberExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
 import {
+  ArrayDestructureInstruction,
+  type DestructureTarget,
   ForInStructure,
   JumpTerminal,
+  ObjectDestructureInstruction,
   Place,
+  StoreContextInstruction,
   StoreLocalInstruction,
   makeInstructionId,
 } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
+import { buildLVal } from "../buildLVal";
 import { instantiateScopeBindings } from "../bindings";
 import { buildNode } from "../buildNode";
-import { buildAssignmentLeft } from "../expressions/buildAssignmentExpression";
-import { buildLVal } from "../buildLVal";
 import { buildOwnedBody } from "./buildOwnedBody";
 
 export function buildForInStatement(
@@ -46,7 +49,8 @@ export function buildForInStatement(
   // Build the iteration value from the left side.
   const left = node.left;
   let iterationValuePlace: Place;
-  let bareLVal: AST.Pattern | undefined;
+  let iterationTarget: DestructureTarget;
+  let bareLVal: AST.Pattern | MemberExpression | undefined;
 
   if (left.type === "VariableDeclaration") {
     // `for (const x in obj)` — new loop-scoped variable.
@@ -55,25 +59,25 @@ export function buildForInStatement(
       throw new Error(`Unsupported variable declaration kind: ${kind}`);
     }
     const id = left.declarations[0].id;
-    iterationValuePlace = buildLVal(
+    iterationTarget = buildLVal(
       id as AST.Pattern,
       forScope,
       functionBuilder,
       moduleBuilder,
       environment,
-      kind,
-    ).place;
+      { kind: "declaration", declarationKind: kind },
+    );
+    iterationValuePlace = environment.createPlace(environment.createIdentifier());
   } else {
     // `for (x in obj)` — assignment to existing variable.
-    iterationValuePlace = buildLVal(
-      left as AST.Pattern,
-      scope,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-      null,
-    ).place;
-    bareLVal = left as AST.Pattern;
+    bareLVal = left as AST.Pattern | MemberExpression;
+    iterationTarget = buildLVal(bareLVal, scope, functionBuilder, moduleBuilder, environment, {
+      kind: "assignment",
+    });
+    iterationValuePlace =
+      iterationTarget.kind === "binding"
+        ? iterationTarget.place
+        : environment.createPlace(environment.createIdentifier());
   }
 
   // Build the body block. When the body is a BlockStatement (the common
@@ -90,31 +94,7 @@ export function buildForInStatement(
   // For bare LVal, copy the iteration value into new version(s) of the
   // outer variable(s) at the start of the body.
   if (bareLVal !== undefined) {
-    const { place: outerPlace, instructions } = buildAssignmentLeft(
-      bareLVal,
-      node as any,
-      scope,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
-
-    const storePlace = environment.createPlace(environment.createIdentifier());
-    functionBuilder.addInstruction(
-      environment.createInstruction(
-        StoreLocalInstruction,
-        storePlace,
-        outerPlace,
-        iterationValuePlace,
-        "const",
-        "assignment",
-        [],
-      ),
-    );
-
-    for (const instr of instructions) {
-      functionBuilder.addInstruction(instr);
-    }
+    emitLoopIterationAssignment(iterationTarget, iterationValuePlace, functionBuilder, environment);
   }
 
   // Build the exit block (created early so break statements can reference it).
@@ -152,6 +132,7 @@ export function buildForInStatement(
     new ForInStructure(
       headerBlock.id,
       iterationValuePlace,
+      iterationTarget,
       objectPlace,
       bodyBlock.id,
       exitBlock.id,
@@ -161,4 +142,57 @@ export function buildForInStatement(
 
   functionBuilder.currentBlock = exitBlock;
   return undefined;
+}
+
+function emitLoopIterationAssignment(
+  target: DestructureTarget,
+  valuePlace: Place,
+  functionBuilder: FunctionIRBuilder,
+  environment: Environment,
+): void {
+  if (target.kind === "binding") {
+    const StoreInstruction =
+      target.storage === "context" ? StoreContextInstruction : StoreLocalInstruction;
+    functionBuilder.addInstruction(
+      environment.createInstruction(
+        StoreInstruction,
+        environment.createPlace(environment.createIdentifier()),
+        target.place,
+        valuePlace,
+        "const",
+        "assignment",
+      ),
+    );
+    return;
+  }
+
+  if (target.kind === "array") {
+    functionBuilder.addInstruction(
+      environment.createInstruction(
+        ArrayDestructureInstruction,
+        environment.createPlace(environment.createIdentifier()),
+        target.elements,
+        valuePlace,
+        "assignment",
+        null,
+      ),
+    );
+    return;
+  }
+
+  if (target.kind === "object") {
+    functionBuilder.addInstruction(
+      environment.createInstruction(
+        ObjectDestructureInstruction,
+        environment.createPlace(environment.createIdentifier()),
+        target.properties,
+        valuePlace,
+        "assignment",
+        null,
+      ),
+    );
+    return;
+  }
+
+  throw new Error(`Unsupported for-in assignment target: ${target.kind}`);
 }

@@ -10,7 +10,6 @@ import {
 } from "../../../ir";
 import { LoadGlobalInstruction } from "../../../ir/instructions/memory/LoadGlobal";
 import { type Scope } from "../../scope/Scope";
-import { buildDestructureDeclarationTarget } from "../buildDestructureDeclarationTarget";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildLVal } from "../buildLVal";
@@ -48,81 +47,72 @@ export function buildVariableDeclaration(
       throw new Error("Value place must be a single place");
     }
 
-    if (id.type === "ArrayPattern" || id.type === "ObjectPattern") {
-      const target = buildDestructureDeclarationTarget(
-        id as AST.Pattern,
-        scope,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-        kind,
-      );
-      const place = environment.createPlace(environment.createIdentifier());
-      let instruction;
-      if (target.kind === "array") {
-        instruction = environment.createInstruction(
+    const target = buildLVal(
+      id as AST.Pattern,
+      scope,
+      functionBuilder,
+      moduleBuilder,
+      environment,
+      { kind: "declaration", declarationKind: kind },
+    );
+    const identifier = environment.createIdentifier();
+    const place = environment.createPlace(identifier);
+    if (target.kind === "binding") {
+      // var declarations were already hoisted (DeclareLocal + StoreLocal/StoreContext
+      // with undefined). The write here is an assignment to the existing binding,
+      // not a new declaration.
+      const contextKind = kind === "var" ? "assignment" : "declaration";
+      const instruction =
+        target.storage === "context"
+          ? environment.createInstruction(
+              StoreContextInstruction,
+              place,
+              target.place,
+              valuePlace,
+              "let",
+              contextKind,
+            )
+          : environment.createInstruction(
+              StoreLocalInstruction,
+              place,
+              target.place,
+              valuePlace,
+              kind,
+              contextKind,
+            );
+      functionBuilder.addInstruction(instruction);
+      return place;
+    }
+
+    if (target.kind === "array") {
+      functionBuilder.addInstruction(
+        environment.createInstruction(
           ArrayDestructureInstruction,
           place,
           target.elements,
           valuePlace,
           "declaration",
           kind,
-        );
-      } else if (target.kind === "object") {
-        instruction = environment.createInstruction(
+        ),
+      );
+      return place;
+    }
+
+    if (target.kind === "object") {
+      functionBuilder.addInstruction(
+        environment.createInstruction(
           ObjectDestructureInstruction,
           place,
           target.properties,
           valuePlace,
           "declaration",
           kind,
-        );
-      } else {
-        throw new Error(`Unsupported declaration destructure target: ${target.kind}`);
-      }
-      functionBuilder.addInstruction(instruction);
+        ),
+      );
       return place;
     }
 
-    const { place: lvalPlace, bindings } = buildLVal(
-      id as AST.Pattern,
-      scope,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-      kind,
-    );
-
-    const isContext = bindings.some((p) =>
-      environment.contextDeclarationIds.has(p.identifier.declarationId),
-    );
-    const identifier = environment.createIdentifier();
-    const place = environment.createPlace(identifier);
-    // var declarations were already hoisted (DeclareLocal + StoreLocal/StoreContext
-    // with undefined). The write here is an assignment to the existing binding,
-    // not a new declaration.
-    const contextKind = kind === "var" ? "assignment" : "declaration";
-    const instruction = isContext
-      ? environment.createInstruction(
-          StoreContextInstruction,
-          place,
-          lvalPlace,
-          valuePlace,
-          "let",
-          contextKind,
-          bindings,
-        )
-      : environment.createInstruction(
-          StoreLocalInstruction,
-          place,
-          lvalPlace,
-          valuePlace,
-          kind,
-          contextKind,
-          bindings,
-        );
-    functionBuilder.addInstruction(instruction);
-    return place;
+    throw new Error(`Unsupported declaration target: ${target.kind}`);
   });
 
   return declarationPlaces;

@@ -1,14 +1,16 @@
 import type { BlockStatement, Expression, Node, Program, Statement } from "oxc-parser";
 import { Environment } from "../../environment";
 import {
+  ArrayDestructureInstruction,
+  ArrayExpressionInstruction,
   BaseInstruction,
   BaseStructure,
   BasicBlock,
   BlockId,
   type ControlContext,
   createInstructionId,
-  type DeclarationKind,
   DeclarationId,
+  type DeclarationKind,
   Place,
   ReturnTerminal,
 } from "../../ir";
@@ -115,7 +117,35 @@ export class FunctionIRBuilder {
       this.environment,
     );
     const params = builtParams.map((p) => p.place);
+    const paramTargets = builtParams.map((p) => p.target);
     const paramBindings = builtParams.map((p) => p.paramBindings);
+    const requiresRuntimeParamDestructure = builtParams.some(
+      (param) => param.target.kind !== "binding" || param.target.place !== param.place,
+    );
+    if (requiresRuntimeParamDestructure) {
+      const runtimeParamArray = this.environment.createInstruction(
+        ArrayExpressionInstruction,
+        this.environment.createPlace(this.environment.createIdentifier()),
+        params,
+      );
+      this.runtimePrologue.push(runtimeParamArray);
+      this.environment.placeToInstruction.set(runtimeParamArray.place.id, runtimeParamArray);
+
+      const runtimeParamDestructure = this.environment.createInstruction(
+        ArrayDestructureInstruction,
+        this.environment.createPlace(this.environment.createIdentifier()),
+        paramTargets,
+        runtimeParamArray.place,
+        "declaration",
+        "const",
+        true,
+      );
+      this.runtimePrologue.push(runtimeParamDestructure);
+      this.environment.placeToInstruction.set(
+        runtimeParamDestructure.place.id,
+        runtimeParamDestructure,
+      );
+    }
 
     const functionId = makeFunctionIRId(this.environment.nextFunctionId++);
 
@@ -162,9 +192,10 @@ export class FunctionIRBuilder {
 
     // The constructor self-registers in moduleIR.functions, so no explicit
     // registration step is needed here.
-    const source = { header: this.sourceHeader, params };
+    const source = { header: this.sourceHeader, params: paramTargets };
     const runtime = {
       params,
+      paramTargets,
       paramBindings,
       prologue: this.runtimePrologue,
       captureParams: [...this.captureParams.values()],

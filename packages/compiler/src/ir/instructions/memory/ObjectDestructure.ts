@@ -68,7 +68,10 @@ export class ObjectDestructureInstruction extends MemoryInstruction {
   }
 
   override getDefs(): Place[] {
-    return [this.place, ...getDestructureTargetDefs({ kind: "object", properties: this.properties })];
+    return [
+      this.place,
+      ...getDestructureTargetDefs({ kind: "object", properties: this.properties }),
+    ];
   }
 
   public override hasSideEffects(): boolean {

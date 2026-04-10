@@ -40,7 +40,12 @@ export function buildImportSpecifier(
   const bindingPlace = environment.createPlace(bindingIdentifier);
 
   functionBuilder.registerDeclarationName(localName, bindingIdentifier.declarationId, scope);
-  functionBuilder.instantiateDeclaration(bindingIdentifier.declarationId, "import", localName, scope);
+  functionBuilder.instantiateDeclaration(
+    bindingIdentifier.declarationId,
+    "import",
+    localName,
+    scope,
+  );
   environment.registerDeclaration(
     bindingIdentifier.declarationId,
     functionBuilder.currentBlock.id,

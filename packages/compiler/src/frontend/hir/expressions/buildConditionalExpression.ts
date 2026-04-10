@@ -121,7 +121,11 @@ function buildTemporaryIdentifier(
     functionBuilder.currentBlock.id,
     bindingPlace.id,
   );
-  environment.ensureSyntheticDeclarationMetadata(bindingIdentifier.declarationId, "let", bindingPlace);
+  environment.ensureSyntheticDeclarationMetadata(
+    bindingIdentifier.declarationId,
+    "let",
+    bindingPlace,
+  );
 
   const resultValueIdentifier = environment.createIdentifier(bindingIdentifier.declarationId);
   const resultValuePlace = environment.createPlace(resultValueIdentifier);

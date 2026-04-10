@@ -1,56 +1,94 @@
-import type { Expression, PrivateIdentifier } from "oxc-parser";
+import type { Expression, MemberExpression, PrivateIdentifier } from "oxc-parser";
 import { Environment } from "../../environment";
-import {
-  ArrayPatternInstruction,
-  AssignmentPatternInstruction,
-  LiteralInstruction,
-  ObjectPatternInstruction,
-  ObjectPropertyInstruction,
-  Place,
-  RestElementInstruction,
-} from "../../ir";
+import { type DestructureObjectProperty, type DestructureTarget, Place } from "../../ir";
 import type * as AST from "../estree";
 import { type Scope } from "../scope/Scope";
+import { buildMemberReference } from "./expressions/buildMemberReference";
 import { buildNode } from "./buildNode";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
 import { getValueFromStaticKey } from "./getValueFromStaticKey";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
 
-/**
- * Builds an lval for a declaration or assignment target.
- *
- * @returns place -- the top-level Place representing this lval
- * @returns bindings -- all leaf identifier Places (for pattern instruction getDefs)
- */
+export type LValMode =
+  | { kind: "declaration"; declarationKind: "var" | "let" | "const" }
+  | { kind: "assignment" };
+
 export function buildLVal(
-  node: AST.Pattern,
+  node: AST.Pattern | MemberExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-  kind: "var" | "let" | "const" | null,
-): { place: Place; bindings: Place[] } {
-  if (node.type === "Identifier") {
-    const place = buildIdentifierLVal(node, scope, functionBuilder, environment, kind);
-    return { place, bindings: [place] };
-  } else if (node.type === "ArrayPattern") {
-    return buildArrayPatternLVal(node, scope, functionBuilder, moduleBuilder, environment, kind);
-  } else if (node.type === "ObjectPattern") {
-    return buildObjectPatternLVal(node, scope, functionBuilder, moduleBuilder, environment, kind);
-  } else if (node.type === "AssignmentPattern") {
-    return buildAssignmentPatternLVal(
-      node,
-      scope,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-      kind,
-    );
-  } else if (node.type === "RestElement") {
-    return buildRestElementLVal(node, scope, functionBuilder, moduleBuilder, environment, kind);
+  mode: LValMode,
+): DestructureTarget {
+  switch (node.type) {
+    case "Identifier":
+      return buildIdentifierLVal(node, scope, functionBuilder, environment, mode);
+    case "MemberExpression":
+      if (mode.kind === "declaration") {
+        throw new Error("Member expressions are not valid declaration targets");
+      }
+      return buildMemberExpressionLVal(node, scope, functionBuilder, moduleBuilder, environment);
+    case "ArrayPattern":
+      return {
+        kind: "array",
+        elements: node.elements.map((element) =>
+          element === null
+            ? null
+            : buildLVal(
+                element as AST.Pattern | MemberExpression,
+                scope,
+                functionBuilder,
+                moduleBuilder,
+                environment,
+                mode,
+              ),
+        ),
+      };
+    case "ObjectPattern":
+      return {
+        kind: "object",
+        properties: node.properties.map((property) =>
+          buildObjectPropertyLVal(
+            property,
+            scope,
+            functionBuilder,
+            moduleBuilder,
+            environment,
+            mode,
+          ),
+        ),
+      };
+    case "AssignmentPattern":
+      return {
+        kind: "assignment",
+        left: buildLVal(node.left, scope, functionBuilder, moduleBuilder, environment, mode),
+        right: buildRequiredPlace(
+          node.right,
+          scope,
+          functionBuilder,
+          moduleBuilder,
+          environment,
+          mode.kind === "declaration"
+            ? "Declaration pattern right must be a single place"
+            : "Assignment pattern right must be a single place",
+        ),
+      };
+    case "RestElement":
+      return {
+        kind: "rest",
+        argument: buildLVal(
+          node.argument as AST.Pattern | MemberExpression,
+          scope,
+          functionBuilder,
+          moduleBuilder,
+          environment,
+          mode,
+        ),
+      };
   }
 
-  throw new Error(`Unsupported LVal type: ${node.type}`);
+  throw new Error(`Unsupported LVal type: ${(node as { type: string }).type}`);
 }
 
 function buildIdentifierLVal(
@@ -58,12 +96,34 @@ function buildIdentifierLVal(
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
-  kind: "var" | "let" | "const" | null,
-): Place {
+  mode: LValMode,
+): DestructureTarget {
   const name = node.name;
   const declarationId = functionBuilder.getDeclarationId(name, scope);
   if (declarationId === undefined) {
     throw new Error(`Variable accessed before declaration: ${name}`);
+  }
+
+  if (mode.kind === "assignment") {
+    if (environment.contextDeclarationIds.has(declarationId)) {
+      const latestDeclaration = environment.getLatestDeclaration(declarationId);
+      const place = environment.places.get(latestDeclaration.placeId);
+      if (place === undefined) {
+        throw new Error(`Unable to find the place for ${name} (${declarationId})`);
+      }
+      return { kind: "binding", place, storage: "context" };
+    }
+
+    const bindingPlace = environment.getDeclarationBinding(declarationId);
+    if (bindingPlace === undefined) {
+      throw new Error(`Unable to find the binding for ${name} (${declarationId})`);
+    }
+    environment.registerDeclaration(
+      declarationId,
+      functionBuilder.currentBlock.id,
+      bindingPlace.id,
+    );
+    return { kind: "binding", place: bindingPlace, storage: "local" };
   }
 
   const latestDeclaration = environment.getLatestDeclaration(declarationId);
@@ -71,175 +131,123 @@ function buildIdentifierLVal(
   if (place === undefined) {
     throw new Error(`Unable to find the place for ${name} (${declarationId})`);
   }
-
-  if (kind !== null && kind !== "var") {
+  if (mode.declarationKind !== "var") {
     functionBuilder.markDeclarationInitialized(declarationId);
   }
 
-  return place;
-}
-
-function buildArrayPatternLVal(
-  node: AST.ArrayPattern,
-  scope: Scope,
-  functionBuilder: FunctionIRBuilder,
-  moduleBuilder: ModuleIRBuilder,
-  environment: Environment,
-  kind: "var" | "let" | "const" | null,
-): { place: Place; bindings: Place[] } {
-  const bindings: Place[] = [];
-
-  const elementPlaces = node.elements.map((element) => {
-    if (element == null) {
-      return null;
-    }
-
-    const result = buildLVal(element, scope, functionBuilder, moduleBuilder, environment, kind);
-    bindings.push(...result.bindings);
-    return result.place;
-  });
-
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    ArrayPatternInstruction,
+  return {
+    kind: "binding",
     place,
-    elementPlaces,
-    bindings,
-  );
-  functionBuilder.addInstruction(instruction);
-  return { place, bindings };
+    storage: environment.contextDeclarationIds.has(declarationId) ? "context" : "local",
+  };
 }
 
-function buildObjectPatternLVal(
-  node: AST.ObjectPattern,
+function buildMemberExpressionLVal(
+  node: MemberExpression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-  kind: "var" | "let" | "const" | null,
-): { place: Place; bindings: Place[] } {
-  const bindings: Place[] = [];
-
-  const propertyPlaces = node.properties.map((property) => {
-    if (property.type === "RestElement") {
-      const result = buildRestElementLVal(
-        property,
-        scope,
-        functionBuilder,
-        moduleBuilder,
-        environment,
-        kind,
-      );
-      bindings.push(...result.bindings);
-      return result.place;
-    }
-
-    // ESTree Property (was Babel ObjectProperty)
-    let keyPlace;
-    if (property.computed) {
-      const place = buildNode(property.key, scope, functionBuilder, moduleBuilder, environment);
-      if (place === undefined || Array.isArray(place)) {
-        throw new Error("Object pattern computed key must be a single place");
+): DestructureTarget {
+  const reference = buildMemberReference(node, scope, functionBuilder, moduleBuilder, environment);
+  return reference.kind === "static"
+    ? {
+        kind: "static-member",
+        object: reference.object,
+        property: reference.property,
+        optional: reference.optional,
       }
-      keyPlace = place;
-    } else {
-      keyPlace = buildObjectPropertyStaticKeyLVal(property.key, functionBuilder, environment);
-    }
-
-    const value = property.value as AST.Pattern;
-    const result = buildLVal(value, scope, functionBuilder, moduleBuilder, environment, kind);
-    bindings.push(...result.bindings);
-
-    const identifier = environment.createIdentifier();
-    const place = environment.createPlace(identifier);
-    const instruction = environment.createInstruction(
-      ObjectPropertyInstruction,
-      place,
-      keyPlace,
-      result.place,
-      property.computed,
-      false,
-      result.bindings,
-    );
-    functionBuilder.addInstruction(instruction);
-    return place;
-  });
-
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    ObjectPatternInstruction,
-    place,
-    propertyPlaces,
-    bindings,
-  );
-  functionBuilder.addInstruction(instruction);
-  return { place, bindings };
+    : {
+        kind: "dynamic-member",
+        object: reference.object,
+        property: reference.property,
+        optional: reference.optional,
+      };
 }
 
-function buildObjectPropertyStaticKeyLVal(
-  node: Expression | PrivateIdentifier,
+function buildObjectPropertyLVal(
+  property: AST.Property | AST.RestElement,
+  scope: Scope,
   functionBuilder: FunctionIRBuilder,
+  moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
+  mode: LValMode,
+): DestructureObjectProperty {
+  if (property.type === "RestElement") {
+    return {
+      key: "rest",
+      computed: false,
+      shorthand: false,
+      value: {
+        kind: "rest",
+        argument: buildLVal(
+          property.argument as AST.Pattern | MemberExpression,
+          scope,
+          functionBuilder,
+          moduleBuilder,
+          environment,
+          mode,
+        ),
+      },
+    };
+  }
+
+  return {
+    key: property.computed
+      ? buildComputedPropertyKey(property.key, scope, functionBuilder, moduleBuilder, environment)
+      : buildStaticPropertyKey(property.key),
+    computed: property.computed,
+    shorthand: property.shorthand,
+    value: buildLVal(
+      property.value as AST.Pattern | MemberExpression,
+      scope,
+      functionBuilder,
+      moduleBuilder,
+      environment,
+      mode,
+    ),
+  };
+}
+
+function buildStaticPropertyKey(node: Expression | PrivateIdentifier): string | number {
   const value = getValueFromStaticKey(node);
   if (value === undefined) {
     throw new Error("Unsupported static key type in object pattern destructuring");
   }
-  const keyIdentifier = environment.createIdentifier();
-  const keyPlace = environment.createPlace(keyIdentifier);
-  const keyInstruction = environment.createInstruction(LiteralInstruction, keyPlace, value);
-  functionBuilder.addInstruction(keyInstruction);
-  return keyPlace;
+  return value;
 }
 
-function buildAssignmentPatternLVal(
-  node: AST.AssignmentPattern,
+function buildComputedPropertyKey(
+  node: AST.Property["key"],
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-  kind: "var" | "let" | "const" | null,
-): { place: Place; bindings: Place[] } {
-  const rightPlace = buildNode(node.right, scope, functionBuilder, moduleBuilder, environment);
-  if (rightPlace === undefined || Array.isArray(rightPlace)) {
-    throw new Error("Right place must be a single place");
+): Place {
+  if (node.type === "PrivateIdentifier") {
+    throw new Error("PrivateIdentifier is not supported in object pattern destructuring");
   }
-
-  const result = buildLVal(node.left, scope, functionBuilder, moduleBuilder, environment, kind);
-
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    AssignmentPatternInstruction,
-    place,
-    result.place,
-    rightPlace,
-    result.bindings,
+  return buildRequiredPlace(
+    node,
+    scope,
+    functionBuilder,
+    moduleBuilder,
+    environment,
+    "Object pattern computed key must be a single place",
   );
-  functionBuilder.addInstruction(instruction);
-  return { place, bindings: result.bindings };
 }
 
-function buildRestElementLVal(
-  node: AST.RestElement,
+function buildRequiredPlace(
+  node: Expression,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-  kind: "var" | "let" | "const" | null,
-): { place: Place; bindings: Place[] } {
-  const result = buildLVal(node.argument, scope, functionBuilder, moduleBuilder, environment, kind);
-
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    RestElementInstruction,
-    place,
-    result.place,
-    result.bindings,
-  );
-  functionBuilder.addInstruction(instruction);
-  return { place, bindings: result.bindings };
+  message: string,
+): Place {
+  const place = buildNode(node, scope, functionBuilder, moduleBuilder, environment);
+  if (place === undefined || Array.isArray(place)) {
+    throw new Error(message);
+  }
+  return place;
 }

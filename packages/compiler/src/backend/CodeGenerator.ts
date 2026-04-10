@@ -2,7 +2,6 @@ import _generate from "@babel/generator";
 import * as t from "@babel/types";
 import { ProjectUnit } from "../frontend/ProjectBuilder";
 import {
-  DeclareLocalInstruction,
   BlockId,
   type ControlContext,
   DeclarationId,
@@ -16,7 +15,6 @@ import {
 import { FunctionIR, makeFunctionIRId } from "../ir/core/FunctionIR";
 import { ModuleIR } from "../ir/core/ModuleIR";
 import { generateFunction } from "./codegen/generateFunction";
-import { generateDeclareLocalInstruction } from "./codegen/instructions/memory/generateDeclareLocal";
 
 const generate =
   typeof _generate === "function"
@@ -130,10 +128,9 @@ export class CodeGenerator {
     const metadata = this.getDeclarationMetadata(place.identifier.declarationId);
     const aliasableDeclaration =
       metadata !== undefined && getCodegenDeclarationKind(metadata.kind) !== undefined;
-    const existingDeclarationIdentifier =
-      aliasableDeclaration
-        ? this.declarationIdentifiers.get(place.identifier.declarationId)
-        : undefined;
+    const existingDeclarationIdentifier = aliasableDeclaration
+      ? this.declarationIdentifiers.get(place.identifier.declarationId)
+      : undefined;
     if (existingDeclarationIdentifier) {
       this.places.set(place.id, existingDeclarationIdentifier);
       return existingDeclarationIdentifier;

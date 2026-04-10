@@ -1,3 +1,4 @@
+import { printDestructureTarget } from "./core/Destructure";
 import { FunctionIR } from "./core/FunctionIR";
 import { ModuleIR } from "./core/ModuleIR";
 
@@ -11,7 +12,10 @@ export function printFunctionIR(functionIR: FunctionIR, indent = ""): string {
     }
   }
 
-  if (functionIR.runtime.prologue !== functionIR.source.header && functionIR.runtime.prologue.length > 0) {
+  if (
+    functionIR.runtime.prologue !== functionIR.source.header &&
+    functionIR.runtime.prologue.length > 0
+  ) {
     lines.push(`${indent}runtime.prologue:`);
     for (const instr of functionIR.runtime.prologue) {
       lines.push(`${indent}  ${instr.print()}`);
@@ -44,7 +48,7 @@ export function printFunctionIR(functionIR: FunctionIR, indent = ""): string {
 export function printModuleIR(moduleIR: ModuleIR): string {
   const lines: string[] = [];
   for (const [id, funcIR] of moduleIR.functions) {
-    const params = funcIR.source.params.map((p) => p.print()).join(", ");
+    const params = funcIR.source.params.map((p) => printDestructureTarget(p)).join(", ");
     const prefix = funcIR.async ? "async " : "";
     const suffix = funcIR.generator ? "*" : "";
     lines.push(`fn${id}${suffix}(${params}) ${prefix}{`);

@@ -30,7 +30,10 @@ export function generateObjectDestructureInstruction(
     if (instruction.declarationKind === null) {
       throw new Error("Object destructure declarations require a declaration kind");
     }
-    for (const place of getDestructureTargetDefs({ kind: "object", properties: instruction.properties })) {
+    for (const place of getDestructureTargetDefs({
+      kind: "object",
+      properties: instruction.properties,
+    })) {
       generator.declaredDeclarations.add(place.identifier.declarationId);
     }
     node = t.variableDeclaration(instruction.declarationKind, [

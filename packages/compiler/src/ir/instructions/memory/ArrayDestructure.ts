@@ -46,9 +46,7 @@ export class ArrayDestructureInstruction extends MemoryInstruction {
       this.id,
       this.place,
       this.elements.map((element) =>
-        element === null
-          ? null
-          : rewriteDestructureTarget(element, values, { rewriteDefinitions }),
+        element === null ? null : rewriteDestructureTarget(element, values, { rewriteDefinitions }),
       ),
       this.value.rewrite(values),
       this.kind,

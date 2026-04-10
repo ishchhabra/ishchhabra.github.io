@@ -5,6 +5,7 @@ import { CodeGenerator } from "../../CodeGenerator";
 import { stripTrailingContinue } from "../generateBackEdge";
 import { generateBasicBlock } from "../generateBlock";
 import { generateInstruction } from "../instructions/generateInstruction";
+import { generateDestructureTarget } from "../instructions/memory/generateDestructureTarget";
 
 export function generateForOfStructure(
   structure: ForOfStructure,
@@ -23,11 +24,7 @@ export function generateForOfStructure(
     headerStatements.push(...generateInstruction(instruction, functionIR, generator));
   }
 
-  // Look up the iteration value (left side) from the places map.
-  const iterationValue = generator.places.get(structure.iterationValue.id);
-  if (iterationValue === undefined) {
-    throw new Error(`Place ${structure.iterationValue.id} not found`);
-  }
+  const iterationValue = generateDestructureTarget(structure.iterationTarget, generator);
   t.assertLVal(iterationValue);
 
   // Look up the iterable (right side) from the places map.

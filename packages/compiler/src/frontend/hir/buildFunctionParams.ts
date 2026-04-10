@@ -1,35 +1,27 @@
-import type * as AST from "../estree";
 import type { Expression, Node, PrivateIdentifier } from "oxc-parser";
 import { Environment } from "../../environment";
-import {
-  ArrayPatternInstruction,
-  DeclareLocalInstruction,
-  LiteralInstruction,
-  ObjectPropertyInstruction,
-  Place,
-  RestElementInstruction,
-} from "../../ir";
-import { AssignmentPatternInstruction } from "../../ir/instructions/pattern/AssignmentPattern";
-import { ObjectPatternInstruction } from "../../ir/instructions/pattern/ObjectPattern";
+import { type DestructureObjectProperty, type DestructureTarget, Place } from "../../ir";
+import type * as AST from "../estree";
 import { type Scope } from "../scope/Scope";
 import { instantiateFunctionParamBindings } from "./bindings/instantiateFunctionParamBindings";
 import { buildNode } from "./buildNode";
-import { getValueFromStaticKey } from "./getValueFromStaticKey";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
+import { getValueFromStaticKey } from "./getValueFromStaticKey";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
 
 export interface BuiltFunctionParam {
   place: Place;
+  target: DestructureTarget;
   paramBindings: Place[];
 }
 
 /**
- * One formal parameter after lowering: the param root `place` and the root
- * header instruction `paramBindings` (empty for a simple identifier param).
+ * One formal parameter after lowering: the runtime param root `place`, the
+ * source-level param `target`, and the leaf bindings defined by the param.
  */
 interface ParamBuildResult {
   place: Place;
-  identifiers: Place[];
+  target: DestructureTarget;
   paramBindings: Place[];
 }
 
@@ -44,7 +36,7 @@ export function buildFunctionParams(
 
   return params.map((param) => {
     const result = buildFunctionParam(param, scope, functionBuilder, moduleBuilder, environment);
-    return { place: result.place, paramBindings: result.paramBindings };
+    return { place: result.place, target: result.target, paramBindings: result.paramBindings };
   });
 }
 
@@ -98,21 +90,18 @@ function buildFunctionIdentifierParam(
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): ParamBuildResult {
-  const name = node.name;
-  const declarationId = functionBuilder.getDeclarationId(name, scope);
-  if (declarationId === undefined) {
-    throw new Error(`Variable accessed before declaration: ${name}`);
-  }
-
-  const latestDeclaration = environment.getLatestDeclaration(declarationId);
-  const place = environment.places.get(latestDeclaration.placeId);
-  if (place === undefined) {
-    throw new Error(`Unable to find the place for ${name} (${declarationId})`);
-  }
-
+  const place = buildFunctionIdentifierParamPlace(node, scope, functionBuilder, environment);
+  const declarationId = place.identifier.declarationId;
   functionBuilder.markDeclarationInitialized(declarationId);
-
-  return { place, identifiers: [place], paramBindings: [] };
+  return {
+    place,
+    target: {
+      kind: "binding",
+      place,
+      storage: environment.contextDeclarationIds.has(declarationId) ? "context" : "local",
+    },
+    paramBindings: [place],
+  };
 }
 
 function buildFunctionArrayPatternParam(
@@ -122,8 +111,9 @@ function buildFunctionArrayPatternParam(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): ParamBuildResult {
-  const identifiers: Place[] = [];
-  const places = node.elements.map((element) => {
+  const paramPlace = environment.createPlace(environment.createIdentifier());
+  const paramBindings: Place[] = [];
+  const elements = node.elements.map((element) => {
     // Holes in array patterns (e.g. `function([,b]){}`) are structural markers
     // in the pattern shape, not values in the data-flow graph.
     if (element == null) {
@@ -131,20 +121,14 @@ function buildFunctionArrayPatternParam(
     }
 
     const result = buildFunctionParam(element, scope, functionBuilder, moduleBuilder, environment);
-    identifiers.push(...result.identifiers);
-    return result.place;
+    paramBindings.push(...result.paramBindings);
+    return result.target;
   });
-
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    ArrayPatternInstruction,
-    place,
-    places,
-    identifiers,
-  );
-  functionBuilder.addHeaderInstruction(instruction);
-  return { place, identifiers, paramBindings: identifiers };
+  return {
+    place: paramPlace,
+    target: { kind: "array", elements },
+    paramBindings,
+  };
 }
 
 function buildFunctionObjectPatternParam(
@@ -154,10 +138,11 @@ function buildFunctionObjectPatternParam(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): ParamBuildResult {
-  const identifiers: Place[] = [];
-  const propertyPlaces = node.properties.map((property) => {
+  const place = environment.createPlace(environment.createIdentifier());
+  const paramBindings: Place[] = [];
+  const properties: DestructureObjectProperty[] = node.properties.map((property) => {
     if (property.type === "Property") {
-      let keyPlace: Place;
+      let key: string | number | Place;
       if (property.computed) {
         // Computed keys emit normal value instructions; move them into the
         // function header so param codegen can resolve them during emission.
@@ -168,9 +153,9 @@ function buildFunctionObjectPatternParam(
         }
         const keyInstructions = functionBuilder.currentBlock.instructions.splice(insertPoint);
         functionBuilder.addHeaderInstructions(keyInstructions);
-        keyPlace = p;
+        key = p;
       } else {
-        keyPlace = buildFunctionObjectPropertyKey(property.key, functionBuilder, environment);
+        key = buildFunctionObjectPropertyKey(property.key);
       }
 
       const value = property.value as AST.Pattern;
@@ -181,21 +166,13 @@ function buildFunctionObjectPatternParam(
         moduleBuilder,
         environment,
       );
-      identifiers.push(...valueResult.identifiers);
-
-      const identifier = environment.createIdentifier();
-      const place = environment.createPlace(identifier);
-      const instruction = environment.createInstruction(
-        ObjectPropertyInstruction,
-        place,
-        keyPlace,
-        valueResult.place,
-        property.computed,
-        property.shorthand,
-        valueResult.identifiers,
-      );
-      functionBuilder.addHeaderInstruction(instruction);
-      return place;
+      paramBindings.push(...valueResult.paramBindings);
+      return {
+        key,
+        computed: property.computed,
+        shorthand: property.shorthand,
+        value: valueResult.target,
+      };
     }
 
     if (property.type === "RestElement") {
@@ -206,51 +183,35 @@ function buildFunctionObjectPatternParam(
         moduleBuilder,
         environment,
       );
-      identifiers.push(...argumentResult.identifiers);
-
-      const identifier = environment.createIdentifier();
-      const place = environment.createPlace(identifier);
-      const instruction = environment.createInstruction(
-        RestElementInstruction,
-        place,
-        argumentResult.place,
-        argumentResult.identifiers,
-      );
-      functionBuilder.addHeaderInstruction(instruction);
-      return place;
+      paramBindings.push(...argumentResult.paramBindings);
+      return {
+        key: "rest",
+        computed: false,
+        shorthand: false,
+        value: {
+          kind: "rest",
+          argument: argumentResult.target,
+        },
+      };
     }
 
     throw new Error("Unsupported object pattern property");
   });
-
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    ObjectPatternInstruction,
+  return {
     place,
-    propertyPlaces,
-    identifiers,
-  );
-  functionBuilder.addHeaderInstruction(instruction);
-  return { place, identifiers, paramBindings: identifiers };
+    target: { kind: "object", properties },
+    paramBindings,
+  };
 }
 
-function buildFunctionObjectPropertyKey(
-  keyNode: Expression | PrivateIdentifier,
-  functionBuilder: FunctionIRBuilder,
-  environment: Environment,
-): Place {
+function buildFunctionObjectPropertyKey(keyNode: Expression | PrivateIdentifier): string | number {
   // Non-computed parameter destructuring keys are property labels
   // (identifiers, strings, numbers), not variable references.
   const value = getValueFromStaticKey(keyNode);
   if (value === undefined) {
     throw new Error("Unsupported static key type in object pattern destructuring");
   }
-  const keyIdentifier = environment.createIdentifier();
-  const keyPlace = environment.createPlace(keyIdentifier);
-  const keyInstruction = environment.createInstruction(LiteralInstruction, keyPlace, value);
-  functionBuilder.addHeaderInstruction(keyInstruction);
-  return keyPlace;
+  return value;
 }
 
 function buildFunctionAssignmentPatternParam(
@@ -277,21 +238,14 @@ function buildFunctionAssignmentPatternParam(
     moduleBuilder,
     environment,
   );
-
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    AssignmentPatternInstruction,
-    place,
-    leftResult.place,
-    rightPlace,
-    leftResult.identifiers,
-  );
-  functionBuilder.addHeaderInstruction(instruction);
   return {
-    place,
-    identifiers: leftResult.identifiers,
-    paramBindings: leftResult.identifiers,
+    place: environment.createPlace(environment.createIdentifier()),
+    target: {
+      kind: "assignment",
+      left: leftResult.target,
+      right: rightPlace,
+    },
+    paramBindings: leftResult.paramBindings,
   };
 }
 
@@ -309,19 +263,33 @@ function buildFunctionRestElementParam(
     moduleBuilder,
     environment,
   );
-
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    RestElementInstruction,
-    place,
-    argumentResult.place,
-    argumentResult.identifiers,
-  );
-  functionBuilder.addHeaderInstruction(instruction);
   return {
-    place,
-    identifiers: argumentResult.identifiers,
-    paramBindings: argumentResult.identifiers,
+    place: environment.createPlace(environment.createIdentifier()),
+    target: {
+      kind: "rest",
+      argument: argumentResult.target,
+    },
+    paramBindings: argumentResult.paramBindings,
   };
+}
+
+function buildFunctionIdentifierParamPlace(
+  node: AST.Identifier,
+  scope: Scope,
+  functionBuilder: FunctionIRBuilder,
+  environment: Environment,
+): Place {
+  const name = node.name;
+  const declarationId = functionBuilder.getDeclarationId(name, scope);
+  if (declarationId === undefined) {
+    throw new Error(`Variable accessed before declaration: ${name}`);
+  }
+
+  const latestDeclaration = environment.getLatestDeclaration(declarationId);
+  const place = environment.places.get(latestDeclaration.placeId);
+  if (place === undefined) {
+    throw new Error(`Unable to find the place for ${name} (${declarationId})`);
+  }
+
+  return place;
 }

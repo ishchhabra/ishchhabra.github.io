@@ -1,4 +1,10 @@
 import { BlockId } from "./Block";
+import {
+  type DestructureTarget,
+  getDestructureTargetDefs,
+  getDestructureTargetOperands,
+  rewriteDestructureTarget,
+} from "./Destructure";
 import { Identifier } from "./Identifier";
 import { Place } from "./Place";
 
@@ -108,6 +114,7 @@ export class ForInStructure extends BaseStructure {
   constructor(
     public header: BlockId,
     public readonly iterationValue: Place,
+    public readonly iterationTarget: DestructureTarget,
     public readonly object: Place,
     public body: BlockId,
     public fallthrough: BlockId,
@@ -128,23 +135,31 @@ export class ForInStructure extends BaseStructure {
   }
 
   getOperands(): Place[] {
-    return [this.object];
+    return [...getDestructureTargetOperands(this.iterationTarget), this.object];
   }
 
   getDefs(): Place[] {
-    return [this.iterationValue];
+    return [this.iterationValue, ...getDestructureTargetDefs(this.iterationTarget)];
   }
 
   rewrite(values: Map<Identifier, Place>): ForInStructure {
     const iterationValue = this.iterationValue.rewrite(values);
+    const iterationTarget = rewriteDestructureTarget(this.iterationTarget, values, {
+      rewriteDefinitions: true,
+    });
     const object = this.object.rewrite(values);
-    if (iterationValue === this.iterationValue && object === this.object) {
+    if (
+      iterationValue === this.iterationValue &&
+      iterationTarget === this.iterationTarget &&
+      object === this.object
+    ) {
       return this;
     }
 
     return new ForInStructure(
       this.header,
       iterationValue,
+      iterationTarget,
       object,
       this.body,
       this.fallthrough,
@@ -156,6 +171,7 @@ export class ForInStructure extends BaseStructure {
     return new ForInStructure(
       remapBlock(blockMap, this.header),
       identifierMap.get(this.iterationValue.identifier) ?? this.iterationValue,
+      rewriteDestructureTarget(this.iterationTarget, identifierMap, { rewriteDefinitions: true }),
       identifierMap.get(this.object.identifier) ?? this.object,
       remapBlock(blockMap, this.body),
       remapBlock(blockMap, this.fallthrough),
@@ -177,6 +193,7 @@ export class ForOfStructure extends BaseStructure {
   constructor(
     public header: BlockId,
     public readonly iterationValue: Place,
+    public readonly iterationTarget: DestructureTarget,
     public readonly iterable: Place,
     public body: BlockId,
     public fallthrough: BlockId,
@@ -198,23 +215,31 @@ export class ForOfStructure extends BaseStructure {
   }
 
   getOperands(): Place[] {
-    return [this.iterable];
+    return [...getDestructureTargetOperands(this.iterationTarget), this.iterable];
   }
 
   getDefs(): Place[] {
-    return [this.iterationValue];
+    return [this.iterationValue, ...getDestructureTargetDefs(this.iterationTarget)];
   }
 
   rewrite(values: Map<Identifier, Place>): ForOfStructure {
     const iterationValue = this.iterationValue.rewrite(values);
+    const iterationTarget = rewriteDestructureTarget(this.iterationTarget, values, {
+      rewriteDefinitions: true,
+    });
     const iterable = this.iterable.rewrite(values);
-    if (iterationValue === this.iterationValue && iterable === this.iterable) {
+    if (
+      iterationValue === this.iterationValue &&
+      iterationTarget === this.iterationTarget &&
+      iterable === this.iterable
+    ) {
       return this;
     }
 
     return new ForOfStructure(
       this.header,
       iterationValue,
+      iterationTarget,
       iterable,
       this.body,
       this.fallthrough,
@@ -227,6 +252,7 @@ export class ForOfStructure extends BaseStructure {
     return new ForOfStructure(
       remapBlock(blockMap, this.header),
       identifierMap.get(this.iterationValue.identifier) ?? this.iterationValue,
+      rewriteDestructureTarget(this.iterationTarget, identifierMap, { rewriteDefinitions: true }),
       identifierMap.get(this.iterable.identifier) ?? this.iterable,
       remapBlock(blockMap, this.body),
       remapBlock(blockMap, this.fallthrough),

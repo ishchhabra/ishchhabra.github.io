@@ -8,16 +8,14 @@ import {
 } from "../../frontend/cfg";
 import type { Phi } from "../../pipeline/ssa/Phi";
 import { BaseInstruction } from "../base";
-import { AssignmentPatternInstruction } from "../instructions/pattern/AssignmentPattern";
-import { ArrayPatternInstruction } from "../instructions/pattern/ArrayPattern";
-import { RestElementInstruction } from "../instructions/RestElement";
 import { FunctionDeclarationInstruction } from "../instructions/declaration/FunctionDeclaration";
-import { StoreLocalInstruction } from "../instructions/memory/StoreLocal";
-import { ArrowFunctionExpressionInstruction } from "../instructions/value/ArrowFunctionExpression";
+import { ArrayDestructureInstruction } from "../instructions/memory/ArrayDestructure";
 import { ArrayExpressionInstruction } from "../instructions/value/ArrayExpression";
+import { ArrowFunctionExpressionInstruction } from "../instructions/value/ArrowFunctionExpression";
 import { FunctionExpressionInstruction } from "../instructions/value/FunctionExpression";
 import { LiteralInstruction } from "../instructions/value/Literal";
 import { BasicBlock, BlockId } from "./Block";
+import { type DestructureTarget, rewriteDestructureTarget } from "./Destructure";
 import { Identifier } from "./Identifier";
 import { ModuleIR } from "./ModuleIR";
 import { Place } from "./Place";
@@ -37,11 +35,12 @@ export function makeFunctionIRId(id: number): FunctionIRId {
 
 export interface FunctionSource {
   header: BaseInstruction[];
-  params: Place[];
+  params: DestructureTarget[];
 }
 
 export interface FunctionRuntime {
   params: Place[];
+  paramTargets: DestructureTarget[];
   paramBindings: Place[][];
   prologue: BaseInstruction[];
   captureParams: Place[];
@@ -340,18 +339,24 @@ export class FunctionIR {
     };
 
     const newSourceHeader = cloneInstructionList(this.source.header);
-    const newRuntimePrologue =
-      this.runtimePrologueMatchesSourceHeader
-        ? newSourceHeader
-        : cloneInstructionList(this.runtime.prologue);
+    const newRuntimePrologue = this.runtimePrologueMatchesSourceHeader
+      ? newSourceHeader
+      : cloneInstructionList(this.runtime.prologue);
 
     for (const [oldBlockId, oldBlock] of this.blocks) {
       const newBlock = oldBlock.clone(targetModule);
       blockMap.set(oldBlockId, newBlock.id);
       newBlocks.set(newBlock.id, newBlock);
       for (let i = 0; i < oldBlock.instructions.length; i++) {
-        identifierMap.set(oldBlock.instructions[i].place.identifier, newBlock.instructions[i].place);
-        this.registerAdditionalDefinitionPlaces(oldBlock.instructions[i], identifierMap, environment);
+        identifierMap.set(
+          oldBlock.instructions[i].place.identifier,
+          newBlock.instructions[i].place,
+        );
+        this.registerAdditionalDefinitionPlaces(
+          oldBlock.instructions[i],
+          identifierMap,
+          environment,
+        );
       }
     }
 
@@ -381,8 +386,11 @@ export class FunctionIR {
     }
 
     const remapPlace = (place: Place): Place => identifierMap.get(place.identifier) ?? place;
-    const newSourceParams = this.source.params.map(remapPlace);
+    const remapTarget = (target: DestructureTarget): DestructureTarget =>
+      rewriteDestructureTarget(target, identifierMap, { rewriteDefinitions: true });
+    const newSourceParams = this.source.params.map(remapTarget);
     const newRuntimeParams = this.runtime.params.map(remapPlace);
+    const newRuntimeParamTargets = this.runtime.paramTargets.map(remapTarget);
     const newRuntimeParamBindings = this.runtime.paramBindings.map((bs) => bs.map(remapPlace));
     const newRuntimeCaptureParams = this.runtime.captureParams.map(remapPlace);
     const newBlockLabels = new Map<BlockId, string>();
@@ -397,6 +405,7 @@ export class FunctionIR {
       { header: newSourceHeader, params: newSourceParams },
       {
         params: newRuntimeParams,
+        paramTargets: newRuntimeParamTargets,
         paramBindings: newRuntimeParamBindings,
         prologue: newRuntimePrologue,
         captureParams: newRuntimeCaptureParams,
@@ -424,20 +433,23 @@ export class FunctionIR {
     const environment = targetModule.environment;
     const rewriteMap = new Map<Identifier, Place>();
     const instructions: BaseInstruction[] = [];
+    const usesSyntheticParamDestructure = this.hasSyntheticRuntimeParamDestructure();
+    if (!usesSyntheticParamDestructure) {
+      this.runtime.params.forEach((paramPlace, index) => {
+        const argPlace = args[index];
+        if (argPlace !== undefined) {
+          rewriteMap.set(paramPlace.identifier, argPlace);
+          return;
+        }
 
-    const ensureClonedPlace = (place: Place) => {
-      if (rewriteMap.has(place.identifier)) return;
-      const identifier = environment.createIdentifier();
-      rewriteMap.set(place.identifier, environment.createPlace(identifier));
-    };
-
-    for (const paramPlace of this.runtime.params) {
-      ensureClonedPlace(paramPlace);
-    }
-    for (const bindings of this.runtime.paramBindings) {
-      for (const binding of bindings) {
-        ensureClonedPlace(binding);
-      }
+        const undefinedLiteral = environment.createInstruction(
+          LiteralInstruction,
+          environment.createPlace(environment.createIdentifier()),
+          undefined,
+        );
+        instructions.push(undefinedLiteral);
+        rewriteMap.set(paramPlace.identifier, undefinedLiteral.place);
+      });
     }
     for (let i = 0; i < this.runtime.captureParams.length; i++) {
       if (i < captures.length) {
@@ -445,78 +457,36 @@ export class FunctionIR {
       }
     }
 
-    for (const instr of this.runtime.prologue) {
+    const runtimePrologue = usesSyntheticParamDestructure
+      ? this.runtime.prologue.slice(0, -2)
+      : this.runtime.prologue;
+    for (const instr of runtimePrologue) {
       const clonedInstr = instr.clone(targetModule);
       rewriteMap.set(instr.place.identifier, clonedInstr.place);
       this.registerAdditionalDefinitionPlaces(instr, rewriteMap, environment);
       instructions.push(clonedInstr.rewrite(rewriteMap, { rewriteDefinitions: true }));
     }
 
-    if (this.canDirectWireRuntimeParams()) {
-      for (let i = 0; i < this.runtime.params.length; i++) {
-        const paramPlace = this.runtime.params[i];
-        const lvalPlace = rewriteMap.get(paramPlace.identifier)!;
-        let argPlace = args[i];
-        if (argPlace === undefined) {
-          const undefinedLiteral = environment.createInstruction(
-            LiteralInstruction,
-            environment.createPlace(environment.createIdentifier()),
-            undefined,
-          );
-          instructions.push(undefinedLiteral);
-          argPlace = undefinedLiteral.place;
-        }
-
-        const bindings = this.runtime.paramBindings[i].map(
-          (binding) => rewriteMap.get(binding.identifier) ?? binding,
-        );
-        instructions.push(
-          environment.createInstruction(
-            StoreLocalInstruction,
-            environment.createPlace(environment.createIdentifier()),
-            lvalPlace,
-            argPlace,
-            "const",
-            "declaration",
-            bindings,
-          ),
-        );
-      }
-    } else {
-      const leftElements = this.runtime.params.map((paramPlace) => {
-        const elementPlace = rewriteMap.get(paramPlace.identifier)!;
-        rewriteMap.set(paramPlace.identifier, elementPlace);
-        return elementPlace;
-      });
-      const leftArrayPattern = environment.createInstruction(
-        ArrayPatternInstruction,
-        environment.createPlace(environment.createIdentifier()),
-        leftElements,
-        this.runtime.params.flatMap((paramPlace, i) => {
-          const leaves = this.runtime.paramBindings[i];
-          if (leaves.length > 0) {
-            return leaves.map((binding) => rewriteMap.get(binding.identifier) ?? binding);
-          }
-          return [rewriteMap.get(paramPlace.identifier)!];
-        }),
-      );
+    if (usesSyntheticParamDestructure) {
       const rightArrayExpression = environment.createInstruction(
         ArrayExpressionInstruction,
         environment.createPlace(environment.createIdentifier()),
         args,
       );
-      instructions.push(leftArrayPattern, rightArrayExpression);
-      instructions.push(
-        environment.createInstruction(
-          StoreLocalInstruction,
-          environment.createPlace(environment.createIdentifier()),
-          leftArrayPattern.place,
-          rightArrayExpression.place,
-          "const",
-          "declaration",
-          leftArrayPattern.bindings,
-        ),
+      const leftArrayDestructure = environment.createInstruction(
+        ArrayDestructureInstruction,
+        environment.createPlace(environment.createIdentifier()),
+        this.runtime.paramTargets,
+        rightArrayExpression.place,
+        "declaration",
+        "const",
+        true,
       );
+      rewriteMap.set(rightArrayExpression.place.identifier, rightArrayExpression.place);
+      rewriteMap.set(leftArrayDestructure.place.identifier, leftArrayDestructure.place);
+      this.registerAdditionalDefinitionPlaces(leftArrayDestructure, rewriteMap, environment);
+      instructions.push(rightArrayExpression);
+      instructions.push(leftArrayDestructure.rewrite(rewriteMap, { rewriteDefinitions: true }));
     }
 
     const block = this.blocks.values().next().value!;
@@ -605,16 +575,6 @@ export class FunctionIR {
     }
   }
 
-  private canDirectWireRuntimeParams(): boolean {
-    const paramIds = new Set(this.runtime.params.map((param) => param.identifier.id));
-    for (const instr of this.runtime.prologue) {
-      if (!paramIds.has(instr.place.identifier.id)) continue;
-      if (instr instanceof AssignmentPatternInstruction) return false;
-      if (instr instanceof RestElementInstruction) return false;
-    }
-    return true;
-  }
-
   private registerAdditionalDefinitionPlaces(
     instr: BaseInstruction,
     map: Map<Identifier, Place>,
@@ -626,5 +586,19 @@ export class FunctionIR {
       }
       map.set(def.identifier, environment.createPlace(environment.createIdentifier()));
     }
+  }
+
+  private hasSyntheticRuntimeParamDestructure(): boolean {
+    if (this.runtime.prologue.length < 2) {
+      return false;
+    }
+
+    const maybeArrayExpr = this.runtime.prologue[this.runtime.prologue.length - 2];
+    const maybeDestructure = this.runtime.prologue[this.runtime.prologue.length - 1];
+    return (
+      maybeArrayExpr instanceof ArrayExpressionInstruction &&
+      maybeDestructure instanceof ArrayDestructureInstruction &&
+      maybeDestructure.value.identifier === maybeArrayExpr.place.identifier
+    );
   }
 }

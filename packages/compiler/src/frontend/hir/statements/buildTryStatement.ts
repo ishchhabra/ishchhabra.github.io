@@ -1,10 +1,5 @@
 import { Environment } from "../../../environment";
-import {
-  createInstructionId,
-  DeclareLocalInstruction,
-  JumpTerminal,
-  TryTerminal,
-} from "../../../ir";
+import { createInstructionId, JumpTerminal, TryTerminal } from "../../../ir";
 import type { TryStatement } from "oxc-parser";
 import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";

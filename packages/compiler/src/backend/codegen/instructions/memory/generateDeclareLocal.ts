@@ -1,4 +1,3 @@
-import * as t from "@babel/types";
 import { DeclareLocalInstruction } from "../../../../ir";
 import { CodeGenerator } from "../../../CodeGenerator";
 

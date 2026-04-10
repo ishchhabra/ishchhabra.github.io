@@ -68,11 +68,10 @@ function buildReferencedIdentifier(
   const place = environment.createPlace(identifier);
 
   const declarationKind =
-    declarationId !== undefined ? environment.getDeclarationMetadata(declarationId)?.kind : undefined;
-  if (
-    declarationId === undefined ||
-    declarationKind === "import"
-  ) {
+    declarationId !== undefined
+      ? environment.getDeclarationMetadata(declarationId)?.kind
+      : undefined;
+  if (declarationId === undefined || declarationKind === "import") {
     const instruction = environment.createInstruction(LoadGlobalInstruction, place, name);
     builder.addInstruction(instruction);
   } else {

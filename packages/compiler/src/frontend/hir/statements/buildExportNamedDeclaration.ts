@@ -5,13 +5,9 @@ import type {
   ExportSpecifier,
   ImportOrExportKind,
   Node,
-  VariableDeclaration,
 } from "oxc-parser";
 import { Environment } from "../../../environment";
-import {
-  ExportNamedDeclarationInstruction,
-  Place,
-} from "../../../ir";
+import { ExportNamedDeclarationInstruction, Place } from "../../../ir";
 import { ExportFromInstruction } from "../../../ir/instructions/module/ExportFrom";
 import { ExportSpecifierInstruction } from "../../../ir/instructions/module/ExportSpecifier";
 import { type Scope } from "../../scope/Scope";

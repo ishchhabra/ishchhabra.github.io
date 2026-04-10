@@ -194,13 +194,6 @@ export abstract class ModuleInstruction extends BaseInstruction {}
 
 /**
  * Pattern instructions represent operations that match patterns in the program.
- *
- * Examples:
- * - ArrayPatternInstruction: Represents an array pattern
- *   e.g., `[x, y]`
- *
- * - ObjectPatternInstruction: Represents an object pattern
- *   e.g., `{ x, y }`
  */
 export abstract class PatternInstruction extends BaseInstruction {}
 

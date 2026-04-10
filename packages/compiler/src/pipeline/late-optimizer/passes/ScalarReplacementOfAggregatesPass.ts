@@ -1,31 +1,28 @@
 import { Environment } from "../../../environment";
 import {
   BasicBlock,
+  CopyInstruction,
   Identifier,
   IdentifierId,
   LiteralInstruction,
   LoadDynamicPropertyInstruction,
   LoadLocalInstruction,
   LoadStaticPropertyInstruction,
-  ObjectExpressionInstruction,
   ObjectDestructureInstruction,
-  ObjectPatternInstruction,
+  ObjectExpressionInstruction,
   ObjectPropertyInstruction,
-  RestElementInstruction,
   StoreLocalInstruction,
-  CopyInstruction,
   UnaryExpressionInstruction,
   makeInstructionId,
 } from "../../../ir";
-import { Place } from "../../../ir/core/Place";
 import { FunctionIR } from "../../../ir/core/FunctionIR";
-import { AssignmentPatternInstruction } from "../../../ir/instructions/pattern/AssignmentPattern";
+import { Place } from "../../../ir/core/Place";
 import { SpreadElementInstruction } from "../../../ir/instructions/SpreadElement";
-import { StoreStaticPropertyInstruction } from "../../../ir/instructions/memory/StoreStaticProperty";
 import { StoreDynamicPropertyInstruction } from "../../../ir/instructions/memory/StoreDynamicProperty";
-import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
+import { StoreStaticPropertyInstruction } from "../../../ir/instructions/memory/StoreStaticProperty";
 import { AnalysisManager } from "../../analysis/AnalysisManager";
 import { EscapeAnalysis } from "../../analysis/EscapeAnalysis";
+import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
 
 /**
  * Scalar Replacement of Aggregates — decomposes object aggregates into
@@ -86,8 +83,8 @@ import { EscapeAnalysis } from "../../analysis/EscapeAnalysis";
  *   2. The object contains no spread elements (`SpreadElementInstruction`).
  *   3. Every property in both the object and the pattern has a
  *      non-computed, literal key.
- *   4. The pattern contains no rest elements (`RestElementInstruction`).
- *   5. The pattern contains no default values (`AssignmentPatternInstruction`).
+ *   4. The pattern contains no rest elements.
+ *   5. The pattern contains no default values.
  *   6. Every pattern key has a corresponding key in the object literal
  *      (no implicit `undefined` bindings).
  *
@@ -136,18 +133,13 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
         let valuePlace: Place;
         let storeKind: StoreLocalInstruction["kind"];
         let declarationKind: StoreLocalInstruction["type"];
-        let pattern: ObjectPatternInstruction | ObjectDestructureInstruction | null = null;
+        let pattern: ObjectDestructureInstruction | null = null;
 
         if (instr instanceof ObjectDestructureInstruction) {
           valuePlace = instr.value;
           storeKind = instr.kind;
           declarationKind = instr.declarationKind ?? "const";
           pattern = instr;
-        } else if (instr instanceof StoreLocalInstruction && instr.bindings.length > 0) {
-          valuePlace = instr.value;
-          storeKind = instr.kind;
-          declarationKind = instr.type;
-          pattern = this.findObjectPattern(block, i, instr.lval);
         } else {
           continue;
         }
@@ -160,10 +152,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
         const objMap = this.buildObjectKeyToValue(objectExpr);
         if (!objMap) continue;
 
-        const replacements =
-          pattern instanceof ObjectDestructureInstruction
-            ? this.matchDestructureToObject(pattern, objMap)
-            : this.matchPatternToObject(pattern, objMap);
+        const replacements = this.matchDestructureToObject(pattern, objMap);
         if (!replacements) continue;
 
         block.removeInstructionAt(i);
@@ -557,21 +546,6 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
   // Shared helpers
   // ---------------------------------------------------------------------------
 
-  private findObjectPattern(
-    block: BasicBlock,
-    storeIndex: number,
-    lval: Place,
-  ): ObjectPatternInstruction | null {
-    const targetId = lval.identifier.id;
-    for (let j = storeIndex - 1; j >= 0; j--) {
-      const prev = block.instructions[j];
-      if (prev instanceof ObjectPatternInstruction && prev.place.identifier.id === targetId) {
-        return prev;
-      }
-    }
-    return null;
-  }
-
   /**
    * Build a map from property key (as string) → value {@link Place} for
    * every property in an object literal.
@@ -600,37 +574,6 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
     }
 
     return map;
-  }
-
-  private matchPatternToObject(
-    pattern: ObjectPatternInstruction,
-    objMap: Map<string, Place>,
-  ): Array<{ lval: Place; value: Place }> | null {
-    const replacements: Array<{ lval: Place; value: Place }> = [];
-
-    for (const propPlace of pattern.properties) {
-      const prop = propPlace.identifier.definer;
-
-      if (prop instanceof RestElementInstruction) return null;
-      if (!(prop instanceof ObjectPropertyInstruction)) return null;
-
-      if (prop.computed) return null;
-
-      if (prop.value.identifier.definer instanceof AssignmentPatternInstruction) return null;
-
-      const keyDefiner = prop.key.identifier.definer;
-      if (!(keyDefiner instanceof LiteralInstruction)) return null;
-      if (typeof keyDefiner.value !== "string" && typeof keyDefiner.value !== "number") return null;
-
-      const keyName = String(keyDefiner.value);
-
-      const objValue = objMap.get(keyName);
-      if (objValue === undefined) return null;
-
-      replacements.push({ lval: prop.value, value: objValue });
-    }
-
-    return replacements;
   }
 
   private matchDestructureToObject(

@@ -1,9 +1,5 @@
 import { ProjectUnit } from "../../frontend/ProjectBuilder";
-import {
-  BaseInstruction,
-  BasicBlock,
-  BlockId,
-} from "../../ir";
+import { BaseInstruction, BasicBlock, BlockId } from "../../ir";
 import { FunctionIR, FunctionIRId } from "../../ir/core/FunctionIR";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { Place } from "../../ir/core/Place";
@@ -324,11 +320,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     return undefined;
   }
 
-  private inlineFunctionIR(
-    index: number,
-    callExpressionBlock: BasicBlock,
-    funcIR: FunctionIR,
-  ) {
+  private inlineFunctionIR(index: number, callExpressionBlock: BasicBlock, funcIR: FunctionIR) {
     if (funcIR.blocks.size > 1) {
       throw new Error("Function has multiple blocks");
     }
@@ -346,11 +338,14 @@ export class FunctionInliningPass extends BaseOptimizationPass {
       captures = "captures" in declInstr ? (declInstr as { captures: Place[] }).captures : [];
     }
     const fragment = funcIR.cloneInlineFragment(this.moduleIR, callExpressionInstr.args, captures);
-    this.functionIR.replaceInstructionWithInstructions(callExpressionBlock, index, fragment.instructions);
+    this.functionIR.replaceInstructionWithInstructions(
+      callExpressionBlock,
+      index,
+      fragment.instructions,
+    );
     this.functionIR.replacePlaceUses(callExpressionInstr.place, fragment.returnPlace, {
       skipBlock: callExpressionBlock,
       skipInstructionIndex: index + fragment.instructions.length,
     });
   }
 }
-

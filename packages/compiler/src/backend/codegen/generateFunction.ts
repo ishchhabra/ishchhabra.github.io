@@ -4,8 +4,9 @@ import { FunctionIR } from "../../ir/core/FunctionIR";
 import { Place } from "../../ir/core/Place";
 import { CodeGenerator } from "../CodeGenerator";
 import { generateBlock } from "./generateBlock";
-import { generateDeclareLocalInstruction } from "./instructions/memory/generateDeclareLocal";
 import { generateInstruction } from "./instructions/generateInstruction";
+import { generateDeclareLocalInstruction } from "./instructions/memory/generateDeclareLocal";
+import { generateDestructureTarget } from "./instructions/memory/generateDestructureTarget";
 
 /**
  * Generates the body of a function.
@@ -66,15 +67,7 @@ function generateFunctionParams(
   generator: CodeGenerator,
 ): Array<t.Identifier | t.RestElement | t.Pattern> {
   return functionIR.source.params.map((param) => {
-    let node = generator.places.get(param.id);
-    if (node === undefined) {
-      node = generator.getPlaceIdentifier(param);
-    }
-
-    if (node === null) {
-      throw new Error(`Holes are not supported in function parameters.`);
-    }
-
+    const node = generateDestructureTarget(param, generator);
     if (!(t.isIdentifier(node) || t.isPattern(node) || t.isRestElement(node))) {
       throw new Error(`Unsupported function param: ${node.type}`);
     }

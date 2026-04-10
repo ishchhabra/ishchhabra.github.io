@@ -2,7 +2,7 @@ import type * as AST from "../estree";
 import type { ExportSpecifier, Node, SpreadElement } from "oxc-parser";
 import { Environment } from "../../environment";
 import { Place } from "../../ir";
-import { isExpression, isJSX, isPattern, isStatement, unwrapTSTypeWrappers } from "../estree";
+import { isExpression, isJSX, isStatement, unwrapTSTypeWrappers } from "../estree";
 import { type Scope } from "../scope/Scope";
 import { buildExportSpecifier } from "./buildExportSpecifier";
 import { buildIdentifier } from "./buildIdentifier";
@@ -14,7 +14,6 @@ import { buildExpression } from "./expressions/buildExpression";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
 import { buildJSX } from "./jsx/buildJSX";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
-import { buildPattern } from "./patterns/buildPattern";
 import { buildStatement } from "./statements/buildStatement";
 
 export function buildNode(
@@ -84,10 +83,6 @@ export function buildNode(
       moduleBuilder,
       environment,
     );
-  }
-
-  if (isPattern(node)) {
-    return buildPattern(node, scope, functionBuilder, moduleBuilder, environment);
   }
 
   if (node.type === "ExportSpecifier") {
