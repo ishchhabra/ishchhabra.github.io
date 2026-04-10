@@ -13,7 +13,6 @@ import {
   ModuleInstruction,
   ObjectDestructureInstruction,
   PatternInstruction,
-  RestElementInstruction,
   SpreadElementInstruction,
   StoreContextInstruction,
   StoreLocalInstruction,
@@ -25,7 +24,6 @@ import { CodeGenerator } from "../../CodeGenerator";
 import { generateDeclarationInstruction } from "./declaration/generateDeclaration";
 import { generateDebuggerStatementInstruction } from "./generateDebuggerStatement";
 import { generateExpressionStatementInstruction } from "./generateExpressionStatement";
-import { generateRestElementInstruction } from "./generateRestElement";
 import { generateJSXInstruction } from "./jsx/generateJSX";
 import { generateDeclareLocalInstruction } from "./memory/generateDeclareLocal";
 import { generateMemoryInstruction } from "./memory/generateMemory";
@@ -87,9 +85,6 @@ export function generateInstruction(
     return [statement as t.Statement];
   } else if (instruction instanceof PatternInstruction) {
     generatePatternInstruction(instruction, generator);
-    return [];
-  } else if (instruction instanceof RestElementInstruction) {
-    generateRestElementInstruction(instruction, generator);
     return [];
   } else if (instruction instanceof SpreadElementInstruction) {
     generateSpreadElementInstruction(instruction, generator);

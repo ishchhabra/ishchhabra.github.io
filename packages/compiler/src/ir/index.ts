@@ -10,5 +10,4 @@ export {
 export * from "./instructions";
 export { DebuggerStatementInstruction } from "./instructions/DebuggerStatement";
 export { ExpressionStatementInstruction } from "./instructions/ExpressionStatement";
-export { RestElementInstruction } from "./instructions/RestElement";
 export * from "./utils";
