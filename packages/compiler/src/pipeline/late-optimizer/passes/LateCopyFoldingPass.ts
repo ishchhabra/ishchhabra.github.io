@@ -2,7 +2,6 @@ import {
   BaseInstruction,
   CopyInstruction,
   DeclareLocalInstruction,
-  ExpressionStatementInstruction,
   IdentifierId,
   LoadLocalInstruction,
   StoreLocalInstruction,
@@ -117,17 +116,7 @@ export class LateCopyFoldingPass extends BaseOptimizationPass {
         ),
       );
 
-      const indicesToRemove = [adjusted.copyIdx];
-      const expressionStmtIdx = this.findRedundantExpressionStatement(
-        block,
-        adjusted.copyIdx,
-        copy,
-      );
-      if (expressionStmtIdx !== undefined) {
-        indicesToRemove.push(expressionStmtIdx);
-      }
-
-      this.removeInstructionIndices(block, indicesToRemove);
+      this.removeInstructionIndices(block, [adjusted.copyIdx]);
       copyIdx = Math.max(-1, adjusted.storeIdx - 1);
       changed = true;
     }
@@ -284,22 +273,6 @@ export class LateCopyFoldingPass extends BaseOptimizationPass {
       previous.place.identifier.uses.size === 0
     ) {
       return storeIdx - 1;
-    }
-
-    return undefined;
-  }
-
-  private findRedundantExpressionStatement(
-    block: BasicBlock,
-    copyIdx: number,
-    copy: CopyInstruction,
-  ): number | undefined {
-    const next = block.instructions[copyIdx + 1];
-    if (
-      next instanceof ExpressionStatementInstruction &&
-      next.expression.identifier.id === copy.place.identifier.id
-    ) {
-      return copyIdx + 1;
     }
 
     return undefined;

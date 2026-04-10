@@ -1,26 +1,24 @@
 let $0_0 = 0;
-let $30_phi_37 = undefined;
-$30_phi_37 = $0_0;
-outer: while ($30_phi_37 < 3) {
+let $27_phi_34 = undefined;
+$27_phi_34 = $0_0;
+outer: while ($27_phi_34 < 3) {
   let $5_0 = 0;
-  let $31_phi_38 = undefined;
-  $31_phi_38 = $5_0;
-  let $32_phi_39 = undefined;
-  let $33_phi_40 = undefined;
-  while ($31_phi_38 < 3) {
-    if ($31_phi_38 === 1) {
-      $33_phi_40 = $31_phi_38;
+  let $28_phi_35 = undefined;
+  $28_phi_35 = $5_0;
+  let $29_phi_36 = undefined;
+  let $30_phi_37 = undefined;
+  while ($28_phi_35 < 3) {
+    if ($28_phi_35 === 1) {
+      $30_phi_37 = $28_phi_35;
       break outer;
     }
-    console.log($30_phi_37, $31_phi_38);
-    const $16_0 = $31_phi_38;
-    $5_0 = $31_phi_38 + 1;
-    $31_phi_38;
-    $31_phi_38 = $5_0;
+    console.log($27_phi_34, $28_phi_35);
+    const $15_0 = $28_phi_35;
+    $5_0 = $28_phi_35 + 1;
+    $28_phi_35 = $5_0;
   }
-  const $23_0 = $30_phi_37;
-  $0_0 = $30_phi_37 + 1;
-  $30_phi_37;
-  $30_phi_37 = $0_0;
-  $32_phi_39 = $31_phi_38;
+  const $21_0 = $27_phi_34;
+  $0_0 = $27_phi_34 + 1;
+  $27_phi_34 = $0_0;
+  $29_phi_36 = $28_phi_35;
 }

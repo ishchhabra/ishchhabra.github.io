@@ -8,8 +8,7 @@ import {
   type Identifier,
   type Place,
 } from "../../core";
-import { BaseInstruction, InstructionId, MemoryInstruction } from "../../base";
-import { ExpressionStatementInstruction } from "../ExpressionStatement";
+import { InstructionId, MemoryInstruction } from "../../base";
 import type { StoreLocalKind } from "./StoreLocal";
 
 export class ArrayDestructureInstruction extends MemoryInstruction {
@@ -68,11 +67,5 @@ export class ArrayDestructureInstruction extends MemoryInstruction {
 
   public override hasSideEffects(): boolean {
     return destructureTargetHasObservableWrites({ kind: "array", elements: this.elements });
-  }
-
-  override asSideEffect(): BaseInstruction | null {
-    return this.hasSideEffects()
-      ? null
-      : new ExpressionStatementInstruction(this.id, this.place, this.value);
   }
 }

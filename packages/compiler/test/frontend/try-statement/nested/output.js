@@ -1,9 +1,9 @@
 try {
   try {
     JSON.parse("invalid");
-  } catch ($5_0) {
-    console.log($5_0);
+  } catch ($4_0) {
+    console.log($4_0);
   }
-} catch ($10_0) {
-  console.log($10_0);
+} catch ($8_0) {
+  console.log($8_0);
 }

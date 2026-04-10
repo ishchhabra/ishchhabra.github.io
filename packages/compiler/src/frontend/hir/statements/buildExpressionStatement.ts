@@ -1,12 +1,7 @@
 import type { ExpressionStatement } from "oxc-parser";
 import { castArray } from "lodash-es";
 import { Environment } from "../../../environment";
-import {
-  ExpressionStatementInstruction,
-  Place,
-  StoreContextInstruction,
-  StoreLocalInstruction,
-} from "../../../ir";
+import { Place } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -30,32 +25,8 @@ export function buildExpressionStatement(
   }
 
   const expressionPlace = buildNode(expression, scope, functionBuilder, moduleBuilder, environment);
-  const expressionPlaces = castArray(expressionPlace);
-  const places = expressionPlaces
-    .map((exprPlace) => {
-      const expressionInstruction = functionBuilder.environment.placeToInstruction.get(
-        exprPlace.id,
-      );
-      // For assignments, since we convert them to a memory instruction,
-      // we do not need to emit an expression statement instruction.
-      if (
-        expressionInstruction instanceof StoreLocalInstruction ||
-        expressionInstruction instanceof StoreContextInstruction
-      ) {
-        return undefined;
-      }
-
-      const identifier = environment.createIdentifier();
-      const place = environment.createPlace(identifier);
-      const instruction = environment.createInstruction(
-        ExpressionStatementInstruction,
-        place,
-        exprPlace,
-      );
-      functionBuilder.addInstruction(instruction);
-      return place;
-    })
-    .filter((place) => place !== undefined);
-
-  return places;
+  // The value instruction is already in the block. Codegen will flush it
+  // as an expression statement if it has zero uses (side-effect-only).
+  // No wrapper instruction needed.
+  return castArray(expressionPlace);
 }

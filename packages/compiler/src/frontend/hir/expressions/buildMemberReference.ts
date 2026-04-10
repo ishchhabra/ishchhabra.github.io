@@ -1,6 +1,6 @@
 import type { Expression, MemberExpression, PrivateIdentifier } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { ExpressionStatementInstruction, Place } from "../../../ir";
+import { Place } from "../../../ir";
 import { LoadDynamicPropertyInstruction } from "../../../ir/instructions/memory/LoadDynamicProperty";
 import { LoadStaticPropertyInstruction } from "../../../ir/instructions/memory/LoadStaticProperty";
 import { StoreDynamicPropertyInstruction } from "../../../ir/instructions/memory/StoreDynamicProperty";
@@ -201,13 +201,7 @@ export function emitMemberReferenceStore(
   functionBuilder: FunctionIRBuilder,
   environment: Environment,
 ): Place {
-  const storePlace = storeMemberReference(reference, valuePlace, functionBuilder, environment);
-  functionBuilder.addInstruction(
-    environment.createInstruction(
-      ExpressionStatementInstruction,
-      environment.createPlace(environment.createIdentifier()),
-      storePlace,
-    ),
-  );
-  return storePlace;
+  // The store instruction is already added by storeMemberReference.
+  // Codegen will flush it as an expression statement if zero-use.
+  return storeMemberReference(reference, valuePlace, functionBuilder, environment);
 }

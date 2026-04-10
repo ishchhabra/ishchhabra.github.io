@@ -4,7 +4,6 @@ import {
   BasicBlock,
   BlockId,
   DeclarationInstruction,
-  ExpressionStatementInstruction,
   ModuleInstruction,
   StoreContextInstruction,
   StoreLocalInstruction,
@@ -363,7 +362,6 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
       }
       return (
         (instr instanceof StoreContextInstruction && instr.emit) ||
-        instr instanceof ExpressionStatementInstruction ||
         instr instanceof DeclarationInstruction ||
         instr instanceof ModuleInstruction
       );

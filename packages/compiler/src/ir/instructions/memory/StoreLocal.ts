@@ -1,7 +1,6 @@
 import type { ModuleIR } from "../../core/ModuleIR";
-import { BaseInstruction, InstructionId, MemoryInstruction } from "../../base";
+import { InstructionId, MemoryInstruction } from "../../base";
 import { Identifier, Place } from "../../core";
-import { ExpressionStatementInstruction } from "../ExpressionStatement";
 
 export type StoreLocalKind = "declaration" | "assignment";
 
@@ -76,10 +75,6 @@ export class StoreLocalInstruction extends MemoryInstruction {
 
   public override hasSideEffects(): boolean {
     return false;
-  }
-
-  override asSideEffect(): BaseInstruction | null {
-    return new ExpressionStatementInstruction(this.id, this.place, this.value);
   }
 
   public override print(): string {

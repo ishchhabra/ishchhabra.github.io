@@ -90,10 +90,6 @@ export abstract class BaseInstruction {
    * Whether this instruction has observable side effects (mutations, I/O,
    * throws). Instructions with side effects cannot be removed even when
    * their result is unused.
-   *
-   * @param environment - Environment for context-dependent lookups.
-   *   ExpressionStatementInstruction uses this to resolve the wrapped
-   *   expression's side-effect status via `placeToInstruction`.
    */
   public hasSideEffects(_environment: Environment): boolean {
     return true;
@@ -114,20 +110,6 @@ export abstract class BaseInstruction {
    */
   public isPure(environment: Environment): boolean {
     return !this.hasSideEffects(environment) && this.isDeterministic;
-  }
-
-  /**
-   * When this instruction is dead (none of its written places are used),
-   * returns a replacement instruction that preserves only the side
-   * effects, stripping the definition. Returns null if the instruction
-   * can be removed entirely.
-   *
-   * For example, a dead `StoreLocal result = delete obj.x` returns an
-   * `ExpressionStatement(delete obj.x)` — the definition of `result` is
-   * stripped, but the side-effecting `delete` is preserved.
-   */
-  asSideEffect(): BaseInstruction | null {
-    return null;
   }
 
   public print(): string {

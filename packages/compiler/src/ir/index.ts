@@ -9,5 +9,4 @@ export {
 } from "./core/Structure";
 export * from "./instructions";
 export { DebuggerStatementInstruction } from "./instructions/DebuggerStatement";
-export { ExpressionStatementInstruction } from "./instructions/ExpressionStatement";
 export * from "./utils";

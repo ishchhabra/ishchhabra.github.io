@@ -1,2 +1,2 @@
-"production";
+process.env;
 console.log("production", false);

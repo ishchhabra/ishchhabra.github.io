@@ -8,8 +8,7 @@ import {
   type DestructureObjectProperty,
   type Identifier,
 } from "../../core";
-import { BaseInstruction, InstructionId, MemoryInstruction } from "../../base";
-import { ExpressionStatementInstruction } from "../ExpressionStatement";
+import { InstructionId, MemoryInstruction } from "../../base";
 import type { StoreLocalKind } from "./StoreLocal";
 
 export class ObjectDestructureInstruction extends MemoryInstruction {
@@ -76,11 +75,5 @@ export class ObjectDestructureInstruction extends MemoryInstruction {
 
   public override hasSideEffects(): boolean {
     return destructureTargetHasObservableWrites({ kind: "object", properties: this.properties });
-  }
-
-  override asSideEffect(): BaseInstruction | null {
-    return this.hasSideEffects()
-      ? null
-      : new ExpressionStatementInstruction(this.id, this.place, this.value);
   }
 }

@@ -76,12 +76,7 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
         if (instr.hasSideEffects(this.environment)) continue;
         if (instr.getDefs().some((p) => liveness.isLive(p.identifier.id))) continue;
 
-        const replacement = instr.asSideEffect();
-        if (replacement && replacement.hasSideEffects(this.environment)) {
-          block.replaceInstruction(i, replacement);
-        } else {
-          block.removeInstructionAt(i);
-        }
+        block.removeInstructionAt(i);
         changed = true;
       }
     }

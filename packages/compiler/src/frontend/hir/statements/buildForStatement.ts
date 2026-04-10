@@ -1,14 +1,6 @@
 import type { Expression, ForStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import {
-  BranchTerminal,
-  ExpressionStatementInstruction,
-  JumpTerminal,
-  LiteralInstruction,
-  StoreContextInstruction,
-  StoreLocalInstruction,
-  makeInstructionId,
-} from "../../../ir";
+import { BranchTerminal, JumpTerminal, LiteralInstruction, makeInstructionId } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { instantiateScopeBindings } from "../bindings";
 import { buildNode } from "../buildNode";
@@ -182,26 +174,7 @@ function buildExpressionAsStatement(
     throw new Error("Expression place is undefined");
   }
 
-  const expressionInstruction = functionBuilder.environment.placeToInstruction.get(
-    expressionPlace.id,
-  );
-
-  // Assignments already emit a StoreLocalInstruction; wrapping in
-  // ExpressionStatementInstruction would duplicate the declaration in codegen.
-  if (
-    expressionInstruction instanceof StoreLocalInstruction ||
-    expressionInstruction instanceof StoreContextInstruction
-  ) {
-    return expressionPlace;
-  }
-
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    ExpressionStatementInstruction,
-    place,
-    expressionPlace,
-  );
-  functionBuilder.addInstruction(instruction);
-  return place;
+  // The value instruction is already in the block. Codegen will flush it
+  // as an expression statement if it has zero uses.
+  return expressionPlace;
 }

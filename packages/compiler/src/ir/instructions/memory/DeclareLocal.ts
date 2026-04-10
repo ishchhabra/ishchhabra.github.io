@@ -54,10 +54,6 @@ export class DeclareLocalInstruction extends BaseInstruction {
     return false;
   }
 
-  override asSideEffect(): BaseInstruction | null {
-    return null;
-  }
-
   public override print(): string {
     return `DeclareLocal ${this.kind} ${this.place.print()}`;
   }

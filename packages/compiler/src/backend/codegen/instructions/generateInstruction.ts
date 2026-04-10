@@ -6,7 +6,6 @@ import {
   DeclarationInstruction,
   DeclareLocalInstruction,
   ExportSpecifierInstruction,
-  ExpressionStatementInstruction,
   ImportSpecifierInstruction,
   JSXInstruction,
   MemoryInstruction,
@@ -23,7 +22,6 @@ import { FunctionDeclarationInstruction } from "../../../ir/instructions/declara
 import { CodeGenerator } from "../../CodeGenerator";
 import { generateDeclarationInstruction } from "./declaration/generateDeclaration";
 import { generateDebuggerStatementInstruction } from "./generateDebuggerStatement";
-import { generateExpressionStatementInstruction } from "./generateExpressionStatement";
 import { generateJSXInstruction } from "./jsx/generateJSX";
 import { generateDeclareLocalInstruction } from "./memory/generateDeclareLocal";
 import { generateMemoryInstruction } from "./memory/generateMemory";
@@ -46,12 +44,6 @@ export function generateInstruction(
     }
 
     return [statement];
-  } else if (instruction instanceof ExpressionStatementInstruction) {
-    const statement = generateExpressionStatementInstruction(instruction, generator);
-    if (statement === undefined) {
-      return [];
-    }
-    return [statement];
   } else if (instruction instanceof JSXInstruction) {
     generateJSXInstruction(instruction, generator);
     return [];
@@ -60,8 +52,6 @@ export function generateInstruction(
     return [];
   } else if (instruction instanceof MemoryInstruction) {
     const statement = generateMemoryInstruction(instruction, generator);
-    // TODO: Refactor HIRBuilder to include a property indicating whether
-    // the place is temporary or not.
     if (
       (instruction instanceof ArrayDestructureInstruction ||
         instruction instanceof ObjectDestructureInstruction ||
@@ -70,6 +60,17 @@ export function generateInstruction(
       instruction.emit
     ) {
       return [statement as t.Statement];
+    }
+
+    // Flush zero-use side-effecting memory instructions (e.g.
+    // StoreStaticProperty) as expression statements.
+    if (
+      instruction.place.identifier.uses.size === 0 &&
+      instruction.hasSideEffects(generator.moduleIR.environment) &&
+      statement &&
+      t.isExpression(statement)
+    ) {
+      return [t.expressionStatement(statement)];
     }
 
     return [];
@@ -90,7 +91,18 @@ export function generateInstruction(
     generateSpreadElementInstruction(instruction, generator);
     return [];
   } else if (instruction instanceof ValueInstruction) {
-    generateValueInstruction(instruction, functionIR, generator);
+    const node = generateValueInstruction(instruction, functionIR, generator);
+    // Flush side-effecting values with zero uses as expression statements.
+    // This replaces ExpressionStatementInstruction — the emission decision
+    // is based on the use graph, not a wrapper instruction type.
+    if (
+      instruction.place.identifier.uses.size === 0 &&
+      instruction.hasSideEffects(generator.moduleIR.environment) &&
+      node !== null &&
+      t.isExpression(node)
+    ) {
+      return [t.expressionStatement(node)];
+    }
     return [];
   }
 

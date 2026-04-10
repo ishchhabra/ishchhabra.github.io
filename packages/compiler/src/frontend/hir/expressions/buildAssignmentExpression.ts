@@ -7,7 +7,6 @@ import {
   BranchTerminal,
   createInstructionId,
   DeclareLocalInstruction,
-  ExpressionStatementInstruction,
   JumpTerminal,
   LiteralInstruction,
   LoadLocalInstruction,
@@ -522,15 +521,6 @@ function buildLogicalMemberAssignment(
   const storePlace = environment.createPlace(environment.createIdentifier());
   functionBuilder.addInstruction(
     createStoreMemberReferenceInstruction(reference, storePlace, stabilizedRightPlace, environment),
-  );
-
-  // Wrap the store in an ExpressionStatement so it emits as a statement.
-  functionBuilder.addInstruction(
-    environment.createInstruction(
-      ExpressionStatementInstruction,
-      environment.createPlace(environment.createIdentifier()),
-      storePlace,
-    ),
   );
 
   // _result = y;
