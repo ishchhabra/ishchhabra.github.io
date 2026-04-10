@@ -9,7 +9,7 @@ import { Place } from "../../core/Place";
  *   `const arrow = (x) => x + 1;`
  *
  * `captures` are the outer-scope Places this closure reads from,
- * aligned by index with `functionIR.captureParams`. Codegen binds
+ * aligned by index with `functionIR.runtime.captureParams`. Codegen binds
  * `captureParams[i]` → `captures[i]` so the function body resolves
  * captured variables through the indirection layer.
  */

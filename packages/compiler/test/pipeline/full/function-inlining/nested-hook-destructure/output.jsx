@@ -10,20 +10,20 @@ function $0_0() {
   }, [a, b]);
 }
 export function App() {
-  const { a, b } = useRouterState({
+  const { a: $56_0, b: $57_0 } = useRouterState({
     select: ($6_0) => ({
       a: $6_0.a,
       b: $6_0.b,
     }),
   });
   const loc = useMemo(() => {
-    return a ? b : null;
-  }, [a, b]);
+    return $56_0 ? $57_0 : null;
+  }, [$56_0, $57_0]);
   return (
     <div>
       {useMemo(() => {
-        return a ? b : null;
-      }, [a, b])}
+        return $56_0 ? $57_0 : null;
+      }, [$56_0, $57_0])}
     </div>
   );
 }

@@ -135,10 +135,10 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
     this.buildAuxMaps();
 
     // Parameters and captures are external — initialize to BOTTOM.
-    for (const param of this.functionIR.params) {
+    for (const param of this.functionIR.runtime.params) {
       this.setLattice(param.identifier, BOTTOM);
     }
-    for (const capture of this.functionIR.captureParams) {
+    for (const capture of this.functionIR.runtime.captureParams) {
       this.setLattice(capture.identifier, BOTTOM);
     }
 

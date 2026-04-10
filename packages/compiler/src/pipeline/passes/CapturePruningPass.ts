@@ -92,10 +92,10 @@ export class CapturePruningPass extends BaseOptimizationPass {
 
         const { functionIR: innerFunctionIR, captures } = fields;
 
-        // Check header reads (parameter bindings) — these are not
-        // in blocks, so the embedded use-chains don't cover them.
+        // Check runtime prologue reads (parameter bindings / lowered setup) —
+        // these are not in blocks, so the embedded use-chains don't cover them.
         const headerReadIds = new Set<IdentifierId>();
-        for (const headerInstr of innerFunctionIR.header) {
+        for (const headerInstr of innerFunctionIR.runtime.prologue) {
           for (const place of headerInstr.getOperands()) {
             headerReadIds.add(place.identifier.id);
           }
@@ -113,7 +113,7 @@ export class CapturePruningPass extends BaseOptimizationPass {
           headerReadIds.has(id) || structureReadIds.has(id);
 
         // Determine which capture slots are still live.
-        const captureParams = innerFunctionIR.captureParams;
+        const captureParams = innerFunctionIR.runtime.captureParams;
         const liveIndices: number[] = [];
         for (let j = 0; j < captureParams.length; j++) {
           const param = captureParams[j];

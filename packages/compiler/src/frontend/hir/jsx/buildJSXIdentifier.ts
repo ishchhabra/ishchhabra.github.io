@@ -44,17 +44,14 @@ export function buildJSXIdentifier(
         throwTDZAccessError(functionBuilder.getDeclarationSourceName(declarationId) ?? name);
       }
 
-      const latestDeclaration = environment.getLatestDeclaration(declarationId);
-      const declarationPlace = environment.places.get(latestDeclaration.placeId);
-      if (declarationPlace === undefined) {
-        throw new Error(`Unable to find the place for ${name} (${declarationId})`);
-      }
-
       if (!functionBuilder.isOwnDeclaration(declarationId)) {
+        const declarationPlace = environment.getDeclarationBinding(declarationId);
+        if (declarationPlace === undefined) {
+          throw new Error(`Unable to find the binding place for ${name} (${declarationId})`);
+        }
         functionBuilder.captures.set(declarationId, declarationPlace);
         if (!functionBuilder.captureParams.has(declarationId)) {
           const paramIdentifier = environment.createIdentifier(declarationId);
-          paramIdentifier.name = declarationPlace.identifier.name;
           functionBuilder.captureParams.set(
             declarationId,
             environment.createPlace(paramIdentifier),
@@ -68,6 +65,11 @@ export function buildJSXIdentifier(
           environment.createInstruction(LoadClass, valuePlace, captureParam),
         );
       } else {
+        const latestDeclaration = environment.getLatestDeclaration(declarationId);
+        const declarationPlace = environment.places.get(latestDeclaration.placeId);
+        if (declarationPlace === undefined) {
+          throw new Error(`Unable to find the place for ${name} (${declarationId})`);
+        }
         const LoadClass = environment.contextDeclarationIds.has(declarationId)
           ? LoadContextInstruction
           : LoadLocalInstruction;

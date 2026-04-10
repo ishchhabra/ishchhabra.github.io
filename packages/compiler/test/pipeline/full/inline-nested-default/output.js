@@ -1,5 +1,5 @@
 function $0_0({ a: $1_0 = 1 }) {
   return $1_0;
 }
-const { a: $1_1 = 1 } = {};
-console.log($1_1);
+const { a: $14_0 = 1 } = {};
+console.log($14_0);

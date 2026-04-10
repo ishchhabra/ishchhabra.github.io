@@ -3,12 +3,12 @@ function $0_0($2_0) {
   return <span>{name}</span>;
 }
 export function App() {
-  const { name } = {
+  const { name: $29_0 } = {
     name: "hello",
   };
   return (
     <div>
-      <span>{name}</span>
+      <span>{$29_0}</span>
     </div>
   );
 }

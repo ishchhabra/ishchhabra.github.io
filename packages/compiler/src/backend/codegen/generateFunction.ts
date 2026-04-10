@@ -11,7 +11,7 @@ import { generateInstruction } from "./instructions/generateInstruction";
  * Generates the body of a function.
  *
  * @param captures - Outer-scope Places this function captures, aligned
- *   by index with `functionIR.captureParams`. When present, each
+ *   by index with `functionIR.runtime.captureParams`. When present, each
  *   `captureParams[i]` is bound to `captures[i]`'s generated node so
  *   the function body can reference captured variables through the
  *   indirection layer.
@@ -27,11 +27,11 @@ export function generateFunction(
   return generator.withFunctionState(() => {
     // Bind capture parameters to outer captures so the function body
     // resolves captured variables through the indirection layer.
-    for (let i = 0; i < functionIR.captureParams.length; i++) {
+    for (let i = 0; i < functionIR.runtime.captureParams.length; i++) {
       if (i < captures.length) {
         const outerNode = generator.places.get(captures[i].id);
         if (outerNode !== undefined) {
-          generator.places.set(functionIR.captureParams[i].id, outerNode);
+          generator.places.set(functionIR.runtime.captureParams[i].id, outerNode);
         }
       }
     }
@@ -39,7 +39,7 @@ export function generateFunction(
     // Pre-register all binding identifiers across ALL blocks of this function.
     // This ensures closures defined in earlier blocks can reference variables
     // declared in later blocks (e.g. phi variables in merge blocks).
-    for (const instruction of functionIR.header) {
+    for (const instruction of functionIR.source.header) {
       if (instruction instanceof DeclareLocalInstruction) {
         generateDeclareLocalInstruction(instruction, generator);
       }
@@ -65,7 +65,7 @@ function generateFunctionParams(
   functionIR: FunctionIR,
   generator: CodeGenerator,
 ): Array<t.Identifier | t.RestElement | t.Pattern> {
-  return functionIR.params.map((param) => {
+  return functionIR.source.params.map((param) => {
     const node = generator.places.get(param.id);
     if (node === undefined) {
       throw new Error(`Place ${param.id} not found`);
@@ -83,7 +83,7 @@ function generateFunctionParams(
 }
 
 function generateHeader(functionIR: FunctionIR, generator: CodeGenerator) {
-  for (const instruction of functionIR.header) {
+  for (const instruction of functionIR.source.header) {
     generateInstruction(instruction, functionIR, generator);
   }
 }

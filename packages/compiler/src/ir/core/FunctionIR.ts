@@ -6,13 +6,23 @@ import {
   getPredecessors,
   getSuccessors,
 } from "../../frontend/cfg";
+import type { Phi } from "../../pipeline/ssa/Phi";
 import { BaseInstruction } from "../base";
+import { AssignmentPatternInstruction } from "../instructions/pattern/AssignmentPattern";
+import { ArrayPatternInstruction } from "../instructions/pattern/ArrayPattern";
+import { RestElementInstruction } from "../instructions/RestElement";
+import { FunctionDeclarationInstruction } from "../instructions/declaration/FunctionDeclaration";
+import { StoreLocalInstruction } from "../instructions/memory/StoreLocal";
+import { ArrowFunctionExpressionInstruction } from "../instructions/value/ArrowFunctionExpression";
+import { ArrayExpressionInstruction } from "../instructions/value/ArrayExpression";
+import { FunctionExpressionInstruction } from "../instructions/value/FunctionExpression";
+import { LiteralInstruction } from "../instructions/value/Literal";
 import { BasicBlock, BlockId } from "./Block";
 import { Identifier } from "./Identifier";
-import { Place } from "./Place";
-import { BaseStructure } from "./Structure";
 import { ModuleIR } from "./ModuleIR";
-import type { Phi } from "../../pipeline/ssa/Phi";
+import { Place } from "./Place";
+import { BaseStructure, TernaryStructure } from "./Structure";
+import { ReturnTerminal } from "./Terminal";
 
 /**
  * Simulated opaque type for FunctionIR to prevent using normal numbers as ids
@@ -24,6 +34,28 @@ export type FunctionIRId = number & { [opaqueFunctionIRId]: "FunctionIRId" };
 export function makeFunctionIRId(id: number): FunctionIRId {
   return id as FunctionIRId;
 }
+
+export interface FunctionSource {
+  header: BaseInstruction[];
+  params: Place[];
+}
+
+export interface FunctionRuntime {
+  params: Place[];
+  paramBindings: Place[][];
+  prologue: BaseInstruction[];
+  captureParams: Place[];
+}
+
+export interface InlinedFunctionFragment {
+  instructions: BaseInstruction[];
+  returnPlace: Place;
+}
+
+type NestedFunctionInstruction =
+  | ArrowFunctionExpressionInstruction
+  | FunctionExpressionInstruction
+  | FunctionDeclarationInstruction;
 
 export class FunctionIR {
   public predecessors!: Map<BlockId, Set<BlockId>>;
@@ -61,6 +93,13 @@ export class FunctionIR {
     return this.blocks.get(this.exitBlockId)!;
   }
 
+  private get runtimePrologueMatchesSourceHeader(): boolean {
+    return (
+      this.runtime.prologue.length === this.source.header.length &&
+      this.runtime.prologue.every((instruction, index) => instruction === this.source.header[index])
+    );
+  }
+
   constructor(
     /**
      * The {@link ModuleIR} this function belongs to. Set at construction
@@ -76,33 +115,14 @@ export class FunctionIR {
      */
     public readonly moduleIR: ModuleIR,
     public readonly id: FunctionIRId,
-    /**
-     * A list of instructions executed at the very start of the function. These
-     * typically handle parameter initialization such as default values,
-     * destructuring, rest/spread setup, etc. Essentially, these instructions
-     * ensure the function's parameter `Place`s are fully populated before
-     * they are referenced.
-     */
-    public readonly header: BaseInstruction[],
-    public readonly params: Place[],
-    /**
-     * Per formal parameter: places in the root header instruction `bindings`
-     * (e.g. destructuring leaves). Empty for a simple identifier param.
-     * Aligned by index with `params`.
-     */
-    public readonly paramBindings: Place[][],
+    public readonly source: FunctionSource,
+    public readonly runtime: FunctionRuntime,
     /** Whether the function is `async`. */
     public readonly async: boolean,
     /** Whether the function is a generator (`function*`, etc.). */
     public readonly generator: boolean,
     public blocks: Map<BlockId, BasicBlock>,
     public structures: Map<BlockId, BaseStructure>,
-    /**
-     * Local places inside this function that correspond to captured
-     * variables from enclosing scopes. Aligned by index with
-     * `captures` on the containing instruction.
-     */
-    public readonly captureParams: Place[] = [],
     /**
      * Maps header (test/back-edge) block IDs to label names for
      * while/for/do-while loops. These loops are reconstructed from
@@ -117,12 +137,9 @@ export class FunctionIR {
     public readonly blockLabels: Map<BlockId, string> = new Map(),
   ) {
     this.computeCFG();
-    // Register use-chains for structures passed in at construction time.
     for (const structure of this.structures.values()) {
       FunctionIR.registerStructure(structure);
     }
-    // Self-register in the owning module so the pipeline and codegen
-    // can find this function via `moduleIR.functions`.
     moduleIR.functions.set(id, this);
   }
 
@@ -137,6 +154,51 @@ export class FunctionIR {
 
   public recomputeCFG() {
     this.computeCFG();
+  }
+
+  public *getRuntimeInstructionLists(): IterableIterator<BaseInstruction[]> {
+    yield this.runtime.prologue;
+    for (const block of this.blocks.values()) {
+      yield block.instructions;
+    }
+  }
+
+  public *getDefinitionInstructionLists(): IterableIterator<BaseInstruction[]> {
+    yield this.runtime.prologue;
+    for (const block of this.blocks.values()) {
+      yield block.instructions;
+    }
+  }
+
+  public *getRuntimeInstructions(): IterableIterator<BaseInstruction> {
+    for (const instructions of this.getRuntimeInstructionLists()) {
+      for (const instruction of instructions) {
+        yield instruction;
+      }
+    }
+  }
+
+  public *getNestedFunctionInstructions(): IterableIterator<NestedFunctionInstruction> {
+    for (const instr of this.runtime.prologue) {
+      if (
+        instr instanceof ArrowFunctionExpressionInstruction ||
+        instr instanceof FunctionExpressionInstruction ||
+        instr instanceof FunctionDeclarationInstruction
+      ) {
+        yield instr;
+      }
+    }
+    for (const block of this.blocks.values()) {
+      for (const instr of block.instructions) {
+        if (
+          instr instanceof ArrowFunctionExpressionInstruction ||
+          instr instanceof FunctionExpressionInstruction ||
+          instr instanceof FunctionDeclarationInstruction
+        ) {
+          yield instr;
+        }
+      }
+    }
   }
 
   /**
@@ -158,6 +220,70 @@ export class FunctionIR {
     for (const block of this.blocks.values()) {
       block.rewriteAll(values);
     }
+  }
+
+  public hasExternalReferences(): boolean {
+    const ownPlaceIds = new Set<number>();
+
+    for (const param of this.runtime.params) {
+      ownPlaceIds.add(param.identifier.id);
+    }
+    for (const bindings of this.runtime.paramBindings) {
+      for (const binding of bindings) {
+        ownPlaceIds.add(binding.identifier.id);
+      }
+    }
+    for (const captureParam of this.runtime.captureParams) {
+      ownPlaceIds.add(captureParam.identifier.id);
+    }
+    for (const instr of this.runtime.prologue) {
+      ownPlaceIds.add(instr.place.identifier.id);
+    }
+    for (const [, block] of this.blocks) {
+      for (const instr of block.instructions) {
+        ownPlaceIds.add(instr.place.identifier.id);
+      }
+    }
+
+    for (const instr of this.runtime.prologue) {
+      for (const place of instr.getOperands()) {
+        if (!ownPlaceIds.has(place.identifier.id)) {
+          return true;
+        }
+      }
+    }
+    for (const [, block] of this.blocks) {
+      for (const instr of block.instructions) {
+        for (const place of instr.getOperands()) {
+          if (!ownPlaceIds.has(place.identifier.id)) {
+            return true;
+          }
+        }
+      }
+      if (block.terminal) {
+        for (const place of block.terminal.getOperands()) {
+          if (!ownPlaceIds.has(place.identifier.id)) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  public findOwningTernary(
+    blockId: BlockId,
+  ): { headerBlockId: BlockId; structure: TernaryStructure } | null {
+    for (const [headerBlockId, structure] of this.structures) {
+      if (
+        structure instanceof TernaryStructure &&
+        (structure.consequent === blockId || structure.alternate === blockId)
+      ) {
+        return { headerBlockId, structure };
+      }
+    }
+    return null;
   }
 
   // -----------------------------------------------------------------------
@@ -197,73 +323,54 @@ export class FunctionIR {
     }
   }
 
-  /**
-   * Deep clone this FunctionIR into `targetModule`. Allocates a new
-   * FunctionIRId, fresh BlockIds, fresh InstructionIds, and fresh
-   * Identifier/Place pairs for every definition. All cross-references
-   * (operands, terminal targets, structure block refs, phi operands) are
-   * remapped to point at the new entities. The clone's
-   * {@link FunctionIR.moduleIR} is set to `targetModule` and the clone
-   * self-registers in `targetModule.functions` (via the constructor).
-   *
-   * `targetModule` defaults to `this.moduleIR`, which is the right answer
-   * for intra-module cloning. Cross-module inlining passes the *target*
-   * module explicitly so the clone lands in the consumer's registry, not
-   * the source's.
-   *
-   * Two phases:
-   *
-   *  1. Clone every header/block instruction via `instr.clone(targetModule)`.
-   *     Each instruction's clone allocates fresh IDs in
-   *     `targetModule.environment` and (for instructions that own a nested
-   *     FunctionIR — arrow / function expressions, function declarations)
-   *     recursively deep-clones the nested FunctionIR into the same
-   *     target module. Cloned instructions still reference old identifiers
-   *     and block IDs at this point.
-   *  2. Rewrite the accumulated identifier and block maps so the cloned
-   *     instructions point at the new entities.
-   */
   public clone(targetModule: ModuleIR = this.moduleIR): FunctionIR {
     const environment = targetModule.environment;
     const blockMap = new Map<BlockId, BlockId>();
     const identifierMap = new Map<Identifier, Place>();
     const newBlocks = new Map<BlockId, BasicBlock>();
+    const cloneInstructionList = (instructions: BaseInstruction[]): BaseInstruction[] => {
+      const clonedInstructions: BaseInstruction[] = [];
+      for (const instr of instructions) {
+        const cloned = instr.clone(targetModule);
+        identifierMap.set(instr.place.identifier, cloned.place);
+        this.registerAdditionalDefinitionPlaces(instr, identifierMap, environment);
+        clonedInstructions.push(cloned);
+      }
+      return clonedInstructions;
+    };
 
-    // Phase 1: clone the header. Build identifierMap as we go. Each
-    // instruction's clone allocates fresh IDs in `targetModule.environment`
-    // and recursively deep-clones any nested FunctionIR into targetModule.
-    const newHeader: BaseInstruction[] = [];
-    for (const instr of this.header) {
-      const cloned = instr.clone(targetModule);
-      identifierMap.set(instr.place.identifier, cloned.place);
-      newHeader.push(cloned);
-    }
+    const newSourceHeader = cloneInstructionList(this.source.header);
+    const newRuntimePrologue =
+      this.runtimePrologueMatchesSourceHeader
+        ? newSourceHeader
+        : cloneInstructionList(this.runtime.prologue);
 
-    // Phase 1: clone every block (cloned instructions + cloned terminal,
-    // both still pointing at old refs). Build blockMap and identifierMap.
     for (const [oldBlockId, oldBlock] of this.blocks) {
       const newBlock = oldBlock.clone(targetModule);
       blockMap.set(oldBlockId, newBlock.id);
       newBlocks.set(newBlock.id, newBlock);
       for (let i = 0; i < oldBlock.instructions.length; i++) {
-        identifierMap.set(
-          oldBlock.instructions[i].place.identifier,
-          newBlock.instructions[i].place,
-        );
+        identifierMap.set(oldBlock.instructions[i].place.identifier, newBlock.instructions[i].place);
+        this.registerAdditionalDefinitionPlaces(oldBlock.instructions[i], identifierMap, environment);
       }
     }
 
-    // Phase 2: rewrite the header and every block through the now-complete
-    // maps. Operand identifiers, definition sites, terminal block targets
-    // and terminal operands are all fixed up here.
-    for (let i = 0; i < newHeader.length; i++) {
-      newHeader[i] = newHeader[i].rewrite(identifierMap, { rewriteDefinitions: true });
+    for (let i = 0; i < newSourceHeader.length; i++) {
+      newSourceHeader[i] = newSourceHeader[i].rewrite(identifierMap, {
+        rewriteDefinitions: true,
+      });
+    }
+    if (newRuntimePrologue !== newSourceHeader) {
+      for (let i = 0; i < newRuntimePrologue.length; i++) {
+        newRuntimePrologue[i] = newRuntimePrologue[i].rewrite(identifierMap, {
+          rewriteDefinitions: true,
+        });
+      }
     }
     for (const newBlock of newBlocks.values()) {
       newBlock.rewrite(environment, blockMap, identifierMap, { rewriteDefinitions: true });
     }
 
-    // Clone structures and phis through both maps.
     const newStructures = new Map<BlockId, BaseStructure>();
     for (const [oldBlockId, oldStructure] of this.structures) {
       newStructures.set(blockMap.get(oldBlockId)!, oldStructure.clone(blockMap, identifierMap));
@@ -273,36 +380,251 @@ export class FunctionIR {
       newPhis.add(oldPhi.clone(blockMap, identifierMap));
     }
 
-    // Remap params, paramBindings, captureParams (all reference header
-    // instruction places which are now in identifierMap), and block labels.
     const remapPlace = (place: Place): Place => identifierMap.get(place.identifier) ?? place;
-    const newParams = this.params.map(remapPlace);
-    const newParamBindings = this.paramBindings.map((bs) => bs.map(remapPlace));
-    const newCaptureParams = this.captureParams.map(remapPlace);
+    const newSourceParams = this.source.params.map(remapPlace);
+    const newRuntimeParams = this.runtime.params.map(remapPlace);
+    const newRuntimeParamBindings = this.runtime.paramBindings.map((bs) => bs.map(remapPlace));
+    const newRuntimeCaptureParams = this.runtime.captureParams.map(remapPlace);
     const newBlockLabels = new Map<BlockId, string>();
     for (const [oldBlockId, label] of this.blockLabels) {
       newBlockLabels.set(blockMap.get(oldBlockId)!, label);
     }
 
-    // Construct the new FunctionIR. The constructor recomputes the CFG,
-    // registers structure use-chains, and self-registers the clone in
-    // targetModule.functions.
     const newId = makeFunctionIRId(environment.nextFunctionId++);
     const populated = new FunctionIR(
       targetModule,
       newId,
-      newHeader,
-      newParams,
-      newParamBindings,
+      { header: newSourceHeader, params: newSourceParams },
+      {
+        params: newRuntimeParams,
+        paramBindings: newRuntimeParamBindings,
+        prologue: newRuntimePrologue,
+        captureParams: newRuntimeCaptureParams,
+      },
       this.async,
       this.generator,
       newBlocks,
       newStructures,
-      newCaptureParams,
       newBlockLabels,
     );
     populated.phis = newPhis;
 
     return populated;
+  }
+
+  public cloneInlineFragment(
+    targetModule: ModuleIR,
+    args: Place[],
+    captures: Place[],
+  ): InlinedFunctionFragment {
+    if (this.blocks.size > 1) {
+      throw new Error("Function has multiple blocks");
+    }
+
+    const environment = targetModule.environment;
+    const rewriteMap = new Map<Identifier, Place>();
+    const instructions: BaseInstruction[] = [];
+
+    const ensureClonedPlace = (place: Place) => {
+      if (rewriteMap.has(place.identifier)) return;
+      const identifier = environment.createIdentifier();
+      rewriteMap.set(place.identifier, environment.createPlace(identifier));
+    };
+
+    for (const paramPlace of this.runtime.params) {
+      ensureClonedPlace(paramPlace);
+    }
+    for (const bindings of this.runtime.paramBindings) {
+      for (const binding of bindings) {
+        ensureClonedPlace(binding);
+      }
+    }
+    for (let i = 0; i < this.runtime.captureParams.length; i++) {
+      if (i < captures.length) {
+        rewriteMap.set(this.runtime.captureParams[i].identifier, captures[i]);
+      }
+    }
+
+    for (const instr of this.runtime.prologue) {
+      const clonedInstr = instr.clone(targetModule);
+      rewriteMap.set(instr.place.identifier, clonedInstr.place);
+      this.registerAdditionalDefinitionPlaces(instr, rewriteMap, environment);
+      instructions.push(clonedInstr.rewrite(rewriteMap, { rewriteDefinitions: true }));
+    }
+
+    if (this.canDirectWireRuntimeParams()) {
+      for (let i = 0; i < this.runtime.params.length; i++) {
+        const paramPlace = this.runtime.params[i];
+        const lvalPlace = rewriteMap.get(paramPlace.identifier)!;
+        let argPlace = args[i];
+        if (argPlace === undefined) {
+          const undefinedLiteral = environment.createInstruction(
+            LiteralInstruction,
+            environment.createPlace(environment.createIdentifier()),
+            undefined,
+          );
+          instructions.push(undefinedLiteral);
+          argPlace = undefinedLiteral.place;
+        }
+
+        const bindings = this.runtime.paramBindings[i].map(
+          (binding) => rewriteMap.get(binding.identifier) ?? binding,
+        );
+        instructions.push(
+          environment.createInstruction(
+            StoreLocalInstruction,
+            environment.createPlace(environment.createIdentifier()),
+            lvalPlace,
+            argPlace,
+            "const",
+            "declaration",
+            bindings,
+          ),
+        );
+      }
+    } else {
+      const leftElements = this.runtime.params.map((paramPlace) => {
+        const elementPlace = rewriteMap.get(paramPlace.identifier)!;
+        rewriteMap.set(paramPlace.identifier, elementPlace);
+        return elementPlace;
+      });
+      const leftArrayPattern = environment.createInstruction(
+        ArrayPatternInstruction,
+        environment.createPlace(environment.createIdentifier()),
+        leftElements,
+        this.runtime.params.flatMap((paramPlace, i) => {
+          const leaves = this.runtime.paramBindings[i];
+          if (leaves.length > 0) {
+            return leaves.map((binding) => rewriteMap.get(binding.identifier) ?? binding);
+          }
+          return [rewriteMap.get(paramPlace.identifier)!];
+        }),
+      );
+      const rightArrayExpression = environment.createInstruction(
+        ArrayExpressionInstruction,
+        environment.createPlace(environment.createIdentifier()),
+        args,
+      );
+      instructions.push(leftArrayPattern, rightArrayExpression);
+      instructions.push(
+        environment.createInstruction(
+          StoreLocalInstruction,
+          environment.createPlace(environment.createIdentifier()),
+          leftArrayPattern.place,
+          rightArrayExpression.place,
+          "const",
+          "declaration",
+          leftArrayPattern.bindings,
+        ),
+      );
+    }
+
+    const block = this.blocks.values().next().value!;
+    for (const instr of block.instructions) {
+      const clonedInstr = instr.clone(targetModule);
+      rewriteMap.set(instr.place.identifier, clonedInstr.place);
+      this.registerAdditionalDefinitionPlaces(instr, rewriteMap, environment);
+      instructions.push(clonedInstr.rewrite(rewriteMap, { rewriteDefinitions: true }));
+    }
+
+    if (block.terminal instanceof ReturnTerminal && block.terminal.value !== null) {
+      const returnPlace = rewriteMap.get(block.terminal.value.identifier);
+      if (!returnPlace) {
+        throw new Error("Could not find a rewritten place for the function's return value");
+      }
+      return { instructions, returnPlace };
+    }
+
+    const undefinedLiteral = environment.createInstruction(
+      LiteralInstruction,
+      environment.createPlace(environment.createIdentifier()),
+      undefined,
+    );
+    instructions.push(undefinedLiteral);
+    return { instructions, returnPlace: undefinedLiteral.place };
+  }
+
+  public replaceInstructionWithInstructions(
+    block: BasicBlock,
+    index: number,
+    instructions: BaseInstruction[],
+  ): BaseInstruction {
+    const removed = block.instructions[index];
+    for (const place of removed.getDefs()) {
+      if (place.identifier.definer === removed) {
+        place.identifier.definer = undefined;
+      }
+      if (this.moduleIR.environment.placeToInstruction.get(place.id) === removed) {
+        this.moduleIR.environment.placeToInstruction.delete(place.id);
+      }
+    }
+    block.removeInstructionAt(index);
+    for (let i = 0; i < instructions.length; i++) {
+      block.insertInstructionAt(index + i, instructions[i]);
+      this.moduleIR.environment.placeToInstruction.set(instructions[i].place.id, instructions[i]);
+    }
+    return removed;
+  }
+
+  public replacePlaceUses(
+    from: Place,
+    to: Place,
+    options: { skipBlock?: BasicBlock; skipInstructionIndex?: number } = {},
+  ): void {
+    const rewriteMap = new Map<Identifier, Place>([[from.identifier, to]]);
+    for (const [, block] of this.blocks) {
+      const start =
+        options.skipBlock === block && options.skipInstructionIndex !== undefined
+          ? options.skipInstructionIndex
+          : 0;
+      for (let i = start; i < block.instructions.length; i++) {
+        const rewritten = block.instructions[i].rewrite(rewriteMap);
+        if (rewritten !== block.instructions[i]) {
+          block.replaceInstruction(i, rewritten);
+          this.moduleIR.environment.placeToInstruction.set(rewritten.place.id, rewritten);
+        }
+      }
+      if (block.terminal) {
+        block.replaceTerminal(block.terminal.rewrite(rewriteMap));
+      }
+    }
+
+    for (const [blockId, structure] of this.structures) {
+      const rewritten = structure.rewrite(rewriteMap);
+      if (rewritten !== structure) {
+        this.setStructure(blockId, rewritten);
+      }
+    }
+
+    for (const phi of this.phis) {
+      for (const [phiBlockId, operandPlace] of phi.operands) {
+        if (operandPlace.identifier === from.identifier) {
+          phi.operands.set(phiBlockId, to);
+        }
+      }
+    }
+  }
+
+  private canDirectWireRuntimeParams(): boolean {
+    const paramIds = new Set(this.runtime.params.map((param) => param.identifier.id));
+    for (const instr of this.runtime.prologue) {
+      if (!paramIds.has(instr.place.identifier.id)) continue;
+      if (instr instanceof AssignmentPatternInstruction) return false;
+      if (instr instanceof RestElementInstruction) return false;
+    }
+    return true;
+  }
+
+  private registerAdditionalDefinitionPlaces(
+    instr: BaseInstruction,
+    map: Map<Identifier, Place>,
+    environment: ModuleIR["environment"],
+  ): void {
+    for (const def of instr.getDefs()) {
+      if (def.identifier === instr.place.identifier || map.has(def.identifier)) {
+        continue;
+      }
+      map.set(def.identifier, environment.createPlace(environment.createIdentifier()));
+    }
   }
 }

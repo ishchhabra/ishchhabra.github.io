@@ -1,29 +1,16 @@
-import { Environment } from "../../environment";
 import { ProjectUnit } from "../../frontend/ProjectBuilder";
 import {
-  ArrayExpressionInstruction,
-  ArrayPatternInstruction,
   BaseInstruction,
   BasicBlock,
   BlockId,
-  IdentifierId,
-  LiteralInstruction,
-  RestElementInstruction,
-  ReturnTerminal,
-  StoreLocalInstruction,
 } from "../../ir";
 import { FunctionIR, FunctionIRId } from "../../ir/core/FunctionIR";
-import { Identifier } from "../../ir/core/Identifier";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { Place } from "../../ir/core/Place";
 import { BranchTerminal, JumpTerminal } from "../../ir/core/Terminal";
 import { TernaryStructure } from "../../ir/core/Structure";
 import { makeInstructionId } from "../../ir/base/Instruction";
-import { AssignmentPatternInstruction } from "../../ir/instructions/pattern/AssignmentPattern";
-import { ArrowFunctionExpressionInstruction } from "../../ir/instructions/value/ArrowFunctionExpression";
 import { CallExpressionInstruction } from "../../ir/instructions/value/CallExpression";
-import { FunctionExpressionInstruction } from "../../ir/instructions/value/FunctionExpression";
-import { FunctionDeclarationInstruction } from "../../ir/instructions/declaration/FunctionDeclaration";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { CallGraphAnalysis, CallGraphResult } from "../analysis/CallGraphAnalysis";
 import { BaseOptimizationPass } from "../late-optimizer/OptimizationPass";
@@ -76,7 +63,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
       // re-evaluate the diamond on the next fixpoint iteration and
       // collapse it back into a ternary if the arms remain expression-only.
       if (this.blockHasInlinableCall(callGraph, block)) {
-        const owning = this.findOwningTernary(blockId);
+        const owning = this.functionIR.findOwningTernary(blockId);
         if (owning) {
           this.dissolveTernary(owning.headerBlockId, owning.structure);
           changed = true;
@@ -110,7 +97,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
         }
 
         const prevLen = block.instructions.length;
-        this.inlineFunctionIR(index, block, functionIR, this.moduleIR.environment);
+        this.inlineFunctionIR(index, block, functionIR);
         changed = true;
         // Skip past the instructions that were spliced in.
         index += block.instructions.length - prevLen;
@@ -141,24 +128,6 @@ export class FunctionInliningPass extends BaseOptimizationPass {
       if (this.isInlinableFunction(callGraph, functionIR, modulePath)) return true;
     }
     return false;
-  }
-
-  /**
-   * If `blockId` is a consequent or alternate arm of a TernaryStructure,
-   * returns that structure and its header block ID. Otherwise returns null.
-   */
-  private findOwningTernary(
-    blockId: BlockId,
-  ): { headerBlockId: BlockId; structure: TernaryStructure } | null {
-    for (const [headerBlockId, structure] of this.functionIR.structures) {
-      if (
-        structure instanceof TernaryStructure &&
-        (structure.consequent === blockId || structure.alternate === blockId)
-      ) {
-        return { headerBlockId, structure };
-      }
-    }
-    return null;
   }
 
   /**
@@ -246,67 +215,11 @@ export class FunctionInliningPass extends BaseOptimizationPass {
       return false;
     }
 
-    if (modulePath !== this.moduleIR.path && this.hasExternalReferences(funcIR)) {
+    if (modulePath !== this.moduleIR.path && funcIR.hasExternalReferences()) {
       return false;
     }
 
     return true;
-  }
-
-  /**
-   * Returns true if the function reads from Places not defined within
-   * its own header or blocks (i.e., it captures from its module scope).
-   */
-  private hasExternalReferences(funcIR: FunctionIR): boolean {
-    const ownPlaceIds = new Set<IdentifierId>();
-
-    for (const param of funcIR.params) {
-      ownPlaceIds.add(param.identifier.id);
-    }
-    for (const bindings of funcIR.paramBindings) {
-      for (const binding of bindings) {
-        ownPlaceIds.add(binding.identifier.id);
-      }
-    }
-    for (const captureParam of funcIR.captureParams) {
-      ownPlaceIds.add(captureParam.identifier.id);
-    }
-
-    for (const instr of funcIR.header) {
-      ownPlaceIds.add(instr.place.identifier.id);
-    }
-    for (const [, block] of funcIR.blocks) {
-      for (const instr of block.instructions) {
-        ownPlaceIds.add(instr.place.identifier.id);
-      }
-    }
-
-    for (const instr of funcIR.header) {
-      for (const place of instr.getOperands()) {
-        if (!ownPlaceIds.has(place.identifier.id)) {
-          return true;
-        }
-      }
-    }
-    for (const [, block] of funcIR.blocks) {
-      for (const instr of block.instructions) {
-        for (const place of instr.getOperands()) {
-          if (!ownPlaceIds.has(place.identifier.id)) {
-            return true;
-          }
-        }
-      }
-
-      const terminal = block.terminal;
-      if (terminal) {
-        for (const place of terminal.getOperands()) {
-          if (!ownPlaceIds.has(place.identifier.id)) {
-            return true;
-          }
-        }
-      }
-    }
-    return false;
   }
 
   /**
@@ -375,7 +288,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
       // Edge 2: function expressions / declarations nested *lexically*
       // inside `current`. Cloning `current` clones these too, so any cycle
       // through their bodies is just as dangerous as a direct cycle.
-      for (const instr of nestedFunctionInstructions(current)) {
+      for (const instr of current.getNestedFunctionInstructions()) {
         if (instr.functionIR.id === funcIR.id && currentModulePath === modulePath) {
           return true;
         }
@@ -396,7 +309,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
    * scanning all blocks in the module. Returns undefined if not found.
    */
   private findDeclaringInstruction(funcIR: FunctionIR): BaseInstruction | undefined {
-    for (const fn of this.moduleIR.functions.values()) {
+    for (const fn of funcIR.moduleIR.functions.values()) {
       for (const block of fn.blocks.values()) {
         for (const instr of block.instructions) {
           if (
@@ -415,7 +328,6 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     index: number,
     callExpressionBlock: BasicBlock,
     funcIR: FunctionIR,
-    environment: Environment,
   ) {
     if (funcIR.blocks.size > 1) {
       throw new Error("Function has multiple blocks");
@@ -426,308 +338,19 @@ export class FunctionInliningPass extends BaseOptimizationPass {
       throw new Error("Expected CallExpressionInstruction");
     }
 
-    const rewriteMap = new Map<Identifier, Place>();
-
-    // Resolve capture params to the actual outer places so inlined
-    // instructions can reference captured variables directly.
-    // The declaring instruction's captures[i] corresponds to funcIR.captureParams[i].
+    // Resolve capture params to the actual outer places so the cloned
+    // runtime fragment can reference captured variables directly.
+    let captures: Place[] = [];
     const declInstr = this.findDeclaringInstruction(funcIR);
     if (declInstr) {
-      const captures = "captures" in declInstr ? (declInstr as { captures: Place[] }).captures : [];
-      for (let i = 0; i < funcIR.captureParams.length; i++) {
-        if (i < captures.length) {
-          rewriteMap.set(funcIR.captureParams[i].identifier, captures[i]);
-        }
-      }
+      captures = "captures" in declInstr ? (declInstr as { captures: Place[] }).captures : [];
     }
-
-    const instrs: BaseInstruction[] = [];
-    this.inlineFunctionParams(funcIR, callExpressionInstr, this.moduleIR, instrs, rewriteMap);
-
-    const block = funcIR.blocks.values().next().value!;
-    for (const instr of block.instructions) {
-      // instr.clone(this.moduleIR) recursively deep-clones any nested
-      // FunctionIR into the caller's module — function-owning instruction
-      // clones (Arrow/Function expression, FunctionDeclaration) call
-      // `this.functionIR.clone(moduleIR)` internally.
-      const clonedInstr = instr.clone(this.moduleIR);
-      rewriteMap.set(instr.place.identifier, clonedInstr.place);
-      instrs.push(clonedInstr.rewrite(rewriteMap, { rewriteDefinitions: true }));
-    }
-
-    if (block.terminal instanceof ReturnTerminal) {
-      const rewritten = callExpressionInstr.rewrite(rewriteMap);
-      callExpressionBlock.replaceInstruction(index, rewritten);
-      environment.placeToInstruction.set(rewritten.place.id, rewritten);
-    }
-
-    let returnPlace: Place;
-    if (block.terminal instanceof ReturnTerminal && block.terminal.value !== null) {
-      const oldReturnId = block.terminal.value.identifier;
-      const rewritten = rewriteMap.get(oldReturnId);
-
-      if (!rewritten) {
-        throw new Error("Could not find a rewritten place for the function's return value");
-      }
-      returnPlace = rewritten;
-    } else {
-      // Void function: the call evaluates to undefined. Create an undefined
-      // literal so any reference to the call's result place resolves correctly.
-      const undefinedLiteral = environment.createInstruction(
-        LiteralInstruction,
-        environment.createPlace(environment.createIdentifier()),
-        undefined,
-      );
-      instrs.push(undefinedLiteral);
-      returnPlace = undefinedLiteral.place;
-    }
-
-    // Splice out the call and insert inlined instructions.
-    const removed = callExpressionBlock.instructions[index];
-    // Unregister the removed call instruction's uses and definers.
-    for (const place of removed.getOperands()) {
-      place.identifier.uses.delete(removed);
-    }
-    for (const place of removed.getDefs()) {
-      if (place.identifier.definer === removed) place.identifier.definer = undefined;
-    }
-    callExpressionBlock.instructions.splice(index, 1, ...instrs);
-    // Register inlined instructions' uses, definers, and placeToInstruction entries.
-    for (const instr of instrs) {
-      for (const place of instr.getOperands()) {
-        place.identifier.uses.add(instr);
-      }
-      for (const place of instr.getDefs()) {
-        place.identifier.definer = instr;
-      }
-      environment.placeToInstruction.set(instr.place.id, instr);
-    }
-
-    const retRewriteMap = new Map<Identifier, Place>();
-    retRewriteMap.set(callExpressionInstr.place.identifier, returnPlace);
-
-    // Rewrite all references to the old call result across the entire
-    // function — not just the inlined block, but also other blocks
-    // (e.g. a ternary's fallthrough) that may reference the call result.
-    for (const [, rewriteBlock] of this.functionIR.blocks) {
-      if (rewriteBlock === callExpressionBlock) {
-        // Skip the just-inlined instructions; only rewrite from after them.
-        for (let i = index + instrs.length; i < rewriteBlock.instructions.length; i++) {
-          const rewrittenInstr = rewriteBlock.instructions[i].rewrite(retRewriteMap);
-          if (rewrittenInstr !== rewriteBlock.instructions[i]) {
-            rewriteBlock.replaceInstruction(i, rewrittenInstr);
-            environment.placeToInstruction.set(rewrittenInstr.place.id, rewrittenInstr);
-          }
-        }
-        if (rewriteBlock.terminal) {
-          rewriteBlock.replaceTerminal(rewriteBlock.terminal.rewrite(retRewriteMap));
-        }
-      } else {
-        rewriteBlock.rewriteAll(retRewriteMap);
-      }
-    }
-
-    // Update any structures that reference the old call result place
-    // (e.g. a TernaryStructure whose test was the inlined call's result).
-    for (const [blockId, structure] of this.functionIR.structures) {
-      const rewritten = structure.rewrite(retRewriteMap);
-      if (rewritten !== structure) {
-        this.functionIR.setStructure(blockId, rewritten);
-      }
-    }
-
-    // Update any phi operands that reference the old call result place.
-    for (const phi of this.phis) {
-      for (const [phiBlockId, operandPlace] of phi.operands) {
-        if (operandPlace.identifier === callExpressionInstr.place.identifier) {
-          phi.operands.set(phiBlockId, returnPlace);
-        }
-      }
-    }
-  }
-
-  /**
-   * Returns true when every param can be directly assigned to its
-   * corresponding call-site arg via a simple `const param = arg`.
-   * This is the case for plain identifiers and destructuring patterns
-   * (object/array), but NOT for default params (AssignmentPattern) or
-   * rest params (RestElement) which need the array-pattern wrapper.
-   */
-  private canDirectWireParams(funcIR: FunctionIR): boolean {
-    // Build a set of identifiers that are param roots for O(1) lookup.
-    const paramIds = new Set(funcIR.params.map((p) => p.identifier.id));
-
-    for (const instr of funcIR.header) {
-      if (!paramIds.has(instr.place.identifier.id)) continue;
-      if (instr instanceof AssignmentPatternInstruction) return false;
-      if (instr instanceof RestElementInstruction) return false;
-    }
-    return true;
-  }
-
-  private inlineFunctionParams(
-    funcIR: FunctionIR,
-    callExpressionInstr: CallExpressionInstruction,
-    moduleIR: ModuleIR,
-    instrs: BaseInstruction[],
-    rewriteMap: Map<Identifier, Place>,
-  ) {
-    const environment = moduleIR.environment;
-
-    const ensureClonedPlace = (place: Place) => {
-      if (rewriteMap.has(place.identifier)) {
-        return;
-      }
-      const identifier = environment.createIdentifier(place.identifier.declarationId);
-      rewriteMap.set(place.identifier, environment.createPlace(identifier));
-    };
-
-    for (const paramPlace of funcIR.params) {
-      ensureClonedPlace(paramPlace);
-    }
-    for (const bindings of funcIR.paramBindings) {
-      for (const binding of bindings) {
-        ensureClonedPlace(binding);
-      }
-    }
-
-    for (const instr of funcIR.header) {
-      const clonedInstr = instr.clone(moduleIR);
-      rewriteMap.set(instr.place.identifier, clonedInstr.place);
-      instrs.push(clonedInstr.rewrite(rewriteMap));
-    }
-
-    // Per-param direct wiring: when every param's root instruction is NOT
-    // an AssignmentPattern (default) or RestElement (rest), we can emit
-    // a direct StoreLocal per param instead of wrapping everything in
-    // const [params] = [args]. This handles simple identifiers, object
-    // destructuring, and array destructuring params.
-    if (this.canDirectWireParams(funcIR)) {
-      for (let i = 0; i < funcIR.params.length; i++) {
-        const paramPlace = funcIR.params[i];
-        const elementPlace = rewriteMap.get(paramPlace.identifier)!;
-        rewriteMap.set(paramPlace.identifier, elementPlace);
-
-        // When the caller passes fewer args than the function declares,
-        // the missing param is undefined (standard JS semantics).
-        let argPlace = callExpressionInstr.args[i];
-        if (argPlace === undefined) {
-          const undefinedLiteral = environment.createInstruction(
-            LiteralInstruction,
-            environment.createPlace(environment.createIdentifier()),
-            undefined,
-          );
-          instrs.push(undefinedLiteral);
-          argPlace = undefinedLiteral.place;
-        }
-
-        const bindings = funcIR.paramBindings[i].map((p) => rewriteMap.get(p.identifier) ?? p);
-
-        const storeLocalPlace = environment.createPlace(environment.createIdentifier());
-        instrs.push(
-          environment.createInstruction(
-            StoreLocalInstruction,
-            storeLocalPlace,
-            elementPlace,
-            argPlace,
-            "const",
-            "declaration",
-            bindings,
-          ),
-        );
-      }
-      return;
-    }
-
-    // Fallback: default or rest params require array pattern to preserve
-    // full JS parameter semantics.
-    const leftElements = [];
-    for (let i = 0; i < funcIR.params.length; i++) {
-      const paramPlace = funcIR.params[i];
-      const elementPlace = rewriteMap.get(paramPlace.identifier)!;
-      leftElements.push(elementPlace);
-      rewriteMap.set(paramPlace.identifier, elementPlace);
-    }
-
-    const leftArrayPatternIdentifier = environment.createIdentifier();
-    const leftArrayPatternPlace = environment.createPlace(leftArrayPatternIdentifier);
-    const leftArrayPattern = environment.createInstruction(
-      ArrayPatternInstruction,
-      leftArrayPatternPlace,
-      leftElements,
-      funcIR.params.flatMap((paramPlace, i) => {
-        const leaves = funcIR.paramBindings[i];
-        if (leaves.length > 0) {
-          return leaves.map((p) => rewriteMap.get(p.identifier) ?? p);
-        }
-        return [rewriteMap.get(paramPlace.identifier)!];
-      }),
-    );
-
-    const rightElements = [];
-    for (let i = 0; i < callExpressionInstr.args.length; i++) {
-      const argPlace = callExpressionInstr.args[i];
-      rightElements.push(argPlace);
-    }
-
-    const rightArrayPatternIdentifier = environment.createIdentifier();
-    const rightArrayPatternPlace = environment.createPlace(rightArrayPatternIdentifier);
-    const rightArrayPattern = environment.createInstruction(
-      ArrayExpressionInstruction,
-      rightArrayPatternPlace,
-      rightElements,
-    );
-
-    const storeLocalIdentifier = environment.createIdentifier();
-    const storeLocalPlace = environment.createPlace(storeLocalIdentifier);
-    const storeLocalInstr = environment.createInstruction(
-      StoreLocalInstruction,
-      storeLocalPlace,
-      leftArrayPatternPlace,
-      rightArrayPatternPlace,
-      "const",
-      "declaration",
-      leftArrayPattern.bindings,
-    );
-
-    instrs.push(leftArrayPattern, rightArrayPattern, storeLocalInstr);
+    const fragment = funcIR.cloneInlineFragment(this.moduleIR, callExpressionInstr.args, captures);
+    this.functionIR.replaceInstructionWithInstructions(callExpressionBlock, index, fragment.instructions);
+    this.functionIR.replacePlaceUses(callExpressionInstr.place, fragment.returnPlace, {
+      skipBlock: callExpressionBlock,
+      skipInstructionIndex: index + fragment.instructions.length,
+    });
   }
 }
 
-/**
- * Yields every instruction in `funcIR` (header + every block) that owns a
- * nested FunctionIR — arrows, function expressions, and function
- * declarations. Used by `isFunctionRecursive` to follow lexical nesting when
- * looking for cycles.
- */
-type NestedFunctionInstruction =
-  | ArrowFunctionExpressionInstruction
-  | FunctionExpressionInstruction
-  | FunctionDeclarationInstruction;
-
-function isNestedFunctionInstruction(
-  instr: BaseInstruction,
-): instr is NestedFunctionInstruction {
-  return (
-    instr instanceof ArrowFunctionExpressionInstruction ||
-    instr instanceof FunctionExpressionInstruction ||
-    instr instanceof FunctionDeclarationInstruction
-  );
-}
-
-function* nestedFunctionInstructions(
-  funcIR: FunctionIR,
-): IterableIterator<NestedFunctionInstruction> {
-  for (const instr of funcIR.header) {
-    if (isNestedFunctionInstruction(instr)) {
-      yield instr;
-    }
-  }
-  for (const block of funcIR.blocks.values()) {
-    for (const instr of block.instructions) {
-      if (isNestedFunctionInstruction(instr)) {
-        yield instr;
-      }
-    }
-  }
-}

@@ -166,7 +166,7 @@ export class SSABuilder {
     stacks: Map<DeclarationId, Place[]>,
     phiDecls: Set<DeclarationId>,
   ): void {
-    for (const instr of this.functionIR.header) {
+    for (const instr of this.functionIR.runtime.prologue) {
       if (instr instanceof StoreLocalInstruction) {
         for (const place of instr.getDefs()) {
           this.pushIfPhi(place, phiDecls, stacks);

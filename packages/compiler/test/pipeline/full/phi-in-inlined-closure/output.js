@@ -6,16 +6,16 @@ function $1_0() {
   }, [globalThis.getA(), globalThis.getB()]);
 }
 export function Component() {
-  const a = globalThis.getA();
-  const b = globalThis.getB();
+  const $33_0 = globalThis.getA();
+  const $38_0 = globalThis.getB();
   const value = globalThis.useMemo(() => {
-    if (a) {
+    if ($33_0) {
     } else {
     }
     return "fallback";
   }, [globalThis.getA(), globalThis.getB()]);
   return globalThis.useMemo(() => {
-    if (a) {
+    if ($33_0) {
     } else {
     }
     return "fallback";

@@ -231,7 +231,7 @@ export class CodeGenerator {
     }
 
     for (const [, functionIR] of moduleIR.functions) {
-      for (const instruction of functionIR.header) {
+      for (const instruction of functionIR.source.header) {
         if (instruction instanceof FunctionDeclarationInstruction) {
           this.places.set(instruction.place.id, this.getPlaceIdentifier(instruction.place));
         }

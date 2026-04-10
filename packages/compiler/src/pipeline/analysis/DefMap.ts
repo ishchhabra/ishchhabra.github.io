@@ -21,8 +21,8 @@ export class DefMap {
     private readonly environment: Environment,
   ) {
     this.map = new Map();
-    for (const block of functionIR.blocks.values()) {
-      for (const instr of block.instructions) {
+    for (const instructions of functionIR.getDefinitionInstructionLists()) {
+      for (const instr of instructions) {
         this.map.set(instr.place.identifier.id, instr);
       }
     }

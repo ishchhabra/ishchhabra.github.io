@@ -29,7 +29,8 @@ export class FunctionIRBuilder {
   public currentBlock: BasicBlock;
   public readonly blocks: Map<BlockId, BasicBlock> = new Map();
   public readonly structures: Map<BlockId, BaseStructure> = new Map();
-  public readonly header: BaseInstruction[] = [];
+  public readonly sourceHeader: BaseInstruction[] = [];
+  public readonly runtimePrologue: BaseInstruction[] = [];
   public readonly controlStack: ControlContext[] = [];
   public readonly blockLabels: Map<BlockId, string> = new Map();
 
@@ -161,17 +162,22 @@ export class FunctionIRBuilder {
 
     // The constructor self-registers in moduleIR.functions, so no explicit
     // registration step is needed here.
+    const source = { header: this.sourceHeader, params };
+    const runtime = {
+      params,
+      paramBindings,
+      prologue: this.runtimePrologue,
+      captureParams: [...this.captureParams.values()],
+    };
     const functionIR = new FunctionIR(
       this.moduleBuilder.moduleIR,
       functionId,
-      this.header,
-      params,
-      paramBindings,
+      source,
+      runtime,
       this.async,
       this.generator,
       this.blocks,
       this.structures,
-      [...this.captureParams.values()],
       this.blockLabels,
     );
     return functionIR;
@@ -180,6 +186,16 @@ export class FunctionIRBuilder {
   public addInstruction<T extends BaseInstruction>(instruction: T) {
     this.currentBlock.appendInstruction(instruction);
     this.environment.placeToInstruction.set(instruction.place.id, instruction);
+  }
+
+  public addHeaderInstruction(instruction: BaseInstruction) {
+    this.sourceHeader.push(instruction);
+    this.runtimePrologue.push(instruction);
+  }
+
+  public addHeaderInstructions(instructions: BaseInstruction[]) {
+    this.sourceHeader.push(...instructions);
+    this.runtimePrologue.push(...instructions);
   }
 
   public registerDeclarationName(name: string, declarationId: DeclarationId, scope: Scope) {
@@ -253,7 +269,6 @@ export class FunctionIRBuilder {
         this.captures.set(declId, capture);
         if (!this.captureParams.has(declId)) {
           const paramIdentifier = this.environment.createIdentifier(declId);
-          paramIdentifier.name = capture.identifier.name;
           this.captureParams.set(declId, this.environment.createPlace(paramIdentifier));
         }
         child.captures.set(declId, this.captureParams.get(declId)!);

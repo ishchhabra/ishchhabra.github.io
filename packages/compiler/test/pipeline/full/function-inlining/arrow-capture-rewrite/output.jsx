@@ -3,7 +3,7 @@ function $0_0() {
   return useMemo(() => x + 1, [getValue()]);
 }
 export function App() {
-  const x = getValue();
-  const result = useMemo(() => x + 1, [getValue()]);
-  return <div>{useMemo(() => x + 1, [getValue()])}</div>;
+  const $26_0 = getValue();
+  const result = useMemo(() => $26_0 + 1, [getValue()]);
+  return <div>{useMemo(() => $26_0 + 1, [getValue()])}</div>;
 }

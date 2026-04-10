@@ -143,7 +143,7 @@ function buildFunctionArrayPatternParam(
     places,
     identifiers,
   );
-  functionBuilder.header.push(instruction);
+  functionBuilder.addHeaderInstruction(instruction);
   return { place, identifiers, paramBindings: identifiers };
 }
 
@@ -167,7 +167,7 @@ function buildFunctionObjectPatternParam(
           throw new Error("Object pattern computed key must be a single place");
         }
         const keyInstructions = functionBuilder.currentBlock.instructions.splice(insertPoint);
-        functionBuilder.header.push(...keyInstructions);
+        functionBuilder.addHeaderInstructions(keyInstructions);
         keyPlace = p;
       } else {
         keyPlace = buildFunctionObjectPropertyKey(property.key, functionBuilder, environment);
@@ -194,7 +194,7 @@ function buildFunctionObjectPatternParam(
         property.shorthand,
         valueResult.identifiers,
       );
-      functionBuilder.header.push(instruction);
+      functionBuilder.addHeaderInstruction(instruction);
       return place;
     }
 
@@ -216,7 +216,7 @@ function buildFunctionObjectPatternParam(
         argumentResult.place,
         argumentResult.identifiers,
       );
-      functionBuilder.header.push(instruction);
+      functionBuilder.addHeaderInstruction(instruction);
       return place;
     }
 
@@ -231,7 +231,7 @@ function buildFunctionObjectPatternParam(
     propertyPlaces,
     identifiers,
   );
-  functionBuilder.header.push(instruction);
+  functionBuilder.addHeaderInstruction(instruction);
   return { place, identifiers, paramBindings: identifiers };
 }
 
@@ -249,7 +249,7 @@ function buildFunctionObjectPropertyKey(
   const keyIdentifier = environment.createIdentifier();
   const keyPlace = environment.createPlace(keyIdentifier);
   const keyInstruction = environment.createInstruction(LiteralInstruction, keyPlace, value);
-  functionBuilder.header.push(keyInstruction);
+  functionBuilder.addHeaderInstruction(keyInstruction);
   return keyPlace;
 }
 
@@ -268,7 +268,7 @@ function buildFunctionAssignmentPatternParam(
     throw new Error("Default value must be a single expression");
   }
   const defaultValueInstructions = functionBuilder.currentBlock.instructions.splice(insertPoint);
-  functionBuilder.header.push(...defaultValueInstructions);
+  functionBuilder.addHeaderInstructions(defaultValueInstructions);
 
   const leftResult = buildFunctionParam(
     node.left,
@@ -287,7 +287,7 @@ function buildFunctionAssignmentPatternParam(
     rightPlace,
     leftResult.identifiers,
   );
-  functionBuilder.header.push(instruction);
+  functionBuilder.addHeaderInstruction(instruction);
   return {
     place,
     identifiers: leftResult.identifiers,
@@ -318,7 +318,7 @@ function buildFunctionRestElementParam(
     argumentResult.place,
     argumentResult.identifiers,
   );
-  functionBuilder.header.push(instruction);
+  functionBuilder.addHeaderInstruction(instruction);
   return {
     place,
     identifiers: argumentResult.identifiers,

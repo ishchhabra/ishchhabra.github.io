@@ -5,14 +5,14 @@ function $0_0($3_0, $4_0 = 5) {
 }
 const ARTICLES = [];
 export function Home() {
-  const [$3_1, $4_1 = 5] = [ARTICLES];
-  const articles = $3_1.slice(0, $4_1).map(($11_0) => ({
+  const [$47_0, $49_0 = 5] = [ARTICLES];
+  const articles = $47_0.slice(0, $49_0).map(($11_0) => ({
     slug: $11_0.slug,
   }));
   return (
     <div>
-      {$3_1
-        .slice(0, $4_1)
+      {$47_0
+        .slice(0, $49_0)
         .map(($11_0) => ({
           slug: $11_0.slug,
         }))

@@ -85,21 +85,18 @@ function buildReferencedIdentifier(
       throwTDZAccessError(builder.getDeclarationSourceName(declarationId) ?? name);
     }
 
-    const latestDeclaration = environment.getLatestDeclaration(declarationId);
-    const declarationPlace = environment.places.get(latestDeclaration.placeId);
-    if (declarationPlace === undefined) {
-      throw new Error(`Unable to find the place for ${name} (${declarationId})`);
-    }
-
     // If this variable was declared in an enclosing scope (not in the
     // current function), record it as a closure capture and use a local
     // capture parameter place so the function's blocks are decoupled
     // from the parent scope's identifiers.
     if (!builder.isOwnDeclaration(declarationId)) {
+      const declarationPlace = environment.getDeclarationBinding(declarationId);
+      if (declarationPlace === undefined) {
+        throw new Error(`Unable to find the binding place for ${name} (${declarationId})`);
+      }
       builder.captures.set(declarationId, declarationPlace);
       if (!builder.captureParams.has(declarationId)) {
         const paramIdentifier = environment.createIdentifier(declarationId);
-        paramIdentifier.name = declarationPlace.identifier.name;
         builder.captureParams.set(declarationId, environment.createPlace(paramIdentifier));
       }
       const captureParam = builder.captureParams.get(declarationId)!;
@@ -109,6 +106,11 @@ function buildReferencedIdentifier(
       const instruction = environment.createInstruction(LoadClass, place, captureParam);
       builder.addInstruction(instruction);
     } else {
+      const latestDeclaration = environment.getLatestDeclaration(declarationId);
+      const declarationPlace = environment.places.get(latestDeclaration.placeId);
+      if (declarationPlace === undefined) {
+        throw new Error(`Unable to find the place for ${name} (${declarationId})`);
+      }
       const LoadClass = environment.contextDeclarationIds.has(declarationId)
         ? LoadContextInstruction
         : LoadLocalInstruction;
