@@ -3,7 +3,6 @@ import { CommonJSExportCollectorPass } from "../frontend/passes/CommonJSExportCo
 import { ProjectUnit } from "../frontend/ProjectBuilder";
 import { printModuleIR } from "../ir/printer";
 import { AnalysisManager } from "./analysis/AnalysisManager";
-import { CallGraph } from "./analysis/CallGraph";
 import { LateOptimizer } from "./late-optimizer/LateOptimizer";
 import { ExportDeclarationMergingPass } from "./late-optimizer/passes/ExportDeclarationMergingPass";
 import { CFGSimplificationPass } from "./CFGSimplificationPass";
@@ -40,7 +39,6 @@ export class StagedPipeline {
 
     const AM = new AnalysisManager();
     const context = new Map<string, any>();
-    const callGraph = new CallGraph(this.projectUnit);
 
     for (const moduleName of this.projectUnit.postOrder.toReversed()) {
       const moduleIR = this.projectUnit.modules.get(moduleName)!;
@@ -55,7 +53,6 @@ export class StagedPipeline {
           const optimizerResult = new Optimizer(
             functionIR,
             moduleIR,
-            callGraph,
             { phis: functionIR.phis },
             this.projectUnit,
             this.options,

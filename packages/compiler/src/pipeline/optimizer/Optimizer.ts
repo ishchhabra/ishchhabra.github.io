@@ -4,7 +4,6 @@ import { BasicBlock, BlockId } from "../../ir";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { AnalysisManager } from "../analysis/AnalysisManager";
-import { CallGraph } from "../analysis/CallGraph";
 import { AlgebraicSimplificationPass } from "../passes/AlgebraicSimplificationPass";
 import { ExpressionInliningPass } from "../passes/ExpressionInliningPass";
 import { SparseConditionalConstantPropagationPass } from "../passes/SparseConditionalConstantPropagationPass";
@@ -24,7 +23,6 @@ export class Optimizer {
   constructor(
     private readonly functionIR: FunctionIR,
     private readonly moduleIR: ModuleIR,
-    private readonly callGraph: CallGraph,
     private readonly ssa: SSA,
     private readonly projectUnit: ProjectUnit,
     private readonly options: CompilerOptions,
@@ -128,7 +126,7 @@ export class Optimizer {
         const functionInliningResult = new FunctionInliningPass(
           this.functionIR,
           this.moduleIR,
-          this.callGraph,
+          this.AM,
           this.projectUnit,
         ).run();
         if (functionInliningResult.changed) {

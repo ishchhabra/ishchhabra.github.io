@@ -20,8 +20,12 @@ import { BranchTerminal, JumpTerminal } from "../../ir/core/Terminal";
 import { TernaryStructure } from "../../ir/core/Structure";
 import { makeInstructionId } from "../../ir/base/Instruction";
 import { AssignmentPatternInstruction } from "../../ir/instructions/pattern/AssignmentPattern";
+import { ArrowFunctionExpressionInstruction } from "../../ir/instructions/value/ArrowFunctionExpression";
 import { CallExpressionInstruction } from "../../ir/instructions/value/CallExpression";
-import { CallGraph } from "../analysis/CallGraph";
+import { FunctionExpressionInstruction } from "../../ir/instructions/value/FunctionExpression";
+import { FunctionDeclarationInstruction } from "../../ir/instructions/declaration/FunctionDeclaration";
+import { AnalysisManager } from "../analysis/AnalysisManager";
+import { CallGraphAnalysis, CallGraphResult } from "../analysis/CallGraphAnalysis";
 import { BaseOptimizationPass } from "../late-optimizer/OptimizationPass";
 import { Phi } from "../ssa/Phi";
 
@@ -51,7 +55,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
   constructor(
     protected readonly functionIR: FunctionIR,
     private readonly moduleIR: ModuleIR,
-    private readonly callGraph: CallGraph,
+    private readonly AM: AnalysisManager,
     private readonly projectUnit: ProjectUnit,
   ) {
     super(functionIR);
@@ -62,6 +66,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
   }
 
   public step() {
+    const callGraph = this.AM.get(CallGraphAnalysis, this.projectUnit);
     let changed = false;
 
     for (const [blockId, block] of this.functionIR.blocks) {
@@ -70,7 +75,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
       // lets us inline into a normal block; PhiOptimizationPass will
       // re-evaluate the diamond on the next fixpoint iteration and
       // collapse it back into a ternary if the arms remain expression-only.
-      if (this.blockHasInlinableCall(block)) {
+      if (this.blockHasInlinableCall(callGraph, block)) {
         const owning = this.findOwningTernary(blockId);
         if (owning) {
           this.dissolveTernary(owning.headerBlockId, owning.structure);
@@ -84,7 +89,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
           continue;
         }
 
-        const calleeIR = this.callGraph.resolveFunctionFromCallExpression(this.moduleIR, instr);
+        const calleeIR = callGraph.resolveFunctionFromCallExpression(this.moduleIR, instr);
         if (calleeIR === undefined) {
           continue;
         }
@@ -100,7 +105,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
           continue;
         }
 
-        if (!this.isInlinableFunction(functionIR, modulePath)) {
+        if (!this.isInlinableFunction(callGraph, functionIR, modulePath)) {
           continue;
         }
 
@@ -119,11 +124,11 @@ export class FunctionInliningPass extends BaseOptimizationPass {
    * Returns true if the block contains at least one call expression that
    * would be inlinable, without actually performing the inline.
    */
-  private blockHasInlinableCall(block: BasicBlock): boolean {
+  private blockHasInlinableCall(callGraph: CallGraphResult, block: BasicBlock): boolean {
     for (const instr of block.instructions) {
       if (!(instr instanceof CallExpressionInstruction)) continue;
 
-      const calleeIR = this.callGraph.resolveFunctionFromCallExpression(this.moduleIR, instr);
+      const calleeIR = callGraph.resolveFunctionFromCallExpression(this.moduleIR, instr);
       if (calleeIR === undefined) continue;
 
       const { modulePath, functionIRId } = calleeIR;
@@ -133,7 +138,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
       const functionIR = moduleIR.functions.get(functionIRId);
       if (!functionIR) continue;
 
-      if (this.isInlinableFunction(functionIR, modulePath)) return true;
+      if (this.isInlinableFunction(callGraph, functionIR, modulePath)) return true;
     }
     return false;
   }
@@ -224,7 +229,11 @@ export class FunctionInliningPass extends BaseOptimizationPass {
    *   from the callee's module scope). Cross-module inlining with
    *   import forwarding is planned but not yet implemented.
    */
-  private isInlinableFunction(funcIR: FunctionIR, modulePath: string): boolean {
+  private isInlinableFunction(
+    callGraph: CallGraphResult,
+    funcIR: FunctionIR,
+    modulePath: string,
+  ): boolean {
     if (funcIR.blocks.size > 1) {
       return false;
     }
@@ -233,7 +242,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
       return false;
     }
 
-    if (this.isFunctionRecursive(funcIR, modulePath)) {
+    if (this.isFunctionRecursive(callGraph, funcIR, modulePath)) {
       return false;
     }
 
@@ -301,44 +310,84 @@ export class FunctionInliningPass extends BaseOptimizationPass {
   }
 
   /**
-   * Checks if `funcIR` is part of a recursion cycle (direct or indirect).
-   * We do a depth-first search on the call graph from `funcIR.id`,
-   * returning `true` if we revisit the start function via any call chain.
+   * Checks if `funcIR` is part of a recursion cycle reachable through *either*
+   * the call graph or lexically nested function expressions.
    *
-   * @param funcIR - The FunctionIR we want to test for recursion
+   * Lexical nesting matters because cloning a function during inlining also
+   * deep-clones every nested arrow / function expression / function
+   * declaration in its body. If any of those nested closures eventually calls
+   * back into `funcIR` — even via an opaque external like `Array.prototype.forEach`
+   * — then inlining `funcIR` will produce a fresh clone whose nested closure
+   * points back at `funcIR`, the optimizer will visit the new clone, inline
+   * `funcIR` again, and the chain compounds until the next `FunctionIR.clone`
+   * recursion overflows the JS call stack.
+   *
+   * Concrete trigger that surfaced this code path:
+   *
+   * ```js
+   * // @radix-ui/react-toast: getAnnounceTextContent
+   * function getAnnounceTextContent(node) {
+   *   const out = [];
+   *   Array.from(node.childNodes).forEach((child) => {
+   *     // ...
+   *     out.push(...getAnnounceTextContent(child));   // recurses through forEach
+   *   });
+   *   return out;
+   * }
+   * ```
+   *
+   * The outer function has *no* outgoing call-graph edges that resolve
+   * (forEach is opaque), so a forward-only DFS over the call graph would
+   * miss the cycle. We have to also walk every nested function expression
+   * in the candidate's body.
    */
-  private isFunctionRecursive(funcIR: FunctionIR, modulePath: string): boolean {
-    const start = funcIR.id;
-    const visited = new Set<FunctionIRId>();
-    const stack = new Set<FunctionIRId>();
+  private isFunctionRecursive(
+    callGraph: CallGraphResult,
+    funcIR: FunctionIR,
+    modulePath: string,
+  ): boolean {
+    // FunctionIRId is per-module; call graph edges are cross-module.
+    const frame = (mp: string, id: FunctionIRId) => `${mp}\0${String(id)}`;
+    const targetKey = frame(modulePath, funcIR.id);
+    const visited = new Set<string>();
 
-    const dfs = (current: FunctionIRId): boolean => {
-      // If 'current' is already on the call stack, we've found a cycle
-      if (stack.has(current)) {
-        return true;
-      }
-      // If 'current' was fully visited before, no cycle found from this node
-      if (visited.has(current)) {
+    const dfs = (current: FunctionIR, currentModulePath: string): boolean => {
+      const key = frame(currentModulePath, current.id);
+      if (visited.has(key)) {
         return false;
       }
+      visited.add(key);
 
-      visited.add(current);
-      stack.add(current);
-
-      const neighbors = this.callGraph.calls.get(modulePath)?.get(current) ?? new Set();
-      for (const neighbor of neighbors) {
-        if (dfs(neighbor.functionIRId)) {
+      // Edge 1: direct call-graph callees of `current`.
+      for (const neighbor of callGraph.getCallees(currentModulePath, current.id)) {
+        const neighborKey = frame(neighbor.modulePath, neighbor.functionIRId);
+        if (neighborKey === targetKey) {
+          return true;
+        }
+        const neighborFn = this.projectUnit.modules
+          .get(neighbor.modulePath)
+          ?.functions.get(neighbor.functionIRId);
+        if (neighborFn !== undefined && dfs(neighborFn, neighbor.modulePath)) {
           return true;
         }
       }
 
-      // Done exploring this path
-      stack.delete(current);
+      // Edge 2: function expressions / declarations nested *lexically*
+      // inside `current`. Cloning `current` clones these too, so any cycle
+      // through their bodies is just as dangerous as a direct cycle.
+      for (const instr of nestedFunctionInstructions(current)) {
+        if (instr.functionIR.id === funcIR.id && currentModulePath === modulePath) {
+          return true;
+        }
+        if (dfs(instr.functionIR, currentModulePath)) {
+          return true;
+        }
+      }
+
       return false;
     };
 
-    // Start DFS from the function's ID
-    return dfs(start);
+    return dfs(funcIR, modulePath);
   }
 
   /**
@@ -642,5 +691,43 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     );
 
     instrs.push(leftArrayPattern, rightArrayPattern, storeLocalInstr);
+  }
+}
+
+/**
+ * Yields every instruction in `funcIR` (header + every block) that owns a
+ * nested FunctionIR — arrows, function expressions, and function
+ * declarations. Used by `isFunctionRecursive` to follow lexical nesting when
+ * looking for cycles.
+ */
+type NestedFunctionInstruction =
+  | ArrowFunctionExpressionInstruction
+  | FunctionExpressionInstruction
+  | FunctionDeclarationInstruction;
+
+function isNestedFunctionInstruction(
+  instr: BaseInstruction,
+): instr is NestedFunctionInstruction {
+  return (
+    instr instanceof ArrowFunctionExpressionInstruction ||
+    instr instanceof FunctionExpressionInstruction ||
+    instr instanceof FunctionDeclarationInstruction
+  );
+}
+
+function* nestedFunctionInstructions(
+  funcIR: FunctionIR,
+): IterableIterator<NestedFunctionInstruction> {
+  for (const instr of funcIR.header) {
+    if (isNestedFunctionInstruction(instr)) {
+      yield instr;
+    }
+  }
+  for (const block of funcIR.blocks.values()) {
+    for (const instr of block.instructions) {
+      if (isNestedFunctionInstruction(instr)) {
+        yield instr;
+      }
+    }
   }
 }

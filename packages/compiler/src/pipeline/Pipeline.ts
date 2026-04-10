@@ -3,7 +3,6 @@ import { CommonJSExportCollectorPass } from "../frontend/passes/CommonJSExportCo
 import { ProjectUnit } from "../frontend/ProjectBuilder";
 import { BasicBlock, BlockId } from "../ir";
 import { AnalysisManager } from "./analysis/AnalysisManager";
-import { CallGraph } from "./analysis/CallGraph";
 import { LateOptimizer } from "./late-optimizer/LateOptimizer";
 import { ExportDeclarationMergingPass } from "./late-optimizer/passes/ExportDeclarationMergingPass";
 import { CFGSimplificationPass } from "./CFGSimplificationPass";
@@ -36,7 +35,6 @@ export class Pipeline {
 
     // oxlint-disable-next-line typescript/no-explicit-any
     const context = new Map<string, any>();
-    const callGraph = new CallGraph(this.projectUnit);
     for (const moduleName of this.projectUnit.postOrder.toReversed()) {
       const moduleIR = this.projectUnit.modules.get(moduleName)!;
       for (const functionIR of moduleIR.functions.values()) {
@@ -50,7 +48,6 @@ export class Pipeline {
           const optimizerResult = new Optimizer(
             functionIR,
             moduleIR,
-            callGraph,
             ssaBuilderResult,
             this.projectUnit,
             this.options,
