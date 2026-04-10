@@ -1,7 +1,7 @@
 function $0_0() {
   return 5;
 }
-let a = undefined;
+let $1_0 = undefined;
 const $7_0 = $0_0();
-a = $7_0;
-const result = $7_0;
+$1_0 = $7_0;
+const $2_0 = $7_0;

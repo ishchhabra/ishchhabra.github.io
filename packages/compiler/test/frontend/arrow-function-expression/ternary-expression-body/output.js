@@ -1,4 +1,4 @@
-const classify = ($1_0) => {
+const $0_0 = ($1_0) => {
   let $4_0 = undefined;
   let $11_phi_16 = undefined;
   if ($1_0 > 0) {

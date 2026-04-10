@@ -1,5 +1,5 @@
-const obj = {
+const $0_0 = {
   x: 1,
   y: 2,
 };
-delete obj.x;
+delete $0_0.x;

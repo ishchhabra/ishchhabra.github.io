@@ -1,2 +1,2 @@
-const a = "hello";
+const $0_0 = "hello";
 ("hello world");

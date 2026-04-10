@@ -4,4 +4,5 @@ const $1_0 = class extends Base {
     this.value = $4_0;
   }
 };
-export const foo = new $1_0(1);
+const $0_0 = new $1_0(1);
+export { $0_0 as foo };

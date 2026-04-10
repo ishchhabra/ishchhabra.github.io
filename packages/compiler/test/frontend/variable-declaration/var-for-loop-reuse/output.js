@@ -1,10 +1,10 @@
 function $0_0() {
-  var i = undefined;
-  i = 0;
+  var $1_0 = undefined;
+  $1_0 = 0;
   if (true) {
   }
-  i = 0;
+  $1_0 = 0;
   if (true) {
   }
-  return i;
+  return $1_0;
 }

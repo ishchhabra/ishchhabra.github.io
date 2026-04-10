@@ -1,2 +1,2 @@
-const err = new Error("oops");
-const map = new Map();
+const $0_0 = new Error("oops");
+const $1_0 = new Map();

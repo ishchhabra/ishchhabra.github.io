@@ -1,8 +1,8 @@
-const obj = {
+const $0_0 = {
   a: 1,
 };
-obj.a = 100;
-const x = 100;
-obj.a = 200;
-const y = 200;
-console.log(x, y);
+$0_0.a = 100;
+const $1_0 = 100;
+$0_0.a = 200;
+const $2_0 = 200;
+console.log($1_0, $2_0);

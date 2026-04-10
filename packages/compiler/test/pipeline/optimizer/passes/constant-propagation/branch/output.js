@@ -1,2 +1,2 @@
-let x = 10;
-const result = (false ? 10 : 20) * 2;
+let $0_0 = 10;
+const $1_0 = (false ? 10 : 20) * 2;

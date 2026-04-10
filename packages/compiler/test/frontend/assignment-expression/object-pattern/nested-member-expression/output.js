@@ -1,9 +1,9 @@
-let obj = {
+let $0_0 = {
   nested: {
     value: 1,
   },
 };
-({ value: obj.nested.value } = {
+({ value: $0_0.nested.value } = {
   value: 2,
 });
-console.log(obj.nested.value);
+console.log($0_0.nested.value);

@@ -1,4 +1,4 @@
-const key = "foo";
-const obj = {
-  [key]: 1,
+const $0_0 = "foo";
+const $1_0 = {
+  [$0_0]: 1,
 };

@@ -1,4 +1,4 @@
-const calculator = {
+const $0_0 = {
   add($2_0, $3_0) {
     return $2_0 + $3_0;
   },

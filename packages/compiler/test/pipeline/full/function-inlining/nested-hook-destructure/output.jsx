@@ -1,29 +1,30 @@
 function $0_0() {
-  const { a, b } = useRouterState({
+  const { a: $2_0, b: $3_0 } = useRouterState({
     select: ($6_0) => ({
       a: $6_0.a,
       b: $6_0.b,
     }),
   });
   return useMemo(() => {
-    return a ? b : null;
-  }, [a, b]);
+    return $2_0 ? $3_0 : null;
+  }, [$2_0, $3_0]);
 }
-export function App() {
-  const { a: $56_0, b: $57_0 } = useRouterState({
+function $1_0() {
+  const { a: $57_0, b: $58_0 } = useRouterState({
     select: ($6_0) => ({
       a: $6_0.a,
       b: $6_0.b,
     }),
   });
-  const loc = useMemo(() => {
-    return $56_0 ? $57_0 : null;
-  }, [$56_0, $57_0]);
+  const $27_0 = useMemo(() => {
+    return $57_0 ? $58_0 : null;
+  }, [$57_0, $58_0]);
   return (
     <div>
       {useMemo(() => {
-        return $56_0 ? $57_0 : null;
-      }, [$56_0, $57_0])}
+        return $57_0 ? $58_0 : null;
+      }, [$57_0, $58_0])}
     </div>
   );
 }
+export { $1_0 as App };

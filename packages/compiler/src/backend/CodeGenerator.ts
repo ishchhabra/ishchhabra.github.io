@@ -139,7 +139,7 @@ export class CodeGenerator {
       return existingDeclarationIdentifier;
     }
 
-    const name = place.identifier.name ?? metadata?.sourceName ?? `$${place.identifier.id}`;
+    const name = place.identifier.name;
     const identifier = t.identifier(name);
     if (aliasableDeclaration) {
       this.declarationIdentifiers.set(place.identifier.declarationId, identifier);
@@ -220,7 +220,7 @@ export class CodeGenerator {
       if (place === undefined) {
         continue;
       }
-      const identifier = t.identifier(place.identifier.name ?? metadata.sourceName);
+      const identifier = t.identifier(place.identifier.name);
       if (getCodegenDeclarationKind(metadata.kind) !== undefined) {
         this.declarationIdentifiers.set(declarationId, identifier);
       }

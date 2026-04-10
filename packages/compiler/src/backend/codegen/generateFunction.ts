@@ -66,9 +66,9 @@ function generateFunctionParams(
   generator: CodeGenerator,
 ): Array<t.Identifier | t.RestElement | t.Pattern> {
   return functionIR.source.params.map((param) => {
-    const node = generator.places.get(param.id);
+    let node = generator.places.get(param.id);
     if (node === undefined) {
-      throw new Error(`Place ${param.id} not found`);
+      node = generator.getPlaceIdentifier(param);
     }
 
     if (node === null) {

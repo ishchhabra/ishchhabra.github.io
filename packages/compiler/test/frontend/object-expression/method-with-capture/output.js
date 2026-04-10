@@ -1,6 +1,6 @@
-const x = 1;
-const obj = {
+const $0_0 = 1;
+const $1_0 = {
   foo() {
-    return x;
+    return $0_0;
   },
 };

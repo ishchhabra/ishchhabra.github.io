@@ -3,5 +3,5 @@ function $0_0($2_0) {
 }
 const $14_0 = "world";
 console.log($14_0);
-const x = undefined;
-console.log(x);
+const $1_0 = undefined;
+console.log($1_0);

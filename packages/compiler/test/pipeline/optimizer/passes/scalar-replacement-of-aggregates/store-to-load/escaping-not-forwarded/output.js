@@ -1,6 +1,6 @@
-const obj = {
+const $0_0 = {
   a: 1,
 };
-obj.a = 10;
-console.log(obj);
-console.log(obj.a);
+$0_0.a = 10;
+console.log($0_0);
+console.log($0_0.a);

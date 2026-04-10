@@ -1,6 +1,6 @@
-let obj = {};
-({ a: obj.a, b: obj.b } = {
+let $0_0 = {};
+({ a: $0_0.a, b: $0_0.b } = {
   a: 1,
   b: 2,
 });
-console.log(obj.a, obj.b);
+console.log($0_0.a, $0_0.b);

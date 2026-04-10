@@ -1,2 +1,2 @@
-const { 0: first, 1: second } = arr;
-console.log(first, second);
+const { 0: $0_0, 1: $1_0 } = arr;
+console.log($0_0, $1_0);

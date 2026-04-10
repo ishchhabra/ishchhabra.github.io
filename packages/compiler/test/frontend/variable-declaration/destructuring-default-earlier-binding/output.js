@@ -1,4 +1,4 @@
 function $0_0($1_0) {
-  const [, theirName, myName = theirName] = $1_0;
-  return myName;
+  const [, $2_0, $3_0 = $2_0] = $1_0;
+  return $3_0;
 }

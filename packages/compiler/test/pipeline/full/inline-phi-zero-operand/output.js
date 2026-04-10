@@ -1,24 +1,24 @@
 function $0_0($1_0, $2_0, $3_0) {
-  var x = undefined;
-  var y = undefined;
-  x = undefined;
-  y = undefined;
+  var $4_0 = undefined;
+  var $7_0 = undefined;
+  $4_0 = undefined;
+  $7_0 = undefined;
   let $40_phi_55 = undefined;
   let $42_phi_57 = undefined;
   let $44_phi_59 = undefined;
   if ($1_0) {
     let $45_phi_60 = undefined;
     if ($2_0) {
-      x = $2_0;
+      $4_0 = $2_0;
       $15_0 = $2_0;
-      $40_phi_55 = x;
-      $42_phi_57 = y;
+      $40_phi_55 = $4_0;
+      $42_phi_57 = $7_0;
       $45_phi_60 = $15_0;
     } else {
-      y = $3_0;
+      $7_0 = $3_0;
       $15_0 = $3_0;
-      $40_phi_55 = x;
-      $42_phi_57 = y;
+      $40_phi_55 = $4_0;
+      $42_phi_57 = $7_0;
       $45_phi_60 = $15_0;
     }
     $14_0 =

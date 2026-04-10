@@ -1,5 +1,5 @@
 function $0_0() {
-  return a;
+  return $3_0;
 }
 function $1_0() {
   return "b";
@@ -7,7 +7,7 @@ function $1_0() {
 function $2_0() {
   return 3;
 }
-let a = {
+let $3_0 = {
   b: 0,
 };
 const $13_0 = $0_0();
@@ -21,4 +21,4 @@ if (!$19_0) {
   $19_0 = $24_0;
   $31_phi_37 = $19_0;
 }
-const result = $31_phi_37;
+const $4_0 = $31_phi_37;

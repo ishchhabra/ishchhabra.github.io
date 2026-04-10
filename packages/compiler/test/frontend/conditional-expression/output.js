@@ -7,4 +7,4 @@ if (Math.random() > 0.5) {
   $6_0 = 20;
   $12_phi_16 = $6_0;
 }
-const value = $12_phi_16;
+const $0_0 = $12_phi_16;

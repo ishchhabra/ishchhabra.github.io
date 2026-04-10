@@ -1,4 +1,4 @@
-const Foo = {
+const $0_0 = {
   Bar: () => <div />,
 };
-const el = <Foo.Bar />;
+const $1_0 = <$0_0.Bar />;

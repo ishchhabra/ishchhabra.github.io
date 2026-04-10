@@ -1,2 +1,2 @@
 import add from "./math";
-const result = add(1, 2);
+const $0_0 = add(1, 2);

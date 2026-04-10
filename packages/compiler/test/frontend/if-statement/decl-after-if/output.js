@@ -2,10 +2,10 @@ let $16_phi_17 = undefined;
 if (true) {
   console.log("first");
 }
-let x = 10;
-$16_phi_17 = x;
+let $0_0 = 10;
+$16_phi_17 = $0_0;
 if (true) {
-  x = 20;
-  $16_phi_17 = x;
+  $0_0 = 20;
+  $16_phi_17 = $0_0;
 }
 console.log($16_phi_17);

@@ -1,9 +1,9 @@
 function $0_0($4_0) {
-  const result = $4_0;
-  return result;
+  const $5_0 = $4_0;
+  return $5_0;
 }
-const result = 0;
+const $1_0 = 0;
 const $19_0 = 1;
-const a = $19_0;
+const $2_0 = $19_0;
 const $25_0 = 2;
-const b = $25_0;
+const $3_0 = $25_0;

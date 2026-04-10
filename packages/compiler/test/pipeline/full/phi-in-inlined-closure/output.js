@@ -1,23 +1,24 @@
+function $0_0() {
+  const $34_0 = globalThis.getA();
+  const $39_0 = globalThis.getB();
+  const $2_0 = globalThis.useMemo(() => {
+    if ($34_0) {
+    } else {
+    }
+    return "fallback";
+  }, [globalThis.getA(), globalThis.getB()]);
+  return globalThis.useMemo(() => {
+    if ($34_0) {
+    } else {
+    }
+    return "fallback";
+  }, [globalThis.getA(), globalThis.getB()]);
+}
 function $1_0() {
-  const a = globalThis.getA();
-  const b = globalThis.getB();
+  const $5_0 = globalThis.getA();
+  const $6_0 = globalThis.getB();
   return globalThis.useMemo(() => {
-    return a ? (b ?? "default") : "fallback";
+    return $5_0 ? ($6_0 ?? "default") : "fallback";
   }, [globalThis.getA(), globalThis.getB()]);
 }
-export function Component() {
-  const $33_0 = globalThis.getA();
-  const $38_0 = globalThis.getB();
-  const value = globalThis.useMemo(() => {
-    if ($33_0) {
-    } else {
-    }
-    return "fallback";
-  }, [globalThis.getA(), globalThis.getB()]);
-  return globalThis.useMemo(() => {
-    if ($33_0) {
-    } else {
-    }
-    return "fallback";
-  }, [globalThis.getA(), globalThis.getB()]);
-}
+export { $0_0 as Component };

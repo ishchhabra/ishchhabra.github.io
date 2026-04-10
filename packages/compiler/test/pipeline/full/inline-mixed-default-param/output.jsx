@@ -3,16 +3,15 @@ function $0_0($3_0, $4_0 = 5) {
     slug: $11_0.slug,
   }));
 }
-const ARTICLES = [];
-export function Home() {
-  const [$47_0, $49_0 = 5] = [ARTICLES];
-  const articles = $47_0.slice(0, $49_0).map(($11_0) => ({
+function $1_0() {
+  const [$48_0, $50_0 = 5] = [$2_0];
+  const $18_0 = $48_0.slice(0, $50_0).map(($11_0) => ({
     slug: $11_0.slug,
   }));
   return (
     <div>
-      {$47_0
-        .slice(0, $49_0)
+      {$48_0
+        .slice(0, $50_0)
         .map(($11_0) => ({
           slug: $11_0.slug,
         }))
@@ -22,3 +21,5 @@ export function Home() {
     </div>
   );
 }
+const $2_0 = [];
+export { $1_0 as Home };

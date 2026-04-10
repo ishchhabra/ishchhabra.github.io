@@ -1,5 +1,5 @@
-const x = 1;
-switch (x) {
+const $0_0 = 1;
+switch ($0_0) {
   case 1:
     console.log("one");
     break;

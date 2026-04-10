@@ -1,4 +1,4 @@
-const router = createRouter({
+const $0_0 = createRouter({
   routes: [],
 });
-export { router as default };
+export { $0_0 as default };

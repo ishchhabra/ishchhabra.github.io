@@ -1,6 +1,6 @@
-for (const item of items) {
-  if (item === target) {
+for (const $1_0 of items) {
+  if ($1_0 === target) {
     break;
   }
-  console.log(item);
+  console.log($1_0);
 }

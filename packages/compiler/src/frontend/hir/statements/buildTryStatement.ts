@@ -86,9 +86,6 @@ export function buildTryStatement(
         catchClause.param.name,
         catchScope,
       );
-      // The catch syntax materializes the binding directly; codegen only needs
-      // the stable declaration metadata and binding place.
-      identifier.name = catchClause.param.name;
       const bindingPlace = environment.createPlace(identifier);
 
       environment.registerDeclaration(

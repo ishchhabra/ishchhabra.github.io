@@ -1,2 +1,2 @@
-const d = 4;
-console.log(d);
+const $3_0 = 4;
+console.log($3_0);

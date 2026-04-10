@@ -1,2 +1,2 @@
-const path = "./module";
-import(path).then(($5_0) => console.log($5_0));
+const $0_0 = "./module";
+import($0_0).then(($5_0) => console.log($5_0));

@@ -1,10 +1,10 @@
-for (const item of items) {
+for (const $1_0 of items) {
   let $10_phi_12 = undefined;
   let $11_phi_13 = undefined;
-  $10_phi_12 = item;
+  $10_phi_12 = $1_0;
   if (condition) {
-    item = item + 1;
-    $10_phi_12 = item;
+    $1_0 = $1_0 + 1;
+    $10_phi_12 = $1_0;
   }
   console.log($10_phi_12);
   $11_phi_13 = $10_phi_12;

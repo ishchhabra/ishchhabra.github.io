@@ -1,4 +1,4 @@
-const props = {
+const $0_0 = {
   id: "main",
 };
-const el = <div className="container" {...props} disabled />;
+const $1_0 = <div className="container" {...$0_0} disabled />;

@@ -1,6 +1,6 @@
-const arr = [10];
-const i = 0;
-const $9_0 = arr[i];
+const $0_0 = [10];
+const $1_0 = 0;
+const $9_0 = $0_0[$1_0];
 const $13_0 = $9_0 + 1;
-arr[i] = $13_0;
-const result = $13_0;
+$0_0[$1_0] = $13_0;
+const $2_0 = $13_0;

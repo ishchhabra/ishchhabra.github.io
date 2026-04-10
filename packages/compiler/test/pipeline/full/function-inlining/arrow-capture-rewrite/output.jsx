@@ -1,9 +1,10 @@
 function $0_0() {
-  const x = getValue();
-  return useMemo(() => x + 1, [getValue()]);
+  const $2_0 = getValue();
+  return useMemo(() => $2_0 + 1, [getValue()]);
 }
-export function App() {
-  const $26_0 = getValue();
-  const result = useMemo(() => $26_0 + 1, [getValue()]);
-  return <div>{useMemo(() => $26_0 + 1, [getValue()])}</div>;
+function $1_0() {
+  const $27_0 = getValue();
+  const $12_0 = useMemo(() => $27_0 + 1, [getValue()]);
+  return <div>{useMemo(() => $27_0 + 1, [getValue()])}</div>;
 }
+export { $1_0 as App };

@@ -1,2 +1,2 @@
-const y = 2;
-console.log(y);
+const $1_0 = 2;
+console.log($1_0);

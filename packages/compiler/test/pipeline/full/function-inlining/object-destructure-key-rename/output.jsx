@@ -1,14 +1,15 @@
 function $0_0($2_0) {
-  const { name } = $2_0;
-  return <span>{name}</span>;
+  const { name: $3_0 } = $2_0;
+  return <span>{$3_0}</span>;
 }
-export function App() {
-  const { name: $29_0 } = {
+function $1_0() {
+  const { name: $30_0 } = {
     name: "hello",
   };
   return (
     <div>
-      <span>{$29_0}</span>
+      <span>{$30_0}</span>
     </div>
   );
 }
+export { $1_0 as App };

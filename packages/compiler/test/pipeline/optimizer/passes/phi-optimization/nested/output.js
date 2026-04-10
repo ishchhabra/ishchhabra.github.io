@@ -1,3 +1,3 @@
-const x = globalThis.x;
-let result = undefined;
-console.log(x > 0 ? "positive" : x < 0 ? "negative" : "zero");
+const $0_0 = globalThis.x;
+let $1_0 = undefined;
+console.log($0_0 > 0 ? "positive" : $0_0 < 0 ? "negative" : "zero");

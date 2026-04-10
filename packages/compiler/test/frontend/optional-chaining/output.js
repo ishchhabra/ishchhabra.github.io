@@ -1,10 +1,10 @@
-const obj = {
+const $0_0 = {
   a: {
     b: 1,
   },
 };
-const x = obj?.a;
-const y = obj?.a?.b;
-const z = obj?.[0];
-const w = obj?.method();
-const v = obj?.a.b;
+const $1_0 = $0_0?.a;
+const $2_0 = $0_0?.a?.b;
+const $3_0 = $0_0?.[0];
+const $4_0 = $0_0?.method();
+const $5_0 = $0_0?.a.b;

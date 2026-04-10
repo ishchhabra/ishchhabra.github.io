@@ -9,14 +9,9 @@ import type {
 } from "oxc-parser";
 import { Environment } from "../../../environment";
 import {
-  ArrayDestructureInstruction,
   ExportNamedDeclarationInstruction,
-  ObjectDestructureInstruction,
   Place,
-  StoreLocalInstruction,
-  StoreContextInstruction,
 } from "../../../ir";
-import { FunctionDeclarationInstruction } from "../../../ir/instructions/declaration/FunctionDeclaration";
 import { ExportFromInstruction } from "../../../ir/instructions/module/ExportFrom";
 import { ExportSpecifierInstruction } from "../../../ir/instructions/module/ExportSpecifier";
 import { type Scope } from "../../scope/Scope";
@@ -56,62 +51,22 @@ export function buildExportNamedDeclaration(
   if (declaration != null && isTSOnlyNode(declaration as Node)) {
     return undefined;
   }
-  // For `export var`, build the declaration normally and create specifiers
-  // so ExportDeclarationMergingPass handles the merge. This avoids wrapping
-  // the value store directly, which conflicts with the hoisted var init.
-  if (
-    declaration != null &&
-    declaration.type === "VariableDeclaration" &&
-    declaration.kind === "var"
-  ) {
-    return buildExportVarAsSpecifiers(
-      declaration,
-      scope,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
-  }
-
+  // Always lower `export <declaration>` into the split form:
+  //   <declaration with SSA name>
+  //   export { $ssa_name as sourceName }
+  //
+  // This decouples the binding identity (SSA, freely renameable) from the
+  // export contract (public name, preserved as a string on the specifier).
+  // ExportDeclarationMergingPass can optionally merge them back into
+  // `export const foo = ...` for nicer output.
   if (declaration != null) {
-    let declarationPlace = buildExportDeclaration(
+    return buildExportDeclarationAsSpecifiers(
       declaration,
       scope,
       functionBuilder,
       moduleBuilder,
       environment,
     );
-
-    // Suppress standalone emission so the export wraps the declaration.
-    // Without this, codegen emits the declaration as a separate statement.
-    const storeInstruction = environment.placeToInstruction.get(declarationPlace.id);
-    if (
-      storeInstruction instanceof FunctionDeclarationInstruction ||
-      storeInstruction instanceof ArrayDestructureInstruction ||
-      storeInstruction instanceof ObjectDestructureInstruction ||
-      storeInstruction instanceof StoreLocalInstruction ||
-      storeInstruction instanceof StoreContextInstruction
-    ) {
-      storeInstruction.emit = false;
-    }
-
-    const identifier = environment.createIdentifier();
-    const place = environment.createPlace(identifier);
-    const instruction = environment.createInstruction(
-      ExportNamedDeclarationInstruction,
-      place,
-      [],
-      declarationPlace,
-    );
-    functionBuilder.addInstruction(instruction);
-    const declarationInstructionId = environment.getDeclarationInstruction(
-      declarationPlace.identifier.declarationId,
-    )!;
-    moduleBuilder.moduleIR.exports.set(identifier.name, {
-      instruction,
-      declaration: environment.instructions.get(declarationInstructionId)!,
-    });
-    return place;
   } else {
     const exportSpecifierPlaces = specifiers.map((specifier) => {
       const exportSpecifierPlace = buildNode(
@@ -141,95 +96,60 @@ export function buildExportNamedDeclaration(
 }
 
 /**
- * Builds the declaration inside an `export` statement. Function and class
- * declarations are already built during scope instantiation, so we look up
- * their existing declaration place instead of calling buildNode (which
- * returns undefined for these).
+ * Lowers any `export <declaration>` into the split form:
+ *   1. Build the declaration normally (binding uses its SSA name).
+ *   2. Create `ExportSpecifier(local=$ssa, exported="sourceName")` for each
+ *      declared name.
+ *   3. Wrap in `ExportNamedDeclaration(specifiers=[...])`.
+ *
+ * ExportDeclarationMergingPass can optionally merge them back into
+ * `export const foo = ...` for nicer output.
  */
-function buildExportDeclaration(
+function buildExportDeclarationAsSpecifiers(
   declaration: Declaration,
   scope: Scope,
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
-  // Function declarations are fully built during scope instantiation.
-  // Reuse the existing FunctionDeclarationInstruction and suppress its
-  // standalone emission so the export wraps it directly.
-  if (declaration.type === "FunctionDeclaration" && declaration.id) {
-    const name = declaration.id.name;
-    const declarationId = functionBuilder.getDeclarationId(name, scope);
-    if (declarationId !== undefined) {
-      const declarationInstructionId = environment.getDeclarationInstruction(declarationId);
-      if (declarationInstructionId !== undefined) {
-        const declarationInstruction = environment.instructions.get(declarationInstructionId);
-        if (declarationInstruction instanceof FunctionDeclarationInstruction) {
-          declarationInstruction.place.identifier.name = name;
-          declarationInstruction.emit = false;
-          return declarationInstruction.place;
-        }
-      }
-    }
-  }
+  // Collect declared names before building (needed for function/class which
+  // don't go through VariableDeclaration).
+  const names = collectDeclaredNames(declaration);
 
-  let result = buildNode(declaration, scope, functionBuilder, moduleBuilder, environment);
-  if (Array.isArray(result)) {
-    // Multi-declarator: `export const a = 1, b = 2;`
-    result = result[0];
-  }
-  if (result === undefined) {
-    throw new Error(`Export declaration produced no place for ${declaration.type}`);
-  }
-  return result;
-}
-
-/**
- * Builds `export var x = 1` by emitting the var declaration normally
- * (which hoists it), then creating export specifiers. This lets
- * ExportDeclarationMergingPass merge them consistently with the
- * `var x = 1; export { x }` path.
- */
-function buildExportVarAsSpecifiers(
-  declaration: VariableDeclaration,
-  scope: Scope,
-  functionBuilder: FunctionIRBuilder,
-  moduleBuilder: ModuleIRBuilder,
-  environment: Environment,
-): Place {
-  // Build the var declaration normally (hoisted init + value store).
+  // Build the declaration. Function/class declarations are already built
+  // during scope instantiation; buildNode returns undefined for them, which
+  // is fine — we just need the binding places, not the return value.
   buildNode(declaration, scope, functionBuilder, moduleBuilder, environment);
 
   // Create export specifiers for each declared name.
   const specifierPlaces: Place[] = [];
-  for (const declarator of declaration.declarations) {
-    for (const name of collectPatternNames(declarator.id)) {
-      const declarationId = functionBuilder.getDeclarationId(name, scope);
-      if (declarationId === undefined) continue;
+  for (const name of names) {
+    const declarationId = functionBuilder.getDeclarationId(name, scope);
+    if (declarationId === undefined) continue;
 
-      const latestDeclaration = environment.getLatestDeclaration(declarationId);
-      if (latestDeclaration === undefined) continue;
+    const latestDeclaration = environment.getLatestDeclaration(declarationId);
+    if (latestDeclaration === undefined) continue;
 
-      const localPlace = environment.places.get(latestDeclaration.placeId);
-      if (localPlace === undefined) continue;
+    const localPlace = environment.places.get(latestDeclaration.placeId);
+    if (localPlace === undefined) continue;
 
-      const specId = environment.createIdentifier();
-      const specPlace = environment.createPlace(specId);
-      const specInstruction = environment.createInstruction(
-        ExportSpecifierInstruction,
-        specPlace,
-        localPlace,
-        name,
-      );
-      functionBuilder.addInstruction(specInstruction);
-      specifierPlaces.push(specPlace);
+    const specId = environment.createIdentifier();
+    const specPlace = environment.createPlace(specId);
+    const specInstruction = environment.createInstruction(
+      ExportSpecifierInstruction,
+      specPlace,
+      localPlace,
+      name,
+    );
+    functionBuilder.addInstruction(specInstruction);
+    specifierPlaces.push(specPlace);
 
-      const declarationInstructionId = environment.getDeclarationInstruction(declarationId);
-      if (declarationInstructionId !== undefined) {
-        moduleBuilder.moduleIR.exports.set(name, {
-          instruction: specInstruction,
-          declaration: environment.instructions.get(declarationInstructionId)!,
-        });
-      }
+    const declarationInstructionId = environment.getDeclarationInstruction(declarationId);
+    if (declarationInstructionId !== undefined) {
+      moduleBuilder.moduleIR.exports.set(name, {
+        instruction: specInstruction,
+        declaration: environment.instructions.get(declarationInstructionId)!,
+      });
     }
   }
 
@@ -243,6 +163,20 @@ function buildExportVarAsSpecifiers(
   );
   functionBuilder.addInstruction(instruction);
   return place;
+}
+
+/** Extracts declared names from a declaration node. */
+function collectDeclaredNames(declaration: Declaration): string[] {
+  if (declaration.type === "VariableDeclaration") {
+    return declaration.declarations.flatMap((d) => collectPatternNames(d.id));
+  }
+  if (
+    (declaration.type === "FunctionDeclaration" || declaration.type === "ClassDeclaration") &&
+    declaration.id
+  ) {
+    return [declaration.id.name];
+  }
+  return [];
 }
 
 function collectPatternNames(pattern: AST.Pattern): string[] {

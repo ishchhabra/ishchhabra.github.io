@@ -1,3 +1,3 @@
-let obj = {};
-[obj.a, obj.b] = [1, 2];
-console.log(obj.a, obj.b);
+let $0_0 = {};
+[$0_0.a, $0_0.b] = [1, 2];
+console.log($0_0.a, $0_0.b);

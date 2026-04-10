@@ -1,1 +1,1 @@
-const result = (1, 2, 3);
+const $0_0 = (1, 2, 3);

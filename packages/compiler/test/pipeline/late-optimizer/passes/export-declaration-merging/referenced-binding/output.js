@@ -1,4 +1,5 @@
-export function foo() {
+function $0_0() {
   return 42;
 }
-foo();
+export { $0_0 as foo };
+$0_0();

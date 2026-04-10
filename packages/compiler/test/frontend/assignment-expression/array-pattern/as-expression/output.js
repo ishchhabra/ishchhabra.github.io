@@ -1,5 +1,5 @@
-let a = undefined;
-let b = undefined;
+let $0_0 = undefined;
+let $1_0 = undefined;
 const $9_0 = [1, 2];
-[a, b] = $9_0;
+[$0_0, $1_0] = $9_0;
 $9_0 == null;

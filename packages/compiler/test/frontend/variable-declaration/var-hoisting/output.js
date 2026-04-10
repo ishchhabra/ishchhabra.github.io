@@ -1,7 +1,7 @@
 function $0_0($1_0) {
-  var x = undefined;
+  var $2_0 = undefined;
   if ($1_0) {
-    x = 1;
+    $2_0 = 1;
   }
-  return x;
+  return $2_0;
 }

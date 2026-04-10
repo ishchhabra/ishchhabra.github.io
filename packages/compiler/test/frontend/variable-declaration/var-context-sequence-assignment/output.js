@@ -1,5 +1,5 @@
-var re = undefined;
-re = undefined;
-re = "log";
-const ae = ("log", () => re);
-console.log(ae());
+var $0_0 = undefined;
+$0_0 = undefined;
+$0_0 = "log";
+const $3_0 = ("log", () => $0_0);
+console.log($3_0());

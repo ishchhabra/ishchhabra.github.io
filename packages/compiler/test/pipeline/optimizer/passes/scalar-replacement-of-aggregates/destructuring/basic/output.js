@@ -1,3 +1,3 @@
-const a = 2;
-const b = 3;
-console.log(a, b);
+const $0_0 = 2;
+const $1_0 = 3;
+console.log($0_0, $1_0);

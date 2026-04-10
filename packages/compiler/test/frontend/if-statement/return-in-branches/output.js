@@ -5,5 +5,5 @@ function $0_0($2_0) {
     return -1;
   }
 }
-const result = $0_0(5);
-console.log(result);
+const $1_0 = $0_0(5);
+console.log($1_0);

@@ -10,4 +10,4 @@ function $1_0($10_0) {
   }
   return $0_0($10_0 - 1);
 }
-const result = $0_0(4);
+const $2_0 = $0_0(4);

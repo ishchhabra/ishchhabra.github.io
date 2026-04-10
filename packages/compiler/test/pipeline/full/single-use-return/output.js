@@ -1,6 +1,6 @@
 function $0_0() {
-  const a = globalThis.getA();
-  const b = globalThis.getB();
+  const $1_0 = globalThis.getA();
+  const $2_0 = globalThis.getB();
   return globalThis.getA() + globalThis.getB();
 }
 globalThis.getA();

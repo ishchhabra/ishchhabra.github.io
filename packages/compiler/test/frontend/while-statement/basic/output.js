@@ -1,7 +1,7 @@
-let number = 5;
+let $0_0 = 5;
 let $8_phi_10 = undefined;
-$8_phi_10 = number;
+$8_phi_10 = $0_0;
 while ($8_phi_10 > 0) {
-  number = $8_phi_10 - 1;
-  $8_phi_10 = number;
+  $0_0 = $8_phi_10 - 1;
+  $8_phi_10 = $0_0;
 }

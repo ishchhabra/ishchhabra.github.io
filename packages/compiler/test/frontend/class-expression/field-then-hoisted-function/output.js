@@ -1,9 +1,9 @@
-var C = undefined;
+var $1_0 = undefined;
 function $0_0() {
-  return k;
+  return $4_0;
 }
-const k = 1;
-C = class {
-  x = k;
+const $4_0 = 1;
+$1_0 = class {
+  x = $4_0;
 };
 export { $0_0 as afterClass };

@@ -1,4 +1,4 @@
 async function $0_0() {
-  const mod = await import("./module");
-  return mod["default"];
+  const $1_0 = await import("./module");
+  return $1_0["default"];
 }

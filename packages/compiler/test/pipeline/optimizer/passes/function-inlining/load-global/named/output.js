@@ -1,2 +1,2 @@
 import { increment } from "./utils";
-const a = increment(5);
+const $0_0 = 5 + 1;
