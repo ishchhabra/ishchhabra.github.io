@@ -9,18 +9,14 @@ import {
 import type { Phi } from "../../pipeline/ssa/Phi";
 import { BaseInstruction } from "../base";
 import { FunctionDeclarationInstruction } from "../instructions/declaration/FunctionDeclaration";
-import { ArrayDestructureInstruction } from "../instructions/memory/ArrayDestructure";
-import { ArrayExpressionInstruction } from "../instructions/value/ArrayExpression";
 import { ArrowFunctionExpressionInstruction } from "../instructions/value/ArrowFunctionExpression";
 import { FunctionExpressionInstruction } from "../instructions/value/FunctionExpression";
-import { LiteralInstruction } from "../instructions/value/Literal";
 import { BasicBlock, BlockId } from "./Block";
 import { type DestructureTarget, rewriteDestructureTarget } from "./Destructure";
 import { Identifier } from "./Identifier";
 import { ModuleIR } from "./ModuleIR";
 import { Place } from "./Place";
 import { BaseStructure, TernaryStructure } from "./Structure";
-import { ReturnTerminal } from "./Terminal";
 
 /**
  * Simulated opaque type for FunctionIR to prevent using normal numbers as ids
@@ -44,11 +40,6 @@ export interface FunctionRuntime {
   paramBindings: Place[][];
   prologue: BaseInstruction[];
   captureParams: Place[];
-}
-
-export interface InlinedFunctionFragment {
-  instructions: BaseInstruction[];
-  returnPlace: Place;
 }
 
 type NestedFunctionInstruction =
@@ -421,146 +412,33 @@ export class FunctionIR {
     return populated;
   }
 
-  public cloneInlineFragment(
-    targetModule: ModuleIR,
-    args: Place[],
-    captures: Place[],
-  ): InlinedFunctionFragment {
-    if (this.blocks.size > 1) {
-      throw new Error("Function has multiple blocks");
-    }
-
-    const environment = targetModule.environment;
-    const rewriteMap = new Map<Identifier, Place>();
-    const instructions: BaseInstruction[] = [];
-    const usesSyntheticParamDestructure = this.hasSyntheticRuntimeParamDestructure();
-    if (!usesSyntheticParamDestructure) {
-      this.runtime.params.forEach((paramPlace, index) => {
-        const argPlace = args[index];
-        if (argPlace !== undefined) {
-          rewriteMap.set(paramPlace.identifier, argPlace);
-          return;
-        }
-
-        const undefinedLiteral = environment.createInstruction(
-          LiteralInstruction,
-          environment.createPlace(environment.createIdentifier()),
-          undefined,
-        );
-        instructions.push(undefinedLiteral);
-        rewriteMap.set(paramPlace.identifier, undefinedLiteral.place);
-      });
-    }
-    for (let i = 0; i < this.runtime.captureParams.length; i++) {
-      if (i < captures.length) {
-        rewriteMap.set(this.runtime.captureParams[i].identifier, captures[i]);
-      }
-    }
-
-    const runtimePrologue = usesSyntheticParamDestructure
-      ? this.runtime.prologue.slice(0, -2)
-      : this.runtime.prologue;
-    for (const instr of runtimePrologue) {
-      const clonedInstr = instr.clone(targetModule);
-      rewriteMap.set(instr.place.identifier, clonedInstr.place);
-      this.registerAdditionalDefinitionPlaces(instr, rewriteMap, environment);
-      instructions.push(clonedInstr.rewrite(rewriteMap, { rewriteDefinitions: true }));
-    }
-
-    if (usesSyntheticParamDestructure) {
-      const rightArrayExpression = environment.createInstruction(
-        ArrayExpressionInstruction,
-        environment.createPlace(environment.createIdentifier()),
-        args,
-      );
-      const leftArrayDestructure = environment.createInstruction(
-        ArrayDestructureInstruction,
-        environment.createPlace(environment.createIdentifier()),
-        this.runtime.paramTargets,
-        rightArrayExpression.place,
-        "declaration",
-        "const",
-        true,
-      );
-      rewriteMap.set(rightArrayExpression.place.identifier, rightArrayExpression.place);
-      rewriteMap.set(leftArrayDestructure.place.identifier, leftArrayDestructure.place);
-      this.registerAdditionalDefinitionPlaces(leftArrayDestructure, rewriteMap, environment);
-      instructions.push(rightArrayExpression);
-      instructions.push(leftArrayDestructure.rewrite(rewriteMap, { rewriteDefinitions: true }));
-    }
-
-    const block = this.blocks.values().next().value!;
-    for (const instr of block.instructions) {
-      const clonedInstr = instr.clone(targetModule);
-      rewriteMap.set(instr.place.identifier, clonedInstr.place);
-      this.registerAdditionalDefinitionPlaces(instr, rewriteMap, environment);
-      instructions.push(clonedInstr.rewrite(rewriteMap, { rewriteDefinitions: true }));
-    }
-
-    if (block.terminal instanceof ReturnTerminal && block.terminal.value !== null) {
-      const returnPlace = rewriteMap.get(block.terminal.value.identifier);
-      if (!returnPlace) {
-        throw new Error("Could not find a rewritten place for the function's return value");
-      }
-      return { instructions, returnPlace };
-    }
-
-    const undefinedLiteral = environment.createInstruction(
-      LiteralInstruction,
-      environment.createPlace(environment.createIdentifier()),
-      undefined,
-    );
-    instructions.push(undefinedLiteral);
-    return { instructions, returnPlace: undefinedLiteral.place };
-  }
-
-  public replaceInstructionWithInstructions(
-    block: BasicBlock,
-    index: number,
-    instructions: BaseInstruction[],
-  ): BaseInstruction {
-    const removed = block.instructions[index];
-    for (const place of removed.getDefs()) {
-      if (place.identifier.definer === removed) {
-        place.identifier.definer = undefined;
-      }
-      if (this.moduleIR.environment.placeToInstruction.get(place.id) === removed) {
-        this.moduleIR.environment.placeToInstruction.delete(place.id);
-      }
-    }
-    block.removeInstructionAt(index);
-    for (let i = 0; i < instructions.length; i++) {
-      block.insertInstructionAt(index + i, instructions[i]);
-      this.moduleIR.environment.placeToInstruction.set(instructions[i].place.id, instructions[i]);
-    }
-    return removed;
-  }
-
-  public replacePlaceUses(
-    from: Place,
-    to: Place,
+  /**
+   * Rewrite all instructions, terminals, structures, and phis across
+   * the entire function using the given identifier → place mapping.
+   */
+  public rewrite(
+    values: Map<Identifier, Place>,
     options: { skipBlock?: BasicBlock; skipInstructionIndex?: number } = {},
   ): void {
-    const rewriteMap = new Map<Identifier, Place>([[from.identifier, to]]);
     for (const [, block] of this.blocks) {
       const start =
         options.skipBlock === block && options.skipInstructionIndex !== undefined
           ? options.skipInstructionIndex
           : 0;
       for (let i = start; i < block.instructions.length; i++) {
-        const rewritten = block.instructions[i].rewrite(rewriteMap);
+        const rewritten = block.instructions[i].rewrite(values);
         if (rewritten !== block.instructions[i]) {
           block.replaceInstruction(i, rewritten);
           this.moduleIR.environment.placeToInstruction.set(rewritten.place.id, rewritten);
         }
       }
       if (block.terminal) {
-        block.replaceTerminal(block.terminal.rewrite(rewriteMap));
+        block.replaceTerminal(block.terminal.rewrite(values));
       }
     }
 
     for (const [blockId, structure] of this.structures) {
-      const rewritten = structure.rewrite(rewriteMap);
+      const rewritten = structure.rewrite(values);
       if (rewritten !== structure) {
         this.setStructure(blockId, rewritten);
       }
@@ -568,8 +446,9 @@ export class FunctionIR {
 
     for (const phi of this.phis) {
       for (const [phiBlockId, operandPlace] of phi.operands) {
-        if (operandPlace.identifier === from.identifier) {
-          phi.operands.set(phiBlockId, to);
+        const rewritten = values.get(operandPlace.identifier);
+        if (rewritten) {
+          phi.operands.set(phiBlockId, rewritten);
         }
       }
     }
@@ -588,17 +467,4 @@ export class FunctionIR {
     }
   }
 
-  private hasSyntheticRuntimeParamDestructure(): boolean {
-    if (this.runtime.prologue.length < 2) {
-      return false;
-    }
-
-    const maybeArrayExpr = this.runtime.prologue[this.runtime.prologue.length - 2];
-    const maybeDestructure = this.runtime.prologue[this.runtime.prologue.length - 1];
-    return (
-      maybeArrayExpr instanceof ArrayExpressionInstruction &&
-      maybeDestructure instanceof ArrayDestructureInstruction &&
-      maybeDestructure.value.identifier === maybeArrayExpr.place.identifier
-    );
-  }
 }

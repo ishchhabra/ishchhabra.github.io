@@ -1,2 +1,1 @@
-const $0_0 = foo();
-const $1_0 = $0_0 * 0;
+const $1_0 = foo() * 0;

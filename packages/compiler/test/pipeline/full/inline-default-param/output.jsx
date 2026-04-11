@@ -5,9 +5,6 @@ function $0_0($3_0 = 5) {
 }
 function $1_0() {
   const [$52_0 = 5] = [];
-  const $19_0 = $2_0.slice(0, $52_0).map(($12_0) => ({
-    slug: $12_0.slug,
-  }));
   return (
     <div>
       {$2_0

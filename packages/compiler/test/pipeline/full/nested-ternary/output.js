@@ -1,2 +1,2 @@
 const $0_0 = globalThis.x;
-console.log(globalThis.x > 0 ? "positive" : globalThis.x < 0 ? "negative" : "zero");
+console.log($0_0 > 0 ? "positive" : $0_0 < 0 ? "negative" : "zero");

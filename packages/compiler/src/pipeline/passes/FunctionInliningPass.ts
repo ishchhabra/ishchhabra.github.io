@@ -1,9 +1,17 @@
 import { ProjectUnit } from "../../frontend/ProjectBuilder";
-import { BaseInstruction, BasicBlock, BlockId } from "../../ir";
+import {
+  ArrayDestructureInstruction,
+  ArrayExpressionInstruction,
+  BaseInstruction,
+  BasicBlock,
+  BlockId,
+  LiteralInstruction,
+} from "../../ir";
 import { FunctionIR, FunctionIRId } from "../../ir/core/FunctionIR";
+import { Identifier } from "../../ir/core/Identifier";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { Place } from "../../ir/core/Place";
-import { BranchTerminal, JumpTerminal } from "../../ir/core/Terminal";
+import { BranchTerminal, JumpTerminal, ReturnTerminal } from "../../ir/core/Terminal";
 import { TernaryStructure } from "../../ir/core/Structure";
 import { makeInstructionId } from "../../ir/base/Instruction";
 import { CallExpressionInstruction } from "../../ir/instructions/value/CallExpression";
@@ -13,26 +21,18 @@ import { BaseOptimizationPass } from "../late-optimizer/OptimizationPass";
 import { Phi } from "../ssa/Phi";
 
 /**
- * A pass that inlines calls to small or trivial functions directly into the
- * calling site, removing function-call overhead and enabling further optimizations
- * like constant propagation. For example:
+ * Inlines calls to small, single-block functions directly into the
+ * calling site. For example:
  *
- * ```js
- * function foo(x) { return x + 1; }
+ *   function foo(x) { return x + 1; }
+ *   function bar() { return foo(5); }
  *
- * function bar() {
- *   const a = 5;
- *   return foo(a);
- * }
- * ```
+ * becomes:
  *
- * Will be transformed into:
- * ```js
- * function bar() {
- *   const a = 5;
- *   return a + 1;
- * }
- * ```
+ *   function bar() { return 5 + 1; }
+ *
+ * The pass composes entirely from generic IR primitives: clone, rewrite,
+ * and getDefs on instructions. No inlining-specific methods on FunctionIR.
  */
 export class FunctionInliningPass extends BaseOptimizationPass {
   constructor(
@@ -42,6 +42,10 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     private readonly projectUnit: ProjectUnit,
   ) {
     super(functionIR);
+  }
+
+  private get environment() {
+    return this.moduleIR.environment;
   }
 
   private get phis(): Set<Phi> {
@@ -93,7 +97,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
         }
 
         const prevLen = block.instructions.length;
-        this.inlineFunctionIR(index, block, functionIR);
+        this.inlineCall(block, index, instr, functionIR);
         changed = true;
         // Skip past the instructions that were spliced in.
         index += block.instructions.length - prevLen;
@@ -102,6 +106,264 @@ export class FunctionInliningPass extends BaseOptimizationPass {
 
     return { changed };
   }
+
+  // -------------------------------------------------------------------
+  // Inlining core
+  // -------------------------------------------------------------------
+
+  /**
+   * Inlines a single call expression by:
+   * 1. Building a substitution map (params → args, captures → outer places)
+   * 2. Cloning the callee's prologue + body with that map
+   * 3. Extracting the return place
+   * 4. Splicing into the caller and rewriting uses of the call result
+   */
+  private inlineCall(
+    block: BasicBlock,
+    index: number,
+    callInstr: CallExpressionInstruction,
+    callee: FunctionIR,
+  ): void {
+    const substitutions = new Map<Identifier, Place>();
+
+    // Bind captures.
+    const captures = this.resolveCaptures(callee);
+    for (let i = 0; i < callee.runtime.captureParams.length; i++) {
+      if (i < captures.length) {
+        substitutions.set(callee.runtime.captureParams[i].identifier, captures[i]);
+      }
+    }
+
+    // Bind parameters and clone body.
+    const bindings = this.bindParameters(callee, callInstr.args, substitutions);
+    const prologue = this.cloneInstructions(this.getPrologueInstructions(callee), substitutions);
+    const syntheticDestructure = this.buildSyntheticParamDestructure(callee, callInstr.args, substitutions);
+    const body = this.cloneInstructions(callee.entryBlock.instructions, substitutions);
+    const { place: returnPlace, instructions: returnInstructions } =
+      this.extractReturnPlace(callee.entryBlock, substitutions);
+
+    // Splice into the caller block.
+    const instructions = [...bindings, ...prologue, ...syntheticDestructure, ...body, ...returnInstructions];
+    this.spliceInstruction(block, index, instructions);
+
+    // Rewrite all uses of the call result to the inlined return value.
+    this.functionIR.rewrite(new Map([[callInstr.place.identifier, returnPlace]]), {
+      skipBlock: block,
+      skipInstructionIndex: index + instructions.length,
+    });
+  }
+
+  /**
+   * Binds callee parameters to argument places via direct substitution.
+   * Missing arguments get an `undefined` literal.
+   *
+   * Multi-use parameters are handled by ValueMaterializationPass
+   * after all optimizations complete — no need to create temporaries here.
+   *
+   * Only applies to functions without synthetic parameter destructuring
+   * (default values, rest elements), which are handled separately.
+   */
+  private bindParameters(
+    callee: FunctionIR,
+    args: Place[],
+    substitutions: Map<Identifier, Place>,
+  ): BaseInstruction[] {
+    if (this.hasSyntheticParamDestructure(callee)) {
+      return [];
+    }
+
+    const bindings: BaseInstruction[] = [];
+
+    callee.runtime.params.forEach((paramPlace, paramIndex) => {
+      const argPlace = args[paramIndex];
+
+      if (argPlace !== undefined) {
+        substitutions.set(paramPlace.identifier, argPlace);
+        return;
+      }
+
+      // Missing argument → undefined.
+      const literal = this.environment.createInstruction(
+        LiteralInstruction,
+        this.environment.createPlace(this.environment.createIdentifier()),
+        undefined,
+      );
+      bindings.push(literal);
+      substitutions.set(paramPlace.identifier, literal.place);
+    });
+
+    return bindings;
+  }
+
+  /**
+   * Returns the prologue instructions to clone, excluding any trailing
+   * synthetic param destructure (which is rebuilt separately).
+   */
+  private getPrologueInstructions(callee: FunctionIR): BaseInstruction[] {
+    if (this.hasSyntheticParamDestructure(callee)) {
+      return callee.runtime.prologue.slice(0, -2);
+    }
+    return callee.runtime.prologue;
+  }
+
+  /**
+   * For functions with synthetic parameter destructuring (default values,
+   * rest elements), builds fresh ArrayExpression + ArrayDestructure
+   * instructions that bind the call arguments.
+   */
+  private buildSyntheticParamDestructure(
+    callee: FunctionIR,
+    args: Place[],
+    substitutions: Map<Identifier, Place>,
+  ): BaseInstruction[] {
+    if (!this.hasSyntheticParamDestructure(callee)) {
+      return [];
+    }
+
+    const arrayExpr = this.environment.createInstruction(
+      ArrayExpressionInstruction,
+      this.environment.createPlace(this.environment.createIdentifier()),
+      args,
+    );
+    const destructure = this.environment.createInstruction(
+      ArrayDestructureInstruction,
+      this.environment.createPlace(this.environment.createIdentifier()),
+      callee.runtime.paramTargets,
+      arrayExpr.place,
+      "declaration",
+      "const",
+      true,
+    );
+
+    substitutions.set(arrayExpr.place.identifier, arrayExpr.place);
+    substitutions.set(destructure.place.identifier, destructure.place);
+    for (const def of destructure.getDefs()) {
+      if (def.identifier !== destructure.place.identifier && !substitutions.has(def.identifier)) {
+        substitutions.set(
+          def.identifier,
+          this.environment.createPlace(this.environment.createIdentifier()),
+        );
+      }
+    }
+
+    return [arrayExpr, destructure.rewrite(substitutions, { rewriteDefinitions: true })];
+  }
+
+  /**
+   * Detects the synthetic parameter destructure pattern: the last two
+   * prologue instructions are ArrayExpression + ArrayDestructure where
+   * the destructure reads from the array expression.
+   */
+  private hasSyntheticParamDestructure(callee: FunctionIR): boolean {
+    const prologue = callee.runtime.prologue;
+    if (prologue.length < 2) {
+      return false;
+    }
+    const maybeArrayExpr = prologue[prologue.length - 2];
+    const maybeDestructure = prologue[prologue.length - 1];
+    return (
+      maybeArrayExpr instanceof ArrayExpressionInstruction &&
+      maybeDestructure instanceof ArrayDestructureInstruction &&
+      maybeDestructure.value.identifier === maybeArrayExpr.place.identifier
+    );
+  }
+
+  // -------------------------------------------------------------------
+  // Generic IR operations
+  // -------------------------------------------------------------------
+
+  /**
+   * Clones an instruction list into the current module, accumulating
+   * a substitution map. Each cloned instruction gets fresh identifiers;
+   * the map is updated so subsequent instructions see earlier rewrites.
+   */
+  private cloneInstructions(
+    instructions: BaseInstruction[],
+    substitutions: Map<Identifier, Place>,
+  ): BaseInstruction[] {
+    const result: BaseInstruction[] = [];
+    for (const instr of instructions) {
+      const cloned = instr.clone(this.moduleIR);
+      substitutions.set(instr.place.identifier, cloned.place);
+      for (const def of instr.getDefs()) {
+        if (def.identifier !== instr.place.identifier && !substitutions.has(def.identifier)) {
+          substitutions.set(
+            def.identifier,
+            this.environment.createPlace(this.environment.createIdentifier()),
+          );
+        }
+      }
+      result.push(cloned.rewrite(substitutions, { rewriteDefinitions: true }));
+    }
+    return result;
+  }
+
+  /**
+   * Extracts the return value from the callee's single block. If the
+   * block ends with `return expr`, looks up the rewritten place.
+   * Otherwise, creates an `undefined` literal (returned as an extra
+   * instruction to splice in).
+   */
+  private extractReturnPlace(
+    block: BasicBlock,
+    substitutions: Map<Identifier, Place>,
+  ): { place: Place; instructions: BaseInstruction[] } {
+    if (block.terminal instanceof ReturnTerminal && block.terminal.value !== null) {
+      const returnPlace = substitutions.get(block.terminal.value.identifier);
+      if (!returnPlace) {
+        throw new Error("Could not find a rewritten place for the function's return value");
+      }
+      return { place: returnPlace, instructions: [] };
+    }
+
+    const literal = this.environment.createInstruction(
+      LiteralInstruction,
+      this.environment.createPlace(this.environment.createIdentifier()),
+      undefined,
+    );
+    return { place: literal.place, instructions: [literal] };
+  }
+
+  /**
+   * Replaces the instruction at `index` with `replacements`, maintaining
+   * definer pointers and the placeToInstruction index.
+   */
+  private spliceInstruction(
+    block: BasicBlock,
+    index: number,
+    replacements: BaseInstruction[],
+  ): void {
+    const removed = block.instructions[index];
+    for (const place of removed.getDefs()) {
+      if (place.identifier.definer === removed) {
+        place.identifier.definer = undefined;
+      }
+      if (this.environment.placeToInstruction.get(place.id) === removed) {
+        this.environment.placeToInstruction.delete(place.id);
+      }
+    }
+    block.removeInstructionAt(index);
+    for (let i = 0; i < replacements.length; i++) {
+      block.insertInstructionAt(index + i, replacements[i]);
+      this.environment.placeToInstruction.set(replacements[i].place.id, replacements[i]);
+    }
+  }
+
+  /**
+   * Resolves capture parameters to the actual outer places from the
+   * instruction that declares the callee function.
+   */
+  private resolveCaptures(callee: FunctionIR): Place[] {
+    const declInstr = this.findDeclaringInstruction(callee);
+    if (!declInstr) {
+      return [];
+    }
+    return "captures" in declInstr ? (declInstr as { captures: Place[] }).captures : [];
+  }
+
+  // -------------------------------------------------------------------
+  // Inlinability checks
+  // -------------------------------------------------------------------
 
   /**
    * Returns true if the block contains at least one call expression that
@@ -133,8 +395,6 @@ export class FunctionInliningPass extends BaseOptimizationPass {
    * re-evaluate the diamond on the next fixpoint iteration.
    */
   private dissolveTernary(headerBlockId: BlockId, structure: TernaryStructure): void {
-    const environment = this.moduleIR.environment;
-
     // Remove the structure.
     this.functionIR.deleteStructure(headerBlockId);
 
@@ -142,7 +402,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     const headerBlock = this.functionIR.blocks.get(headerBlockId)!;
     const terminalId = headerBlock.terminal
       ? headerBlock.terminal.id
-      : makeInstructionId(environment.nextInstructionId++);
+      : makeInstructionId(this.environment.nextInstructionId++);
     headerBlock.replaceTerminal(
       new BranchTerminal(
         terminalId,
@@ -157,18 +417,16 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     const consBlock = this.functionIR.blocks.get(structure.consequent)!;
     const altBlock = this.functionIR.blocks.get(structure.alternate)!;
     consBlock.replaceTerminal(
-      new JumpTerminal(makeInstructionId(environment.nextInstructionId++), structure.fallthrough),
+      new JumpTerminal(makeInstructionId(this.environment.nextInstructionId++), structure.fallthrough),
     );
     altBlock.replaceTerminal(
-      new JumpTerminal(makeInstructionId(environment.nextInstructionId++), structure.fallthrough),
+      new JumpTerminal(makeInstructionId(this.environment.nextInstructionId++), structure.fallthrough),
     );
 
     // Create a Phi that merges the arm values into resultPlace.
-    // Register the declaration so SSAEliminator can find the dominator
-    // block for the `let` declaration it emits.
     const declId = structure.resultPlace.identifier.declarationId;
-    if (!environment.declToPlaces.has(declId)) {
-      environment.registerDeclaration(declId, headerBlockId, structure.resultPlace.id);
+    if (!this.environment.declToPlaces.has(declId)) {
+      this.environment.registerDeclaration(declId, headerBlockId, structure.resultPlace.id);
     }
 
     const phi = new Phi(
@@ -188,11 +446,9 @@ export class FunctionInliningPass extends BaseOptimizationPass {
   /**
    * Checks whether the function is inlinable:
    * - Must have exactly one block
-   * - Must not be async or a generator (inlining would splice await/yield into the wrong context)
+   * - Must not be async or a generator
    * - Must not be recursive
-   * - If cross-module, must be self-contained (no references to Places
-   *   from the callee's module scope). Cross-module inlining with
-   *   import forwarding is planned but not yet implemented.
+   * - If cross-module, must be self-contained
    */
   private isInlinableFunction(
     callGraph: CallGraphResult,
@@ -219,43 +475,14 @@ export class FunctionInliningPass extends BaseOptimizationPass {
   }
 
   /**
-   * Checks if `funcIR` is part of a recursion cycle reachable through *either*
-   * the call graph or lexically nested function expressions.
-   *
-   * Lexical nesting matters because cloning a function during inlining also
-   * deep-clones every nested arrow / function expression / function
-   * declaration in its body. If any of those nested closures eventually calls
-   * back into `funcIR` — even via an opaque external like `Array.prototype.forEach`
-   * — then inlining `funcIR` will produce a fresh clone whose nested closure
-   * points back at `funcIR`, the optimizer will visit the new clone, inline
-   * `funcIR` again, and the chain compounds until the next `FunctionIR.clone`
-   * recursion overflows the JS call stack.
-   *
-   * Concrete trigger that surfaced this code path:
-   *
-   * ```js
-   * // @radix-ui/react-toast: getAnnounceTextContent
-   * function getAnnounceTextContent(node) {
-   *   const out = [];
-   *   Array.from(node.childNodes).forEach((child) => {
-   *     // ...
-   *     out.push(...getAnnounceTextContent(child));   // recurses through forEach
-   *   });
-   *   return out;
-   * }
-   * ```
-   *
-   * The outer function has *no* outgoing call-graph edges that resolve
-   * (forEach is opaque), so a forward-only DFS over the call graph would
-   * miss the cycle. We have to also walk every nested function expression
-   * in the candidate's body.
+   * Checks if `funcIR` is part of a recursion cycle reachable through
+   * either the call graph or lexically nested function expressions.
    */
   private isFunctionRecursive(
     callGraph: CallGraphResult,
     funcIR: FunctionIR,
     modulePath: string,
   ): boolean {
-    // FunctionIRId is per-module; call graph edges are cross-module.
     const frame = (mp: string, id: FunctionIRId) => `${mp}\0${String(id)}`;
     const targetKey = frame(modulePath, funcIR.id);
     const visited = new Set<string>();
@@ -267,7 +494,6 @@ export class FunctionInliningPass extends BaseOptimizationPass {
       }
       visited.add(key);
 
-      // Edge 1: direct call-graph callees of `current`.
       for (const neighbor of callGraph.getCallees(currentModulePath, current.id)) {
         const neighborKey = frame(neighbor.modulePath, neighbor.functionIRId);
         if (neighborKey === targetKey) {
@@ -281,9 +507,6 @@ export class FunctionInliningPass extends BaseOptimizationPass {
         }
       }
 
-      // Edge 2: function expressions / declarations nested *lexically*
-      // inside `current`. Cloning `current` clones these too, so any cycle
-      // through their bodies is just as dangerous as a direct cycle.
       for (const instr of current.getNestedFunctionInstructions()) {
         if (instr.functionIR.id === funcIR.id && currentModulePath === modulePath) {
           return true;
@@ -300,9 +523,8 @@ export class FunctionInliningPass extends BaseOptimizationPass {
   }
 
   /**
-   * Finds the instruction (FunctionDeclaration, ArrowFunctionExpression,
-   * or FunctionExpression) that declares the given FunctionIR, by
-   * scanning all blocks in the module. Returns undefined if not found.
+   * Finds the instruction that declares the given FunctionIR by
+   * scanning all blocks in the module.
    */
   private findDeclaringInstruction(funcIR: FunctionIR): BaseInstruction | undefined {
     for (const fn of funcIR.moduleIR.functions.values()) {
@@ -318,34 +540,5 @@ export class FunctionInliningPass extends BaseOptimizationPass {
       }
     }
     return undefined;
-  }
-
-  private inlineFunctionIR(index: number, callExpressionBlock: BasicBlock, funcIR: FunctionIR) {
-    if (funcIR.blocks.size > 1) {
-      throw new Error("Function has multiple blocks");
-    }
-
-    const callExpressionInstr = callExpressionBlock.instructions[index];
-    if (!(callExpressionInstr instanceof CallExpressionInstruction)) {
-      throw new Error("Expected CallExpressionInstruction");
-    }
-
-    // Resolve capture params to the actual outer places so the cloned
-    // runtime fragment can reference captured variables directly.
-    let captures: Place[] = [];
-    const declInstr = this.findDeclaringInstruction(funcIR);
-    if (declInstr) {
-      captures = "captures" in declInstr ? (declInstr as { captures: Place[] }).captures : [];
-    }
-    const fragment = funcIR.cloneInlineFragment(this.moduleIR, callExpressionInstr.args, captures);
-    this.functionIR.replaceInstructionWithInstructions(
-      callExpressionBlock,
-      index,
-      fragment.instructions,
-    );
-    this.functionIR.replacePlaceUses(callExpressionInstr.place, fragment.returnPlace, {
-      skipBlock: callExpressionBlock,
-      skipInstructionIndex: index + fragment.instructions.length,
-    });
   }
 }

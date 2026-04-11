@@ -147,6 +147,17 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
     if (instr instanceof StoreLocalInstruction) {
       const x = instr.lval.identifier.declarationId;
       this.kill(state, x);
+
+      // Only record a copy when the value is a direct variable load
+      // (const x = y). Propagating through computed values (e.g.
+      // AwaitExpression, CallExpression) would cause codegen to re-emit
+      // the defining expression at every use site, duplicating side
+      // effects and computation.
+      const definer = instr.value.identifier.definer;
+      if (!(definer instanceof LoadLocalInstruction)) {
+        return;
+      }
+
       const resolved = this.resolve(state, instr.value.identifier.declarationId) ?? instr.value;
       if (resolved.identifier.declarationId !== x) {
         state.set(x, resolved);

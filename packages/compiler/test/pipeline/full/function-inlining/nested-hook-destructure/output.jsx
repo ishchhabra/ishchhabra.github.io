@@ -16,9 +16,6 @@ function $1_0() {
       b: $6_0.b,
     }),
   });
-  const $27_0 = useMemo(() => {
-    return $57_0 ? $58_0 : null;
-  }, [$57_0, $58_0]);
   return (
     <div>
       {useMemo(() => {

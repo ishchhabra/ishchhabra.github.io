@@ -6,6 +6,7 @@ import { AnalysisManager } from "./analysis/AnalysisManager";
 import { LateOptimizer } from "./late-optimizer/LateOptimizer";
 import { ExportDeclarationMergingPass } from "./late-optimizer/passes/ExportDeclarationMergingPass";
 import { CFGSimplificationPass } from "./CFGSimplificationPass";
+import { ValueMaterializationPass } from "./passes/ValueMaterializationPass";
 import { Optimizer } from "./optimizer/Optimizer";
 import { UnusedExportEliminationPass } from "./passes/UnusedExportEliminationPass";
 import { SSABuilder } from "./ssa/SSABuilder";
@@ -74,7 +75,11 @@ export class Pipeline {
           functionIR.blocks = lateOptimizerResult.blocks;
         }
 
-        // Phase 4: Output optimization (single-run passes).
+        // Phase 4: Lowering — materialize multi-use SSA values into
+        // variable declarations so codegen can reference them by name.
+        new ValueMaterializationPass(functionIR, moduleIR).run();
+
+        // Phase 5: Output optimization (single-run passes).
         if (this.options.enableExportDeclarationMergingPass) {
           const exportMergingResult = new ExportDeclarationMergingPass(functionIR).run();
           functionIR.blocks = exportMergingResult.blocks;
