@@ -61,6 +61,7 @@ export class FunctionIR {
    */
   public phis: Set<Phi> = new Set();
 
+
   get entryBlockId(): BlockId {
     return this.blocks.keys().next().value!;
   }
@@ -351,6 +352,34 @@ export class FunctionIR {
       }
     }
 
+    // Ensure structure and phi identifiers are in the identifierMap
+    // BEFORE rewriting instructions.
+    // Structures (e.g. TernaryStructure.resultPlace) and phi places may
+    // reference identifiers created by optimization passes that aren't
+    // instruction outputs — they'd be missed by the instruction-based
+    // identifierMap population above. Without remapping, the clone's
+    // structures would share PlaceIds with the original, causing
+    // collisions in CodeGenerator's shared places map.
+    for (const structure of this.structures.values()) {
+      for (const place of [...structure.getOperands(), ...structure.getDefs()]) {
+        if (!identifierMap.has(place.identifier)) {
+          identifierMap.set(
+            place.identifier,
+            environment.createPlace(environment.createIdentifier()),
+          );
+        }
+      }
+    }
+    for (const phi of this.phis) {
+      if (!identifierMap.has(phi.place.identifier)) {
+        identifierMap.set(
+          phi.place.identifier,
+          environment.createPlace(environment.createIdentifier()),
+        );
+      }
+    }
+
+    // Now rewrite all instructions with the complete identifierMap.
     for (let i = 0; i < newSourceHeader.length; i++) {
       newSourceHeader[i] = newSourceHeader[i].rewrite(identifierMap, {
         rewriteDefinitions: true,

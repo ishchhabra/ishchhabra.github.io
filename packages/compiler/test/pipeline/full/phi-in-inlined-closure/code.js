@@ -1,7 +1,6 @@
-// Component is declared first, so its FunctionIR is registered before
-// useHook's children. When the pipeline processes Component and inlines
-// useHook, the useMemo callback's FunctionIR hasn't been pipeline-processed
-// yet, so the clone gets blocks without phi elimination.
+// Regression test: inlining a callee whose nested closure contains a
+// ternary (phi diamond). CGSCC-ordered processing ensures the closure
+// is fully optimized before the caller clones it during inlining.
 export function Component() {
   const value = useHook();
   return value;

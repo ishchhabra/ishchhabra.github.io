@@ -7,6 +7,7 @@ import { LateOptimizer } from "./late-optimizer/LateOptimizer";
 import { ExportDeclarationMergingPass } from "./late-optimizer/passes/ExportDeclarationMergingPass";
 import { CFGSimplificationPass } from "./CFGSimplificationPass";
 import { Optimizer } from "./optimizer/Optimizer";
+import { computeProcessingOrder } from "./processingOrder";
 import { UnusedExportEliminationPass } from "./passes/UnusedExportEliminationPass";
 import { SSABuilder } from "./ssa/SSABuilder";
 import { SSAEliminator } from "./ssa/SSAEliminator";
@@ -42,7 +43,9 @@ export class StagedPipeline {
 
     for (const moduleName of this.projectUnit.postOrder.toReversed()) {
       const moduleIR = this.projectUnit.modules.get(moduleName)!;
-      for (const functionIR of moduleIR.functions.values()) {
+      const processingOrder = computeProcessingOrder(moduleIR);
+
+      for (const functionIR of processingOrder) {
         new CommonJSExportCollectorPass(functionIR, moduleIR).run();
         new CFGSimplificationPass(functionIR, moduleIR).run();
 
@@ -82,6 +85,7 @@ export class StagedPipeline {
           functionIR.blocks = exportMergingResult.blocks;
         }
         snapshots.lateOptimized = printModuleIR(moduleIR);
+
       }
     }
 

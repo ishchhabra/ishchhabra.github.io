@@ -1,12 +1,9 @@
 function $0_0() {
-  const $34_0 = globalThis.getA();
-  const $39_0 = globalThis.getB();
+  const $36_0 = globalThis.getA();
+  const $41_0 = globalThis.getB();
   return globalThis.useMemo(() => {
-    if ($34_0) {
-    } else {
-    }
-    return "fallback";
-  }, [$34_0, $39_0]);
+    return $36_0 ? ($41_0 ?? "default") : "fallback";
+  }, [$36_0, $41_0]);
 }
 function $1_0() {
   const $5_0 = globalThis.getA();
