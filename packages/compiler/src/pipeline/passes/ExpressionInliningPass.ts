@@ -5,6 +5,11 @@ import {
   StoreLocalInstruction,
   ValueInstruction,
 } from "../../ir";
+import { AwaitExpressionInstruction } from "../../ir/instructions/value/AwaitExpression";
+import { ArrowFunctionExpressionInstruction } from "../../ir/instructions/value/ArrowFunctionExpression";
+import { FunctionExpressionInstruction } from "../../ir/instructions/value/FunctionExpression";
+import { ObjectMethodInstruction } from "../../ir/instructions/value/ObjectMethod";
+import { ClassMethodInstruction } from "../../ir/instructions/value/ClassMethod";
 import { BaseTerminal } from "../../ir/base";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { Identifier } from "../../ir/core/Identifier";
@@ -131,6 +136,16 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
       return undefined;
     }
 
+    // An `await` expression can only appear inside an async function.
+    // If the user is a non-async function expression (arrow, function,
+    // object method, class method), the await would be inlined into its
+    // captures and emitted inside the non-async body — a syntax error.
+    if (instruction.value.identifier.definer instanceof AwaitExpressionInstruction) {
+      if (this.isNonAsyncFunction(user)) {
+        return undefined;
+      }
+    }
+
     // Check that no side-effecting statement would be emitted between
     // the store and its use. If one exists, removing the store would
     // delay the value's execution past that statement, reordering
@@ -191,6 +206,14 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
         return true;
       }
     }
+    return false;
+  }
+
+  private isNonAsyncFunction(instruction: BaseInstruction): boolean {
+    if (instruction instanceof ArrowFunctionExpressionInstruction) return !instruction.async;
+    if (instruction instanceof FunctionExpressionInstruction) return !instruction.async;
+    if (instruction instanceof ObjectMethodInstruction) return !instruction.async;
+    if (instruction instanceof ClassMethodInstruction) return !instruction.async;
     return false;
   }
 
