@@ -9,6 +9,7 @@ import {
 } from "../../ir";
 import { FunctionIR, FunctionIRId } from "../../ir/core/FunctionIR";
 import { Identifier } from "../../ir/core/Identifier";
+import { LexicalScopeId } from "../../ir/core/LexicalScope";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { Place } from "../../ir/core/Place";
 import { BranchTerminal, JumpTerminal, ReturnTerminal } from "../../ir/core/Terminal";
@@ -92,7 +93,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
           continue;
         }
 
-        if (!this.isInlinableFunction(callGraph, functionIR, modulePath)) {
+        if (!this.isInlinableFunction(callGraph, functionIR, modulePath, block)) {
           continue;
         }
 
@@ -383,7 +384,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
       const functionIR = moduleIR.functions.get(functionIRId);
       if (!functionIR) continue;
 
-      if (this.isInlinableFunction(callGraph, functionIR, modulePath)) return true;
+      if (this.isInlinableFunction(callGraph, functionIR, modulePath, block)) return true;
     }
     return false;
   }
@@ -444,16 +445,19 @@ export class FunctionInliningPass extends BaseOptimizationPass {
   }
 
   /**
-   * Checks whether the function is inlinable:
+   * Checks whether the function is inlinable at the given call site:
    * - Must have exactly one block
    * - Must not be async or a generator
    * - Must not be recursive
-   * - If cross-module, must be self-contained
+   * - Every free variable (capture) must be lexically visible at the
+   *   call site, so the substituted outer places still resolve after
+   *   the body is copied into the caller.
    */
   private isInlinableFunction(
     callGraph: CallGraphResult,
     funcIR: FunctionIR,
     modulePath: string,
+    callSite: BasicBlock,
   ): boolean {
     if (funcIR.blocks.size > 1) {
       return false;
@@ -467,11 +471,89 @@ export class FunctionInliningPass extends BaseOptimizationPass {
       return false;
     }
 
-    if (modulePath !== this.moduleIR.path && funcIR.hasExternalReferences()) {
+    if (!this.areCapturesVisibleAt(funcIR, callSite)) {
       return false;
     }
 
     return true;
+  }
+
+  /**
+   * Textbook scoping invariant for inlining: after copying the callee's
+   * body into the caller, every free variable the body references must
+   * still resolve to a live binding. A free variable is "visible" at a
+   * call site iff its declaration's lexical scope is an ancestor of (or
+   * equal to) the call site's scope in the global lexical scope tree.
+   *
+   * This is the same invariant LLVM's inliner relies on — it just gets
+   * the property for free because its IR names all cross-function
+   * references through module-level globals, which are addressable
+   * from any function after linking/importing. Our JS-to-JS IR tracks
+   * free variables explicitly as `captureParams`, so we check each one.
+   *
+   * Self-contained functions (no captures) trivially pass.
+   *
+   * Cross-module calls fail automatically: each module has its own
+   * lexical scope tree rooted at its own `program` scope, so a
+   * declaration from module A's tree can never be an ancestor of a
+   * call site in module B's tree. This subsumes the "same module" check
+   * without special-casing it.
+   *
+   * Same-module closures (e.g. an inner arrow capturing a local of its
+   * enclosing function) are accepted only at call sites nested inside
+   * the declaring function, where the captured binding is actually in
+   * scope.
+   */
+  private areCapturesVisibleAt(callee: FunctionIR, callSite: BasicBlock): boolean {
+    if (callee.runtime.captureParams.length === 0) {
+      return true;
+    }
+
+    // Cross-module captures live in a disjoint scope tree — we can't
+    // address them from the caller's environment even if we wanted to.
+    if (callee.moduleIR !== this.moduleIR) {
+      return false;
+    }
+
+    const callSiteScopeId = callSite.scopeId;
+
+    for (const capture of callee.runtime.captureParams) {
+      const declarationId = capture.identifier.declarationId;
+      const metadata = this.environment.getDeclarationMetadata(declarationId);
+      const declarationScopeId = metadata?.scopeId;
+      if (declarationScopeId === undefined) {
+        // Unknown scope — be conservative and refuse to inline.
+        return false;
+      }
+      if (!this.isScopeAncestor(declarationScopeId, callSiteScopeId)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * True iff `maybeAncestor` is `descendant` or appears on the chain
+   * of parent scopes reached from `descendant`. Walking stops at the
+   * root of the scope tree.
+   */
+  private isScopeAncestor(
+    maybeAncestor: LexicalScopeId,
+    descendant: LexicalScopeId,
+  ): boolean {
+    let current: LexicalScopeId | null = descendant;
+    while (current !== null) {
+      if (current === maybeAncestor) {
+        return true;
+      }
+      const scope = this.environment.scopes.get(current);
+      if (scope === undefined) {
+        return false;
+      }
+      current = scope.parent;
+    }
+    return false;
   }
 
   /**
