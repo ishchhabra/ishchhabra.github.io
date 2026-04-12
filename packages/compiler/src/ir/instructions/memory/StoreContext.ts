@@ -45,7 +45,7 @@ export class StoreContextInstruction extends MemoryInstruction {
     { rewriteDefinitions = false }: { rewriteDefinitions?: boolean } = {},
   ): StoreContextInstruction {
     const value = this.value.rewrite(values);
-    const lval = rewriteDefinitions ? this.lval.rewrite(values) : this.lval;
+    const lval = this.lval.rewrite(values);
 
     let bindings = this.bindings;
     if (rewriteDefinitions && bindings.length) {
@@ -70,11 +70,11 @@ export class StoreContextInstruction extends MemoryInstruction {
   }
 
   getOperands(): Place[] {
-    return [this.value];
+    return [this.lval, this.value];
   }
 
   override getDefs(): Place[] {
-    return [this.place, this.lval, ...this.bindings];
+    return [this.place, ...this.bindings];
   }
 
   public override print(): string {

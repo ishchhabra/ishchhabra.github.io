@@ -4,6 +4,7 @@ import {
   BinaryExpressionInstruction,
   DeclareLocalInstruction,
   LiteralInstruction,
+  LoadContextInstruction,
   LoadLocalInstruction,
   Place,
   StoreContextInstruction,
@@ -46,14 +47,32 @@ export function buildUpdateExpression(
     throwTDZAccessError(functionBuilder.getDeclarationSourceName(declarationId) ?? argument.name);
   }
 
-  const latestDeclaration = environment.getLatestDeclaration(declarationId)!;
-  const originalPlace = environment.places.get(latestDeclaration.placeId);
-  if (originalPlace === undefined) {
-    throw new Error(`Unable to find the place for ${argument.name} (${declarationId})`);
-  }
   const bindingPlace = environment.getDeclarationBinding(declarationId);
   if (bindingPlace === undefined) {
     throw new Error(`Unable to find the binding for ${argument.name} (${declarationId})`);
+  }
+
+  const isContext = environment.contextDeclarationIds.has(declarationId);
+  const isCaptured = !functionBuilder.isOwnDeclaration(declarationId);
+
+  let contextPlace: Place | undefined;
+  if (isContext && isCaptured) {
+    functionBuilder.captures.set(declarationId, bindingPlace);
+    if (!functionBuilder.captureParams.has(declarationId)) {
+      const paramIdentifier = environment.createIdentifier(declarationId);
+      functionBuilder.captureParams.set(declarationId, environment.createPlace(paramIdentifier));
+    }
+    contextPlace = functionBuilder.captureParams.get(declarationId)!;
+  } else if (isContext) {
+    contextPlace = bindingPlace;
+  }
+
+  const latestDeclaration = environment.getLatestDeclaration(declarationId)!;
+  const originalPlace = isContext
+    ? contextPlace
+    : environment.places.get(latestDeclaration.placeId);
+  if (originalPlace === undefined) {
+    throw new Error(`Unable to find the place for ${argument.name} (${declarationId})`);
   }
 
   // For postfix operations, snapshot the original value into a temporary
@@ -85,7 +104,7 @@ export function buildUpdateExpression(
   }
 
   let lvalPlace: Place;
-  if (environment.contextDeclarationIds.has(declarationId)) {
+  if (isContext) {
     lvalPlace = originalPlace;
   } else {
     lvalPlace = bindingPlace;
@@ -96,7 +115,11 @@ export function buildUpdateExpression(
   const argLoadIdentifier = environment.createIdentifier(declarationId);
   const argLoadPlace = environment.createPlace(argLoadIdentifier);
   functionBuilder.addInstruction(
-    environment.createInstruction(LoadLocalInstruction, argLoadPlace, originalPlace),
+    environment.createInstruction(
+      isContext ? LoadContextInstruction : LoadLocalInstruction,
+      argLoadPlace,
+      originalPlace,
+    ),
   );
 
   // Create literal 1
@@ -118,7 +141,6 @@ export function buildUpdateExpression(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const isContext = environment.contextDeclarationIds.has(declarationId);
   const instruction = isContext
     ? environment.createInstruction(
         StoreContextInstruction,
@@ -146,7 +168,11 @@ export function buildUpdateExpression(
     const loadIdentifier = environment.createIdentifier(declarationId);
     const loadPlace = environment.createPlace(loadIdentifier);
     functionBuilder.addInstruction(
-      environment.createInstruction(LoadLocalInstruction, loadPlace, lvalPlace),
+      environment.createInstruction(
+        isContext ? LoadContextInstruction : LoadLocalInstruction,
+        loadPlace,
+        lvalPlace,
+      ),
     );
     return loadPlace;
   }

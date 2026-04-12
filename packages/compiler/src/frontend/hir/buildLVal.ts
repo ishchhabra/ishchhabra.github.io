@@ -106,8 +106,25 @@ function buildIdentifierLVal(
 
   if (mode.kind === "assignment") {
     if (environment.contextDeclarationIds.has(declarationId)) {
-      const latestDeclaration = environment.getLatestDeclaration(declarationId);
-      const place = environment.places.get(latestDeclaration.placeId);
+      if (!functionBuilder.isOwnDeclaration(declarationId)) {
+        const declarationPlace = environment.getDeclarationBinding(declarationId);
+        if (declarationPlace === undefined) {
+          throw new Error(`Unable to find the binding place for ${name} (${declarationId})`);
+        }
+        functionBuilder.captures.set(declarationId, declarationPlace);
+        if (!functionBuilder.captureParams.has(declarationId)) {
+          const paramIdentifier = environment.createIdentifier(declarationId);
+          functionBuilder.captureParams.set(declarationId, environment.createPlace(paramIdentifier));
+        }
+        return {
+          kind: "binding",
+          place: functionBuilder.captureParams.get(declarationId)!,
+          storage: "context",
+        };
+      }
+
+      const bindingPlace = environment.getDeclarationBinding(declarationId);
+      const place = bindingPlace ?? environment.places.get(environment.getLatestDeclaration(declarationId)!.placeId);
       if (place === undefined) {
         throw new Error(`Unable to find the place for ${name} (${declarationId})`);
       }

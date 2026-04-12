@@ -8,9 +8,7 @@ export function generateStoreContextInstruction(
 ): t.Statement {
   let lval = generator.places.get(instruction.lval.id);
   if (lval === undefined || lval === null) {
-    const name = instruction.lval.identifier.name ?? `$${instruction.lval.identifier.id}`;
-    lval = t.identifier(name);
-    generator.places.set(instruction.lval.id, lval);
+    lval = generator.getPlaceIdentifier(instruction.lval);
   }
   t.assertLVal(lval);
 
@@ -19,7 +17,7 @@ export function generateStoreContextInstruction(
 
   if (instruction.kind === "declaration") {
     const node = t.variableDeclaration(instruction.type, [t.variableDeclarator(lval, value)]);
-    generator.places.set(instruction.place.id, node);
+    generator.places.set(instruction.place.id, instruction.emit ? lval : node);
     return node;
   }
 
