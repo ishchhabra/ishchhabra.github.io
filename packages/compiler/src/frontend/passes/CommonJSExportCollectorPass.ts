@@ -2,6 +2,8 @@ import { BaseInstruction, BlockId, LoadGlobalInstruction } from "../../ir";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { StoreStaticPropertyInstruction } from "../../ir/instructions/memory/StoreStaticProperty";
+import { AnalysisManager } from "../../pipeline/analysis/AnalysisManager";
+import { DominatorTreeAnalysis } from "../../pipeline/analysis/DominatorTreeAnalysis";
 
 const EXPORTS_PROPERTY_NAME = "exports";
 
@@ -24,6 +26,7 @@ export class CommonJSExportCollectorPass {
   constructor(
     private readonly functionIR: FunctionIR,
     private readonly moduleIR: ModuleIR,
+    private readonly AM: AnalysisManager,
   ) {}
 
   public run() {
@@ -70,7 +73,7 @@ export class CommonJSExportCollectorPass {
 
   private isAlwaysExecutedBlock(blockId: BlockId) {
     const exitBlockId = this.functionIR.exitBlockId;
-    const exitDominators = this.functionIR.dominators.get(exitBlockId)!;
-    return exitDominators.has(blockId);
+    const domTree = this.AM.get(DominatorTreeAnalysis, this.functionIR);
+    return domTree.dominates(blockId, exitBlockId);
   }
 }

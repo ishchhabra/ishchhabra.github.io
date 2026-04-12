@@ -22,12 +22,15 @@ import {
   UnaryExpressionInstruction,
 } from "../../ir";
 import { BaseTerminal } from "../../ir/base";
+import { getBackEdgesWithDominance } from "../../frontend/cfg";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import {
   TemplateElement,
   TemplateLiteralInstruction,
 } from "../../ir/instructions/value/TemplateLiteral";
+import { AnalysisManager } from "../analysis/AnalysisManager";
+import { DominatorTreeAnalysis } from "../analysis/DominatorTreeAnalysis";
 import { BaseOptimizationPass } from "../late-optimizer/OptimizationPass";
 import { Phi } from "../ssa/Phi";
 import { SSA } from "../ssa/SSABuilder";
@@ -100,6 +103,7 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
     private readonly ssa: SSA,
     private readonly context: Map<string, any>,
     private readonly options: CompilerOptions,
+    private readonly AM: AnalysisManager,
   ) {
     super(functionIR);
     this.resolveConstantCtx = {
@@ -437,6 +441,13 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
     let changed = false;
     this.exportConstants();
 
+    const domTree = this.AM.get(DominatorTreeAnalysis, this.functionIR);
+    const backEdgePredecessors = getBackEdgesWithDominance(
+      this.functionIR.blocks,
+      this.functionIR.predecessors,
+      (b) => domTree.getDominators(b),
+    );
+
     for (const [blockId, block] of this.functionIR.blocks) {
       // Replace constant-valued instructions with literals.
       for (let i = 0; i < block.instructions.length; i++) {
@@ -508,8 +519,7 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
 
       // Fold branches with constant tests (skip loop headers).
       if (block.terminal instanceof BranchTerminal) {
-        const backEdges = this.functionIR.backEdges.get(blockId);
-        if (backEdges && backEdges.size > 0) continue;
+        if ((backEdgePredecessors.get(blockId)?.size ?? 0) > 0) continue;
 
         const testVal = this.getLattice(block.terminal.test.identifier.id);
         if (isConstant(testVal)) {
@@ -526,8 +536,7 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
               continue;
             }
             for (const [operandBlockId] of phi.operands) {
-              const dominators = this.functionIR.dominators.get(operandBlockId)!;
-              if (dominators.has(deadBlockId)) {
+              if (domTree.dominates(deadBlockId, operandBlockId)) {
                 const result = phi.removeOperand(operandBlockId);
                 if (result === "single") {
                   this.degradeSingleOperandPhi(phi);

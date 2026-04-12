@@ -10,6 +10,8 @@ import {
 } from "../../ir";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { ModuleIR } from "../../ir/core/ModuleIR";
+import { AnalysisManager } from "../analysis/AnalysisManager";
+import { DominatorTreeAnalysis, type DominatorTree } from "../analysis/DominatorTreeAnalysis";
 import { Phi } from "./Phi";
 import { createPhiIdentifier } from "./utils";
 
@@ -34,11 +36,13 @@ export class SSABuilder {
   constructor(
     private readonly functionIR: FunctionIR,
     private readonly moduleIR: ModuleIR,
+    private readonly AM: AnalysisManager,
   ) {}
 
   public build(): SSA {
-    const phis = this.placePhi();
-    this.rename(phis);
+    const domTree = this.AM.get(DominatorTreeAnalysis, this.functionIR);
+    const phis = this.placePhi(domTree);
+    this.rename(phis, domTree);
     this.functionIR.phis = phis;
     return { phis };
   }
@@ -51,7 +55,7 @@ export class SSABuilder {
    * For every variable with definitions in multiple blocks, insert φ-nodes
    * at the iterated dominance frontier of those definition blocks.
    */
-  private placePhi(): Set<Phi> {
+  private placePhi(domTree: DominatorTree): Set<Phi> {
     const phis = new Set<Phi>();
     const ownBlockIds = new Set(this.functionIR.blocks.keys());
 
@@ -61,7 +65,7 @@ export class SSABuilder {
       const defBlocks = entries.filter((e) => ownBlockIds.has(e.blockId)).map((e) => e.blockId);
       if (defBlocks.length <= 1) continue;
 
-      this.placePhiForDeclaration(declId, defBlocks, phis);
+      this.placePhiForDeclaration(declId, defBlocks, phis, domTree);
     }
     return phis;
   }
@@ -74,6 +78,7 @@ export class SSABuilder {
     declId: DeclarationId,
     defBlocks: BlockId[],
     phis: Set<Phi>,
+    domTree: DominatorTree,
   ): void {
     const worklist = [...defBlocks];
     const hasPhi = new Set<BlockId>();
@@ -81,7 +86,7 @@ export class SSABuilder {
 
     while (worklist.length > 0) {
       const block = worklist.pop()!;
-      for (const frontier of this.functionIR.dominanceFrontier.get(block) ?? []) {
+      for (const frontier of domTree.getDominanceFrontier(block)) {
         if (hasPhi.has(frontier)) continue;
 
         const id = createPhiIdentifier(this.moduleIR.environment);
@@ -106,9 +111,9 @@ export class SSABuilder {
    * instruction/structure/terminal uses, push new definitions, fill
    * successor φ-operands, recurse children, then pop.
    */
-  private rename(phis: Set<Phi>): void {
+  private rename(phis: Set<Phi>, domTree: DominatorTree): void {
     const stacks = new Map<DeclarationId, Place[]>();
-    const domChildren = this.buildDominatorChildren();
+    const domChildren = this.buildDominatorChildren(domTree);
     const { phisByBlock, phiDecls } = this.indexPhis(phis);
 
     // Seed stacks with header definitions (parameter bindings). Header
@@ -316,9 +321,9 @@ export class SSABuilder {
     return instruction.rewrite(values) as T;
   }
 
-  private buildDominatorChildren(): Map<BlockId, BlockId[]> {
+  private buildDominatorChildren(domTree: DominatorTree): Map<BlockId, BlockId[]> {
     const children = new Map<BlockId, BlockId[]>();
-    for (const [blockId, idom] of this.functionIR.immediateDominators) {
+    for (const [blockId, idom] of domTree.getImmediateDominators()) {
       if (idom === undefined) continue;
       if (!children.has(idom)) children.set(idom, []);
       children.get(idom)!.push(blockId);

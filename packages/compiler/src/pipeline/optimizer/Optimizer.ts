@@ -45,6 +45,7 @@ export class Optimizer {
           this.ssa,
           this.context,
           this.options,
+          this.AM,
         ).run();
         if (sccpResult.changed) {
           changed = true;

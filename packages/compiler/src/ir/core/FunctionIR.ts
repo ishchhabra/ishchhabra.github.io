@@ -1,11 +1,4 @@
-import {
-  getBackEdges,
-  getDominanceFrontier,
-  getDominators,
-  getImmediateDominators,
-  getPredecessors,
-  getSuccessors,
-} from "../../frontend/cfg";
+import { getPredecessors, getSuccessors } from "../../frontend/cfg";
 import type { Phi } from "../../pipeline/ssa/Phi";
 import { BaseInstruction } from "../base";
 import { FunctionDeclarationInstruction } from "../instructions/declaration/FunctionDeclaration";
@@ -50,10 +43,6 @@ type NestedFunctionInstruction =
 export class FunctionIR {
   public predecessors!: Map<BlockId, Set<BlockId>>;
   public successors!: Map<BlockId, Set<BlockId>>;
-  public dominators!: Map<BlockId, Set<BlockId>>;
-  public immediateDominators!: Map<BlockId, BlockId | undefined>;
-  public dominanceFrontier!: Map<BlockId, Set<BlockId>>;
-  public backEdges!: Map<BlockId, Set<BlockId>>;
 
   /**
    * SSA phi nodes for this function. Set by SSABuilder after SSA
@@ -137,12 +126,9 @@ export class FunctionIR {
   private computeCFG() {
     this.predecessors = getPredecessors(this.blocks, this.structures);
     this.successors = getSuccessors(this.predecessors);
-    this.dominators = getDominators(this.predecessors, this.entryBlockId);
-    this.immediateDominators = getImmediateDominators(this.dominators);
-    this.dominanceFrontier = getDominanceFrontier(this.predecessors, this.immediateDominators);
-    this.backEdges = getBackEdges(this.blocks, this.dominators, this.predecessors);
   }
 
+  /** Recomputes predecessor/successor maps after CFG changes. Dominance is `DominatorTree` (see pipeline/analysis/DominatorTree.ts). */
   public recomputeCFG() {
     this.computeCFG();
   }

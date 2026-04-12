@@ -1,4 +1,4 @@
-export { getBackEdges } from "./getBackEdges";
+export { getBackEdges, getBackEdgesWithDominance } from "./getBackEdges";
 export { getDominanceFrontier } from "./getDominanceFrontier";
 export { getDominators } from "./getDominators";
 export { getImmediateDominators } from "./getImmediateDominators";
