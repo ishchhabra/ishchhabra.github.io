@@ -11,7 +11,11 @@ export function generateLoadContextInstruction(
     node = generator.getPlaceIdentifier(instruction.value);
   }
 
-  const expression = t.isFunctionDeclaration(node) ? node.id : node;
+  const expression = t.isFunctionDeclaration(node)
+    ? node.id
+    : t.isClassDeclaration(node) && node.id
+      ? node.id
+      : node;
   t.assertExpression(expression);
   generator.places.set(instruction.place.id, expression);
   return expression;

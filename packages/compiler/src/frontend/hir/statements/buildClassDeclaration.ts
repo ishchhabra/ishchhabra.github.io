@@ -1,6 +1,7 @@
 import type { Class } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { Place, StoreLocalInstruction } from "../../../ir";
+import { ClassDeclarationInstruction } from "../../../ir/instructions/declaration/ClassDeclaration";
 import { ClassExpressionInstruction } from "../../../ir/instructions/value/ClassExpression";
 import { type Scope } from "../../scope/Scope";
 import { buildClassBody } from "../buildClassElements";
@@ -14,6 +15,7 @@ export function buildClassDeclaration(
   functionBuilder: FunctionIRBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
+  options: { emit?: boolean } = {},
 ) {
   if (node.decorators && node.decorators.length > 0) {
     throw new Error("Unsupported: class decorators");
@@ -53,37 +55,49 @@ export function buildClassDeclaration(
     environment,
   );
 
-  // For class declarations, the binding lives in the enclosing scope and is
-  // wired up by the StoreLocal below. The class expression itself does not
-  // need an inner name binding (named class expressions are only meaningful
-  // when the class body references its own name from a non-enclosing scope).
-  const classPlace = environment.createPlace(environment.createIdentifier(declarationId));
-  const instruction = environment.createInstruction(
-    ClassExpressionInstruction,
-    classPlace,
-    null,
+  const emit = options.emit !== false;
+
+  // Context (`let`) class bindings must stay as expression + assignment — there
+  // is no `let class Foo {}` form in JS.
+  const isContext = environment.contextDeclarationIds.has(declarationId);
+  if (isContext) {
+    const classPlace = environment.createPlace(environment.createIdentifier(declarationId));
+    const instruction = environment.createInstruction(
+      ClassExpressionInstruction,
+      classPlace,
+      null,
+      superClassPlace,
+      elements,
+    );
+    functionBuilder.addInstruction(instruction);
+    environment.registerDeclarationInstruction(classPlace, instruction);
+
+    const storePlace = environment.createPlace(environment.createIdentifier());
+    functionBuilder.addInstruction(
+      environment.createInstruction(
+        StoreLocalInstruction,
+        storePlace,
+        identifierPlace,
+        classPlace,
+        "let",
+        "declaration",
+        [],
+      ),
+    );
+    functionBuilder.markDeclarationInitialized(declarationId);
+    return classPlace;
+  }
+
+  const classDecl = environment.createInstruction(
+    ClassDeclarationInstruction,
+    identifierPlace,
     superClassPlace,
     elements,
+    emit,
   );
-  functionBuilder.addInstruction(instruction);
-  environment.registerDeclarationInstruction(classPlace, instruction);
-
-  // Explicit StoreLocal to bind the class value to the declaration place.
-  const isContext = environment.contextDeclarationIds.has(declarationId);
-  const storePlace = environment.createPlace(environment.createIdentifier());
-  functionBuilder.addInstruction(
-    environment.createInstruction(
-      StoreLocalInstruction,
-      storePlace,
-      identifierPlace,
-      classPlace,
-      isContext ? ("let" as const) : ("const" as const),
-      "declaration",
-      [],
-    ),
-  );
-
+  functionBuilder.addInstruction(classDecl);
+  environment.registerDeclarationInstruction(identifierPlace, classDecl);
   functionBuilder.markDeclarationInitialized(declarationId);
 
-  return classPlace;
+  return identifierPlace;
 }

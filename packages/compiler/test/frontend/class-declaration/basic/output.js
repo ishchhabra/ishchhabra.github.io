@@ -1,5 +1,5 @@
-const $0_0 = class {
+class $0_0 {
   constructor() {
     this.x = 1;
   }
-};
+}

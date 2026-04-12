@@ -124,6 +124,10 @@ export class CodeGenerator {
       this.places.set(place.id, existing.id);
       return existing.id;
     }
+    if (existing && t.isClassDeclaration(existing) && existing.id) {
+      this.places.set(place.id, existing.id);
+      return existing.id;
+    }
 
     const metadata = this.getDeclarationMetadata(place.identifier.declarationId);
     const aliasableDeclaration =

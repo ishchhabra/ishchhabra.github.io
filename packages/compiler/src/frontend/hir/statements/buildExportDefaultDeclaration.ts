@@ -4,6 +4,7 @@ import { ExportDefaultDeclarationInstruction } from "../../../ir";
 import { FunctionDeclarationInstruction } from "../../../ir/instructions/declaration/FunctionDeclaration";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
+import { buildClassDeclaration } from "./buildClassDeclaration";
 import { buildClassExpression } from "../expressions/buildClassExpression";
 import { buildFunctionExpression } from "../expressions/buildFunctionExpression";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -18,43 +19,52 @@ export function buildExportDefaultDeclaration(
 ) {
   const declaration = node.declaration;
 
-  // `export default function() {}` and `export default class {}` have
-  // FunctionDeclaration / ClassDeclaration nodes with id=null.  Route
-  // these through the expression builders which already handle the
-  // anonymous case, rather than the declaration builders which require
-  // a name.
+  // Anonymous default function/class → expression builders. Named default
+  // function is reused from scope instantiation (`emit: false`); named default
+  // class uses `buildClassDeclaration` with `emit: false`.
   let declarationPlace;
-  if (declaration.type === "FunctionDeclaration" && declaration.id === null) {
-    declarationPlace = buildFunctionExpression(
-      declaration,
-      scope,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
-  } else if (declaration.type === "ClassDeclaration" && declaration.id === null) {
-    declarationPlace = buildClassExpression(
-      declaration,
-      scope,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
-  } else if (declaration.type === "FunctionDeclaration" && declaration.id != null) {
-    // Named function declarations are already built during scope
-    // instantiation. Reuse the existing declaration node directly.
-    const name = declaration.id.name;
-    const declarationId = functionBuilder.getDeclarationId(name, scope);
-    if (declarationId !== undefined) {
-      const declarationInstructionId = environment.getDeclarationInstruction(declarationId);
-      const declarationInstruction =
-        declarationInstructionId !== undefined
-          ? environment.instructions.get(declarationInstructionId)
-          : undefined;
-      if (declarationInstruction instanceof FunctionDeclarationInstruction) {
-        declarationInstruction.emit = false;
-        declarationPlace = declarationInstruction.place;
+  if (declaration.type === "FunctionDeclaration") {
+    if (declaration.id === null) {
+      declarationPlace = buildFunctionExpression(
+        declaration,
+        scope,
+        functionBuilder,
+        moduleBuilder,
+        environment,
+      );
+    } else {
+      const name = declaration.id.name;
+      const declarationId = functionBuilder.getDeclarationId(name, scope);
+      if (declarationId !== undefined) {
+        const declarationInstructionId = environment.getDeclarationInstruction(declarationId);
+        const declarationInstruction =
+          declarationInstructionId !== undefined
+            ? environment.instructions.get(declarationInstructionId)
+            : undefined;
+        if (declarationInstruction instanceof FunctionDeclarationInstruction) {
+          declarationInstruction.emit = false;
+          declarationPlace = declarationInstruction.place;
+        }
       }
+    }
+  } else if (declaration.type === "ClassDeclaration") {
+    if (declaration.id === null) {
+      declarationPlace = buildClassExpression(
+        declaration,
+        scope,
+        functionBuilder,
+        moduleBuilder,
+        environment,
+      );
+    } else {
+      declarationPlace = buildClassDeclaration(
+        declaration,
+        scope,
+        functionBuilder,
+        moduleBuilder,
+        environment,
+        { emit: false },
+      );
     }
   } else {
     declarationPlace = buildNode(declaration, scope, functionBuilder, moduleBuilder, environment);

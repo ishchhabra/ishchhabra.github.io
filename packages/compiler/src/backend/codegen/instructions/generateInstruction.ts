@@ -18,6 +18,7 @@ import {
   ValueInstruction,
 } from "../../../ir";
 import { FunctionIR } from "../../../ir/core/FunctionIR";
+import { ClassDeclarationInstruction } from "../../../ir/instructions/declaration/ClassDeclaration";
 import { FunctionDeclarationInstruction } from "../../../ir/instructions/declaration/FunctionDeclaration";
 import { CodeGenerator } from "../../CodeGenerator";
 import { generateDeclarationInstruction } from "./declaration/generateDeclaration";
@@ -39,7 +40,11 @@ export function generateInstruction(
     return [generateDebuggerStatementInstruction(instruction, generator)];
   } else if (instruction instanceof DeclarationInstruction) {
     const statement = generateDeclarationInstruction(instruction, generator);
-    if (instruction instanceof FunctionDeclarationInstruction && !instruction.emit) {
+    if (
+      (instruction instanceof FunctionDeclarationInstruction ||
+        instruction instanceof ClassDeclarationInstruction) &&
+      !instruction.emit
+    ) {
       return [];
     }
 
