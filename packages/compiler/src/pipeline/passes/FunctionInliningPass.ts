@@ -138,13 +138,25 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     // Bind parameters and clone body.
     const bindings = this.bindParameters(callee, callInstr.args, substitutions);
     const prologue = this.cloneInstructions(this.getPrologueInstructions(callee), substitutions);
-    const syntheticDestructure = this.buildSyntheticParamDestructure(callee, callInstr.args, substitutions);
+    const syntheticDestructure = this.buildSyntheticParamDestructure(
+      callee,
+      callInstr.args,
+      substitutions,
+    );
     const body = this.cloneInstructions(callee.entryBlock.instructions, substitutions);
-    const { place: returnPlace, instructions: returnInstructions } =
-      this.extractReturnPlace(callee.entryBlock, substitutions);
+    const { place: returnPlace, instructions: returnInstructions } = this.extractReturnPlace(
+      callee.entryBlock,
+      substitutions,
+    );
 
     // Splice into the caller block.
-    const instructions = [...bindings, ...prologue, ...syntheticDestructure, ...body, ...returnInstructions];
+    const instructions = [
+      ...bindings,
+      ...prologue,
+      ...syntheticDestructure,
+      ...body,
+      ...returnInstructions,
+    ];
     this.spliceInstruction(block, index, instructions);
 
     // Rewrite all uses of the call result to the inlined return value.
@@ -418,10 +430,16 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     const consBlock = this.functionIR.blocks.get(structure.consequent)!;
     const altBlock = this.functionIR.blocks.get(structure.alternate)!;
     consBlock.replaceTerminal(
-      new JumpTerminal(makeInstructionId(this.environment.nextInstructionId++), structure.fallthrough),
+      new JumpTerminal(
+        makeInstructionId(this.environment.nextInstructionId++),
+        structure.fallthrough,
+      ),
     );
     altBlock.replaceTerminal(
-      new JumpTerminal(makeInstructionId(this.environment.nextInstructionId++), structure.fallthrough),
+      new JumpTerminal(
+        makeInstructionId(this.environment.nextInstructionId++),
+        structure.fallthrough,
+      ),
     );
 
     // Create a Phi that merges the arm values into resultPlace.
@@ -538,10 +556,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
    * of parent scopes reached from `descendant`. Walking stops at the
    * root of the scope tree.
    */
-  private isScopeAncestor(
-    maybeAncestor: LexicalScopeId,
-    descendant: LexicalScopeId,
-  ): boolean {
+  private isScopeAncestor(maybeAncestor: LexicalScopeId, descendant: LexicalScopeId): boolean {
     let current: LexicalScopeId | null = descendant;
     while (current !== null) {
       if (current === maybeAncestor) {

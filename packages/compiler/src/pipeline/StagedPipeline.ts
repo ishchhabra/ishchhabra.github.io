@@ -86,7 +86,6 @@ export class StagedPipeline {
           functionIR.blocks = exportMergingResult.blocks;
         }
         snapshots.lateOptimized = printModuleIR(moduleIR);
-
       }
     }
 

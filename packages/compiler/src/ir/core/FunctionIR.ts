@@ -47,7 +47,6 @@ export class FunctionIR {
    */
   public phis: Set<Phi> = new Set();
 
-
   get entryBlockId(): BlockId {
     return this.blocks.keys().next().value!;
   }
@@ -468,5 +467,4 @@ export class FunctionIR {
       map.set(def.identifier, environment.createPlace(environment.createIdentifier()));
     }
   }
-
 }

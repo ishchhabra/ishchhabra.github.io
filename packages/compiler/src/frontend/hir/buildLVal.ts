@@ -114,7 +114,10 @@ function buildIdentifierLVal(
         functionBuilder.captures.set(declarationId, declarationPlace);
         if (!functionBuilder.captureParams.has(declarationId)) {
           const paramIdentifier = environment.createIdentifier(declarationId);
-          functionBuilder.captureParams.set(declarationId, environment.createPlace(paramIdentifier));
+          functionBuilder.captureParams.set(
+            declarationId,
+            environment.createPlace(paramIdentifier),
+          );
         }
         return {
           kind: "binding",
@@ -124,7 +127,9 @@ function buildIdentifierLVal(
       }
 
       const bindingPlace = environment.getDeclarationBinding(declarationId);
-      const place = bindingPlace ?? environment.places.get(environment.getLatestDeclaration(declarationId)!.placeId);
+      const place =
+        bindingPlace ??
+        environment.places.get(environment.getLatestDeclaration(declarationId)!.placeId);
       if (place === undefined) {
         throw new Error(`Unable to find the place for ${name} (${declarationId})`);
       }

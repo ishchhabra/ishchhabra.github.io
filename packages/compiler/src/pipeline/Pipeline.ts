@@ -97,7 +97,6 @@ export class Pipeline {
           const exportMergingResult = new ExportDeclarationMergingPass(functionIR).run();
           functionIR.blocks = exportMergingResult.blocks;
         }
-
       }
     }
 

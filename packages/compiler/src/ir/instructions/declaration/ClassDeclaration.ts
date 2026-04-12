@@ -41,13 +41,7 @@ export class ClassDeclarationInstruction extends DeclarationInstruction {
     if (!superChanged && !elementsChanged) {
       return this;
     }
-    return new ClassDeclarationInstruction(
-      this.id,
-      this.place,
-      newSuper,
-      newElements,
-      this.emit,
-    );
+    return new ClassDeclarationInstruction(this.id, this.place, newSuper, newElements, this.emit);
   }
 
   public getOperands(): Place[] {

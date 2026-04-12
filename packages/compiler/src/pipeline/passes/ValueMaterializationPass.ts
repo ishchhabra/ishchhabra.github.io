@@ -165,10 +165,7 @@ export class ValueMaterializationPass {
    * except for the StoreLocal we just inserted (which references the
    * original place as its value).
    */
-  private rewriteUses(
-    instruction: BaseInstruction,
-    newPlace: typeof instruction.place,
-  ): void {
+  private rewriteUses(instruction: BaseInstruction, newPlace: typeof instruction.place): void {
     const oldIdentifier = instruction.place.identifier;
     const users = [...oldIdentifier.uses];
 

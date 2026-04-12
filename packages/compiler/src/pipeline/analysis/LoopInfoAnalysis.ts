@@ -93,7 +93,13 @@ export class LoopInfo {
     const parentOf = new Map<RawNaturalLoop, RawNaturalLoop | null>();
     const sortedBySize = [...raws].sort((a, b) => a.blocks.size - b.blocks.size);
     for (const raw of sortedBySize) {
-      parentOf.set(raw, minimalProperSupersetRaw(raw, raws.filter((o) => o !== raw)));
+      parentOf.set(
+        raw,
+        minimalProperSupersetRaw(
+          raw,
+          raws.filter((o) => o !== raw),
+        ),
+      );
     }
 
     const topLevelRaws = raws.filter((r) => parentOf.get(r) === null);
