@@ -5,9 +5,7 @@ import { AnalysisManager, FunctionAnalysis } from "./AnalysisManager";
 
 /**
  * Dominance information for a function's CFG, analogous to LLVM's
- * `llvm::DominatorTree`. Loop back edges use dominance but live in the CFG
- * layer (`getBackEdgesWithDominance`), not on this object — same separation
- * as LLVM's `LoopInfo` vs `DominatorTree`.
+ * `llvm::DominatorTree`. Loop structure and back edges live in {@link LoopInfo}.
  *
  * Depends on current {@link FunctionIR#predecessors} / {@link FunctionIR#blocks}.
  * Obtain via {@link AnalysisManager#get} with {@link DominatorTreeAnalysis}, or

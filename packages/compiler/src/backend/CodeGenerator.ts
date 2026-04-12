@@ -12,11 +12,10 @@ import {
   LexicalScope,
   type LexicalScopeId,
 } from "../ir";
-import { getBackEdgesWithDominance } from "../frontend/cfg";
 import { FunctionIR, makeFunctionIRId } from "../ir/core/FunctionIR";
 import { ModuleIR } from "../ir/core/ModuleIR";
 import { AnalysisManager } from "../pipeline/analysis/AnalysisManager";
-import { DominatorTreeAnalysis } from "../pipeline/analysis/DominatorTreeAnalysis";
+import { LoopInfo, LoopInfoAnalysis } from "../pipeline/analysis/LoopInfoAnalysis";
 import { generateFunction } from "./codegen/generateFunction";
 
 const generate =
@@ -34,11 +33,8 @@ interface FunctionCodegenState {
  * Generates the code from the IR.
  */
 export class CodeGenerator {
-  /** Lazily caches dominance for nested functions during codegen (mirrors pipeline `AnalysisManager`). */
+  /** Lazily caches analyses for nested functions during codegen (mirrors pipeline `AnalysisManager`). */
   public readonly analysisManager = new AnalysisManager();
-
-  /** Back-edge classification per function (dominance + CFG; not stored on {@link DominatorTree}). */
-  private readonly backEdgeMaps = new WeakMap<FunctionIR, Map<BlockId, Set<BlockId>>>();
 
   public readonly places: Map<PlaceId, t.Node | null> = new Map();
   public readonly declarationIdentifiers: Map<DeclarationId, t.Identifier> = new Map();
@@ -124,20 +120,9 @@ export class CodeGenerator {
     return this.moduleIR.environment.getDeclarationMetadata(declarationId);
   }
 
-  /**
-   * Map of block → predecessor blocks that are loop back edges into that block.
-   * Computed once per {@link FunctionIR} during codegen.
-   */
-  getBackEdgePredecessorMap(functionIR: FunctionIR): Map<BlockId, Set<BlockId>> {
-    let map = this.backEdgeMaps.get(functionIR);
-    if (map === undefined) {
-      const dom = this.analysisManager.get(DominatorTreeAnalysis, functionIR);
-      map = getBackEdgesWithDominance(functionIR.blocks, functionIR.predecessors, (b) =>
-        dom.getDominators(b),
-      );
-      this.backEdgeMaps.set(functionIR, map);
-    }
-    return map;
+  /** Loop nest and back-edge classification (LLVM-style {@link LoopInfo}). */
+  getLoopInfo(functionIR: FunctionIR): LoopInfo {
+    return this.analysisManager.get(LoopInfoAnalysis, functionIR);
   }
 
   public getPlaceIdentifier(place: Place): t.Identifier {

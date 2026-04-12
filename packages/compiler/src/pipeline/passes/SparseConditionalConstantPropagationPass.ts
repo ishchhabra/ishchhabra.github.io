@@ -22,7 +22,6 @@ import {
   UnaryExpressionInstruction,
 } from "../../ir";
 import { BaseTerminal } from "../../ir/base";
-import { getBackEdgesWithDominance } from "../../frontend/cfg";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import {
@@ -31,6 +30,7 @@ import {
 } from "../../ir/instructions/value/TemplateLiteral";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { DominatorTreeAnalysis } from "../analysis/DominatorTreeAnalysis";
+import { LoopInfoAnalysis } from "../analysis/LoopInfoAnalysis";
 import { BaseOptimizationPass } from "../late-optimizer/OptimizationPass";
 import { Phi } from "../ssa/Phi";
 import { SSA } from "../ssa/SSABuilder";
@@ -442,11 +442,7 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
     this.exportConstants();
 
     const domTree = this.AM.get(DominatorTreeAnalysis, this.functionIR);
-    const backEdgePredecessors = getBackEdgesWithDominance(
-      this.functionIR.blocks,
-      this.functionIR.predecessors,
-      (b) => domTree.getDominators(b),
-    );
+    const loopInfo = this.AM.get(LoopInfoAnalysis, this.functionIR);
 
     for (const [blockId, block] of this.functionIR.blocks) {
       // Replace constant-valued instructions with literals.
@@ -519,7 +515,7 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
 
       // Fold branches with constant tests (skip loop headers).
       if (block.terminal instanceof BranchTerminal) {
-        if ((backEdgePredecessors.get(blockId)?.size ?? 0) > 0) continue;
+        if (loopInfo.getBackEdgePredecessors(blockId).size > 0) continue;
 
         const testVal = this.getLattice(block.terminal.test.identifier.id);
         if (isConstant(testVal)) {

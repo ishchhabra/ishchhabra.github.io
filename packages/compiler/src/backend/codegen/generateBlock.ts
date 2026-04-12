@@ -62,8 +62,7 @@ export function generateBasicBlock(
     statements.push(...generateInstruction(instruction, functionIR, generator));
   }
 
-  const backPreds = generator.getBackEdgePredecessorMap(functionIR).get(blockId);
-  if (backPreds !== undefined && backPreds.size > 0) {
+  if (generator.getLoopInfo(functionIR).getBackEdgePredecessors(blockId).size > 0) {
     return generateBackEdge(blockId, functionIR, generator);
   }
 
