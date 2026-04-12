@@ -8,6 +8,8 @@ import {
   TPrimitiveValue,
 } from "../../../ir";
 import { FunctionIR } from "../../../ir/core/FunctionIR";
+import { AnalysisManager } from "../../analysis/AnalysisManager";
+import { ControlFlowGraphAnalysis } from "../../analysis/ControlFlowGraphAnalysis";
 import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
 
 /**
@@ -26,7 +28,10 @@ import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
  *   const y = 1;
  */
 export class LateConstantPropagationPass extends BaseOptimizationPass {
-  constructor(protected readonly functionIR: FunctionIR) {
+  constructor(
+    protected readonly functionIR: FunctionIR,
+    private readonly AM: AnalysisManager,
+  ) {
     super(functionIR);
   }
 
@@ -73,7 +78,7 @@ export class LateConstantPropagationPass extends BaseOptimizationPass {
   }
 
   private meet(blockId: BlockId, outState: Map<BlockId, ConstState>): ConstState {
-    const preds = this.functionIR.predecessors.get(blockId);
+    const preds = this.AM.get(ControlFlowGraphAnalysis, this.functionIR).predecessors.get(blockId);
 
     if (!preds || preds.size === 0) {
       return new Map();

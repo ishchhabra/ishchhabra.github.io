@@ -11,6 +11,7 @@ import {
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { AnalysisManager } from "../analysis/AnalysisManager";
+import { ControlFlowGraphAnalysis } from "../analysis/ControlFlowGraphAnalysis";
 import { DominatorTreeAnalysis, type DominatorTree } from "../analysis/DominatorTreeAnalysis";
 import { Phi } from "./Phi";
 import { createPhiIdentifier } from "./utils";
@@ -276,7 +277,8 @@ export class SSABuilder {
     phisByBlock: Map<BlockId, Phi[]>,
     stacks: Map<DeclarationId, Place[]>,
   ): void {
-    for (const succ of this.functionIR.successors.get(blockId) ?? []) {
+    const succs = this.AM.get(ControlFlowGraphAnalysis, this.functionIR).successors.get(blockId);
+    for (const succ of succs ?? []) {
       for (const phi of phisByBlock.get(succ) ?? []) {
         const stack = stacks.get(phi.declarationId);
         if (stack && stack.length > 0) {

@@ -41,9 +41,6 @@ type NestedFunctionInstruction =
   | FunctionDeclarationInstruction;
 
 export class FunctionIR {
-  public predecessors!: Map<BlockId, Set<BlockId>>;
-  public successors!: Map<BlockId, Set<BlockId>>;
-
   /**
    * SSA phi nodes for this function. Set by SSABuilder after SSA
    * construction. Empty before SSA and after SSA elimination.
@@ -60,8 +57,9 @@ export class FunctionIR {
   }
 
   get exitBlockId(): BlockId {
-    for (const [blockId, successors] of this.successors) {
-      if (successors.size === 0) {
+    const successors = getSuccessors(getPredecessors(this.blocks, this.structures));
+    for (const [blockId, succs] of successors) {
+      if (succs.size === 0) {
         return blockId;
       }
     }
@@ -116,21 +114,10 @@ export class FunctionIR {
      */
     public readonly blockLabels: Map<BlockId, string> = new Map(),
   ) {
-    this.computeCFG();
     for (const structure of this.structures.values()) {
       FunctionIR.registerStructure(structure);
     }
     moduleIR.functions.set(id, this);
-  }
-
-  private computeCFG() {
-    this.predecessors = getPredecessors(this.blocks, this.structures);
-    this.successors = getSuccessors(this.predecessors);
-  }
-
-  /** Recomputes predecessor/successor maps after CFG changes. Dominance is `DominatorTree` (see pipeline/analysis/DominatorTree.ts). */
-  public recomputeCFG() {
-    this.computeCFG();
   }
 
   public *getRuntimeInstructionLists(): IterableIterator<BaseInstruction[]> {

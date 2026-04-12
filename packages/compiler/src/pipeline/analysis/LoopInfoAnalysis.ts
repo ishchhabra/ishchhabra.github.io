@@ -2,6 +2,8 @@ import type { BlockId } from "../../ir";
 import { getBackEdgesWithDominance } from "../../frontend/cfg";
 import type { FunctionIR } from "../../ir/core/FunctionIR";
 import { AnalysisManager, FunctionAnalysis } from "./AnalysisManager";
+import type { ControlFlowGraph } from "./ControlFlowGraphAnalysis";
+import { ControlFlowGraphAnalysis } from "./ControlFlowGraphAnalysis";
 import type { DominatorTree } from "./DominatorTreeAnalysis";
 import { DominatorTreeAnalysis } from "./DominatorTreeAnalysis";
 
@@ -30,7 +32,7 @@ export class Loop {
  * Per-function loop nest (LLVM: `LoopInfo`): natural loops, nesting, and
  * back-edge classification for loop headers.
  *
- * Depends on {@link DominatorTree} and current CFG edge maps.
+ * Depends on {@link DominatorTree} and {@link ControlFlowGraph} (predecessor map).
  */
 interface RawNaturalLoop {
   header: BlockId;
@@ -62,8 +64,8 @@ export class LoopInfo {
     return this.backEdgeIntoHeader.get(header) ?? new Set();
   }
 
-  static compute(functionIR: FunctionIR, dom: DominatorTree): LoopInfo {
-    const predecessors = functionIR.predecessors;
+  static compute(functionIR: FunctionIR, dom: DominatorTree, cfg: ControlFlowGraph): LoopInfo {
+    const predecessors = cfg.predecessors;
     const backEdgeMap = getBackEdgesWithDominance(functionIR.blocks, predecessors, (b) =>
       dom.getDominators(b),
     );
@@ -173,11 +175,13 @@ function naturalLoopBlocks(
 /**
  * Cached {@link LoopInfo} for a function (LLVM-style loop analysis).
  *
- * Depends on {@link DominatorTreeAnalysis}. Invalidate when the CFG changes.
+ * Depends on {@link DominatorTreeAnalysis} and {@link ControlFlowGraphAnalysis}.
+ * Invalidate when the CFG changes.
  */
 export class LoopInfoAnalysis extends FunctionAnalysis<LoopInfo> {
   run(functionIR: FunctionIR, AM: AnalysisManager): LoopInfo {
+    const cfg = AM.get(ControlFlowGraphAnalysis, functionIR);
     const dom = AM.get(DominatorTreeAnalysis, functionIR);
-    return LoopInfo.compute(functionIR, dom);
+    return LoopInfo.compute(functionIR, dom, cfg);
   }
 }

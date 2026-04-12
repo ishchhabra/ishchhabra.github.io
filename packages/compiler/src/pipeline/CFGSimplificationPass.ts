@@ -2,6 +2,11 @@ import { BlockId } from "../ir";
 import { FunctionIR } from "../ir/core/FunctionIR";
 import { ModuleIR } from "../ir/core/ModuleIR";
 import { JumpTerminal } from "../ir/core/Terminal";
+import { AnalysisManager } from "./analysis/AnalysisManager";
+import {
+  type ControlFlowGraph,
+  ControlFlowGraphAnalysis,
+} from "./analysis/ControlFlowGraphAnalysis";
 import { BaseOptimizationPass, OptimizationResult } from "./late-optimizer/OptimizationPass";
 import type { Phi } from "./ssa/Phi";
 
@@ -27,6 +32,7 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
   constructor(
     protected readonly functionIR: FunctionIR,
     private readonly moduleIR: ModuleIR,
+    private readonly AM: AnalysisManager,
   ) {
     super(functionIR);
   }
@@ -36,15 +42,16 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
   }
 
   protected step(): OptimizationResult {
+    const cfg = this.AM.get(ControlFlowGraphAnalysis, this.functionIR);
     let changed = false;
-    changed = this.removeUnreachableBlocks() || changed;
-    changed = this.mergeLinearChains() || changed;
+    changed = this.removeUnreachableBlocks(cfg) || changed;
+    changed = this.mergeLinearChains(cfg) || changed;
     // TODO: enable eliminateEmptyBlocks once the code generator no longer
     // relies on the existence of empty fallthrough blocks. The implementation
     // is correct but the code generator expects certain blocks to exist for
     // structural code emission (e.g. if-else merge points).
     if (changed) {
-      this.functionIR.recomputeCFG();
+      this.AM.invalidateFunction(this.functionIR);
     }
     return { changed };
   }
@@ -60,7 +67,7 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
    * still references it. Otherwise we clear its instructions (the block
    * remains as an empty target so the code generator doesn't crash).
    */
-  private removeUnreachableBlocks(): boolean {
+  private removeUnreachableBlocks(cfg: ControlFlowGraph): boolean {
     const reachable = new Set<BlockId>();
     const worklist: BlockId[] = [this.functionIR.entryBlockId];
 
@@ -69,7 +76,7 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
       if (reachable.has(blockId)) continue;
       reachable.add(blockId);
 
-      const succs = this.functionIR.successors.get(blockId);
+      const succs = cfg.successors.get(blockId);
       if (succs) {
         for (const succ of succs) {
           worklist.push(succ);
@@ -123,19 +130,19 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
   /**
    * Merge successor into predecessor when the edge is the only one for both.
    */
-  private mergeLinearChains(): boolean {
+  private mergeLinearChains(cfg: ControlFlowGraph): boolean {
     let changed = false;
 
     for (const blockId of Array.from(this.functionIR.blocks.keys())) {
       if (!this.functionIR.blocks.has(blockId)) continue;
 
-      const preds = this.functionIR.predecessors.get(blockId);
+      const preds = cfg.predecessors.get(blockId);
       if (!preds || preds.size !== 1) continue;
 
       const [predId] = preds;
       if (!this.functionIR.blocks.has(predId)) continue;
 
-      const predSuccs = this.functionIR.successors.get(predId);
+      const predSuccs = cfg.successors.get(predId);
       if (!predSuccs || predSuccs.size !== 1) continue;
 
       // Don't merge structural join points (fallthrough targets). These
@@ -209,7 +216,7 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
    * predecessors or is referenced by terminals that don't create CFG
    * predecessor edges (e.g. BranchTerminal.fallthrough).
    */
-  private eliminateEmptyBlocks(): boolean {
+  private eliminateEmptyBlocks(cfg: ControlFlowGraph): boolean {
     let changed = false;
 
     for (const [blockId, block] of this.functionIR.blocks) {
@@ -225,11 +232,11 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
       if (target === blockId) continue; // self-loop
 
       // Collect CFG predecessors for phi migration.
-      const preds = this.functionIR.predecessors.get(blockId);
+      const preds = cfg.predecessors.get(blockId);
 
       // Abort if retargeting would create duplicate predecessors at the target.
       if (preds && preds.size > 0) {
-        const targetPreds = this.functionIR.predecessors.get(target);
+        const targetPreds = cfg.predecessors.get(target);
         if (targetPreds && [...preds].some((p) => p !== blockId && targetPreds.has(p))) {
           continue;
         }

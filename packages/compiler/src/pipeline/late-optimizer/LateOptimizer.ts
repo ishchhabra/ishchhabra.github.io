@@ -39,7 +39,10 @@ export class LateOptimizer {
       changed = false;
 
       if (this.options.enableLateConstantPropagationPass) {
-        const constantPropagationResult = new LateConstantPropagationPass(this.functionIR).run();
+        const constantPropagationResult = new LateConstantPropagationPass(
+          this.functionIR,
+          this.AM,
+        ).run();
         if (constantPropagationResult.changed) {
           changed = true;
           this.AM.invalidateFunction(this.functionIR);
@@ -48,7 +51,7 @@ export class LateOptimizer {
       }
 
       if (this.options.enableLateCopyPropagationPass) {
-        const copyPropagationResult = new LateCopyPropagationPass(this.functionIR).run();
+        const copyPropagationResult = new LateCopyPropagationPass(this.functionIR, this.AM).run();
         if (copyPropagationResult.changed) {
           changed = true;
           this.AM.invalidateFunction(this.functionIR);

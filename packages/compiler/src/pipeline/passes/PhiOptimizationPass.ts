@@ -12,6 +12,11 @@ import { Place } from "../../ir/core/Place";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { BranchTerminal, JumpTerminal } from "../../ir/core/Terminal";
 import { TernaryStructure } from "../../ir/core/Structure";
+import { AnalysisManager } from "../analysis/AnalysisManager";
+import {
+  type ControlFlowGraph,
+  ControlFlowGraphAnalysis,
+} from "../analysis/ControlFlowGraphAnalysis";
 import { BaseOptimizationPass, OptimizationResult } from "../late-optimizer/OptimizationPass";
 import { Phi } from "../ssa/Phi";
 
@@ -29,6 +34,7 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
   constructor(
     protected readonly functionIR: FunctionIR,
     private readonly environment: Environment,
+    private readonly AM: AnalysisManager,
   ) {
     super(functionIR);
   }
@@ -53,6 +59,8 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
   private tryCollapseDiamond(phi: Phi): boolean {
     if (phi.operands.size !== 2) return false;
 
+    const cfg = this.AM.get(ControlFlowGraphAnalysis, this.functionIR);
+
     const [operandB, operandC] = [...phi.operands.entries()];
     const [blockIdB, placeB] = operandB;
     const [blockIdC, placeC] = operandC;
@@ -70,8 +78,8 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
 
     // Find the branch block (A) that dominates both operand blocks.
     // Use getEffectivePredecessor to look through structure fallthroughs.
-    const branchBlockIdB = this.getEffectivePredecessor(blockIdB);
-    const branchBlockIdC = this.getEffectivePredecessor(blockIdC);
+    const branchBlockIdB = this.getEffectivePredecessor(blockIdB, cfg);
+    const branchBlockIdC = this.getEffectivePredecessor(blockIdC, cfg);
     if (branchBlockIdB === null || branchBlockIdC === null) return false;
     if (branchBlockIdB !== branchBlockIdC) return false;
 
@@ -203,7 +211,7 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
     }
 
     this.phis.delete(phi);
-    this.functionIR.recomputeCFG();
+    this.AM.invalidateFunction(this.functionIR);
     return true;
   }
 
@@ -213,14 +221,14 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
    * fallthrough is this block, the "effective" predecessor is the
    * structure header's predecessor (the actual branch block).
    */
-  private getEffectivePredecessor(blockId: BlockId): BlockId | null {
-    const preds = this.functionIR.predecessors.get(blockId);
+  private getEffectivePredecessor(blockId: BlockId, cfg: ControlFlowGraph): BlockId | null {
+    const preds = cfg.predecessors.get(blockId);
     if (!preds || preds.size !== 1) return null;
     const pred = [...preds][0];
 
     const structure = this.functionIR.structures.get(pred);
     if (structure instanceof TernaryStructure && structure.fallthrough === blockId) {
-      return this.getEffectivePredecessor(pred);
+      return this.getEffectivePredecessor(pred, cfg);
     }
 
     return pred;

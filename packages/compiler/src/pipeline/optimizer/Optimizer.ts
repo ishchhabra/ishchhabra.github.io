@@ -81,6 +81,7 @@ export class Optimizer {
         const cfgSimplificationResult = new CFGSimplificationPass(
           this.functionIR,
           this.moduleIR,
+          this.AM,
         ).run();
         if (cfgSimplificationResult.changed) {
           changed = true;
@@ -93,6 +94,7 @@ export class Optimizer {
         const phiOptimizationResult = new PhiOptimizationPass(
           this.functionIR,
           this.moduleIR.environment,
+          this.AM,
         ).run();
         if (phiOptimizationResult.changed) {
           changed = true;

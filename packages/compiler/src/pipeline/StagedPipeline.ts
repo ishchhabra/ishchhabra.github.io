@@ -47,7 +47,7 @@ export class StagedPipeline {
 
       for (const functionIR of processingOrder) {
         new CommonJSExportCollectorPass(functionIR, moduleIR, AM).run();
-        new CFGSimplificationPass(functionIR, moduleIR).run();
+        new CFGSimplificationPass(functionIR, moduleIR, AM).run();
         AM.invalidateFunction(functionIR);
 
         new SSABuilder(functionIR, moduleIR, AM).build();

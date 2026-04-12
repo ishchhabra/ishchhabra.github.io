@@ -1,6 +1,7 @@
 import * as t from "@babel/types";
 import { BlockStructure } from "../../../ir";
 import { FunctionIR } from "../../../ir/core/FunctionIR";
+import { ControlFlowGraphAnalysis } from "../../../pipeline/analysis/ControlFlowGraphAnalysis";
 import { CodeGenerator } from "../../CodeGenerator";
 import { generateBasicBlock } from "../generateBlock";
 
@@ -24,7 +25,9 @@ export function generateBlockStructure(
   const bodyStatements = generateBasicBlock(structure.body, functionIR, generator);
 
   generator.generatedBlocks.delete(structure.exit);
-  const exitPredecessors = functionIR.predecessors.get(structure.exit);
+  const exitPredecessors = generator.analysisManager
+    .get(ControlFlowGraphAnalysis, functionIR)
+    .predecessors.get(structure.exit);
   const exitStatements =
     exitPredecessors && exitPredecessors.size > 0
       ? generateBasicBlock(structure.exit, functionIR, generator)

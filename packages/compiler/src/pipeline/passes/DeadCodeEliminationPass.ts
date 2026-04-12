@@ -46,7 +46,6 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
       const isLive = structure.getDefs().some((p) => liveness.isLive(p.identifier.id));
       if (!isLive) {
         this.functionIR.deleteStructure(blockId);
-        this.functionIR.recomputeCFG();
         changed = true;
       }
     }

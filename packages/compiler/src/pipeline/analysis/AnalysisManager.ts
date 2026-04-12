@@ -1,4 +1,4 @@
-import type { FunctionIR, FunctionIRId } from "../../ir/core/FunctionIR";
+import type { FunctionIR } from "../../ir/core/FunctionIR";
 import type { ProjectUnit } from "../../frontend/ProjectBuilder";
 
 /**
@@ -90,9 +90,13 @@ export class PreservedAnalyses {
  * ```
  */
 export class AnalysisManager {
-  /** Per-function analysis caches. */
+  /**
+   * Per-function analysis caches, keyed by {@link FunctionIR} **identity**
+   * (not {@link FunctionIRId}): ids are unique per module, so two entry
+   * functions in different modules can share the same numeric id.
+   */
   private readonly functionCaches = new Map<
-    FunctionIRId,
+    FunctionIR,
     Map<FunctionAnalysisClass<unknown>, unknown>
   >();
 
@@ -125,10 +129,10 @@ export class AnalysisManager {
     analysisClass: FunctionAnalysisClass<Result>,
     functionIR: FunctionIR,
   ): Result {
-    let cache = this.functionCaches.get(functionIR.id);
+    let cache = this.functionCaches.get(functionIR);
     if (!cache) {
       cache = new Map();
-      this.functionCaches.set(functionIR.id, cache);
+      this.functionCaches.set(functionIR, cache);
     }
 
     const key = analysisClass as FunctionAnalysisClass<unknown>;
@@ -163,7 +167,7 @@ export class AnalysisManager {
     functionIR: FunctionIR,
     preserved: PreservedAnalyses = PreservedAnalyses.none(),
   ): void {
-    const cache = this.functionCaches.get(functionIR.id);
+    const cache = this.functionCaches.get(functionIR);
     if (!cache) return;
 
     for (const analysisClass of cache.keys()) {

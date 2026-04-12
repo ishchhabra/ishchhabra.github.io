@@ -441,7 +441,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     );
     this.phis.add(phi);
 
-    this.functionIR.recomputeCFG();
+    this.AM.invalidateFunction(this.functionIR);
   }
 
   /**

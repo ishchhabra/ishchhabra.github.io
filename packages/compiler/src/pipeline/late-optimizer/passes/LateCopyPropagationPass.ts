@@ -7,6 +7,8 @@ import {
   StoreLocalInstruction,
 } from "../../../ir";
 import { FunctionIR } from "../../../ir/core/FunctionIR";
+import { AnalysisManager } from "../../analysis/AnalysisManager";
+import { ControlFlowGraphAnalysis } from "../../analysis/ControlFlowGraphAnalysis";
 import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
 
 /**
@@ -26,7 +28,10 @@ import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
  *   z = y
  */
 export class LateCopyPropagationPass extends BaseOptimizationPass {
-  constructor(protected readonly functionIR: FunctionIR) {
+  constructor(
+    protected readonly functionIR: FunctionIR,
+    private readonly AM: AnalysisManager,
+  ) {
     super(functionIR);
   }
 
@@ -100,7 +105,7 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
    * Only copy relationships that agree across *all* predecessors survive.
    */
   private meet(blockId: BlockId, outState: Map<BlockId, CopyState>): CopyState {
-    const preds = this.functionIR.predecessors.get(blockId);
+    const preds = this.AM.get(ControlFlowGraphAnalysis, this.functionIR).predecessors.get(blockId);
 
     if (!preds || preds.size === 0) {
       return new Map();

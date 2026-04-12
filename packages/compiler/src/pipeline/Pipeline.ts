@@ -52,7 +52,7 @@ export class Pipeline {
 
       for (const functionIR of processingOrder) {
         new CommonJSExportCollectorPass(functionIR, moduleIR, AM).run();
-        new CFGSimplificationPass(functionIR, moduleIR).run();
+        new CFGSimplificationPass(functionIR, moduleIR, AM).run();
         AM.invalidateFunction(functionIR);
 
         const ssaBuilderResult = new SSABuilder(functionIR, moduleIR, AM).build();
