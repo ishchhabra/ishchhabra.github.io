@@ -1,6 +1,6 @@
 import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
-import { LiteralInstruction, TPrimitiveValue } from "../../../ir";
+import { LiteralOp, TPrimitiveValue } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 export function buildLiteral(
@@ -12,9 +12,9 @@ export function buildLiteral(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(LiteralInstruction, place, value);
-  functionBuilder.addInstruction(instruction);
-  environment.registerDeclarationInstruction(place, instruction);
+  const instruction = environment.createOperation(LiteralOp, place, value);
+  functionBuilder.addOp(instruction);
+  environment.registerDeclarationOp(place, instruction);
   return place;
 }
 

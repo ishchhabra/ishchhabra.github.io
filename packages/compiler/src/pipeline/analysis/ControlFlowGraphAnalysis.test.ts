@@ -29,7 +29,7 @@ describe("ControlFlowGraph", () => {
     const cached = am.get(ControlFlowGraphAnalysis, fn);
     expect(cached.predecessors.size).toBe(direct.predecessors.size);
     const sortIds = (a: BlockId, b: BlockId) => a - b;
-    for (const id of fn.blocks.keys()) {
+    for (const id of fn.blockIds()) {
       expect([...(cached.predecessors.get(id) ?? [])].sort(sortIds)).toEqual(
         [...(direct.predecessors.get(id) ?? [])].sort(sortIds),
       );

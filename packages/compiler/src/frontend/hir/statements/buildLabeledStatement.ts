@@ -1,6 +1,6 @@
 import type { LabeledStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { JumpTerminal, LabeledBlockStructure, createInstructionId } from "../../../ir";
+import { JumpOp, LabeledBlockOp, Region, createOperationId } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -49,18 +49,21 @@ export function buildLabeledStatement(
   const scopeId = functionBuilder.lexicalScopeIdFor(scope);
 
   const headerBlock = environment.createBlock(scopeId);
-  functionBuilder.blocks.set(headerBlock.id, headerBlock);
+  functionBuilder.addBlock(headerBlock);
 
   const bodyScope = body.type === "BlockStatement" ? functionBuilder.scopeFor(body) : scope;
   const bodyScopeId = functionBuilder.lexicalScopeIdFor(bodyScope);
   const bodyBlock = environment.createBlock(bodyScopeId);
-  functionBuilder.blocks.set(bodyBlock.id, bodyBlock);
+  functionBuilder.addBlock(bodyBlock);
 
   const exitBlock = environment.createBlock(scopeId);
-  functionBuilder.blocks.set(exitBlock.id, exitBlock);
+  functionBuilder.addBlock(exitBlock);
 
   // Wire current block -> header block.
-  currentBlock.terminal = new JumpTerminal(createInstructionId(environment), headerBlock.id);
+  currentBlock.terminal = new JumpOp(createOperationId(environment), headerBlock.id);
+
+  const bodyRegion = new Region([]);
+  bodyRegion.moveBlockHere(bodyBlock);
 
   // Build the body inside a labeled control context.
   functionBuilder.currentBlock = bodyBlock;
@@ -68,14 +71,16 @@ export function buildLabeledStatement(
     kind: "label",
     label,
     breakTarget: exitBlock.id,
+    structured: true,
   });
-  buildOwnedBody(body, scope, functionBuilder, moduleBuilder, environment);
+  functionBuilder.withStructureRegion(bodyRegion, () => {
+    buildOwnedBody(body, scope, functionBuilder, moduleBuilder, environment);
+  });
   functionBuilder.controlStack.pop();
 
-  // If the body didn't terminate, jump to the exit block.
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.terminal = new JumpTerminal(
-      createInstructionId(environment),
+    functionBuilder.currentBlock.terminal = new JumpOp(
+      createOperationId(environment),
       exitBlock.id,
     );
   }
@@ -83,7 +88,13 @@ export function buildLabeledStatement(
   // Register the structure on the header block.
   functionBuilder.structures.set(
     headerBlock.id,
-    new LabeledBlockStructure(headerBlock.id, bodyBlock.id, exitBlock.id, label),
+    new LabeledBlockOp(
+      createOperationId(environment),
+      headerBlock.id,
+      exitBlock.id,
+      label,
+      bodyRegion,
+    ),
   );
 
   functionBuilder.currentBlock = exitBlock;

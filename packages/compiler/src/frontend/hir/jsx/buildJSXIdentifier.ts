@@ -1,11 +1,11 @@
 import type { JSXIdentifier } from "oxc-parser";
 import { Environment } from "../../../environment";
 import {
-  JSXIdentifierInstruction,
-  LiteralInstruction,
-  LoadContextInstruction,
-  LoadGlobalInstruction,
-  LoadLocalInstruction,
+  JSXIdentifierOp,
+  LiteralOp,
+  LoadContextOp,
+  LoadGlobalOp,
+  LoadLocalOp,
   Place,
 } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -33,9 +33,7 @@ export function buildJSXIdentifier(
   const valuePlace = environment.createPlace(valueIdentifier);
 
   if (/^[a-z]/.test(name)) {
-    functionBuilder.addInstruction(
-      environment.createInstruction(LiteralInstruction, valuePlace, name),
-    );
+    functionBuilder.addOp(environment.createOperation(LiteralOp, valuePlace, name));
   } else {
     const declarationId = functionBuilder.getDeclarationId(name, scope);
 
@@ -59,11 +57,9 @@ export function buildJSXIdentifier(
         }
         const captureParam = functionBuilder.captureParams.get(declarationId)!;
         const LoadClass = environment.contextDeclarationIds.has(declarationId)
-          ? LoadContextInstruction
-          : LoadLocalInstruction;
-        functionBuilder.addInstruction(
-          environment.createInstruction(LoadClass, valuePlace, captureParam),
-        );
+          ? LoadContextOp
+          : LoadLocalOp;
+        functionBuilder.addOp(environment.createOperation(LoadClass, valuePlace, captureParam));
       } else {
         const latestDeclaration = environment.getLatestDeclaration(declarationId);
         const declarationPlace = environment.places.get(latestDeclaration.placeId);
@@ -71,21 +67,15 @@ export function buildJSXIdentifier(
           throw new Error(`Unable to find the place for ${name} (${declarationId})`);
         }
         const LoadClass = environment.contextDeclarationIds.has(declarationId)
-          ? LoadContextInstruction
-          : LoadLocalInstruction;
-        functionBuilder.addInstruction(
-          environment.createInstruction(LoadClass, valuePlace, declarationPlace),
-        );
+          ? LoadContextOp
+          : LoadLocalOp;
+        functionBuilder.addOp(environment.createOperation(LoadClass, valuePlace, declarationPlace));
       }
     } else {
-      functionBuilder.addInstruction(
-        environment.createInstruction(LoadGlobalInstruction, valuePlace, name),
-      );
+      functionBuilder.addOp(environment.createOperation(LoadGlobalOp, valuePlace, name));
     }
   }
 
-  functionBuilder.addInstruction(
-    environment.createInstruction(JSXIdentifierInstruction, outPlace, valuePlace),
-  );
+  functionBuilder.addOp(environment.createOperation(JSXIdentifierOp, outPlace, valuePlace));
   return outPlace;
 }

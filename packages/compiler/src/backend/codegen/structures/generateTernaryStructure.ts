@@ -1,35 +1,38 @@
 import * as t from "@babel/types";
-import { TernaryStructure } from "../../../ir";
+import { TernaryOp } from "../../../ir";
 import { FunctionIR } from "../../../ir/core/FunctionIR";
 import { CodeGenerator } from "../../CodeGenerator";
 import { generateBasicBlock } from "../generateBlock";
-import { generateInstruction } from "../instructions/generateInstruction";
+import { generateOp } from "../ops/generateOp";
 
 export function generateTernaryStructure(
-  structure: TernaryStructure,
+  structure: TernaryOp,
   functionIR: FunctionIR,
   generator: CodeGenerator,
 ): Array<t.Statement> {
   // Generate the header block's instructions (everything before the ternary).
   // This populates the places map with the test value and any preceding
   // instructions (e.g. phi declarations from SSA elimination).
-  const headerBlock = functionIR.blocks.get(structure.header);
+  const headerBlock = functionIR.maybeBlock(structure.header);
   if (headerBlock === undefined) {
     throw new Error(`Block ${structure.header} not found`);
   }
   const headerStatements: Array<t.Statement> = [];
-  for (const instruction of headerBlock.instructions) {
-    headerStatements.push(...generateInstruction(instruction, functionIR, generator));
+  for (const instruction of headerBlock.operations) {
+    headerStatements.push(...generateOp(instruction, functionIR, generator));
   }
 
-  // Generate the consequent arm block. All its instructions register
-  // expressions in the places map. Since these are expression-only
-  // instructions, generateBasicBlock returns no statements — the
-  // expressions are inlined when we look up consequentValue below.
-  generateBasicBlock(structure.consequent, functionIR, generator);
+  // Generate the consequent arm block via the nested region (step #9).
+  // All its instructions register expressions in the places map. Since
+  // these are expression-only instructions, generateBasicBlock returns
+  // no statements — the expressions are inlined when we look up
+  // consequentValue below.
+  const consequentEntryId = structure.regions[0]?.entry.id ?? structure.consequent;
+  generateBasicBlock(consequentEntryId, functionIR, generator);
 
-  // Generate the alternate arm block (same as above).
-  generateBasicBlock(structure.alternate, functionIR, generator);
+  // Generate the alternate arm block via the nested region (step #9).
+  const alternateEntryId = structure.regions[1]?.entry.id ?? structure.alternate;
+  generateBasicBlock(alternateEntryId, functionIR, generator);
 
   // Look up the test expression.
   const test = generator.places.get(structure.test.id);

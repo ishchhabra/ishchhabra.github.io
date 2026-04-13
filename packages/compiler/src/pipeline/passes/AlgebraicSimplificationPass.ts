@@ -1,12 +1,12 @@
 import {
-  BaseInstruction,
+  Operation,
   BasicBlock,
-  BinaryExpressionInstruction,
+  BinaryExpressionOp,
   IdentifierId,
-  LiteralInstruction,
-  LoadLocalInstruction,
-  LogicalExpressionInstruction,
-  StoreLocalInstruction,
+  LiteralOp,
+  LoadLocalOp,
+  LogicalExpressionOp,
+  StoreLocalOp,
   TPrimitiveValue,
 } from "../../ir";
 import { FunctionIR } from "../../ir/core/FunctionIR";
@@ -37,7 +37,7 @@ import { BaseOptimizationPass } from "../late-optimizer/OptimizationPass";
 export class AlgebraicSimplificationPass extends BaseOptimizationPass {
   /**
    * Maps identifier ids to their known literal values.
-   * Tracks values through LiteralInstruction, LoadLocal, and StoreLocal chains.
+   * Tracks values through LiteralOp, LoadLocal, and StoreLocal chains.
    */
   private readonly literals: Map<IdentifierId, TPrimitiveValue>;
 
@@ -46,16 +46,16 @@ export class AlgebraicSimplificationPass extends BaseOptimizationPass {
     this.literals = new Map();
 
     // Pre-scan all blocks to find literal values, following LoadLocal/StoreLocal chains.
-    for (const block of this.functionIR.blocks.values()) {
-      for (const instruction of block.instructions) {
-        if (instruction instanceof LiteralInstruction) {
+    for (const block of this.functionIR.allBlocks()) {
+      for (const instruction of block.operations) {
+        if (instruction instanceof LiteralOp) {
           this.literals.set(instruction.place.identifier.id, instruction.value);
-        } else if (instruction instanceof LoadLocalInstruction) {
+        } else if (instruction instanceof LoadLocalOp) {
           const val = this.literals.get(instruction.value.identifier.id);
           if (val !== undefined) {
             this.literals.set(instruction.place.identifier.id, val);
           }
-        } else if (instruction instanceof StoreLocalInstruction) {
+        } else if (instruction instanceof StoreLocalOp) {
           const val = this.literals.get(instruction.value.identifier.id);
           if (val !== undefined) {
             this.literals.set(instruction.lval.identifier.id, val);
@@ -68,7 +68,7 @@ export class AlgebraicSimplificationPass extends BaseOptimizationPass {
   public step() {
     let changed = false;
 
-    for (const block of this.functionIR.blocks.values()) {
+    for (const block of this.functionIR.allBlocks()) {
       changed ||= this.simplifyBlock(block);
     }
 
@@ -78,18 +78,18 @@ export class AlgebraicSimplificationPass extends BaseOptimizationPass {
   private simplifyBlock(block: BasicBlock): boolean {
     let changed = false;
 
-    for (const [index, instruction] of block.instructions.entries()) {
-      let replacement: BaseInstruction | undefined;
+    for (const [index, instruction] of block.operations.entries()) {
+      let replacement: Operation | undefined;
 
-      if (instruction instanceof BinaryExpressionInstruction) {
+      if (instruction instanceof BinaryExpressionOp) {
         replacement = this.simplifyBinaryExpression(instruction);
-      } else if (instruction instanceof LogicalExpressionInstruction) {
+      } else if (instruction instanceof LogicalExpressionOp) {
         replacement = this.simplifyLogicalExpression(instruction);
       }
 
       if (replacement !== undefined) {
-        block.replaceInstruction(index, replacement);
-        if (replacement instanceof LiteralInstruction) {
+        block.replaceOp(index, replacement);
+        if (replacement instanceof LiteralOp) {
           this.literals.set(replacement.place.identifier.id, replacement.value);
         }
         changed = true;
@@ -125,17 +125,15 @@ export class AlgebraicSimplificationPass extends BaseOptimizationPass {
     return Number.isFinite(val);
   }
 
-  private forwardPlace(instruction: BaseInstruction, source: Place): BaseInstruction {
-    return new LoadLocalInstruction(instruction.id, instruction.place, source);
+  private forwardPlace(instruction: Operation, source: Place): Operation {
+    return new LoadLocalOp(instruction.id, instruction.place!, source);
   }
 
-  private makeLiteral(instruction: BaseInstruction, value: TPrimitiveValue): LiteralInstruction {
-    return new LiteralInstruction(instruction.id, instruction.place, value);
+  private makeLiteral(instruction: Operation, value: TPrimitiveValue): LiteralOp {
+    return new LiteralOp(instruction.id, instruction.place!, value);
   }
 
-  private simplifyBinaryExpression(
-    instruction: BinaryExpressionInstruction,
-  ): BaseInstruction | undefined {
+  private simplifyBinaryExpression(instruction: BinaryExpressionOp): Operation | undefined {
     const leftLit = this.getLiteral(instruction.left);
     const rightLit = this.getLiteral(instruction.right);
     const leftIsLit = this.isLiteral(instruction.left);
@@ -225,9 +223,7 @@ export class AlgebraicSimplificationPass extends BaseOptimizationPass {
     return undefined;
   }
 
-  private simplifyLogicalExpression(
-    instruction: LogicalExpressionInstruction,
-  ): BaseInstruction | undefined {
+  private simplifyLogicalExpression(instruction: LogicalExpressionOp): Operation | undefined {
     const leftLit = this.getLiteral(instruction.left);
     const leftIsLit = this.isLiteral(instruction.left);
     const rightIsLit = this.isLiteral(instruction.right);

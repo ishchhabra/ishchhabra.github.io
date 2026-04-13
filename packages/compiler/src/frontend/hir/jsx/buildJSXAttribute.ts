@@ -1,6 +1,6 @@
 import type { JSXAttribute, JSXIdentifier, JSXNamespacedName } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { JSXAttributeInstruction, Place } from "../../../ir";
+import { JSXAttributeOp, Place } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -26,8 +26,8 @@ export function buildJSXAttribute(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(JSXAttributeInstruction, place, name, value);
-  functionBuilder.addInstruction(instruction);
+  const instruction = environment.createOperation(JSXAttributeOp, place, name, value);
+  functionBuilder.addOp(instruction);
   return place;
 }
 

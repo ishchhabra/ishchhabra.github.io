@@ -1,11 +1,11 @@
 import * as t from "@babel/types";
-import { BranchTerminal } from "../../../ir";
+import { BranchOp } from "../../../ir";
 import { FunctionIR } from "../../../ir/core/FunctionIR";
 import { CodeGenerator } from "../../CodeGenerator";
 import { generateBlock } from "../generateBlock";
 
 export function generateBranchTerminal(
-  terminal: BranchTerminal,
+  terminal: BranchOp,
   functionIR: FunctionIR,
   generator: CodeGenerator,
 ): Array<t.Statement> {

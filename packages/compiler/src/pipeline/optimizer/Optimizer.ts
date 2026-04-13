@@ -1,6 +1,5 @@
 import { CompilerOptions } from "../../compile";
 import { ProjectUnit } from "../../frontend/ProjectBuilder";
-import { BasicBlock, BlockId } from "../../ir";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { AnalysisManager } from "../analysis/AnalysisManager";
@@ -16,7 +15,7 @@ import { ScalarReplacementOfAggregatesPass } from "../late-optimizer/passes/Scal
 import { SSA } from "../ssa/SSABuilder";
 
 interface OptimizerResult {
-  blocks: Map<BlockId, BasicBlock>;
+  changed: boolean;
 }
 
 export class Optimizer {
@@ -32,127 +31,83 @@ export class Optimizer {
   ) {}
 
   public run(): OptimizerResult {
-    let changed = true;
+    let anyChanged = false;
+    let iterationChanged = true;
 
-    let blocks = this.functionIR.blocks;
-    while (changed) {
-      changed = false;
-      if (this.options.enableConstantPropagationPass) {
-        const sccpResult = new SparseConditionalConstantPropagationPass(
-          this.functionIR,
-          this.moduleIR,
-          this.projectUnit,
-          this.ssa,
-          this.context,
-          this.options,
-          this.AM,
-        ).run();
-        if (sccpResult.changed) {
-          changed = true;
+    while (iterationChanged) {
+      iterationChanged = false;
+
+      const runPass = (changed: boolean) => {
+        if (changed) {
+          iterationChanged = true;
           this.AM.invalidateFunction(this.functionIR);
         }
-        blocks = sccpResult.blocks;
+      };
+
+      if (this.options.enableConstantPropagationPass) {
+        runPass(
+          new SparseConditionalConstantPropagationPass(
+            this.functionIR,
+            this.moduleIR,
+            this.projectUnit,
+            this.ssa,
+            this.context,
+            this.options,
+            this.AM,
+          ).run().changed,
+        );
       }
 
       if (this.options.enableAlgebraicSimplificationPass) {
-        const algebraicSimplificationResult = new AlgebraicSimplificationPass(
-          this.functionIR,
-        ).run();
-        if (algebraicSimplificationResult.changed) {
-          changed = true;
-          this.AM.invalidateFunction(this.functionIR);
-        }
-        blocks = algebraicSimplificationResult.blocks;
+        runPass(new AlgebraicSimplificationPass(this.functionIR).run().changed);
       }
 
       if (this.options.enableExpressionInliningPass) {
-        const expressionInliningResult = new ExpressionInliningPass(
-          this.functionIR,
-          this.moduleIR.environment,
-        ).run();
-        if (expressionInliningResult.changed) {
-          changed = true;
-          this.AM.invalidateFunction(this.functionIR);
-        }
-        blocks = expressionInliningResult.blocks;
+        runPass(
+          new ExpressionInliningPass(this.functionIR, this.moduleIR.environment).run().changed,
+        );
       }
 
-      {
-        const cfgSimplificationResult = new CFGSimplificationPass(
-          this.functionIR,
-          this.moduleIR,
-          this.AM,
-        ).run();
-        if (cfgSimplificationResult.changed) {
-          changed = true;
-          this.AM.invalidateFunction(this.functionIR);
-        }
-        blocks = cfgSimplificationResult.blocks;
-      }
+      runPass(new CFGSimplificationPass(this.functionIR, this.moduleIR, this.AM).run().changed);
 
       if (this.options.enablePhiOptimizationPass) {
-        const phiOptimizationResult = new PhiOptimizationPass(
-          this.functionIR,
-          this.moduleIR.environment,
-          this.AM,
-        ).run();
-        if (phiOptimizationResult.changed) {
-          changed = true;
-          this.AM.invalidateFunction(this.functionIR);
-        }
-        blocks = phiOptimizationResult.blocks;
+        runPass(
+          new PhiOptimizationPass(this.functionIR, this.moduleIR.environment, this.AM).run()
+            .changed,
+        );
       }
 
       if (this.options.enableCapturePruningPass) {
-        const capturePruningResult = new CapturePruningPass(this.functionIR).run();
-        if (capturePruningResult.changed) {
-          changed = true;
-          this.AM.invalidateFunction(this.functionIR);
-        }
-        blocks = capturePruningResult.blocks;
+        runPass(new CapturePruningPass(this.functionIR).run().changed);
       }
 
       if (this.options.enableDeadCodeEliminationPass) {
-        const deadCodeEliminationResult = new DeadCodeEliminationPass(
-          this.functionIR,
-          this.moduleIR.environment,
-          this.AM,
-        ).run();
-        if (deadCodeEliminationResult.changed) {
-          changed = true;
-          this.AM.invalidateFunction(this.functionIR);
-        }
-        blocks = deadCodeEliminationResult.blocks;
+        runPass(
+          new DeadCodeEliminationPass(this.functionIR, this.moduleIR.environment, this.AM).run()
+            .changed,
+        );
       }
 
       if (this.options.enableFunctionInliningPass) {
-        const functionInliningResult = new FunctionInliningPass(
-          this.functionIR,
-          this.moduleIR,
-          this.AM,
-          this.projectUnit,
-        ).run();
-        if (functionInliningResult.changed) {
-          changed = true;
-          this.AM.invalidateFunction(this.functionIR);
-        }
-        blocks = functionInliningResult.blocks;
+        runPass(
+          new FunctionInliningPass(this.functionIR, this.moduleIR, this.AM, this.projectUnit).run()
+            .changed,
+        );
       }
 
       if (this.options.enableScalarReplacementOfAggregatesPass) {
-        const sroaResult = new ScalarReplacementOfAggregatesPass(
-          this.functionIR,
-          this.moduleIR.environment,
-          this.AM,
-        ).run();
-        if (sroaResult.changed) {
-          changed = true;
-          this.AM.invalidateFunction(this.functionIR);
-        }
-        blocks = sroaResult.blocks;
+        runPass(
+          new ScalarReplacementOfAggregatesPass(
+            this.functionIR,
+            this.moduleIR.environment,
+            this.AM,
+          ).run().changed,
+        );
       }
+
+      anyChanged ||= iterationChanged;
     }
 
-    return { blocks };
+    return { changed: anyChanged };
   }
 }

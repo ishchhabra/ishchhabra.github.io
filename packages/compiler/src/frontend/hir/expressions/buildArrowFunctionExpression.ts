@@ -1,7 +1,7 @@
 import type { ArrowFunctionExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
-import { ArrowFunctionExpressionInstruction } from "../../../ir/instructions/value/ArrowFunctionExpression";
+import { ArrowFunctionExpressionOp } from "../../../ir/ops/func/ArrowFunctionExpression";
 import { isExpression, unwrapTSTypeWrappers } from "../../estree";
 import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -34,8 +34,8 @@ export function buildArrowFunctionExpression(
   const capturedPlaces = [...functionIRBuilder.captures.values()];
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    ArrowFunctionExpressionInstruction,
+  const instruction = environment.createOperation(
+    ArrowFunctionExpressionOp,
     place,
     functionIR,
     node.async ?? false,
@@ -43,6 +43,6 @@ export function buildArrowFunctionExpression(
     false,
     capturedPlaces,
   );
-  functionBuilder.addInstruction(instruction);
+  functionBuilder.addOp(instruction);
   return place;
 }

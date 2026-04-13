@@ -1,6 +1,6 @@
 import type { Expression, ForStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { BranchTerminal, JumpTerminal, LiteralInstruction, makeInstructionId } from "../../../ir";
+import { BranchOp, JumpOp, LiteralOp, makeOperationId } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { instantiateScopeBindings } from "../bindings";
 import { buildNode } from "../buildNode";
@@ -34,7 +34,7 @@ export function buildForStatement(
 
   // Build the init block.
   const initBlock = environment.createBlock(forScopeId);
-  functionBuilder.blocks.set(initBlock.id, initBlock);
+  functionBuilder.addBlock(initBlock);
 
   functionBuilder.currentBlock = initBlock;
   if (init != null) {
@@ -50,7 +50,7 @@ export function buildForStatement(
 
   // Build the test block.
   const testBlock = environment.createBlock(forScopeId);
-  functionBuilder.blocks.set(testBlock.id, testBlock);
+  functionBuilder.addBlock(testBlock);
 
   functionBuilder.currentBlock = testBlock;
 
@@ -60,9 +60,7 @@ export function buildForStatement(
   } else {
     // If the test is not provided, it is equivalent to while(true).
     const truePlace = environment.createPlace(environment.createIdentifier());
-    functionBuilder.addInstruction(
-      environment.createInstruction(LiteralInstruction, truePlace, true),
-    );
+    functionBuilder.addOp(environment.createOperation(LiteralOp, truePlace, true));
     testPlace = truePlace;
   }
   if (testPlace === undefined || Array.isArray(testPlace)) {
@@ -72,7 +70,7 @@ export function buildForStatement(
 
   // Build the exit block (created early so break statements can reference it).
   const exitBlock = environment.createBlock(scopeId);
-  functionBuilder.blocks.set(exitBlock.id, exitBlock);
+  functionBuilder.addBlock(exitBlock);
 
   // Build the body block. When the body is a BlockStatement, use its
   // scope so it merges with the body block — the loop syntax provides { }.
@@ -80,12 +78,12 @@ export function buildForStatement(
     node.body.type === "BlockStatement" ? functionBuilder.scopeFor(node.body) : forScope;
   const bodyScopeId = functionBuilder.lexicalScopeIdFor(bodyScope);
   const bodyBlock = environment.createBlock(bodyScopeId);
-  functionBuilder.blocks.set(bodyBlock.id, bodyBlock);
+  functionBuilder.addBlock(bodyBlock);
 
   const update = node.update;
   const updateBlock = update != null ? environment.createBlock(forScopeId) : undefined;
   if (updateBlock !== undefined) {
-    functionBuilder.blocks.set(updateBlock.id, updateBlock);
+    functionBuilder.addBlock(updateBlock);
   }
 
   functionBuilder.currentBlock = bodyBlock;
@@ -94,6 +92,7 @@ export function buildForStatement(
     label,
     breakTarget: exitBlock.id,
     continueTarget: updateBlock?.id ?? testBlock.id,
+    structured: false,
   });
   if (label) {
     functionBuilder.blockLabels.set(testBlock.id, label);
@@ -105,8 +104,8 @@ export function buildForStatement(
   // Normal fall-through from the body also reaches the update when present.
   if (updateBlock !== undefined && update != null) {
     if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.terminal = new JumpTerminal(
-        makeInstructionId(functionBuilder.environment.nextInstructionId++),
+      functionBuilder.currentBlock.terminal = new JumpOp(
+        makeOperationId(functionBuilder.environment.nextOperationId++),
         updateBlock.id,
       );
     }
@@ -117,14 +116,14 @@ export function buildForStatement(
   const bodyBlockTerminus = functionBuilder.currentBlock;
 
   // Set the jump terminal for init block to test block.
-  initBlockTerminus.terminal = new JumpTerminal(
-    makeInstructionId(functionBuilder.environment.nextInstructionId++),
+  initBlockTerminus.terminal = new JumpOp(
+    makeOperationId(functionBuilder.environment.nextOperationId++),
     testBlock.id,
   );
 
   // Set the branch terminal for test block.
-  testBlockTerminus.terminal = new BranchTerminal(
-    makeInstructionId(functionBuilder.environment.nextInstructionId++),
+  testBlockTerminus.terminal = new BranchOp(
+    makeOperationId(functionBuilder.environment.nextOperationId++),
     testPlace,
     bodyBlock.id,
     exitBlock.id,
@@ -134,15 +133,15 @@ export function buildForStatement(
   // Set the jump terminal for body block to create a back edge (unless the body
   // already ended with break/return/throw, which owns the terminal).
   if (bodyBlockTerminus.terminal === undefined) {
-    bodyBlockTerminus.terminal = new JumpTerminal(
-      makeInstructionId(functionBuilder.environment.nextInstructionId++),
+    bodyBlockTerminus.terminal = new JumpOp(
+      makeOperationId(functionBuilder.environment.nextOperationId++),
       testBlock.id,
     );
   }
 
   // Set the jump terminal for the current block.
-  currentBlock.terminal = new JumpTerminal(
-    makeInstructionId(functionBuilder.environment.nextInstructionId++),
+  currentBlock.terminal = new JumpOp(
+    makeOperationId(functionBuilder.environment.nextOperationId++),
     initBlock.id,
   );
 

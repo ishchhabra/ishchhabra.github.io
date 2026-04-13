@@ -1,6 +1,6 @@
 import type { AwaitExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { AwaitExpressionInstruction } from "../../../ir/instructions/value/AwaitExpression";
+import { AwaitExpressionOp } from "../../../ir/ops/call/AwaitExpression";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -26,11 +26,7 @@ export function buildAwaitExpression(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    AwaitExpressionInstruction,
-    place,
-    argumentPlace,
-  );
-  functionBuilder.addInstruction(instruction);
+  const instruction = environment.createOperation(AwaitExpressionOp, place, argumentPlace);
+  functionBuilder.addOp(instruction);
   return place;
 }

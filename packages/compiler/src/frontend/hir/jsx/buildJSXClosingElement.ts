@@ -1,6 +1,6 @@
 import type { JSXClosingElement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { JSXClosingElementInstruction, Place } from "../../../ir";
+import { JSXClosingElementOp, Place } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -20,7 +20,7 @@ export function buildJSXClosingElement(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(JSXClosingElementInstruction, place, tagPlace);
-  functionBuilder.addInstruction(instruction);
+  const instruction = environment.createOperation(JSXClosingElementOp, place, tagPlace);
+  functionBuilder.addOp(instruction);
   return place;
 }

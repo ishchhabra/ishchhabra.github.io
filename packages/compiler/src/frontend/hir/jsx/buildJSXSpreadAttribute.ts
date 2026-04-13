@@ -1,7 +1,7 @@
 import type { JSXSpreadAttribute } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
-import { JSXSpreadAttributeInstruction } from "../../../ir/instructions/jsx/JSXSpreadAttribute";
+import { JSXSpreadAttributeOp } from "../../../ir/ops/jsx/JSXSpreadAttribute";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -27,11 +27,7 @@ export function buildJSXSpreadAttribute(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    JSXSpreadAttributeInstruction,
-    place,
-    argumentPlace,
-  );
-  functionBuilder.addInstruction(instruction);
+  const instruction = environment.createOperation(JSXSpreadAttributeOp, place, argumentPlace);
+  functionBuilder.addOp(instruction);
   return place;
 }

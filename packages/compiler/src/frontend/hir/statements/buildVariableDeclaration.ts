@@ -2,13 +2,13 @@ import type * as AST from "../../estree";
 import type { VariableDeclaration, VariableDeclarator } from "oxc-parser";
 import { Environment } from "../../../environment";
 import {
-  ArrayDestructureInstruction,
-  ObjectDestructureInstruction,
+  ArrayDestructureOp,
+  ObjectDestructureOp,
   Place,
-  StoreContextInstruction,
-  StoreLocalInstruction,
+  StoreContextOp,
+  StoreLocalOp,
 } from "../../../ir";
-import { LoadGlobalInstruction } from "../../../ir/instructions/memory/LoadGlobal";
+import { LoadGlobalOp } from "../../../ir/ops/prop/LoadGlobal";
 import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -36,9 +36,7 @@ export function buildVariableDeclaration(
     if (init == null) {
       // No initializer — emit LoadGlobal("undefined") instead of mutating the AST.
       const undefinedPlace = environment.createPlace(environment.createIdentifier());
-      functionBuilder.addInstruction(
-        environment.createInstruction(LoadGlobalInstruction, undefinedPlace, "undefined"),
-      );
+      functionBuilder.addOp(environment.createOperation(LoadGlobalOp, undefinedPlace, "undefined"));
       valuePlace = undefinedPlace;
     } else {
       valuePlace = buildNode(init, scope, functionBuilder, moduleBuilder, environment);
@@ -64,30 +62,30 @@ export function buildVariableDeclaration(
       const contextKind = kind === "var" ? "assignment" : "declaration";
       const instruction =
         target.storage === "context"
-          ? environment.createInstruction(
-              StoreContextInstruction,
+          ? environment.createOperation(
+              StoreContextOp,
               place,
               target.place,
               valuePlace,
               "let",
               contextKind,
             )
-          : environment.createInstruction(
-              StoreLocalInstruction,
+          : environment.createOperation(
+              StoreLocalOp,
               place,
               target.place,
               valuePlace,
               kind,
               contextKind,
             );
-      functionBuilder.addInstruction(instruction);
+      functionBuilder.addOp(instruction);
       return place;
     }
 
     if (target.kind === "array") {
-      functionBuilder.addInstruction(
-        environment.createInstruction(
-          ArrayDestructureInstruction,
+      functionBuilder.addOp(
+        environment.createOperation(
+          ArrayDestructureOp,
           place,
           target.elements,
           valuePlace,
@@ -99,9 +97,9 @@ export function buildVariableDeclaration(
     }
 
     if (target.kind === "object") {
-      functionBuilder.addInstruction(
-        environment.createInstruction(
-          ObjectDestructureInstruction,
+      functionBuilder.addOp(
+        environment.createOperation(
+          ObjectDestructureOp,
           place,
           target.properties,
           valuePlace,

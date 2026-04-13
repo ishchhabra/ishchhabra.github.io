@@ -1,9 +1,9 @@
-import { CallExpressionInstruction, LoadLocalInstruction, StoreLocalInstruction } from "../ir";
+import { CallExpressionOp, LoadLocalOp, StoreLocalOp } from "../ir";
 import { FunctionIR, FunctionIRId } from "../ir/core/FunctionIR";
 import { ModuleIR } from "../ir/core/ModuleIR";
-import { ArrowFunctionExpressionInstruction } from "../ir/instructions/value/ArrowFunctionExpression";
-import { FunctionDeclarationInstruction } from "../ir/instructions/declaration/FunctionDeclaration";
-import { FunctionExpressionInstruction } from "../ir/instructions/value/FunctionExpression";
+import { ArrowFunctionExpressionOp } from "../ir/ops/func/ArrowFunctionExpression";
+import { FunctionDeclarationOp } from "../ir/ops/func/FunctionDeclaration";
+import { FunctionExpressionOp } from "../ir/ops/func/FunctionExpression";
 
 /**
  * Computes a bottom-up processing order for a module's functions using
@@ -23,15 +23,15 @@ export function computeProcessingOrder(moduleIR: ModuleIR): FunctionIR[] {
 
   // Map declarationIds to FunctionIRIds for call resolution.
   for (const funcIR of moduleIR.functions.values()) {
-    for (const block of funcIR.blocks.values()) {
-      for (const instr of block.instructions) {
-        if (instr instanceof FunctionDeclarationInstruction) {
+    for (const block of funcIR.allBlocks()) {
+      for (const instr of block.operations) {
+        if (instr instanceof FunctionDeclarationOp) {
           declToFunc.set(instr.place.identifier.declarationId, instr.functionIR.id);
-        } else if (instr instanceof StoreLocalInstruction) {
+        } else if (instr instanceof StoreLocalOp) {
           const definer = instr.value.identifier.definer;
           if (
-            definer instanceof FunctionExpressionInstruction ||
-            definer instanceof ArrowFunctionExpressionInstruction
+            definer instanceof FunctionExpressionOp ||
+            definer instanceof ArrowFunctionExpressionOp
           ) {
             declToFunc.set(instr.lval.identifier.declarationId, definer.functionIR.id);
           }
@@ -48,17 +48,17 @@ export function computeProcessingOrder(moduleIR: ModuleIR): FunctionIR[] {
     deps.set(funcIR.id, funcDeps);
 
     // Nesting: parent depends on children.
-    for (const nested of funcIR.getNestedFunctionInstructions()) {
+    for (const nested of funcIR.getNestedFunctionOps()) {
       funcDeps.add(nested.functionIR.id);
     }
 
     // Calls: caller depends on callee (intra-module only).
-    for (const block of funcIR.blocks.values()) {
-      for (const instr of block.instructions) {
-        if (!(instr instanceof CallExpressionInstruction)) continue;
+    for (const block of funcIR.allBlocks()) {
+      for (const instr of block.operations) {
+        if (!(instr instanceof CallExpressionOp)) continue;
 
-        const calleeInstr = moduleIR.environment.placeToInstruction.get(instr.callee.id);
-        if (!(calleeInstr instanceof LoadLocalInstruction)) continue;
+        const calleeInstr = moduleIR.environment.placeToOp.get(instr.callee.id);
+        if (!(calleeInstr instanceof LoadLocalOp)) continue;
         const calleeId = declToFunc.get(calleeInstr.value.identifier.declarationId);
         if (calleeId !== undefined && calleeId !== funcIR.id) {
           funcDeps.add(calleeId);

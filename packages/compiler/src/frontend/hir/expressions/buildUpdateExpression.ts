@@ -1,14 +1,14 @@
 import type { UpdateExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
 import {
-  BinaryExpressionInstruction,
-  DeclareLocalInstruction,
-  LiteralInstruction,
-  LoadContextInstruction,
-  LoadLocalInstruction,
+  BinaryExpressionOp,
+  DeclareLocalOp,
+  LiteralOp,
+  LoadContextOp,
+  LoadLocalOp,
   Place,
-  StoreContextInstruction,
-  StoreLocalInstruction,
+  StoreContextOp,
+  StoreLocalOp,
 } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { throwTDZAccessError } from "../buildIdentifier";
@@ -83,13 +83,11 @@ export function buildUpdateExpression(
   if (!node.prefix) {
     const oldValBinding = environment.createIdentifier();
     const oldValBindingPlace = environment.createPlace(oldValBinding);
-    functionBuilder.addInstruction(
-      environment.createInstruction(DeclareLocalInstruction, oldValBindingPlace, "const"),
-    );
+    functionBuilder.addOp(environment.createOperation(DeclareLocalOp, oldValBindingPlace, "const"));
     const oldValStorePlace = environment.createPlace(environment.createIdentifier());
-    functionBuilder.addInstruction(
-      environment.createInstruction(
-        StoreLocalInstruction,
+    functionBuilder.addOp(
+      environment.createOperation(
+        StoreLocalOp,
         oldValStorePlace,
         oldValBindingPlace,
         originalPlace,
@@ -98,8 +96,8 @@ export function buildUpdateExpression(
       ),
     );
     oldValLoadPlace = environment.createPlace(environment.createIdentifier());
-    functionBuilder.addInstruction(
-      environment.createInstruction(LoadLocalInstruction, oldValLoadPlace, oldValBindingPlace),
+    functionBuilder.addOp(
+      environment.createOperation(LoadLocalOp, oldValLoadPlace, oldValBindingPlace),
     );
   }
 
@@ -114,9 +112,9 @@ export function buildUpdateExpression(
   // Load the argument value.
   const argLoadIdentifier = environment.createIdentifier(declarationId);
   const argLoadPlace = environment.createPlace(argLoadIdentifier);
-  functionBuilder.addInstruction(
-    environment.createInstruction(
-      isContext ? LoadContextInstruction : LoadLocalInstruction,
+  functionBuilder.addOp(
+    environment.createOperation(
+      isContext ? LoadContextOp : LoadLocalOp,
       argLoadPlace,
       originalPlace,
     ),
@@ -124,14 +122,14 @@ export function buildUpdateExpression(
 
   // Create literal 1
   const onePlace = environment.createPlace(environment.createIdentifier());
-  functionBuilder.addInstruction(environment.createInstruction(LiteralInstruction, onePlace, 1));
+  functionBuilder.addOp(environment.createOperation(LiteralOp, onePlace, 1));
 
   // Compute value +/- 1
   const isIncrement = node.operator === "++";
   const valuePlace = environment.createPlace(environment.createIdentifier());
-  functionBuilder.addInstruction(
-    environment.createInstruction(
-      BinaryExpressionInstruction,
+  functionBuilder.addOp(
+    environment.createOperation(
+      BinaryExpressionOp,
       valuePlace,
       isIncrement ? "+" : "-",
       argLoadPlace,
@@ -142,23 +140,16 @@ export function buildUpdateExpression(
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   const instruction = isContext
-    ? environment.createInstruction(
-        StoreContextInstruction,
-        place,
-        lvalPlace,
-        valuePlace,
-        "let",
-        "assignment",
-      )
-    : environment.createInstruction(
-        StoreLocalInstruction,
+    ? environment.createOperation(StoreContextOp, place, lvalPlace, valuePlace, "let", "assignment")
+    : environment.createOperation(
+        StoreLocalOp,
         place,
         lvalPlace,
         valuePlace,
         "const",
         "assignment",
       );
-  functionBuilder.addInstruction(instruction);
+  functionBuilder.addOp(instruction);
   environment.registerDeclaration(declarationId, functionBuilder.currentBlock.id, lvalPlace.id);
 
   if (node.prefix) {
@@ -167,12 +158,8 @@ export function buildUpdateExpression(
     // binary expression.
     const loadIdentifier = environment.createIdentifier(declarationId);
     const loadPlace = environment.createPlace(loadIdentifier);
-    functionBuilder.addInstruction(
-      environment.createInstruction(
-        isContext ? LoadContextInstruction : LoadLocalInstruction,
-        loadPlace,
-        lvalPlace,
-      ),
+    functionBuilder.addOp(
+      environment.createOperation(isContext ? LoadContextOp : LoadLocalOp, loadPlace, lvalPlace),
     );
     return loadPlace;
   }

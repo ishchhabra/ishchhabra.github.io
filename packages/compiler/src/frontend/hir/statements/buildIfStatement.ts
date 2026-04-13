@@ -1,6 +1,6 @@
 import type { IfStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { BasicBlock, BranchTerminal, createInstructionId, JumpTerminal } from "../../../ir";
+import { BasicBlock, BranchOp, createOperationId, JumpOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -24,7 +24,7 @@ export function buildIfStatement(
 
   // Create the join block.
   const joinBlock = environment.createBlock(scopeId);
-  functionBuilder.blocks.set(joinBlock.id, joinBlock);
+  functionBuilder.addBlock(joinBlock);
 
   // Build the consequent block. When the consequent is a BlockStatement,
   // use its scope so it merges with the consequent block — if/else syntax
@@ -33,7 +33,7 @@ export function buildIfStatement(
     node.consequent.type === "BlockStatement" ? functionBuilder.scopeFor(node.consequent) : scope;
   const consequentScopeId = functionBuilder.lexicalScopeIdFor(consequentScope);
   const consequentBlock = environment.createBlock(consequentScopeId);
-  functionBuilder.blocks.set(consequentBlock.id, consequentBlock);
+  functionBuilder.addBlock(consequentBlock);
 
   functionBuilder.currentBlock = consequentBlock;
   buildOwnedBody(node.consequent, scope, functionBuilder, moduleBuilder, environment);
@@ -42,8 +42,8 @@ export function buildIfStatement(
   // from the last block to the join block, unless the block already has
   // a terminal (e.g., a return statement).
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.terminal = new JumpTerminal(
-      createInstructionId(functionBuilder.environment),
+    functionBuilder.currentBlock.terminal = new JumpOp(
+      createOperationId(functionBuilder.environment),
       joinBlock.id,
     );
   }
@@ -55,7 +55,7 @@ export function buildIfStatement(
       node.alternate?.type === "BlockStatement" ? functionBuilder.scopeFor(node.alternate) : scope;
     const alternateScopeId = functionBuilder.lexicalScopeIdFor(alternateScope);
     alternateBlock = environment.createBlock(alternateScopeId);
-    functionBuilder.blocks.set(alternateBlock.id, alternateBlock);
+    functionBuilder.addBlock(alternateBlock);
 
     functionBuilder.currentBlock = alternateBlock;
     buildOwnedBody(node.alternate, scope, functionBuilder, moduleBuilder, environment);
@@ -65,15 +65,15 @@ export function buildIfStatement(
   // from the last block to the join block, unless the block already has
   // a terminal (e.g., a return statement).
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.terminal = new JumpTerminal(
-      createInstructionId(functionBuilder.environment),
+    functionBuilder.currentBlock.terminal = new JumpOp(
+      createOperationId(functionBuilder.environment),
       joinBlock.id,
     );
   }
 
   // Set branch terminal for the current block.
-  currentBlock.terminal = new BranchTerminal(
-    createInstructionId(functionBuilder.environment),
+  currentBlock.terminal = new BranchOp(
+    createOperationId(functionBuilder.environment),
     testPlace,
     consequentBlock.id,
     alternateBlock.id,

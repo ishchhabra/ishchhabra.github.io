@@ -1,7 +1,7 @@
-import { BaseInstruction, BlockId, LoadGlobalInstruction } from "../../ir";
+import { Operation, BlockId, LoadGlobalOp } from "../../ir";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { ModuleIR } from "../../ir/core/ModuleIR";
-import { StoreStaticPropertyInstruction } from "../../ir/instructions/memory/StoreStaticProperty";
+import { StoreStaticPropertyOp } from "../../ir/ops/prop/StoreStaticProperty";
 import { AnalysisManager } from "../../pipeline/analysis/AnalysisManager";
 import { DominatorTreeAnalysis } from "../../pipeline/analysis/DominatorTreeAnalysis";
 
@@ -30,41 +30,39 @@ export class CommonJSExportCollectorPass {
   ) {}
 
   public run() {
-    for (const [blockId, block] of this.functionIR.blocks) {
+    for (const block of this.functionIR.allBlocks()) {
+      const blockId = block.id;
       if (!this.isAlwaysExecutedBlock(blockId)) {
         continue;
       }
 
-      for (const instruction of block.instructions) {
+      for (const instruction of block.operations) {
         if (!this.isModuleExportInstruction(instruction)) {
           continue;
         }
 
         const declarationId = instruction.value.identifier.declarationId;
-        const declarationInstructionId =
-          this.moduleIR.environment.getDeclarationInstruction(declarationId)!;
+        const declarationInstructionId = this.moduleIR.environment.getDeclarationOp(declarationId)!;
         this.moduleIR.exports.set("default", {
           instruction,
-          declaration: this.moduleIR.environment.instructions.get(declarationInstructionId)!,
+          declaration: this.moduleIR.environment.operations.get(declarationInstructionId)!,
         });
       }
     }
   }
 
-  private isModuleExportInstruction(
-    instruction: BaseInstruction,
-  ): instruction is StoreStaticPropertyInstruction {
+  private isModuleExportInstruction(instruction: Operation): instruction is StoreStaticPropertyOp {
     if (
-      !(instruction instanceof StoreStaticPropertyInstruction) ||
+      !(instruction instanceof StoreStaticPropertyOp) ||
       instruction.property !== EXPORTS_PROPERTY_NAME
     ) {
       return false;
     }
 
     const objectPlace = instruction.object;
-    const objectInstr = this.moduleIR.environment.placeToInstruction.get(objectPlace.id)!;
+    const objectInstr = this.moduleIR.environment.placeToOp.get(objectPlace.id)!;
 
-    if (!(objectInstr instanceof LoadGlobalInstruction) || objectInstr.name !== "module") {
+    if (!(objectInstr instanceof LoadGlobalOp) || objectInstr.name !== "module") {
       return false;
     }
 

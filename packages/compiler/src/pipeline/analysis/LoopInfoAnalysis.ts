@@ -66,13 +66,13 @@ export class LoopInfo {
 
   static compute(functionIR: FunctionIR, dom: DominatorTree, cfg: ControlFlowGraph): LoopInfo {
     const predecessors = cfg.predecessors;
-    const backEdgeMap = getBackEdgesWithDominance(functionIR.blocks, predecessors, (b) =>
+    const backEdgeMap = getBackEdgesWithDominance(functionIR, predecessors, (b) =>
       dom.getDominators(b),
     );
 
-    const headersWithBackEdges = [...functionIR.blocks.keys()].filter(
-      (h) => (backEdgeMap.get(h)?.size ?? 0) > 0,
-    );
+    const headersWithBackEdges = [...functionIR.allBlocks()]
+      .map((_b) => _b.id)
+      .filter((h) => (backEdgeMap.get(h)?.size ?? 0) > 0);
 
     if (headersWithBackEdges.length === 0) {
       return new LoopInfo([], new Map(), new Map());
@@ -119,7 +119,7 @@ export class LoopInfo {
     const topLevel = topLevelRaws.map((r) => buildLoop(r, null));
 
     const innermost = new Map<BlockId, Loop>();
-    for (const blockId of functionIR.blocks.keys()) {
+    for (const blockId of functionIR.blockIds()) {
       const containing = raws.filter((r) => r.blocks.has(blockId));
       if (containing.length === 0) continue;
       const smallest = containing.reduce((a, b) => (a.blocks.size <= b.blocks.size ? a : b));

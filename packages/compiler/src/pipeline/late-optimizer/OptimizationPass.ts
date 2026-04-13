@@ -14,7 +14,11 @@ export abstract class BaseOptimizationPass {
       changed ||= result.changed;
     }
 
-    return { blocks: this.functionIR.blocks, changed };
+    // Passes mutate `functionIR` in place; the return value carries
+    // only the "did anything change" flag. Callers that previously
+    // reassigned `functionIR.blocks = result.blocks` are no-ops after
+    // the region-ownership migration and have been removed.
+    return { changed };
   }
 
   protected abstract step(): OptimizationResult;

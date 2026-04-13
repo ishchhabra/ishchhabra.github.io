@@ -1,6 +1,6 @@
 import type { ArrayExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { ArrayExpressionInstruction } from "../../../ir";
+import { ArrayExpressionOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -24,11 +24,7 @@ export function buildArrayExpression(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    ArrayExpressionInstruction,
-    place,
-    elementPlaces,
-  );
-  functionBuilder.addInstruction(instruction);
+  const instruction = environment.createOperation(ArrayExpressionOp, place, elementPlaces);
+  functionBuilder.addOp(instruction);
   return place;
 }

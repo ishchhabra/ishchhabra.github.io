@@ -1,6 +1,6 @@
 import type { JSXFragment } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { JSXFragmentInstruction, Place } from "../../../ir";
+import { JSXFragmentOp, Place } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -50,13 +50,13 @@ export function buildJSXFragment(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    JSXFragmentInstruction,
+  const instruction = environment.createOperation(
+    JSXFragmentOp,
     place,
     openingFragmentPlace,
     closingFragmentPlace,
     childrenPlaces,
   );
-  functionBuilder.addInstruction(instruction);
+  functionBuilder.addOp(instruction);
   return place;
 }

@@ -1,6 +1,6 @@
 import type { LogicalExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { LogicalExpressionInstruction } from "../../../ir";
+import { LogicalExpressionOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -25,13 +25,13 @@ export function buildLogicalExpression(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    LogicalExpressionInstruction,
+  const instruction = environment.createOperation(
+    LogicalExpressionOp,
     place,
     node.operator,
     leftPlace,
     rightPlace,
   );
-  functionBuilder.addInstruction(instruction);
+  functionBuilder.addOp(instruction);
   return place;
 }

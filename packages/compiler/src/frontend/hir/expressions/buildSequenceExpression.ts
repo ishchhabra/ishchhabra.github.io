@@ -1,6 +1,6 @@
 import type { SequenceExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { SequenceExpressionInstruction } from "../../../ir/instructions/value/SequenceExpression";
+import { SequenceExpressionOp } from "../../../ir/ops/arith/SequenceExpression";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -23,11 +23,7 @@ export function buildSequenceExpression(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    SequenceExpressionInstruction,
-    place,
-    expressionPlaces,
-  );
-  functionBuilder.addInstruction(instruction);
+  const instruction = environment.createOperation(SequenceExpressionOp, place, expressionPlaces);
+  functionBuilder.addOp(instruction);
   return place;
 }

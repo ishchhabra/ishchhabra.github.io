@@ -1,21 +1,22 @@
 import { ProjectUnit } from "../../frontend/ProjectBuilder";
 import {
-  ArrayDestructureInstruction,
-  ArrayExpressionInstruction,
-  BaseInstruction,
+  ArrayDestructureOp,
+  ArrayExpressionOp,
+  Operation,
   BasicBlock,
   BlockId,
-  LiteralInstruction,
+  LiteralOp,
+  makeCloneContext,
 } from "../../ir";
 import { FunctionIR, FunctionIRId } from "../../ir/core/FunctionIR";
 import { Identifier } from "../../ir/core/Identifier";
 import { LexicalScopeId } from "../../ir/core/LexicalScope";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { Place } from "../../ir/core/Place";
-import { BranchTerminal, JumpTerminal, ReturnTerminal } from "../../ir/core/Terminal";
-import { TernaryStructure } from "../../ir/core/Structure";
-import { makeInstructionId } from "../../ir/base/Instruction";
-import { CallExpressionInstruction } from "../../ir/instructions/value/CallExpression";
+import { BranchOp, JumpOp, ReturnOp } from "../../ir/ops/control";
+import { TernaryOp } from "../../ir/ops/control";
+import { makeOperationId } from "../../ir/core/Operation";
+import { CallExpressionOp } from "../../ir/ops/call/CallExpression";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { CallGraphAnalysis, CallGraphResult } from "../analysis/CallGraphAnalysis";
 import { BaseOptimizationPass } from "../late-optimizer/OptimizationPass";
@@ -57,7 +58,8 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     const callGraph = this.AM.get(CallGraphAnalysis, this.projectUnit);
     let changed = false;
 
-    for (const [blockId, block] of this.functionIR.blocks) {
+    for (const block of this.functionIR.allBlocks()) {
+      const blockId = block.id;
       // If this block is a ternary arm that contains an inlinable call,
       // dissolve the ternary back into an if/else diamond first. This
       // lets us inline into a normal block; PhiOptimizationPass will
@@ -71,9 +73,9 @@ export class FunctionInliningPass extends BaseOptimizationPass {
         }
       }
 
-      for (let index = 0; index < block.instructions.length; index++) {
-        const instr = block.instructions[index];
-        if (!(instr instanceof CallExpressionInstruction)) {
+      for (let index = 0; index < block.operations.length; index++) {
+        const instr = block.operations[index];
+        if (!(instr instanceof CallExpressionOp)) {
           continue;
         }
 
@@ -97,11 +99,11 @@ export class FunctionInliningPass extends BaseOptimizationPass {
           continue;
         }
 
-        const prevLen = block.instructions.length;
+        const prevLen = block.operations.length;
         this.inlineCall(block, index, instr, functionIR);
         changed = true;
         // Skip past the instructions that were spliced in.
-        index += block.instructions.length - prevLen;
+        index += block.operations.length - prevLen;
       }
     }
 
@@ -122,7 +124,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
   private inlineCall(
     block: BasicBlock,
     index: number,
-    callInstr: CallExpressionInstruction,
+    callInstr: CallExpressionOp,
     callee: FunctionIR,
   ): void {
     const substitutions = new Map<Identifier, Place>();
@@ -143,7 +145,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
       callInstr.args,
       substitutions,
     );
-    const body = this.cloneInstructions(callee.entryBlock.instructions, substitutions);
+    const body = this.cloneInstructions(callee.entryBlock.operations, substitutions);
     const { place: returnPlace, instructions: returnInstructions } = this.extractReturnPlace(
       callee.entryBlock,
       substitutions,
@@ -180,12 +182,12 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     callee: FunctionIR,
     args: Place[],
     substitutions: Map<Identifier, Place>,
-  ): BaseInstruction[] {
+  ): Operation[] {
     if (this.hasSyntheticParamDestructure(callee)) {
       return [];
     }
 
-    const bindings: BaseInstruction[] = [];
+    const bindings: Operation[] = [];
 
     callee.runtime.params.forEach((paramPlace, paramIndex) => {
       const argPlace = args[paramIndex];
@@ -196,8 +198,8 @@ export class FunctionInliningPass extends BaseOptimizationPass {
       }
 
       // Missing argument → undefined.
-      const literal = this.environment.createInstruction(
-        LiteralInstruction,
+      const literal = this.environment.createOperation(
+        LiteralOp,
         this.environment.createPlace(this.environment.createIdentifier()),
         undefined,
       );
@@ -212,7 +214,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
    * Returns the prologue instructions to clone, excluding any trailing
    * synthetic param destructure (which is rebuilt separately).
    */
-  private getPrologueInstructions(callee: FunctionIR): BaseInstruction[] {
+  private getPrologueInstructions(callee: FunctionIR): Operation[] {
     if (this.hasSyntheticParamDestructure(callee)) {
       return callee.runtime.prologue.slice(0, -2);
     }
@@ -228,18 +230,18 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     callee: FunctionIR,
     args: Place[],
     substitutions: Map<Identifier, Place>,
-  ): BaseInstruction[] {
+  ): Operation[] {
     if (!this.hasSyntheticParamDestructure(callee)) {
       return [];
     }
 
-    const arrayExpr = this.environment.createInstruction(
-      ArrayExpressionInstruction,
+    const arrayExpr = this.environment.createOperation(
+      ArrayExpressionOp,
       this.environment.createPlace(this.environment.createIdentifier()),
       args,
     );
-    const destructure = this.environment.createInstruction(
-      ArrayDestructureInstruction,
+    const destructure = this.environment.createOperation(
+      ArrayDestructureOp,
       this.environment.createPlace(this.environment.createIdentifier()),
       callee.runtime.paramTargets,
       arrayExpr.place,
@@ -275,8 +277,8 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     const maybeArrayExpr = prologue[prologue.length - 2];
     const maybeDestructure = prologue[prologue.length - 1];
     return (
-      maybeArrayExpr instanceof ArrayExpressionInstruction &&
-      maybeDestructure instanceof ArrayDestructureInstruction &&
+      maybeArrayExpr instanceof ArrayExpressionOp &&
+      maybeDestructure instanceof ArrayDestructureOp &&
       maybeDestructure.value.identifier === maybeArrayExpr.place.identifier
     );
   }
@@ -291,15 +293,18 @@ export class FunctionInliningPass extends BaseOptimizationPass {
    * the map is updated so subsequent instructions see earlier rewrites.
    */
   private cloneInstructions(
-    instructions: BaseInstruction[],
+    instructions: readonly Operation[],
     substitutions: Map<Identifier, Place>,
-  ): BaseInstruction[] {
-    const result: BaseInstruction[] = [];
+  ): Operation[] {
+    const result: Operation[] = [];
+    const ctx = makeCloneContext(this.moduleIR);
     for (const instr of instructions) {
-      const cloned = instr.clone(this.moduleIR);
-      substitutions.set(instr.place.identifier, cloned.place);
+      const cloned = instr.clone(ctx);
+      const instrPlace = instr.place!;
+      const clonedPlace = cloned.place!;
+      substitutions.set(instrPlace.identifier, clonedPlace);
       for (const def of instr.getDefs()) {
-        if (def.identifier !== instr.place.identifier && !substitutions.has(def.identifier)) {
+        if (def.identifier !== instrPlace.identifier && !substitutions.has(def.identifier)) {
           substitutions.set(
             def.identifier,
             this.environment.createPlace(this.environment.createIdentifier()),
@@ -320,8 +325,8 @@ export class FunctionInliningPass extends BaseOptimizationPass {
   private extractReturnPlace(
     block: BasicBlock,
     substitutions: Map<Identifier, Place>,
-  ): { place: Place; instructions: BaseInstruction[] } {
-    if (block.terminal instanceof ReturnTerminal && block.terminal.value !== null) {
+  ): { place: Place; instructions: Operation[] } {
+    if (block.terminal instanceof ReturnOp && block.terminal.value !== null) {
       const returnPlace = substitutions.get(block.terminal.value.identifier);
       if (!returnPlace) {
         throw new Error("Could not find a rewritten place for the function's return value");
@@ -329,8 +334,8 @@ export class FunctionInliningPass extends BaseOptimizationPass {
       return { place: returnPlace, instructions: [] };
     }
 
-    const literal = this.environment.createInstruction(
-      LiteralInstruction,
+    const literal = this.environment.createOperation(
+      LiteralOp,
       this.environment.createPlace(this.environment.createIdentifier()),
       undefined,
     );
@@ -339,26 +344,23 @@ export class FunctionInliningPass extends BaseOptimizationPass {
 
   /**
    * Replaces the instruction at `index` with `replacements`, maintaining
-   * definer pointers and the placeToInstruction index.
+   * definer pointers and the placeToOp index.
    */
-  private spliceInstruction(
-    block: BasicBlock,
-    index: number,
-    replacements: BaseInstruction[],
-  ): void {
-    const removed = block.instructions[index];
+  private spliceInstruction(block: BasicBlock, index: number, replacements: Operation[]): void {
+    const removed = block.operations[index];
     for (const place of removed.getDefs()) {
       if (place.identifier.definer === removed) {
         place.identifier.definer = undefined;
       }
-      if (this.environment.placeToInstruction.get(place.id) === removed) {
-        this.environment.placeToInstruction.delete(place.id);
+      if (this.environment.placeToOp.get(place.id) === removed) {
+        this.environment.placeToOp.delete(place.id);
       }
     }
-    block.removeInstructionAt(index);
+    block.removeOpAt(index);
     for (let i = 0; i < replacements.length; i++) {
-      block.insertInstructionAt(index + i, replacements[i]);
-      this.environment.placeToInstruction.set(replacements[i].place.id, replacements[i]);
+      const replacement = replacements[i]!;
+      block.insertOpAt(index + i, replacement);
+      this.environment.placeToOp.set(replacement.place!.id, replacement);
     }
   }
 
@@ -383,8 +385,8 @@ export class FunctionInliningPass extends BaseOptimizationPass {
    * would be inlinable, without actually performing the inline.
    */
   private blockHasInlinableCall(callGraph: CallGraphResult, block: BasicBlock): boolean {
-    for (const instr of block.instructions) {
-      if (!(instr instanceof CallExpressionInstruction)) continue;
+    for (const instr of block.operations) {
+      if (!(instr instanceof CallExpressionOp)) continue;
 
       const calleeIR = callGraph.resolveFunctionFromCallExpression(this.moduleIR, instr);
       if (calleeIR === undefined) continue;
@@ -402,44 +404,51 @@ export class FunctionInliningPass extends BaseOptimizationPass {
   }
 
   /**
-   * Dissolves a TernaryStructure back into a normal if/else diamond so
+   * Dissolves a TernaryOp back into a normal if/else diamond so
    * that its arm blocks can be inlined into. Creates a new Phi to merge
    * the arm values at the fallthrough block. PhiOptimizationPass will
    * re-evaluate the diamond on the next fixpoint iteration.
    */
-  private dissolveTernary(headerBlockId: BlockId, structure: TernaryStructure): void {
+  private dissolveTernary(headerBlockId: BlockId, structure: TernaryOp): void {
+    const headerBlock = this.functionIR.getBlock(headerBlockId);
+
+    // Snapshot the arm block ids BEFORE reparenting — `structure.consequent`
+    // and `structure.alternate` are getters that read `regions[i].entry.id`,
+    // and the upcoming `moveBlockHere` calls empty the regions.
+    const consBlockId = structure.consequent;
+    const altBlockId = structure.alternate;
+    const fallthroughId = structure.fallthrough;
+    const consBlockForMove = this.functionIR.getBlock(consBlockId);
+    const altBlockForMove = this.functionIR.getBlock(altBlockId);
+
+    // Move the arm blocks out of the ternary's regions back into the
+    // region that owns `headerBlock` — the enclosing function body
+    // (or an outer structure region, if the ternary was nested).
+    // PhiOptimizationPass reparented them INTO the ternary regions; we
+    // reverse that here so the arms are visible to `body.allBlocks()`.
+    const enclosingRegion = headerBlock.parent;
+    if (enclosingRegion !== null) {
+      enclosingRegion.moveBlockHere(consBlockForMove);
+      enclosingRegion.moveBlockHere(altBlockForMove);
+    }
+
     // Remove the structure.
     this.functionIR.deleteStructure(headerBlockId);
 
-    // Restore the header's BranchTerminal.
-    const headerBlock = this.functionIR.blocks.get(headerBlockId)!;
+    // Restore the header's BranchOp.
     const terminalId = headerBlock.terminal
       ? headerBlock.terminal.id
-      : makeInstructionId(this.environment.nextInstructionId++);
+      : makeOperationId(this.environment.nextOperationId++);
     headerBlock.replaceTerminal(
-      new BranchTerminal(
-        terminalId,
-        structure.test,
-        structure.consequent,
-        structure.alternate,
-        structure.fallthrough,
-      ),
+      new BranchOp(terminalId, structure.test, consBlockId, altBlockId, fallthroughId),
     );
 
     // Restore JumpTerminals on each arm.
-    const consBlock = this.functionIR.blocks.get(structure.consequent)!;
-    const altBlock = this.functionIR.blocks.get(structure.alternate)!;
-    consBlock.replaceTerminal(
-      new JumpTerminal(
-        makeInstructionId(this.environment.nextInstructionId++),
-        structure.fallthrough,
-      ),
+    consBlockForMove.replaceTerminal(
+      new JumpOp(makeOperationId(this.environment.nextOperationId++), fallthroughId),
     );
-    altBlock.replaceTerminal(
-      new JumpTerminal(
-        makeInstructionId(this.environment.nextInstructionId++),
-        structure.fallthrough,
-      ),
+    altBlockForMove.replaceTerminal(
+      new JumpOp(makeOperationId(this.environment.nextOperationId++), fallthroughId),
     );
 
     // Create a Phi that merges the arm values into resultPlace.
@@ -449,11 +458,12 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     }
 
     const phi = new Phi(
-      structure.fallthrough,
+      makeOperationId(this.environment.nextOperationId++),
+      fallthroughId,
       structure.resultPlace,
       new Map<BlockId, Place>([
-        [structure.consequent, structure.consequentValue],
-        [structure.alternate, structure.alternateValue],
+        [consBlockId, structure.consequentValue],
+        [altBlockId, structure.alternateValue],
       ]),
       declId,
     );
@@ -477,7 +487,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
     modulePath: string,
     callSite: BasicBlock,
   ): boolean {
-    if (funcIR.blocks.size > 1) {
+    if (funcIR.blockCount > 1) {
       return false;
     }
 
@@ -604,7 +614,7 @@ export class FunctionInliningPass extends BaseOptimizationPass {
         }
       }
 
-      for (const instr of current.getNestedFunctionInstructions()) {
+      for (const instr of current.getNestedFunctionOps()) {
         if (instr.functionIR.id === funcIR.id && currentModulePath === modulePath) {
           return true;
         }
@@ -623,10 +633,10 @@ export class FunctionInliningPass extends BaseOptimizationPass {
    * Finds the instruction that declares the given FunctionIR by
    * scanning all blocks in the module.
    */
-  private findDeclaringInstruction(funcIR: FunctionIR): BaseInstruction | undefined {
+  private findDeclaringInstruction(funcIR: FunctionIR): Operation | undefined {
     for (const fn of funcIR.moduleIR.functions.values()) {
-      for (const block of fn.blocks.values()) {
-        for (const instr of block.instructions) {
+      for (const block of fn.allBlocks()) {
+        for (const instr of block.operations) {
           if (
             "functionIR" in instr &&
             (instr as { functionIR: FunctionIR }).functionIR === funcIR

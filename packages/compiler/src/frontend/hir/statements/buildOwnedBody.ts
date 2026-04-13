@@ -11,7 +11,7 @@ import { type Scope } from "../../scope/Scope";
  * Lower a statement into a construct body that already owns its `{}` syntax.
  *
  * When the source body is a BlockStatement we inline its statements into the
- * current block instead of creating a separate BlockStructure, because the
+ * current block instead of creating a separate BlockOp, because the
  * enclosing construct (`if`, loop, `try`, labeled block, etc.) already emits
  * the braces for the body.
  */

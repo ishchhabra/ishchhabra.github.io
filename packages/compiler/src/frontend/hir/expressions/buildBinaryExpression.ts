@@ -1,6 +1,6 @@
 import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
-import { BinaryExpressionInstruction } from "../../../ir";
+import { BinaryExpressionOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -29,13 +29,13 @@ export function buildBinaryExpression(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    BinaryExpressionInstruction,
+  const instruction = environment.createOperation(
+    BinaryExpressionOp,
     place,
     node.operator,
     leftPlace,
     rightPlace,
   );
-  functionBuilder.addInstruction(instruction);
+  functionBuilder.addOp(instruction);
   return place;
 }

@@ -1,16 +1,12 @@
 import { Environment } from "../../environment";
-import {
-  BaseInstruction,
-  LoadLocalInstruction,
-  StoreLocalInstruction,
-  ValueInstruction,
-} from "../../ir";
-import { AwaitExpressionInstruction } from "../../ir/instructions/value/AwaitExpression";
-import { ArrowFunctionExpressionInstruction } from "../../ir/instructions/value/ArrowFunctionExpression";
-import { FunctionExpressionInstruction } from "../../ir/instructions/value/FunctionExpression";
-import { ObjectMethodInstruction } from "../../ir/instructions/value/ObjectMethod";
-import { ClassMethodInstruction } from "../../ir/instructions/value/ClassMethod";
-import { BaseTerminal } from "../../ir/base";
+import { Operation, LoadLocalOp, StoreLocalOp } from "../../ir";
+import { isValueOp } from "../../ir/categories";
+import { AwaitExpressionOp } from "../../ir/ops/call/AwaitExpression";
+import { ArrowFunctionExpressionOp } from "../../ir/ops/func/ArrowFunctionExpression";
+import { FunctionExpressionOp } from "../../ir/ops/func/FunctionExpression";
+import { ObjectMethodOp } from "../../ir/ops/object/ObjectMethod";
+import { ClassMethodOp } from "../../ir/ops/class/ClassMethod";
+import { isTerminal, Terminal } from "../../ir/ops/control";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { Identifier } from "../../ir/core/Identifier";
 import { Place } from "../../ir/core/Place";
@@ -50,10 +46,10 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
   protected step(): OptimizationResult {
     let changed = false;
 
-    for (const block of this.functionIR.blocks.values()) {
-      for (let i = block.instructions.length - 1; i >= 0; i--) {
-        const instruction = block.instructions[i];
-        if (!(instruction instanceof StoreLocalInstruction)) continue;
+    for (const block of this.functionIR.allBlocks()) {
+      for (let i = block.operations.length - 1; i >= 0; i--) {
+        const instruction = block.operations[i];
+        if (!(instruction instanceof StoreLocalOp)) continue;
 
         const candidate = this.getInliningCandidate(block, i, instruction);
         if (!candidate) continue;
@@ -65,7 +61,7 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
 
         if (!this.rewriteUser(candidate.user, rewriteMap)) continue;
 
-        block.removeInstructionAt(i);
+        block.removeOpAt(i);
         changed = true;
       }
     }
@@ -74,10 +70,10 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
   }
 
   private getInliningCandidate(
-    block: { instructions: BaseInstruction[]; terminal?: BaseTerminal },
+    block: { operations: readonly Operation[]; terminal?: Terminal },
     index: number,
-    instruction: StoreLocalInstruction,
-  ): { user: BaseInstruction | BaseTerminal } | undefined {
+    instruction: StoreLocalOp,
+  ): { user: Operation | Terminal } | undefined {
     // Only inline const-typed stores (not assignments to mutable variables).
     if (instruction.type !== "const") {
       return undefined;
@@ -107,13 +103,13 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
     }
 
     const [user] = uses;
-    if (!(user instanceof BaseInstruction) && !(user instanceof BaseTerminal)) {
+    if (!(user instanceof Operation) && !isTerminal(user)) {
       return undefined;
     }
 
     // Terminal users: the store must be the last instruction in the block.
-    if (user instanceof BaseTerminal) {
-      if (index !== block.instructions.length - 1) {
+    if (isTerminal(user)) {
+      if (index !== block.operations.length - 1) {
         return undefined;
       }
       return { user };
@@ -123,15 +119,11 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
     // that embeds operands as expressions (ValueInstruction, LoadLocal,
     // StoreLocal). Module/JSX/Declaration instructions need the declared
     // binding name, not an inlined expression.
-    if (
-      !(user instanceof ValueInstruction) &&
-      !(user instanceof StoreLocalInstruction) &&
-      !(user instanceof LoadLocalInstruction)
-    ) {
+    if (!isValueOp(user) && !(user instanceof StoreLocalOp) && !(user instanceof LoadLocalOp)) {
       return undefined;
     }
 
-    const userIndex = block.instructions.indexOf(user);
+    const userIndex = block.operations.indexOf(user);
     if (userIndex === -1) {
       return undefined;
     }
@@ -140,7 +132,7 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
     // If the user is a non-async function expression (arrow, function,
     // object method, class method), the await would be inlined into its
     // captures and emitted inside the non-async body — a syntax error.
-    if (instruction.value.identifier.definer instanceof AwaitExpressionInstruction) {
+    if (instruction.value.identifier.definer instanceof AwaitExpressionOp) {
       if (this.isNonAsyncFunction(user)) {
         return undefined;
       }
@@ -163,15 +155,12 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
    * `const`-typed declaration is followed by an `assignment`-typed update
    * to the same declaration.
    */
-  private hasMultipleDefinitions(instruction: StoreLocalInstruction): boolean {
+  private hasMultipleDefinitions(instruction: StoreLocalOp): boolean {
     const declId = instruction.lval.identifier.declarationId;
-    for (const block of this.functionIR.blocks.values()) {
-      for (const instr of block.instructions) {
+    for (const block of this.functionIR.allBlocks()) {
+      for (const instr of block.operations) {
         if (instr === instruction) continue;
-        if (
-          instr instanceof StoreLocalInstruction &&
-          instr.lval.identifier.declarationId === declId
-        ) {
+        if (instr instanceof StoreLocalOp && instr.lval.identifier.declarationId === declId) {
           return true;
         }
       }
@@ -184,22 +173,22 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
    * would produce a side-effecting statement in the output.
    */
   private hasInterveningSideEffect(
-    block: { instructions: BaseInstruction[] },
+    block: { operations: readonly Operation[] },
     start: number,
     end: number,
   ): boolean {
     for (let j = start + 1; j < end; j++) {
-      const instr = block.instructions[j];
+      const instr = block.operations[j];
 
       // A StoreLocal with emit emits a const/let/var declaration.
-      if (instr instanceof StoreLocalInstruction && instr.emit) {
+      if (instr instanceof StoreLocalOp && instr.emit) {
         return true;
       }
 
-      // A zero-use side-effecting ValueInstruction gets flushed as an
+      // A zero-use side-effecting value op gets flushed as an
       // expression statement by codegen.
       if (
-        instr instanceof ValueInstruction &&
+        isValueOp(instr) &&
         instr.place.identifier.uses.size === 0 &&
         instr.hasSideEffects(this.environment)
       ) {
@@ -209,31 +198,28 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
     return false;
   }
 
-  private isNonAsyncFunction(instruction: BaseInstruction): boolean {
-    if (instruction instanceof ArrowFunctionExpressionInstruction) return !instruction.async;
-    if (instruction instanceof FunctionExpressionInstruction) return !instruction.async;
-    if (instruction instanceof ObjectMethodInstruction) return !instruction.async;
-    if (instruction instanceof ClassMethodInstruction) return !instruction.async;
+  private isNonAsyncFunction(instruction: Operation): boolean {
+    if (instruction instanceof ArrowFunctionExpressionOp) return !instruction.async;
+    if (instruction instanceof FunctionExpressionOp) return !instruction.async;
+    if (instruction instanceof ObjectMethodOp) return !instruction.async;
+    if (instruction instanceof ClassMethodOp) return !instruction.async;
     return false;
   }
 
-  private rewriteUser(
-    user: BaseInstruction | BaseTerminal,
-    values: Map<Identifier, Place>,
-  ): boolean {
+  private rewriteUser(user: Operation | Terminal, values: Map<Identifier, Place>): boolean {
     return this.rewriteInstructionUser(user, values) || this.rewriteTerminalUser(user, values);
   }
 
   private rewriteInstructionUser(
-    user: BaseInstruction | BaseTerminal,
+    user: Operation | Terminal,
     values: Map<Identifier, Place>,
   ): boolean {
-    if (!(user instanceof BaseInstruction)) {
+    if (!(user instanceof Operation)) {
       return false;
     }
 
-    for (const block of this.functionIR.blocks.values()) {
-      const index = block.instructions.indexOf(user);
+    for (const block of this.functionIR.allBlocks()) {
+      const index = block.operations.indexOf(user);
       if (index === -1) continue;
 
       const rewritten = user.rewrite(values);
@@ -241,25 +227,22 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
         return false;
       }
 
-      block.replaceInstruction(index, rewritten);
+      block.replaceOp(index, rewritten);
       return true;
     }
 
     return false;
   }
 
-  private rewriteTerminalUser(
-    user: BaseInstruction | BaseTerminal,
-    values: Map<Identifier, Place>,
-  ): boolean {
-    if (!(user instanceof BaseTerminal)) {
+  private rewriteTerminalUser(user: Operation | Terminal, values: Map<Identifier, Place>): boolean {
+    if (!isTerminal(user)) {
       return false;
     }
 
-    for (const block of this.functionIR.blocks.values()) {
+    for (const block of this.functionIR.allBlocks()) {
       if (block.terminal !== user) continue;
 
-      const rewritten = user.rewrite(values);
+      const rewritten = user.rewrite(values) as Terminal;
       if (rewritten === user) {
         return false;
       }

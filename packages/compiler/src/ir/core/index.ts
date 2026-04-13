@@ -24,19 +24,23 @@ export {
   type DeclarationId,
   type IdentifierId,
 } from "./Identifier";
-export { Place, type PlaceId } from "./Place";
 export {
   LexicalScope,
   makeLexicalScopeId,
   type LexicalScopeId,
   type LexicalScopeKind,
 } from "./LexicalScope";
-export { BaseStructure, BlockStructure } from "./Structure";
 export {
-  BranchTerminal,
-  JumpTerminal,
-  ReturnTerminal,
-  SwitchTerminal,
-  ThrowTerminal,
-  TryTerminal,
-} from "./Terminal";
+  makeCloneContext,
+  makeOperationId,
+  nextId,
+  Operation,
+  remapBlockId,
+  remapPlace,
+  Trait,
+  VerifyError,
+  type CloneContext,
+  type OperationId,
+} from "./Operation";
+export { Place, type PlaceId } from "./Place";
+export { Region } from "./Region";

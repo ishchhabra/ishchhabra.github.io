@@ -1,6 +1,6 @@
 import { type CallExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { CallExpressionInstruction, Place, SuperCallInstruction } from "../../../ir";
+import { CallExpressionOp, Place, SuperCallOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -15,7 +15,7 @@ export function buildCallExpression(
 ): Place {
   const callee = node.callee;
 
-  // super(...args) — emit a dedicated SuperCallInstruction.
+  // super(...args) — emit a dedicated SuperCallOp.
   // `super` is not a value and must not be lowered to a Place.
   if (callee.type === "Super") {
     return buildSuperCall(node, scope, functionBuilder, moduleBuilder, environment);
@@ -34,14 +34,14 @@ export function buildCallExpression(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    CallExpressionInstruction,
+  const instruction = environment.createOperation(
+    CallExpressionOp,
     place,
     calleePlace,
     argumentPlaces,
     optional,
   );
-  functionBuilder.addInstruction(instruction);
+  functionBuilder.addOp(instruction);
   return place;
 }
 
@@ -55,8 +55,8 @@ function buildSuperCall(
   const argumentPlaces = buildArguments(node, scope, functionBuilder, moduleBuilder, environment);
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(SuperCallInstruction, place, argumentPlaces);
-  functionBuilder.addInstruction(instruction);
+  const instruction = environment.createOperation(SuperCallOp, place, argumentPlaces);
+  functionBuilder.addOp(instruction);
   return place;
 }
 

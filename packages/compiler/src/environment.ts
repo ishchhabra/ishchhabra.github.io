@@ -1,13 +1,13 @@
 import { castArray } from "lodash-es";
 import {
-  BaseInstruction,
   BasicBlock,
   BlockId,
   type DeclarationKind,
   type DeclarationMetadata,
-  InstructionId,
   makeBlockId,
-  makeInstructionId,
+  makeOperationId,
+  Operation,
+  OperationId,
 } from "./ir";
 import {
   DeclarationId,
@@ -16,13 +16,13 @@ import {
   makeDeclarationId,
   makeIdentifierId,
 } from "./ir/core/Identifier";
-import { makePlaceId, Place, PlaceId } from "./ir/core/Place";
 import {
   LexicalScope,
   makeLexicalScopeId,
   type LexicalScopeId,
   type LexicalScopeKind,
 } from "./ir/core/LexicalScope";
+import { makePlaceId, Place, PlaceId } from "./ir/core/Place";
 import { ProjectEnvironment } from "./ProjectEnvironment";
 
 // oxlint-disable-next-line typescript/no-explicit-any
@@ -31,7 +31,7 @@ type OmitFirst<T extends unknown[]> = T extends [any, ...infer Rest] ? Rest : ne
 export class Environment {
   public readonly identifiers: Map<IdentifierId, Identifier> = new Map();
   public readonly places: Map<PlaceId, Place> = new Map();
-  public readonly instructions: Map<InstructionId, BaseInstruction> = new Map();
+  public readonly operations: Map<OperationId, Operation> = new Map();
   public readonly blocks: Map<BlockId, BasicBlock> = new Map();
   public readonly scopes: Map<LexicalScopeId, LexicalScope> = new Map();
 
@@ -52,7 +52,7 @@ export class Environment {
    * - `place`: the `Place` holding the (SSA) value for that version
    *
    * In an SSA-based IR, each new assignment to a declaration in a different block
-   * or scope effectively creates a new “version” of that declaration, captured by
+   * or scope effectively creates a new "version" of that declaration, captured by
    * a distinct `Place`. This structure keeps track of those versions over time.
    */
   declToPlaces: Map<DeclarationId, Array<{ blockId: BlockId; placeId: PlaceId }>> = new Map();
@@ -65,21 +65,21 @@ export class Environment {
   declarationMetadata: Map<DeclarationId, DeclarationMetadata> = new Map();
 
   /**
-   * Transitional map from DeclarationId to the instruction that originally
-   * declared or materialized it. Still used by some export/import lowering
-   * paths, but not required for local binding codegen.
+   * Transitional map from DeclarationId to the op that originally declared
+   * or materialized it. Still used by some export/import lowering paths,
+   * but not required for local binding codegen.
    */
-  declToDeclInstr: Map<DeclarationId, InstructionId> = new Map();
+  declToDeclOp: Map<DeclarationId, OperationId> = new Map();
 
   /**
-   * Maps each `PlaceId` to the IR instruction that is associated with it.
+   * Maps each `PlaceId` to the op that defines that place.
    */
-  placeToInstruction: Map<PlaceId, BaseInstruction> = new Map();
+  placeToOp: Map<PlaceId, Operation> = new Map();
 
   /**
    * Set of `DeclarationId`s for mutable variables that are captured and/or
    * mutated across closure boundaries ("context variables"). These are
-   * excluded from SSA renaming and use dedicated Load/StoreContext instructions.
+   * excluded from SSA renaming and use dedicated Load/StoreContext ops.
    */
   contextDeclarationIds: Set<DeclarationId> = new Set();
 
@@ -105,11 +105,11 @@ export class Environment {
   set nextIdentifierId(v: number) {
     this.projectEnvironment.nextIdentifierId = v;
   }
-  get nextInstructionId() {
-    return this.projectEnvironment.nextInstructionId;
+  get nextOperationId() {
+    return this.projectEnvironment.nextOperationId;
   }
-  set nextInstructionId(v: number) {
-    this.projectEnvironment.nextInstructionId = v;
+  set nextOperationId(v: number) {
+    this.projectEnvironment.nextOperationId = v;
   }
   get nextPlaceId() {
     return this.projectEnvironment.nextPlaceId;
@@ -136,15 +136,17 @@ export class Environment {
   }
 
   // oxlint-disable-next-line typescript/no-explicit-any
-  public createInstruction<C extends new (...args: any[]) => any>(
+  public createOperation<C extends new (...args: any[]) => any>(
     Class: C,
     ...args: OmitFirst<ConstructorParameters<C>>
   ): InstanceType<C> {
-    const instructionId = makeInstructionId(this.projectEnvironment.nextInstructionId++);
-    const instruction = new Class(instructionId, ...args);
-    this.instructions.set(instructionId, instruction);
-    this.placeToInstruction.set(instruction.place.id, instruction);
-    return instruction;
+    const opId = makeOperationId(this.projectEnvironment.nextOperationId++);
+    const op = new Class(opId, ...args);
+    this.operations.set(opId, op);
+    if (op.place !== undefined) {
+      this.placeToOp.set(op.place.id, op);
+    }
+    return op;
   }
 
   public createBlock(scopeId: LexicalScopeId): BasicBlock {
@@ -229,17 +231,14 @@ export class Environment {
     return first ? this.places.get(first.placeId) : undefined;
   }
 
-  public registerDeclarationInstruction(
-    declarations: Place | Place[],
-    instruction: BaseInstruction,
-  ) {
+  public registerDeclarationOp(declarations: Place | Place[], op: Operation) {
     const declarations_ = castArray(declarations);
     declarations_.forEach((declaration) => {
-      this.declToDeclInstr.set(declaration.identifier.declarationId, instruction.id);
+      this.declToDeclOp.set(declaration.identifier.declarationId, op.id);
     });
   }
 
-  public getDeclarationInstruction(declarationId: DeclarationId): InstructionId | undefined {
-    return this.declToDeclInstr.get(declarationId);
+  public getDeclarationOp(declarationId: DeclarationId): OperationId | undefined {
+    return this.declToDeclOp.get(declarationId);
   }
 }

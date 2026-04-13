@@ -15,6 +15,6 @@ export class ProjectEnvironment {
   nextBlockId = 0;
   nextDeclarationId = 0;
   nextIdentifierId = 0;
-  nextInstructionId = 0;
+  nextOperationId = 0;
   nextPlaceId = 0;
 }

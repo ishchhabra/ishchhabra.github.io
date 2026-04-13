@@ -5,7 +5,7 @@ import {
   BlockId,
   type ControlContext,
   DeclarationId,
-  FunctionDeclarationInstruction,
+  FunctionDeclarationOp,
   getCodegenDeclarationKind,
   Place,
   PlaceId,
@@ -243,7 +243,7 @@ export class CodeGenerator {
 
     for (const [, functionIR] of moduleIR.functions) {
       for (const instruction of functionIR.source.header) {
-        if (instruction instanceof FunctionDeclarationInstruction) {
+        if (instruction instanceof FunctionDeclarationOp) {
           this.places.set(instruction.place.id, this.getPlaceIdentifier(instruction.place));
         }
       }

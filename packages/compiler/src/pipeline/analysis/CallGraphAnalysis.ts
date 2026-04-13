@@ -1,17 +1,17 @@
 import { ProjectUnit } from "../../frontend/ProjectBuilder";
 import {
-  CallExpressionInstruction,
+  CallExpressionOp,
   DeclarationId,
-  FunctionDeclarationInstruction,
-  LoadGlobalInstruction,
-  LoadLocalInstruction,
-  StoreLocalInstruction,
+  FunctionDeclarationOp,
+  LoadGlobalOp,
+  LoadLocalOp,
+  StoreLocalOp,
 } from "../../ir";
-import { ArrowFunctionExpressionInstruction } from "../../ir/instructions/value/ArrowFunctionExpression";
-import { FunctionExpressionInstruction } from "../../ir/instructions/value/FunctionExpression";
+import { ArrowFunctionExpressionOp } from "../../ir/ops/func/ArrowFunctionExpression";
+import { FunctionExpressionOp } from "../../ir/ops/func/FunctionExpression";
 import { FunctionIRId } from "../../ir/core/FunctionIR";
 import { ModuleGlobal, ModuleIR } from "../../ir/core/ModuleIR";
-import { ExportFromInstruction } from "../../ir/instructions/module/ExportFrom";
+import { ExportFromOp } from "../../ir/ops/module/ExportFrom";
 import { AnalysisManager, ProjectAnalysis } from "./AnalysisManager";
 
 // ---------------------------------------------------------------------------
@@ -32,7 +32,7 @@ export interface CallTarget {
  *
  * Query methods:
  * - {@link getCallees} — forward lookup
- * - {@link resolveFunctionFromCallExpression} — resolve a CallExpressionInstruction
+ * - {@link resolveFunctionFromCallExpression} — resolve a CallExpressionOp
  * - {@link resolveGlobalFunctionCall} — resolve a cross-module import call
  */
 export class CallGraphResult {
@@ -50,7 +50,7 @@ export class CallGraphResult {
   }
 
   /**
-   * Resolves the callee of a {@link CallExpressionInstruction}.
+   * Resolves the callee of a {@link CallExpressionOp}.
    *
    * Handles two cases:
    * 1. **LoadGlobal** — cross-module import; delegates to {@link resolveGlobalFunctionCall}.
@@ -61,16 +61,16 @@ export class CallGraphResult {
    */
   resolveFunctionFromCallExpression(
     moduleIR: ModuleIR,
-    callExpression: CallExpressionInstruction,
+    callExpression: CallExpressionOp,
   ): CallTarget | undefined {
-    const loadInstr = moduleIR.environment.placeToInstruction.get(callExpression.callee.id);
+    const loadInstr = moduleIR.environment.placeToOp.get(callExpression.callee.id);
 
-    if (loadInstr instanceof LoadGlobalInstruction) {
+    if (loadInstr instanceof LoadGlobalOp) {
       const global = moduleIR.globals.get(loadInstr.name);
       return global !== undefined ? this.resolveGlobalFunctionCall(global) : undefined;
     }
 
-    if (loadInstr instanceof LoadLocalInstruction) {
+    if (loadInstr instanceof LoadLocalOp) {
       const declarationId = loadInstr.value.identifier.declarationId;
       const funcIRId = this.declarations.get(moduleIR.path)?.get(declarationId);
       if (funcIRId !== undefined) {
@@ -118,7 +118,7 @@ export class CallGraphResult {
       }
 
       // Follow re-exports to the defining module (stack-safe).
-      if (exportPlace.declaration instanceof ExportFromInstruction) {
+      if (exportPlace.declaration instanceof ExportFromOp) {
         const reExportGlobal = moduleIR.globals.get(name);
         if (reExportGlobal === undefined) {
           return undefined;
@@ -127,17 +127,15 @@ export class CallGraphResult {
         continue;
       }
 
-      const funcDeclInstr = moduleIR.environment.placeToInstruction.get(
-        exportPlace.declaration.place.id,
-      );
+      const funcDeclInstr = moduleIR.environment.placeToOp.get(exportPlace.declaration.place!.id);
 
-      if (funcDeclInstr instanceof FunctionDeclarationInstruction) {
+      if (funcDeclInstr instanceof FunctionDeclarationOp) {
         return { modulePath: source, functionIRId: funcDeclInstr.functionIR.id };
       }
-      if (funcDeclInstr instanceof FunctionExpressionInstruction) {
+      if (funcDeclInstr instanceof FunctionExpressionOp) {
         return { modulePath: source, functionIRId: funcDeclInstr.functionIR.id };
       }
-      if (funcDeclInstr instanceof ArrowFunctionExpressionInstruction) {
+      if (funcDeclInstr instanceof ArrowFunctionExpressionOp) {
         return { modulePath: source, functionIRId: funcDeclInstr.functionIR.id };
       }
 
@@ -165,7 +163,7 @@ export class CallGraphResult {
  * Two-phase construction mirrors a standard Cytron-style approach:
  * 1. **Gather declarations** — register every named function (declaration,
  *    expression, or arrow stored in a local binding) so calls can resolve.
- * 2. **Gather calls** — walk every CallExpressionInstruction and record
+ * 2. **Gather calls** — walk every CallExpressionOp and record
  *    forward edges for each statically resolvable callee.
  */
 export class CallGraphAnalysis extends ProjectAnalysis<CallGraphResult> {
@@ -206,31 +204,31 @@ export class CallGraphAnalysis extends ProjectAnalysis<CallGraphResult> {
  * Registers every named function in `moduleIR` into the declaration map.
  *
  * Covers:
- * - `function foo() {}` — FunctionDeclarationInstruction
- * - `const f = function() {}` — StoreLocal whose value is a FunctionExpressionInstruction
- * - `const f = () => {}` — StoreLocal whose value is an ArrowFunctionExpressionInstruction
+ * - `function foo() {}` — FunctionDeclarationOp
+ * - `const f = function() {}` — StoreLocal whose value is a FunctionExpressionOp
+ * - `const f = () => {}` — StoreLocal whose value is an ArrowFunctionExpressionOp
  */
 function gatherDeclarations(
   moduleIR: ModuleIR,
   moduleDecls: Map<DeclarationId, FunctionIRId>,
 ): void {
   for (const funcIR of moduleIR.functions.values()) {
-    for (const block of funcIR.blocks.values()) {
-      for (const instr of block.instructions) {
+    for (const block of funcIR.allBlocks()) {
+      for (const instr of block.operations) {
         // function foo() {} — hoisted declaration
-        if (instr instanceof FunctionDeclarationInstruction) {
+        if (instr instanceof FunctionDeclarationOp) {
           moduleDecls.set(instr.place.identifier.declarationId, instr.functionIR.id);
           continue;
         }
 
         // const f = <function expression | arrow>
-        if (!(instr instanceof StoreLocalInstruction)) {
+        if (!(instr instanceof StoreLocalOp)) {
           continue;
         }
         const definer = instr.value.identifier.definer;
         if (
-          definer instanceof FunctionExpressionInstruction ||
-          definer instanceof ArrowFunctionExpressionInstruction
+          definer instanceof FunctionExpressionOp ||
+          definer instanceof ArrowFunctionExpressionOp
         ) {
           moduleDecls.set(instr.lval.identifier.declarationId, definer.functionIR.id);
         }
@@ -259,9 +257,9 @@ function gatherCalls(
 
   // Record call edges.
   for (const funcIR of moduleIR.functions.values()) {
-    for (const block of funcIR.blocks.values()) {
-      for (const instr of block.instructions) {
-        if (!(instr instanceof CallExpressionInstruction)) {
+    for (const block of funcIR.allBlocks()) {
+      for (const instr of block.operations) {
+        if (!(instr instanceof CallExpressionOp)) {
           continue;
         }
 
@@ -271,7 +269,7 @@ function gatherCalls(
         }
 
         // Guard: the callee instruction must exist (filters out phantom refs).
-        if (moduleIR.environment.placeToInstruction.get(instr.callee.id) === undefined) {
+        if (moduleIR.environment.placeToOp.get(instr.callee.id) === undefined) {
           continue;
         }
 

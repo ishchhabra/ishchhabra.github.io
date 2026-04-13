@@ -1,11 +1,4 @@
-import {
-  BaseInstruction,
-  BlockId,
-  DeclarationId,
-  LoadLocalInstruction,
-  Place,
-  StoreLocalInstruction,
-} from "../../../ir";
+import { Operation, BlockId, DeclarationId, LoadLocalOp, Place, StoreLocalOp } from "../../../ir";
 import { FunctionIR } from "../../../ir/core/FunctionIR";
 import { AnalysisManager } from "../../analysis/AnalysisManager";
 import { ControlFlowGraphAnalysis } from "../../analysis/ControlFlowGraphAnalysis";
@@ -47,12 +40,13 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
 
     let changed = false;
 
-    for (const [blockId, block] of this.functionIR.blocks) {
+    for (const block of this.functionIR.allBlocks()) {
+      const blockId = block.id;
       /** Current copy state at block entry (IN[B]). */
       const state = this.meet(blockId, outState);
 
-      for (let i = 0; i < block.instructions.length; i++) {
-        const instr = block.instructions[i];
+      for (let i = 0; i < block.operations.length; i++) {
+        const instr = block.operations[i];
 
         // ------------------------------------------------------------
         // Rewrite phase
@@ -71,12 +65,12 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
         //    load y
         //
 
-        if (instr instanceof LoadLocalInstruction) {
+        if (instr instanceof LoadLocalOp) {
           const srcDecl = instr.value.identifier.declarationId;
           const resolved = this.resolve(state, srcDecl);
 
           if (resolved && resolved.identifier.declarationId !== srcDecl) {
-            block.replaceInstruction(i, new LoadLocalInstruction(instr.id, instr.place, resolved));
+            block.replaceOp(i, new LoadLocalOp(instr.id, instr.place, resolved));
 
             changed = true;
           }
@@ -139,7 +133,7 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
    *
    * Updates the current copy state according to kill/gen rules.
    */
-  private transfer(instr: BaseInstruction, state: CopyState): void {
+  private transfer(instr: Operation, state: CopyState): void {
     // ------------------------------------------------------------
     // General assignment
     //
@@ -149,7 +143,7 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
     // SSA value that x now aliases.
     // ------------------------------------------------------------
 
-    if (instr instanceof StoreLocalInstruction) {
+    if (instr instanceof StoreLocalOp) {
       const x = instr.lval.identifier.declarationId;
       this.kill(state, x);
 
@@ -159,7 +153,7 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
       // the defining expression at every use site, duplicating side
       // effects and computation.
       const definer = instr.value.identifier.definer;
-      if (!(definer instanceof LoadLocalInstruction)) {
+      if (!(definer instanceof LoadLocalOp)) {
         return;
       }
 

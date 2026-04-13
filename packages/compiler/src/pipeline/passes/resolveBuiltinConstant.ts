@@ -1,9 +1,9 @@
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import {
-  BaseInstruction,
-  CallExpressionInstruction,
-  LoadGlobalInstruction,
-  LoadStaticPropertyInstruction,
+  Operation,
+  CallExpressionOp,
+  LoadGlobalOp,
+  LoadStaticPropertyOp,
   TPrimitiveValue,
 } from "../../ir";
 import { ResolveConstantContext, getQualifiedName } from "./resolveConstant";
@@ -319,11 +319,11 @@ registerAliases(
 );
 
 export function resolveBuiltinConstant(
-  instruction: BaseInstruction,
+  instruction: Operation,
   moduleIR: ModuleIR,
   ctx: ResolveConstantContext,
 ): void {
-  if (instruction instanceof LoadGlobalInstruction) {
+  if (instruction instanceof LoadGlobalOp) {
     if (moduleIR.globals.get(instruction.name)?.kind === "import") {
       return;
     }
@@ -335,7 +335,7 @@ export function resolveBuiltinConstant(
     return;
   }
 
-  if (instruction instanceof LoadStaticPropertyInstruction) {
+  if (instruction instanceof LoadStaticPropertyOp) {
     const qualifiedName = getQualifiedName(instruction, ctx.environment);
     if (qualifiedName === undefined || !isBuiltinRoot(qualifiedName, moduleIR)) {
       return;
@@ -348,11 +348,11 @@ export function resolveBuiltinConstant(
     return;
   }
 
-  if (!(instruction instanceof CallExpressionInstruction)) {
+  if (!(instruction instanceof CallExpressionOp)) {
     return;
   }
 
-  const calleeInstruction = ctx.environment.placeToInstruction.get(instruction.callee.id);
+  const calleeInstruction = ctx.environment.placeToOp.get(instruction.callee.id);
   if (calleeInstruction === undefined) {
     return;
   }

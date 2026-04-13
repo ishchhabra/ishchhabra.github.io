@@ -1,6 +1,6 @@
 import type { ClassElement, Expression, PropertyDefinition } from "oxc-parser";
 import { Environment } from "../../environment";
-import { ClassPropertyInstruction, LiteralInstruction, Place } from "../../ir";
+import { ClassPropertyOp, LiteralOp, Place } from "../../ir";
 import type { Scope } from "../scope/Scope";
 import { buildClassMethod } from "./buildClassMethod";
 import { buildNode } from "./buildNode";
@@ -10,9 +10,9 @@ import { ModuleIRBuilder } from "./ModuleIRBuilder";
 /**
  * Builds the elements of a class body as first-class IR nodes.
  *
- * Methods become {@link ClassMethodInstruction}s and fields become
- * {@link ClassPropertyInstruction}s. Nothing is desugared — see the
- * comment on {@link ClassPropertyInstruction} for the spec-correctness
+ * Methods become {@link ClassMethodOp}s and fields become
+ * {@link ClassPropertyOp}s. Nothing is desugared — see the
+ * comment on {@link ClassPropertyOp} for the spec-correctness
  * rationale (define-vs-set semantics, per-instance evaluation,
  * derived-constructor ordering, etc.).
  */
@@ -70,9 +70,7 @@ function buildClassProperty(
   if (!node.computed && node.key.type === "Identifier") {
     const keyIdentifier = environment.createIdentifier();
     keyPlace = environment.createPlace(keyIdentifier);
-    functionBuilder.addInstruction(
-      environment.createInstruction(LiteralInstruction, keyPlace, node.key.name),
-    );
+    functionBuilder.addOp(environment.createOperation(LiteralOp, keyPlace, node.key.name));
   } else {
     const built = buildNode(node.key, scope, functionBuilder, moduleBuilder, environment);
     if (built === undefined || Array.isArray(built)) {
@@ -109,9 +107,9 @@ function buildClassProperty(
   }
 
   const fieldPlace = environment.createPlace(environment.createIdentifier());
-  functionBuilder.addInstruction(
-    environment.createInstruction(
-      ClassPropertyInstruction,
+  functionBuilder.addOp(
+    environment.createOperation(
+      ClassPropertyOp,
       fieldPlace,
       keyPlace,
       valueIR,

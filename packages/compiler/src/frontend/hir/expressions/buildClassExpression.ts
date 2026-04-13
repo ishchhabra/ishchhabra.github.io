@@ -1,6 +1,6 @@
 import type { Class } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { ClassExpressionInstruction, Place } from "../../../ir";
+import { ClassExpressionOp, Place } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildClassBody } from "../buildClassElements";
 import { buildNode } from "../buildNode";
@@ -48,14 +48,14 @@ export function buildClassExpression(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    ClassExpressionInstruction,
+  const instruction = environment.createOperation(
+    ClassExpressionOp,
     place,
     identifierPlace,
     superClassPlace,
     elements,
   );
-  functionBuilder.addInstruction(instruction);
+  functionBuilder.addOp(instruction);
 
   return place;
 }

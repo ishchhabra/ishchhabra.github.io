@@ -1,13 +1,13 @@
 import type { ConditionalExpression, Expression } from "oxc-parser";
 import { Environment } from "../../../environment";
 import {
-  BranchTerminal,
-  createInstructionId,
-  DeclareLocalInstruction,
-  JumpTerminal,
-  LiteralInstruction,
+  BranchOp,
+  createOperationId,
+  DeclareLocalOp,
+  JumpOp,
+  LiteralOp,
   Place,
-  StoreLocalInstruction,
+  StoreLocalOp,
 } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -42,11 +42,11 @@ export function buildConditionalExpression(
 
   // Create the join block.
   const joinBlock = environment.createBlock(scopeId);
-  functionBuilder.blocks.set(joinBlock.id, joinBlock);
+  functionBuilder.addBlock(joinBlock);
 
   // Build the consequent block.
   const consequentBlock = environment.createBlock(scopeId);
-  functionBuilder.blocks.set(consequentBlock.id, consequentBlock);
+  functionBuilder.addBlock(consequentBlock);
 
   functionBuilder.currentBlock = consequentBlock;
   buildBranchExpression(
@@ -60,14 +60,14 @@ export function buildConditionalExpression(
 
   // After building the consequent block, we need to set the terminal
   // from the last block to the join block.
-  functionBuilder.currentBlock.terminal = new JumpTerminal(
-    createInstructionId(functionBuilder.environment),
+  functionBuilder.currentBlock.terminal = new JumpOp(
+    createOperationId(functionBuilder.environment),
     joinBlock.id,
   );
 
   // Build the alternate block.
   const alternateBlock = environment.createBlock(scopeId);
-  functionBuilder.blocks.set(alternateBlock.id, alternateBlock);
+  functionBuilder.addBlock(alternateBlock);
 
   functionBuilder.currentBlock = alternateBlock;
   buildBranchExpression(
@@ -81,14 +81,14 @@ export function buildConditionalExpression(
 
   // After building the alternate block, we need to set the terminal
   // from the last block to the join block.
-  functionBuilder.currentBlock.terminal = new JumpTerminal(
-    createInstructionId(functionBuilder.environment),
+  functionBuilder.currentBlock.terminal = new JumpOp(
+    createOperationId(functionBuilder.environment),
     joinBlock.id,
   );
 
   // Set the branch terminal for the current block.
-  currentBlock.terminal = new BranchTerminal(
-    createInstructionId(functionBuilder.environment),
+  currentBlock.terminal = new BranchOp(
+    createOperationId(functionBuilder.environment),
     testPlace,
     consequentBlock.id,
     alternateBlock.id,
@@ -108,9 +108,7 @@ function buildTemporaryIdentifier(
 ) {
   const bindingIdentifier = environment.createIdentifier();
   const bindingPlace = environment.createPlace(bindingIdentifier);
-  functionBuilder.addInstruction(
-    environment.createInstruction(DeclareLocalInstruction, bindingPlace, "let"),
-  );
+  functionBuilder.addOp(environment.createOperation(DeclareLocalOp, bindingPlace, "let"));
   functionBuilder.registerDeclarationName(
     bindingIdentifier.name,
     bindingIdentifier.declarationId,
@@ -129,15 +127,13 @@ function buildTemporaryIdentifier(
 
   const resultValueIdentifier = environment.createIdentifier(bindingIdentifier.declarationId);
   const resultValuePlace = environment.createPlace(resultValueIdentifier);
-  functionBuilder.addInstruction(
-    environment.createInstruction(LiteralInstruction, resultValuePlace, undefined),
-  );
+  functionBuilder.addOp(environment.createOperation(LiteralOp, resultValuePlace, undefined));
 
   const resultIdentifier = environment.createIdentifier(bindingIdentifier.declarationId);
   const resultPlace = environment.createPlace(resultIdentifier);
-  functionBuilder.addInstruction(
-    environment.createInstruction(
-      StoreLocalInstruction,
+  functionBuilder.addOp(
+    environment.createOperation(
+      StoreLocalOp,
       resultPlace,
       bindingPlace,
       resultValuePlace,
@@ -170,15 +166,15 @@ function buildBranchExpression(
     lvalPlace.id,
   );
   const storePlace = environment.createPlace(environment.createIdentifier());
-  const storeInstruction = environment.createInstruction(
-    StoreLocalInstruction,
+  const storeInstruction = environment.createOperation(
+    StoreLocalOp,
     storePlace,
     lvalPlace,
     place,
     "const",
     "assignment",
   );
-  functionBuilder.addInstruction(storeInstruction);
+  functionBuilder.addOp(storeInstruction);
 
   return place;
 }

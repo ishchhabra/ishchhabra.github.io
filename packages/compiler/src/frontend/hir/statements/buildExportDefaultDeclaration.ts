@@ -1,7 +1,7 @@
 import type { ExportDefaultDeclaration } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { ExportDefaultDeclarationInstruction } from "../../../ir";
-import { FunctionDeclarationInstruction } from "../../../ir/instructions/declaration/FunctionDeclaration";
+import { ExportDefaultDeclarationOp } from "../../../ir";
+import { FunctionDeclarationOp } from "../../../ir/ops/func/FunctionDeclaration";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { buildClassDeclaration } from "./buildClassDeclaration";
@@ -36,12 +36,12 @@ export function buildExportDefaultDeclaration(
       const name = declaration.id.name;
       const declarationId = functionBuilder.getDeclarationId(name, scope);
       if (declarationId !== undefined) {
-        const declarationInstructionId = environment.getDeclarationInstruction(declarationId);
+        const declarationInstructionId = environment.getDeclarationOp(declarationId);
         const declarationInstruction =
           declarationInstructionId !== undefined
-            ? environment.instructions.get(declarationInstructionId)
+            ? environment.operations.get(declarationInstructionId)
             : undefined;
-        if (declarationInstruction instanceof FunctionDeclarationInstruction) {
+        if (declarationInstruction instanceof FunctionDeclarationOp) {
           declarationInstruction.emit = false;
           declarationPlace = declarationInstruction.place;
         }
@@ -76,22 +76,22 @@ export function buildExportDefaultDeclaration(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    ExportDefaultDeclarationInstruction,
+  const instruction = environment.createOperation(
+    ExportDefaultDeclarationOp,
     place,
     declarationPlace,
   );
-  functionBuilder.addInstruction(instruction);
+  functionBuilder.addOp(instruction);
 
-  // Named declarations register via registerDeclarationInstruction; anonymous
-  // export default functions/classes only have a placeToInstruction entry.
-  const declarationInstructionId = environment.getDeclarationInstruction(
+  // Named declarations register via registerDeclarationOp; anonymous
+  // export default functions/classes only have a placeToOp entry.
+  const declarationInstructionId = environment.getDeclarationOp(
     declarationPlace.identifier.declarationId,
   );
   const declarationInstr =
     declarationInstructionId !== undefined
-      ? environment.instructions.get(declarationInstructionId)
-      : environment.placeToInstruction.get(declarationPlace.id);
+      ? environment.operations.get(declarationInstructionId)
+      : environment.placeToOp.get(declarationPlace.id);
   moduleBuilder.moduleIR.exports.set("default", {
     instruction,
     declaration: declarationInstr,

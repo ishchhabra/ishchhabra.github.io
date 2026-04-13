@@ -1,7 +1,7 @@
 import type * as AST from "../estree";
 import type { ExportSpecifier } from "oxc-parser";
 import { Environment } from "../../environment";
-import { ExportSpecifierInstruction, Place } from "../../ir";
+import { ExportSpecifierOp, Place } from "../../ir";
 import { type Scope } from "../scope/Scope";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
@@ -20,8 +20,8 @@ export function buildExportSpecifier(
   if (declarationId === undefined) {
     throw new Error(`Export specifier local '${localName}': no declaration id found`);
   }
-  const declarationInstructionId = environment.getDeclarationInstruction(declarationId)!;
-  const declarationInstruction = environment.instructions.get(declarationInstructionId)!;
+  const declarationInstructionId = environment.getDeclarationOp(declarationId)!;
+  const declarationInstruction = environment.operations.get(declarationInstructionId)!;
 
   // Use the declaration's binding place directly so that ExportSpecifier
   // holds a read-reference to it, preventing DCE from removing the declaration.
@@ -39,13 +39,13 @@ export function buildExportSpecifier(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    ExportSpecifierInstruction,
+  const instruction = environment.createOperation(
+    ExportSpecifierOp,
     place,
     localPlace,
     exportedName,
   );
-  functionBuilder.addInstruction(instruction);
+  functionBuilder.addOp(instruction);
 
   moduleBuilder.moduleIR.exports.set(exportedName, {
     instruction,

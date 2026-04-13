@@ -1,4 +1,4 @@
-import { BranchTerminal, JumpTerminal } from "../../ir";
+import { BranchOp, JumpOp } from "../../ir";
 
 import * as t from "@babel/types";
 import { BlockId } from "../../ir";
@@ -11,13 +11,13 @@ export function generateBackEdge(
   functionIR: FunctionIR,
   generator: CodeGenerator,
 ): Array<t.Statement> {
-  const terminal = functionIR.blocks.get(blockId)!.terminal!;
+  const terminal = functionIR.getBlock(blockId).terminal!;
 
-  if (terminal instanceof JumpTerminal) {
+  if (terminal instanceof JumpOp) {
     return generateJumpBackEdge(terminal, blockId, functionIR, generator);
   }
 
-  if (terminal instanceof BranchTerminal) {
+  if (terminal instanceof BranchOp) {
     return generateBranchBackEdge(terminal, blockId, functionIR, generator);
   }
 
@@ -25,14 +25,14 @@ export function generateBackEdge(
 }
 
 /**
- * A JumpTerminal back edge is an unconditional loop: while (true) { ... }
+ * A JumpOp back edge is an unconditional loop: while (true) { ... }
  *
  * This occurs when ConstantPropagationPass folds a loop condition that is
- * always true, replacing BranchTerminal(true, body, exit) with
- * JumpTerminal(body).
+ * always true, replacing BranchOp(true, body, exit) with
+ * JumpOp(body).
  */
 function generateJumpBackEdge(
-  terminal: JumpTerminal,
+  terminal: JumpOp,
   headerBlockId: BlockId,
   functionIR: FunctionIR,
   generator: CodeGenerator,
@@ -61,7 +61,7 @@ function generateJumpBackEdge(
 }
 
 function generateBranchBackEdge(
-  terminal: BranchTerminal,
+  terminal: BranchOp,
   headerBlockId: BlockId,
   functionIR: FunctionIR,
   generator: CodeGenerator,

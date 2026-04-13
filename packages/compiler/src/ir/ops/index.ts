@@ -1,0 +1,140 @@
+/**
+ * Barrel re-exporting every concrete op class organized by semantic
+ * domain. Each subdirectory groups ops that share a semantic
+ * category:
+ *
+ *   prim/    — universal primitives: Literal, RegExpLiteral,
+ *              TemplateLiteral, Hole, Copy, Debugger, SpreadElement
+ *   arith/   — BinaryExpression, UnaryExpression, LogicalExpression,
+ *              SequenceExpression
+ *   call/    — Call, New, SuperCall, TaggedTemplate, Import, Await, Yield
+ *   func/    — FunctionExpression, ArrowFunctionExpression,
+ *              FunctionDeclaration
+ *   class/   — Class expression/declaration, ClassMethod, ClassProperty
+ *   object/  — ArrayExpression, ObjectExpression, ObjectProperty,
+ *              ObjectMethod
+ *   pattern/ — ArrayDestructure, ObjectDestructure, AssignmentPattern
+ *   prop/    — LoadGlobal, LoadStatic/DynamicProperty, StoreStatic/
+ *              DynamicProperty, MetaProperty, ThisExpression,
+ *              SuperProperty
+ *   mem/     — LoadLocal, StoreLocal, DeclareLocal, LoadContext,
+ *              StoreContext, LoadPhi
+ *   module/  — Import / Export declarations and specifiers
+ *   jsx/     — JSX elements, fragments, attributes, text
+ *   control/ — Terminators (Jump, Branch, Return, Throw, Switch, Try)
+ *              and structured control flow (Block, ForIn, ForOf,
+ *              Ternary, LabeledBlock). See `./control/index.ts` for
+ *              Terminal / Structure unions and isTerminal /
+ *              isStructure predicates.
+ */
+
+// prim
+export { LiteralOp, type TPrimitiveValue } from "./prim/Literal";
+export { RegExpLiteralOp } from "./prim/RegExpLiteral";
+export { TemplateLiteralOp, type TemplateElement } from "./prim/TemplateLiteral";
+export { HoleOp } from "./prim/Hole";
+export { CopyOp } from "./prim/Copy";
+export { DebuggerStatementOp } from "./prim/Debugger";
+export { SpreadElementOp } from "./prim/SpreadElement";
+
+// control (terminators + structured control flow)
+export {
+  BlockOp,
+  BranchOp,
+  BreakOp,
+  ContinueOp,
+  ForInOp,
+  ForOfOp,
+  isStructure,
+  isTerminal,
+  JumpOp,
+  LabeledBlockOp,
+  ReturnOp,
+  SwitchOp,
+  type Structure,
+  type SwitchCase,
+  type Terminal,
+  TernaryOp,
+  ThrowOp,
+  TryOp,
+} from "./control";
+
+// arith
+export { BinaryExpressionOp, type BinaryOperator } from "./arith/BinaryExpression";
+export { UnaryExpressionOp, type UnaryOperator } from "./arith/UnaryExpression";
+export { LogicalExpressionOp, type LogicalOperator } from "./arith/LogicalExpression";
+export { SequenceExpressionOp } from "./arith/SequenceExpression";
+
+// call
+export { CallExpressionOp } from "./call/CallExpression";
+export { NewExpressionOp } from "./call/NewExpression";
+export { SuperCallOp } from "./call/SuperCall";
+export { TaggedTemplateExpressionOp } from "./call/TaggedTemplateExpression";
+export { ImportExpressionOp } from "./call/ImportExpression";
+export { AwaitExpressionOp } from "./call/AwaitExpression";
+export { YieldExpressionOp } from "./call/YieldExpression";
+
+// func
+export { FunctionExpressionOp } from "./func/FunctionExpression";
+export { ArrowFunctionExpressionOp } from "./func/ArrowFunctionExpression";
+export { FunctionDeclarationOp } from "./func/FunctionDeclaration";
+
+// class
+export { ClassExpressionOp } from "./class/ClassExpression";
+export { ClassMethodOp } from "./class/ClassMethod";
+export { ClassPropertyOp } from "./class/ClassProperty";
+export { ClassDeclarationOp } from "./class/ClassDeclaration";
+
+// object
+export { ArrayExpressionOp } from "./object/ArrayExpression";
+export { ObjectExpressionOp } from "./object/ObjectExpression";
+export { ObjectPropertyOp } from "./object/ObjectProperty";
+export { ObjectMethodOp } from "./object/ObjectMethod";
+
+// pattern
+export { ArrayDestructureOp } from "./pattern/ArrayDestructure";
+export { ObjectDestructureOp } from "./pattern/ObjectDestructure";
+export { AssignmentPatternOp } from "./pattern/AssignmentPattern";
+
+// prop
+export { MetaPropertyOp } from "./prop/MetaProperty";
+export { ThisExpressionOp } from "./prop/ThisExpression";
+export { SuperPropertyOp } from "./prop/SuperProperty";
+export { LoadGlobalOp } from "./prop/LoadGlobal";
+export { LoadStaticPropertyOp } from "./prop/LoadStaticProperty";
+export { LoadDynamicPropertyOp } from "./prop/LoadDynamicProperty";
+export { StoreStaticPropertyOp } from "./prop/StoreStaticProperty";
+export { StoreDynamicPropertyOp } from "./prop/StoreDynamicProperty";
+
+// mem
+export { LoadLocalOp } from "./mem/LoadLocal";
+export { StoreLocalOp, type StoreLocalKind } from "./mem/StoreLocal";
+export { DeclareLocalOp } from "./mem/DeclareLocal";
+export { LoadContextOp } from "./mem/LoadContext";
+export { StoreContextOp, type StoreContextKind } from "./mem/StoreContext";
+export { LoadPhiOp } from "./mem/LoadPhi";
+export { PhiOp, makePhiIdentifierName } from "./mem/Phi";
+
+// module
+export { ImportDeclarationOp } from "./module/ImportDeclaration";
+export { ImportSpecifierOp } from "./module/ImportSpecifier";
+export { ExportAllOp } from "./module/ExportAll";
+export { ExportDeclarationOp } from "./module/ExportDeclaration";
+export { ExportDefaultDeclarationOp } from "./module/ExportDefaultDeclaration";
+export { ExportFromOp, type ExportFromSpecifier } from "./module/ExportFrom";
+export { ExportNamedDeclarationOp } from "./module/ExportNamedDeclaration";
+export { ExportSpecifierOp } from "./module/ExportSpecifier";
+
+// jsx
+export { JSXElementOp } from "./jsx/JSXElement";
+export { JSXFragmentOp } from "./jsx/JSXFragment";
+export { JSXAttributeOp } from "./jsx/JSXAttribute";
+export { JSXSpreadAttributeOp } from "./jsx/JSXSpreadAttribute";
+export { JSXOpeningElementOp } from "./jsx/JSXOpeningElement";
+export { JSXClosingElementOp } from "./jsx/JSXClosingElement";
+export { JSXOpeningFragmentOp } from "./jsx/JSXOpeningFragment";
+export { JSXClosingFragmentOp } from "./jsx/JSXClosingFragment";
+export { JSXIdentifierOp } from "./jsx/JSXIdentifier";
+export { JSXMemberExpressionOp } from "./jsx/JSXMemberExpression";
+export { JSXNamespacedNameOp } from "./jsx/JSXNamespacedName";
+export { JSXTextOp } from "./jsx/JSXText";

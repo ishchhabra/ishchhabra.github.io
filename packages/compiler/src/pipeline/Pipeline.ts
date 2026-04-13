@@ -59,7 +59,7 @@ export class Pipeline {
 
         // Phase 1: SSA optimization (fixpoint loop).
         if (this.options.enableOptimizer) {
-          const optimizerResult = new Optimizer(
+          new Optimizer(
             functionIR,
             moduleIR,
             ssaBuilderResult,
@@ -68,7 +68,6 @@ export class Pipeline {
             context,
             AM,
           ).run();
-          functionIR.blocks = optimizerResult.blocks;
         }
 
         // Phase 2: SSA elimination.
@@ -79,13 +78,7 @@ export class Pipeline {
 
         // Phase 3: Post-SSA cleanup (fixpoint loop).
         if (this.options.enableLateOptimizer) {
-          const lateOptimizerResult = new LateOptimizer(
-            moduleIR,
-            functionIR,
-            this.options,
-            AM,
-          ).run();
-          functionIR.blocks = lateOptimizerResult.blocks;
+          new LateOptimizer(moduleIR, functionIR, this.options, AM).run();
         }
 
         // Phase 4: Lowering — materialize multi-use SSA values into
@@ -94,8 +87,7 @@ export class Pipeline {
 
         // Phase 5: Output optimization (single-run passes).
         if (this.options.enableExportDeclarationMergingPass) {
-          const exportMergingResult = new ExportDeclarationMergingPass(functionIR).run();
-          functionIR.blocks = exportMergingResult.blocks;
+          new ExportDeclarationMergingPass(functionIR).run();
         }
       }
     }

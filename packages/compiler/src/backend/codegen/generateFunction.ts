@@ -1,12 +1,12 @@
 import * as t from "@babel/types";
-import { DeclareLocalInstruction } from "../../ir";
+import { DeclareLocalOp } from "../../ir";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { Place } from "../../ir/core/Place";
 import { CodeGenerator } from "../CodeGenerator";
 import { generateBlock } from "./generateBlock";
-import { generateInstruction } from "./instructions/generateInstruction";
-import { generateDeclareLocalInstruction } from "./instructions/memory/generateDeclareLocal";
-import { generateDestructureTarget } from "./instructions/memory/generateDestructureTarget";
+import { generateOp } from "./ops/generateOp";
+import { generateDeclareLocalOp } from "./ops/memory/generateDeclareLocal";
+import { generateDestructureTarget } from "./ops/memory/generateDestructureTarget";
 
 /**
  * Generates the body of a function.
@@ -41,15 +41,15 @@ export function generateFunction(
     // This ensures closures defined in earlier blocks can reference variables
     // declared in later blocks (e.g. phi variables in merge blocks).
     for (const instruction of functionIR.source.header) {
-      if (instruction instanceof DeclareLocalInstruction) {
-        generateDeclareLocalInstruction(instruction, generator);
+      if (instruction instanceof DeclareLocalOp) {
+        generateDeclareLocalOp(instruction, generator);
       }
     }
 
-    for (const [, block] of functionIR.blocks) {
-      for (const instruction of block.instructions) {
-        if (instruction instanceof DeclareLocalInstruction) {
-          generateDeclareLocalInstruction(instruction, generator);
+    for (const block of functionIR.allBlocks()) {
+      for (const instruction of block.operations) {
+        if (instruction instanceof DeclareLocalOp) {
+          generateDeclareLocalOp(instruction, generator);
         }
       }
     }
@@ -77,6 +77,6 @@ function generateFunctionParams(
 
 function generateHeader(functionIR: FunctionIR, generator: CodeGenerator) {
   for (const instruction of functionIR.source.header) {
-    generateInstruction(instruction, functionIR, generator);
+    generateOp(instruction, functionIR, generator);
   }
 }

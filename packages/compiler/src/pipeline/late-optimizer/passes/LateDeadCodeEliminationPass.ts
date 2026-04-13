@@ -1,5 +1,5 @@
 import { Environment } from "../../../environment";
-import { BaseInstruction, StoreLocalInstruction } from "../../../ir";
+import { Operation, StoreLocalOp } from "../../../ir";
 import { FunctionIR } from "../../../ir/core/FunctionIR";
 import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
 
@@ -24,20 +24,20 @@ export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
   protected step(): OptimizationResult {
     let changed = false;
 
-    for (const block of this.functionIR.blocks.values()) {
-      for (let i = block.instructions.length - 1; i >= 0; i--) {
-        const instr = block.instructions[i];
+    for (const block of this.functionIR.allBlocks()) {
+      for (let i = block.operations.length - 1; i >= 0; i--) {
+        const instr = block.operations[i];
         if (instr.hasSideEffects(this.environment)) continue;
 
-        if (instr instanceof StoreLocalInstruction) {
+        if (instr instanceof StoreLocalOp) {
           if (instr.getDefs().some((p) => p.identifier.uses.size > 0)) continue;
           const definer = instr.value.identifier.definer;
-          if (definer instanceof BaseInstruction && !definer.isPure(this.environment)) continue;
+          if (definer instanceof Operation && !definer.isPure(this.environment)) continue;
         } else {
           if (instr.getDefs().some((p) => p.identifier.uses.size > 0)) continue;
         }
 
-        block.removeInstructionAt(i);
+        block.removeOpAt(i);
         changed = true;
       }
     }

@@ -3,7 +3,7 @@ import { BlockId } from "../../ir";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { CodeGenerator } from "../CodeGenerator";
 import { generateBackEdge } from "./generateBackEdge";
-import { generateInstruction } from "./instructions/generateInstruction";
+import { generateOp } from "./ops/generateOp";
 import { generateStructure } from "./structures/generateStructure";
 import { generateTerminal } from "./terminals/generateTerminal";
 
@@ -29,7 +29,7 @@ export function generateBlock(
 
   generator.generatedBlocks.add(blockId);
 
-  const block = functionIR.blocks.get(blockId);
+  const block = functionIR.maybeBlock(blockId);
   if (block === undefined) {
     throw new Error(`Block ${blockId} not found`);
   }
@@ -44,7 +44,7 @@ export function generateBasicBlock(
   functionIR: FunctionIR,
   generator: CodeGenerator,
 ): Array<t.Statement> {
-  const block = functionIR.blocks.get(blockId);
+  const block = functionIR.maybeBlock(blockId);
   if (block === undefined) {
     throw new Error(`Block ${blockId} not found`);
   }
@@ -58,8 +58,8 @@ export function generateBasicBlock(
     return statements;
   }
 
-  for (const instruction of block.instructions) {
-    statements.push(...generateInstruction(instruction, functionIR, generator));
+  for (const instruction of block.operations) {
+    statements.push(...generateOp(instruction, functionIR, generator));
   }
 
   if (generator.getLoopInfo(functionIR).getBackEdgePredecessors(blockId).size > 0) {

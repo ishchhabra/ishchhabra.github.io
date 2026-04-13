@@ -5,7 +5,7 @@ import type {
   ImportSpecifier,
 } from "oxc-parser";
 import { Environment } from "../../environment";
-import { ImportSpecifierInstruction } from "../../ir";
+import { ImportSpecifierOp } from "../../ir";
 import type * as AST from "../estree";
 import { type Scope } from "../scope/Scope";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
@@ -25,13 +25,13 @@ export function buildImportSpecifier(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    ImportSpecifierInstruction,
+  const instruction = environment.createOperation(
+    ImportSpecifierOp,
     place,
     localName,
     importedName,
   );
-  functionBuilder.addInstruction(instruction);
+  functionBuilder.addOp(instruction);
 
   // Register the import binding so later loads/codegen can treat it as a
   // source declaration without depending on a separate DeclareLocal node.
@@ -52,7 +52,7 @@ export function buildImportSpecifier(
     bindingPlace.id,
   );
   environment.setDeclarationBindingPlace(bindingIdentifier.declarationId, bindingPlace.id);
-  environment.registerDeclarationInstruction(bindingPlace, instruction);
+  environment.registerDeclarationOp(bindingPlace, instruction);
 
   const source = declarationNode.source.value;
   moduleBuilder.moduleIR.globals.set(localName, {

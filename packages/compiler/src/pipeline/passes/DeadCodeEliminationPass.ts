@@ -1,5 +1,6 @@
 import { Environment } from "../../environment";
 import { FunctionIR } from "../../ir/core/FunctionIR";
+import type { Place } from "../../ir/core/Place";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { LivenessAnalysis, LivenessResult } from "../analysis/LivenessAnalysis";
 import { BaseOptimizationPass, OptimizationResult } from "../late-optimizer/OptimizationPass";
@@ -42,8 +43,8 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
     let changed = false;
 
     for (const [blockId, structure] of this.functionIR.structures) {
-      if (structure.hasSideEffects()) continue;
-      const isLive = structure.getDefs().some((p) => liveness.isLive(p.identifier.id));
+      if (structure.hasSideEffects(this.functionIR.moduleIR.environment)) continue;
+      const isLive = structure.getDefs().some((p: Place) => liveness.isLive(p.identifier.id));
       if (!isLive) {
         this.functionIR.deleteStructure(blockId);
         changed = true;
@@ -69,13 +70,13 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
   private removeDeadInstructions(liveness: LivenessResult): boolean {
     let changed = false;
 
-    for (const block of this.functionIR.blocks.values()) {
-      for (let i = block.instructions.length - 1; i >= 0; i--) {
-        const instr = block.instructions[i];
+    for (const block of this.functionIR.allBlocks()) {
+      for (let i = block.operations.length - 1; i >= 0; i--) {
+        const instr = block.operations[i];
         if (instr.hasSideEffects(this.environment)) continue;
         if (instr.getDefs().some((p) => liveness.isLive(p.identifier.id))) continue;
 
-        block.removeInstructionAt(i);
+        block.removeOpAt(i);
         changed = true;
       }
     }

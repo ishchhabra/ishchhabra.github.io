@@ -1,6 +1,6 @@
 import type { Statement, SwitchStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { createInstructionId, JumpTerminal, SwitchTerminal } from "../../../ir";
+import { createOperationId, JumpOp, SwitchOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { instantiateScopeBindings } from "../bindings";
 import { buildNode } from "../buildNode";
@@ -37,10 +37,15 @@ export function buildSwitchStatement(
 
   // Create the fallthrough block (continuation after switch).
   const fallthroughBlock = environment.createBlock(scopeId);
-  functionBuilder.blocks.set(fallthroughBlock.id, fallthroughBlock);
+  functionBuilder.addBlock(fallthroughBlock);
 
   // Register switch control context so BreakStatement can jump to fallthrough.
-  functionBuilder.controlStack.push({ kind: "switch", label, breakTarget: fallthroughBlock.id });
+  functionBuilder.controlStack.push({
+    kind: "switch",
+    label,
+    breakTarget: fallthroughBlock.id,
+    structured: false,
+  });
 
   const switchCases = node.cases;
   const cases: Array<{
@@ -80,7 +85,7 @@ export function buildSwitchStatement(
     }
 
     const caseBlock = environment.createBlock(switchScopeId);
-    functionBuilder.blocks.set(caseBlock.id, caseBlock);
+    functionBuilder.addBlock(caseBlock);
 
     caseEntries.push({ test: testPlace, block: caseBlock });
   }
@@ -104,8 +109,8 @@ export function buildSwitchStatement(
     // If the case body didn't end with a terminal (no break/return/throw),
     // add fallthrough to the next case's block (or the fallthrough block for last case).
     if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.terminal = new JumpTerminal(
-        createInstructionId(environment),
+      functionBuilder.currentBlock.terminal = new JumpOp(
+        createOperationId(environment),
         nextFallthroughTarget,
       );
     }
@@ -123,9 +128,9 @@ export function buildSwitchStatement(
     cases.push({ test: null, block: fallthroughBlock.id });
   }
 
-  // Set the SwitchTerminal on the pre-switch block.
-  currentBlock.terminal = new SwitchTerminal(
-    createInstructionId(environment),
+  // Set the SwitchOp on the pre-switch block.
+  currentBlock.terminal = new SwitchOp(
+    createOperationId(environment),
     discriminantPlace,
     cases,
     fallthroughBlock.id,

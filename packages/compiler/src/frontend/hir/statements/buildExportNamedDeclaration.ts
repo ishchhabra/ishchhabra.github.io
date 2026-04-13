@@ -7,9 +7,9 @@ import type {
   Node,
 } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { ExportNamedDeclarationInstruction, Place } from "../../../ir";
-import { ExportFromInstruction } from "../../../ir/instructions/module/ExportFrom";
-import { ExportSpecifierInstruction } from "../../../ir/instructions/module/ExportSpecifier";
+import { ExportNamedDeclarationOp, Place } from "../../../ir";
+import { ExportFromOp } from "../../../ir/ops/module/ExportFrom";
+import { ExportSpecifierOp } from "../../../ir/ops/module/ExportSpecifier";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -80,13 +80,13 @@ export function buildExportNamedDeclaration(
 
     const identifier = environment.createIdentifier();
     const place = environment.createPlace(identifier);
-    const instruction = environment.createInstruction(
-      ExportNamedDeclarationInstruction,
+    const instruction = environment.createOperation(
+      ExportNamedDeclarationOp,
       place,
       exportSpecifierPlaces,
       undefined,
     );
-    functionBuilder.addInstruction(instruction);
+    functionBuilder.addOp(instruction);
     return place;
   }
 }
@@ -131,33 +131,33 @@ function buildExportDeclarationAsSpecifiers(
 
     const specId = environment.createIdentifier();
     const specPlace = environment.createPlace(specId);
-    const specInstruction = environment.createInstruction(
-      ExportSpecifierInstruction,
+    const specInstruction = environment.createOperation(
+      ExportSpecifierOp,
       specPlace,
       localPlace,
       name,
     );
-    functionBuilder.addInstruction(specInstruction);
+    functionBuilder.addOp(specInstruction);
     specifierPlaces.push(specPlace);
 
-    const declarationInstructionId = environment.getDeclarationInstruction(declarationId);
+    const declarationInstructionId = environment.getDeclarationOp(declarationId);
     if (declarationInstructionId !== undefined) {
       moduleBuilder.moduleIR.exports.set(name, {
         instruction: specInstruction,
-        declaration: environment.instructions.get(declarationInstructionId)!,
+        declaration: environment.operations.get(declarationInstructionId)!,
       });
     }
   }
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    ExportNamedDeclarationInstruction,
+  const instruction = environment.createOperation(
+    ExportNamedDeclarationOp,
     place,
     specifierPlaces,
     undefined,
   );
-  functionBuilder.addInstruction(instruction);
+  functionBuilder.addOp(instruction);
   return place;
 }
 
@@ -240,13 +240,8 @@ function buildExportFrom(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    ExportFromInstruction,
-    place,
-    source,
-    specifiers,
-  );
-  functionBuilder.addInstruction(instruction);
+  const instruction = environment.createOperation(ExportFromOp, place, source, specifiers);
+  functionBuilder.addOp(instruction);
 
   // Register each re-exported name as an export for UnusedExportEliminationPass.
   for (const { exported } of specifiers) {

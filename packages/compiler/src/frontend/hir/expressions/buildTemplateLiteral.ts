@@ -1,6 +1,6 @@
 import type { TemplateLiteral } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { TemplateLiteralInstruction } from "../../../ir/instructions/value/TemplateLiteral";
+import { TemplateLiteralOp } from "../../../ir/ops/prim/TemplateLiteral";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -25,12 +25,12 @@ export function buildTemplateLiteral(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    TemplateLiteralInstruction,
+  const instruction = environment.createOperation(
+    TemplateLiteralOp,
     place,
     quasis as any,
     expressionPlaces,
   );
-  functionBuilder.addInstruction(instruction);
+  functionBuilder.addOp(instruction);
   return place;
 }

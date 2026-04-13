@@ -1,11 +1,11 @@
 import * as t from "@babel/types";
-import { TryTerminal } from "../../../ir";
+import { TryOp } from "../../../ir";
 import { FunctionIR } from "../../../ir/core/FunctionIR";
 import { CodeGenerator } from "../../CodeGenerator";
 import { generateBlock } from "../generateBlock";
 
 export function generateTryTerminal(
-  terminal: TryTerminal,
+  terminal: TryOp,
   functionIR: FunctionIR,
   generator: CodeGenerator,
 ): Array<t.Statement> {

@@ -1,14 +1,14 @@
 import {
-  BaseInstruction,
-  CopyInstruction,
-  DeclareLocalInstruction,
+  Operation,
+  CopyOp,
+  DeclareLocalOp,
   IdentifierId,
-  LoadLocalInstruction,
-  StoreLocalInstruction,
+  LoadLocalOp,
+  StoreLocalOp,
 } from "../../../ir";
 import { BasicBlock } from "../../../ir/core/Block";
 import { FunctionIR } from "../../../ir/core/FunctionIR";
-import { LoadPhiInstruction } from "../../../ir/instructions/memory/LoadPhi";
+import { LoadPhiOp } from "../../../ir/ops/mem/LoadPhi";
 import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
 
 /**
@@ -46,7 +46,7 @@ export class LateCopyFoldingPass extends BaseOptimizationPass {
     let changed = false;
     const loadCounts = this.countLoads();
 
-    for (const block of this.functionIR.blocks.values()) {
+    for (const block of this.functionIR.allBlocks()) {
       changed = this.foldExpressionInliningInBlock(block, loadCounts) || changed;
       changed = this.foldInitialValueInBlock(block) || changed;
     }
@@ -60,16 +60,13 @@ export class LateCopyFoldingPass extends BaseOptimizationPass {
   ): boolean {
     let changed = false;
 
-    for (let copyIdx = 0; copyIdx < block.instructions.length; copyIdx++) {
+    for (let copyIdx = 0; copyIdx < block.operations.length; copyIdx++) {
       const match = this.matchExpressionInlining(block, copyIdx, loadCounts);
       if (!match) continue;
 
       const { copy, loadIdx, storeIdx, store } = match;
 
-      block.replaceInstruction(
-        copyIdx,
-        new CopyInstruction(copy.id, copy.place, copy.lval, store.value),
-      );
+      block.replaceOp(copyIdx, new CopyOp(copy.id, copy.place, copy.lval, store.value));
 
       const indicesToRemove = [loadIdx, storeIdx];
       const bindingIdx = this.findRemovableBinding(block, storeIdx, store);
@@ -88,24 +85,24 @@ export class LateCopyFoldingPass extends BaseOptimizationPass {
   private foldInitialValueInBlock(block: BasicBlock): boolean {
     let changed = false;
 
-    for (let copyIdx = 0; copyIdx < block.instructions.length; copyIdx++) {
-      const copy = block.instructions[copyIdx];
-      if (!(copy instanceof CopyInstruction)) continue;
+    for (let copyIdx = 0; copyIdx < block.operations.length; copyIdx++) {
+      const copy = block.operations[copyIdx];
+      if (!(copy instanceof CopyOp)) continue;
 
-      const storeIdx = this.findReachingStore(block.instructions, copyIdx, copy.lval.identifier.id);
+      const storeIdx = this.findReachingStore(block.operations, copyIdx, copy.lval.identifier.id);
       if (storeIdx === undefined) continue;
 
       const adjusted = this.ensureValueAvailable(block, storeIdx, copyIdx, copy);
       if (!adjusted) continue;
 
-      const store = block.instructions[adjusted.storeIdx];
-      if (!(store instanceof StoreLocalInstruction)) {
+      const store = block.operations[adjusted.storeIdx];
+      if (!(store instanceof StoreLocalOp)) {
         continue;
       }
 
-      block.replaceInstruction(
+      block.replaceOp(
         adjusted.storeIdx,
-        new StoreLocalInstruction(
+        new StoreLocalOp(
           store.id,
           store.place,
           store.lval,
@@ -130,23 +127,23 @@ export class LateCopyFoldingPass extends BaseOptimizationPass {
     loadCounts: Map<IdentifierId, number>,
   ):
     | {
-        copy: CopyInstruction;
+        copy: CopyOp;
         loadIdx: number;
         storeIdx: number;
-        store: StoreLocalInstruction;
+        store: StoreLocalOp;
       }
     | undefined {
-    const copy = block.instructions[copyIdx];
-    if (!(copy instanceof CopyInstruction)) {
+    const copy = block.operations[copyIdx];
+    if (!(copy instanceof CopyOp)) {
       return undefined;
     }
 
     const load = copy.value.identifier.definer;
-    if (!(load instanceof LoadLocalInstruction)) {
+    if (!(load instanceof LoadLocalOp)) {
       return undefined;
     }
 
-    const loadIdx = block.instructions.indexOf(load);
+    const loadIdx = block.operations.indexOf(load);
     if (loadIdx === -1 || loadIdx >= copyIdx) {
       return undefined;
     }
@@ -157,11 +154,11 @@ export class LateCopyFoldingPass extends BaseOptimizationPass {
     }
 
     const store = load.value.identifier.definer;
-    if (!(store instanceof StoreLocalInstruction)) {
+    if (!(store instanceof StoreLocalOp)) {
       return undefined;
     }
 
-    const storeIdx = block.instructions.indexOf(store);
+    const storeIdx = block.operations.indexOf(store);
     if (storeIdx === -1 || storeIdx >= loadIdx) {
       return undefined;
     }
@@ -182,17 +179,14 @@ export class LateCopyFoldingPass extends BaseOptimizationPass {
    * intervening read of the destination variable.
    */
   private findReachingStore(
-    instructions: BaseInstruction[],
+    instructions: readonly Operation[],
     copyIdx: number,
     destinationId: IdentifierId,
   ): number | undefined {
     for (let i = copyIdx - 1; i >= 0; i--) {
       const instruction = instructions[i];
 
-      if (
-        instruction instanceof StoreLocalInstruction &&
-        instruction.lval.identifier.id === destinationId
-      ) {
+      if (instruction instanceof StoreLocalOp && instruction.lval.identifier.id === destinationId) {
         return i;
       }
 
@@ -214,14 +208,14 @@ export class LateCopyFoldingPass extends BaseOptimizationPass {
     block: BasicBlock,
     storeIdx: number,
     copyIdx: number,
-    copy: CopyInstruction,
+    copy: CopyOp,
   ): { storeIdx: number; copyIdx: number } | undefined {
     const definer = copy.value.identifier.definer;
-    if (!(definer instanceof BaseInstruction)) {
+    if (!(definer instanceof Operation)) {
       return { storeIdx, copyIdx };
     }
 
-    const valueIdx = block.instructions.indexOf(definer);
+    const valueIdx = block.operations.indexOf(definer);
     if (valueIdx === -1 || valueIdx < storeIdx) {
       return { storeIdx, copyIdx };
     }
@@ -231,8 +225,8 @@ export class LateCopyFoldingPass extends BaseOptimizationPass {
         return undefined;
       }
 
-      block.removeInstructionAt(valueIdx);
-      block.insertInstructionAt(storeIdx, definer);
+      block.removeOpAt(valueIdx);
+      block.insertOpAt(storeIdx, definer);
       return { storeIdx: storeIdx + 1, copyIdx: copyIdx + 1 };
     }
 
@@ -242,12 +236,9 @@ export class LateCopyFoldingPass extends BaseOptimizationPass {
   private countLoads(): Map<IdentifierId, number> {
     const counts = new Map<IdentifierId, number>();
 
-    for (const block of this.functionIR.blocks.values()) {
-      for (const instruction of block.instructions) {
-        if (
-          instruction instanceof LoadLocalInstruction ||
-          instruction instanceof LoadPhiInstruction
-        ) {
+    for (const block of this.functionIR.allBlocks()) {
+      for (const instruction of block.operations) {
+        if (instruction instanceof LoadLocalOp || instruction instanceof LoadPhiOp) {
           const id = instruction.value.identifier.id;
           counts.set(id, (counts.get(id) ?? 0) + 1);
         }
@@ -260,15 +251,15 @@ export class LateCopyFoldingPass extends BaseOptimizationPass {
   private findRemovableBinding(
     block: BasicBlock,
     storeIdx: number,
-    store: StoreLocalInstruction,
+    store: StoreLocalOp,
   ): number | undefined {
     if (storeIdx === 0) {
       return undefined;
     }
 
-    const previous = block.instructions[storeIdx - 1];
+    const previous = block.operations[storeIdx - 1];
     if (
-      previous instanceof DeclareLocalInstruction &&
+      previous instanceof DeclareLocalOp &&
       previous.place.identifier.id === store.lval.identifier.id &&
       previous.place.identifier.uses.size === 0
     ) {
@@ -281,7 +272,7 @@ export class LateCopyFoldingPass extends BaseOptimizationPass {
   private removeInstructionIndices(block: BasicBlock, indices: number[]): void {
     const uniqueDescending = [...new Set(indices)].sort((left, right) => right - left);
     for (const index of uniqueDescending) {
-      block.removeInstructionAt(index);
+      block.removeOpAt(index);
     }
   }
 }

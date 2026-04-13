@@ -1,6 +1,6 @@
 import type { ExportAllDeclaration } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { ExportAllInstruction } from "../../../ir/instructions/module/ExportAll";
+import { ExportAllOp } from "../../../ir/ops/module/ExportAll";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
@@ -14,7 +14,7 @@ export function buildExportAllDeclaration(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(ExportAllInstruction, place, source);
-  functionBuilder.addInstruction(instruction);
+  const instruction = environment.createOperation(ExportAllOp, place, source);
+  functionBuilder.addOp(instruction);
   return place;
 }

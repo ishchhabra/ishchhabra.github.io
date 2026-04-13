@@ -1,11 +1,11 @@
 import {
   BasicBlock,
-  DeclareLocalInstruction,
-  ExportDefaultDeclarationInstruction,
-  ExportNamedDeclarationInstruction,
-  StoreLocalInstruction,
+  DeclareLocalOp,
+  ExportDefaultDeclarationOp,
+  ExportNamedDeclarationOp,
+  StoreLocalOp,
 } from "../../../ir";
-import { ExportSpecifierInstruction } from "../../../ir/instructions/module/ExportSpecifier";
+import { ExportSpecifierOp } from "../../../ir/ops/module/ExportSpecifier";
 import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
 
 /**
@@ -51,7 +51,7 @@ export class ExportDeclarationMergingPass extends BaseOptimizationPass {
   protected step(): OptimizationResult {
     let changed = false;
 
-    for (const block of this.functionIR.blocks.values()) {
+    for (const block of this.functionIR.allBlocks()) {
       if (this.mergeExportDeclarationsInBlock(block)) {
         changed = true;
       }
@@ -61,13 +61,13 @@ export class ExportDeclarationMergingPass extends BaseOptimizationPass {
   }
 
   private mergeExportDeclarationsInBlock(block: BasicBlock): boolean {
-    const instrs = block.instructions;
+    const instrs = block.operations;
     let changed = false;
 
     // Collect ExportSpecifier instructions.
-    const exportSpecifiers: ExportSpecifierInstruction[] = [];
+    const exportSpecifiers: ExportSpecifierOp[] = [];
     for (const instr of instrs) {
-      if (instr instanceof ExportSpecifierInstruction) {
+      if (instr instanceof ExportSpecifierOp) {
         exportSpecifiers.push(instr);
       }
     }
@@ -77,14 +77,14 @@ export class ExportDeclarationMergingPass extends BaseOptimizationPass {
     }
 
     // Track ExportSpecifiers to remove after iteration.
-    const toRemove = new Set<ExportSpecifierInstruction>();
+    const toRemove = new Set<ExportSpecifierOp>();
 
     // For each ExportSpecifier, try to merge with its declaration.
     for (const exportSpec of exportSpecifiers) {
       // Find the binding instruction that defines the local place.
       const bi = instrs.find(
-        (instr): instr is DeclareLocalInstruction =>
-          instr instanceof DeclareLocalInstruction && instr.place.id === exportSpec.localPlace.id,
+        (instr): instr is DeclareLocalOp =>
+          instr instanceof DeclareLocalOp && instr.place.id === exportSpec.localPlace.id,
       );
       if (bi === undefined) continue;
 
@@ -95,8 +95,8 @@ export class ExportDeclarationMergingPass extends BaseOptimizationPass {
 
       // Find the ExportNamedDeclaration that contains this ExportSpecifier.
       const exportDecl = instrs.find(
-        (instr): instr is ExportNamedDeclarationInstruction =>
-          instr instanceof ExportNamedDeclarationInstruction &&
+        (instr): instr is ExportNamedDeclarationOp =>
+          instr instanceof ExportNamedDeclarationOp &&
           instr.specifiers.some((sp) => sp.id === exportSpec.place.id),
       );
       if (exportDecl === undefined) continue;
@@ -118,35 +118,26 @@ export class ExportDeclarationMergingPass extends BaseOptimizationPass {
       const declIndex = instrs.indexOf(decl);
       const exportDeclIndex = instrs.indexOf(exportDecl);
 
-      let merged: ExportDefaultDeclarationInstruction | ExportNamedDeclarationInstruction;
+      let merged: ExportDefaultDeclarationOp | ExportNamedDeclarationOp;
       if (exportSpec.exported === "default") {
         // For default exports, convert to ExportDefaultDeclaration.
         // Don't rename the BI — keeps the function name for debugging/stack traces.
-        merged = new ExportDefaultDeclarationInstruction(
-          exportDecl.id,
-          exportDecl.place,
-          decl.place,
-        );
+        merged = new ExportDefaultDeclarationOp(exportDecl.id, exportDecl.place, decl.place);
       } else {
         // For named exports, rename the BI and convert to declaration form.
         bi.place.identifier.name = exportSpec.exported;
 
-        merged = new ExportNamedDeclarationInstruction(
-          exportDecl.id,
-          exportDecl.place,
-          [],
-          decl.place,
-        );
+        merged = new ExportNamedDeclarationOp(exportDecl.id, exportDecl.place, [], decl.place);
       }
 
       // For hoisted var declarations, the merged export must appear right
       // after the declaration (at the hoist point), not at the original
       // export position, to preserve correct statement ordering.
       if (decl.type === "var" && declIndex < exportDeclIndex) {
-        instrs.splice(exportDeclIndex, 1);
-        instrs.splice(declIndex + 1, 0, merged);
+        block.removeOpAt(exportDeclIndex);
+        block.insertOpAt(declIndex + 1, merged);
       } else {
-        instrs[exportDeclIndex] = merged;
+        block.replaceOp(exportDeclIndex, merged);
       }
 
       // 4. Mark the ExportSpecifier for removal.
@@ -156,9 +147,11 @@ export class ExportDeclarationMergingPass extends BaseOptimizationPass {
     }
 
     // Remove marked ExportSpecifiers in reverse order to preserve indices.
-    for (let i = instrs.length - 1; i >= 0; i--) {
-      if (toRemove.has(instrs[i] as ExportSpecifierInstruction)) {
-        instrs.splice(i, 1);
+    // Re-read `block.operations` after the in-place edits above.
+    const currentInstrs = block.operations;
+    for (let i = currentInstrs.length - 1; i >= 0; i--) {
+      if (toRemove.has(currentInstrs[i] as ExportSpecifierOp)) {
+        block.removeOpAt(i);
       }
     }
 
@@ -169,11 +162,11 @@ export class ExportDeclarationMergingPass extends BaseOptimizationPass {
    * Finds the StoreLocal instruction that writes to the given binding.
    */
   private findDeclaration(
-    instrs: readonly import("../../../ir").BaseInstruction[],
-    bi: DeclareLocalInstruction,
-  ): StoreLocalInstruction | undefined {
+    instrs: readonly import("../../../ir").Operation[],
+    bi: DeclareLocalOp,
+  ): StoreLocalOp | undefined {
     for (const instr of instrs) {
-      if (instr instanceof StoreLocalInstruction && instr.lval.id === bi.place.id) {
+      if (instr instanceof StoreLocalOp && instr.lval.id === bi.place.id) {
         return instr;
       }
     }

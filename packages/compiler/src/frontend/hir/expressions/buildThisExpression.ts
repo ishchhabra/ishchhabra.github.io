@@ -1,6 +1,6 @@
 import type { ThisExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { ThisExpressionInstruction } from "../../../ir/instructions/value/ThisExpression";
+import { ThisExpressionOp } from "../../../ir/ops/prop/ThisExpression";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 export function buildThisExpression(
@@ -10,7 +10,7 @@ export function buildThisExpression(
 ) {
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(ThisExpressionInstruction, place);
-  functionBuilder.addInstruction(instruction);
+  const instruction = environment.createOperation(ThisExpressionOp, place);
+  functionBuilder.addOp(instruction);
   return place;
 }

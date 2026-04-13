@@ -1,6 +1,6 @@
 import type * as AST from "../estree";
 import { Environment } from "../../environment";
-import { LiteralInstruction, ObjectPropertyInstruction } from "../../ir";
+import { LiteralOp, ObjectPropertyOp } from "../../ir";
 import { type Scope } from "../scope/Scope";
 import { buildNode } from "./buildNode";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
@@ -16,16 +16,12 @@ export function buildObjectProperty(
   let keyPlace;
   if (!node.computed && node.key.type === "Identifier") {
     // Non-computed identifier keys are property labels (string literals),
-    // not variable references.  Emit a LiteralInstruction so the key
+    // not variable references.  Emit a LiteralOp so the key
     // survives SSA transformations (clone/rewrite) unchanged.
     const keyIdentifier = environment.createIdentifier();
     keyPlace = environment.createPlace(keyIdentifier);
-    const keyInstruction = environment.createInstruction(
-      LiteralInstruction,
-      keyPlace,
-      node.key.name,
-    );
-    functionBuilder.addInstruction(keyInstruction);
+    const keyInstruction = environment.createOperation(LiteralOp, keyPlace, node.key.name);
+    functionBuilder.addOp(keyInstruction);
   } else {
     keyPlace = buildNode(node.key, scope, functionBuilder, moduleBuilder, environment);
     if (keyPlace === undefined || Array.isArray(keyPlace)) {
@@ -40,14 +36,14 @@ export function buildObjectProperty(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    ObjectPropertyInstruction,
+  const instruction = environment.createOperation(
+    ObjectPropertyOp,
     place,
     keyPlace,
     valuePlace,
     node.computed,
     node.shorthand,
   );
-  functionBuilder.addInstruction(instruction);
+  functionBuilder.addOp(instruction);
   return place;
 }

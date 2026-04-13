@@ -1,11 +1,5 @@
 import { Environment } from "../../environment";
-import {
-  BaseInstruction,
-  LoadGlobalInstruction,
-  LoadStaticPropertyInstruction,
-  Place,
-  TPrimitiveValue,
-} from "../../ir";
+import { Operation, LoadGlobalOp, LoadStaticPropertyOp, Place, TPrimitiveValue } from "../../ir";
 
 /**
  * Context passed to the `resolveConstant` hook, giving users the ability
@@ -28,13 +22,10 @@ export interface ResolveConstantContext {
  * Called for each instruction during constant propagation. Use `ctx.set()`
  * to provide a compile-time constant value for the instruction's result.
  */
-export type ResolveConstantHook = (
-  instruction: BaseInstruction,
-  ctx: ResolveConstantContext,
-) => void;
+export type ResolveConstantHook = (instruction: Operation, ctx: ResolveConstantContext) => void;
 
 /**
- * Traces a chain of static property accesses back to a `LoadGlobalInstruction`,
+ * Traces a chain of static property accesses back to a `LoadGlobalOp`,
  * returning the fully qualified dotted path.
  *
  * For example, given the IR for `process.env.NODE_ENV`:
@@ -48,24 +39,24 @@ export type ResolveConstantHook = (
  * `"process.env.NODE_ENV"`.
  *
  * Returns `undefined` if the chain contains a dynamic property access or
- * does not root at a `LoadGlobalInstruction`.
+ * does not root at a `LoadGlobalOp`.
  */
 export function getQualifiedName(
-  instruction: BaseInstruction,
+  instruction: Operation,
   environment: Environment,
 ): string | undefined {
   const segments: string[] = [];
-  let current: BaseInstruction = instruction;
+  let current: Operation = instruction;
 
   for (;;) {
-    if (current instanceof LoadGlobalInstruction) {
+    if (current instanceof LoadGlobalOp) {
       segments.push(current.name);
       break;
     }
 
-    if (current instanceof LoadStaticPropertyInstruction) {
+    if (current instanceof LoadStaticPropertyOp) {
       segments.push(current.property);
-      const objectInstruction = environment.placeToInstruction.get(current.object.id);
+      const objectInstruction = environment.placeToOp.get(current.object.id);
       if (objectInstruction === undefined) {
         return undefined;
       }

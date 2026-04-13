@@ -1,11 +1,6 @@
 import type * as AST from "../estree";
 import { Environment } from "../../environment";
-import {
-  LoadContextInstruction,
-  LoadGlobalInstruction,
-  LoadLocalInstruction,
-  Place,
-} from "../../ir";
+import { LoadContextOp, LoadGlobalOp, LoadLocalOp, Place } from "../../ir";
 import { type Scope } from "../scope/Scope";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
 
@@ -72,8 +67,8 @@ function buildReferencedIdentifier(
       ? environment.getDeclarationMetadata(declarationId)?.kind
       : undefined;
   if (declarationId === undefined || declarationKind === "import") {
-    const instruction = environment.createInstruction(LoadGlobalInstruction, place, name);
-    builder.addInstruction(instruction);
+    const instruction = environment.createOperation(LoadGlobalOp, place, name);
+    builder.addOp(instruction);
   } else {
     const declarationId = builder.getDeclarationId(name, scope);
     if (declarationId === undefined) {
@@ -100,10 +95,10 @@ function buildReferencedIdentifier(
       }
       const captureParam = builder.captureParams.get(declarationId)!;
       const LoadClass = environment.contextDeclarationIds.has(declarationId)
-        ? LoadContextInstruction
-        : LoadLocalInstruction;
-      const instruction = environment.createInstruction(LoadClass, place, captureParam);
-      builder.addInstruction(instruction);
+        ? LoadContextOp
+        : LoadLocalOp;
+      const instruction = environment.createOperation(LoadClass, place, captureParam);
+      builder.addOp(instruction);
     } else {
       const latestDeclaration = environment.getLatestDeclaration(declarationId);
       const declarationPlace = environment.places.get(latestDeclaration.placeId);
@@ -111,10 +106,10 @@ function buildReferencedIdentifier(
         throw new Error(`Unable to find the place for ${name} (${declarationId})`);
       }
       const LoadClass = environment.contextDeclarationIds.has(declarationId)
-        ? LoadContextInstruction
-        : LoadLocalInstruction;
-      const instruction = environment.createInstruction(LoadClass, place, declarationPlace);
-      builder.addInstruction(instruction);
+        ? LoadContextOp
+        : LoadLocalOp;
+      const instruction = environment.createOperation(LoadClass, place, declarationPlace);
+      builder.addOp(instruction);
     }
   }
 

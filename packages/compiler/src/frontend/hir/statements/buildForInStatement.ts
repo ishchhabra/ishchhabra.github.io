@@ -2,15 +2,16 @@ import type * as AST from "../../estree";
 import type { ForInStatement, MemberExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
 import {
-  ArrayDestructureInstruction,
+  ArrayDestructureOp,
+  createOperationId,
   type DestructureTarget,
-  ForInStructure,
-  JumpTerminal,
-  ObjectDestructureInstruction,
+  ForInOp,
+  JumpOp,
+  ObjectDestructureOp,
   Place,
-  StoreContextInstruction,
-  StoreLocalInstruction,
-  makeInstructionId,
+  Region,
+  StoreContextOp,
+  StoreLocalOp,
 } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -41,7 +42,7 @@ export function buildForInStatement(
   const forScopeId = functionBuilder.lexicalScopeIdFor(forScope, "for");
   const scopeId = functionBuilder.lexicalScopeIdFor(scope);
   const headerBlock = environment.createBlock(forScopeId);
-  functionBuilder.blocks.set(headerBlock.id, headerBlock);
+  functionBuilder.addBlock(headerBlock);
 
   functionBuilder.currentBlock = headerBlock;
   instantiateScopeBindings(node, forScope, functionBuilder, environment, moduleBuilder);
@@ -87,7 +88,7 @@ export function buildForInStatement(
     node.body.type === "BlockStatement" ? functionBuilder.scopeFor(node.body) : forScope;
   const bodyScopeId = functionBuilder.lexicalScopeIdFor(bodyScope);
   const bodyBlock = environment.createBlock(bodyScopeId);
-  functionBuilder.blocks.set(bodyBlock.id, bodyBlock);
+  functionBuilder.addBlock(bodyBlock);
 
   functionBuilder.currentBlock = bodyBlock;
 
@@ -99,43 +100,45 @@ export function buildForInStatement(
 
   // Build the exit block (created early so break statements can reference it).
   const exitBlock = environment.createBlock(scopeId);
-  functionBuilder.blocks.set(exitBlock.id, exitBlock);
+  functionBuilder.addBlock(exitBlock);
+
+  // The nested MLIR region owns every block created by buildOwnedBody.
+  const bodyRegion = new Region([]);
+  bodyRegion.moveBlockHere(bodyBlock);
 
   functionBuilder.controlStack.push({
     kind: "loop",
     label,
     breakTarget: exitBlock.id,
     continueTarget: headerBlock.id,
+    structured: true,
   });
-  buildOwnedBody(node.body, forScope, functionBuilder, moduleBuilder, environment);
+  functionBuilder.withStructureRegion(bodyRegion, () => {
+    buildOwnedBody(node.body, forScope, functionBuilder, moduleBuilder, environment);
+  });
   functionBuilder.controlStack.pop();
   const bodyBlockTerminus = functionBuilder.currentBlock;
 
   // Set the jump terminal for the current block to the header block.
-  currentBlock.terminal = new JumpTerminal(
-    makeInstructionId(functionBuilder.environment.nextInstructionId++),
-    headerBlock.id,
-  );
+  currentBlock.terminal = new JumpOp(createOperationId(environment), headerBlock.id);
 
   // Set the jump terminal for the body block to create a back edge (unless the body
   // already ended with break/return/throw, which owns the terminal).
   if (bodyBlockTerminus.terminal === undefined) {
-    bodyBlockTerminus.terminal = new JumpTerminal(
-      makeInstructionId(functionBuilder.environment.nextInstructionId++),
-      headerBlock.id,
-    );
+    bodyBlockTerminus.terminal = new JumpOp(createOperationId(environment), headerBlock.id);
   }
 
-  // Register the ForInStructure on the header block.
+  // Register the ForInOp on the header block.
   functionBuilder.structures.set(
     headerBlock.id,
-    new ForInStructure(
+    new ForInOp(
+      createOperationId(environment),
       headerBlock.id,
       iterationValuePlace,
       iterationTarget,
       objectPlace,
-      bodyBlock.id,
       exitBlock.id,
+      bodyRegion,
       label,
     ),
   );
@@ -151,10 +154,9 @@ function emitLoopIterationAssignment(
   environment: Environment,
 ): void {
   if (target.kind === "binding") {
-    const StoreInstruction =
-      target.storage === "context" ? StoreContextInstruction : StoreLocalInstruction;
-    functionBuilder.addInstruction(
-      environment.createInstruction(
+    const StoreInstruction = target.storage === "context" ? StoreContextOp : StoreLocalOp;
+    functionBuilder.addOp(
+      environment.createOperation(
         StoreInstruction,
         environment.createPlace(environment.createIdentifier()),
         target.place,
@@ -167,9 +169,9 @@ function emitLoopIterationAssignment(
   }
 
   if (target.kind === "array") {
-    functionBuilder.addInstruction(
-      environment.createInstruction(
-        ArrayDestructureInstruction,
+    functionBuilder.addOp(
+      environment.createOperation(
+        ArrayDestructureOp,
         environment.createPlace(environment.createIdentifier()),
         target.elements,
         valuePlace,
@@ -181,9 +183,9 @@ function emitLoopIterationAssignment(
   }
 
   if (target.kind === "object") {
-    functionBuilder.addInstruction(
-      environment.createInstruction(
-        ObjectDestructureInstruction,
+    functionBuilder.addOp(
+      environment.createOperation(
+        ObjectDestructureOp,
         environment.createPlace(environment.createIdentifier()),
         target.properties,
         valuePlace,

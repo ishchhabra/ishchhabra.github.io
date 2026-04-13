@@ -1,8 +1,8 @@
 import type { Class } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { Place, StoreLocalInstruction } from "../../../ir";
-import { ClassDeclarationInstruction } from "../../../ir/instructions/declaration/ClassDeclaration";
-import { ClassExpressionInstruction } from "../../../ir/instructions/value/ClassExpression";
+import { Place, StoreLocalOp } from "../../../ir";
+import { ClassDeclarationOp } from "../../../ir/ops/class/ClassDeclaration";
+import { ClassExpressionOp } from "../../../ir/ops/class/ClassExpression";
 import { type Scope } from "../../scope/Scope";
 import { buildClassBody } from "../buildClassElements";
 import { buildNode } from "../buildNode";
@@ -62,20 +62,20 @@ export function buildClassDeclaration(
   const isContext = environment.contextDeclarationIds.has(declarationId);
   if (isContext) {
     const classPlace = environment.createPlace(environment.createIdentifier(declarationId));
-    const instruction = environment.createInstruction(
-      ClassExpressionInstruction,
+    const instruction = environment.createOperation(
+      ClassExpressionOp,
       classPlace,
       null,
       superClassPlace,
       elements,
     );
-    functionBuilder.addInstruction(instruction);
-    environment.registerDeclarationInstruction(classPlace, instruction);
+    functionBuilder.addOp(instruction);
+    environment.registerDeclarationOp(classPlace, instruction);
 
     const storePlace = environment.createPlace(environment.createIdentifier());
-    functionBuilder.addInstruction(
-      environment.createInstruction(
-        StoreLocalInstruction,
+    functionBuilder.addOp(
+      environment.createOperation(
+        StoreLocalOp,
         storePlace,
         identifierPlace,
         classPlace,
@@ -88,15 +88,15 @@ export function buildClassDeclaration(
     return classPlace;
   }
 
-  const classDecl = environment.createInstruction(
-    ClassDeclarationInstruction,
+  const classDecl = environment.createOperation(
+    ClassDeclarationOp,
     identifierPlace,
     superClassPlace,
     elements,
     emit,
   );
-  functionBuilder.addInstruction(classDecl);
-  environment.registerDeclarationInstruction(identifierPlace, classDecl);
+  functionBuilder.addOp(classDecl);
+  environment.registerDeclarationOp(identifierPlace, classDecl);
   functionBuilder.markDeclarationInitialized(declarationId);
 
   return identifierPlace;

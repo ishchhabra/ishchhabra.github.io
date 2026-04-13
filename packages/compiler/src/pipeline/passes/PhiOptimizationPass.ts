@@ -1,17 +1,11 @@
 import { Environment } from "../../environment";
-import {
-  BaseInstruction,
-  BasicBlock,
-  BlockId,
-  DeclarationInstruction,
-  ModuleInstruction,
-  StoreContextInstruction,
-  StoreLocalInstruction,
-} from "../../ir";
+import { makeOperationId } from "../../ir/core/Operation";
+import { Operation, BasicBlock, BlockId, Region, StoreContextOp, StoreLocalOp } from "../../ir";
+import { isDeclarationOp, isModuleOp } from "../../ir/categories";
 import { Place } from "../../ir/core/Place";
 import { FunctionIR } from "../../ir/core/FunctionIR";
-import { BranchTerminal, JumpTerminal } from "../../ir/core/Terminal";
-import { TernaryStructure } from "../../ir/core/Structure";
+import { BranchOp, JumpOp } from "../../ir/ops/control";
+import { TernaryOp } from "../../ir/ops/control";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import {
   type ControlFlowGraph,
@@ -24,10 +18,10 @@ import { Phi } from "../ssa/Phi";
  * SSA-phase phi optimization pass (analogous to GCC's pass_phiopt).
  *
  * Detects diamond-shaped CFG patterns where a phi node merges values
- * from two branches, and converts them into a TernaryStructure.
+ * from two branches, and converts them into a TernaryOp.
  *
  * Supports nested diamonds: when one arm of the outer diamond contains
- * an already-collapsed TernaryStructure, the pass looks through the
+ * an already-collapsed TernaryOp, the pass looks through the
  * structure's fallthrough trampoline to detect the outer diamond.
  */
 export class PhiOptimizationPass extends BaseOptimizationPass {
@@ -66,13 +60,13 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
     const [blockIdC, placeC] = operandC;
     const mergeBlockId = phi.blockId;
 
-    const blockB = this.functionIR.blocks.get(blockIdB);
-    const blockC = this.functionIR.blocks.get(blockIdC);
+    const blockB = this.functionIR.maybeBlock(blockIdB);
+    const blockC = this.functionIR.maybeBlock(blockIdC);
     if (!blockB || !blockC) return false;
 
     // Both operand blocks must jump to the merge block.
-    if (!(blockB.terminal instanceof JumpTerminal)) return false;
-    if (!(blockC.terminal instanceof JumpTerminal)) return false;
+    if (!(blockB.terminal instanceof JumpOp)) return false;
+    if (!(blockC.terminal instanceof JumpOp)) return false;
     if (blockB.terminal.target !== mergeBlockId) return false;
     if (blockC.terminal.target !== mergeBlockId) return false;
 
@@ -84,16 +78,16 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
     if (branchBlockIdB !== branchBlockIdC) return false;
 
     const branchBlockId = branchBlockIdB;
-    const branchBlock = this.functionIR.blocks.get(branchBlockId);
+    const branchBlock = this.functionIR.maybeBlock(branchBlockId);
     if (!branchBlock) return false;
 
     const terminal = branchBlock.terminal;
-    if (!(terminal instanceof BranchTerminal)) return false;
+    if (!(terminal instanceof BranchOp)) return false;
     if (terminal.fallthrough !== mergeBlockId) return false;
 
     // Determine which operand is consequent and which is alternate.
     // matchBranchTarget handles the case where a phi operand block is
-    // the fallthrough of a TernaryStructure on the branch target.
+    // the fallthrough of a TernaryOp on the branch target.
     let consBlockId: BlockId, altBlockId: BlockId;
     let consOperandPlace: Place, altOperandPlace: Place;
 
@@ -117,8 +111,8 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
       return false;
     }
 
-    const consBlock = this.functionIR.blocks.get(consBlockId)!;
-    const altBlock = this.functionIR.blocks.get(altBlockId)!;
+    const consBlock = this.functionIR.getBlock(consBlockId);
+    const altBlock = this.functionIR.getBlock(altBlockId);
 
     // Extract the phi store from each branch.
     // For structure-through arms, the phi operand block is the structure's
@@ -136,7 +130,7 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
 
     // Don't collapse if other phis at the merge block have operands from
     // BOTH arm blocks — they form a sibling diamond that can't be
-    // represented by a single TernaryStructure. Collapsing would clear
+    // represented by a single TernaryOp. Collapsing would clear
     // the arm terminals and orphan the sibling phi.
     for (const otherPhi of this.phis) {
       if (otherPhi === phi || otherPhi.blockId !== mergeBlockId) continue;
@@ -149,22 +143,22 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
     // any statements they produce. If either arm's remaining instructions
     // contain statement-producing instructions, the diamond cannot be
     // collapsed into a ternary without losing declarations or side effects.
-    if (this.armHasStatements(consBlock.instructions, consResult.storeIndex)) return false;
-    if (this.armHasStatements(altBlock.instructions, altResult.storeIndex)) return false;
+    if (this.armHasStatements(consBlock.operations, consResult.storeIndex)) return false;
+    if (this.armHasStatements(altBlock.operations, altResult.storeIndex)) return false;
 
     // === Apply the transformation ===
 
     // Remove the phi stores from the arm blocks (in reverse order to
     // preserve indices if both are in the same block).
-    if (consResult.storeIndex >= 0) consBlock.removeInstructionAt(consResult.storeIndex);
-    if (altResult.storeIndex >= 0) altBlock.removeInstructionAt(altResult.storeIndex);
+    if (consResult.storeIndex >= 0) consBlock.removeOpAt(consResult.storeIndex);
+    if (altResult.storeIndex >= 0) altBlock.removeOpAt(altResult.storeIndex);
 
     // Remove deferred trampoline stores (from the structure-through case).
     if (consResult.trampolineBlock && consResult.trampolineStoreIndex >= 0) {
-      consResult.trampolineBlock.removeInstructionAt(consResult.trampolineStoreIndex);
+      consResult.trampolineBlock.removeOpAt(consResult.trampolineStoreIndex);
     }
     if (altResult.trampolineBlock && altResult.trampolineStoreIndex >= 0) {
-      altResult.trampolineBlock.removeInstructionAt(altResult.trampolineStoreIndex);
+      altResult.trampolineBlock.removeOpAt(altResult.trampolineStoreIndex);
     }
 
     // Clear arm block terminals — they're owned by the structure now.
@@ -175,29 +169,41 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
     // clear its terminal too so the inner structure's codegen doesn't
     // follow it into the outer merge block.
     for (const trampoline of consResult.trampolines) {
-      const block = this.functionIR.blocks.get(trampoline);
+      const block = this.functionIR.maybeBlock(trampoline);
       if (block) block.replaceTerminal(undefined);
     }
     for (const trampoline of altResult.trampolines) {
-      const block = this.functionIR.blocks.get(trampoline);
+      const block = this.functionIR.maybeBlock(trampoline);
       if (block) block.replaceTerminal(undefined);
     }
 
     const resultPlace = this.environment.createPlace(this.environment.createIdentifier());
 
-    const ternary = new TernaryStructure(
+    // Create the ternary's consequent/alternate regions by REPARENTING
+    // the existing arm blocks, not by constructing a new Region that
+    // shares blocks with the top-level body. `Region` constructor
+    // blindly sets `block.parent` to itself; if we passed already-
+    // owned blocks, they'd end up in two regions and `allBlocks()`
+    // would visit them twice.
+    const consequentRegion = new Region([]);
+    consequentRegion.moveBlockHere(consBlock);
+    const alternateRegion = new Region([]);
+    alternateRegion.moveBlockHere(altBlock);
+
+    const ternary = new TernaryOp(
+      makeOperationId(this.environment.nextOperationId++),
       branchBlockId,
       terminal.test,
-      consBlockId,
       consResult.valuePlace,
-      altBlockId,
       altResult.valuePlace,
       mergeBlockId,
       resultPlace,
+      consequentRegion,
+      alternateRegion,
     );
     this.functionIR.setStructure(branchBlockId, ternary);
 
-    branchBlock.replaceTerminal(new JumpTerminal(terminal.id, mergeBlockId));
+    branchBlock.replaceTerminal(new JumpOp(terminal.id, mergeBlockId));
 
     // Rewrite all references to the phi's place → the ternary result.
     this.functionIR.rewriteAllBlocks(new Map([[phi.place.identifier, resultPlace]]));
@@ -216,8 +222,8 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
   }
 
   /**
-   * Follows predecessor chain through TernaryStructure fallthroughs.
-   * When a block's sole predecessor has a TernaryStructure whose
+   * Follows predecessor chain through TernaryOp fallthroughs.
+   * When a block's sole predecessor has a TernaryOp whose
    * fallthrough is this block, the "effective" predecessor is the
    * structure header's predecessor (the actual branch block).
    */
@@ -227,7 +233,7 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
     const pred = [...preds][0];
 
     const structure = this.functionIR.structures.get(pred);
-    if (structure instanceof TernaryStructure && structure.fallthrough === blockId) {
+    if (structure instanceof TernaryOp && structure.fallthrough === blockId) {
       return this.getEffectivePredecessor(pred, cfg);
     }
 
@@ -236,13 +242,13 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
 
   /**
    * Checks if a phi operand block matches a branch terminal target,
-   * either directly or through a TernaryStructure fallthrough chain.
+   * either directly or through a TernaryOp fallthrough chain.
    */
   private matchBranchTarget(phiBlockId: BlockId, branchTarget: BlockId): boolean {
     if (phiBlockId === branchTarget) return true;
 
     const structure = this.functionIR.structures.get(branchTarget);
-    if (structure instanceof TernaryStructure) {
+    if (structure instanceof TernaryOp) {
       return this.matchBranchTarget(phiBlockId, structure.fallthrough);
     }
     return false;
@@ -279,14 +285,14 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
       return { ...result, trampolines: [], trampolineBlock: null, trampolineStoreIndex: -1 };
     }
 
-    // Structure-through case — the arm has an inner TernaryStructure
+    // Structure-through case — the arm has an inner TernaryOp
     // and the phi operand comes from its fallthrough trampoline.
     // Extract the outer phi's StoreLocal from the trampoline block
     // (that's where SSA placed it), then use the stored value.
     const trampolines = this.collectTrampolines(armBlockId, phiBlockId);
     if (trampolines === null) return null;
 
-    const phiBlock = this.functionIR.blocks.get(phiBlockId);
+    const phiBlock = this.functionIR.maybeBlock(phiBlockId);
     if (!phiBlock) return null;
 
     const phiStoreResult = this.extractPhiStore(phiBlock, phi, operandPlace);
@@ -311,7 +317,7 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
    */
   private collectTrampolines(fromBlockId: BlockId, toBlockId: BlockId): BlockId[] | null {
     const structure = this.functionIR.structures.get(fromBlockId);
-    if (!(structure instanceof TernaryStructure)) return null;
+    if (!(structure instanceof TernaryOp)) return null;
 
     if (structure.fallthrough === toBlockId) {
       return [toBlockId];
@@ -329,10 +335,10 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
   ): { valuePlace: Place; storeIndex: number } | null {
     let storeIndex = -1;
 
-    for (let i = block.instructions.length - 1; i >= 0; i--) {
-      const instr = block.instructions[i];
+    for (let i = block.operations.length - 1; i >= 0; i--) {
+      const instr = block.operations[i];
       if (
-        instr instanceof StoreLocalInstruction &&
+        instr instanceof StoreLocalOp &&
         instr.lval.identifier.declarationId === phi.declarationId
       ) {
         storeIndex = i;
@@ -341,7 +347,7 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
     }
 
     if (storeIndex !== -1) {
-      const store = block.instructions[storeIndex] as StoreLocalInstruction;
+      const store = block.operations[storeIndex] as StoreLocalOp;
       if (store.lval.identifier.id !== operandPlace.identifier.id) return null;
       return { valuePlace: store.value, storeIndex };
     }
@@ -360,18 +366,18 @@ export class PhiOptimizationPass extends BaseOptimizationPass {
    * declarationId matches a known phi) are exempt — SSA elimination
    * handles their declarations and copies independently.
    */
-  private armHasStatements(instrs: BaseInstruction[], skipIndex: number = -1): boolean {
+  private armHasStatements(instrs: readonly Operation[], skipIndex: number = -1): boolean {
     const phiDeclarationIds = new Set([...this.phis].map((phi) => phi.declarationId));
 
     return instrs.some((instr, i) => {
       if (i === skipIndex) return false;
-      if (instr instanceof StoreLocalInstruction && instr.emit) {
+      if (instr instanceof StoreLocalOp && instr.emit) {
         return !phiDeclarationIds.has(instr.lval.identifier.declarationId);
       }
       return (
-        (instr instanceof StoreContextInstruction && instr.emit) ||
-        instr instanceof DeclarationInstruction ||
-        instr instanceof ModuleInstruction
+        (instr instanceof StoreContextOp && instr.emit) ||
+        isDeclarationOp(instr) ||
+        isModuleOp(instr)
       );
     });
   }

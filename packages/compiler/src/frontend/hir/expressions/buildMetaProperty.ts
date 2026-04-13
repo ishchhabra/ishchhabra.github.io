@@ -1,6 +1,6 @@
 import type { MetaProperty } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { MetaPropertyInstruction } from "../../../ir/instructions/value/MetaProperty";
+import { MetaPropertyOp } from "../../../ir/ops/prop/MetaProperty";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 export function buildMetaProperty(
@@ -10,12 +10,12 @@ export function buildMetaProperty(
 ) {
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    MetaPropertyInstruction,
+  const instruction = environment.createOperation(
+    MetaPropertyOp,
     place,
     node.meta.name,
     node.property.name,
   );
-  functionBuilder.addInstruction(instruction);
+  functionBuilder.addOp(instruction);
   return place;
 }

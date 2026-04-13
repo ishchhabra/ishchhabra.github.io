@@ -1,6 +1,6 @@
 import type { Function } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { FunctionExpressionInstruction } from "../../../ir/instructions/value/FunctionExpression";
+import { FunctionExpressionOp } from "../../../ir/ops/func/FunctionExpression";
 import { type Scope } from "../../scope/Scope";
 import { buildIdentifier } from "../buildIdentifier";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -37,8 +37,8 @@ export function buildFunctionExpression(
   const capturedPlaces = [...functionIRBuilder.captures.values()];
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    FunctionExpressionInstruction,
+  const instruction = environment.createOperation(
+    FunctionExpressionOp,
     place,
     identifierPlace,
     functionIR,
@@ -46,6 +46,6 @@ export function buildFunctionExpression(
     node.async ?? false,
     capturedPlaces,
   );
-  functionBuilder.addInstruction(instruction);
+  functionBuilder.addOp(instruction);
   return place;
 }

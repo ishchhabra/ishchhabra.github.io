@@ -1,6 +1,6 @@
 import { Environment } from "../../environment";
-import { BaseInstruction } from "../base";
 import { FunctionIR, FunctionIRId } from "./FunctionIR";
+import { Operation } from "./Operation";
 
 export type ModuleGlobal =
   | {
@@ -13,11 +13,11 @@ export type ModuleGlobal =
     };
 
 export interface ModuleExport {
-  /** The ExportDeclarationInstruction for the export */
-  instruction: BaseInstruction;
+  /** The ExportDeclarationOp for the export */
+  instruction: Operation;
 
   /** The instruction that declares the exported variable (undefined for anonymous export default) */
-  declaration?: BaseInstruction;
+  declaration?: Operation;
 }
 
 /**

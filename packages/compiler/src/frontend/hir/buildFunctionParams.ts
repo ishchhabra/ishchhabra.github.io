@@ -146,13 +146,13 @@ function buildFunctionObjectPatternParam(
       if (property.computed) {
         // Computed keys emit normal value instructions; move them into the
         // function header so param codegen can resolve them during emission.
-        const insertPoint = functionBuilder.currentBlock.instructions.length;
+        const insertPoint = functionBuilder.currentBlock.operations.length;
         const p = buildNode(property.key, scope, functionBuilder, moduleBuilder, environment);
         if (p === undefined || Array.isArray(p)) {
           throw new Error("Object pattern computed key must be a single place");
         }
-        const keyInstructions = functionBuilder.currentBlock.instructions.splice(insertPoint);
-        functionBuilder.addHeaderInstructions(keyInstructions);
+        const keyInstructions = functionBuilder.currentBlock.spliceInstructions(insertPoint);
+        functionBuilder.addHeaderOps(keyInstructions);
         key = p;
       } else {
         key = buildFunctionObjectPropertyKey(property.key);
@@ -223,13 +223,13 @@ function buildFunctionAssignmentPatternParam(
 ): ParamBuildResult {
   // buildNode emits instructions into the current block, but parameter default
   // value instructions must live in the function header for codegen.
-  const insertPoint = functionBuilder.currentBlock.instructions.length;
+  const insertPoint = functionBuilder.currentBlock.operations.length;
   const rightPlace = buildNode(node.right, scope, functionBuilder, moduleBuilder, environment);
   if (rightPlace === undefined || Array.isArray(rightPlace)) {
     throw new Error("Default value must be a single expression");
   }
-  const defaultValueInstructions = functionBuilder.currentBlock.instructions.splice(insertPoint);
-  functionBuilder.addHeaderInstructions(defaultValueInstructions);
+  const defaultValueInstructions = functionBuilder.currentBlock.spliceInstructions(insertPoint);
+  functionBuilder.addHeaderOps(defaultValueInstructions);
 
   const leftResult = buildFunctionParam(
     node.left,

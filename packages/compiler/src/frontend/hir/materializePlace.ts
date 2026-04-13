@@ -1,37 +1,37 @@
 import { Environment } from "../../environment";
 import {
-  ArrayExpressionInstruction,
-  AwaitExpressionInstruction,
-  BinaryExpressionInstruction,
-  CallExpressionInstruction,
-  ClassExpressionInstruction,
-  CopyInstruction,
-  DeclareLocalInstruction,
-  ImportExpressionInstruction,
-  LiteralInstruction,
-  LoadContextInstruction,
-  LoadDynamicPropertyInstruction,
-  LoadGlobalInstruction,
-  LoadLocalInstruction,
-  LoadPhiInstruction,
-  LoadStaticPropertyInstruction,
-  LogicalExpressionInstruction,
-  MetaPropertyInstruction,
-  NewExpressionInstruction,
-  ObjectExpressionInstruction,
-  ObjectPropertyInstruction,
+  ArrayExpressionOp,
+  AwaitExpressionOp,
+  BinaryExpressionOp,
+  CallExpressionOp,
+  ClassExpressionOp,
+  CopyOp,
+  DeclareLocalOp,
+  ImportExpressionOp,
+  LiteralOp,
+  LoadContextOp,
+  LoadDynamicPropertyOp,
+  LoadGlobalOp,
+  LoadLocalOp,
+  LoadPhiOp,
+  LoadStaticPropertyOp,
+  LogicalExpressionOp,
+  MetaPropertyOp,
+  NewExpressionOp,
+  ObjectExpressionOp,
+  ObjectPropertyOp,
   Place,
-  RegExpLiteralInstruction,
-  SequenceExpressionInstruction,
-  StoreLocalInstruction,
-  TaggedTemplateExpressionInstruction,
-  TemplateLiteralInstruction,
-  ThisExpressionInstruction,
-  UnaryExpressionInstruction,
-  YieldExpressionInstruction,
+  RegExpLiteralOp,
+  SequenceExpressionOp,
+  StoreLocalOp,
+  TaggedTemplateExpressionOp,
+  TemplateLiteralOp,
+  ThisExpressionOp,
+  UnaryExpressionOp,
+  YieldExpressionOp,
 } from "../../ir";
-import { ArrowFunctionExpressionInstruction } from "../../ir/instructions/value/ArrowFunctionExpression";
-import { FunctionExpressionInstruction } from "../../ir/instructions/value/FunctionExpression";
+import { ArrowFunctionExpressionOp } from "../../ir/ops/func/ArrowFunctionExpression";
+import { FunctionExpressionOp } from "../../ir/ops/func/FunctionExpression";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
 
 export function materializePlace(
@@ -40,17 +40,15 @@ export function materializePlace(
   environment: Environment,
 ): Place {
   const bindingPlace = environment.createPlace(environment.createIdentifier());
-  functionBuilder.addInstruction(
-    environment.createInstruction(DeclareLocalInstruction, bindingPlace, "const"),
-  );
+  functionBuilder.addOp(environment.createOperation(DeclareLocalOp, bindingPlace, "const"));
   environment.registerDeclaration(
     bindingPlace.identifier.declarationId,
     functionBuilder.currentBlock.id,
     bindingPlace.id,
   );
-  functionBuilder.addInstruction(
-    environment.createInstruction(
-      StoreLocalInstruction,
+  functionBuilder.addOp(
+    environment.createOperation(
+      StoreLocalOp,
       environment.createPlace(environment.createIdentifier()),
       bindingPlace,
       valuePlace,
@@ -69,70 +67,70 @@ export function isStablePlace(
   if (seen.has(place.id)) return true;
   seen.add(place.id);
 
-  const instruction = environment.placeToInstruction.get(place.id);
+  const instruction = environment.placeToOp.get(place.id);
   if (!instruction) {
     return true;
   }
 
   if (
-    instruction instanceof DeclareLocalInstruction ||
-    instruction instanceof LoadLocalInstruction ||
-    instruction instanceof LoadContextInstruction ||
-    instruction instanceof LoadPhiInstruction ||
-    instruction instanceof LiteralInstruction ||
-    instruction instanceof ThisExpressionInstruction ||
-    instruction instanceof MetaPropertyInstruction
+    instruction instanceof DeclareLocalOp ||
+    instruction instanceof LoadLocalOp ||
+    instruction instanceof LoadContextOp ||
+    instruction instanceof LoadPhiOp ||
+    instruction instanceof LiteralOp ||
+    instruction instanceof ThisExpressionOp ||
+    instruction instanceof MetaPropertyOp
   ) {
     return true;
   }
 
-  if (instruction instanceof UnaryExpressionInstruction) {
+  if (instruction instanceof UnaryExpressionOp) {
     return (
       !["delete", "throw"].includes(instruction.operator) &&
       isStablePlace(instruction.argument, environment, seen)
     );
   }
 
-  if (instruction instanceof BinaryExpressionInstruction) {
+  if (instruction instanceof BinaryExpressionOp) {
     return (
       isStablePlace(instruction.left, environment, seen) &&
       isStablePlace(instruction.right, environment, seen)
     );
   }
 
-  if (instruction instanceof LogicalExpressionInstruction) {
+  if (instruction instanceof LogicalExpressionOp) {
     return (
       isStablePlace(instruction.left, environment, seen) &&
       isStablePlace(instruction.right, environment, seen)
     );
   }
 
-  if (instruction instanceof TemplateLiteralInstruction) {
+  if (instruction instanceof TemplateLiteralOp) {
     return instruction.expressions.every((expr) => isStablePlace(expr, environment, seen));
   }
 
-  if (instruction instanceof SequenceExpressionInstruction) {
+  if (instruction instanceof SequenceExpressionOp) {
     return instruction.expressions.every((expr) => isStablePlace(expr, environment, seen));
   }
 
   if (
-    instruction instanceof ArrayExpressionInstruction ||
-    instruction instanceof AwaitExpressionInstruction ||
-    instruction instanceof CallExpressionInstruction ||
-    instruction instanceof ClassExpressionInstruction ||
-    instruction instanceof CopyInstruction ||
-    instruction instanceof ArrowFunctionExpressionInstruction ||
-    instruction instanceof FunctionExpressionInstruction ||
-    instruction instanceof ImportExpressionInstruction ||
-    instruction instanceof LoadDynamicPropertyInstruction ||
-    instruction instanceof LoadGlobalInstruction ||
-    instruction instanceof LoadStaticPropertyInstruction ||
-    instruction instanceof NewExpressionInstruction ||
-    instruction instanceof ObjectExpressionInstruction ||
-    instruction instanceof ObjectPropertyInstruction ||
-    instruction instanceof RegExpLiteralInstruction ||
-    instruction instanceof TaggedTemplateExpressionInstruction ||
-    instruction instanceof YieldExpressionInstruction
+    instruction instanceof ArrayExpressionOp ||
+    instruction instanceof AwaitExpressionOp ||
+    instruction instanceof CallExpressionOp ||
+    instruction instanceof ClassExpressionOp ||
+    instruction instanceof CopyOp ||
+    instruction instanceof ArrowFunctionExpressionOp ||
+    instruction instanceof FunctionExpressionOp ||
+    instruction instanceof ImportExpressionOp ||
+    instruction instanceof LoadDynamicPropertyOp ||
+    instruction instanceof LoadGlobalOp ||
+    instruction instanceof LoadStaticPropertyOp ||
+    instruction instanceof NewExpressionOp ||
+    instruction instanceof ObjectExpressionOp ||
+    instruction instanceof ObjectPropertyOp ||
+    instruction instanceof RegExpLiteralOp ||
+    instruction instanceof TaggedTemplateExpressionOp ||
+    instruction instanceof YieldExpressionOp
   ) {
     return false;
   }

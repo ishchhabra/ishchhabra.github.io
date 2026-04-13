@@ -1,6 +1,6 @@
 import type { WhileStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { BranchTerminal, createInstructionId, JumpTerminal } from "../../../ir";
+import { BranchOp, createOperationId, JumpOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -20,7 +20,7 @@ export function buildWhileStatement(
 
   // Build the test block.
   const testBlock = environment.createBlock(scopeId);
-  functionBuilder.blocks.set(testBlock.id, testBlock);
+  functionBuilder.addBlock(testBlock);
 
   functionBuilder.currentBlock = testBlock;
   const testPlace = buildNode(node.test, scope, functionBuilder, moduleBuilder, environment);
@@ -31,7 +31,7 @@ export function buildWhileStatement(
 
   // Build the exit block (created early so break statements can reference it).
   const exitBlock = environment.createBlock(scopeId);
-  functionBuilder.blocks.set(exitBlock.id, exitBlock);
+  functionBuilder.addBlock(exitBlock);
 
   // Build the body block. When the body is a BlockStatement, use its
   // scope so it merges with the body block — the loop syntax provides { }.
@@ -39,7 +39,7 @@ export function buildWhileStatement(
     node.body.type === "BlockStatement" ? functionBuilder.scopeFor(node.body) : scope;
   const bodyScopeId = functionBuilder.lexicalScopeIdFor(bodyScope);
   const bodyBlock = environment.createBlock(bodyScopeId);
-  functionBuilder.blocks.set(bodyBlock.id, bodyBlock);
+  functionBuilder.addBlock(bodyBlock);
 
   functionBuilder.currentBlock = bodyBlock;
   functionBuilder.controlStack.push({
@@ -47,6 +47,7 @@ export function buildWhileStatement(
     label,
     breakTarget: exitBlock.id,
     continueTarget: testBlock.id,
+    structured: false,
   });
   if (label) {
     functionBuilder.blockLabels.set(testBlock.id, label);
@@ -56,8 +57,8 @@ export function buildWhileStatement(
   const bodyBlockTerminus = functionBuilder.currentBlock;
 
   // Set the branch terminal for the test block.
-  testBlockTerminus.terminal = new BranchTerminal(
-    createInstructionId(functionBuilder.environment),
+  testBlockTerminus.terminal = new BranchOp(
+    createOperationId(functionBuilder.environment),
     testPlace,
     bodyBlock.id,
     exitBlock.id,
@@ -67,17 +68,14 @@ export function buildWhileStatement(
   // Set the jump terminal for body block to create a back edge (unless the body
   // already ended with break/return/throw, which owns the terminal).
   if (bodyBlockTerminus.terminal === undefined) {
-    bodyBlockTerminus.terminal = new JumpTerminal(
-      createInstructionId(functionBuilder.environment),
+    bodyBlockTerminus.terminal = new JumpOp(
+      createOperationId(functionBuilder.environment),
       testBlock.id,
     );
   }
 
   // Set the jump terminal for the current block.
-  currentBlock.terminal = new JumpTerminal(
-    createInstructionId(functionBuilder.environment),
-    testBlock.id,
-  );
+  currentBlock.terminal = new JumpOp(createOperationId(functionBuilder.environment), testBlock.id);
 
   functionBuilder.currentBlock = exitBlock;
   return undefined;

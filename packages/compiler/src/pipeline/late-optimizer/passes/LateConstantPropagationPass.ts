@@ -1,10 +1,10 @@
 import {
-  BaseInstruction,
+  Operation,
   BlockId,
   DeclarationId,
-  LiteralInstruction,
-  LoadLocalInstruction,
-  StoreLocalInstruction,
+  LiteralOp,
+  LoadLocalOp,
+  StoreLocalOp,
   TPrimitiveValue,
 } from "../../../ir";
 import { FunctionIR } from "../../../ir/core/FunctionIR";
@@ -40,24 +40,25 @@ export class LateConstantPropagationPass extends BaseOptimizationPass {
 
     let changed = false;
 
-    for (const [blockId, block] of this.functionIR.blocks) {
+    for (const block of this.functionIR.allBlocks()) {
+      const blockId = block.id;
       const state = this.meet(blockId, outState);
 
-      for (let i = 0; i < block.instructions.length; i++) {
-        const instr = block.instructions[i];
+      for (let i = 0; i < block.operations.length; i++) {
+        const instr = block.operations[i];
 
         // ------------------------------------------------------------
         // Rewrite loads using known constants
         // ------------------------------------------------------------
 
-        if (instr instanceof LoadLocalInstruction) {
+        if (instr instanceof LoadLocalOp) {
           const decl = instr.value.identifier.declarationId;
           const value = state.get(decl);
 
           if (value && value.kind === "const") {
-            const litInstr = new LiteralInstruction(instr.id, instr.place, value.value);
+            const litInstr = new LiteralOp(instr.id, instr.place, value.value);
 
-            block.replaceInstruction(i, litInstr);
+            block.replaceOp(i, litInstr);
 
             changed = true;
             continue;
@@ -106,13 +107,13 @@ export class LateConstantPropagationPass extends BaseOptimizationPass {
     return result ?? new Map();
   }
 
-  private transfer(instr: BaseInstruction, state: ConstState): void {
-    if (instr instanceof StoreLocalInstruction) {
+  private transfer(instr: Operation, state: ConstState): void {
+    if (instr instanceof StoreLocalOp) {
       const x = instr.lval.identifier.declarationId;
 
       const valueDef = instr.value.identifier.definer;
 
-      if (valueDef instanceof LiteralInstruction) {
+      if (valueDef instanceof LiteralOp) {
         state.set(x, { kind: "const", value: valueDef.value });
       } else {
         state.set(x, TOP);

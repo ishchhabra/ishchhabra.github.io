@@ -1,5 +1,4 @@
 import { CompilerOptions } from "../../compile";
-import { BasicBlock, BlockId } from "../../ir";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { AnalysisManager } from "../analysis/AnalysisManager";
@@ -10,7 +9,7 @@ import { LateCopyPropagationPass } from "./passes/LateCopyPropagationPass";
 import { LateDeadCodeEliminationPass } from "./passes/LateDeadCodeEliminationPass";
 
 interface LateOptimizerResult {
-  blocks: Map<BlockId, BasicBlock>;
+  changed: boolean;
 }
 
 /**
@@ -32,64 +31,52 @@ export class LateOptimizer {
   ) {}
 
   public run(): LateOptimizerResult {
-    let blocks = this.functionIR.blocks;
-    let changed = true;
+    let anyChanged = false;
+    let iterationChanged = true;
 
-    while (changed) {
-      changed = false;
+    while (iterationChanged) {
+      iterationChanged = false;
 
       if (this.options.enableLateConstantPropagationPass) {
-        const constantPropagationResult = new LateConstantPropagationPass(
-          this.functionIR,
-          this.AM,
-        ).run();
-        if (constantPropagationResult.changed) {
-          changed = true;
+        if (new LateConstantPropagationPass(this.functionIR, this.AM).run().changed) {
+          iterationChanged = true;
           this.AM.invalidateFunction(this.functionIR);
         }
-        blocks = constantPropagationResult.blocks;
       }
 
       if (this.options.enableLateCopyPropagationPass) {
-        const copyPropagationResult = new LateCopyPropagationPass(this.functionIR, this.AM).run();
-        if (copyPropagationResult.changed) {
-          changed = true;
+        if (new LateCopyPropagationPass(this.functionIR, this.AM).run().changed) {
+          iterationChanged = true;
           this.AM.invalidateFunction(this.functionIR);
         }
-        blocks = copyPropagationResult.blocks;
       }
 
       if (this.options.enableLateCopyFoldingPass) {
-        const copyFoldingResult = new LateCopyFoldingPass(this.functionIR).run();
-        if (copyFoldingResult.changed) {
-          changed = true;
+        if (new LateCopyFoldingPass(this.functionIR).run().changed) {
+          iterationChanged = true;
           this.AM.invalidateFunction(this.functionIR);
         }
-        blocks = copyFoldingResult.blocks;
       }
 
       if (this.options.enableLateCopyCoalescingPass) {
-        const copyCoalescingResult = new LateCopyCoalescingPass(this.functionIR).run();
-        if (copyCoalescingResult.changed) {
-          changed = true;
+        if (new LateCopyCoalescingPass(this.functionIR).run().changed) {
+          iterationChanged = true;
           this.AM.invalidateFunction(this.functionIR);
         }
-        blocks = copyCoalescingResult.blocks;
       }
 
       if (this.options.enableLateDeadCodeEliminationPass) {
-        const lateDeadCodeEliminationResult = new LateDeadCodeEliminationPass(
-          this.functionIR,
-          this.moduleIR.environment,
-        ).run();
-        if (lateDeadCodeEliminationResult.changed) {
-          changed = true;
+        if (
+          new LateDeadCodeEliminationPass(this.functionIR, this.moduleIR.environment).run().changed
+        ) {
+          iterationChanged = true;
           this.AM.invalidateFunction(this.functionIR);
         }
-        blocks = lateDeadCodeEliminationResult.blocks;
       }
+
+      anyChanged ||= iterationChanged;
     }
 
-    return { blocks };
+    return { changed: anyChanged };
   }
 }

@@ -1,6 +1,6 @@
 import type { Function } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { FunctionDeclarationInstruction } from "../../../ir/instructions/declaration/FunctionDeclaration";
+import { FunctionDeclarationOp } from "../../../ir/ops/func/FunctionDeclaration";
 import { type Scope, type ScopeMap } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -55,7 +55,7 @@ export function registerFunctionDeclarationBinding(
 }
 
 /**
- * Phase 2: Build the function body and emit a dedicated FunctionDeclarationInstruction.
+ * Phase 2: Build the function body and emit a dedicated FunctionDeclarationOp.
  * Per ECMA-262 ss.10.2.11, InstantiateFunctionObject runs after ALL bindings in
  * the scope have been created, so this must be called after all register*
  * functions have completed.
@@ -110,14 +110,14 @@ export function initializeFunctionDeclaration(
   functionBuilder.propagateCapturesFrom(functionIRBuilder);
   const capturedPlaces = [...functionIRBuilder.captures.values()];
 
-  const instruction = environment.createInstruction(
-    FunctionDeclarationInstruction,
+  const instruction = environment.createOperation(
+    FunctionDeclarationOp,
     identifierPlace,
     functionIR,
     node.generator ?? false,
     node.async ?? false,
     capturedPlaces,
   );
-  functionBuilder.addInstruction(instruction);
-  environment.registerDeclarationInstruction(identifierPlace, instruction);
+  functionBuilder.addOp(instruction);
+  environment.registerDeclarationOp(identifierPlace, instruction);
 }

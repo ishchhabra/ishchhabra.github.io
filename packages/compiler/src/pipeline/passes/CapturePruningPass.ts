@@ -1,35 +1,32 @@
-import { BaseInstruction, IdentifierId } from "../../ir";
+import { Operation, IdentifierId } from "../../ir";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { Place } from "../../ir/core/Place";
-import { FunctionDeclarationInstruction } from "../../ir/instructions/declaration/FunctionDeclaration";
-import { ArrowFunctionExpressionInstruction } from "../../ir/instructions/value/ArrowFunctionExpression";
-import { FunctionExpressionInstruction } from "../../ir/instructions/value/FunctionExpression";
+import { FunctionDeclarationOp } from "../../ir/ops/func/FunctionDeclaration";
+import { ArrowFunctionExpressionOp } from "../../ir/ops/func/ArrowFunctionExpression";
+import { FunctionExpressionOp } from "../../ir/ops/func/FunctionExpression";
 import { BaseOptimizationPass, OptimizationResult } from "../late-optimizer/OptimizationPass";
 
 type FunctionBearingInstruction =
-  | FunctionDeclarationInstruction
-  | ArrowFunctionExpressionInstruction
-  | FunctionExpressionInstruction;
+  | FunctionDeclarationOp
+  | ArrowFunctionExpressionOp
+  | FunctionExpressionOp;
 
 function getFunctionBearingFields(
-  instr: BaseInstruction,
+  instr: Operation,
 ): { functionIR: FunctionIR; captures: Place[] } | undefined {
   if (
-    instr instanceof FunctionDeclarationInstruction ||
-    instr instanceof ArrowFunctionExpressionInstruction ||
-    instr instanceof FunctionExpressionInstruction
+    instr instanceof FunctionDeclarationOp ||
+    instr instanceof ArrowFunctionExpressionOp ||
+    instr instanceof FunctionExpressionOp
   ) {
     return { functionIR: instr.functionIR, captures: instr.captures };
   }
   return undefined;
 }
 
-function rebuildWithCaptures(
-  instr: FunctionBearingInstruction,
-  newCaptures: Place[],
-): BaseInstruction {
-  if (instr instanceof FunctionDeclarationInstruction) {
-    return new FunctionDeclarationInstruction(
+function rebuildWithCaptures(instr: FunctionBearingInstruction, newCaptures: Place[]): Operation {
+  if (instr instanceof FunctionDeclarationOp) {
+    return new FunctionDeclarationOp(
       instr.id,
       instr.place,
       instr.functionIR,
@@ -38,8 +35,8 @@ function rebuildWithCaptures(
       newCaptures,
       instr.emit,
     );
-  } else if (instr instanceof ArrowFunctionExpressionInstruction) {
-    return new ArrowFunctionExpressionInstruction(
+  } else if (instr instanceof ArrowFunctionExpressionOp) {
+    return new ArrowFunctionExpressionOp(
       instr.id,
       instr.place,
       instr.functionIR,
@@ -49,7 +46,7 @@ function rebuildWithCaptures(
       newCaptures,
     );
   } else {
-    return new FunctionExpressionInstruction(
+    return new FunctionExpressionOp(
       instr.id,
       instr.place,
       instr.identifier,
@@ -82,9 +79,9 @@ export class CapturePruningPass extends BaseOptimizationPass {
   protected step(): OptimizationResult {
     let changed = false;
 
-    for (const block of this.functionIR.blocks.values()) {
-      for (let i = 0; i < block.instructions.length; i++) {
-        const instr = block.instructions[i];
+    for (const block of this.functionIR.allBlocks()) {
+      for (let i = 0; i < block.operations.length; i++) {
+        const instr = block.operations[i];
         const fields = getFunctionBearingFields(instr);
         if (!fields || fields.captures.length === 0) {
           continue;
@@ -130,10 +127,7 @@ export class CapturePruningPass extends BaseOptimizationPass {
         const newCaptures = liveIndices.map((j) => captures[j]);
         const newCaptureParams = liveIndices.map((j) => captureParams[j]);
 
-        block.replaceInstruction(
-          i,
-          rebuildWithCaptures(instr as FunctionBearingInstruction, newCaptures),
-        );
+        block.replaceOp(i, rebuildWithCaptures(instr as FunctionBearingInstruction, newCaptures));
 
         // Update captureParams on the inner FunctionIR to match.
         captureParams.length = 0;

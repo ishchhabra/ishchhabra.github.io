@@ -1,5 +1,6 @@
 import { IdentifierId } from "../../ir";
 import { FunctionIR } from "../../ir/core/FunctionIR";
+import type { Place } from "../../ir/core/Place";
 import { FunctionAnalysis, AnalysisManager } from "./AnalysisManager";
 
 /**
@@ -49,8 +50,8 @@ export class LivenessAnalysis extends FunctionAnalysis<LivenessResult> {
   run(functionIR: FunctionIR, _AM: AnalysisManager): LivenessResult {
     // Seed: every identifier directly read by an instruction or terminal.
     const liveIds = new Set<IdentifierId>();
-    for (const block of functionIR.blocks.values()) {
-      for (const instr of block.instructions) {
+    for (const block of functionIR.allBlocks()) {
+      for (const instr of block.operations) {
         for (const place of instr.getOperands()) {
           liveIds.add(place.identifier.id);
         }
@@ -81,8 +82,8 @@ export class LivenessAnalysis extends FunctionAnalysis<LivenessResult> {
       // Structure propagation: if a structure is live, its reads are live.
       for (const structure of functionIR.structures.values()) {
         const isLive =
-          structure.hasSideEffects() ||
-          structure.getDefs().some((p) => liveIds.has(p.identifier.id));
+          structure.hasSideEffects(functionIR.moduleIR.environment) ||
+          structure.getDefs().some((p: Place) => liveIds.has(p.identifier.id));
         if (isLive) {
           for (const place of structure.getOperands()) {
             if (!liveIds.has(place.identifier.id)) {

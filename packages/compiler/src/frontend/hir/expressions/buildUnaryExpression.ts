@@ -1,6 +1,6 @@
 import type { UnaryExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { UnaryExpressionInstruction } from "../../../ir";
+import { UnaryExpressionOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -26,12 +26,12 @@ export function buildUnaryExpression(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    UnaryExpressionInstruction,
+  const instruction = environment.createOperation(
+    UnaryExpressionOp,
     place,
     node.operator,
     argumentPlace,
   );
-  functionBuilder.addInstruction(instruction);
+  functionBuilder.addOp(instruction);
   return place;
 }

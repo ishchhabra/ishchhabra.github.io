@@ -2,19 +2,19 @@ import type * as AST from "../../estree";
 import type { AssignmentExpression, MemberExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
 import {
-  ArrayDestructureInstruction,
-  BinaryExpressionInstruction,
-  BranchTerminal,
-  createInstructionId,
-  DeclareLocalInstruction,
-  JumpTerminal,
-  LiteralInstruction,
-  LoadLocalInstruction,
-  ObjectDestructureInstruction,
+  ArrayDestructureOp,
+  BinaryExpressionOp,
+  BranchOp,
+  createOperationId,
+  DeclareLocalOp,
+  JumpOp,
+  LiteralOp,
+  LoadLocalOp,
+  ObjectDestructureOp,
   Place,
-  StoreContextInstruction,
-  StoreLocalInstruction,
-  UnaryExpressionInstruction,
+  StoreContextOp,
+  StoreLocalOp,
+  UnaryExpressionOp,
 } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildLVal } from "../buildLVal";
@@ -136,9 +136,9 @@ function buildIdentifierAssignment(
     }
 
     const computedPlace = environment.createPlace(environment.createIdentifier());
-    functionBuilder.addInstruction(
-      environment.createInstruction(
-        BinaryExpressionInstruction,
+    functionBuilder.addOp(
+      environment.createOperation(
+        BinaryExpressionOp,
         computedPlace,
         operator.slice(0, -1) as AST.BinaryExpression["operator"],
         currentValuePlace,
@@ -166,23 +166,23 @@ function buildIdentifierAssignment(
   const place = environment.createPlace(identifier);
   const isContext = environment.contextDeclarationIds.has(declarationId);
   const instruction = isContext
-    ? environment.createInstruction(
-        StoreContextInstruction,
+    ? environment.createOperation(
+        StoreContextOp,
         place,
         target.place,
         resultPlace,
         "let",
         "assignment",
       )
-    : environment.createInstruction(
-        StoreLocalInstruction,
+    : environment.createOperation(
+        StoreLocalOp,
         place,
         target.place,
         resultPlace,
         "const",
         "assignment",
       );
-  functionBuilder.addInstruction(instruction);
+  functionBuilder.addOp(instruction);
   return resultPlace;
 }
 
@@ -201,9 +201,7 @@ function buildLogicalCondition(
 ): Place {
   if (operator === "||=") {
     const place = environment.createPlace(environment.createIdentifier());
-    functionBuilder.addInstruction(
-      environment.createInstruction(UnaryExpressionInstruction, place, "!", valuePlace),
-    );
+    functionBuilder.addOp(environment.createOperation(UnaryExpressionOp, place, "!", valuePlace));
     return place;
   }
   if (operator === "&&=") {
@@ -211,12 +209,10 @@ function buildLogicalCondition(
   }
   // ??= : value == null (checks both null and undefined)
   const nullPlace = environment.createPlace(environment.createIdentifier());
-  functionBuilder.addInstruction(
-    environment.createInstruction(LiteralInstruction, nullPlace, null),
-  );
+  functionBuilder.addOp(environment.createOperation(LiteralOp, nullPlace, null));
   const place = environment.createPlace(environment.createIdentifier());
-  functionBuilder.addInstruction(
-    environment.createInstruction(BinaryExpressionInstruction, place, "==", valuePlace, nullPlace),
+  functionBuilder.addOp(
+    environment.createOperation(BinaryExpressionOp, place, "==", valuePlace, nullPlace),
   );
   return place;
 }
@@ -232,9 +228,7 @@ function emitResultVariable(
   environment: Environment,
 ): { bindingPlace: Place; storePlace: Place } {
   const bindingPlace = environment.createPlace(environment.createIdentifier());
-  functionBuilder.addInstruction(
-    environment.createInstruction(DeclareLocalInstruction, bindingPlace, "let"),
-  );
+  functionBuilder.addOp(environment.createOperation(DeclareLocalOp, bindingPlace, "let"));
   environment.registerDeclaration(
     bindingPlace.identifier.declarationId,
     functionBuilder.currentBlock.id,
@@ -246,9 +240,9 @@ function emitResultVariable(
     bindingPlace,
   );
   const storePlace = environment.createPlace(environment.createIdentifier());
-  functionBuilder.addInstruction(
-    environment.createInstruction(
-      StoreLocalInstruction,
+  functionBuilder.addOp(
+    environment.createOperation(
+      StoreLocalOp,
       storePlace,
       bindingPlace,
       initialValue,
@@ -277,9 +271,9 @@ function emitResultUpdate(
     functionBuilder.currentBlock.id,
     updateBinding.id,
   );
-  functionBuilder.addInstruction(
-    environment.createInstruction(
-      StoreLocalInstruction,
+  functionBuilder.addOp(
+    environment.createOperation(
+      StoreLocalOp,
       environment.createPlace(environment.createIdentifier()),
       updateBinding,
       newValue,
@@ -327,12 +321,12 @@ function buildLogicalIdentifierAssignment(
   const scopeId = functionBuilder.lexicalScopeIdFor(scope);
 
   const assignBlock = environment.createBlock(scopeId);
-  functionBuilder.blocks.set(assignBlock.id, assignBlock);
+  functionBuilder.addBlock(assignBlock);
   const mergeBlock = environment.createBlock(scopeId);
-  functionBuilder.blocks.set(mergeBlock.id, mergeBlock);
+  functionBuilder.addBlock(mergeBlock);
 
-  functionBuilder.currentBlock.terminal = new BranchTerminal(
-    createInstructionId(environment),
+  functionBuilder.currentBlock.terminal = new BranchOp(
+    createOperationId(environment),
     conditionPlace,
     assignBlock.id,
     mergeBlock.id,
@@ -361,18 +355,18 @@ function buildLogicalIdentifierAssignment(
     throw new Error(`Expected binding assignment target, got: ${target.kind}`);
   }
   const isContext = environment.contextDeclarationIds.has(declarationId);
-  functionBuilder.addInstruction(
+  functionBuilder.addOp(
     isContext
-      ? environment.createInstruction(
-          StoreContextInstruction,
+      ? environment.createOperation(
+          StoreContextOp,
           environment.createPlace(environment.createIdentifier()),
           target.place,
           stabilizedRightPlace,
           "let",
           "assignment",
         )
-      : environment.createInstruction(
-          StoreLocalInstruction,
+      : environment.createOperation(
+          StoreLocalOp,
           environment.createPlace(environment.createIdentifier()),
           target.place,
           stabilizedRightPlace,
@@ -384,18 +378,13 @@ function buildLogicalIdentifierAssignment(
   // _result = y;
   emitResultUpdate(bindingPlace, stabilizedRightPlace, functionBuilder, environment);
 
-  functionBuilder.currentBlock.terminal = new JumpTerminal(
-    createInstructionId(environment),
-    mergeBlock.id,
-  );
+  functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), mergeBlock.id);
 
   // Load _result at the merge block. SSA creates a phi merging the
   // initial value (skip path) and the updated value (assign path).
   functionBuilder.currentBlock = mergeBlock;
   const resultPlace = environment.createPlace(environment.createIdentifier());
-  functionBuilder.addInstruction(
-    environment.createInstruction(LoadLocalInstruction, resultPlace, bindingPlace),
-  );
+  functionBuilder.addOp(environment.createOperation(LoadLocalOp, resultPlace, bindingPlace));
   return resultPlace;
 }
 
@@ -430,9 +419,9 @@ function buildMemberExpressionAssignment(
     }
 
     rightPlace = environment.createPlace(environment.createIdentifier());
-    functionBuilder.addInstruction(
-      environment.createInstruction(
-        BinaryExpressionInstruction,
+    functionBuilder.addOp(
+      environment.createOperation(
+        BinaryExpressionOp,
         rightPlace,
         operator.slice(0, -1) as AST.BinaryExpression["operator"],
         currentValuePlace,
@@ -489,19 +478,17 @@ function buildLogicalMemberAssignment(
 
   // Build the condition from the cached result, not from testPlace.
   const cachedPlace = environment.createPlace(environment.createIdentifier());
-  functionBuilder.addInstruction(
-    environment.createInstruction(LoadLocalInstruction, cachedPlace, resultBinding),
-  );
+  functionBuilder.addOp(environment.createOperation(LoadLocalOp, cachedPlace, resultBinding));
   const conditionPlace = buildLogicalCondition(operator, cachedPlace, functionBuilder, environment);
   const scopeId = functionBuilder.lexicalScopeIdFor(scope);
 
   const assignBlock = environment.createBlock(scopeId);
-  functionBuilder.blocks.set(assignBlock.id, assignBlock);
+  functionBuilder.addBlock(assignBlock);
   const mergeBlock = environment.createBlock(scopeId);
-  functionBuilder.blocks.set(mergeBlock.id, mergeBlock);
+  functionBuilder.addBlock(mergeBlock);
 
-  functionBuilder.currentBlock.terminal = new BranchTerminal(
-    createInstructionId(environment),
+  functionBuilder.currentBlock.terminal = new BranchOp(
+    createOperationId(environment),
     conditionPlace,
     assignBlock.id,
     mergeBlock.id,
@@ -519,25 +506,20 @@ function buildLogicalMemberAssignment(
 
   // Store the property.
   const storePlace = environment.createPlace(environment.createIdentifier());
-  functionBuilder.addInstruction(
+  functionBuilder.addOp(
     createStoreMemberReferenceInstruction(reference, storePlace, stabilizedRightPlace, environment),
   );
 
   // _result = y;
   emitResultUpdate(resultBinding, stabilizedRightPlace, functionBuilder, environment);
 
-  functionBuilder.currentBlock.terminal = new JumpTerminal(
-    createInstructionId(environment),
-    mergeBlock.id,
-  );
+  functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), mergeBlock.id);
 
   // Load _result at the merge block. SSA creates a phi merging the
   // initial value (skip path) and the updated value (assign path).
   functionBuilder.currentBlock = mergeBlock;
   const resultPlace = environment.createPlace(environment.createIdentifier());
-  functionBuilder.addInstruction(
-    environment.createInstruction(LoadLocalInstruction, resultPlace, resultBinding),
-  );
+  functionBuilder.addOp(environment.createOperation(LoadLocalOp, resultPlace, resultBinding));
   return resultPlace;
 }
 
@@ -575,8 +557,8 @@ function buildDestructuringAssignment(
   const place = environment.createPlace(environment.createIdentifier());
   let instruction;
   if (target.kind === "array") {
-    instruction = environment.createInstruction(
-      ArrayDestructureInstruction,
+    instruction = environment.createOperation(
+      ArrayDestructureOp,
       place,
       target.elements,
       resultPlace,
@@ -584,8 +566,8 @@ function buildDestructuringAssignment(
       null,
     );
   } else if (target.kind === "object") {
-    instruction = environment.createInstruction(
-      ObjectDestructureInstruction,
+    instruction = environment.createOperation(
+      ObjectDestructureOp,
       place,
       target.properties,
       resultPlace,
@@ -595,7 +577,7 @@ function buildDestructuringAssignment(
   } else {
     throw new Error(`Unsupported destructure target: ${target.kind}`);
   }
-  functionBuilder.addInstruction(instruction);
+  functionBuilder.addOp(instruction);
   return resultPlace;
 }
 
@@ -625,9 +607,9 @@ function buildAssignmentRight(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  functionBuilder.addInstruction(
-    environment.createInstruction(
-      BinaryExpressionInstruction,
+  functionBuilder.addOp(
+    environment.createOperation(
+      BinaryExpressionOp,
       place,
       binaryOperator as AST.BinaryExpression["operator"],
       leftPlace,

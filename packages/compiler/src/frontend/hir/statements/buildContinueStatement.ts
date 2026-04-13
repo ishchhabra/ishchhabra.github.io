@@ -1,6 +1,6 @@
 import type { ContinueStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { createInstructionId, JumpTerminal } from "../../../ir";
+import { ContinueOp, JumpOp, createOperationId } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 export function buildContinueStatement(
@@ -9,17 +9,19 @@ export function buildContinueStatement(
   environment: Environment,
 ) {
   const label = node.label?.name;
-  const target = functionBuilder.getContinueTarget(label);
-  if (target === undefined) {
+  const ctx = functionBuilder.getContinueControl(label);
+  if (ctx === undefined) {
     throw new Error(
       label ? `Labeled continue target "${label}" not found` : "Continue statement outside of loop",
     );
   }
 
-  functionBuilder.currentBlock.terminal = new JumpTerminal(
-    createInstructionId(environment),
-    target,
-  );
+  // Structured loops get a ContinueOp; flat loops keep a raw JumpOp
+  // back-edge so the existing back-edge detection in codegen continues
+  // to work.
+  functionBuilder.currentBlock.terminal = ctx.structured
+    ? new ContinueOp(createOperationId(environment), label)
+    : new JumpOp(createOperationId(environment), ctx.continueTarget);
 
   return undefined;
 }

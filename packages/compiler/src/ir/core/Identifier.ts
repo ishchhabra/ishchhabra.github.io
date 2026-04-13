@@ -29,8 +29,8 @@ export function makeDeclarationId(id: number): DeclarationId {
  *
  * This is the element type stored in {@link Identifier.uses}. The
  * constraint is intentionally structural (any object with
- * `getOperands()`) so that BaseInstruction, BaseTerminal, and
- * BaseStructure all satisfy it without a circular import.
+ * `getOperands()`) so that Operation, Operation, and
+ * Operation all satisfy it without a circular import.
  */
 export type User = {
   getOperands(): readonly { readonly identifier: Identifier }[];

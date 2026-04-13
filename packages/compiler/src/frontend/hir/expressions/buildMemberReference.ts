@@ -1,10 +1,10 @@
 import type { Expression, MemberExpression, PrivateIdentifier } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
-import { LoadDynamicPropertyInstruction } from "../../../ir/instructions/memory/LoadDynamicProperty";
-import { LoadStaticPropertyInstruction } from "../../../ir/instructions/memory/LoadStaticProperty";
-import { StoreDynamicPropertyInstruction } from "../../../ir/instructions/memory/StoreDynamicProperty";
-import { StoreStaticPropertyInstruction } from "../../../ir/instructions/memory/StoreStaticProperty";
+import { LoadDynamicPropertyOp } from "../../../ir/ops/prop/LoadDynamicProperty";
+import { LoadStaticPropertyOp } from "../../../ir/ops/prop/LoadStaticProperty";
+import { StoreDynamicPropertyOp } from "../../../ir/ops/prop/StoreDynamicProperty";
+import { StoreStaticPropertyOp } from "../../../ir/ops/prop/StoreStaticProperty";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -127,8 +127,8 @@ export function createLoadMemberReferenceInstruction(
   environment: Environment,
 ) {
   if (reference.kind === "static") {
-    return environment.createInstruction(
-      LoadStaticPropertyInstruction,
+    return environment.createOperation(
+      LoadStaticPropertyOp,
       place,
       reference.object,
       reference.property,
@@ -136,8 +136,8 @@ export function createLoadMemberReferenceInstruction(
     );
   }
 
-  return environment.createInstruction(
-    LoadDynamicPropertyInstruction,
+  return environment.createOperation(
+    LoadDynamicPropertyOp,
     place,
     reference.object,
     reference.property,
@@ -151,9 +151,7 @@ export function loadMemberReference(
   environment: Environment,
 ): Place {
   const place = environment.createPlace(environment.createIdentifier());
-  functionBuilder.addInstruction(
-    createLoadMemberReferenceInstruction(reference, place, environment),
-  );
+  functionBuilder.addOp(createLoadMemberReferenceInstruction(reference, place, environment));
   return place;
 }
 
@@ -164,8 +162,8 @@ export function createStoreMemberReferenceInstruction(
   environment: Environment,
 ) {
   if (reference.kind === "static") {
-    return environment.createInstruction(
-      StoreStaticPropertyInstruction,
+    return environment.createOperation(
+      StoreStaticPropertyOp,
       place,
       reference.object,
       reference.property,
@@ -173,8 +171,8 @@ export function createStoreMemberReferenceInstruction(
     );
   }
 
-  return environment.createInstruction(
-    StoreDynamicPropertyInstruction,
+  return environment.createOperation(
+    StoreDynamicPropertyOp,
     place,
     reference.object,
     reference.property,
@@ -189,7 +187,7 @@ export function storeMemberReference(
   environment: Environment,
 ): Place {
   const place = environment.createPlace(environment.createIdentifier());
-  functionBuilder.addInstruction(
+  functionBuilder.addOp(
     createStoreMemberReferenceInstruction(reference, place, valuePlace, environment),
   );
   return place;

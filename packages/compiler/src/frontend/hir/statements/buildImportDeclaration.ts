@@ -1,6 +1,6 @@
 import type { ImportDeclaration, ImportOrExportKind, Node } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { ImportDeclarationInstruction } from "../../../ir";
+import { ImportDeclarationOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildImportSpecifier } from "../buildImportSpecifier";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -48,13 +48,13 @@ export function buildImportDeclaration(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    ImportDeclarationInstruction,
+  const instruction = environment.createOperation(
+    ImportDeclarationOp,
     place,
     sourceValue,
     resolvedSourceValue,
     specifierPlaces,
   );
-  functionBuilder.addInstruction(instruction);
+  functionBuilder.addOp(instruction);
   return place;
 }

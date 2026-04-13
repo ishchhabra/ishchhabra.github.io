@@ -1,7 +1,7 @@
 import { BlockId } from "../ir";
 import { FunctionIR } from "../ir/core/FunctionIR";
 import { ModuleIR } from "../ir/core/ModuleIR";
-import { JumpTerminal } from "../ir/core/Terminal";
+import { JumpOp } from "../ir/ops/control";
 import { AnalysisManager } from "./analysis/AnalysisManager";
 import {
   type ControlFlowGraph,
@@ -89,7 +89,7 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
     // getPredecessors does not treat as successors).
     const referenced = new Set<BlockId>();
     for (const blockId of reachable) {
-      const block = this.functionIR.blocks.get(blockId);
+      const block = this.functionIR.maybeBlock(blockId);
       if (!block) continue;
       if (block.terminal) {
         for (const ref of block.terminal.getBlockRefs()) {
@@ -105,12 +105,13 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
     }
 
     let changed = false;
-    for (const [blockId, block] of this.functionIR.blocks) {
+    for (const block of this.functionIR.allBlocks()) {
+      const blockId = block.id;
       if (reachable.has(blockId)) continue;
 
       if (referenced.has(blockId)) {
         // Still referenced — clear instructions but keep the block.
-        if (block.instructions.length > 0) {
+        if (block.operations.length > 0) {
           block.clearInstructions();
           changed = true;
         }
@@ -133,14 +134,14 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
   private mergeLinearChains(cfg: ControlFlowGraph): boolean {
     let changed = false;
 
-    for (const blockId of Array.from(this.functionIR.blocks.keys())) {
-      if (!this.functionIR.blocks.has(blockId)) continue;
+    for (const blockId of [...this.functionIR.allBlocks()].map((_b) => _b.id)) {
+      if (!this.functionIR.hasBlock(blockId)) continue;
 
       const preds = cfg.predecessors.get(blockId);
       if (!preds || preds.size !== 1) continue;
 
       const [predId] = preds;
-      if (!this.functionIR.blocks.has(predId)) continue;
+      if (!this.functionIR.hasBlock(predId)) continue;
 
       const predSuccs = cfg.successors.get(predId);
       if (!predSuccs || predSuccs.size !== 1) continue;
@@ -163,22 +164,20 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
       if (this.functionIR.structures.has(blockId)) continue;
       if (this.functionIR.structures.has(predId)) continue;
 
-      const predBlock = this.functionIR.blocks.get(predId)!;
-      const block = this.functionIR.blocks.get(blockId)!;
+      const predBlock = this.functionIR.getBlock(predId);
+      const block = this.functionIR.getBlock(blockId);
 
       // Don't merge blocks with different scope IDs — the scope boundary
       // represents a source-level { } block that the codegen must emit.
       if (predBlock.scopeId !== block.scopeId) continue;
 
-      // Absorb instructions and terminal. Instructions are moved (not
-      // created/deleted), so use-chains stay valid without re-registration.
-      // Terminal must be detached from `block` first (unregisters), then
-      // attached to `predBlock` (re-registers) — block-agnostic use-chains
-      // end up with the terminal registered exactly once.
-      predBlock.instructions.push(...block.instructions);
-      const movedTerminal = block.terminal;
-      block.terminal = undefined;
-      predBlock.terminal = movedTerminal;
+      // Absorb all ops from `block` into `predBlock`. Ops are *moved*,
+      // so use-chains stay valid. Detach the predecessor's current
+      // terminator first — absorbFrom refuses to merge into a block
+      // that still has a terminator (it would violate the single-array
+      // invariant "terminator is last").
+      predBlock.terminal = undefined;
+      predBlock.absorbFrom(block);
 
       // Re-home declToPlaces references.
       for (const [, places] of this.moduleIR.environment.declToPlaces) {
@@ -195,7 +194,7 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
       // Remap all references to the deleted block.
       this.remapBlockReferences(blockId, predId);
 
-      this.functionIR.blocks.delete(blockId);
+      this.functionIR.removeBlock(blockId);
       changed = true;
     }
     return changed;
@@ -214,16 +213,17 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
    *
    * Unlike mergeLinearChains, this handles the case where B has multiple
    * predecessors or is referenced by terminals that don't create CFG
-   * predecessor edges (e.g. BranchTerminal.fallthrough).
+   * predecessor edges (e.g. BranchOp.fallthrough).
    */
   private eliminateEmptyBlocks(cfg: ControlFlowGraph): boolean {
     let changed = false;
 
-    for (const [blockId, block] of this.functionIR.blocks) {
+    for (const block of this.functionIR.allBlocks()) {
+      const blockId = block.id;
       // Must be an empty unconditional jump.
       if (blockId === this.functionIR.entryBlockId) continue;
-      if (block.instructions.length !== 0) continue;
-      if (!(block.terminal instanceof JumpTerminal)) continue;
+      if (block.operations.length !== 0) continue;
+      if (!(block.terminal instanceof JumpOp)) continue;
       if (this.functionIR.structures.has(blockId)) continue;
       if (this.blockHasPhis(blockId)) continue;
       if (this.isReferencedByStructure(blockId)) continue;
@@ -277,8 +277,8 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
    * contents, all dangling references must be updated.
    */
   private remapBlockReferences(from: BlockId, to: BlockId): void {
-    for (const [otherId, otherBlock] of this.functionIR.blocks) {
-      if (otherId === from || otherId === to) continue;
+    for (const otherBlock of this.functionIR.allBlocks()) {
+      if (otherBlock.id === from || otherBlock.id === to) continue;
       otherBlock.terminal?.remap(from, to);
     }
     for (const [structId, structure] of this.functionIR.structures) {
@@ -302,7 +302,7 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
       }
     }
 
-    this.functionIR.blocks.delete(blockId);
+    this.functionIR.removeBlock(blockId);
     this.functionIR.deleteStructure(blockId);
     this.functionIR.blockLabels.delete(blockId);
   }
@@ -318,7 +318,7 @@ export class CFGSimplificationPass extends BaseOptimizationPass {
   }
 
   private isJoinTarget(blockId: BlockId): boolean {
-    for (const [, block] of this.functionIR.blocks) {
+    for (const block of this.functionIR.allBlocks()) {
       if (block.terminal?.getJoinTarget() === blockId) return true;
     }
     return false;

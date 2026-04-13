@@ -1,6 +1,6 @@
 import type { ObjectExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { ObjectExpressionInstruction } from "../../../ir";
+import { ObjectExpressionOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -24,11 +24,7 @@ export function buildObjectExpression(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    ObjectExpressionInstruction,
-    place,
-    propertyPlaces,
-  );
-  functionBuilder.addInstruction(instruction);
+  const instruction = environment.createOperation(ObjectExpressionOp, place, propertyPlaces);
+  functionBuilder.addOp(instruction);
   return place;
 }

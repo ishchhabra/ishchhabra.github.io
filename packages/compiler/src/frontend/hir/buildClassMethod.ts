@@ -1,6 +1,6 @@
 import type { Function, MethodDefinition } from "oxc-parser";
 import { Environment } from "../../environment";
-import { ClassMethodInstruction, LiteralInstruction, Place } from "../../ir";
+import { ClassMethodOp, LiteralOp, Place } from "../../ir";
 import { type Scope } from "../scope/Scope";
 import { buildNode } from "./buildNode";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
@@ -11,7 +11,7 @@ import { ModuleIRBuilder } from "./ModuleIRBuilder";
  *
  * Mirrors {@link buildObjectMethod}: the method body becomes its own
  * {@link FunctionIR} so existing function-level optimizations apply.
- * Non-computed identifier keys are emitted as {@link LiteralInstruction}s
+ * Non-computed identifier keys are emitted as {@link LiteralOp}s
  * so the property name survives SSA transformations unchanged (matching
  * the convention in {@link buildObjectProperty}).
  */
@@ -35,12 +35,8 @@ export function buildClassMethod(
   if (!node.computed && node.key.type === "Identifier") {
     const keyIdentifier = environment.createIdentifier();
     keyPlace = environment.createPlace(keyIdentifier);
-    const keyInstruction = environment.createInstruction(
-      LiteralInstruction,
-      keyPlace,
-      node.key.name,
-    );
-    functionBuilder.addInstruction(keyInstruction);
+    const keyInstruction = environment.createOperation(LiteralOp, keyPlace, node.key.name);
+    functionBuilder.addOp(keyInstruction);
   } else {
     const built = buildNode(node.key, scope, functionBuilder, moduleBuilder, environment);
     if (built === undefined || Array.isArray(built)) {
@@ -73,8 +69,8 @@ export function buildClassMethod(
   const capturedPlaces = [...methodIRBuilder.captures.values()];
   const methodIdentifier = environment.createIdentifier();
   const methodPlace = environment.createPlace(methodIdentifier);
-  const instruction = environment.createInstruction(
-    ClassMethodInstruction,
+  const instruction = environment.createOperation(
+    ClassMethodOp,
     methodPlace,
     keyPlace,
     bodyIR,
@@ -85,6 +81,6 @@ export function buildClassMethod(
     fn.async ?? false,
     capturedPlaces,
   );
-  functionBuilder.addInstruction(instruction);
+  functionBuilder.addOp(instruction);
   return methodPlace;
 }

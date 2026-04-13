@@ -1,11 +1,11 @@
 import { ProjectUnit } from "../../frontend/ProjectBuilder";
-import { BaseInstruction } from "../../ir";
 import {
-  ExportDefaultDeclarationInstruction,
-  ExportFromInstruction,
-  ExportNamedDeclarationInstruction,
-  ExportSpecifierInstruction,
-} from "../../ir/instructions/module";
+  ExportDefaultDeclarationOp,
+  ExportFromOp,
+  ExportNamedDeclarationOp,
+  ExportSpecifierOp,
+  Operation,
+} from "../../ir";
 
 /**
  * Removes exports from non-entry modules that are not imported by any other
@@ -69,7 +69,7 @@ export class UnusedExportEliminationPass {
 
       // Collect the set of instruction references that belong to unused exports,
       // BEFORE deleting from the map.
-      const deadExportInstructions = new Set<BaseInstruction>();
+      const deadExportInstructions = new Set<Operation>();
       for (const name of unusedExportNames) {
         const entry = moduleIR.exports.get(name);
         if (entry) {
@@ -84,23 +84,23 @@ export class UnusedExportEliminationPass {
 
       // Remove the corresponding export instructions from all function blocks.
       for (const functionIR of moduleIR.functions.values()) {
-        for (const block of functionIR.blocks.values()) {
-          for (let i = block.instructions.length - 1; i >= 0; i--) {
-            const instr = block.instructions[i];
+        for (const block of functionIR.allBlocks()) {
+          for (let i = block.operations.length - 1; i >= 0; i--) {
+            const instr = block.operations[i];
             let remove = false;
 
-            if (instr instanceof ExportSpecifierInstruction) {
+            if (instr instanceof ExportSpecifierOp) {
               remove = unusedExportNames.has(instr.exported);
-            } else if (instr instanceof ExportNamedDeclarationInstruction) {
+            } else if (instr instanceof ExportNamedDeclarationOp) {
               remove = deadExportInstructions.has(instr);
-            } else if (instr instanceof ExportFromInstruction) {
+            } else if (instr instanceof ExportFromOp) {
               instr.specifiers = instr.specifiers.filter((s) => !unusedExportNames.has(s.exported));
               remove = instr.specifiers.length === 0;
-            } else if (instr instanceof ExportDefaultDeclarationInstruction) {
+            } else if (instr instanceof ExportDefaultDeclarationOp) {
               remove = unusedExportNames.has("default");
             }
 
-            if (remove) block.removeInstructionAt(i);
+            if (remove) block.removeOpAt(i);
           }
         }
       }

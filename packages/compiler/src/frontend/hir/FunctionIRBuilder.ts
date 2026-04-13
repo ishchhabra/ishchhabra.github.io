@@ -1,18 +1,19 @@
 import type { BlockStatement, Expression, Node, Program, Statement } from "oxc-parser";
 import { Environment } from "../../environment";
 import {
-  ArrayDestructureInstruction,
-  ArrayExpressionInstruction,
-  BaseInstruction,
-  BaseStructure,
+  ArrayDestructureOp,
+  ArrayExpressionOp,
+  Operation,
   BasicBlock,
   BlockId,
   type ControlContext,
-  createInstructionId,
+  createOperationId,
   DeclarationId,
   type DeclarationKind,
   Place,
-  ReturnTerminal,
+  Region,
+  ReturnOp,
+  type Structure,
 } from "../../ir";
 import { FunctionIR, makeFunctionIRId } from "../../ir/core/FunctionIR";
 import type { LexicalScopeId, LexicalScopeKind } from "../../ir/core/LexicalScope";
@@ -30,11 +31,23 @@ export type DeclarationState = "uninitialized" | "initialized";
 export class FunctionIRBuilder {
   public currentBlock: BasicBlock;
   public readonly blocks: Map<BlockId, BasicBlock> = new Map();
-  public readonly structures: Map<BlockId, BaseStructure> = new Map();
-  public readonly sourceHeader: BaseInstruction[] = [];
-  public readonly runtimePrologue: BaseInstruction[] = [];
+  public readonly structures: Map<BlockId, Structure> = new Map();
+  public readonly sourceHeader: Operation[] = [];
+  public readonly runtimePrologue: Operation[] = [];
   public readonly controlStack: ControlContext[] = [];
   public readonly blockLabels: Map<BlockId, string> = new Map();
+
+  /**
+   * Stack of in-progress structure regions. When non-empty, new blocks
+   * created via {@link addBlock} are claimed by the top region; when
+   * empty, new blocks are unclaimed and end up in the function's
+   * top-level `body` region at `FunctionIR` construction time.
+   *
+   * Used by structured-CF builders (for-of, for-in, block, labeled
+   * block) to populate their nested MLIR regions with body blocks as
+   * the body is being built.
+   */
+  private regionStack: Region[] = [];
 
   /**
    * Places captured from enclosing scopes, keyed by DeclarationId to
@@ -72,6 +85,37 @@ export class FunctionIRBuilder {
     const entryBlock = this.environment.createBlock(entryScopeId);
     this.blocks.set(entryBlock.id, entryBlock);
     this.currentBlock = entryBlock;
+  }
+
+  /**
+   * Register a newly-created block with the builder. Adds it to the
+   * flat {@link blocks} id index and — if a structure region is
+   * currently on the region stack — claims the block into that
+   * region. Unclaimed blocks are placed into the function's top-level
+   * body region at `FunctionIR` construction.
+   *
+   * Replaces direct `functionBuilder.blocks.set(block.id, block)`
+   * calls so block creation is uniformly region-aware.
+   */
+  public addBlock(block: BasicBlock): void {
+    this.blocks.set(block.id, block);
+    if (this.regionStack.length > 0) {
+      this.regionStack[this.regionStack.length - 1].appendBlock(block);
+    }
+  }
+
+  /**
+   * Run `fn` with `region` pushed onto the region stack. Any block
+   * created via {@link addBlock} inside `fn` (and not claimed by a
+   * more deeply nested structure region) is appended to `region`.
+   */
+  public withStructureRegion<T>(region: Region, fn: () => T): T {
+    this.regionStack.push(region);
+    try {
+      return fn();
+    } finally {
+      this.regionStack.pop();
+    }
   }
 
   /**
@@ -123,16 +167,16 @@ export class FunctionIRBuilder {
       (param) => param.target.kind !== "binding" || param.target.place !== param.place,
     );
     if (requiresRuntimeParamDestructure) {
-      const runtimeParamArray = this.environment.createInstruction(
-        ArrayExpressionInstruction,
+      const runtimeParamArray = this.environment.createOperation(
+        ArrayExpressionOp,
         this.environment.createPlace(this.environment.createIdentifier()),
         params,
       );
       this.runtimePrologue.push(runtimeParamArray);
-      this.environment.placeToInstruction.set(runtimeParamArray.place.id, runtimeParamArray);
+      this.environment.placeToOp.set(runtimeParamArray.place.id, runtimeParamArray);
 
-      const runtimeParamDestructure = this.environment.createInstruction(
-        ArrayDestructureInstruction,
+      const runtimeParamDestructure = this.environment.createOperation(
+        ArrayDestructureOp,
         this.environment.createPlace(this.environment.createIdentifier()),
         paramTargets,
         runtimeParamArray.place,
@@ -141,10 +185,7 @@ export class FunctionIRBuilder {
         true,
       );
       this.runtimePrologue.push(runtimeParamDestructure);
-      this.environment.placeToInstruction.set(
-        runtimeParamDestructure.place.id,
-        runtimeParamDestructure,
-      );
+      this.environment.placeToOp.set(runtimeParamDestructure.place.id, runtimeParamDestructure);
     }
 
     const functionId = makeFunctionIRId(this.environment.nextFunctionId++);
@@ -163,10 +204,7 @@ export class FunctionIRBuilder {
         this.environment,
       );
       if (resultPlace !== undefined && !Array.isArray(resultPlace)) {
-        this.currentBlock.terminal = new ReturnTerminal(
-          createInstructionId(this.environment),
-          resultPlace,
-        );
+        this.currentBlock.terminal = new ReturnOp(createOperationId(this.environment), resultPlace);
       }
     } else {
       const bodyScope = this.scopeFor(effectiveBody);
@@ -214,19 +252,19 @@ export class FunctionIRBuilder {
     return functionIR;
   }
 
-  public addInstruction<T extends BaseInstruction>(instruction: T) {
-    this.currentBlock.appendInstruction(instruction);
-    this.environment.placeToInstruction.set(instruction.place.id, instruction);
+  public addOp<T extends Operation>(instruction: T) {
+    this.currentBlock.appendOp(instruction);
+    this.environment.placeToOp.set(instruction.place!.id, instruction);
   }
 
-  public addHeaderInstruction(instruction: BaseInstruction) {
+  public addHeaderOp(instruction: Operation) {
     this.sourceHeader.push(instruction);
     this.runtimePrologue.push(instruction);
   }
 
-  public addHeaderInstructions(instructions: BaseInstruction[]) {
-    this.sourceHeader.push(...instructions);
-    this.runtimePrologue.push(...instructions);
+  public addHeaderOps(ops: Operation[]) {
+    this.sourceHeader.push(...ops);
+    this.runtimePrologue.push(...ops);
   }
 
   public registerDeclarationName(name: string, declarationId: DeclarationId, scope: Scope) {
@@ -308,23 +346,39 @@ export class FunctionIRBuilder {
   }
 
   public getBreakTarget(label?: string): BlockId | undefined {
+    return this.getBreakControl(label)?.breakTarget;
+  }
+
+  /**
+   * Returns the control-stack entry that an unlabeled-or-labeled `break`
+   * targets, including its `structured` flag so callers can decide
+   * between emitting a `BreakOp` (structured) and a raw `JumpOp(target)`
+   * (flat). Returns `undefined` when no matching enclosing construct
+   * exists.
+   */
+  public getBreakControl(label?: string): ControlContext | undefined {
     if (label !== undefined) {
       for (let i = this.controlStack.length - 1; i >= 0; i--) {
         if (this.controlStack[i].label === label) {
-          return this.controlStack[i].breakTarget;
+          return this.controlStack[i];
         }
       }
       return undefined;
     }
-    return this.controlStack[this.controlStack.length - 1]?.breakTarget;
+    return this.controlStack[this.controlStack.length - 1];
   }
 
   public getContinueTarget(label?: string): BlockId | undefined {
+    return this.getContinueControl(label)?.continueTarget;
+  }
+
+  /** Like {@link getBreakControl} but for `continue`. */
+  public getContinueControl(label?: string): (ControlContext & { kind: "loop" }) | undefined {
     if (label !== undefined) {
       for (let i = this.controlStack.length - 1; i >= 0; i--) {
         const ctx = this.controlStack[i];
         if (ctx.label === label && ctx.kind === "loop") {
-          return ctx.continueTarget;
+          return ctx;
         }
       }
       return undefined;
@@ -332,7 +386,7 @@ export class FunctionIRBuilder {
     for (let i = this.controlStack.length - 1; i >= 0; i--) {
       const ctx = this.controlStack[i];
       if (ctx.kind === "loop") {
-        return ctx.continueTarget;
+        return ctx;
       }
     }
     return undefined;

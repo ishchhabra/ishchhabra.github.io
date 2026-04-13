@@ -1,6 +1,6 @@
 import type { JSXElement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { JSXElementInstruction, Place } from "../../../ir";
+import { JSXElementOp, Place } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -51,13 +51,13 @@ export function buildJSXElement(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    JSXElementInstruction,
+  const instruction = environment.createOperation(
+    JSXElementOp,
     place,
     openingElement,
     closingElement,
     childrenPlaces,
   );
-  functionBuilder.addInstruction(instruction);
+  functionBuilder.addOp(instruction);
   return place;
 }

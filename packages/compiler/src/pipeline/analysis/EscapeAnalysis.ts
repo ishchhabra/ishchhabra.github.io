@@ -1,30 +1,30 @@
 import {
-  CallExpressionInstruction,
-  CopyInstruction,
-  FunctionDeclarationInstruction,
+  CallExpressionOp,
+  CopyOp,
+  FunctionDeclarationOp,
   IdentifierId,
-  LoadContextInstruction,
-  LoadDynamicPropertyInstruction,
-  LoadLocalInstruction,
-  LoadPhiInstruction,
-  LoadStaticPropertyInstruction,
-  NewExpressionInstruction,
-  ObjectExpressionInstruction,
-  ArrayExpressionInstruction,
-  StoreContextInstruction,
-  StoreLocalInstruction,
-  ReturnTerminal,
-  ThrowTerminal,
+  LoadContextOp,
+  LoadDynamicPropertyOp,
+  LoadLocalOp,
+  LoadPhiOp,
+  LoadStaticPropertyOp,
+  NewExpressionOp,
+  ObjectExpressionOp,
+  ArrayExpressionOp,
+  StoreContextOp,
+  StoreLocalOp,
+  ReturnOp,
+  ThrowOp,
 } from "../../ir";
-import { StoreStaticPropertyInstruction } from "../../ir/instructions/memory/StoreStaticProperty";
-import { StoreDynamicPropertyInstruction } from "../../ir/instructions/memory/StoreDynamicProperty";
+import { StoreStaticPropertyOp } from "../../ir/ops/prop/StoreStaticProperty";
+import { StoreDynamicPropertyOp } from "../../ir/ops/prop/StoreDynamicProperty";
 import { FunctionIR } from "../../ir/core/FunctionIR";
-import { ArrowFunctionExpressionInstruction } from "../../ir/instructions/value/ArrowFunctionExpression";
-import { FunctionExpressionInstruction } from "../../ir/instructions/value/FunctionExpression";
-import { YieldExpressionInstruction } from "../../ir/instructions/value/YieldExpression";
-import { AwaitExpressionInstruction } from "../../ir/instructions/value/AwaitExpression";
-import { TaggedTemplateExpressionInstruction } from "../../ir/instructions/value/TaggedTemplateExpression";
-import { TemplateLiteralInstruction } from "../../ir/instructions/value/TemplateLiteral";
+import { ArrowFunctionExpressionOp } from "../../ir/ops/func/ArrowFunctionExpression";
+import { FunctionExpressionOp } from "../../ir/ops/func/FunctionExpression";
+import { YieldExpressionOp } from "../../ir/ops/call/YieldExpression";
+import { AwaitExpressionOp } from "../../ir/ops/call/AwaitExpression";
+import { TaggedTemplateExpressionOp } from "../../ir/ops/call/TaggedTemplateExpression";
+import { TemplateLiteralOp } from "../../ir/ops/prim/TemplateLiteral";
 import { FunctionAnalysis, AnalysisManager } from "./AnalysisManager";
 
 /**
@@ -102,8 +102,8 @@ export class EscapeAnalysis extends FunctionAnalysis<EscapeAnalysisResult> {
     };
 
     // Phase 1: Walk all instructions and classify uses.
-    for (const block of functionIR.blocks.values()) {
-      for (const instr of block.instructions) {
+    for (const block of functionIR.allBlocks()) {
+      for (const instr of block.operations) {
         // Ensure every defined identifier has an entry.
         for (const place of instr.getDefs()) {
           if (!states.has(place.identifier.id)) {
@@ -111,61 +111,55 @@ export class EscapeAnalysis extends FunctionAnalysis<EscapeAnalysisResult> {
           }
         }
 
-        if (instr instanceof StoreLocalInstruction) {
+        if (instr instanceof StoreLocalOp) {
           addAlias(instr.value.identifier.id, instr.lval.identifier.id);
           continue;
         }
 
-        if (instr instanceof LoadLocalInstruction) {
+        if (instr instanceof LoadLocalOp) {
           addAlias(instr.value.identifier.id, instr.place.identifier.id);
           continue;
         }
 
-        if (instr instanceof LoadPhiInstruction) {
+        if (instr instanceof LoadPhiOp) {
           addAlias(instr.value.identifier.id, instr.place.identifier.id);
           continue;
         }
 
-        if (instr instanceof LoadContextInstruction) {
+        if (instr instanceof LoadContextOp) {
           addAlias(instr.value.identifier.id, instr.place.identifier.id);
           continue;
         }
 
-        if (instr instanceof CopyInstruction) {
+        if (instr instanceof CopyOp) {
           addAlias(instr.value.identifier.id, instr.lval.identifier.id);
           continue;
         }
 
-        if (
-          instr instanceof LoadStaticPropertyInstruction ||
-          instr instanceof LoadDynamicPropertyInstruction
-        ) {
+        if (instr instanceof LoadStaticPropertyOp || instr instanceof LoadDynamicPropertyOp) {
           // Property reads don't cause the object to escape.
           continue;
         }
 
-        if (
-          instr instanceof StoreStaticPropertyInstruction ||
-          instr instanceof StoreDynamicPropertyInstruction
-        ) {
+        if (instr instanceof StoreStaticPropertyOp || instr instanceof StoreDynamicPropertyOp) {
           // Storing a value into a property → value escapes to heap.
           raise(instr.value.identifier.id, EscapeState.GlobalEscape);
           continue;
         }
 
-        if (instr instanceof StoreContextInstruction) {
+        if (instr instanceof StoreContextOp) {
           raise(instr.value.identifier.id, EscapeState.GlobalEscape);
           continue;
         }
 
-        if (instr instanceof CallExpressionInstruction) {
+        if (instr instanceof CallExpressionOp) {
           for (const arg of instr.args) {
             raise(arg.identifier.id, EscapeState.ArgEscape);
           }
           continue;
         }
 
-        if (instr instanceof NewExpressionInstruction) {
+        if (instr instanceof NewExpressionOp) {
           for (const arg of instr.args) {
             raise(arg.identifier.id, EscapeState.ArgEscape);
           }
@@ -173,9 +167,9 @@ export class EscapeAnalysis extends FunctionAnalysis<EscapeAnalysisResult> {
         }
 
         if (
-          instr instanceof FunctionDeclarationInstruction ||
-          instr instanceof ArrowFunctionExpressionInstruction ||
-          instr instanceof FunctionExpressionInstruction
+          instr instanceof FunctionDeclarationOp ||
+          instr instanceof ArrowFunctionExpressionOp ||
+          instr instanceof FunctionExpressionOp
         ) {
           for (const capture of instr.captures) {
             raise(capture.identifier.id, EscapeState.GlobalEscape);
@@ -183,26 +177,26 @@ export class EscapeAnalysis extends FunctionAnalysis<EscapeAnalysisResult> {
           continue;
         }
 
-        if (instr instanceof YieldExpressionInstruction) {
+        if (instr instanceof YieldExpressionOp) {
           for (const place of instr.getOperands()) {
             raise(place.identifier.id, EscapeState.GlobalEscape);
           }
           continue;
         }
 
-        if (instr instanceof AwaitExpressionInstruction) {
+        if (instr instanceof AwaitExpressionOp) {
           for (const place of instr.getOperands()) {
             raise(place.identifier.id, EscapeState.GlobalEscape);
           }
           continue;
         }
 
-        if (instr instanceof ObjectExpressionInstruction) {
+        if (instr instanceof ObjectExpressionOp) {
           // Object creation reads its properties but doesn't cause escape.
           continue;
         }
 
-        if (instr instanceof ArrayExpressionInstruction) {
+        if (instr instanceof ArrayExpressionOp) {
           // Array elements flow into the aggregate.
           for (const element of instr.elements) {
             addAlias(element.identifier.id, instr.place.identifier.id);
@@ -210,13 +204,13 @@ export class EscapeAnalysis extends FunctionAnalysis<EscapeAnalysisResult> {
           continue;
         }
 
-        if (instr instanceof TaggedTemplateExpressionInstruction) {
+        if (instr instanceof TaggedTemplateExpressionOp) {
           // tag`...${expr}...` calls the tag with the quasi as argument.
           raise(instr.quasi.identifier.id, EscapeState.ArgEscape);
           continue;
         }
 
-        if (instr instanceof TemplateLiteralInstruction) {
+        if (instr instanceof TemplateLiteralOp) {
           // Expressions flow into the template result. If the result
           // escapes (e.g., via a tagged template), the expressions escape.
           for (const expr of instr.expressions) {
@@ -231,10 +225,10 @@ export class EscapeAnalysis extends FunctionAnalysis<EscapeAnalysisResult> {
 
       // Classify terminal uses.
       if (block.terminal) {
-        if (block.terminal instanceof ReturnTerminal && block.terminal.value) {
+        if (block.terminal instanceof ReturnOp && block.terminal.value) {
           raise(block.terminal.value.identifier.id, EscapeState.GlobalEscape);
         }
-        if (block.terminal instanceof ThrowTerminal) {
+        if (block.terminal instanceof ThrowOp) {
           for (const place of block.terminal.getOperands()) {
             raise(place.identifier.id, EscapeState.GlobalEscape);
           }

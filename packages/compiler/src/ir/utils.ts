@@ -1,6 +1,6 @@
 import { Environment } from "../environment";
-import { InstructionId, makeInstructionId } from "./base/Instruction";
+import { OperationId, makeOperationId } from "./core/Operation";
 
-export function createInstructionId(environment: Environment): InstructionId {
-  return makeInstructionId(environment.nextInstructionId++);
+export function createOperationId(environment: Environment): OperationId {
+  return makeOperationId(environment.nextOperationId++);
 }

@@ -54,7 +54,7 @@ export class StagedPipeline {
         snapshots.ssa = printModuleIR(moduleIR);
 
         if (this.options.enableOptimizer) {
-          const optimizerResult = new Optimizer(
+          new Optimizer(
             functionIR,
             moduleIR,
             { phis: functionIR.phis },
@@ -63,7 +63,6 @@ export class StagedPipeline {
             context,
             AM,
           ).run();
-          functionIR.blocks = optimizerResult.blocks;
         }
         snapshots.optimized = printModuleIR(moduleIR);
 
@@ -72,18 +71,11 @@ export class StagedPipeline {
         snapshots.ssaEliminated = printModuleIR(moduleIR);
 
         if (this.options.enableLateOptimizer) {
-          const lateOptimizerResult = new LateOptimizer(
-            moduleIR,
-            functionIR,
-            this.options,
-            AM,
-          ).run();
-          functionIR.blocks = lateOptimizerResult.blocks;
+          new LateOptimizer(moduleIR, functionIR, this.options, AM).run();
         }
 
         if (this.options.enableExportDeclarationMergingPass) {
-          const exportMergingResult = new ExportDeclarationMergingPass(functionIR).run();
-          functionIR.blocks = exportMergingResult.blocks;
+          new ExportDeclarationMergingPass(functionIR).run();
         }
         snapshots.lateOptimized = printModuleIR(moduleIR);
       }

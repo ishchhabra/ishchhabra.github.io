@@ -1,4 +1,4 @@
-import { LoadGlobalInstruction } from "../../../../../../src/ir/index.ts";
+import { LoadGlobalOp } from "../../../../../../src/ir/index.ts";
 import { getQualifiedName } from "../../../../../../src/pipeline/passes/resolveConstant.ts";
 
 export default {
@@ -7,7 +7,8 @@ export default {
     if (name === "process.env.NODE_ENV") {
       ctx.set("production");
     }
-    if (instruction instanceof LoadGlobalInstruction && instruction.name === "__DEV__") {
+
+    if (instruction instanceof LoadGlobalOp && instruction.name === "__DEV__") {
       ctx.set(false);
     }
   },

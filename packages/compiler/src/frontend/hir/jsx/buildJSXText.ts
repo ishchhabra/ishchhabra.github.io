@@ -1,6 +1,6 @@
 import type { JSXText } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { JSXTextInstruction, Place } from "../../../ir";
+import { JSXTextOp, Place } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 export function buildJSXText(
@@ -10,7 +10,7 @@ export function buildJSXText(
 ): Place | undefined {
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(JSXTextInstruction, place, node.value);
-  functionBuilder.addInstruction(instruction);
+  const instruction = environment.createOperation(JSXTextOp, place, node.value);
+  functionBuilder.addOp(instruction);
   return place;
 }

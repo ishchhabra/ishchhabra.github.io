@@ -1,0 +1,48 @@
+import { OperationId } from "../../core";
+import { Place } from "../../core";
+
+import { Operation } from "../../core/Operation";
+import type { CloneContext } from "../../core/Operation";
+export type TPrimitiveValue = string | number | boolean | null | undefined | bigint | symbol;
+
+/**
+ * Represents a literal value.
+ *
+ * Example:
+ * 42
+ * "hello"
+ * true
+ */
+export class LiteralOp extends Operation {
+  constructor(
+    id: OperationId,
+    public override readonly place: Place,
+    public readonly value: TPrimitiveValue,
+  ) {
+    super(id);
+  }
+
+  public clone(ctx: CloneContext): LiteralOp {
+    const moduleIR = ctx.moduleIR;
+    const identifier = moduleIR.environment.createIdentifier();
+    const place = moduleIR.environment.createPlace(identifier);
+    return moduleIR.environment.createOperation(LiteralOp, place, this.value);
+  }
+
+  rewrite(): Operation {
+    // Literals can not be rewritten.
+    return this;
+  }
+
+  getOperands(): Place[] {
+    return [];
+  }
+
+  public override hasSideEffects(): boolean {
+    return false;
+  }
+
+  public override print(): string {
+    return `${this.place.print()} = ${JSON.stringify(this.value)}`;
+  }
+}

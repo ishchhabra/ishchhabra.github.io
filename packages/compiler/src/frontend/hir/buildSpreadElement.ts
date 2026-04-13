@@ -1,6 +1,6 @@
 import type { SpreadElement } from "oxc-parser";
 import { Environment } from "../../environment";
-import { Place, SpreadElementInstruction } from "../../ir";
+import { Place, SpreadElementOp } from "../../ir";
 import { type Scope } from "../scope/Scope";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
@@ -26,7 +26,7 @@ export function buildSpreadElement(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(SpreadElementInstruction, place, argumentPlace);
-  functionBuilder.addInstruction(instruction);
+  const instruction = environment.createOperation(SpreadElementOp, place, argumentPlace);
+  functionBuilder.addOp(instruction);
   return place;
 }

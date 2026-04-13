@@ -1,6 +1,6 @@
 import type { JSXClosingFragment } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { JSXClosingFragmentInstruction, Place } from "../../../ir";
+import { JSXClosingFragmentOp, Place } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 export function buildJSXClosingFragment(
@@ -10,7 +10,7 @@ export function buildJSXClosingFragment(
 ): Place {
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(JSXClosingFragmentInstruction, place);
-  functionBuilder.addInstruction(instruction);
+  const instruction = environment.createOperation(JSXClosingFragmentOp, place);
+  functionBuilder.addOp(instruction);
   return place;
 }

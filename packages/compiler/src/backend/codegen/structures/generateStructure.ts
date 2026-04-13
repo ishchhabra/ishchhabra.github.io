@@ -1,12 +1,5 @@
 import * as t from "@babel/types";
-import {
-  BaseStructure,
-  BlockStructure,
-  ForInStructure,
-  ForOfStructure,
-  LabeledBlockStructure,
-  TernaryStructure,
-} from "../../../ir";
+import { Operation, BlockOp, ForInOp, ForOfOp, LabeledBlockOp, TernaryOp } from "../../../ir";
 import { FunctionIR } from "../../../ir/core/FunctionIR";
 import { CodeGenerator } from "../../CodeGenerator";
 import { generateBlockStructure } from "./generateBlockStructure";
@@ -16,25 +9,27 @@ import { generateLabeledBlockStructure } from "./generateLabeledBlockStructure";
 import { generateTernaryStructure } from "./generateTernaryStructure";
 
 export function generateStructure(
-  structure: BaseStructure,
+  structure: Operation,
   functionIR: FunctionIR,
   generator: CodeGenerator,
 ): Array<t.Statement> {
-  if (structure instanceof BlockStructure) {
+  if (structure instanceof BlockOp) {
     return generateBlockStructure(structure, functionIR, generator);
   }
-  if (structure instanceof ForInStructure) {
+  if (structure instanceof ForInOp) {
     return generateForInStructure(structure, functionIR, generator);
   }
-  if (structure instanceof ForOfStructure) {
+  if (structure instanceof ForOfOp) {
     return generateForOfStructure(structure, functionIR, generator);
   }
-  if (structure instanceof TernaryStructure) {
+  if (structure instanceof TernaryOp) {
     return generateTernaryStructure(structure, functionIR, generator);
   }
-  if (structure instanceof LabeledBlockStructure) {
+  if (structure instanceof LabeledBlockOp) {
     return generateLabeledBlockStructure(structure, functionIR, generator);
   }
 
-  throw new Error(`Unsupported structure type: ${structure.constructor.name}`);
+  throw new Error(
+    `Unsupported structure type: ${(structure as { constructor: { name: string } }).constructor.name}`,
+  );
 }

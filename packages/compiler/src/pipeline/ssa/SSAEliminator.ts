@@ -1,20 +1,11 @@
-import {
-  BasicBlock,
-  BlockId,
-  LiteralInstruction,
-  makeInstructionId,
-  StoreLocalInstruction,
-} from "../../ir";
+import { LiteralOp, makeOperationId, StoreLocalOp } from "../../ir";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { Phi } from "./Phi";
 
-interface SSAEliminationResult {
-  blocks: Map<BlockId, BasicBlock>;
-}
-
 /**
  * Eliminates phis by materializing edge assignments into the target binding.
+ * Mutates `functionIR` in place; no return value.
  */
 export class SSAEliminator {
   constructor(
@@ -22,7 +13,7 @@ export class SSAEliminator {
     private readonly moduleIR: ModuleIR,
   ) {}
 
-  public eliminate(): SSAEliminationResult {
+  public eliminate(): void {
     for (const phi of this.functionIR.phis) {
       if (phi.operands.size === 0) {
         continue;
@@ -31,8 +22,6 @@ export class SSAEliminator {
       this.#insertPhiDeclaration(phi);
       this.#insertPhiStores(phi);
     }
-
-    return { blocks: this.functionIR.blocks };
   }
 
   #insertPhiDeclaration(phi: Phi) {
@@ -48,19 +37,19 @@ export class SSAEliminator {
       phi.place,
     );
 
-    const undefinedId = makeInstructionId(this.moduleIR.environment.nextInstructionId++);
+    const undefinedId = makeOperationId(this.moduleIR.environment.nextOperationId++);
     const undefinedPlace = this.moduleIR.environment.createPlace(
       this.moduleIR.environment.createIdentifier(),
     );
-    const undefinedInstr = new LiteralInstruction(undefinedId, undefinedPlace, undefined);
-    declarationBlock.appendInstruction(undefinedInstr);
-    this.moduleIR.environment.placeToInstruction.set(undefinedPlace.id, undefinedInstr);
+    const undefinedInstr = new LiteralOp(undefinedId, undefinedPlace, undefined);
+    declarationBlock.appendOp(undefinedInstr);
+    this.moduleIR.environment.placeToOp.set(undefinedPlace.id, undefinedInstr);
 
-    const storeId = makeInstructionId(this.moduleIR.environment.nextInstructionId++);
+    const storeId = makeOperationId(this.moduleIR.environment.nextOperationId++);
     const storePlace = this.moduleIR.environment.createPlace(
       this.moduleIR.environment.createIdentifier(phi.place.identifier.declarationId),
     );
-    const storeInstr = new StoreLocalInstruction(
+    const storeInstr = new StoreLocalOp(
       storeId,
       storePlace,
       phi.place,
@@ -68,18 +57,18 @@ export class SSAEliminator {
       "let",
       "declaration",
     );
-    declarationBlock.appendInstruction(storeInstr);
-    this.moduleIR.environment.placeToInstruction.set(storePlace.id, storeInstr);
+    declarationBlock.appendOp(storeInstr);
+    this.moduleIR.environment.placeToOp.set(storePlace.id, storeInstr);
   }
 
   #insertPhiStores(phi: Phi) {
     for (const [blockId, place] of phi.operands) {
       const block = this.functionIR.getBlock(blockId);
-      const storeId = makeInstructionId(this.moduleIR.environment.nextInstructionId++);
+      const storeId = makeOperationId(this.moduleIR.environment.nextOperationId++);
       const storePlace = this.moduleIR.environment.createPlace(
         this.moduleIR.environment.createIdentifier(phi.place.identifier.declarationId),
       );
-      const storeInstr = new StoreLocalInstruction(
+      const storeInstr = new StoreLocalOp(
         storeId,
         storePlace,
         phi.place,
@@ -87,8 +76,8 @@ export class SSAEliminator {
         "let",
         "assignment",
       );
-      block.appendInstruction(storeInstr);
-      this.moduleIR.environment.placeToInstruction.set(storePlace.id, storeInstr);
+      block.appendOp(storeInstr);
+      this.moduleIR.environment.placeToOp.set(storePlace.id, storeInstr);
     }
   }
 }

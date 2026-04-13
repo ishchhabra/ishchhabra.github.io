@@ -1,11 +1,11 @@
 import * as t from "@babel/types";
-import { SwitchTerminal } from "../../../ir";
+import { SwitchOp } from "../../../ir";
 import { FunctionIR } from "../../../ir/core/FunctionIR";
 import { CodeGenerator } from "../../CodeGenerator";
 import { generateBlock } from "../generateBlock";
 
 export function generateSwitchTerminal(
-  terminal: SwitchTerminal,
+  terminal: SwitchOp,
   functionIR: FunctionIR,
   generator: CodeGenerator,
 ): Array<t.Statement> {

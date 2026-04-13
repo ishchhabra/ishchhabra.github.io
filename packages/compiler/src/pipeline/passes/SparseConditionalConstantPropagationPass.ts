@@ -1,33 +1,30 @@
 import { CompilerOptions } from "../../compile";
 import { ProjectUnit } from "../../frontend/ProjectBuilder";
 import {
-  BaseInstruction,
-  BinaryExpressionInstruction,
+  Operation,
+  BinaryExpressionOp,
   BlockId,
-  BranchTerminal,
-  ExportDefaultDeclarationInstruction,
-  ExportNamedDeclarationInstruction,
-  ExportSpecifierInstruction,
+  BranchOp,
+  ExportDefaultDeclarationOp,
+  ExportNamedDeclarationOp,
+  ExportSpecifierOp,
   Identifier,
   IdentifierId,
-  JumpTerminal,
-  LiteralInstruction,
-  LoadGlobalInstruction,
-  LoadLocalInstruction,
-  LoadPhiInstruction,
-  LogicalExpressionInstruction,
+  JumpOp,
+  LiteralOp,
+  LoadGlobalOp,
+  LoadLocalOp,
+  LoadPhiOp,
+  LogicalExpressionOp,
   Place,
-  StoreLocalInstruction,
+  StoreLocalOp,
   TPrimitiveValue,
-  UnaryExpressionInstruction,
+  UnaryExpressionOp,
 } from "../../ir";
-import { BaseTerminal } from "../../ir/base";
+import { isTerminal, Terminal } from "../../ir/ops/control";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { ModuleIR } from "../../ir/core/ModuleIR";
-import {
-  TemplateElement,
-  TemplateLiteralInstruction,
-} from "../../ir/instructions/value/TemplateLiteral";
+import { TemplateElement, TemplateLiteralOp } from "../../ir/ops/prim/TemplateLiteral";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { DominatorTreeAnalysis } from "../analysis/DominatorTreeAnalysis";
 import { LoopInfoAnalysis } from "../analysis/LoopInfoAnalysis";
@@ -193,8 +190,9 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
 
     // Instruction/terminal → block mapping.
     this.userBlock.clear();
-    for (const [blockId, block] of this.functionIR.blocks) {
-      for (const instr of block.instructions) {
+    for (const block of this.functionIR.allBlocks()) {
+      const blockId = block.id;
+      for (const instr of block.operations) {
         this.userBlock.set(instr, blockId);
       }
       if (block.terminal) {
@@ -224,8 +222,8 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
     }
 
     if (newlyReachable) {
-      const block = this.functionIR.blocks.get(to)!;
-      for (const instr of block.instructions) {
+      const block = this.functionIR.getBlock(to);
+      for (const instr of block.operations) {
         this.evaluateInstruction(instr);
       }
       this.evaluateTerminal(to, block);
@@ -255,10 +253,10 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
       const blockId = this.userBlock.get(user);
       if (blockId === undefined || !this.executableBlocks.has(blockId)) continue;
 
-      if (user instanceof BaseInstruction) {
-        this.evaluateInstruction(user);
-      } else if (user instanceof BaseTerminal) {
+      if (isTerminal(user)) {
         this.evaluateTerminal(blockId, { terminal: user });
+      } else if (user instanceof Operation && user.place !== undefined) {
+        this.evaluateInstruction(user);
       }
     }
   }
@@ -292,11 +290,11 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
   // Terminal evaluation
   // -------------------------------------------------------------------------
 
-  private evaluateTerminal(blockId: BlockId, block: { terminal?: BaseTerminal }): void {
+  private evaluateTerminal(blockId: BlockId, block: { terminal?: Terminal }): void {
     const terminal = block.terminal;
     if (!terminal) return;
 
-    if (terminal instanceof BranchTerminal) {
+    if (terminal instanceof BranchOp) {
       const testVal = this.getLattice(terminal.test.identifier.id);
       if (isConstant(testVal)) {
         // Constant test — only the taken path is executable.
@@ -320,58 +318,58 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
   // Instruction evaluation
   // -------------------------------------------------------------------------
 
-  private evaluateInstruction(instr: BaseInstruction): void {
+  private evaluateInstruction(instr: Operation): void {
     const resolvedValue = this.tryResolveConstant(instr);
-    if (resolvedValue !== undefined || this.hookResolved.has(instr.place.identifier.id)) {
-      this.setLattice(instr.place.identifier, resolvedValue);
+    if (resolvedValue !== undefined || this.hookResolved.has(instr.place!.identifier.id)) {
+      this.setLattice(instr.place!.identifier, resolvedValue);
       return;
     }
 
-    if (instr instanceof LiteralInstruction) {
+    if (instr instanceof LiteralOp) {
       this.setLattice(instr.place.identifier, instr.value);
       return;
     }
-    if (instr instanceof BinaryExpressionInstruction) {
+    if (instr instanceof BinaryExpressionOp) {
       this.evaluateBinary(instr);
       return;
     }
-    if (instr instanceof UnaryExpressionInstruction) {
+    if (instr instanceof UnaryExpressionOp) {
       this.evaluateUnary(instr);
       return;
     }
-    if (instr instanceof LogicalExpressionInstruction) {
+    if (instr instanceof LogicalExpressionOp) {
       this.evaluateLogical(instr);
       return;
     }
-    if (instr instanceof TemplateLiteralInstruction) {
+    if (instr instanceof TemplateLiteralOp) {
       this.evaluateTemplateLiteral(instr);
       return;
     }
-    if (instr instanceof LoadGlobalInstruction) {
+    if (instr instanceof LoadGlobalOp) {
       this.evaluateLoadGlobal(instr);
       return;
     }
-    if (instr instanceof StoreLocalInstruction) {
+    if (instr instanceof StoreLocalOp) {
       this.evaluateStoreLocal(instr);
       return;
     }
-    if (instr instanceof LoadLocalInstruction) {
+    if (instr instanceof LoadLocalOp) {
       this.evaluateLoadLocal(instr);
       return;
     }
-    if (instr instanceof LoadPhiInstruction) {
+    if (instr instanceof LoadPhiOp) {
       this.evaluateLoadPhi(instr);
       return;
     }
-    if (instr instanceof ExportDefaultDeclarationInstruction) {
+    if (instr instanceof ExportDefaultDeclarationOp) {
       this.evaluateExportDefault(instr);
       return;
     }
-    if (instr instanceof ExportSpecifierInstruction) {
+    if (instr instanceof ExportSpecifierOp) {
       this.evaluateExportSpecifier(instr);
       return;
     }
-    if (instr instanceof ExportNamedDeclarationInstruction) {
+    if (instr instanceof ExportNamedDeclarationOp) {
       this.evaluateExportNamed(instr);
       return;
     }
@@ -381,11 +379,11 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
     // it's a structural declaration whose value comes from a StoreLocal
     // later → leave as TOP until that store executes.
     if (instr.getOperands().length > 0) {
-      this.setLattice(instr.place.identifier, BOTTOM);
+      this.setLattice(instr.place!.identifier, BOTTOM);
     }
   }
 
-  private tryResolveConstant(instr: BaseInstruction): TPrimitiveValue | undefined {
+  private tryResolveConstant(instr: Operation): TPrimitiveValue | undefined {
     let resolvedValue: TPrimitiveValue | undefined;
     let resolved = false;
 
@@ -406,7 +404,7 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
     }
 
     if (resolved) {
-      this.hookResolved.add(instr.place.identifier.id);
+      this.hookResolved.add(instr.place!.identifier.id);
       return resolvedValue;
     }
 
@@ -444,37 +442,38 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
     const domTree = this.AM.get(DominatorTreeAnalysis, this.functionIR);
     const loopInfo = this.AM.get(LoopInfoAnalysis, this.functionIR);
 
-    for (const [blockId, block] of this.functionIR.blocks) {
+    for (const block of this.functionIR.allBlocks()) {
+      const blockId = block.id;
       // Replace constant-valued instructions with literals.
-      for (let i = 0; i < block.instructions.length; i++) {
-        const instr = block.instructions[i];
-        const val = this.getLattice(instr.place.identifier.id);
+      for (let i = 0; i < block.operations.length; i++) {
+        const instr = block.operations[i];
+        const val = this.getLattice(instr.place!.identifier.id);
         if (!isConstant(val)) continue;
-        if (instr instanceof LiteralInstruction) continue;
+        if (instr instanceof LiteralOp) continue;
 
         const canReplace =
-          this.hookResolved.has(instr.place.identifier.id) ||
-          instr instanceof BinaryExpressionInstruction ||
+          this.hookResolved.has(instr.place!.identifier.id) ||
+          instr instanceof BinaryExpressionOp ||
           // UnaryExpression is replaceable only when pure. `void expr`
           // propagates side effects from its operand, so `void fetch()`
           // must not be replaced with `undefined` (that drops the fetch).
-          (instr instanceof UnaryExpressionInstruction &&
+          (instr instanceof UnaryExpressionOp &&
             !instr.hasSideEffects(this.moduleUnit.environment)) ||
-          instr instanceof LogicalExpressionInstruction ||
-          instr instanceof LoadLocalInstruction ||
-          instr instanceof LoadPhiInstruction ||
-          instr instanceof LoadGlobalInstruction ||
-          instr instanceof TemplateLiteralInstruction;
+          instr instanceof LogicalExpressionOp ||
+          instr instanceof LoadLocalOp ||
+          instr instanceof LoadPhiOp ||
+          instr instanceof LoadGlobalOp ||
+          instr instanceof TemplateLiteralOp;
         if (!canReplace) continue;
 
-        block.replaceInstruction(i, new LiteralInstruction(instr.id, instr.place, val));
+        block.replaceOp(i, new LiteralOp(instr.id, instr.place!, val));
         changed = true;
       }
 
       // Partial-fold template literals.
-      for (let i = 0; i < block.instructions.length; i++) {
-        const instr = block.instructions[i];
-        if (!(instr instanceof TemplateLiteralInstruction)) continue;
+      for (let i = 0; i < block.operations.length; i++) {
+        const instr = block.operations[i];
+        if (!(instr instanceof TemplateLiteralOp)) continue;
         if (instr.expressions.length === 0) continue;
 
         let anyConstant = false;
@@ -506,22 +505,19 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
         }
         newQuasis.push(templateElement(pending, true));
 
-        block.replaceInstruction(
-          i,
-          new TemplateLiteralInstruction(instr.id, instr.place, newQuasis, newExpressions),
-        );
+        block.replaceOp(i, new TemplateLiteralOp(instr.id, instr.place, newQuasis, newExpressions));
         changed = true;
       }
 
       // Fold branches with constant tests (skip loop headers).
-      if (block.terminal instanceof BranchTerminal) {
+      if (block.terminal instanceof BranchOp) {
         if (loopInfo.getBackEdgePredecessors(blockId).size > 0) continue;
 
         const testVal = this.getLattice(block.terminal.test.identifier.id);
         if (isConstant(testVal)) {
           const terminal = block.terminal;
           const deadBlockId = testVal ? terminal.alternate : terminal.consequent;
-          block.terminal = new JumpTerminal(
+          block.terminal = new JumpOp(
             terminal.id,
             testVal ? terminal.consequent : terminal.alternate,
           );
@@ -556,16 +552,13 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
     const rewriteMap = new Map<Identifier, Place>();
     rewriteMap.set(phi.place.identifier, singleOperandPlace);
 
-    for (let i = 0; i < phiBlock.instructions.length; i++) {
-      const instr = phiBlock.instructions[i];
-      if (instr instanceof LoadPhiInstruction && phi.place.id === instr.value.id) {
-        phiBlock.replaceInstruction(
-          i,
-          new LoadLocalInstruction(instr.id, instr.place, singleOperandPlace),
-        );
+    for (let i = 0; i < phiBlock.operations.length; i++) {
+      const instr = phiBlock.operations[i];
+      if (instr instanceof LoadPhiOp && phi.place.id === instr.value.id) {
+        phiBlock.replaceOp(i, new LoadLocalOp(instr.id, instr.place, singleOperandPlace));
       } else {
         const rewritten = instr.rewrite(rewriteMap);
-        if (rewritten !== instr) phiBlock.replaceInstruction(i, rewritten);
+        if (rewritten !== instr) phiBlock.replaceOp(i, rewritten);
       }
     }
     if (phiBlock.terminal) {
@@ -597,7 +590,7 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
   // Instruction evaluators
   // -------------------------------------------------------------------------
 
-  private evaluateBinary(instr: BinaryExpressionInstruction): void {
+  private evaluateBinary(instr: BinaryExpressionOp): void {
     const left = this.getLattice(instr.left.identifier.id);
     const right = this.getLattice(instr.right.identifier.id);
     if (left === TOP || right === TOP) return;
@@ -675,7 +668,7 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
     this.setLattice(instr.place.identifier, result);
   }
 
-  private evaluateUnary(instr: UnaryExpressionInstruction): void {
+  private evaluateUnary(instr: UnaryExpressionOp): void {
     if (instr.operator === "void") {
       this.setLattice(instr.place.identifier, undefined);
       return;
@@ -711,7 +704,7 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
     this.setLattice(instr.place.identifier, result);
   }
 
-  private evaluateLogical(instr: LogicalExpressionInstruction): void {
+  private evaluateLogical(instr: LogicalExpressionOp): void {
     const left = this.getLattice(instr.left.identifier.id);
     const right = this.getLattice(instr.right.identifier.id);
     if (left === TOP || right === TOP) return;
@@ -737,7 +730,7 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
     this.setLattice(instr.place.identifier, result);
   }
 
-  private evaluateTemplateLiteral(instr: TemplateLiteralInstruction): void {
+  private evaluateTemplateLiteral(instr: TemplateLiteralOp): void {
     if (instr.expressions.length === 0) {
       this.setLattice(instr.place.identifier, BOTTOM);
       return;
@@ -759,7 +752,7 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
     this.setLattice(instr.place.identifier, result);
   }
 
-  private evaluateLoadGlobal(instr: LoadGlobalInstruction): void {
+  private evaluateLoadGlobal(instr: LoadGlobalOp): void {
     const global = this.moduleUnit.globals.get(instr.name);
     if (!global || global.kind === "builtin") {
       this.setLattice(instr.place.identifier, BOTTOM);
@@ -779,7 +772,7 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
       this.setLattice(instr.place.identifier, BOTTOM);
       return;
     }
-    const id = moduleExport.instruction.place.identifier.id;
+    const id = moduleExport.instruction.place!.identifier.id;
     if (!constantsForSource.has(id)) {
       this.setLattice(instr.place.identifier, BOTTOM);
       return;
@@ -787,43 +780,43 @@ export class SparseConditionalConstantPropagationPass extends BaseOptimizationPa
     this.setLattice(instr.place.identifier, constantsForSource.get(id)!);
   }
 
-  private evaluateStoreLocal(instr: StoreLocalInstruction): void {
+  private evaluateStoreLocal(instr: StoreLocalOp): void {
     const val = this.getLattice(instr.value.identifier.id);
     if (val === TOP) return;
     this.setLattice(instr.place.identifier, val);
     this.setLattice(instr.lval.identifier, val);
   }
 
-  private evaluateLoadLocal(instr: LoadLocalInstruction): void {
+  private evaluateLoadLocal(instr: LoadLocalOp): void {
     const val = this.getLattice(instr.value.identifier.id);
     if (val === TOP) return;
     this.setLattice(instr.place.identifier, val);
   }
 
-  private evaluateLoadPhi(instr: LoadPhiInstruction): void {
+  private evaluateLoadPhi(instr: LoadPhiOp): void {
     const val = this.getLattice(instr.value.identifier.id);
     if (val === TOP) return;
     this.setLattice(instr.place.identifier, val);
   }
 
-  private evaluateExportSpecifier(instr: ExportSpecifierInstruction): void {
+  private evaluateExportSpecifier(instr: ExportSpecifierOp): void {
     const moduleExport = this.moduleUnit.exports.get(instr.exported);
     if (!moduleExport?.declaration) {
       this.setLattice(instr.place.identifier, BOTTOM);
       return;
     }
-    const val = this.getLattice(moduleExport.declaration.place.identifier.id);
+    const val = this.getLattice(moduleExport.declaration.place!.identifier.id);
     if (val === TOP) return;
     this.setLattice(instr.place.identifier, val);
   }
 
-  private evaluateExportDefault(instr: ExportDefaultDeclarationInstruction): void {
+  private evaluateExportDefault(instr: ExportDefaultDeclarationOp): void {
     const val = this.getLattice(instr.declaration.identifier.id);
     if (val === TOP) return;
     this.setLattice(instr.place.identifier, val);
   }
 
-  private evaluateExportNamed(instr: ExportNamedDeclarationInstruction): void {
+  private evaluateExportNamed(instr: ExportNamedDeclarationOp): void {
     if (!instr.declaration) {
       this.setLattice(instr.place.identifier, BOTTOM);
       return;

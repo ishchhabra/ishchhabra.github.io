@@ -1,7 +1,7 @@
 import type * as AST from "../estree";
 import type { Function } from "oxc-parser";
 import { Environment } from "../../environment";
-import { ObjectMethodInstruction, Place } from "../../ir";
+import { ObjectMethodOp, Place } from "../../ir";
 import { type Scope } from "../scope/Scope";
 import { buildNode } from "./buildNode";
 import { FunctionIRBuilder } from "./FunctionIRBuilder";
@@ -53,8 +53,8 @@ export function buildObjectMethod(
   const capturedPlaces = [...functionIRBuilder.captures.values()];
   const methodIdentifier = environment.createIdentifier();
   const methodPlace = environment.createPlace(methodIdentifier);
-  const instruction = environment.createInstruction(
-    ObjectMethodInstruction,
+  const instruction = environment.createOperation(
+    ObjectMethodOp,
     methodPlace,
     keyPlace,
     bodyIR,
@@ -64,6 +64,6 @@ export function buildObjectMethod(
     node.kind === "init" ? "method" : node.kind,
     capturedPlaces,
   );
-  functionBuilder.addInstruction(instruction);
+  functionBuilder.addOp(instruction);
   return methodPlace;
 }

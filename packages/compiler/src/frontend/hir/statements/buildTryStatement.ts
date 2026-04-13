@@ -1,5 +1,5 @@
 import { Environment } from "../../../environment";
-import { createInstructionId, JumpTerminal, TryTerminal } from "../../../ir";
+import { createOperationId, JumpOp, TryOp } from "../../../ir";
 import type { TryStatement } from "oxc-parser";
 import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -21,7 +21,7 @@ export function buildTryStatement(
 
   // Create the fallthrough block (continuation after entire try statement).
   const fallthroughBlock = environment.createBlock(scopeId);
-  functionBuilder.blocks.set(fallthroughBlock.id, fallthroughBlock);
+  functionBuilder.addBlock(fallthroughBlock);
 
   // Create the finally block if present.
   let finallyBlock = null;
@@ -29,7 +29,7 @@ export function buildTryStatement(
     const finalizerScope = functionBuilder.scopeFor(node.finalizer!);
     const finalizerScopeId = functionBuilder.lexicalScopeIdFor(finalizerScope);
     finallyBlock = environment.createBlock(finalizerScopeId);
-    functionBuilder.blocks.set(finallyBlock.id, finallyBlock);
+    functionBuilder.addBlock(finallyBlock);
   }
 
   // The target that try/catch bodies jump to after normal completion.
@@ -39,14 +39,14 @@ export function buildTryStatement(
   const tryBodyScope = functionBuilder.scopeFor(node.block);
   const tryBodyScopeId = functionBuilder.lexicalScopeIdFor(tryBodyScope);
   const tryBlock = environment.createBlock(tryBodyScopeId);
-  functionBuilder.blocks.set(tryBlock.id, tryBlock);
+  functionBuilder.addBlock(tryBlock);
 
   functionBuilder.currentBlock = tryBlock;
   buildOwnedBody(node.block, scope, functionBuilder, moduleBuilder, environment);
 
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.terminal = new JumpTerminal(
-      createInstructionId(environment),
+    functionBuilder.currentBlock.terminal = new JumpOp(
+      createOperationId(environment),
       jumpTarget.id,
     );
   }
@@ -61,7 +61,7 @@ export function buildTryStatement(
     const catchScope = functionBuilder.scopeFor(catchClause);
     const catchScopeId = functionBuilder.lexicalScopeIdFor(catchScope, "catch");
     const handlerBlock = environment.createBlock(catchScopeId);
-    functionBuilder.blocks.set(handlerBlock.id, handlerBlock);
+    functionBuilder.addBlock(handlerBlock);
 
     functionBuilder.currentBlock = handlerBlock;
 
@@ -97,8 +97,8 @@ export function buildTryStatement(
     buildOwnedBody(catchClause.body, scope, functionBuilder, moduleBuilder, environment);
 
     if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.terminal = new JumpTerminal(
-        createInstructionId(environment),
+      functionBuilder.currentBlock.terminal = new JumpOp(
+        createOperationId(environment),
         jumpTarget.id,
       );
     }
@@ -112,16 +112,16 @@ export function buildTryStatement(
     buildOwnedBody(node.finalizer!, scope, functionBuilder, moduleBuilder, environment);
 
     if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.terminal = new JumpTerminal(
-        createInstructionId(environment),
+      functionBuilder.currentBlock.terminal = new JumpOp(
+        createOperationId(environment),
         fallthroughBlock.id,
       );
     }
   }
 
-  // Set the TryTerminal on the current (pre-try) block.
-  currentBlock.terminal = new TryTerminal(
-    createInstructionId(environment),
+  // Set the TryOp on the current (pre-try) block.
+  currentBlock.terminal = new TryOp(
+    createOperationId(environment),
     tryBlock.id,
     handler,
     finallyBlock?.id ?? null,

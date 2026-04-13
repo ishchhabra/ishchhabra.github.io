@@ -1,20 +1,20 @@
 import * as t from "@babel/types";
-import { LabeledBlockStructure } from "../../../ir";
+import { LabeledBlockOp } from "../../../ir";
 import { FunctionIR } from "../../../ir/core/FunctionIR";
 import { CodeGenerator } from "../../CodeGenerator";
 import { generateBasicBlock } from "../generateBlock";
 
 export function generateLabeledBlockStructure(
-  structure: LabeledBlockStructure,
+  structure: LabeledBlockOp,
   functionIR: FunctionIR,
   generator: CodeGenerator,
 ): Array<t.Statement> {
-  const headerBlock = functionIR.blocks.get(structure.header);
+  const headerBlock = functionIR.maybeBlock(structure.header);
   if (headerBlock === undefined) {
     throw new Error(`Block ${structure.header} not found`);
   }
-  if (headerBlock.instructions.length > 0) {
-    throw new Error("LabeledBlockStructure header must not contain ordinary instructions");
+  if (headerBlock.operations.length > 0) {
+    throw new Error("LabeledBlockOp header must not contain ordinary instructions");
   }
 
   // Reserve the fallthrough (exit) block so that JumpTerminals inside
@@ -26,7 +26,9 @@ export function generateLabeledBlockStructure(
     label: structure.label,
     breakTarget: structure.fallthrough,
   });
-  const bodyStatements = generateBasicBlock(structure.body, functionIR, generator);
+  // Walk the nested region (step #9).
+  const bodyEntryId = structure.regions[0]?.entry.id ?? structure.body;
+  const bodyStatements = generateBasicBlock(bodyEntryId, functionIR, generator);
   generator.controlStack.pop();
 
   // Strip trailing `break label` that represents the natural block exit.

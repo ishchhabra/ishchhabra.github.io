@@ -1,6 +1,6 @@
 import type { JSXMemberExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { JSXMemberExpressionInstruction, Place } from "../../../ir";
+import { JSXMemberExpressionOp, Place } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -20,12 +20,12 @@ export function buildJSXMemberExpression(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    JSXMemberExpressionInstruction,
+  const instruction = environment.createOperation(
+    JSXMemberExpressionOp,
     place,
     objectPlace,
     node.property.name,
   );
-  functionBuilder.addInstruction(instruction);
+  functionBuilder.addOp(instruction);
   return place;
 }

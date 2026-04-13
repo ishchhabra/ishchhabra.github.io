@@ -1,6 +1,6 @@
 import type { TaggedTemplateExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { TaggedTemplateExpressionInstruction } from "../../../ir/instructions/value/TaggedTemplateExpression";
+import { TaggedTemplateExpressionOp } from "../../../ir/ops/call/TaggedTemplateExpression";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -25,12 +25,12 @@ export function buildTaggedTemplateExpression(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    TaggedTemplateExpressionInstruction,
+  const instruction = environment.createOperation(
+    TaggedTemplateExpressionOp,
     place,
     tagPlace,
     quasiPlace,
   );
-  functionBuilder.addInstruction(instruction);
+  functionBuilder.addOp(instruction);
   return place;
 }

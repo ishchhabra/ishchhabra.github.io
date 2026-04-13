@@ -27,7 +27,7 @@ export class ControlFlowGraph {
    * Builds pred/succ maps for the current {@link FunctionIR} shape.
    */
   static compute(functionIR: FunctionIR): ControlFlowGraph {
-    const predecessors = getPredecessors(functionIR.blocks, functionIR.structures);
+    const predecessors = getPredecessors(functionIR, functionIR.structures);
     const successors = getSuccessors(predecessors);
     return new ControlFlowGraph(predecessors, successors);
   }

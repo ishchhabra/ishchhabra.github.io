@@ -1,20 +1,21 @@
 import {
-  BaseInstruction,
-  DeclareLocalInstruction,
-  LiteralInstruction,
-  LoadContextInstruction,
-  LoadGlobalInstruction,
-  LoadLocalInstruction,
-  MetaPropertyInstruction,
-  RegExpLiteralInstruction,
-  StoreLocalInstruction,
-  ThisExpressionInstruction,
-  ValueInstruction,
+  Operation,
+  DeclareLocalOp,
+  LiteralOp,
+  LoadContextOp,
+  LoadGlobalOp,
+  LoadLocalOp,
+  MetaPropertyOp,
+  RegExpLiteralOp,
+  StoreLocalOp,
+  ThisExpressionOp,
 } from "../../ir";
+import { isMemoryOp, isValueOp } from "../../ir/categories";
 import { FunctionIR } from "../../ir/core/FunctionIR";
+import { Identifier } from "../../ir/core/Identifier";
 import { ModuleIR } from "../../ir/core/ModuleIR";
-import { MemoryInstruction } from "../../ir/base";
-import { LoadPhiInstruction } from "../../ir/instructions/memory/LoadPhi";
+import { Place } from "../../ir/core/Place";
+import { LoadPhiOp } from "../../ir/ops/mem/LoadPhi";
 
 /**
  * Lowering pass: materializes multi-use SSA values into StoreLocal
@@ -37,12 +38,12 @@ export class ValueMaterializationPass {
     private readonly moduleIR: ModuleIR,
   ) {}
 
-  public run(): { blocks: FunctionIR["blocks"] } {
+  public run(): void {
     const environment = this.moduleIR.environment;
 
-    for (const block of this.functionIR.blocks.values()) {
-      for (let i = 0; i < block.instructions.length; i++) {
-        const instruction = block.instructions[i];
+    for (const block of this.functionIR.allBlocks()) {
+      for (let i = 0; i < block.operations.length; i++) {
+        const instruction = block.operations[i];
 
         if (!this.needsMaterialization(instruction)) {
           continue;
@@ -50,18 +51,18 @@ export class ValueMaterializationPass {
 
         // Create: const $tmp = <value>
         const lval = environment.createPlace(environment.createIdentifier());
-        const store = environment.createInstruction(
-          StoreLocalInstruction,
+        const store = environment.createOperation(
+          StoreLocalOp,
           environment.createPlace(environment.createIdentifier()),
           lval,
-          instruction.place,
+          instruction.place!,
           "const",
           "declaration",
         );
 
         // Insert the StoreLocal immediately after the defining instruction.
-        block.insertInstructionAt(i + 1, store);
-        environment.placeToInstruction.set(store.place.id, store);
+        block.insertOpAt(i + 1, store);
+        environment.placeToOp.set(store.place.id, store);
 
         // Rewrite all users to reference the StoreLocal's lval.
         this.rewriteUses(instruction, store.lval);
@@ -70,21 +71,19 @@ export class ValueMaterializationPass {
         i++;
       }
     }
-
-    return { blocks: this.functionIR.blocks };
   }
 
   /**
    * Returns true if the instruction's output Place has multiple uses
    * and codegen would duplicate the expression without a variable.
    */
-  private needsMaterialization(instruction: BaseInstruction): boolean {
-    if (instruction.place.identifier.uses.size <= 1) {
+  private needsMaterialization(instruction: Operation): boolean {
+    if (instruction.place!.identifier.uses.size <= 1) {
       return false;
     }
 
     // StoreLocal/destructure instructions already emit declarations.
-    if (instruction instanceof StoreLocalInstruction) {
+    if (instruction instanceof StoreLocalOp) {
       return false;
     }
 
@@ -95,15 +94,15 @@ export class ValueMaterializationPass {
       return false;
     }
 
-    // Value instructions (calls, binary ops, await, etc.) produce
-    // expressions that must not be duplicated.
-    if (instruction instanceof ValueInstruction) {
+    // Value ops (calls, binary ops, await, etc.) produce expressions
+    // that must not be duplicated.
+    if (isValueOp(instruction)) {
       return true;
     }
 
-    // Load-type memory instructions (LoadStaticProperty, etc.) that
-    // aren't trivially duplicable and don't already have a StoreLocal.
-    if (instruction instanceof MemoryInstruction) {
+    // Load-type memory ops (LoadStaticProperty, etc.) that aren't
+    // trivially duplicable and don't already have a StoreLocal.
+    if (isMemoryOp(instruction)) {
       return !this.hasStoreLocal(instruction);
     }
 
@@ -115,14 +114,14 @@ export class ValueMaterializationPass {
    * value — one that codegen can safely emit multiple times because
    * it's a single token with no side effects.
    */
-  private isTriviallyDuplicable(instruction: BaseInstruction): boolean {
+  private isTriviallyDuplicable(instruction: Operation): boolean {
     if (
-      instruction instanceof LiteralInstruction ||
-      instruction instanceof LoadGlobalInstruction ||
-      instruction instanceof LoadContextInstruction ||
-      instruction instanceof ThisExpressionInstruction ||
-      instruction instanceof MetaPropertyInstruction ||
-      instruction instanceof RegExpLiteralInstruction
+      instruction instanceof LiteralOp ||
+      instruction instanceof LoadGlobalOp ||
+      instruction instanceof LoadContextOp ||
+      instruction instanceof ThisExpressionOp ||
+      instruction instanceof MetaPropertyOp ||
+      instruction instanceof RegExpLiteralOp
     ) {
       return true;
     }
@@ -132,15 +131,13 @@ export class ValueMaterializationPass {
     // capture — all of which codegen emits as a named identifier).
     // If the source is a bare SSA temp from a ValueInstruction, codegen
     // would chase the def chain and emit the full expression inline.
-    if (instruction instanceof LoadLocalInstruction || instruction instanceof LoadPhiInstruction) {
+    if (instruction instanceof LoadLocalOp || instruction instanceof LoadPhiOp) {
       const source = instruction.value.identifier.definer;
       // No definer → parameter or capture (always named).
       // StoreLocal/DeclareLocal → declared variable (always named).
       // Anything else (ValueInstruction output) → SSA temp, not safe.
       return (
-        source === undefined ||
-        source instanceof StoreLocalInstruction ||
-        source instanceof DeclareLocalInstruction
+        source === undefined || source instanceof StoreLocalOp || source instanceof DeclareLocalOp
       );
     }
 
@@ -151,9 +148,9 @@ export class ValueMaterializationPass {
    * Checks whether a StoreLocal already exists that stores this
    * instruction's output, making materialization unnecessary.
    */
-  private hasStoreLocal(instruction: BaseInstruction): boolean {
-    for (const user of instruction.place.identifier.uses) {
-      if (user instanceof StoreLocalInstruction && user.value === instruction.place) {
+  private hasStoreLocal(instruction: Operation): boolean {
+    for (const user of instruction.place!.identifier.uses) {
+      if (user instanceof StoreLocalOp && user.value === instruction.place) {
         return true;
       }
     }
@@ -165,29 +162,31 @@ export class ValueMaterializationPass {
    * except for the StoreLocal we just inserted (which references the
    * original place as its value).
    */
-  private rewriteUses(instruction: BaseInstruction, newPlace: typeof instruction.place): void {
-    const oldIdentifier = instruction.place.identifier;
+  private rewriteUses(instruction: Operation, newPlace: Place): void {
+    const oldIdentifier = instruction.place!.identifier;
     const users = [...oldIdentifier.uses];
 
     for (const user of users) {
       // Don't rewrite the StoreLocal we just created — it needs to
       // reference the original value as its RHS.
-      if (user instanceof StoreLocalInstruction && user.value === instruction.place) {
+      if (user instanceof StoreLocalOp && user.value === instruction.place) {
         continue;
       }
 
-      if (user instanceof BaseInstruction) {
+      if (user instanceof Operation) {
         this.rewriteInstructionUser(user, oldIdentifier, newPlace);
       }
     }
 
     // Rewrite terminal references.
-    for (const block of this.functionIR.blocks.values()) {
+    for (const block of this.functionIR.allBlocks()) {
       if (block.terminal) {
         const operands = block.terminal.getOperands();
         if (operands.some((op) => op.identifier === oldIdentifier)) {
-          const map = new Map([[oldIdentifier, newPlace]]);
-          block.replaceTerminal(block.terminal.rewrite(map));
+          const map = new Map<Identifier, Place>([[oldIdentifier, newPlace]]);
+          block.replaceTerminal(
+            block.terminal.rewrite(map) as import("../../ir/ops/control").Terminal,
+          );
         }
       }
     }
@@ -196,29 +195,32 @@ export class ValueMaterializationPass {
     for (const [blockId, structure] of this.functionIR.structures) {
       const operands = structure.getOperands();
       if (operands.some((op) => op.identifier === oldIdentifier)) {
-        const map = new Map([[oldIdentifier, newPlace]]);
+        const map = new Map<Identifier, Place>([[oldIdentifier, newPlace]]);
         const rewritten = structure.rewrite(map);
         if (rewritten !== structure) {
-          this.functionIR.setStructure(blockId, rewritten);
+          this.functionIR.setStructure(
+            blockId,
+            rewritten as import("../../ir/ops/control").Structure,
+          );
         }
       }
     }
   }
 
   private rewriteInstructionUser(
-    user: BaseInstruction,
-    oldIdentifier: typeof user.place.identifier,
-    newPlace: typeof user.place,
+    user: Operation,
+    oldIdentifier: Identifier,
+    newPlace: Place,
   ): void {
-    for (const block of this.functionIR.blocks.values()) {
-      const index = block.instructions.indexOf(user);
+    for (const block of this.functionIR.allBlocks()) {
+      const index = block.operations.indexOf(user);
       if (index === -1) continue;
 
-      const map = new Map([[oldIdentifier, newPlace]]);
+      const map = new Map<Identifier, Place>([[oldIdentifier, newPlace]]);
       const rewritten = user.rewrite(map);
       if (rewritten !== user) {
-        block.replaceInstruction(index, rewritten);
-        this.moduleIR.environment.placeToInstruction.set(rewritten.place.id, rewritten);
+        block.replaceOp(index, rewritten);
+        this.moduleIR.environment.placeToOp.set(rewritten.place!.id, rewritten);
       }
       return;
     }

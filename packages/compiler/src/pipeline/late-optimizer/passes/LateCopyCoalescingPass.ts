@@ -1,12 +1,7 @@
-import {
-  CopyInstruction,
-  DeclarationId,
-  LoadLocalInstruction,
-  StoreLocalInstruction,
-} from "../../../ir";
+import { CopyOp, DeclarationId, LoadLocalOp, StoreLocalOp } from "../../../ir";
 import { FunctionIR } from "../../../ir/core/FunctionIR";
 import { Place } from "../../../ir/core";
-import { LoadPhiInstruction } from "../../../ir/instructions/memory/LoadPhi";
+import { LoadPhiOp } from "../../../ir/ops/mem/LoadPhi";
 import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
 
 /**
@@ -29,11 +24,11 @@ export class LateCopyCoalescingPass extends BaseOptimizationPass {
   protected step(): OptimizationResult {
     let changed = false;
 
-    for (const [, block] of this.functionIR.blocks) {
-      for (let i = 0; i < block.instructions.length; i++) {
-        const instr = block.instructions[i];
+    for (const block of this.functionIR.allBlocks()) {
+      for (let i = 0; i < block.operations.length; i++) {
+        const instr = block.operations[i];
 
-        if (!(instr instanceof CopyInstruction)) continue;
+        if (!(instr instanceof CopyOp)) continue;
 
         const dst = instr.lval.identifier.declarationId;
         const src = instr.value.identifier.declarationId;
@@ -42,7 +37,7 @@ export class LateCopyCoalescingPass extends BaseOptimizationPass {
 
         this.replaceLoads(dst, instr.value);
 
-        block.removeInstructionAt(i);
+        block.removeOpAt(i);
         i--;
 
         changed = true;
@@ -58,31 +53,28 @@ export class LateCopyCoalescingPass extends BaseOptimizationPass {
    * Unsafe when `src` is redefined between the copy and a use of `dst`,
    * since the use would then see the wrong value.
    */
-  private canCoalesce(copyInstr: CopyInstruction, dst: DeclarationId, src: DeclarationId): boolean {
-    for (const [, block] of this.functionIR.blocks) {
-      for (const instr of block.instructions) {
+  private canCoalesce(copyInstr: CopyOp, dst: DeclarationId, src: DeclarationId): boolean {
+    for (const block of this.functionIR.allBlocks()) {
+      for (const instr of block.operations) {
         // dst must have exactly one definition — the Copy we're removing.
         // If anything else writes to dst, coalescing is unsound.
         if (instr !== copyInstr) {
-          if (
-            instr instanceof StoreLocalInstruction &&
-            instr.lval.identifier.declarationId === dst
-          ) {
+          if (instr instanceof StoreLocalOp && instr.lval.identifier.declarationId === dst) {
             return false;
           }
-          if (instr instanceof CopyInstruction && instr.lval.identifier.declarationId === dst) {
+          if (instr instanceof CopyOp && instr.lval.identifier.declarationId === dst) {
             return false;
           }
         }
 
         // If src is redefined anywhere a use of dst could reach, the
         // use would see the wrong value after rewriting.
-        if (instr instanceof StoreLocalInstruction && instr.lval.identifier.declarationId === src) {
+        if (instr instanceof StoreLocalOp && instr.lval.identifier.declarationId === src) {
           return false;
         }
         if (
           instr !== copyInstr &&
-          instr instanceof CopyInstruction &&
+          instr instanceof CopyOp &&
           instr.lval.identifier.declarationId === src
         ) {
           return false;
@@ -98,25 +90,16 @@ export class LateCopyCoalescingPass extends BaseOptimizationPass {
    * read from `srcPlace` instead.
    */
   private replaceLoads(dst: DeclarationId, srcPlace: Place): void {
-    for (const [, block] of this.functionIR.blocks) {
-      for (let i = 0; i < block.instructions.length; i++) {
-        const instr = block.instructions[i];
+    for (const block of this.functionIR.allBlocks()) {
+      for (let i = 0; i < block.operations.length; i++) {
+        const instr = block.operations[i];
 
-        if (instr instanceof LoadLocalInstruction && instr.value.identifier.declarationId === dst) {
-          block.replaceInstruction(i, new LoadLocalInstruction(instr.id, instr.place, srcPlace));
-        } else if (
-          instr instanceof LoadPhiInstruction &&
-          instr.value.identifier.declarationId === dst
-        ) {
-          block.replaceInstruction(i, new LoadPhiInstruction(instr.id, instr.place, srcPlace));
-        } else if (
-          instr instanceof CopyInstruction &&
-          instr.value.identifier.declarationId === dst
-        ) {
-          block.replaceInstruction(
-            i,
-            new CopyInstruction(instr.id, instr.place, instr.lval, srcPlace),
-          );
+        if (instr instanceof LoadLocalOp && instr.value.identifier.declarationId === dst) {
+          block.replaceOp(i, new LoadLocalOp(instr.id, instr.place, srcPlace));
+        } else if (instr instanceof LoadPhiOp && instr.value.identifier.declarationId === dst) {
+          block.replaceOp(i, new LoadPhiOp(instr.id, instr.place, srcPlace));
+        } else if (instr instanceof CopyOp && instr.value.identifier.declarationId === dst) {
+          block.replaceOp(i, new CopyOp(instr.id, instr.place, instr.lval, srcPlace));
         }
       }
     }

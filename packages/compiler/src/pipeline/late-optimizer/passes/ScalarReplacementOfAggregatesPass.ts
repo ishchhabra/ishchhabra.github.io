@@ -1,25 +1,25 @@
 import { Environment } from "../../../environment";
 import {
   BasicBlock,
-  CopyInstruction,
+  CopyOp,
   Identifier,
   IdentifierId,
-  LiteralInstruction,
-  LoadDynamicPropertyInstruction,
-  LoadLocalInstruction,
-  LoadStaticPropertyInstruction,
-  ObjectDestructureInstruction,
-  ObjectExpressionInstruction,
-  ObjectPropertyInstruction,
-  StoreLocalInstruction,
-  UnaryExpressionInstruction,
-  makeInstructionId,
+  LiteralOp,
+  LoadDynamicPropertyOp,
+  LoadLocalOp,
+  LoadStaticPropertyOp,
+  ObjectDestructureOp,
+  ObjectExpressionOp,
+  ObjectPropertyOp,
+  StoreLocalOp,
+  UnaryExpressionOp,
+  makeOperationId,
 } from "../../../ir";
 import { FunctionIR } from "../../../ir/core/FunctionIR";
 import { Place } from "../../../ir/core/Place";
-import { SpreadElementInstruction } from "../../../ir/instructions/SpreadElement";
-import { StoreDynamicPropertyInstruction } from "../../../ir/instructions/memory/StoreDynamicProperty";
-import { StoreStaticPropertyInstruction } from "../../../ir/instructions/memory/StoreStaticProperty";
+import { SpreadElementOp } from "../../../ir/ops/prim/SpreadElement";
+import { StoreDynamicPropertyOp } from "../../../ir/ops/prop/StoreDynamicProperty";
+import { StoreStaticPropertyOp } from "../../../ir/ops/prop/StoreStaticProperty";
 import { AnalysisManager } from "../../analysis/AnalysisManager";
 import { EscapeAnalysis } from "../../analysis/EscapeAnalysis";
 import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
@@ -78,9 +78,9 @@ import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
  *
  * **Soundness conditions** for destructuring SROA:
  *
- *   1. The RHS is a syntactic `ObjectExpressionInstruction` — a literal
+ *   1. The RHS is a syntactic `ObjectExpressionOp` — a literal
  *      `{ ... }` that is guaranteed free of getters and Proxy traps.
- *   2. The object contains no spread elements (`SpreadElementInstruction`).
+ *   2. The object contains no spread elements (`SpreadElementOp`).
  *   3. Every property in both the object and the pattern has a
  *      non-computed, literal key.
  *   4. The pattern contains no rest elements.
@@ -90,7 +90,7 @@ import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
  *
  * **Soundness conditions** for member-access SROA:
  *
- *   1. The object is a syntactic `ObjectExpressionInstruction`.
+ *   1. The object is a syntactic `ObjectExpressionOp`.
  *   2. The object does not escape (EscapeAnalysis reports NoEscape).
  *   3. No `StoreStaticProperty` / `StoreDynamicProperty` writes to the object.
  *   4. The object contains no spread elements and all keys are literal.
@@ -127,15 +127,15 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
   private stepDestructuring(): boolean {
     let changed = false;
 
-    for (const block of this.functionIR.blocks.values()) {
-      for (let i = 0; i < block.instructions.length; i++) {
-        const instr = block.instructions[i];
+    for (const block of this.functionIR.allBlocks()) {
+      for (let i = 0; i < block.operations.length; i++) {
+        const instr = block.operations[i];
         let valuePlace: Place;
-        let storeKind: StoreLocalInstruction["kind"];
-        let declarationKind: StoreLocalInstruction["type"];
-        let pattern: ObjectDestructureInstruction | null = null;
+        let storeKind: StoreLocalOp["kind"];
+        let declarationKind: StoreLocalOp["type"];
+        let pattern: ObjectDestructureOp | null = null;
 
-        if (instr instanceof ObjectDestructureInstruction) {
+        if (instr instanceof ObjectDestructureOp) {
           valuePlace = instr.value;
           storeKind = instr.kind;
           declarationKind = instr.declarationKind ?? "const";
@@ -147,7 +147,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
         if (!pattern) continue;
 
         const objectExpr = valuePlace.identifier.definer;
-        if (!(objectExpr instanceof ObjectExpressionInstruction)) continue;
+        if (!(objectExpr instanceof ObjectExpressionOp)) continue;
 
         const objMap = this.buildObjectKeyToValue(objectExpr);
         if (!objMap) continue;
@@ -155,22 +155,15 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
         const replacements = this.matchDestructureToObject(pattern, objMap);
         if (!replacements) continue;
 
-        block.removeInstructionAt(i);
+        block.removeOpAt(i);
 
         for (let j = 0; j < replacements.length; j++) {
           const { lval, value } = replacements[j];
-          const id = makeInstructionId(this.environment.nextInstructionId++);
+          const id = makeOperationId(this.environment.nextOperationId++);
           const identifier = this.environment.createIdentifier();
           const place = this.environment.createPlace(identifier);
-          const scalar = new StoreLocalInstruction(
-            id,
-            place,
-            lval,
-            value,
-            declarationKind,
-            storeKind,
-          );
-          block.insertInstructionAt(i + j, scalar);
+          const scalar = new StoreLocalOp(id, place, lval, value, declarationKind, storeKind);
+          block.insertOpAt(i + j, scalar);
         }
 
         i += replacements.length - 1;
@@ -191,12 +184,12 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
     // 1. Find non-escaping, unmodified object literals.
     const candidates = new Map<
       IdentifierId,
-      { objExpr: ObjectExpressionInstruction; propMap: Map<string, Place> }
+      { objExpr: ObjectExpressionOp; propMap: Map<string, Place> }
     >();
 
-    for (const block of this.functionIR.blocks.values()) {
-      for (const instr of block.instructions) {
-        if (!(instr instanceof ObjectExpressionInstruction)) continue;
+    for (const block of this.functionIR.allBlocks()) {
+      for (const instr of block.operations) {
+        if (!(instr instanceof ObjectExpressionOp)) continue;
         if (!escapeResult.doesNotEscape(instr.place.identifier.id)) continue;
 
         const propMap = this.buildObjectKeyToValue(instr);
@@ -217,10 +210,10 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
     const rewrites = new Map<Identifier, Place>();
     const toRemove = new Map<BasicBlock, number[]>();
 
-    for (const block of this.functionIR.blocks.values()) {
-      for (let i = 0; i < block.instructions.length; i++) {
-        const instr = block.instructions[i];
-        if (!(instr instanceof LoadStaticPropertyInstruction)) continue;
+    for (const block of this.functionIR.allBlocks()) {
+      for (let i = 0; i < block.operations.length; i++) {
+        const instr = block.operations[i];
+        if (!(instr instanceof LoadStaticPropertyOp)) continue;
 
         const objExpr = this.resolveToObjectExpression(instr.object);
         if (!objExpr) continue;
@@ -248,12 +241,12 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
     for (const [block, indices] of toRemove) {
       indices.sort((a, b) => b - a);
       for (const index of indices) {
-        block.removeInstructionAt(index);
+        block.removeOpAt(index);
       }
     }
 
     // 4. Rewrite all uses of the removed loads to point to the property values.
-    for (const block of this.functionIR.blocks.values()) {
+    for (const block of this.functionIR.allBlocks()) {
       block.rewriteAll(rewrites);
     }
 
@@ -272,19 +265,19 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
 
   /**
    * Trace an identifier through value-forwarding instructions
-   * (LoadLocal, StoreLocal, CopyInstruction) back to its origin.
-   * Returns the ObjectExpressionInstruction if found, null otherwise.
+   * (LoadLocal, StoreLocal, CopyOp) back to its origin.
+   * Returns the ObjectExpressionOp if found, null otherwise.
    */
-  private resolveToObjectExpression(place: Place): ObjectExpressionInstruction | null {
+  private resolveToObjectExpression(place: Place): ObjectExpressionOp | null {
     // oxlint-disable-next-line typescript/no-explicit-any
     let current: any = place.identifier.definer;
     for (let depth = 0; depth < 10 && current; depth++) {
-      if (current instanceof ObjectExpressionInstruction) return current;
-      if (current instanceof LoadLocalInstruction) {
+      if (current instanceof ObjectExpressionOp) return current;
+      if (current instanceof LoadLocalOp) {
         current = current.value.identifier.definer;
-      } else if (current instanceof CopyInstruction) {
+      } else if (current instanceof CopyOp) {
         current = current.value.identifier.definer;
-      } else if (current instanceof StoreLocalInstruction) {
+      } else if (current instanceof StoreLocalOp) {
         current = current.value.identifier.definer;
       } else {
         break;
@@ -302,18 +295,12 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
    *   is a `LoadStaticProperty` on the object
    */
   private removeModifiedObjects(
-    candidates: Map<
-      IdentifierId,
-      { objExpr: ObjectExpressionInstruction; propMap: Map<string, Place> }
-    >,
+    candidates: Map<IdentifierId, { objExpr: ObjectExpressionOp; propMap: Map<string, Place> }>,
   ): void {
-    for (const block of this.functionIR.blocks.values()) {
-      for (const instr of block.instructions) {
+    for (const block of this.functionIR.allBlocks()) {
+      for (const instr of block.operations) {
         // Direct property stores.
-        if (
-          instr instanceof StoreStaticPropertyInstruction ||
-          instr instanceof StoreDynamicPropertyInstruction
-        ) {
+        if (instr instanceof StoreStaticPropertyOp || instr instanceof StoreDynamicPropertyOp) {
           const objExpr = this.resolveToObjectExpression(instr.object);
           if (objExpr) {
             candidates.delete(objExpr.place.identifier.id);
@@ -321,9 +308,9 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
         }
 
         // `delete obj.prop` — the delete argument is a LoadStaticProperty.
-        if (instr instanceof UnaryExpressionInstruction && instr.operator === "delete") {
+        if (instr instanceof UnaryExpressionOp && instr.operator === "delete") {
           const argDefiner = instr.argument.identifier.definer;
-          if (argDefiner instanceof LoadStaticPropertyInstruction) {
+          if (argDefiner instanceof LoadStaticPropertyOp) {
             const objExpr = this.resolveToObjectExpression(argDefiner.object);
             if (objExpr) {
               candidates.delete(objExpr.place.identifier.id);
@@ -355,15 +342,15 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
     const rewrites = new Map<Identifier, Place>();
     const toRemove = new Map<BasicBlock, number[]>();
 
-    for (const block of this.functionIR.blocks.values()) {
+    for (const block of this.functionIR.allBlocks()) {
       // Virtual state: objectId → (propertyKey → current value Place)
       const virtualState = new Map<IdentifierId, Map<string, Place>>();
 
-      for (let i = 0; i < block.instructions.length; i++) {
-        const instr = block.instructions[i];
+      for (let i = 0; i < block.operations.length; i++) {
+        const instr = block.operations[i];
 
         // Initialize virtual state when we see a non-escaping object literal.
-        if (instr instanceof ObjectExpressionInstruction) {
+        if (instr instanceof ObjectExpressionOp) {
           if (!escapeResult.doesNotEscape(instr.place.identifier.id)) continue;
           const propMap = this.buildObjectKeyToValue(instr);
           if (propMap) {
@@ -373,7 +360,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
         }
 
         // Static property store → update the tracked value.
-        if (instr instanceof StoreStaticPropertyInstruction) {
+        if (instr instanceof StoreStaticPropertyOp) {
           const objId = this.resolveToObjectId(instr.object);
           if (objId !== null) {
             const state = virtualState.get(objId);
@@ -386,7 +373,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
 
         // Dynamic property store → invalidate all tracked properties
         // (we don't know which key was written).
-        if (instr instanceof StoreDynamicPropertyInstruction) {
+        if (instr instanceof StoreDynamicPropertyOp) {
           const objId = this.resolveToObjectId(instr.object);
           if (objId !== null) {
             virtualState.delete(objId);
@@ -395,9 +382,9 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
         }
 
         // `delete obj.prop` → invalidate the specific property.
-        if (instr instanceof UnaryExpressionInstruction && instr.operator === "delete") {
+        if (instr instanceof UnaryExpressionOp && instr.operator === "delete") {
           const argDefiner = instr.argument.identifier.definer;
-          if (argDefiner instanceof LoadStaticPropertyInstruction) {
+          if (argDefiner instanceof LoadStaticPropertyOp) {
             const objId = this.resolveToObjectId(argDefiner.object);
             if (objId !== null) {
               const state = virtualState.get(objId);
@@ -410,7 +397,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
         }
 
         // Static property load → forward if we have a tracked value.
-        if (instr instanceof LoadStaticPropertyInstruction) {
+        if (instr instanceof LoadStaticPropertyOp) {
           const objId = this.resolveToObjectId(instr.object);
           if (objId === null) continue;
           const state = virtualState.get(objId);
@@ -441,12 +428,12 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
     for (const [block, indices] of toRemove) {
       indices.sort((a, b) => b - a);
       for (const index of indices) {
-        block.removeInstructionAt(index);
+        block.removeOpAt(index);
       }
     }
 
     // Rewrite all uses of forwarded loads to the property values.
-    for (const block of this.functionIR.blocks.values()) {
+    for (const block of this.functionIR.allBlocks()) {
       block.rewriteAll(rewrites);
     }
 
@@ -470,7 +457,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
    * Removes unused property loads on non-escaping object literals.
    *
    * A `LoadStaticProperty` / `LoadDynamicProperty` on an object that is:
-   *   1. Defined by an `ObjectExpressionInstruction` (no getters), AND
+   *   1. Defined by an `ObjectExpressionOp` (no getters), AND
    *   2. `NoEscape` (no external code could have installed a getter)
    *
    * is guaranteed side-effect-free. If its result is unused, the load
@@ -480,14 +467,11 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
     const escapeResult = this.AM.get(EscapeAnalysis, this.functionIR);
     const toRemove = new Map<BasicBlock, number[]>();
 
-    for (const block of this.functionIR.blocks.values()) {
-      for (let i = 0; i < block.instructions.length; i++) {
-        const instr = block.instructions[i];
+    for (const block of this.functionIR.allBlocks()) {
+      for (let i = 0; i < block.operations.length; i++) {
+        const instr = block.operations[i];
 
-        if (
-          !(instr instanceof LoadStaticPropertyInstruction) &&
-          !(instr instanceof LoadDynamicPropertyInstruction)
-        ) {
+        if (!(instr instanceof LoadStaticPropertyOp) && !(instr instanceof LoadDynamicPropertyOp)) {
           continue;
         }
 
@@ -513,7 +497,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
     for (const [block, indices] of toRemove) {
       indices.sort((a, b) => b - a);
       for (const index of indices) {
-        block.removeInstructionAt(index);
+        block.removeOpAt(index);
       }
     }
 
@@ -524,9 +508,9 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
    * Returns true if the instruction's result is used as the argument
    * to a `delete` UnaryExpression.
    */
-  private feedsDeleteExpression(instr: LoadStaticPropertyInstruction): boolean {
+  private feedsDeleteExpression(instr: LoadStaticPropertyOp): boolean {
     for (const user of instr.place.identifier.uses) {
-      if (user instanceof UnaryExpressionInstruction && user.operator === "delete") {
+      if (user instanceof UnaryExpressionOp && user.operator === "delete") {
         return true;
       }
     }
@@ -553,21 +537,19 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
    * Returns `null` if any property is a spread element, has a computed
    * key, or has a non-literal key.
    */
-  private buildObjectKeyToValue(
-    objectExpr: ObjectExpressionInstruction,
-  ): Map<string, Place> | null {
+  private buildObjectKeyToValue(objectExpr: ObjectExpressionOp): Map<string, Place> | null {
     const map = new Map<string, Place>();
 
     for (const propPlace of objectExpr.properties) {
       const prop = propPlace.identifier.definer;
 
-      if (prop instanceof SpreadElementInstruction) return null;
-      if (!(prop instanceof ObjectPropertyInstruction)) return null;
+      if (prop instanceof SpreadElementOp) return null;
+      if (!(prop instanceof ObjectPropertyOp)) return null;
 
       if (prop.computed) return null;
 
       const keyDefiner = prop.key.identifier.definer;
-      if (!(keyDefiner instanceof LiteralInstruction)) return null;
+      if (!(keyDefiner instanceof LiteralOp)) return null;
       if (typeof keyDefiner.value !== "string" && typeof keyDefiner.value !== "number") return null;
 
       map.set(String(keyDefiner.value), prop.value);
@@ -577,7 +559,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
   }
 
   private matchDestructureToObject(
-    pattern: ObjectDestructureInstruction,
+    pattern: ObjectDestructureOp,
     objMap: Map<string, Place>,
   ): Array<{ lval: Place; value: Place }> | null {
     const replacements: Array<{ lval: Place; value: Place }> = [];

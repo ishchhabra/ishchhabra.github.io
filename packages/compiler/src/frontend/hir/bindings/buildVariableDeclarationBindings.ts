@@ -1,7 +1,7 @@
 import type * as AST from "../../estree";
 import type { Node, VariableDeclaration } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { type DeclarationKind, LiteralInstruction, StoreLocalInstruction } from "../../../ir";
+import { type DeclarationKind, LiteralOp, StoreLocalOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { isBindingOwnedByScope } from "./isBindingOwnedByScope";
@@ -98,13 +98,11 @@ function buildIdentifierBindings(
   // source-level hoisting and ES module circular import semantics.
   if (declarationKind === "var") {
     const undefPlace = environment.createPlace(environment.createIdentifier());
-    functionBuilder.addInstruction(
-      environment.createInstruction(LiteralInstruction, undefPlace, undefined),
-    );
+    functionBuilder.addOp(environment.createOperation(LiteralOp, undefPlace, undefined));
     const storePlace = environment.createPlace(environment.createIdentifier());
-    functionBuilder.addInstruction(
-      environment.createInstruction(
-        StoreLocalInstruction,
+    functionBuilder.addOp(
+      environment.createOperation(
+        StoreLocalOp,
         storePlace,
         place,
         undefPlace,

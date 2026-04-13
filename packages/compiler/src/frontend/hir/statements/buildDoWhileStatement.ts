@@ -1,12 +1,6 @@
 import type { DoWhileStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import {
-  BranchTerminal,
-  createInstructionId,
-  JumpTerminal,
-  LiteralInstruction,
-  UnaryExpressionInstruction,
-} from "../../../ir";
+import { BranchOp, createOperationId, JumpOp, LiteralOp, UnaryExpressionOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -36,19 +30,17 @@ export function buildDoWhileStatement(
 
   // Build the test block — the `while(true)` header.
   const testBlock = environment.createBlock(scopeId);
-  functionBuilder.blocks.set(testBlock.id, testBlock);
+  functionBuilder.addBlock(testBlock);
 
   // Emit `true` as the while condition.
   functionBuilder.currentBlock = testBlock;
   const truePlace = environment.createPlace(environment.createIdentifier());
-  functionBuilder.addInstruction(
-    environment.createInstruction(LiteralInstruction, truePlace, true),
-  );
+  functionBuilder.addOp(environment.createOperation(LiteralOp, truePlace, true));
   const testBlockTerminus = functionBuilder.currentBlock;
 
   // Build the exit block (created early so break statements can reference it).
   const exitBlock = environment.createBlock(scopeId);
-  functionBuilder.blocks.set(exitBlock.id, exitBlock);
+  functionBuilder.addBlock(exitBlock);
 
   // Build the body block. When the body is a BlockStatement, use its
   // scope so it merges with the body block — the loop syntax provides { }.
@@ -56,7 +48,7 @@ export function buildDoWhileStatement(
     node.body.type === "BlockStatement" ? functionBuilder.scopeFor(node.body) : scope;
   const bodyScopeId = functionBuilder.lexicalScopeIdFor(bodyScope);
   const bodyBlock = environment.createBlock(bodyScopeId);
-  functionBuilder.blocks.set(bodyBlock.id, bodyBlock);
+  functionBuilder.addBlock(bodyBlock);
 
   functionBuilder.currentBlock = bodyBlock;
   functionBuilder.controlStack.push({
@@ -64,6 +56,7 @@ export function buildDoWhileStatement(
     label,
     breakTarget: exitBlock.id,
     continueTarget: testBlock.id,
+    structured: false,
   });
   if (label) {
     functionBuilder.blockLabels.set(testBlock.id, label);
@@ -79,28 +72,22 @@ export function buildDoWhileStatement(
   // Emit: if (!test) break — negate the test, then branch to a break
   // block. When test is true, fall through to the next iteration.
   const notTestPlace = environment.createPlace(environment.createIdentifier());
-  functionBuilder.addInstruction(
-    environment.createInstruction(UnaryExpressionInstruction, notTestPlace, "!", doWhileTestPlace),
+  functionBuilder.addOp(
+    environment.createOperation(UnaryExpressionOp, notTestPlace, "!", doWhileTestPlace),
   );
 
   const breakBlock = environment.createBlock(scopeId);
-  functionBuilder.blocks.set(breakBlock.id, breakBlock);
-  breakBlock.terminal = new JumpTerminal(
-    createInstructionId(functionBuilder.environment),
-    exitBlock.id,
-  );
+  functionBuilder.addBlock(breakBlock);
+  breakBlock.terminal = new JumpOp(createOperationId(functionBuilder.environment), exitBlock.id);
 
   const loopBackBlock = environment.createBlock(scopeId);
-  functionBuilder.blocks.set(loopBackBlock.id, loopBackBlock);
-  loopBackBlock.terminal = new JumpTerminal(
-    createInstructionId(functionBuilder.environment),
-    testBlock.id,
-  );
+  functionBuilder.addBlock(loopBackBlock);
+  loopBackBlock.terminal = new JumpOp(createOperationId(functionBuilder.environment), testBlock.id);
 
   const bodyBlockTerminus = functionBuilder.currentBlock;
   if (bodyBlockTerminus.terminal === undefined) {
-    bodyBlockTerminus.terminal = new BranchTerminal(
-      createInstructionId(functionBuilder.environment),
+    bodyBlockTerminus.terminal = new BranchOp(
+      createOperationId(functionBuilder.environment),
       notTestPlace,
       breakBlock.id,
       loopBackBlock.id,
@@ -111,8 +98,8 @@ export function buildDoWhileStatement(
   functionBuilder.controlStack.pop();
 
   // Set the branch terminal for the test block (while(true) -> always enter body).
-  testBlockTerminus.terminal = new BranchTerminal(
-    createInstructionId(functionBuilder.environment),
+  testBlockTerminus.terminal = new BranchOp(
+    createOperationId(functionBuilder.environment),
     truePlace,
     bodyBlock.id,
     exitBlock.id,
@@ -120,10 +107,7 @@ export function buildDoWhileStatement(
   );
 
   // Entry jumps to the test block.
-  currentBlock.terminal = new JumpTerminal(
-    createInstructionId(functionBuilder.environment),
-    testBlock.id,
-  );
+  currentBlock.terminal = new JumpOp(createOperationId(functionBuilder.environment), testBlock.id);
 
   functionBuilder.currentBlock = exitBlock;
   return undefined;

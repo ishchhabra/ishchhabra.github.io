@@ -1,12 +1,13 @@
 import {
-  BaseInstruction,
+  Operation,
   BlockId,
   DeclarationId,
   Identifier,
-  LoadLocalInstruction,
-  LoadPhiInstruction,
+  LoadLocalOp,
+  LoadPhiOp,
+  makeOperationId,
   Place,
-  StoreLocalInstruction,
+  StoreLocalOp,
 } from "../../ir";
 import { FunctionIR } from "../../ir/core/FunctionIR";
 import { ModuleIR } from "../../ir/core/ModuleIR";
@@ -58,7 +59,7 @@ export class SSABuilder {
    */
   private placePhi(domTree: DominatorTree): Set<Phi> {
     const phis = new Set<Phi>();
-    const ownBlockIds = new Set(this.functionIR.blocks.keys());
+    const ownBlockIds = new Set([...this.functionIR.allBlocks()].map((_b) => _b.id));
 
     for (const [declId, entries] of this.moduleIR.environment.declToPlaces) {
       if (this.moduleIR.environment.contextDeclarationIds.has(declId)) continue;
@@ -92,7 +93,8 @@ export class SSABuilder {
 
         const id = createPhiIdentifier(this.moduleIR.environment);
         const place = this.moduleIR.environment.createPlace(id);
-        phis.add(new Phi(frontier, place, new Map(), declId));
+        const opId = makeOperationId(this.moduleIR.environment.nextOperationId++);
+        phis.add(new Phi(opId, frontier, place, new Map(), declId));
         hasPhi.add(frontier);
 
         if (!defSet.has(frontier)) {
@@ -124,7 +126,7 @@ export class SSABuilder {
     this.seedHeaderDefinitions(stacks, phiDecls);
 
     const visit = (blockId: BlockId) => {
-      const block = this.functionIR.blocks.get(blockId)!;
+      const block = this.functionIR.getBlock(blockId);
       const pushed: DeclarationId[] = [];
 
       this.pushPhiResults(blockId, phisByBlock, stacks, pushed);
@@ -173,11 +175,11 @@ export class SSABuilder {
     phiDecls: Set<DeclarationId>,
   ): void {
     for (const instr of this.functionIR.runtime.prologue) {
-      if (instr instanceof StoreLocalInstruction) {
+      if (instr instanceof StoreLocalOp) {
         for (const place of instr.getDefs()) {
           this.pushIfPhi(place, phiDecls, stacks);
         }
-      } else {
+      } else if (instr.place) {
         this.pushIfPhi(instr.place, phiDecls, stacks);
       }
     }
@@ -212,24 +214,24 @@ export class SSABuilder {
 
   private rewriteAndPushInstructions(
     block: {
-      instructions: BaseInstruction[];
-      replaceInstruction(index: number, instr: BaseInstruction): void;
+      operations: readonly Operation[];
+      replaceOp(index: number, instr: Operation): void;
     },
     phiDecls: Set<DeclarationId>,
     stacks: Map<DeclarationId, Place[]>,
     pushed: DeclarationId[],
   ): void {
-    for (let i = 0; i < block.instructions.length; i++) {
-      const instruction = block.instructions[i];
+    for (let i = 0; i < block.operations.length; i++) {
+      const instruction = block.operations[i];
 
       const rewriteMap = this.buildRewriteMap(instruction.getOperands?.() ?? [], phiDecls, stacks);
       if (rewriteMap.size > 0) {
         const rewritten = this.rewriteInstruction(instruction, rewriteMap);
-        block.replaceInstruction(i, rewritten);
-        this.moduleIR.environment.placeToInstruction.set(rewritten.place.id, rewritten);
+        block.replaceOp(i, rewritten);
+        this.moduleIR.environment.placeToOp.set(rewritten.place!.id, rewritten);
       }
 
-      if (instruction instanceof StoreLocalInstruction) {
+      if (instruction instanceof StoreLocalOp) {
         for (const place of instruction.getDefs()) {
           this.pushIfPhi(place, phiDecls, stacks, pushed);
         }
@@ -309,12 +311,12 @@ export class SSABuilder {
   // Utilities
   // ---------------------------------------------------------------------------
 
-  private rewriteInstruction<T extends BaseInstruction>(
+  private rewriteInstruction<T extends Operation>(
     instruction: T,
     values: Map<Identifier, Place>,
-  ): T | LoadPhiInstruction {
-    if (instruction instanceof LoadLocalInstruction && values.has(instruction.value.identifier)) {
-      return new LoadPhiInstruction(
+  ): T | LoadPhiOp {
+    if (instruction instanceof LoadLocalOp && values.has(instruction.value.identifier)) {
+      return new LoadPhiOp(
         instruction.id,
         instruction.place,
         values.get(instruction.value.identifier)!,

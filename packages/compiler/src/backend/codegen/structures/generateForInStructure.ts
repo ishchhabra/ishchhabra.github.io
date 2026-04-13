@@ -1,25 +1,25 @@
 import * as t from "@babel/types";
-import { ForInStructure } from "../../../ir";
+import { ForInOp } from "../../../ir";
 import { FunctionIR } from "../../../ir/core/FunctionIR";
 import { CodeGenerator } from "../../CodeGenerator";
 import { stripTrailingContinue } from "../generateBackEdge";
 import { generateBasicBlock } from "../generateBlock";
-import { generateInstruction } from "../instructions/generateInstruction";
-import { generateDestructureTarget } from "../instructions/memory/generateDestructureTarget";
+import { generateOp } from "../ops/generateOp";
+import { generateDestructureTarget } from "../ops/memory/generateDestructureTarget";
 
 export function generateForInStructure(
-  structure: ForInStructure,
+  structure: ForInOp,
   functionIR: FunctionIR,
   generator: CodeGenerator,
 ): Array<t.Statement> {
   // Generate the header block's instructions.
-  const headerBlock = functionIR.blocks.get(structure.header);
+  const headerBlock = functionIR.maybeBlock(structure.header);
   if (headerBlock === undefined) {
     throw new Error(`Block ${structure.header} not found`);
   }
   const headerStatements: Array<t.Statement> = [];
-  for (const instruction of headerBlock.instructions) {
-    headerStatements.push(...generateInstruction(instruction, functionIR, generator));
+  for (const instruction of headerBlock.operations) {
+    headerStatements.push(...generateOp(instruction, functionIR, generator));
   }
 
   const iterationValue = generateDestructureTarget(structure.iterationTarget, generator);
@@ -32,7 +32,7 @@ export function generateForInStructure(
   }
   t.assertExpression(object);
 
-  // Generate the body block statements.
+  // Generate the body block statements via the nested region (step #9).
   const label = structure.label;
   generator.controlStack.push({
     kind: "loop",
@@ -40,7 +40,8 @@ export function generateForInStructure(
     breakTarget: structure.fallthrough,
     continueTarget: structure.header,
   });
-  const bodyStatements = generateBasicBlock(structure.body, functionIR, generator);
+  const bodyEntryId = structure.regions[0]?.entry.id ?? structure.body;
+  const bodyStatements = generateBasicBlock(bodyEntryId, functionIR, generator);
   generator.controlStack.pop();
 
   // Strip the trailing `continue` that the implicit back-edge produces —

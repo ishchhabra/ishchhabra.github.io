@@ -1,7 +1,7 @@
 import type { JSXOpeningElement } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
-import { JSXOpeningElementInstruction } from "../../../ir/instructions/jsx/JSXOpeningElement";
+import { JSXOpeningElementOp } from "../../../ir/ops/jsx/JSXOpeningElement";
 import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -32,13 +32,13 @@ export function buildJSXOpeningElement(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    JSXOpeningElementInstruction,
+  const instruction = environment.createOperation(
+    JSXOpeningElementOp,
     place,
     tagPlace,
     attributes,
     selfClosing,
   );
-  functionBuilder.addInstruction(instruction);
+  functionBuilder.addOp(instruction);
   return place;
 }

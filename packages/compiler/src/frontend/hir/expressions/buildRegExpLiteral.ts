@@ -1,6 +1,6 @@
 import type { RegExpLiteral } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { RegExpLiteralInstruction } from "../../../ir";
+import { RegExpLiteralOp } from "../../../ir";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 export function buildRegExpLiteral(
@@ -10,13 +10,13 @@ export function buildRegExpLiteral(
 ) {
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    RegExpLiteralInstruction,
+  const instruction = environment.createOperation(
+    RegExpLiteralOp,
     place,
     node.regex.pattern,
     node.regex.flags,
   );
-  functionBuilder.addInstruction(instruction);
-  environment.registerDeclarationInstruction(place, instruction);
+  functionBuilder.addOp(instruction);
+  environment.registerDeclarationOp(place, instruction);
   return place;
 }

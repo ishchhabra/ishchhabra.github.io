@@ -1,6 +1,6 @@
 import type { BlockStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { BlockStructure, JumpTerminal, createInstructionId } from "../../../ir";
+import { BlockOp, JumpOp, Region, createOperationId } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -20,29 +20,34 @@ export function buildBlockStatement(
   const blockScopeId = functionBuilder.lexicalScopeIdFor(blockScope);
 
   const headerBlock = environment.createBlock(scopeId);
-  functionBuilder.blocks.set(headerBlock.id, headerBlock);
+  functionBuilder.addBlock(headerBlock);
 
   const bodyBlock = environment.createBlock(blockScopeId);
-  functionBuilder.blocks.set(bodyBlock.id, bodyBlock);
+  functionBuilder.addBlock(bodyBlock);
 
   const exitBlock = environment.createBlock(scopeId);
-  functionBuilder.blocks.set(exitBlock.id, exitBlock);
+  functionBuilder.addBlock(exitBlock);
 
-  currentBlock.terminal = new JumpTerminal(createInstructionId(environment), headerBlock.id);
+  currentBlock.terminal = new JumpOp(createOperationId(environment), headerBlock.id);
+
+  const bodyRegion = new Region([]);
+  bodyRegion.moveBlockHere(bodyBlock);
 
   functionBuilder.currentBlock = bodyBlock;
-  buildOwnedBody(node, scope, functionBuilder, moduleBuilder, environment);
+  functionBuilder.withStructureRegion(bodyRegion, () => {
+    buildOwnedBody(node, scope, functionBuilder, moduleBuilder, environment);
+  });
 
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.terminal = new JumpTerminal(
-      createInstructionId(environment),
+    functionBuilder.currentBlock.terminal = new JumpOp(
+      createOperationId(environment),
       exitBlock.id,
     );
   }
 
   functionBuilder.structures.set(
     headerBlock.id,
-    new BlockStructure(headerBlock.id, bodyBlock.id, exitBlock.id),
+    new BlockOp(createOperationId(environment), headerBlock.id, exitBlock.id, bodyRegion),
   );
 
   functionBuilder.currentBlock = exitBlock;

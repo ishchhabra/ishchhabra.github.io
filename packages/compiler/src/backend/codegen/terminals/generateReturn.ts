@@ -1,9 +1,9 @@
 import * as t from "@babel/types";
-import { ReturnTerminal } from "../../../ir";
+import { ReturnOp } from "../../../ir";
 import { CodeGenerator } from "../../CodeGenerator";
 
 export function generateReturnTerminal(
-  terminal: ReturnTerminal,
+  terminal: ReturnOp,
   generator: CodeGenerator,
 ): Array<t.Statement> {
   if (terminal.value === null) {

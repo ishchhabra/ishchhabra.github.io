@@ -1,6 +1,6 @@
 import type { YieldExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { YieldExpressionInstruction } from "../../../ir/instructions/value/YieldExpression";
+import { YieldExpressionOp } from "../../../ir/ops/call/YieldExpression";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -23,12 +23,12 @@ export function buildYieldExpression(
 
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
-  const instruction = environment.createInstruction(
-    YieldExpressionInstruction,
+  const instruction = environment.createOperation(
+    YieldExpressionOp,
     place,
     argumentPlace,
     node.delegate,
   );
-  functionBuilder.addInstruction(instruction);
+  functionBuilder.addOp(instruction);
   return place;
 }
