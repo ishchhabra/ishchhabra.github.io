@@ -30,7 +30,6 @@ import { JSXOpeningFragmentOp } from "./ops/jsx/JSXOpeningFragment";
 import { JSXSpreadAttributeOp } from "./ops/jsx/JSXSpreadAttribute";
 import { JSXTextOp } from "./ops/jsx/JSXText";
 import { ArrayDestructureOp } from "./ops/pattern/ArrayDestructure";
-import { CopyOp } from "./ops/prim/Copy";
 import { LoadContextOp } from "./ops/mem/LoadContext";
 import { LoadDynamicPropertyOp } from "./ops/prop/LoadDynamicProperty";
 import { LoadGlobalOp } from "./ops/prop/LoadGlobal";
@@ -122,7 +121,6 @@ export type ValueOp =
  */
 export type MemoryOp =
   | ArrayDestructureOp
-  | CopyOp
   | LoadContextOp
   | LoadDynamicPropertyOp
   | LoadGlobalOp
@@ -199,7 +197,6 @@ const VALUE_CTORS = new Set<Function>([
 
 const MEMORY_CTORS = new Set<Function>([
   ArrayDestructureOp,
-  CopyOp,
   LoadContextOp,
   LoadDynamicPropertyOp,
   LoadGlobalOp,

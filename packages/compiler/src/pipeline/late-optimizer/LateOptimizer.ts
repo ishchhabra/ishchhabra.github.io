@@ -3,8 +3,6 @@ import { FuncOp } from "../../ir/core/FuncOp";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { LateConstantPropagationPass } from "./passes/LateConstantPropagationPass";
-import { LateCopyCoalescingPass } from "./passes/LateCopyCoalescingPass";
-import { LateCopyFoldingPass } from "./passes/LateCopyFoldingPass";
 import { LateCopyPropagationPass } from "./passes/LateCopyPropagationPass";
 import { LateDeadCodeEliminationPass } from "./passes/LateDeadCodeEliminationPass";
 
@@ -46,20 +44,6 @@ export class LateOptimizer {
 
       if (this.options.enableLateCopyPropagationPass) {
         if (new LateCopyPropagationPass(this.funcOp, this.AM).run().changed) {
-          iterationChanged = true;
-          this.AM.invalidateFunction(this.funcOp);
-        }
-      }
-
-      if (this.options.enableLateCopyFoldingPass) {
-        if (new LateCopyFoldingPass(this.funcOp).run().changed) {
-          iterationChanged = true;
-          this.AM.invalidateFunction(this.funcOp);
-        }
-      }
-
-      if (this.options.enableLateCopyCoalescingPass) {
-        if (new LateCopyCoalescingPass(this.funcOp).run().changed) {
           iterationChanged = true;
           this.AM.invalidateFunction(this.funcOp);
         }

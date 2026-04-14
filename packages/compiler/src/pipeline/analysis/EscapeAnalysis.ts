@@ -1,7 +1,6 @@
 import {
   type BlockId,
   CallExpressionOp,
-  CopyOp,
   FunctionDeclarationOp,
   IdentifierId,
   LoadContextOp,
@@ -125,11 +124,6 @@ export class EscapeAnalysis extends FunctionAnalysis<EscapeAnalysisResult> {
 
         if (instr instanceof LoadContextOp) {
           addAlias(instr.value.identifier.id, instr.place.identifier.id);
-          continue;
-        }
-
-        if (instr instanceof CopyOp) {
-          addAlias(instr.value.identifier.id, instr.lval.identifier.id);
           continue;
         }
 

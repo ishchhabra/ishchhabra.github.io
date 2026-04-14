@@ -1,7 +1,6 @@
 import { Environment } from "../../../environment";
 import {
   BasicBlock,
-  CopyOp,
   Identifier,
   IdentifierId,
   LiteralOp,
@@ -257,8 +256,8 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
 
   /**
    * Trace an identifier through value-forwarding instructions
-   * (LoadLocal, StoreLocal, CopyOp) back to its origin.
-   * Returns the ObjectExpressionOp if found, null otherwise.
+   * (LoadLocal, StoreLocal) back to its origin. Returns the
+   * ObjectExpressionOp if found, null otherwise.
    */
   private resolveToObjectExpression(place: Place): ObjectExpressionOp | null {
     // oxlint-disable-next-line typescript/no-explicit-any
@@ -266,8 +265,6 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
     for (let depth = 0; depth < 10 && current; depth++) {
       if (current instanceof ObjectExpressionOp) return current;
       if (current instanceof LoadLocalOp) {
-        current = current.value.identifier.definer;
-      } else if (current instanceof CopyOp) {
         current = current.value.identifier.definer;
       } else if (current instanceof StoreLocalOp) {
         current = current.value.identifier.definer;

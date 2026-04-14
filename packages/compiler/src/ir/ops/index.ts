@@ -4,7 +4,7 @@
  * category:
  *
  *   prim/    — universal primitives: Literal, RegExpLiteral,
- *              TemplateLiteral, Hole, Copy, Debugger, SpreadElement
+ *              TemplateLiteral, Hole, Debugger, SpreadElement
  *   arith/   — BinaryExpression, UnaryExpression, LogicalExpression,
  *              SequenceExpression
  *   call/    — Call, New, SuperCall, TaggedTemplate, Import, Await, Yield
@@ -33,7 +33,6 @@ export { LiteralOp, type TPrimitiveValue } from "./prim/Literal";
 export { RegExpLiteralOp } from "./prim/RegExpLiteral";
 export { TemplateLiteralOp, type TemplateElement } from "./prim/TemplateLiteral";
 export { HoleOp } from "./prim/Hole";
-export { CopyOp } from "./prim/Copy";
 export { DebuggerStatementOp } from "./prim/Debugger";
 export { SpreadElementOp } from "./prim/SpreadElement";
 

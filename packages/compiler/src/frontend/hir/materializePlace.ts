@@ -5,7 +5,6 @@ import {
   BinaryExpressionOp,
   CallExpressionOp,
   ClassExpressionOp,
-  CopyOp,
   DeclareLocalOp,
   ImportExpressionOp,
   LiteralOp,
@@ -116,7 +115,6 @@ export function isStablePlace(
     instruction instanceof AwaitExpressionOp ||
     instruction instanceof CallExpressionOp ||
     instruction instanceof ClassExpressionOp ||
-    instruction instanceof CopyOp ||
     instruction instanceof ArrowFunctionExpressionOp ||
     instruction instanceof FunctionExpressionOp ||
     instruction instanceof ImportExpressionOp ||
