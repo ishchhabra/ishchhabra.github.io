@@ -1,26 +1,53 @@
 function $0_0($2_0) {
   switch ($2_0.type) {
-    case "comment": {
-      const $24_0 = $2_0;
-      return {
-        type: "comment",
-        value: $24_0.data,
-      };
-    }
-    case "text": {
-      const $15_0 = $2_0;
-      return {
-        type: "text",
-        value: $15_0.value,
-      };
-    }
-    default: {
-      const $6_0 = $2_0;
-      return {
-        type: "element",
-        tag: $6_0.tagName,
-      };
-    }
+    case "comment":
+      {
+        const $7_0 = $2_0;
+        return {
+          type: "comment",
+          value: $7_0.data,
+        };
+      }
+      {
+        const $18_0 = $2_0;
+        return {
+          type: "text",
+          value: $18_0.value,
+        };
+      }
+      {
+        const $29_0 = $2_0;
+        return {
+          type: "element",
+          tag: $29_0.tagName,
+        };
+      }
+      break;
+    case "text":
+      {
+        const $18_0 = $2_0;
+        return {
+          type: "text",
+          value: $18_0.value,
+        };
+      }
+      {
+        const $29_0 = $2_0;
+        return {
+          type: "element",
+          tag: $29_0.tagName,
+        };
+      }
+      break;
+    default:
+      {
+        const $29_0 = $2_0;
+        return {
+          type: "element",
+          tag: $29_0.tagName,
+        };
+      }
+      break;
   }
 }
 const $1_0 = $0_0({

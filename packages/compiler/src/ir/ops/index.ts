@@ -18,14 +18,14 @@
  *              DynamicProperty, MetaProperty, ThisExpression,
  *              SuperProperty
  *   mem/     — LoadLocal, StoreLocal, DeclareLocal, LoadContext,
- *              StoreContext, LoadPhi
+ *              StoreContext
  *   module/  — Import / Export declarations and specifiers
  *   jsx/     — JSX elements, fragments, attributes, text
- *   control/ — Terminators (Jump, Branch, Return, Throw, Switch, Try)
- *              and structured control flow (Block, ForIn, ForOf,
- *              Ternary, LabeledBlock). See `./control/index.ts` for
- *              Terminal / Structure unions and isTerminal /
- *              isStructure predicates.
+ *   control/ — Terminators (Jump, Branch, Return, Throw, Break,
+ *              Continue, Yield, Switch, Try) and structured control
+ *              flow (If, While, Block, ForIn, ForOf, LabeledBlock).
+ *              See `./control/index.ts` for Terminal / Structure
+ *              unions and isTerminal / isStructure predicates.
  */
 
 // prim
@@ -40,11 +40,13 @@ export { SpreadElementOp } from "./prim/SpreadElement";
 // control (terminators + structured control flow)
 export {
   BlockOp,
-  BranchOp,
   BreakOp,
+  ConditionOp,
   ContinueOp,
   ForInOp,
   ForOfOp,
+  ForOp,
+  IfOp,
   isStructure,
   isTerminal,
   JumpOp,
@@ -52,11 +54,11 @@ export {
   ReturnOp,
   SwitchOp,
   type Structure,
-  type SwitchCase,
   type Terminal,
-  TernaryOp,
   ThrowOp,
   TryOp,
+  WhileOp,
+  YieldOp,
 } from "./control";
 
 // arith
@@ -112,8 +114,6 @@ export { StoreLocalOp, type StoreLocalKind } from "./mem/StoreLocal";
 export { DeclareLocalOp } from "./mem/DeclareLocal";
 export { LoadContextOp } from "./mem/LoadContext";
 export { StoreContextOp, type StoreContextKind } from "./mem/StoreContext";
-export { LoadPhiOp } from "./mem/LoadPhi";
-export { PhiOp, makePhiIdentifierName } from "./mem/Phi";
 
 // module
 export { ImportDeclarationOp } from "./module/ImportDeclaration";

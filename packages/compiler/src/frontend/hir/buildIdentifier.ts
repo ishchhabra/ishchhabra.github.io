@@ -2,7 +2,7 @@ import type * as AST from "../estree";
 import { Environment } from "../../environment";
 import { LoadContextOp, LoadGlobalOp, LoadLocalOp, Place } from "../../ir";
 import { type Scope } from "../scope/Scope";
-import { FunctionIRBuilder } from "./FunctionIRBuilder";
+import { FuncOpBuilder } from "./FuncOpBuilder";
 
 /**
  * Builds a place for an identifier. Identifiers reaching this function via
@@ -11,7 +11,7 @@ import { FunctionIRBuilder } from "./FunctionIRBuilder";
  *
  * @param node - The ESTree Identifier node
  * @param scope - The scope info for this node
- * @param builder - The FunctionIRBuilder managing IR state
+ * @param builder - The FuncOpBuilder managing IR state
  * @param environment - The environment managing IR state
  *
  * @returns The `Place` representing this identifier in the IR
@@ -19,7 +19,7 @@ import { FunctionIRBuilder } from "./FunctionIRBuilder";
 export function buildIdentifier(
   node: AST.Identifier,
   scope: Scope,
-  builder: FunctionIRBuilder,
+  builder: FuncOpBuilder,
   environment: Environment,
 ) {
   return buildReferencedIdentifier(node, scope, builder, environment);
@@ -32,7 +32,7 @@ export function throwTDZAccessError(name: string): never {
 export function buildBindingIdentifier(
   node: AST.Identifier,
   scope: Scope,
-  builder: FunctionIRBuilder,
+  builder: FuncOpBuilder,
   environment: Environment,
 ) {
   const name = node.name;
@@ -53,13 +53,16 @@ export function buildBindingIdentifier(
 function buildReferencedIdentifier(
   node: AST.Identifier,
   scope: Scope,
-  builder: FunctionIRBuilder,
+  builder: FuncOpBuilder,
   environment: Environment,
 ) {
   const name = node.name;
   const declarationId = builder.getDeclarationId(name, scope);
 
-  const identifier = environment.createIdentifier(declarationId);
+  // LoadLocal produces a temp SSA value that isn't a new version of
+  // the source variable — it's just a read. Use a fresh identifier
+  // so SSA rename stacks don't confuse it with the source.
+  const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
 
   const declarationKind =

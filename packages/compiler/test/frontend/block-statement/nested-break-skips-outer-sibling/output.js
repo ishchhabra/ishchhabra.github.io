@@ -1,6 +1,8 @@
-if (true) {
+while (true) {
   {
     {
+      break;
     }
+    console.log("sibling");
   }
 }

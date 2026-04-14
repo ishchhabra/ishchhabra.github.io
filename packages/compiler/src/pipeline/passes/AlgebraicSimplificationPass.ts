@@ -9,7 +9,7 @@ import {
   StoreLocalOp,
   TPrimitiveValue,
 } from "../../ir";
-import { FunctionIR } from "../../ir/core/FunctionIR";
+import { FuncOp } from "../../ir/core/FuncOp";
 import { Place } from "../../ir/core/Place";
 import { BaseOptimizationPass } from "../late-optimizer/OptimizationPass";
 
@@ -41,34 +41,53 @@ export class AlgebraicSimplificationPass extends BaseOptimizationPass {
    */
   private readonly literals: Map<IdentifierId, TPrimitiveValue>;
 
-  constructor(protected readonly functionIR: FunctionIR) {
-    super(functionIR);
+  constructor(protected readonly funcOp: FuncOp) {
+    super(funcOp);
     this.literals = new Map();
 
-    // Pre-scan all blocks to find literal values, following LoadLocal/StoreLocal chains.
-    for (const block of this.functionIR.allBlocks()) {
-      for (const instruction of block.operations) {
-        if (instruction instanceof LiteralOp) {
-          this.literals.set(instruction.place.identifier.id, instruction.value);
-        } else if (instruction instanceof LoadLocalOp) {
-          const val = this.literals.get(instruction.value.identifier.id);
+    // Pre-scan to find literal values. Walk every op — including
+    // ops inside structured ops' regions — uniformly.
+    this.seedLiterals(this.funcOp);
+  }
+
+  private seedLiterals(funcOp: FuncOp): void {
+    const walkOps = (ops: readonly Operation[]) => {
+      for (const op of ops) {
+        if (op instanceof LiteralOp) {
+          this.literals.set(op.place.identifier.id, op.value);
+        } else if (op instanceof LoadLocalOp) {
+          const val = this.literals.get(op.value.identifier.id);
           if (val !== undefined) {
-            this.literals.set(instruction.place.identifier.id, val);
+            this.literals.set(op.place.identifier.id, val);
           }
-        } else if (instruction instanceof StoreLocalOp) {
-          const val = this.literals.get(instruction.value.identifier.id);
-          if (val !== undefined) {
-            this.literals.set(instruction.lval.identifier.id, val);
+        } else if (op instanceof StoreLocalOp) {
+          // Only track literal values through `const` bindings —
+          // `let` variables can be reassigned, so their binding
+          // place cannot carry a known literal value for uses
+          // later in the program.
+          if (op.type === "const") {
+            const val = this.literals.get(op.value.identifier.id);
+            if (val !== undefined) {
+              this.literals.set(op.lval.identifier.id, val);
+            }
+          }
+        }
+        for (const region of op.regions) {
+          for (const block of region.blocks) {
+            walkOps(block.operations);
           }
         }
       }
+    };
+    for (const block of funcOp.allBlocks()) {
+      walkOps(block.operations);
     }
   }
 
   public step() {
     let changed = false;
 
-    for (const block of this.functionIR.allBlocks()) {
+    for (const block of this.funcOp.allBlocks()) {
       changed ||= this.simplifyBlock(block);
     }
 

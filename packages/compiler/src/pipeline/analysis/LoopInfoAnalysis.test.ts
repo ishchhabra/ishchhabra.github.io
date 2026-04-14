@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { ProjectBuilder } from "../../frontend/ProjectBuilder";
-import { makeFunctionIRId } from "../../ir/core/FunctionIR";
+import { makeFuncOpId } from "../../ir/core/FuncOp";
 import { ControlFlowGraph } from "./ControlFlowGraphAnalysis";
 import { DominatorTree } from "./DominatorTreeAnalysis";
 import { type Loop, LoopInfo } from "./LoopInfoAnalysis";
@@ -13,7 +13,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 function getFirstFunction(source: string) {
   const unit = new ProjectBuilder().buildFromSource(source, "m.js");
   const moduleIR = unit.modules.get("m.js")!;
-  const fn = moduleIR.functions.get(makeFunctionIRId(0));
+  const fn = moduleIR.functions.get(makeFuncOpId(0));
   if (!fn) {
     throw new Error("expected function id 0");
   }

@@ -1,7 +1,6 @@
 import { CopyOp, DeclarationId, LoadLocalOp, StoreLocalOp } from "../../../ir";
-import { FunctionIR } from "../../../ir/core/FunctionIR";
+import { FuncOp } from "../../../ir/core/FuncOp";
 import { Place } from "../../../ir/core";
-import { LoadPhiOp } from "../../../ir/ops/mem/LoadPhi";
 import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
 
 /**
@@ -17,14 +16,14 @@ import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
  * Designed to run after SSA destruction.
  */
 export class LateCopyCoalescingPass extends BaseOptimizationPass {
-  constructor(protected readonly functionIR: FunctionIR) {
-    super(functionIR);
+  constructor(protected readonly funcOp: FuncOp) {
+    super(funcOp);
   }
 
   protected step(): OptimizationResult {
     let changed = false;
 
-    for (const block of this.functionIR.allBlocks()) {
+    for (const block of this.funcOp.allBlocks()) {
       for (let i = 0; i < block.operations.length; i++) {
         const instr = block.operations[i];
 
@@ -54,7 +53,7 @@ export class LateCopyCoalescingPass extends BaseOptimizationPass {
    * since the use would then see the wrong value.
    */
   private canCoalesce(copyInstr: CopyOp, dst: DeclarationId, src: DeclarationId): boolean {
-    for (const block of this.functionIR.allBlocks()) {
+    for (const block of this.funcOp.allBlocks()) {
       for (const instr of block.operations) {
         // dst must have exactly one definition — the Copy we're removing.
         // If anything else writes to dst, coalescing is unsound.
@@ -86,18 +85,16 @@ export class LateCopyCoalescingPass extends BaseOptimizationPass {
   }
 
   /**
-   * Rewrite all LoadLocal / LoadPhi / Copy-value reads of `dst` to
-   * read from `srcPlace` instead.
+   * Rewrite all LoadLocal / Copy-value reads of `dst` to read from
+   * `srcPlace` instead.
    */
   private replaceLoads(dst: DeclarationId, srcPlace: Place): void {
-    for (const block of this.functionIR.allBlocks()) {
+    for (const block of this.funcOp.allBlocks()) {
       for (let i = 0; i < block.operations.length; i++) {
         const instr = block.operations[i];
 
         if (instr instanceof LoadLocalOp && instr.value.identifier.declarationId === dst) {
           block.replaceOp(i, new LoadLocalOp(instr.id, instr.place, srcPlace));
-        } else if (instr instanceof LoadPhiOp && instr.value.identifier.declarationId === dst) {
-          block.replaceOp(i, new LoadPhiOp(instr.id, instr.place, srcPlace));
         } else if (instr instanceof CopyOp && instr.value.identifier.declarationId === dst) {
           block.replaceOp(i, new CopyOp(instr.id, instr.place, instr.lval, srcPlace));
         }

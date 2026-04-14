@@ -17,7 +17,9 @@ export function generateStoreContextOp(
 
   if (instruction.kind === "declaration") {
     const node = t.variableDeclaration(instruction.type, [t.variableDeclarator(lval, value)]);
-    generator.places.set(instruction.place.id, instruction.emit ? lval : node);
+    // Always cache the full VariableDeclaration so an export wrapper
+    // that references this store via `.declaration` can read it.
+    generator.places.set(instruction.place.id, node);
     return node;
   }
 

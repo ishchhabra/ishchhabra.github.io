@@ -1,12 +1,12 @@
 import { BlockId } from "../../ir";
 import { getPredecessors, getSuccessors } from "../../frontend/cfg";
-import type { FunctionIR } from "../../ir/core/FunctionIR";
+import type { FuncOp } from "../../ir/core/FuncOp";
 import { AnalysisManager, FunctionAnalysis } from "./AnalysisManager";
 
 /**
  * Per-function control-flow graph: predecessor and successor sets per block.
  *
- * Built from {@link FunctionIR#blocks}, {@link FunctionIR#structures}, and
+ * Built from {@link FuncOp#blocks}, {@link FuncOp#structures}, and
  * block terminals (LLVM: CFG edges). Obtain via {@link AnalysisManager#get}
  * with {@link ControlFlowGraphAnalysis}. The static {@link ControlFlowGraph.compute}
  * is used by that analysis (and in tests); pipeline code should use the manager.
@@ -24,24 +24,12 @@ export class ControlFlowGraph {
   ) {}
 
   /**
-   * Builds pred/succ maps for the current {@link FunctionIR} shape.
+   * Builds pred/succ maps for the current {@link FuncOp} shape.
    */
-  static compute(functionIR: FunctionIR): ControlFlowGraph {
-    const predecessors = getPredecessors(functionIR, functionIR.structures);
+  static compute(funcOp: FuncOp): ControlFlowGraph {
+    const predecessors = getPredecessors(funcOp);
     const successors = getSuccessors(predecessors);
     return new ControlFlowGraph(predecessors, successors);
-  }
-
-  /**
-   * Block with no outgoing CFG edges (unique exit in a well-formed single-exit region).
-   */
-  getExitBlockId(): BlockId {
-    for (const [blockId, succs] of this.successors) {
-      if (succs.size === 0) {
-        return blockId;
-      }
-    }
-    throw new Error("No exit block found");
   }
 }
 
@@ -49,11 +37,11 @@ export class ControlFlowGraph {
  * Cached {@link ControlFlowGraph} for a function.
  *
  * Invalidate via {@link AnalysisManager#invalidateFunction} after any change to
- * {@link FunctionIR#blocks}, {@link FunctionIR#structures}, or block terminals
+ * {@link FuncOp#blocks}, {@link FuncOp#structures}, or block terminals
  * that affects control flow.
  */
 export class ControlFlowGraphAnalysis extends FunctionAnalysis<ControlFlowGraph> {
-  run(functionIR: FunctionIR, _AM: AnalysisManager): ControlFlowGraph {
-    return ControlFlowGraph.compute(functionIR);
+  run(funcOp: FuncOp, _AM: AnalysisManager): ControlFlowGraph {
+    return ControlFlowGraph.compute(funcOp);
   }
 }

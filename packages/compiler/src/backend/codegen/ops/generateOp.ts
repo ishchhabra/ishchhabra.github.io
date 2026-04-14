@@ -1,16 +1,24 @@
 import * as t from "@babel/types";
 import {
   ArrayDestructureOp,
-  Operation,
+  BreakOp,
+  ConditionOp,
+  ContinueOp,
   DebuggerStatementOp,
   DeclareLocalOp,
   ExportSpecifierOp,
   ImportSpecifierOp,
+  JumpOp,
   ObjectDestructureOp,
+  Operation,
+  ReturnOp,
   SpreadElementOp,
   StoreContextOp,
   StoreLocalOp,
+  ThrowOp,
+  YieldOp,
 } from "../../../ir";
+import { isClaimedByExportDeclaration } from "../../../ir/exportClaim";
 import {
   isDeclarationOp,
   isJSXOp,
@@ -19,10 +27,17 @@ import {
   isPatternOp,
   isValueOp,
 } from "../../../ir/categories";
-import { FunctionIR } from "../../../ir/core/FunctionIR";
+import { FuncOp } from "../../../ir/core/FuncOp";
+import { Trait } from "../../../ir/core/Operation";
 import { ClassDeclarationOp } from "../../../ir/ops/class/ClassDeclaration";
 import { FunctionDeclarationOp } from "../../../ir/ops/func/FunctionDeclaration";
 import { CodeGenerator } from "../../CodeGenerator";
+import { generateStructure } from "../structures/generateStructure";
+import { generateBreakTerminal } from "../terminals/generateBreak";
+import { generateContinueTerminal } from "../terminals/generateContinue";
+import { generateJumpTerminal } from "../terminals/generateJump";
+import { generateReturnTerminal } from "../terminals/generateReturn";
+import { generateThrowTerminal } from "../terminals/generateThrow";
 import { generateDeclarationOp } from "./declaration/generateDeclaration";
 import { generateDebuggerStatementOp } from "./generateDebuggerStatement";
 import { generateJSXOp } from "./jsx/generateJSX";
@@ -35,16 +50,50 @@ import { generateValueOp } from "./value/generateValue";
 
 export function generateOp(
   instruction: Operation,
-  functionIR: FunctionIR,
+  funcOp: FuncOp,
   generator: CodeGenerator,
 ): Array<t.Statement> {
+  // Terminators are just ops with `Trait.Terminator`. Uniform
+  // dispatch through this single entrypoint.
+  if (instruction.hasTrait(Trait.Terminator)) {
+    if (instruction instanceof YieldOp || instruction instanceof ConditionOp) {
+      // YieldOp / ConditionOp end a structured op's region — they
+      // produce no statements on their own. The enclosing structured
+      // op's emitter reads the yielded / condition values and binds
+      // them appropriately (result places for YieldOp, JS while/for
+      // test for ConditionOp).
+      return [];
+    }
+    if (instruction instanceof BreakOp) {
+      return generateBreakTerminal(instruction);
+    }
+    if (instruction instanceof ContinueOp) {
+      return generateContinueTerminal(instruction);
+    }
+    if (instruction instanceof JumpOp) {
+      return generateJumpTerminal(instruction, funcOp, generator);
+    }
+    if (instruction instanceof ReturnOp) {
+      return generateReturnTerminal(instruction, generator);
+    }
+    if (instruction instanceof ThrowOp) {
+      return generateThrowTerminal(instruction, generator);
+    }
+    throw new Error(`Unsupported terminator op: ${instruction.constructor.name}`);
+  }
+  // Structured control-flow ops (IfOp, WhileOp, BlockOp, ForInOp,
+  // ForOfOp, LabeledBlockOp, SwitchOp, TryOp) live inline in the
+  // block's op stream.
+  if (instruction.hasTrait(Trait.HasRegions)) {
+    return generateStructure(instruction, funcOp, generator);
+  }
   if (instruction instanceof DebuggerStatementOp) {
     return [generateDebuggerStatementOp(instruction, generator)];
   } else if (isDeclarationOp(instruction)) {
     const statement = generateDeclarationOp(instruction, generator);
     if (
       (instruction instanceof FunctionDeclarationOp || instruction instanceof ClassDeclarationOp) &&
-      !instruction.emit
+      isClaimedByExportDeclaration(instruction)
     ) {
       return [];
     }
@@ -59,17 +108,17 @@ export function generateOp(
   } else if (isMemoryOp(instruction)) {
     const statement = generateMemoryOp(instruction, generator);
     if (
-      (instruction instanceof ArrayDestructureOp ||
-        instruction instanceof ObjectDestructureOp ||
-        instruction instanceof StoreLocalOp ||
-        instruction instanceof StoreContextOp) &&
-      instruction.emit
+      instruction instanceof ArrayDestructureOp ||
+      instruction instanceof ObjectDestructureOp ||
+      instruction instanceof StoreLocalOp ||
+      instruction instanceof StoreContextOp
     ) {
+      if (isClaimedByExportDeclaration(instruction)) {
+        return [];
+      }
       return [statement as t.Statement];
     }
 
-    // Flush zero-use side-effecting memory instructions (e.g.
-    // StoreStaticProperty) as expression statements.
     if (
       instruction.place.identifier.uses.size === 0 &&
       instruction.hasSideEffects(generator.moduleIR.environment) &&
@@ -94,10 +143,7 @@ export function generateOp(
     generateSpreadElementOp(instruction, generator);
     return [];
   } else if (isValueOp(instruction)) {
-    const node = generateValueOp(instruction, functionIR, generator);
-    // Flush side-effecting values with zero uses as expression statements.
-    // This replaces ExpressionStatementInstruction — the emission decision
-    // is based on the use graph, not a wrapper instruction type.
+    const node = generateValueOp(instruction, funcOp, generator);
     if (
       instruction.place.identifier.uses.size === 0 &&
       instruction.hasSideEffects(generator.moduleIR.environment) &&

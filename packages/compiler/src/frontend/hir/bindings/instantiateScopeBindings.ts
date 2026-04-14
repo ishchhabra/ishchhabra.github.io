@@ -1,7 +1,7 @@
 import type { Node } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { type Scope } from "../../scope/Scope";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildClassDeclarationBindings } from "./buildClassDeclarationBindings";
 import {
@@ -32,7 +32,7 @@ import { buildVariableDeclarationBindings } from "./buildVariableDeclarationBind
 export function instantiateScopeBindings(
   _bodyNode: Node,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
   moduleBuilder: ModuleIRBuilder,
 ) {
@@ -52,7 +52,7 @@ export function instantiateScopeBindings(
  */
 function instantiateFunctionScope(
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
   moduleBuilder: ModuleIRBuilder,
 ) {
@@ -102,7 +102,7 @@ function instantiateFunctionScope(
  */
 function instantiateBlockScope(
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
   moduleBuilder: ModuleIRBuilder,
 ) {

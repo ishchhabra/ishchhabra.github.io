@@ -35,7 +35,6 @@ import { LoadContextOp } from "./ops/mem/LoadContext";
 import { LoadDynamicPropertyOp } from "./ops/prop/LoadDynamicProperty";
 import { LoadGlobalOp } from "./ops/prop/LoadGlobal";
 import { LoadLocalOp } from "./ops/mem/LoadLocal";
-import { LoadPhiOp } from "./ops/mem/LoadPhi";
 import { LoadStaticPropertyOp } from "./ops/prop/LoadStaticProperty";
 import { ObjectDestructureOp } from "./ops/pattern/ObjectDestructure";
 import { StoreContextOp } from "./ops/mem/StoreContext";
@@ -128,7 +127,6 @@ export type MemoryOp =
   | LoadDynamicPropertyOp
   | LoadGlobalOp
   | LoadLocalOp
-  | LoadPhiOp
   | LoadStaticPropertyOp
   | ObjectDestructureOp
   | StoreContextOp
@@ -206,7 +204,6 @@ const MEMORY_CTORS = new Set<Function>([
   LoadDynamicPropertyOp,
   LoadGlobalOp,
   LoadLocalOp,
-  LoadPhiOp,
   LoadStaticPropertyOp,
   ObjectDestructureOp,
   StoreContextOp,

@@ -1,11 +1,11 @@
 import type { DebuggerStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { DebuggerStatementOp, Place } from "../../../ir";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 
 export function buildDebuggerStatement(
   _node: DebuggerStatement,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ): Place {
   const identifier = environment.createIdentifier();

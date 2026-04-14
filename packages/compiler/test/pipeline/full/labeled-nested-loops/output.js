@@ -1,28 +1,16 @@
 let $0_0 = 0;
-let $31_phi_40 = undefined;
-$31_phi_40 = $0_0;
-outer: while ($31_phi_40 < 5) {
-  let $5_0 = 0;
-  let $32_phi_41 = undefined;
-  $32_phi_41 = $5_0;
-  inner: while ($32_phi_41 < 5) {
-    if ($32_phi_41 === 2) {
-      $5_0 = $32_phi_41 + 1;
-      $32_phi_41 = $5_0;
-      continue;
+outer: for (; $0_0 < 5; $0_0 = $0_0 + 1) {
+  let $6_0 = 0;
+  inner: for (; $6_0 < 5; $6_0 = $6_0 + 1) {
+    if ($6_0 === 2) {
+      continue inner;
     }
-    if ($32_phi_41 === 3) {
-      $0_0 = $31_phi_40 + 1;
-      $31_phi_40 = $0_0;
+    if ($6_0 === 3) {
       continue outer;
     }
-    if ($31_phi_40 === 4) {
+    if ($0_0 === 4) {
       break outer;
     }
-    console.log($31_phi_40, $32_phi_41);
-    $5_0 = $32_phi_41 + 1;
-    $32_phi_41 = $5_0;
+    console.log($0_0, $6_0);
   }
-  $0_0 = $31_phi_40 + 1;
-  $31_phi_40 = $0_0;
 }

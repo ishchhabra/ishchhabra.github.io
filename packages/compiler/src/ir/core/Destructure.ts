@@ -104,6 +104,40 @@ export function getDestructureTargetDefs(target: DestructureTarget): Place[] {
   }
 }
 
+/**
+ * Collect every binding-leaf place in a destructure target tree,
+ * including bindings with `storage: "context"`. This is the wider
+ * analog of {@link getDestructureTargetDefs}, which filters out
+ * context bindings because they don't participate in SSA rename as
+ * ordinary local defs.
+ *
+ * Used by {@link FuncOp} consumers that need every place the
+ * destructure produces regardless of storage — e.g., rename-stack
+ * seeding for function parameters, and "places owned by this
+ * function" scans.
+ */
+export function collectDestructureTargetBindingPlaces(target: DestructureTarget): Place[] {
+  switch (target.kind) {
+    case "binding":
+      return [target.place];
+    case "static-member":
+    case "dynamic-member":
+      return [];
+    case "assignment":
+      return collectDestructureTargetBindingPlaces(target.left);
+    case "rest":
+      return collectDestructureTargetBindingPlaces(target.argument);
+    case "array":
+      return target.elements.flatMap((element) =>
+        element === null ? [] : collectDestructureTargetBindingPlaces(element),
+      );
+    case "object":
+      return target.properties.flatMap((property) =>
+        collectDestructureTargetBindingPlaces(property.value),
+      );
+  }
+}
+
 export function destructureTargetHasObservableWrites(target: DestructureTarget): boolean {
   switch (target.kind) {
     case "binding":

@@ -20,7 +20,6 @@ export class ArrayDestructureOp extends Operation {
     public readonly value: Place,
     public readonly kind: StoreLocalKind,
     public readonly declarationKind: "let" | "const" | "var" | null = null,
-    public emit = true,
   ) {
     super(id);
   }
@@ -35,7 +34,6 @@ export class ArrayDestructureOp extends Operation {
       this.value,
       this.kind,
       this.declarationKind,
-      this.emit,
     );
   }
 
@@ -52,7 +50,6 @@ export class ArrayDestructureOp extends Operation {
       this.value.rewrite(values),
       this.kind,
       this.declarationKind,
-      this.emit,
     );
   }
 

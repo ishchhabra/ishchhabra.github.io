@@ -35,6 +35,12 @@ export function generateStoreLocalOp(
     }
   }
 
-  generator.places.set(instruction.place.id, instruction.emit ? lval : node);
+  // Always cache the full Declaration / ExpressionStatement node in
+  // `places[op.place.id]` so an export wrapper that references this
+  // store via its `.declaration` field (and whose codegen reads
+  // `places[declaration.id]`) finds a node it can wrap. Standalone
+  // emission is decided structurally in `generateOp`, not by an
+  // `emit` flag on the op.
+  generator.places.set(instruction.place.id, node);
   return node;
 }

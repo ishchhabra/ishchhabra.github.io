@@ -10,7 +10,7 @@ import {
 } from "../../../ir";
 import { LoadGlobalOp } from "../../../ir/ops/prop/LoadGlobal";
 import { type Scope } from "../../scope/Scope";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildLVal } from "../buildLVal";
 import { buildNode } from "../buildNode";
@@ -18,7 +18,7 @@ import { buildNode } from "../buildNode";
 export function buildVariableDeclaration(
   node: VariableDeclaration,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place | Place[] | undefined {

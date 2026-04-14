@@ -4,20 +4,20 @@ import { Place } from "../../../ir";
 import { ArrowFunctionExpressionOp } from "../../../ir/ops/func/ArrowFunctionExpression";
 import { isExpression, unwrapTSTypeWrappers } from "../../estree";
 import { type Scope } from "../../scope/Scope";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildArrowFunctionExpression(
   node: ArrowFunctionExpression,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
   const body = node.body;
   const conciseExpressionBody = isExpression(unwrapTSTypeWrappers(body));
   const childScope = functionBuilder.scopeFor(node);
-  const functionIRBuilder = new FunctionIRBuilder(
+  const funcOpBuilder = new FuncOpBuilder(
     node.params,
     body,
     childScope,
@@ -26,18 +26,19 @@ export function buildArrowFunctionExpression(
     moduleBuilder,
     node.async ?? false,
     false,
+    functionBuilder.funcOpId,
   );
-  const functionIR = functionIRBuilder.build();
+  const funcOp = funcOpBuilder.build();
 
-  functionBuilder.propagateCapturesFrom(functionIRBuilder);
+  functionBuilder.propagateCapturesFrom(funcOpBuilder);
 
-  const capturedPlaces = [...functionIRBuilder.captures.values()];
+  const capturedPlaces = [...funcOpBuilder.captures.values()];
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   const instruction = environment.createOperation(
     ArrowFunctionExpressionOp,
     place,
-    functionIR,
+    funcOp,
     node.async ?? false,
     conciseExpressionBody,
     false,

@@ -6,7 +6,7 @@ import { generateFunction } from "../../generateFunction";
 /**
  * Emits a {@link t.ClassProperty} for a class field instruction.
  *
- * The initializer is stored in the IR as a zero-arg {@link FunctionIR}
+ * The initializer is stored in the IR as a zero-arg {@link FuncOp}
  * "thunk" (see {@link ClassPropertyOp}). We generate its body
  * via the normal {@link generateFunction} pipeline and then extract the
  * single `return <expr>;` statement — the extracted expression becomes

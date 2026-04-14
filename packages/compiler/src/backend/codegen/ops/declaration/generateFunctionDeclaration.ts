@@ -8,7 +8,7 @@ export function generateFunctionDeclarationOp(
   generator: CodeGenerator,
 ): t.FunctionDeclaration {
   const { params, statements } = generateFunction(
-    instruction.functionIR,
+    instruction.funcOp,
     instruction.captures,
     generator,
   );

@@ -1,5 +1,5 @@
 import { OperationId } from "../../core";
-import { FunctionIR } from "../../core/FunctionIR";
+import { FuncOp } from "../../core/FuncOp";
 import { Identifier } from "../../core/Identifier";
 import { Place } from "../../core/Place";
 
@@ -10,7 +10,7 @@ export class FunctionExpressionOp extends Operation {
     id: OperationId,
     public override readonly place: Place,
     public readonly identifier: Place | null,
-    public readonly functionIR: FunctionIR,
+    public readonly funcOp: FuncOp,
     public readonly generator: boolean,
     public readonly async: boolean,
     public readonly captures: Place[] = [],
@@ -22,13 +22,13 @@ export class FunctionExpressionOp extends Operation {
     const moduleIR = ctx.moduleIR;
     const identifier = moduleIR.environment.createIdentifier();
     const place = moduleIR.environment.createPlace(identifier);
-    // Recursively deep-clone the nested FunctionIR into the same target
+    // Recursively deep-clone the nested FuncOp into the same target
     // module so the cloned function expression owns an independent body.
     return moduleIR.environment.createOperation(
       FunctionExpressionOp,
       place,
       this.identifier,
-      this.functionIR.clone(makeCloneContext(moduleIR)),
+      this.funcOp.clone(makeCloneContext(moduleIR)),
       this.generator,
       this.async,
       this.captures,
@@ -49,7 +49,7 @@ export class FunctionExpressionOp extends Operation {
       this.id,
       this.place,
       newIdentifier,
-      this.functionIR,
+      this.funcOp,
       this.generator,
       this.async,
       newCaptures,

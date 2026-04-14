@@ -1,5 +1,5 @@
 import { OperationId } from "../../core";
-import { FunctionIR } from "../../core/FunctionIR";
+import { FuncOp } from "../../core/FuncOp";
 import { Identifier } from "../../core/Identifier";
 import { Place } from "../../core/Place";
 
@@ -10,7 +10,7 @@ import { makeCloneContext, type CloneContext } from "../../core/Operation";
  *   `const arrow = (x) => x + 1;`
  *
  * `captures` are the outer-scope Places this closure reads from,
- * aligned by index with `functionIR.runtime.captureParams`. Codegen binds
+ * aligned by index with `funcOp.runtime.captureParams`. Codegen binds
  * `captureParams[i]` → `captures[i]` so the function body resolves
  * captured variables through the indirection layer.
  */
@@ -18,7 +18,7 @@ export class ArrowFunctionExpressionOp extends Operation {
   constructor(
     id: OperationId,
     public override readonly place: Place,
-    public readonly functionIR: FunctionIR,
+    public readonly funcOp: FuncOp,
     public readonly async: boolean,
     public readonly expression: boolean,
     public readonly generator: boolean,
@@ -31,13 +31,13 @@ export class ArrowFunctionExpressionOp extends Operation {
     const moduleIR = ctx.moduleIR;
     const identifier = moduleIR.environment.createIdentifier();
     const place = moduleIR.environment.createPlace(identifier);
-    // Recursively deep-clone the nested FunctionIR into the same target
+    // Recursively deep-clone the nested FuncOp into the same target
     // module so the inlined / cloned arrow doesn't share its body with
     // the source. The clone self-registers in `moduleIR.functions`.
     return moduleIR.environment.createOperation(
       ArrowFunctionExpressionOp,
       place,
-      this.functionIR.clone(makeCloneContext(moduleIR)),
+      this.funcOp.clone(makeCloneContext(moduleIR)),
       this.async,
       this.expression,
       this.generator,
@@ -56,7 +56,7 @@ export class ArrowFunctionExpressionOp extends Operation {
     return new ArrowFunctionExpressionOp(
       this.id,
       this.place,
-      this.functionIR,
+      this.funcOp,
       this.async,
       this.expression,
       this.generator,

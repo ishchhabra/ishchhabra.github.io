@@ -5,18 +5,13 @@ import { type CloneContext, nextId, Operation, Trait } from "../../core/Operatio
 import type { Place } from "../../core/Place";
 
 /**
- * Structured `break` exit — MLIR-style structural successor.
+ * Structured `break` — MLIR-style structural exit.
  *
- * A `break` (optionally `break label`) statement breaks out of the
- * closest enclosing loop / switch (or the construct named by `label`)
- * to its fallthrough. In MLIR / Cranelift terms this is a structural
- * exit op whose target is the enclosing structured op's fallthrough,
- * not an arbitrary block id — so it carries no CFG successor and is
- * resolved by the codegen using the enclosing-construct stack.
- *
- * Replaces `JumpOp(exitBlockId)` for break statements. Unlike a
- * raw `JumpOp`, a `BreakOp` cannot dangle across region boundaries —
- * its semantics are tied to the enclosing structured op.
+ * A `break` (optionally `break label`) statement exits the closest
+ * enclosing loop / switch (or the construct named by `label`). It
+ * carries no explicit CFG successor: the target is the continuation
+ * after the enclosing structured op, resolved at codegen time via
+ * the control stack.
  */
 export class BreakOp extends Operation {
   static override readonly traits = new Set<Trait>([Trait.Terminator]);

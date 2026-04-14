@@ -1,12 +1,12 @@
 import * as t from "@babel/types";
 import { JumpOp } from "../../../ir";
-import { FunctionIR } from "../../../ir/core/FunctionIR";
+import { FuncOp } from "../../../ir/core/FuncOp";
 import { CodeGenerator } from "../../CodeGenerator";
 import { generateBlock } from "../generateBlock";
 
 export function generateJumpTerminal(
   terminal: JumpOp,
-  functionIR: FunctionIR,
+  funcOp: FuncOp,
   generator: CodeGenerator,
 ): Array<t.Statement> {
   const breakLabel = generator.getBreakLabel(terminal.target);
@@ -19,6 +19,6 @@ export function generateJumpTerminal(
     return [t.continueStatement(continueLabel ? t.identifier(continueLabel) : null)];
   }
 
-  const statements = generateBlock(terminal.target, functionIR, generator);
+  const statements = generateBlock(terminal.target, funcOp, generator);
   return statements;
 }

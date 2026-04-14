@@ -6,15 +6,15 @@ import {
   createOperationId,
   type DestructureTarget,
   ForInOp,
-  JumpOp,
   ObjectDestructureOp,
   Place,
   Region,
   StoreContextOp,
   StoreLocalOp,
+  YieldOp,
 } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildLVal } from "../buildLVal";
 import { instantiateScopeBindings } from "../bindings";
@@ -24,37 +24,27 @@ import { buildOwnedBody } from "./buildOwnedBody";
 export function buildForInStatement(
   node: ForInStatement,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
   label?: string,
 ) {
-  const currentBlock = functionBuilder.currentBlock;
+  const parentBlock = functionBuilder.currentBlock;
 
-  // Build the object expression in the current block.
   const objectPlace = buildNode(node.right, scope, functionBuilder, moduleBuilder, environment);
   if (objectPlace === undefined || Array.isArray(objectPlace)) {
     throw new Error("For-in object must be a single place");
   }
 
-  // Build the header block.
   const forScope = functionBuilder.scopeFor(node);
-  const forScopeId = functionBuilder.lexicalScopeIdFor(forScope, "for");
-  const scopeId = functionBuilder.lexicalScopeIdFor(scope);
-  const headerBlock = environment.createBlock(forScopeId);
-  functionBuilder.addBlock(headerBlock);
-
-  functionBuilder.currentBlock = headerBlock;
   instantiateScopeBindings(node, forScope, functionBuilder, environment, moduleBuilder);
 
-  // Build the iteration value from the left side.
   const left = node.left;
   let iterationValuePlace: Place;
   let iterationTarget: DestructureTarget;
   let bareLVal: AST.Pattern | MemberExpression | undefined;
 
   if (left.type === "VariableDeclaration") {
-    // `for (const x in obj)` — new loop-scoped variable.
     const kind = left.kind;
     if (kind !== "var" && kind !== "let" && kind !== "const") {
       throw new Error(`Unsupported variable declaration kind: ${kind}`);
@@ -70,7 +60,6 @@ export function buildForInStatement(
     );
     iterationValuePlace = environment.createPlace(environment.createIdentifier());
   } else {
-    // `for (x in obj)` — assignment to existing variable.
     bareLVal = left as AST.Pattern | MemberExpression;
     iterationTarget = buildLVal(bareLVal, scope, functionBuilder, moduleBuilder, environment, {
       kind: "assignment",
@@ -81,76 +70,56 @@ export function buildForInStatement(
         : environment.createPlace(environment.createIdentifier());
   }
 
-  // Build the body block. When the body is a BlockStatement (the common
-  // case: `for (x in obj) { ... }`), use the BlockStatement's scope so
-  // it merges with the body block — the loop syntax already provides { }.
-  const bodyScope =
-    node.body.type === "BlockStatement" ? functionBuilder.scopeFor(node.body) : forScope;
-  const bodyScopeId = functionBuilder.lexicalScopeIdFor(bodyScope);
-  const bodyBlock = environment.createBlock(bodyScopeId);
-  functionBuilder.addBlock(bodyBlock);
-
-  functionBuilder.currentBlock = bodyBlock;
-
-  // For bare LVal, copy the iteration value into new version(s) of the
-  // outer variable(s) at the start of the body.
-  if (bareLVal !== undefined) {
-    emitLoopIterationAssignment(iterationTarget, iterationValuePlace, functionBuilder, environment);
-  }
-
-  // Build the exit block (created early so break statements can reference it).
-  const exitBlock = environment.createBlock(scopeId);
-  functionBuilder.addBlock(exitBlock);
-
-  // The nested MLIR region owns every block created by buildOwnedBody.
   const bodyRegion = new Region([]);
-  bodyRegion.moveBlockHere(bodyBlock);
-
-  functionBuilder.controlStack.push({
-    kind: "loop",
-    label,
-    breakTarget: exitBlock.id,
-    continueTarget: headerBlock.id,
-    structured: true,
-  });
+  const bodyBlock = environment.createBlock();
   functionBuilder.withStructureRegion(bodyRegion, () => {
-    buildOwnedBody(node.body, forScope, functionBuilder, moduleBuilder, environment);
-  });
-  functionBuilder.controlStack.pop();
-  const bodyBlockTerminus = functionBuilder.currentBlock;
+    functionBuilder.addBlock(bodyBlock);
+    functionBuilder.currentBlock = bodyBlock;
 
-  // Set the jump terminal for the current block to the header block.
-  currentBlock.terminal = new JumpOp(createOperationId(environment), headerBlock.id);
+    if (bareLVal !== undefined) {
+      emitLoopIterationAssignment(
+        iterationTarget,
+        iterationValuePlace,
+        functionBuilder,
+        environment,
+      );
+    }
 
-  // Set the jump terminal for the body block to create a back edge (unless the body
-  // already ended with break/return/throw, which owns the terminal).
-  if (bodyBlockTerminus.terminal === undefined) {
-    bodyBlockTerminus.terminal = new JumpOp(createOperationId(environment), headerBlock.id);
-  }
-
-  // Register the ForInOp on the header block.
-  functionBuilder.structures.set(
-    headerBlock.id,
-    new ForInOp(
-      createOperationId(environment),
-      headerBlock.id,
-      iterationValuePlace,
-      iterationTarget,
-      objectPlace,
-      exitBlock.id,
-      bodyRegion,
+    functionBuilder.controlStack.push({
+      kind: "loop",
       label,
-    ),
-  );
+      breakTarget: undefined,
+      continueTarget: undefined,
+      structured: true,
+    });
+    buildOwnedBody(node.body, forScope, functionBuilder, moduleBuilder, environment);
+    functionBuilder.controlStack.pop();
 
-  functionBuilder.currentBlock = exitBlock;
+    if (functionBuilder.currentBlock.terminal === undefined) {
+      functionBuilder.currentBlock.terminal = new YieldOp(
+        createOperationId(environment),
+        [],
+      );
+    }
+  });
+
+  const forInOp = new ForInOp(
+    createOperationId(environment),
+    iterationValuePlace,
+    iterationTarget,
+    objectPlace,
+    bodyRegion,
+    label,
+  );
+  parentBlock.appendOp(forInOp);
+  functionBuilder.currentBlock = parentBlock;
   return undefined;
 }
 
 function emitLoopIterationAssignment(
   target: DestructureTarget,
   valuePlace: Place,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ): void {
   if (target.kind === "binding") {

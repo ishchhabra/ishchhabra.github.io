@@ -1,13 +1,14 @@
 import { Environment } from "../../environment";
 import { Operation, LoadLocalOp, StoreLocalOp } from "../../ir";
 import { isValueOp } from "../../ir/categories";
+import { isClaimedByExportDeclaration } from "../../ir/exportClaim";
 import { AwaitExpressionOp } from "../../ir/ops/call/AwaitExpression";
 import { ArrowFunctionExpressionOp } from "../../ir/ops/func/ArrowFunctionExpression";
 import { FunctionExpressionOp } from "../../ir/ops/func/FunctionExpression";
 import { ObjectMethodOp } from "../../ir/ops/object/ObjectMethod";
 import { ClassMethodOp } from "../../ir/ops/class/ClassMethod";
 import { isTerminal, Terminal } from "../../ir/ops/control";
-import { FunctionIR } from "../../ir/core/FunctionIR";
+import { FuncOp } from "../../ir/core/FuncOp";
 import { Identifier } from "../../ir/core/Identifier";
 import { Place } from "../../ir/core/Place";
 import { BaseOptimizationPass, OptimizationResult } from "../late-optimizer/OptimizationPass";
@@ -37,16 +38,16 @@ import { BaseOptimizationPass, OptimizationResult } from "../late-optimizer/Opti
  */
 export class ExpressionInliningPass extends BaseOptimizationPass {
   constructor(
-    protected readonly functionIR: FunctionIR,
+    protected readonly funcOp: FuncOp,
     private readonly environment: Environment,
   ) {
-    super(functionIR);
+    super(funcOp);
   }
 
   protected step(): OptimizationResult {
     let changed = false;
 
-    for (const block of this.functionIR.allBlocks()) {
+    for (const block of this.funcOp.allBlocks()) {
       for (let i = block.operations.length - 1; i >= 0; i--) {
         const instruction = block.operations[i];
         if (!(instruction instanceof StoreLocalOp)) continue;
@@ -157,7 +158,7 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
    */
   private hasMultipleDefinitions(instruction: StoreLocalOp): boolean {
     const declId = instruction.lval.identifier.declarationId;
-    for (const block of this.functionIR.allBlocks()) {
+    for (const block of this.funcOp.allBlocks()) {
       for (const instr of block.operations) {
         if (instr === instruction) continue;
         if (instr instanceof StoreLocalOp && instr.lval.identifier.declarationId === declId) {
@@ -180,8 +181,9 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
     for (let j = start + 1; j < end; j++) {
       const instr = block.operations[j];
 
-      // A StoreLocal with emit emits a const/let/var declaration.
-      if (instr instanceof StoreLocalOp && instr.emit) {
+      // A StoreLocal that's not claimed by a downstream export
+      // wrapper emits a const/let/var declaration statement.
+      if (instr instanceof StoreLocalOp && !isClaimedByExportDeclaration(instr)) {
         return true;
       }
 
@@ -218,7 +220,7 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
       return false;
     }
 
-    for (const block of this.functionIR.allBlocks()) {
+    for (const block of this.funcOp.allBlocks()) {
       const index = block.operations.indexOf(user);
       if (index === -1) continue;
 
@@ -239,7 +241,7 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
       return false;
     }
 
-    for (const block of this.functionIR.allBlocks()) {
+    for (const block of this.funcOp.allBlocks()) {
       if (block.terminal !== user) continue;
 
       const rewritten = user.rewrite(values) as Terminal;

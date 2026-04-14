@@ -1,85 +1,82 @@
 import type { IfStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { BasicBlock, BranchOp, createOperationId, JumpOp } from "../../../ir";
+import { createOperationId, IfOp, Region, YieldOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildOwnedBody } from "./buildOwnedBody";
 
+/**
+ * Lower a JS `if (test) { … } [else { … }]` to a textbook MLIR
+ * `IfOp`. The IfOp is inlined into its parent block; after it,
+ * control continues with the next op in the parent block.
+ *
+ *   parentBlock: [...ops before..., IfOp, ...ops after...]
+ *     consRegion: [consBlock] ending in YieldOp
+ *     altRegion:  [altBlock]  ending in YieldOp (two-arm only)
+ *
+ * No fallthrough / join block. No header JumpOp. The SSABuilder
+ * lifts any let-variable mutations inside the arms into
+ * `IfOp.resultPlaces` and threads the new values through each arm's
+ * `YieldOp.values`, so reads in the parent block's subsequent ops
+ * pick up the merged values.
+ */
 export function buildIfStatement(
   node: IfStatement,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
+  const parentBlock = functionBuilder.currentBlock;
+
   const testPlace = buildNode(node.test, scope, functionBuilder, moduleBuilder, environment);
   if (testPlace === undefined || Array.isArray(testPlace)) {
     throw new Error("If statement test must be a single place");
   }
 
-  const currentBlock = functionBuilder.currentBlock;
-  const scopeId = functionBuilder.lexicalScopeIdFor(scope);
+  // Build the consequent region.
+  const consequentRegion = new Region([]);
+  const consequentBlock = environment.createBlock();
+  functionBuilder.withStructureRegion(consequentRegion, () => {
+    functionBuilder.addBlock(consequentBlock);
+    functionBuilder.currentBlock = consequentBlock;
+    buildOwnedBody(node.consequent, scope, functionBuilder, moduleBuilder, environment);
+    if (functionBuilder.currentBlock.terminal === undefined) {
+      functionBuilder.currentBlock.terminal = new YieldOp(
+        createOperationId(environment),
+        [],
+      );
+    }
+  });
 
-  // Create the join block.
-  const joinBlock = environment.createBlock(scopeId);
-  functionBuilder.addBlock(joinBlock);
-
-  // Build the consequent block. When the consequent is a BlockStatement,
-  // use its scope so it merges with the consequent block — if/else syntax
-  // provides { }.
-  const consequentScope =
-    node.consequent.type === "BlockStatement" ? functionBuilder.scopeFor(node.consequent) : scope;
-  const consequentScopeId = functionBuilder.lexicalScopeIdFor(consequentScope);
-  const consequentBlock = environment.createBlock(consequentScopeId);
-  functionBuilder.addBlock(consequentBlock);
-
-  functionBuilder.currentBlock = consequentBlock;
-  buildOwnedBody(node.consequent, scope, functionBuilder, moduleBuilder, environment);
-
-  // After building the consequent block, we need to set the terminal
-  // from the last block to the join block, unless the block already has
-  // a terminal (e.g., a return statement).
-  if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.terminal = new JumpOp(
-      createOperationId(functionBuilder.environment),
-      joinBlock.id,
-    );
-  }
-
-  // Build the alternate block
-  let alternateBlock: BasicBlock | undefined = joinBlock;
+  // Build the alternate region (two-arm only).
+  let alternateRegion: Region | undefined;
   if (node.alternate != null) {
-    const alternateScope =
-      node.alternate?.type === "BlockStatement" ? functionBuilder.scopeFor(node.alternate) : scope;
-    const alternateScopeId = functionBuilder.lexicalScopeIdFor(alternateScope);
-    alternateBlock = environment.createBlock(alternateScopeId);
-    functionBuilder.addBlock(alternateBlock);
-
-    functionBuilder.currentBlock = alternateBlock;
-    buildOwnedBody(node.alternate, scope, functionBuilder, moduleBuilder, environment);
+    alternateRegion = new Region([]);
+    const alternateBlock = environment.createBlock();
+    functionBuilder.withStructureRegion(alternateRegion, () => {
+      functionBuilder.addBlock(alternateBlock);
+      functionBuilder.currentBlock = alternateBlock;
+      buildOwnedBody(node.alternate!, scope, functionBuilder, moduleBuilder, environment);
+      if (functionBuilder.currentBlock.terminal === undefined) {
+        functionBuilder.currentBlock.terminal = new YieldOp(
+          createOperationId(environment),
+          [],
+        );
+      }
+    });
   }
 
-  // After building the alternate block, we need to set the terminal
-  // from the last block to the join block, unless the block already has
-  // a terminal (e.g., a return statement).
-  if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.terminal = new JumpOp(
-      createOperationId(functionBuilder.environment),
-      joinBlock.id,
-    );
-  }
-
-  // Set branch terminal for the current block.
-  currentBlock.terminal = new BranchOp(
-    createOperationId(functionBuilder.environment),
+  const ifOp = new IfOp(
+    createOperationId(environment),
     testPlace,
-    consequentBlock.id,
-    alternateBlock.id,
-    joinBlock.id,
+    [],
+    consequentRegion,
+    alternateRegion,
   );
-
-  functionBuilder.currentBlock = joinBlock;
+  parentBlock.appendOp(ifOp);
+  functionBuilder.currentBlock = parentBlock;
   return undefined;
 }

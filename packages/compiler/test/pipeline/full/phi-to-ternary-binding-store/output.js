@@ -1,10 +1,16 @@
 function $0_0($1_0) {
   let $2_0 = $1_0;
-  let $17_phi_23 = undefined;
-  $17_phi_23 = $2_0;
-  for (const $7_0 of [1, 2]) {
-    $17_phi_23 = $7_0 ? $10_0 : $1_0;
+  for (const $8_0 of [1, 2]) {
+    let $23_0 = undefined;
+    if ($8_0) {
+      const { x: $11_0, ...$12_0 } = $2_0;
+      $2_0 = $12_0;
+      $23_0 = $2_0;
+    } else {
+      $2_0 = $1_0;
+      $23_0 = $2_0;
+    }
   }
-  return $17_phi_23;
+  return $2_0;
 }
 export { $0_0 as f };

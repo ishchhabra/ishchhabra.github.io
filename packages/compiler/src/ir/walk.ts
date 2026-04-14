@@ -1,5 +1,5 @@
 import type { BasicBlock } from "./core/Block";
-import type { FunctionIR } from "./core/FunctionIR";
+import type { FuncOp } from "./core/FuncOp";
 import type { Operation } from "./core/Operation";
 import type { Region } from "./core/Region";
 
@@ -48,18 +48,17 @@ export function walkBlock(block: BasicBlock, visit: WalkVisitor): void {
 
 /**
  * Walk every op in a function — source header, runtime prologue,
- * every block's operations + terminal, every structure, every phi.
- * Recurses into any regions owned by the ops visited.
+ * and every block's op list (regular instructions, structured ops,
+ * terminator). Recurses into any regions owned by the ops visited.
  *
  * This is the convenience entry-point for passes that want "touch
- * every op in this function once." Replaces the common idiom of
- * iterating `functionIR.blocks` + `runtime.prologue` + `structures`
- * + `phis` by hand.
+ * every op in this function once." Block params are not ops and are
+ * not yielded; passes that care about them iterate `block.params`
+ * directly.
  */
-export function walkFunction(functionIR: FunctionIR, visit: WalkVisitor): void {
-  for (const op of functionIR.source.header) walkOp(op, visit);
-  for (const op of functionIR.runtime.prologue) walkOp(op, visit);
-  for (const block of functionIR.allBlocks()) walkBlock(block, visit);
-  for (const structure of functionIR.structures.values()) walkOp(structure, visit);
-  for (const phi of functionIR.phis) walkOp(phi, visit);
+export function walkFunction(funcOp: FuncOp, visit: WalkVisitor): void {
+  for (const op of funcOp.prologue) walkOp(op, visit);
+  for (const block of funcOp.allBlocks()) {
+    walkBlock(block, visit);
+  }
 }

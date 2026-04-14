@@ -1,7 +1,5 @@
 {
   "enableOptimizer": true,
-  "enableConstantPropagationPass": false,
-  "enableFunctionInliningPass": false,
   "enableDeadCodeEliminationPass": false,
   "enableLateOptimizer": false
 }

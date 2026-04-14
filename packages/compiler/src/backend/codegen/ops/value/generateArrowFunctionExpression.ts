@@ -8,7 +8,7 @@ export function generateArrowFunctionExpressionOp(
   generator: CodeGenerator,
 ): t.ArrowFunctionExpression {
   const { params, statements } = generateFunction(
-    instruction.functionIR,
+    instruction.funcOp,
     instruction.captures,
     generator,
   );

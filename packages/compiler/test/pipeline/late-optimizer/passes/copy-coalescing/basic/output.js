@@ -1,8 +1,9 @@
 let $0_0 = 0;
-let $12_phi_13 = undefined;
-$12_phi_13 = $0_0;
+let $14_0 = undefined;
 if (globalThis.cond) {
   $0_0 = globalThis.compute();
-  $12_phi_13 = $0_0;
+  $14_0 = $0_0;
+} else {
+  $14_0 = $0_0;
 }
-console.log($12_phi_13);
+console.log($14_0);

@@ -1,11 +1,11 @@
 import type { BreakStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { BreakOp, JumpOp, createOperationId } from "../../../ir";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { BreakOp, createOperationId } from "../../../ir";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 
 export function buildBreakStatement(
   node: BreakStatement,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ) {
   const label = node.label?.name;
@@ -18,13 +18,6 @@ export function buildBreakStatement(
     );
   }
 
-  // Structured constructs (BlockOp/LabeledBlockOp/ForOf/ForIn) get a
-  // structural BreakOp; flat constructs (while/for/do-while/switch)
-  // still use a raw JumpOp targeting the exit block — there is no
-  // enclosing structured op for the CFG analyzer to walk up to.
-  functionBuilder.currentBlock.terminal = ctx.structured
-    ? new BreakOp(createOperationId(environment), label)
-    : new JumpOp(createOperationId(environment), ctx.breakTarget);
-
+  functionBuilder.currentBlock.terminal = new BreakOp(createOperationId(environment), label);
   return undefined;
 }

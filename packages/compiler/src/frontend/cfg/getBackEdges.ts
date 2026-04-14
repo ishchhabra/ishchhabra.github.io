@@ -1,7 +1,7 @@
 import { BlockId } from "../../ir";
 
 /**
- * Minimal block source used by back-edge analysis. The FunctionIR
+ * Minimal block source used by back-edge analysis. The FuncOp
  * satisfies this interface via its `blockIds()` region walker.
  */
 export interface BlockIdSource {

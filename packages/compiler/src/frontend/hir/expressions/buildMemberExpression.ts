@@ -3,7 +3,7 @@ import { Environment } from "../../../environment";
 import { BinaryExpressionOp, LiteralOp, Place, SuperPropertyOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { materializePlace } from "../materializePlace";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import {
@@ -15,7 +15,7 @@ import {
 export function buildMemberExpression(
   node: MemberExpression,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
@@ -32,7 +32,7 @@ export function buildMemberExpression(
 function buildSuperPropertyAccess(
   node: MemberExpression,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
@@ -78,7 +78,7 @@ export function buildMemberExpressionUpdate(
   updateNode: UpdateExpression,
   memberNode: MemberExpression,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {

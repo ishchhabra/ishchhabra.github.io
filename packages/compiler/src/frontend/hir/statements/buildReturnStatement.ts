@@ -2,14 +2,14 @@ import type { ReturnStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { createOperationId, ReturnOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildNode } from "../buildNode";
 
 export function buildReturnStatement(
   node: ReturnStatement,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {

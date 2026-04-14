@@ -6,4 +6,6 @@ switch ($0_0) {
   case 2:
     console.log("two");
     break;
+  default:
+    break;
 }

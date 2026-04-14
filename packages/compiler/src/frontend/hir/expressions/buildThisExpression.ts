@@ -1,11 +1,11 @@
 import type { ThisExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { ThisExpressionOp } from "../../../ir/ops/prop/ThisExpression";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 
 export function buildThisExpression(
   _node: ThisExpression,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ) {
   const identifier = environment.createIdentifier();

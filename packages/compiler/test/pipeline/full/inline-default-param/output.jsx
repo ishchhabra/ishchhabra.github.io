@@ -1,20 +1,14 @@
 function $0_0($3_0 = 5) {
-  return $2_0.slice(0, $3_0).map(($12_0) => ({
-    slug: $12_0.slug,
+  return $2_0.slice(0, $3_0).map(($14_0) => ({
+    slug: $14_0.slug,
   }));
 }
 function $1_0() {
-  const [$52_0 = 5] = [];
   return (
     <div>
-      {$2_0
-        .slice(0, $52_0)
-        .map(($12_0) => ({
-          slug: $12_0.slug,
-        }))
-        .map(($30_0) => (
-          <span key={$30_0.slug}>{$30_0.slug}</span>
-        ))}
+      {$0_0().map(($35_0) => (
+        <span key={$35_0.slug}>{$35_0.slug}</span>
+      ))}
     </div>
   );
 }

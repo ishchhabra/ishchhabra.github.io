@@ -5,7 +5,6 @@ import { BasicBlock, BlockId } from "../ir";
 import { AnalysisManager } from "./analysis/AnalysisManager";
 import { LateOptimizer } from "./late-optimizer/LateOptimizer";
 import { ExportDeclarationMergingPass } from "./late-optimizer/passes/ExportDeclarationMergingPass";
-import { CFGSimplificationPass } from "./CFGSimplificationPass";
 import { ValueMaterializationPass } from "./passes/ValueMaterializationPass";
 import { Optimizer } from "./optimizer/Optimizer";
 import { computeProcessingOrder } from "./processingOrder";
@@ -25,69 +24,44 @@ export class Pipeline {
   ) {}
 
   public run() {
-    // Remove exports that no other module imports (module-level pass).
     if (this.options.enableUnusedExportEliminationPass) {
       const entryModules = this.entryModules ?? [this.projectUnit.postOrder[0]];
       new UnusedExportEliminationPass(this.projectUnit, entryModules).run();
     }
 
-    // Shared analysis manager — caches analysis results across passes
-    // within each function, and project-level analyses across all functions.
     const AM = new AnalysisManager();
-
     // oxlint-disable-next-line typescript/no-explicit-any
     const context = new Map<string, any>();
 
     for (const moduleName of this.projectUnit.postOrder.toReversed()) {
       const moduleIR = this.projectUnit.modules.get(moduleName)!;
-
-      // Process functions in bottom-up call-graph order: callees and
-      // nested children before callers and parents, analogous to LLVM's
-      // CGSCC pass manager. This guarantees that when FunctionInliningPass
-      // clones a nested FunctionIR, the clone copies final-form IR.
-      // computeProcessingOrder also acts as a snapshot — functions cloned
-      // during inlining are registered in moduleIR.functions but aren't
-      // in the pre-computed order, so they won't be re-processed.
       const processingOrder = computeProcessingOrder(moduleIR);
 
-      for (const functionIR of processingOrder) {
-        new CommonJSExportCollectorPass(functionIR, moduleIR, AM).run();
-        new CFGSimplificationPass(functionIR, moduleIR, AM).run();
-        AM.invalidateFunction(functionIR);
+      for (const funcOp of processingOrder) {
+        new CommonJSExportCollectorPass(funcOp, moduleIR, AM).run();
+        AM.invalidateFunction(funcOp);
 
-        const ssaBuilderResult = new SSABuilder(functionIR, moduleIR, AM).build();
+        // SSA construction: adds block params to merge blocks and
+        // rewrites reads to reaching defs, textbook Cytron style.
+        new SSABuilder(funcOp, moduleIR, AM).build();
 
-        // Phase 1: SSA optimization (fixpoint loop).
         if (this.options.enableOptimizer) {
-          new Optimizer(
-            functionIR,
-            moduleIR,
-            ssaBuilderResult,
-            this.projectUnit,
-            this.options,
-            context,
-            AM,
-          ).run();
+          new Optimizer(funcOp, moduleIR, this.projectUnit, this.options, context, AM).run();
         }
 
-        // Phase 2: SSA elimination.
-        new SSAEliminator(functionIR, moduleIR).eliminate();
+        // Out-of-SSA lowering: materialize block params as `let`
+        // variables and insert copy stores at each predecessor.
+        new SSAEliminator(funcOp, moduleIR).eliminate();
+        AM.invalidateFunction(funcOp);
 
-        // Invalidate function analyses — SSA elimination rewrites the IR.
-        AM.invalidateFunction(functionIR);
-
-        // Phase 3: Post-SSA cleanup (fixpoint loop).
         if (this.options.enableLateOptimizer) {
-          new LateOptimizer(moduleIR, functionIR, this.options, AM).run();
+          new LateOptimizer(moduleIR, funcOp, this.options, AM).run();
         }
 
-        // Phase 4: Lowering — materialize multi-use SSA values into
-        // variable declarations so codegen can reference them by name.
-        new ValueMaterializationPass(functionIR, moduleIR).run();
+        new ValueMaterializationPass(funcOp, moduleIR).run();
 
-        // Phase 5: Output optimization (single-run passes).
         if (this.options.enableExportDeclarationMergingPass) {
-          new ExportDeclarationMergingPass(functionIR).run();
+          new ExportDeclarationMergingPass(funcOp).run();
         }
       }
     }

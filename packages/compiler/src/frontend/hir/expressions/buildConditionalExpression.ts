@@ -1,180 +1,93 @@
 import type { ConditionalExpression, Expression } from "oxc-parser";
 import { Environment } from "../../../environment";
-import {
-  BranchOp,
-  createOperationId,
-  DeclareLocalOp,
-  JumpOp,
-  LiteralOp,
-  Place,
-  StoreLocalOp,
-} from "../../../ir";
+import { createOperationId, IfOp, Place, Region, YieldOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildNode } from "../buildNode";
 
 /**
- * Builds a place for a conditional expression.
+ * Lower `test ? consequent : alternate` to a textbook MLIR `IfOp`
+ * with one result place — the merged expression value.
  *
- * Lowers a conditional expression `test ? consequent : alternate` into an
- * if statement, with a temporary variable to store the result of the
- * conditional expression.
+ *   [test compute ops]
+ *   %result = IfOp(test) {
+ *     [cons compute ops]
+ *     YieldOp(%consValue)
+ *   } else {
+ *     [alt compute ops]
+ *     YieldOp(%altValue)
+ *   }
+ *
+ * The caller receives `%result` and may use it as any other value.
  */
 export function buildConditionalExpression(
   node: ConditionalExpression,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
-  const scopeId = functionBuilder.lexicalScopeIdFor(scope);
+  const parentBlock = functionBuilder.currentBlock;
+
   const testPlace = buildNode(node.test, scope, functionBuilder, moduleBuilder, environment);
   if (testPlace === undefined || Array.isArray(testPlace)) {
     throw new Error("Conditional expression test must be a single place");
   }
 
-  const currentBlock = functionBuilder.currentBlock;
-  // When lowering a conditional expression to an if statement, we need to
-  // create a temporary identifier to store the result of the conditional
-  // expression in case it is used as value somewhere (ex: in a StoreLocal).
-  const resultPlace = buildTemporaryIdentifier(scope, functionBuilder, environment);
-
-  // Create the join block.
-  const joinBlock = environment.createBlock(scopeId);
-  functionBuilder.addBlock(joinBlock);
-
-  // Build the consequent block.
-  const consequentBlock = environment.createBlock(scopeId);
-  functionBuilder.addBlock(consequentBlock);
-
-  functionBuilder.currentBlock = consequentBlock;
-  buildBranchExpression(
+  const consResult = buildArm(
     node.consequent,
     scope,
     functionBuilder,
     moduleBuilder,
     environment,
-    resultPlace,
   );
-
-  // After building the consequent block, we need to set the terminal
-  // from the last block to the join block.
-  functionBuilder.currentBlock.terminal = new JumpOp(
-    createOperationId(functionBuilder.environment),
-    joinBlock.id,
-  );
-
-  // Build the alternate block.
-  const alternateBlock = environment.createBlock(scopeId);
-  functionBuilder.addBlock(alternateBlock);
-
-  functionBuilder.currentBlock = alternateBlock;
-  buildBranchExpression(
+  const altResult = buildArm(
     node.alternate,
     scope,
     functionBuilder,
     moduleBuilder,
     environment,
-    resultPlace,
   );
 
-  // After building the alternate block, we need to set the terminal
-  // from the last block to the join block.
-  functionBuilder.currentBlock.terminal = new JumpOp(
-    createOperationId(functionBuilder.environment),
-    joinBlock.id,
-  );
+  const resultPlace = environment.createPlace(environment.createIdentifier());
 
-  // Set the branch terminal for the current block.
-  currentBlock.terminal = new BranchOp(
-    createOperationId(functionBuilder.environment),
+  const ifOp = new IfOp(
+    createOperationId(environment),
     testPlace,
-    consequentBlock.id,
-    alternateBlock.id,
-    joinBlock.id,
+    [resultPlace],
+    consResult.region,
+    altResult.region,
   );
-
-  functionBuilder.currentBlock = joinBlock;
-
-  const { placeId } = environment.getLatestDeclaration(resultPlace.identifier.declarationId);
-  return environment.places.get(placeId)!;
+  parentBlock.appendOp(ifOp);
+  functionBuilder.currentBlock = parentBlock;
+  return resultPlace;
 }
 
-function buildTemporaryIdentifier(
-  scope: Scope,
-  functionBuilder: FunctionIRBuilder,
-  environment: Environment,
-) {
-  const bindingIdentifier = environment.createIdentifier();
-  const bindingPlace = environment.createPlace(bindingIdentifier);
-  functionBuilder.addOp(environment.createOperation(DeclareLocalOp, bindingPlace, "let"));
-  functionBuilder.registerDeclarationName(
-    bindingIdentifier.name,
-    bindingIdentifier.declarationId,
-    scope,
-  );
-  environment.registerDeclaration(
-    bindingIdentifier.declarationId,
-    functionBuilder.currentBlock.id,
-    bindingPlace.id,
-  );
-  environment.ensureSyntheticDeclarationMetadata(
-    bindingIdentifier.declarationId,
-    "let",
-    bindingPlace,
-  );
-
-  const resultValueIdentifier = environment.createIdentifier(bindingIdentifier.declarationId);
-  const resultValuePlace = environment.createPlace(resultValueIdentifier);
-  functionBuilder.addOp(environment.createOperation(LiteralOp, resultValuePlace, undefined));
-
-  const resultIdentifier = environment.createIdentifier(bindingIdentifier.declarationId);
-  const resultPlace = environment.createPlace(resultIdentifier);
-  functionBuilder.addOp(
-    environment.createOperation(
-      StoreLocalOp,
-      resultPlace,
-      bindingPlace,
-      resultValuePlace,
-      "const",
-      "declaration",
-    ),
-  );
-
-  return bindingPlace;
-}
-
-function buildBranchExpression(
+function buildArm(
   node: Expression,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-  resultPlace: Place,
-) {
-  const place = buildNode(node, scope, functionBuilder, moduleBuilder, environment);
-  if (place === undefined || Array.isArray(place)) {
-    throw new Error("Conditional expression consequent must be a single place");
-  }
+): { region: Region } {
+  const region = new Region([]);
+  const block = environment.createBlock();
+  functionBuilder.withStructureRegion(region, () => {
+    functionBuilder.addBlock(block);
+    functionBuilder.currentBlock = block;
 
-  const lvalIdentifier = environment.createIdentifier(resultPlace.identifier.declarationId);
-  const lvalPlace = environment.createPlace(lvalIdentifier);
-  environment.registerDeclaration(
-    resultPlace.identifier.declarationId,
-    functionBuilder.currentBlock.id,
-    lvalPlace.id,
-  );
-  const storePlace = environment.createPlace(environment.createIdentifier());
-  const storeInstruction = environment.createOperation(
-    StoreLocalOp,
-    storePlace,
-    lvalPlace,
-    place,
-    "const",
-    "assignment",
-  );
-  functionBuilder.addOp(storeInstruction);
+    const place = buildNode(node, scope, functionBuilder, moduleBuilder, environment);
+    if (place === undefined || Array.isArray(place)) {
+      throw new Error("Conditional expression arm must be a single place");
+    }
 
-  return place;
+    if (functionBuilder.currentBlock.terminal === undefined) {
+      functionBuilder.currentBlock.terminal = new YieldOp(
+        createOperationId(environment),
+        [place],
+      );
+    }
+  });
+  return { region };
 }

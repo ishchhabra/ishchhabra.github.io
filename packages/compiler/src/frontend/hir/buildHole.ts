@@ -1,8 +1,8 @@
 import { Environment } from "../../environment";
 import { HoleOp, Place } from "../../ir";
-import { FunctionIRBuilder } from "./FunctionIRBuilder";
+import { FuncOpBuilder } from "./FuncOpBuilder";
 
-export function buildHole(builder: FunctionIRBuilder, environment: Environment): Place {
+export function buildHole(builder: FuncOpBuilder, environment: Environment): Place {
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   const instruction = environment.createOperation(HoleOp, place);

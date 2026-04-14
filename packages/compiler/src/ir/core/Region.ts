@@ -1,30 +1,24 @@
 import type { BasicBlock, BlockId } from "./Block";
+import type { LexicalScopeKind } from "./LexicalScope";
 import type { Operation } from "./Operation";
 
 /**
  * An ordered list of blocks owned by an {@link Operation}.
  *
- * Regions are how MLIR-style structured control flow is expressed:
- * instead of a `ForOfOp` pointing at a `body` BlockId in a flat
- * function-level block map, it owns a `Region` whose blocks describe
- * the loop body directly. Nesting is explicit — a FuncOp's body is a
- * region that contains blocks, those blocks may contain a ForOfOp
- * whose own body is another region, and so on.
+ * Regions express structured control flow the MLIR way: a
+ * structured op (IfOp, WhileOp, ForOfOp, ...) owns one or more
+ * regions whose blocks describe its nested control flow directly.
+ * Nesting is explicit — a FuncOp's body is a region that contains
+ * blocks, those blocks may contain a ForOfOp whose own body is
+ * another region, and so on.
  *
  * The first block in `blocks` is the region entry — control flow
  * enters there. Inside the region, blocks are connected through
  * their terminator ops' successors the same way any CFG is wired.
  *
  * Regions are exposed on `Operation.regions` as a read-only array.
- * Most ops have `regions === []`. Structured CF ops (ForOfOp, IfOp,
- * BlockOp, ...) have one or more.
- *
- * NOTE: during the transition from the flat-CFG + overlay model to
- * full region ownership, some structured ops still carry BlockId
- * fields (`header`, `body`, `fallthrough`) in parallel with a
- * region. The BlockId path is the legacy wire; the region is the
- * destination. Follow-up passes consume the regions; the BlockId
- * fields go away when the last consumer is migrated.
+ * Most ops have `regions === []`. Structured CF ops have one or
+ * more.
  */
 export class Region {
   /**
@@ -35,7 +29,19 @@ export class Region {
    */
   public parent: Operation | null = null;
 
-  constructor(public readonly blocks: BasicBlock[]) {
+  /**
+   * If this region introduces a new ECMAScript lexical scope, the
+   * kind of that scope. `undefined` means the region is scope-
+   * transparent (its blocks share the enclosing region's scope).
+   *
+   * This is the canonical storage for scope information — block-level
+   * `scopeId` is legacy and will be deleted once all readers migrate
+   * to walking the region-parent chain.
+   */
+  public scopeKind: LexicalScopeKind | undefined;
+
+  constructor(public readonly blocks: BasicBlock[], scopeKind?: LexicalScopeKind) {
+    this.scopeKind = scopeKind;
     // Maintain the back-pointer invariant: every block in a region
     // points back to the region it belongs to.
     for (const block of blocks) {
@@ -102,19 +108,21 @@ export class Region {
   }
 
   /**
-   * Walk every block in this region and its nested structures'
-   * regions in program order. Yields the region's own blocks first,
-   * then recurses into blocks' `structure.regions`.
+   * Walk every block in this region and every block reachable through
+   * nested regions owned by any op in the region, in program order.
    *
-   * This is the MLIR-style region walker: it visits every block
-   * reachable from the region root, regardless of nesting depth.
+   * This is the MLIR-style region walker: it yields the region's own
+   * blocks, and for each block recurses into regions owned by every
+   * op in that block (not just the structure slot). That makes the
+   * walker correct for dual-traited ops like `SwitchOp` and `TryOp`,
+   * whose case / handler / finally regions sit on the terminator
+   * slot rather than the structure slot.
    */
   *allBlocks(): IterableIterator<BasicBlock> {
     for (const block of this.blocks) {
       yield block;
-      const structure = block.structure;
-      if (structure !== undefined) {
-        for (const region of structure.regions) {
+      for (const op of block.getAllOps()) {
+        for (const region of op.regions) {
           yield* region.allBlocks();
         }
       }

@@ -3,13 +3,13 @@ import { Environment } from "../../../environment";
 import { FunctionExpressionOp } from "../../../ir/ops/func/FunctionExpression";
 import { type Scope } from "../../scope/Scope";
 import { buildIdentifier } from "../buildIdentifier";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildFunctionExpression(
   node: Function,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
@@ -20,7 +20,7 @@ export function buildFunctionExpression(
   }
 
   const childScope = functionBuilder.scopeFor(node);
-  const functionIRBuilder = new FunctionIRBuilder(
+  const funcOpBuilder = new FuncOpBuilder(
     node.params,
     node.body,
     childScope,
@@ -29,19 +29,20 @@ export function buildFunctionExpression(
     moduleBuilder,
     node.async ?? false,
     node.generator ?? false,
+    functionBuilder.funcOpId,
   );
-  const functionIR = functionIRBuilder.build();
+  const funcOp = funcOpBuilder.build();
 
-  functionBuilder.propagateCapturesFrom(functionIRBuilder);
+  functionBuilder.propagateCapturesFrom(funcOpBuilder);
 
-  const capturedPlaces = [...functionIRBuilder.captures.values()];
+  const capturedPlaces = [...funcOpBuilder.captures.values()];
   const identifier = environment.createIdentifier();
   const place = environment.createPlace(identifier);
   const instruction = environment.createOperation(
     FunctionExpressionOp,
     place,
     identifierPlace,
-    functionIR,
+    funcOp,
     node.generator ?? false,
     node.async ?? false,
     capturedPlaces,

@@ -1,8 +1,8 @@
 console.log(
-  2.220446049250313e-16,
-  9007199254740991,
-  3.141592653589793,
-  1.4142135623730951,
-  1 / 0,
-  0 / 0,
+  Number.EPSILON,
+  Number.MAX_SAFE_INTEGER,
+  Math.PI,
+  Math.SQRT2,
+  Number.POSITIVE_INFINITY,
+  Number.NaN,
 );

@@ -2,7 +2,7 @@
  * Project-wide shared environment for cross-module ID uniqueness.
  *
  * Each module gets its own {@link Environment}, but cross-module inlining
- * moves FunctionIR objects (with their block/place/identifier IDs) between
+ * moves FuncOp objects (with their block/place/identifier IDs) between
  * modules. Unless IDs are globally unique, the codegen's per-place caches
  * can collide — an inlined function's capture parameters can overwrite
  * unrelated binding entries in the target module's codegen output.

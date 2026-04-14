@@ -83,8 +83,8 @@ export class UnusedExportEliminationPass {
       }
 
       // Remove the corresponding export instructions from all function blocks.
-      for (const functionIR of moduleIR.functions.values()) {
-        for (const block of functionIR.allBlocks()) {
+      for (const funcOp of moduleIR.functions.values()) {
+        for (const block of funcOp.allBlocks()) {
           for (let i = block.operations.length - 1; i >= 0; i--) {
             const instr = block.operations[i];
             let remove = false;

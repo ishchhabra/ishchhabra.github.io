@@ -3,14 +3,14 @@ import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
 import { JSXOpeningElementOp } from "../../../ir/ops/jsx/JSXOpeningElement";
 import { type Scope } from "../../scope/Scope";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildNode } from "../buildNode";
 
 export function buildJSXOpeningElement(
   node: JSXOpeningElement,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {

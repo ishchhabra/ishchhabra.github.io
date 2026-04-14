@@ -9,7 +9,7 @@ import {
 } from "../../ir";
 import { ArrowFunctionExpressionOp } from "../../ir/ops/func/ArrowFunctionExpression";
 import { FunctionExpressionOp } from "../../ir/ops/func/FunctionExpression";
-import { FunctionIRId } from "../../ir/core/FunctionIR";
+import { FuncOpId } from "../../ir/core/FuncOp";
 import { ModuleGlobal, ModuleIR } from "../../ir/core/ModuleIR";
 import { ExportFromOp } from "../../ir/ops/module/ExportFrom";
 import { AnalysisManager, ProjectAnalysis } from "./AnalysisManager";
@@ -21,14 +21,14 @@ import { AnalysisManager, ProjectAnalysis } from "./AnalysisManager";
 /** A resolved call target: module path + function ID within that module. */
 export interface CallTarget {
   readonly modulePath: string;
-  readonly functionIRId: FunctionIRId;
+  readonly funcOpId: FuncOpId;
 }
 
 /**
  * Immutable result of call-graph analysis.
  *
  * Holds forward edges (caller → callees) and a declaration map
- * (DeclarationId → FunctionIRId) that enables call resolution.
+ * (DeclarationId → FuncOpId) that enables call resolution.
  *
  * Query methods:
  * - {@link getCallees} — forward lookup
@@ -38,14 +38,14 @@ export interface CallTarget {
 export class CallGraphResult {
   constructor(
     /** Forward edges: modulePath → (functionId → set of callees). */
-    private readonly calls: Map<string, Map<FunctionIRId, Set<CallTarget>>>,
+    private readonly calls: Map<string, Map<FuncOpId, Set<CallTarget>>>,
     /** Declaration lookup: modulePath → (declarationId → functionId). */
-    private readonly declarations: Map<string, Map<DeclarationId, FunctionIRId>>,
+    private readonly declarations: Map<string, Map<DeclarationId, FuncOpId>>,
     private readonly projectUnit: ProjectUnit,
   ) {}
 
   /** Forward lookup: which functions does (modulePath, functionId) call? */
-  getCallees(modulePath: string, functionId: FunctionIRId): Set<CallTarget> {
+  getCallees(modulePath: string, functionId: FuncOpId): Set<CallTarget> {
     return this.calls.get(modulePath)?.get(functionId) ?? new Set();
   }
 
@@ -74,7 +74,7 @@ export class CallGraphResult {
       const declarationId = loadInstr.value.identifier.declarationId;
       const funcIRId = this.declarations.get(moduleIR.path)?.get(declarationId);
       if (funcIRId !== undefined) {
-        return { modulePath: moduleIR.path, functionIRId: funcIRId };
+        return { modulePath: moduleIR.path, funcOpId: funcIRId };
       }
     }
 
@@ -130,13 +130,13 @@ export class CallGraphResult {
       const funcDeclInstr = moduleIR.environment.placeToOp.get(exportPlace.declaration.place!.id);
 
       if (funcDeclInstr instanceof FunctionDeclarationOp) {
-        return { modulePath: source, functionIRId: funcDeclInstr.functionIR.id };
+        return { modulePath: source, funcOpId: funcDeclInstr.funcOp.id };
       }
       if (funcDeclInstr instanceof FunctionExpressionOp) {
-        return { modulePath: source, functionIRId: funcDeclInstr.functionIR.id };
+        return { modulePath: source, funcOpId: funcDeclInstr.funcOp.id };
       }
       if (funcDeclInstr instanceof ArrowFunctionExpressionOp) {
-        return { modulePath: source, functionIRId: funcDeclInstr.functionIR.id };
+        return { modulePath: source, funcOpId: funcDeclInstr.funcOp.id };
       }
 
       return undefined;
@@ -168,8 +168,8 @@ export class CallGraphResult {
  */
 export class CallGraphAnalysis extends ProjectAnalysis<CallGraphResult> {
   run(projectUnit: ProjectUnit, _AM: AnalysisManager): CallGraphResult {
-    const calls = new Map<string, Map<FunctionIRId, Set<CallTarget>>>();
-    const declarations = new Map<string, Map<DeclarationId, FunctionIRId>>();
+    const calls = new Map<string, Map<FuncOpId, Set<CallTarget>>>();
+    const declarations = new Map<string, Map<DeclarationId, FuncOpId>>();
 
     // Initialize empty maps for each module.
     for (const modulePath of projectUnit.postOrder.toReversed()) {
@@ -210,14 +210,14 @@ export class CallGraphAnalysis extends ProjectAnalysis<CallGraphResult> {
  */
 function gatherDeclarations(
   moduleIR: ModuleIR,
-  moduleDecls: Map<DeclarationId, FunctionIRId>,
+  moduleDecls: Map<DeclarationId, FuncOpId>,
 ): void {
   for (const funcIR of moduleIR.functions.values()) {
     for (const block of funcIR.allBlocks()) {
       for (const instr of block.operations) {
         // function foo() {} — hoisted declaration
         if (instr instanceof FunctionDeclarationOp) {
-          moduleDecls.set(instr.place.identifier.declarationId, instr.functionIR.id);
+          moduleDecls.set(instr.place.identifier.declarationId, instr.funcOp.id);
           continue;
         }
 
@@ -230,7 +230,7 @@ function gatherDeclarations(
           definer instanceof FunctionExpressionOp ||
           definer instanceof ArrowFunctionExpressionOp
         ) {
-          moduleDecls.set(instr.lval.identifier.declarationId, definer.functionIR.id);
+          moduleDecls.set(instr.lval.identifier.declarationId, definer.funcOp.id);
         }
       }
     }
@@ -243,7 +243,7 @@ function gatherDeclarations(
  */
 function gatherCalls(
   moduleIR: ModuleIR,
-  calls: Map<string, Map<FunctionIRId, Set<CallTarget>>>,
+  calls: Map<string, Map<FuncOpId, Set<CallTarget>>>,
   result: CallGraphResult,
 ): void {
   const moduleCalls = calls.get(moduleIR.path)!;

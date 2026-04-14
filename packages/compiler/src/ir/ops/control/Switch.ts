@@ -1,106 +1,75 @@
 import type { OperationId } from "../../core";
-import type { BlockId } from "../../core/Block";
 import type { Identifier } from "../../core/Identifier";
 import {
   type CloneContext,
   nextId,
   Operation,
-  remapBlockId,
   remapPlace,
+  remapRegion,
   Trait,
-  VerifyError,
 } from "../../core/Operation";
 import type { Place } from "../../core/Place";
-
-export interface SwitchCase {
-  /** `null` for the `default:` case. */
-  test: Place | null;
-  block: BlockId;
-}
+import { Region } from "../../core/Region";
 
 /**
- * `switch (discriminant) { case a: ... default: ... }`. Terminator
- * with one successor per case plus `fallthrough`. Replaces
- * `SwitchTerminal`.
+ * `switch (discriminant) { case a: ... default: ... }`.
+ *
+ * Inline structured op. Each case is a region; the discriminant is
+ * the op's operand. Case tests are carried alongside the case regions
+ * via the `caseTests` list (parallel to `regions`): a `null` entry
+ * marks the `default` case.
+ *
+ * JS switch semantics (fall-through, shared bindings) are expressed
+ * by having each case region terminate in a YieldOp when it falls
+ * off the end, or in a BreakOp to exit the switch. Fall-through from
+ * one case to the next is desugared at the frontend into explicit
+ * jumps.
  */
 export class SwitchOp extends Operation {
-  static override readonly traits = new Set<Trait>([Trait.Terminator]);
+  static override readonly traits = new Set<Trait>([Trait.HasRegions]);
 
   constructor(
     id: OperationId,
     public readonly discriminant: Place,
-    public readonly cases: SwitchCase[],
-    public fallthrough: BlockId,
+    /**
+     * Per-case test expressions. Parallel to `regions`: `caseTests[i]`
+     * is the test for `regions[i]`. `null` marks the default case.
+     */
+    public readonly caseTests: readonly (Place | null)[],
+    regions: readonly Region[],
     public readonly label?: string,
   ) {
-    super(id);
+    super(id, regions);
   }
 
   getOperands(): Place[] {
     const places = [this.discriminant];
-    for (const c of this.cases) {
-      if (c.test !== null) {
-        places.push(c.test);
-      }
+    for (const t of this.caseTests) {
+      if (t !== null) places.push(t);
     }
     return places;
   }
 
   rewrite(values: Map<Identifier, Place>): SwitchOp {
     const discriminant = values.get(this.discriminant.identifier) ?? this.discriminant;
-    const cases = this.cases.map((c) => ({
-      test: c.test !== null ? (values.get(c.test.identifier) ?? c.test) : null,
-      block: c.block,
-    }));
-    if (
-      discriminant === this.discriminant &&
-      cases.every((c, i) => c.test === this.cases[i]!.test)
-    ) {
-      return this;
-    }
-    return new SwitchOp(this.id, discriminant, cases, this.fallthrough, this.label);
+    let changed = false;
+    const newTests = this.caseTests.map((t) => {
+      if (t === null) return null;
+      const next = values.get(t.identifier) ?? t;
+      if (next !== t) changed = true;
+      return next;
+    });
+    if (discriminant === this.discriminant && !changed) return this;
+    return new SwitchOp(this.id, discriminant, newTests, this.regions, this.label);
   }
 
   clone(ctx: CloneContext): SwitchOp {
     return new SwitchOp(
       nextId(ctx),
       remapPlace(ctx, this.discriminant),
-      this.cases.map((c) => ({
-        test: c.test === null ? null : remapPlace(ctx, c.test),
-        block: remapBlockId(ctx, c.block),
-      })),
-      remapBlockId(ctx, this.fallthrough),
+      this.caseTests.map((t) => (t === null ? null : remapPlace(ctx, t))),
+      this.regions.map((r) => remapRegion(ctx, r)),
       this.label,
     );
-  }
-
-  override remap(from: BlockId, to: BlockId): void {
-    for (const c of this.cases) {
-      if (c.block === from) c.block = to;
-    }
-    if (this.fallthrough === from) this.fallthrough = to;
-  }
-
-  override getBlockRefs(): BlockId[] {
-    return [...this.cases.map((c) => c.block), this.fallthrough];
-  }
-
-  override getJoinTarget(): BlockId {
-    return this.fallthrough;
-  }
-
-  override verify(): void {
-    super.verify();
-    if (this.cases.length === 0) {
-      throw new VerifyError(this, "switch has 0 cases");
-    }
-    // At most one default case.
-    let defaultCount = 0;
-    for (const c of this.cases) {
-      if (c.test === null) defaultCount++;
-    }
-    if (defaultCount > 1) {
-      throw new VerifyError(this, `switch has ${defaultCount} default cases`);
-    }
   }
 }

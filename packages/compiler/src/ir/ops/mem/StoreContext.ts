@@ -21,7 +21,6 @@ export class StoreContextOp extends Operation {
     public readonly type: "let" | "var",
     public readonly kind: StoreContextKind,
     public readonly bindings: Place[] = [],
-    public emit = true,
   ) {
     super(id);
   }
@@ -38,7 +37,6 @@ export class StoreContextOp extends Operation {
       this.type,
       this.kind,
       this.bindings,
-      this.emit,
     );
   }
 
@@ -59,16 +57,7 @@ export class StoreContextOp extends Operation {
       return this;
     }
 
-    return new StoreContextOp(
-      this.id,
-      this.place,
-      lval,
-      value,
-      this.type,
-      this.kind,
-      bindings,
-      this.emit,
-    );
+    return new StoreContextOp(this.id, this.place, lval, value, this.type, this.kind, bindings);
   }
 
   getOperands(): Place[] {

@@ -13,7 +13,6 @@ import {
   LoadDynamicPropertyOp,
   LoadGlobalOp,
   LoadLocalOp,
-  LoadPhiOp,
   LoadStaticPropertyOp,
   LogicalExpressionOp,
   MetaPropertyOp,
@@ -32,11 +31,11 @@ import {
 } from "../../ir";
 import { ArrowFunctionExpressionOp } from "../../ir/ops/func/ArrowFunctionExpression";
 import { FunctionExpressionOp } from "../../ir/ops/func/FunctionExpression";
-import { FunctionIRBuilder } from "./FunctionIRBuilder";
+import { FuncOpBuilder } from "./FuncOpBuilder";
 
 export function materializePlace(
   valuePlace: Place,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ): Place {
   const bindingPlace = environment.createPlace(environment.createIdentifier());
@@ -76,7 +75,6 @@ export function isStablePlace(
     instruction instanceof DeclareLocalOp ||
     instruction instanceof LoadLocalOp ||
     instruction instanceof LoadContextOp ||
-    instruction instanceof LoadPhiOp ||
     instruction instanceof LiteralOp ||
     instruction instanceof ThisExpressionOp ||
     instruction instanceof MetaPropertyOp
@@ -140,7 +138,7 @@ export function isStablePlace(
 
 export function stabilizePlace(
   valuePlace: Place,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ): Place {
   if (isStablePlace(valuePlace, environment)) {

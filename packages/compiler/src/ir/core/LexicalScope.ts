@@ -1,15 +1,4 @@
 /**
- * Simulated opaque type for LexicalScopeId to prevent using normal numbers as ids
- * accidentally.
- */
-const opaqueLexicalScopeId = Symbol();
-export type LexicalScopeId = number & { [opaqueLexicalScopeId]: "LexicalScopeId" };
-
-export function makeLexicalScopeId(id: number): LexicalScopeId {
-  return id as LexicalScopeId;
-}
-
-/**
  * The kind of lexical scope, corresponding to the ECMAScript construct
  * that creates the scope's LexicalEnvironment.
  *
@@ -20,6 +9,13 @@ export function makeLexicalScopeId(id: number): LexicalScopeId {
  *   - `for`      — §14.7.4  for(let/const ...) creates a per-iteration scope
  *   - `catch`    — §14.15.2 CatchClauseEvaluation
  *   - `class`    — §15.7.14 ClassDefinitionEvaluation
+ *
+ * The former `LexicalScope` class, `LexicalScopeId` opaque type,
+ * `makeLexicalScopeId`, and `Environment.scopes` registry have been
+ * deleted. Scope identity no longer needs to survive past frontend
+ * building: the MLIR-style region tree carries scope KIND on each
+ * {@link Region}, and the function inliner walks
+ * `FuncOp.parentFuncOpId` for visibility checks.
  */
 export type LexicalScopeKind =
   | "program"
@@ -29,26 +25,3 @@ export type LexicalScopeKind =
   | "for"
   | "catch"
   | "class";
-
-/**
- * A lexical scope in the IR.
- *
- * Represents a source-level construct that creates a new
- * LexicalEnvironment (per the ECMAScript spec). The scope tree is
- * first-class in the IR: every {@link BasicBlock} carries a `scopeId`
- * indicating which scope its instructions execute in. The codegen uses
- * scope transitions between blocks to decide when to emit `{ }`.
- *
- * The scope tree is built during HIR construction (from the frontend's
- * scope analysis) and carried through the pipeline unchanged. It is
- * intentionally minimal — binding resolution, mutation tracking, and
- * other analysis data are ephemeral frontend concerns, not part of
- * the IR.
- */
-export class LexicalScope {
-  constructor(
-    public readonly id: LexicalScopeId,
-    public readonly parent: LexicalScopeId | null,
-    public readonly kind: LexicalScopeKind,
-  ) {}
-}

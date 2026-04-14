@@ -1,97 +1,98 @@
 /**
  * Control-flow ops. Two flavors:
  *
- *   - **Terminators** (`Trait.Terminator`): flat CFG goto-style ops
- *     that end a basic block. Jump, Branch, Return, Throw, Switch, Try.
- *   - **Structured control-flow** (`Trait.HasRegions`): high-level ops
- *     that group multiple blocks into a single semantic unit. Block
- *     statement, ForIn, ForOf, Ternary, LabeledBlock. These are the
- *     former `BaseStructure` classes.
+ *   - **Terminators** (`Trait.Terminator`): end a basic block. They
+ *     do not own regions. Jump, Return, Throw, Break, Continue, Yield.
+ *   - **Structured control-flow** (`Trait.HasRegions`): inline ops
+ *     that own one or more regions. They are NOT terminators — they
+ *     live in the middle of a block, and control continues with the
+ *     next op in the parent block after they finish. If, While,
+ *     ForIn, ForOf, Block, LabeledBlock, Switch, Try.
  *
- * Both sets extend {@link Operation} directly and live under this
- * one directory. Two union types + predicates are exported here so
- * passes can type-narrow:
- *
- *   isTerminal(op)  → op is Terminal
- *   isStructure(op) → op is Structure
- *
- * The old `src/ir/core/Terminal.ts` and `src/ir/core/Structure.ts`
- * files have been deleted — they were remnants of the class-hierarchy
- * world where `BaseTerminal` and `BaseStructure` existed.
+ * Both sets extend {@link Operation} directly.
  */
 
 // Terminators
-export { BranchOp } from "./Branch";
 export { BreakOp } from "./Break";
+export { ConditionOp } from "./Condition";
 export { ContinueOp } from "./Continue";
 export { JumpOp } from "./Jump";
 export { ReturnOp } from "./Return";
-export { SwitchOp, type SwitchCase } from "./Switch";
 export { ThrowOp } from "./Throw";
-export { TryOp } from "./Try";
+export { YieldOp } from "./Yield";
 
 // Structured control flow
 export { BlockOp } from "./Block";
 export { ForInOp } from "./ForIn";
 export { ForOfOp } from "./ForOf";
+export { ForOp } from "./For";
+export { IfOp } from "./If";
 export { LabeledBlockOp } from "./LabeledBlock";
-export { TernaryOp } from "./Ternary";
+export { SwitchOp } from "./Switch";
+export { TryOp } from "./Try";
+export { WhileOp } from "./While";
 
-import { BranchOp } from "./Branch";
 import { BreakOp } from "./Break";
+import { ConditionOp } from "./Condition";
 import { ContinueOp } from "./Continue";
 import { JumpOp } from "./Jump";
 import { ReturnOp } from "./Return";
-import { SwitchOp } from "./Switch";
 import { ThrowOp } from "./Throw";
-import { TryOp } from "./Try";
+import { YieldOp } from "./Yield";
 import { BlockOp } from "./Block";
 import { ForInOp } from "./ForIn";
 import { ForOfOp } from "./ForOf";
+import { ForOp } from "./For";
+import { IfOp } from "./If";
 import { LabeledBlockOp } from "./LabeledBlock";
-import { TernaryOp } from "./Ternary";
+import { SwitchOp } from "./Switch";
+import { TryOp } from "./Try";
+import { WhileOp } from "./While";
 
-/**
- * Type-narrow union of all terminator ops. For trait-aware dispatch
- * on an arbitrary Operation, use `op.hasTrait(Trait.Terminator)`.
- */
+/** Union of all terminator ops. */
 export type Terminal =
-  | BranchOp
   | BreakOp
+  | ConditionOp
   | ContinueOp
   | JumpOp
   | ReturnOp
   | ThrowOp
-  | SwitchOp
-  | TryOp;
+  | YieldOp;
 
-/** Runtime predicate matching the {@link Terminal} union. */
 export function isTerminal(op: unknown): op is Terminal {
   return (
-    op instanceof BranchOp ||
     op instanceof BreakOp ||
+    op instanceof ConditionOp ||
     op instanceof ContinueOp ||
     op instanceof JumpOp ||
     op instanceof ReturnOp ||
     op instanceof ThrowOp ||
-    op instanceof SwitchOp ||
-    op instanceof TryOp
+    op instanceof YieldOp
   );
 }
 
-/**
- * Type-narrow union of all structured control-flow ops. For
- * trait-aware dispatch, use `op.hasTrait(Trait.HasRegions)`.
- */
-export type Structure = BlockOp | ForInOp | ForOfOp | TernaryOp | LabeledBlockOp;
+/** Union of all structured control-flow ops. */
+export type Structure =
+  | BlockOp
+  | ForInOp
+  | ForOfOp
+  | ForOp
+  | IfOp
+  | LabeledBlockOp
+  | SwitchOp
+  | TryOp
+  | WhileOp;
 
-/** Runtime predicate matching the {@link Structure} union. */
 export function isStructure(op: unknown): op is Structure {
   return (
     op instanceof BlockOp ||
     op instanceof ForInOp ||
     op instanceof ForOfOp ||
-    op instanceof TernaryOp ||
-    op instanceof LabeledBlockOp
+    op instanceof ForOp ||
+    op instanceof IfOp ||
+    op instanceof LabeledBlockOp ||
+    op instanceof SwitchOp ||
+    op instanceof TryOp ||
+    op instanceof WhileOp
   );
 }

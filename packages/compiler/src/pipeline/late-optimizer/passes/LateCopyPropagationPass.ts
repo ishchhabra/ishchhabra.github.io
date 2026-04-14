@@ -1,5 +1,6 @@
 import { Operation, BlockId, DeclarationId, LoadLocalOp, Place, StoreLocalOp } from "../../../ir";
-import { FunctionIR } from "../../../ir/core/FunctionIR";
+import { FuncOp } from "../../../ir/core/FuncOp";
+import { Trait } from "../../../ir/core/Operation";
 import { AnalysisManager } from "../../analysis/AnalysisManager";
 import { ControlFlowGraphAnalysis } from "../../analysis/ControlFlowGraphAnalysis";
 import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
@@ -22,10 +23,10 @@ import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
  */
 export class LateCopyPropagationPass extends BaseOptimizationPass {
   constructor(
-    protected readonly functionIR: FunctionIR,
+    protected readonly funcOp: FuncOp,
     private readonly AM: AnalysisManager,
   ) {
-    super(functionIR);
+    super(funcOp);
   }
 
   /**
@@ -40,7 +41,7 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
 
     let changed = false;
 
-    for (const block of this.functionIR.allBlocks()) {
+    for (const block of this.funcOp.allBlocks()) {
       const blockId = block.id;
       /** Current copy state at block entry (IN[B]). */
       const state = this.meet(blockId, outState);
@@ -48,37 +49,26 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
       for (let i = 0; i < block.operations.length; i++) {
         const instr = block.operations[i];
 
-        // ------------------------------------------------------------
-        // Rewrite phase
-        // ------------------------------------------------------------
-        //
-        // If we encounter:
-        //
-        //    load x
-        //
-        // and the current state says:
-        //
-        //    x → y
-        //
-        // we rewrite the load to:
-        //
-        //    load y
-        //
-
         if (instr instanceof LoadLocalOp) {
           const srcDecl = instr.value.identifier.declarationId;
           const resolved = this.resolve(state, srcDecl);
 
           if (resolved && resolved.identifier.declarationId !== srcDecl) {
             block.replaceOp(i, new LoadLocalOp(instr.id, instr.place, resolved));
-
             changed = true;
           }
+          continue;
         }
 
-        // ------------------------------------------------------------
-        // Transfer function
-        // ------------------------------------------------------------
+        // Structured ops may mutate variables inside their regions.
+        // Conservatively kill every copy relationship involving any
+        // decl stored to in any nested region.
+        if (instr.hasTrait(Trait.HasRegions)) {
+          for (const decl of this.collectStoredDecls(instr)) {
+            this.kill(state, decl);
+          }
+          continue;
+        }
 
         this.transfer(instr, state);
       }
@@ -99,7 +89,7 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
    * Only copy relationships that agree across *all* predecessors survive.
    */
   private meet(blockId: BlockId, outState: Map<BlockId, CopyState>): CopyState {
-    const preds = this.AM.get(ControlFlowGraphAnalysis, this.functionIR).predecessors.get(blockId);
+    const preds = this.AM.get(ControlFlowGraphAnalysis, this.funcOp).predecessors.get(blockId);
 
     if (!preds || preds.size === 0) {
       return new Map();
@@ -183,6 +173,24 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
         state.delete(k);
       }
     }
+  }
+
+  private collectStoredDecls(op: Operation): Set<DeclarationId> {
+    const decls = new Set<DeclarationId>();
+    const walk = (inner: Operation) => {
+      if (inner instanceof StoreLocalOp) {
+        decls.add(inner.lval.identifier.declarationId);
+      }
+      if (inner.hasTrait(Trait.HasRegions)) {
+        for (const region of inner.regions) {
+          for (const block of region.blocks) {
+            for (const op2 of block.operations) walk(op2);
+          }
+        }
+      }
+    };
+    walk(op);
+    return decls;
   }
 
   /**

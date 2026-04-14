@@ -1,55 +1,47 @@
 import type { BlockStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { BlockOp, JumpOp, Region, createOperationId } from "../../../ir";
+import { BlockOp, createOperationId, Region, YieldOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildOwnedBody } from "./buildOwnedBody";
 
+/**
+ * Lower a JS `{ ... }` block statement to a textbook MLIR `BlockOp`.
+ *
+ *   parentBlock: [...ops before..., BlockOp, ...ops after...]
+ *     BlockOp.bodyRegion: [bodyBlock]
+ *       bodyBlock: [...body ops..., YieldOp]
+ *
+ * The BlockOp is inline in the parent block — nothing else to do.
+ * After the BlockOp, the parent block's walker continues with the
+ * next op naturally.
+ */
 export function buildBlockStatement(
   node: BlockStatement,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  const currentBlock = functionBuilder.currentBlock;
-
-  const blockScope = functionBuilder.scopeFor(node);
-  const scopeId = functionBuilder.lexicalScopeIdFor(scope);
-  const blockScopeId = functionBuilder.lexicalScopeIdFor(blockScope);
-
-  const headerBlock = environment.createBlock(scopeId);
-  functionBuilder.addBlock(headerBlock);
-
-  const bodyBlock = environment.createBlock(blockScopeId);
-  functionBuilder.addBlock(bodyBlock);
-
-  const exitBlock = environment.createBlock(scopeId);
-  functionBuilder.addBlock(exitBlock);
-
-  currentBlock.terminal = new JumpOp(createOperationId(environment), headerBlock.id);
+  const parentBlock = functionBuilder.currentBlock;
 
   const bodyRegion = new Region([]);
-  bodyRegion.moveBlockHere(bodyBlock);
-
-  functionBuilder.currentBlock = bodyBlock;
+  const bodyBlock = environment.createBlock();
   functionBuilder.withStructureRegion(bodyRegion, () => {
+    functionBuilder.addBlock(bodyBlock);
+    functionBuilder.currentBlock = bodyBlock;
     buildOwnedBody(node, scope, functionBuilder, moduleBuilder, environment);
+    if (functionBuilder.currentBlock.terminal === undefined) {
+      functionBuilder.currentBlock.terminal = new YieldOp(
+        createOperationId(environment),
+        [],
+      );
+    }
   });
 
-  if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.terminal = new JumpOp(
-      createOperationId(environment),
-      exitBlock.id,
-    );
-  }
-
-  functionBuilder.structures.set(
-    headerBlock.id,
-    new BlockOp(createOperationId(environment), headerBlock.id, exitBlock.id, bodyRegion),
-  );
-
-  functionBuilder.currentBlock = exitBlock;
+  const blockOp = new BlockOp(createOperationId(environment), bodyRegion);
+  parentBlock.appendOp(blockOp);
+  functionBuilder.currentBlock = parentBlock;
   return undefined;
 }

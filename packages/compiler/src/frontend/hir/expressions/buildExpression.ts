@@ -2,7 +2,7 @@ import type { Expression, RegExpLiteral } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildAwaitExpression } from "./buildAwaitExpression";
 import { buildArrayExpression } from "./buildArrayExpression";
@@ -32,7 +32,7 @@ import { buildImportExpression } from "./buildImportExpression";
 export function buildExpression(
   node: Expression,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {

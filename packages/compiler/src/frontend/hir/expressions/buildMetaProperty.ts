@@ -1,11 +1,11 @@
 import type { MetaProperty } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { MetaPropertyOp } from "../../../ir/ops/prop/MetaProperty";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 
 export function buildMetaProperty(
   node: MetaProperty,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ) {
   const identifier = environment.createIdentifier();

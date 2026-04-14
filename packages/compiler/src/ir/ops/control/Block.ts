@@ -1,11 +1,10 @@
 import type { OperationId } from "../../core";
-import type { BlockId } from "../../core/Block";
 import type { Identifier } from "../../core/Identifier";
+import type { LexicalScopeKind } from "../../core/LexicalScope";
 import {
   type CloneContext,
   nextId,
   Operation,
-  remapBlockId,
   remapRegion,
   Trait,
 } from "../../core/Operation";
@@ -13,39 +12,31 @@ import type { Place } from "../../core/Place";
 import { Region } from "../../core/Region";
 
 /**
- * Standalone source-level block statement `{ ... }`.
+ * Source-level lexical scope marker. Owns a single body region
+ * whose `scopeKind` records the ECMAScript scope kind (naked
+ * `{ ... }` block, `for (let ...)` scope, class body, catch
+ * parameter binding, etc.).
  *
- * Replaces `BlockStructure`. Declares `Trait.HasRegions`. Note that
- * the class name is `BlockOp` (as in "block statement"), distinct
+ * The class name is `BlockOp` (as in "block statement"), distinct
  * from `BasicBlock` which is the IR-level CFG node type.
  *
- * The body block is owned by the nested region; the `body` accessor
- * derives the entry block id from `regions[0].entry.id` rather than
- * being stored as a separate field.
+ * Inline structured op — lives directly in its parent block, no
+ * fallthrough field.
  */
 export class BlockOp extends Operation {
   static override readonly traits = new Set<Trait>([Trait.HasRegions]);
 
   constructor(
     id: OperationId,
-    public header: BlockId,
-    public exit: BlockId,
     bodyRegion: Region,
+    public readonly kind: LexicalScopeKind = "block",
   ) {
+    bodyRegion.scopeKind = kind;
     super(id, [bodyRegion]);
   }
 
-  /** Entry block id of the body region. */
-  get body(): BlockId {
-    return this.regions[0].entry.id;
-  }
-
-  getEdges(): Array<[BlockId, BlockId]> {
-    return [[this.header, this.body]];
-  }
-
-  override getBlockRefs(): BlockId[] {
-    return [this.body, this.exit];
+  get bodyRegion(): Region {
+    return this.regions[0];
   }
 
   getOperands(): Place[] {
@@ -61,19 +52,6 @@ export class BlockOp extends Operation {
   }
 
   clone(ctx: CloneContext): BlockOp {
-    const bodyRegion = remapRegion(ctx, this.regions[0]);
-    return new BlockOp(
-      nextId(ctx),
-      remapBlockId(ctx, this.header),
-      remapBlockId(ctx, this.exit),
-      bodyRegion,
-    );
-  }
-
-  override remap(from: BlockId, to: BlockId): void {
-    if (this.header === from) this.header = to;
-    if (this.exit === from) this.exit = to;
-    // body is derived from regions[0].entry.id; no remap needed —
-    // the region's block list is updated separately.
+    return new BlockOp(nextId(ctx), remapRegion(ctx, this.regions[0]), this.kind);
   }
 }

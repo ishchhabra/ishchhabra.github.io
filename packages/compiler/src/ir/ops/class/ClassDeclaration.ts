@@ -13,7 +13,6 @@ export class ClassDeclarationOp extends Operation {
     public override readonly place: Place,
     public readonly superClass: Place | null,
     public readonly elements: Place[],
-    public emit = true,
   ) {
     super(id);
   }
@@ -27,7 +26,6 @@ export class ClassDeclarationOp extends Operation {
       place,
       this.superClass,
       this.elements,
-      this.emit,
     );
   }
 
@@ -42,7 +40,7 @@ export class ClassDeclarationOp extends Operation {
     if (!superChanged && !elementsChanged) {
       return this;
     }
-    return new ClassDeclarationOp(this.id, this.place, newSuper, newElements, this.emit);
+    return new ClassDeclarationOp(this.id, this.place, newSuper, newElements);
   }
 
   public getOperands(): Place[] {

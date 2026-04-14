@@ -1,81 +1,116 @@
 import { Environment } from "../../environment";
-import { FunctionIR } from "../../ir/core/FunctionIR";
+import type { BlockId } from "../../ir";
+import { FuncOp } from "../../ir/core/FuncOp";
+import { Operation, Trait } from "../../ir/core/Operation";
 import type { Place } from "../../ir/core/Place";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { LivenessAnalysis, LivenessResult } from "../analysis/LivenessAnalysis";
 import { BaseOptimizationPass, OptimizationResult } from "../late-optimizer/OptimizationPass";
+import { rewriteOutgoingEdgeArgs } from "../ssa/blockArgs";
 
 /**
  * SSA-phase Dead Code Elimination.
  *
- * Removes instructions, phis, and structures whose results are not
- * live. Uses the cached LivenessAnalysis (which transitively propagates
- * through phis and structures) to determine what is safe to remove.
- *
- * The base class re-runs `step()` until fixpoint so that chains of
- * dead definitions are cleaned up across iterations.
+ * Uniform walk over every op in every block's `_ops` — structured
+ * ops, instructions, terminators alike. Removes ops whose results
+ * are not live.
  */
 export class DeadCodeEliminationPass extends BaseOptimizationPass {
   constructor(
-    protected readonly functionIR: FunctionIR,
+    protected readonly funcOp: FuncOp,
     private readonly environment: Environment,
     private readonly AM: AnalysisManager,
   ) {
-    super(functionIR);
+    super(funcOp);
   }
 
   protected step(): OptimizationResult {
-    const liveness = this.AM.get(LivenessAnalysis, this.functionIR);
+    const liveness = this.AM.get(LivenessAnalysis, this.funcOp);
 
-    const removedStructures = this.removeDeadStructures(liveness);
-    const removedPhis = this.removeDeadPhis(liveness);
+    const removedParams = this.removeDeadBlockParams(liveness);
     const removedInstructions = this.removeDeadInstructions(liveness);
 
-    const changed = removedStructures || removedPhis || removedInstructions;
+    const changed = removedParams || removedInstructions;
     if (changed) {
-      this.AM.invalidateFunction(this.functionIR);
+      this.AM.invalidateFunction(this.funcOp);
     }
 
     return { changed };
   }
 
-  private removeDeadStructures(liveness: LivenessResult): boolean {
-    let changed = false;
-
-    for (const [blockId, structure] of this.functionIR.structures) {
-      if (structure.hasSideEffects(this.functionIR.moduleIR.environment)) continue;
-      const isLive = structure.getDefs().some((p: Place) => liveness.isLive(p.identifier.id));
-      if (!isLive) {
-        this.functionIR.deleteStructure(blockId);
-        changed = true;
+  /**
+   * A structured op is live iff any def anywhere inside its regions
+   * is live — including result places, nested op defs, and contained
+   * block params. Walking the full region tree keeps loop-carried
+   * mutations alive even when the op itself has no outer defs.
+   */
+  private structureHasLiveDef(op: Operation, liveness: LivenessResult): boolean {
+    for (const p of op.getDefs()) {
+      if (liveness.isLive(p.identifier.id)) return true;
+    }
+    for (const region of op.regions) {
+      for (const block of region.blocks) {
+        for (const param of block.params) {
+          if (liveness.isLive(param.identifier.id)) return true;
+        }
+        for (const innerOp of block.operations) {
+          for (const p of innerOp.getDefs()) {
+            if (liveness.isLive(p.identifier.id)) return true;
+          }
+          if (innerOp.hasTrait(Trait.HasRegions)) {
+            if (this.structureHasLiveDef(innerOp, liveness)) return true;
+          }
+        }
       }
     }
-
-    return changed;
+    return false;
   }
 
-  private removeDeadPhis(liveness: LivenessResult): boolean {
+  private removeDeadBlockParams(liveness: LivenessResult): boolean {
     let changed = false;
 
-    for (const phi of this.functionIR.phis) {
-      if (!liveness.isLive(phi.place.identifier.id)) {
-        this.functionIR.phis.delete(phi);
-        changed = true;
+    const keepMask = new Map<BlockId, boolean[]>();
+    for (const block of this.funcOp.allBlocks()) {
+      if (block.params.length === 0) continue;
+      const mask = block.params.map((p) => liveness.isLive(p.identifier.id));
+      if (mask.every((live) => live)) continue;
+      keepMask.set(block.id, mask);
+      block.params = block.params.filter((_, i) => mask[i]);
+      changed = true;
+    }
+    if (!changed) return false;
+
+    for (const predBlock of this.funcOp.allBlocks()) {
+      if (predBlock.terminal === undefined) continue;
+      let terminal = predBlock.terminal;
+      for (const [succId, mask] of keepMask) {
+        terminal = rewriteOutgoingEdgeArgs(terminal, succId, (args: readonly Place[]) =>
+          args.filter((_, i) => mask[i]),
+        );
+      }
+      if (terminal !== predBlock.terminal) {
+        predBlock.replaceTerminal(terminal);
       }
     }
 
-    return changed;
+    return true;
   }
 
   private removeDeadInstructions(liveness: LivenessResult): boolean {
     let changed = false;
 
-    for (const block of this.functionIR.allBlocks()) {
+    for (const block of this.funcOp.allBlocks()) {
       for (let i = block.operations.length - 1; i >= 0; i--) {
-        const instr = block.operations[i];
-        if (instr.hasSideEffects(this.environment)) continue;
-        if (instr.getDefs().some((p) => liveness.isLive(p.identifier.id))) continue;
-
+        const op = block.operations[i];
+        if (op.hasTrait(Trait.HasRegions)) {
+          if (op.hasSideEffects(this.environment)) continue;
+          if (this.structureHasLiveDef(op, liveness)) continue;
+          block.removeOpAt(i);
+          changed = true;
+          continue;
+        }
+        if (op.hasSideEffects(this.environment)) continue;
+        if (op.getDefs().some((p) => liveness.isLive(p.identifier.id))) continue;
         block.removeOpAt(i);
         changed = true;
       }

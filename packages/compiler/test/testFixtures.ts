@@ -227,6 +227,12 @@ function addTestSuites(
       if (!existsSync(expectation.path) && process.env.UPDATE_FIXTURES) {
         writeFileSync(expectation.path, formattedActual + "\n", "utf8");
         console.info(`[INFO] Created missing fixture file at: ${expectation.path}`);
+      } else if (process.env.UPDATE_FIXTURES) {
+        const existingCode = readFileSync(expectation.path, "utf-8").trim();
+        if (existingCode !== formattedActual) {
+          writeFileSync(expectation.path, formattedActual + "\n", "utf8");
+          console.info(`[INFO] Updated fixture file at: ${expectation.path}`);
+        }
       }
 
       const expectedCode = readFileSync(expectation.path, "utf-8").trim();
@@ -278,7 +284,7 @@ function addTestSuites(
 
 /**
  * Call this in your test file with a directory:
- *   testFixtures(__dirname, { enableConstantPropagationPass: true });
+ *   testFixtures(__dirname, { enableDeadCodeEliminationPass: true });
  *
  * It will:
  *   1) Find all fixtures under the directory (look for `code.js` or `code.jsx`)

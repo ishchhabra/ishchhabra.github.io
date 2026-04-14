@@ -7,8 +7,7 @@ import {
   StoreLocalOp,
 } from "../../../ir";
 import { BasicBlock } from "../../../ir/core/Block";
-import { FunctionIR } from "../../../ir/core/FunctionIR";
-import { LoadPhiOp } from "../../../ir/ops/mem/LoadPhi";
+import { FuncOp } from "../../../ir/core/FuncOp";
 import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
 
 /**
@@ -38,15 +37,15 @@ import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
  * textbook folds is enough to recover longer chains as well.
  */
 export class LateCopyFoldingPass extends BaseOptimizationPass {
-  constructor(protected readonly functionIR: FunctionIR) {
-    super(functionIR);
+  constructor(protected readonly funcOp: FuncOp) {
+    super(funcOp);
   }
 
   protected step(): OptimizationResult {
     let changed = false;
     const loadCounts = this.countLoads();
 
-    for (const block of this.functionIR.allBlocks()) {
+    for (const block of this.funcOp.allBlocks()) {
       changed = this.foldExpressionInliningInBlock(block, loadCounts) || changed;
       changed = this.foldInitialValueInBlock(block) || changed;
     }
@@ -236,9 +235,9 @@ export class LateCopyFoldingPass extends BaseOptimizationPass {
   private countLoads(): Map<IdentifierId, number> {
     const counts = new Map<IdentifierId, number>();
 
-    for (const block of this.functionIR.allBlocks()) {
+    for (const block of this.funcOp.allBlocks()) {
       for (const instruction of block.operations) {
-        if (instruction instanceof LoadLocalOp || instruction instanceof LoadPhiOp) {
+        if (instruction instanceof LoadLocalOp) {
           const id = instruction.value.identifier.id;
           counts.set(id, (counts.get(id) ?? 0) + 1);
         }

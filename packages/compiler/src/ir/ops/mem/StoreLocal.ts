@@ -22,13 +22,6 @@ export class StoreLocalOp extends Operation {
     public readonly type: "let" | "const" | "var",
     public readonly kind: StoreLocalKind = "assignment",
     public readonly bindings: Place[] = [],
-    /**
-     * Whether codegen should emit this as a standalone statement. When `false`,
-     * codegen still populates `generator.places` but does not emit a
-     * VariableDeclaration statement. Set to `false` by export merging when the
-     * declaration is wrapped by an export declaration.
-     */
-    public emit = true,
   ) {
     super(id);
   }
@@ -45,7 +38,6 @@ export class StoreLocalOp extends Operation {
       this.type,
       this.kind,
       this.bindings,
-      this.emit,
     );
   }
 
@@ -63,7 +55,6 @@ export class StoreLocalOp extends Operation {
       rewriteDefinitions
         ? this.bindings.map((binding) => values.get(binding.identifier) ?? binding)
         : this.bindings,
-      this.emit,
     );
   }
 

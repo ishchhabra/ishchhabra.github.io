@@ -4,23 +4,22 @@ import { Environment } from "../../../environment";
 import {
   ArrayDestructureOp,
   BinaryExpressionOp,
-  BranchOp,
   createOperationId,
-  DeclareLocalOp,
-  JumpOp,
+  IfOp,
   LiteralOp,
-  LoadLocalOp,
   ObjectDestructureOp,
   Place,
+  Region,
   StoreContextOp,
   StoreLocalOp,
   UnaryExpressionOp,
+  YieldOp,
 } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildLVal } from "../buildLVal";
 import { buildNode } from "../buildNode";
 import { buildBindingIdentifier, throwTDZAccessError } from "../buildIdentifier";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import {
   buildMemberReference,
   createStoreMemberReferenceInstruction,
@@ -33,7 +32,7 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
 export function buildAssignmentExpression(
   node: AssignmentExpression,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
   /** When true, the result is not used as an expression value (e.g. ExpressionStatement, for-loop update). */
@@ -73,7 +72,7 @@ export function buildAssignmentExpression(
 function buildIdentifierAssignment(
   node: AssignmentExpression,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
   statementContext: boolean,
@@ -196,7 +195,7 @@ function buildIdentifierAssignment(
 function buildLogicalCondition(
   operator: string,
   valuePlace: Place,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ): Place {
   if (operator === "||=") {
@@ -218,82 +217,20 @@ function buildLogicalCondition(
 }
 
 /**
- * Emits `let _result = initialValue` and returns the binding and store
- * places, used by logical assignment lowering to track the expression
- * result across both branches.
- */
-function emitResultVariable(
-  initialValue: Place,
-  functionBuilder: FunctionIRBuilder,
-  environment: Environment,
-): { bindingPlace: Place; storePlace: Place } {
-  const bindingPlace = environment.createPlace(environment.createIdentifier());
-  functionBuilder.addOp(environment.createOperation(DeclareLocalOp, bindingPlace, "let"));
-  environment.registerDeclaration(
-    bindingPlace.identifier.declarationId,
-    functionBuilder.currentBlock.id,
-    bindingPlace.id,
-  );
-  environment.ensureSyntheticDeclarationMetadata(
-    bindingPlace.identifier.declarationId,
-    "let",
-    bindingPlace,
-  );
-  const storePlace = environment.createPlace(environment.createIdentifier());
-  functionBuilder.addOp(
-    environment.createOperation(
-      StoreLocalOp,
-      storePlace,
-      bindingPlace,
-      initialValue,
-      "let",
-      "declaration",
-    ),
-  );
-  return { bindingPlace, storePlace };
-}
-
-/**
- * Emits `_result = newValue` in the current block, creating a new SSA
- * version of the result variable so the phi merge works correctly.
- */
-function emitResultUpdate(
-  bindingPlace: Place,
-  newValue: Place,
-  functionBuilder: FunctionIRBuilder,
-  environment: Environment,
-): void {
-  const updateBinding = environment.createPlace(
-    environment.createIdentifier(bindingPlace.identifier.declarationId),
-  );
-  environment.registerDeclaration(
-    bindingPlace.identifier.declarationId,
-    functionBuilder.currentBlock.id,
-    updateBinding.id,
-  );
-  functionBuilder.addOp(
-    environment.createOperation(
-      StoreLocalOp,
-      environment.createPlace(environment.createIdentifier()),
-      updateBinding,
-      newValue,
-      "const",
-      "assignment",
-    ),
-  );
-}
-
-/**
- * Lowers `x ||= y`, `x &&= y`, `x ??= y` to:
+ * Lowers `x ||= y`, `x &&= y`, `x ??= y` to a textbook MLIR `IfOp`
+ * with one result place:
  *
- *   let _result = x;
- *   if (<condition>) { x = y; _result = y; }
- *   // expression value is _result
+ *   %result = IfOp(condition) {
+ *     %stored = ... store y into x ...
+ *     YieldOp(%stored)    // the new value of x
+ *   } else {
+ *     YieldOp(%oldValue)  // the original value of x
+ *   }
  */
 function buildLogicalIdentifierAssignment(
   node: AssignmentExpression,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
@@ -309,89 +246,96 @@ function buildLogicalIdentifierAssignment(
     throwTDZAccessError(functionBuilder.getDeclarationSourceName(declarationId) ?? left.name);
   }
 
-  // Load x once — use buildBindingIdentifier to reuse the existing
-  // declaration place (matching Babel's isReferencedIdentifier() = false
-  // for the LHS of logical assignments).
-  const testPlace = buildBindingIdentifier(left, scope, functionBuilder, environment);
+  const parentBlock = functionBuilder.currentBlock;
+  const oldValuePlace = buildBindingIdentifier(left, scope, functionBuilder, environment);
+  const conditionPlace = buildLogicalCondition(
+    operator,
+    oldValuePlace,
+    functionBuilder,
+    environment,
+  );
 
-  const conditionPlace = buildLogicalCondition(operator, testPlace, functionBuilder, environment);
+  // Consequent region: evaluate rhs, store into x, yield new value.
+  const consRegion = new Region([]);
+  const consBlock = environment.createBlock();
+  let consYielded: Place | null = null;
+  functionBuilder.withStructureRegion(consRegion, () => {
+    functionBuilder.addBlock(consBlock);
+    functionBuilder.currentBlock = consBlock;
 
-  // let _result = x; -- holds the expression value across both paths.
-  const { bindingPlace } = emitResultVariable(testPlace, functionBuilder, environment);
-  const scopeId = functionBuilder.lexicalScopeIdFor(scope);
+    const rightPlace = buildNode(node.right, scope, functionBuilder, moduleBuilder, environment);
+    if (rightPlace === undefined || Array.isArray(rightPlace)) {
+      throw new Error("Logical assignment right must be a single place");
+    }
+    const stabilizedRightPlace = stabilizePlace(rightPlace, functionBuilder, environment);
 
-  const assignBlock = environment.createBlock(scopeId);
-  functionBuilder.addBlock(assignBlock);
-  const mergeBlock = environment.createBlock(scopeId);
-  functionBuilder.addBlock(mergeBlock);
+    const target = buildLVal(
+      left as AST.Pattern,
+      scope,
+      functionBuilder,
+      moduleBuilder,
+      environment,
+      { kind: "assignment" },
+    );
+    if (target.kind !== "binding") {
+      throw new Error(`Expected binding assignment target, got: ${target.kind}`);
+    }
+    const isContext = environment.contextDeclarationIds.has(declarationId);
+    functionBuilder.addOp(
+      isContext
+        ? environment.createOperation(
+            StoreContextOp,
+            environment.createPlace(environment.createIdentifier()),
+            target.place,
+            stabilizedRightPlace,
+            "let",
+            "assignment",
+          )
+        : environment.createOperation(
+            StoreLocalOp,
+            environment.createPlace(environment.createIdentifier()),
+            target.place,
+            stabilizedRightPlace,
+            "const",
+            "assignment",
+          ),
+    );
+    consYielded = stabilizedRightPlace;
+    functionBuilder.currentBlock.terminal = new YieldOp(
+      createOperationId(environment),
+      [stabilizedRightPlace],
+    );
+  });
 
-  functionBuilder.currentBlock.terminal = new BranchOp(
+  // Alternate region: yield old value unchanged.
+  const altRegion = new Region([]);
+  const altBlock = environment.createBlock();
+  functionBuilder.withStructureRegion(altRegion, () => {
+    functionBuilder.addBlock(altBlock);
+    altBlock.terminal = new YieldOp(createOperationId(environment), [oldValuePlace]);
+  });
+
+  if (consYielded === null) {
+    throw new Error("Logical assignment cons arm did not yield a value");
+  }
+
+  const resultPlace = environment.createPlace(environment.createIdentifier());
+  const ifOp = new IfOp(
     createOperationId(environment),
     conditionPlace,
-    assignBlock.id,
-    mergeBlock.id,
-    mergeBlock.id,
+    [resultPlace],
+    consRegion,
+    altRegion,
   );
-
-  // Build the assignment in assignBlock.
-  functionBuilder.currentBlock = assignBlock;
-
-  const rightPlace = buildNode(node.right, scope, functionBuilder, moduleBuilder, environment);
-  if (rightPlace === undefined || Array.isArray(rightPlace)) {
-    throw new Error("Logical assignment right must be a single place");
-  }
-  const stabilizedRightPlace = stabilizePlace(rightPlace, functionBuilder, environment);
-
-  // Store x = y.
-  const target = buildLVal(
-    left as AST.Pattern,
-    scope,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-    { kind: "assignment" },
-  );
-  if (target.kind !== "binding") {
-    throw new Error(`Expected binding assignment target, got: ${target.kind}`);
-  }
-  const isContext = environment.contextDeclarationIds.has(declarationId);
-  functionBuilder.addOp(
-    isContext
-      ? environment.createOperation(
-          StoreContextOp,
-          environment.createPlace(environment.createIdentifier()),
-          target.place,
-          stabilizedRightPlace,
-          "let",
-          "assignment",
-        )
-      : environment.createOperation(
-          StoreLocalOp,
-          environment.createPlace(environment.createIdentifier()),
-          target.place,
-          stabilizedRightPlace,
-          "const",
-          "assignment",
-        ),
-  );
-
-  // _result = y;
-  emitResultUpdate(bindingPlace, stabilizedRightPlace, functionBuilder, environment);
-
-  functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), mergeBlock.id);
-
-  // Load _result at the merge block. SSA creates a phi merging the
-  // initial value (skip path) and the updated value (assign path).
-  functionBuilder.currentBlock = mergeBlock;
-  const resultPlace = environment.createPlace(environment.createIdentifier());
-  functionBuilder.addOp(environment.createOperation(LoadLocalOp, resultPlace, bindingPlace));
+  parentBlock.appendOp(ifOp);
+  functionBuilder.currentBlock = parentBlock;
   return resultPlace;
 }
 
 function buildMemberExpressionAssignment(
   node: AssignmentExpression,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
   statementContext: boolean,
@@ -439,22 +383,24 @@ function buildMemberExpressionAssignment(
 }
 
 /**
- * Lowers `obj.x ||= y`, `obj.x &&= y`, and `obj.x ??= y` to:
+ * Lowers `obj.x ||= y`, `obj.x &&= y`, and `obj.x ??= y` to a
+ * textbook MLIR `IfOp` with one result place:
  *
- *   let _result = obj.x;          // read property once
- *   if (<condition>) {
- *     _result = y;                // update result
- *     obj.x = y;                  // store property
+ *   %cached = <load obj.x>
+ *   %result = IfOp(cond(%cached)) {
+ *     obj.x = y
+ *     YieldOp(y)
+ *   } else {
+ *     YieldOp(%cached)
  *   }
- *   // expression value is _result
  *
- * The temp variable holds the result across both paths without
- * re-reading the property (which would trigger a getter twice).
+ * The property read is cached once before the IfOp so the getter
+ * fires at most once.
  */
 function buildLogicalMemberAssignment(
   node: AssignmentExpression,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
@@ -464,69 +410,71 @@ function buildLogicalMemberAssignment(
     reusable: true,
   });
 
-  // Load the property value once.
-  const testPlace = loadMemberReference(reference, functionBuilder, environment);
-
-  // let _result = testPlace; -- cache the property read. The condition
-  // and all subsequent references use _result, not testPlace, to avoid
-  // re-triggering getters.
-  const { bindingPlace: resultBinding } = emitResultVariable(
-    testPlace,
+  const parentBlock = functionBuilder.currentBlock;
+  const cachedPlace = loadMemberReference(reference, functionBuilder, environment);
+  const conditionPlace = buildLogicalCondition(
+    operator,
+    cachedPlace,
     functionBuilder,
     environment,
   );
 
-  // Build the condition from the cached result, not from testPlace.
-  const cachedPlace = environment.createPlace(environment.createIdentifier());
-  functionBuilder.addOp(environment.createOperation(LoadLocalOp, cachedPlace, resultBinding));
-  const conditionPlace = buildLogicalCondition(operator, cachedPlace, functionBuilder, environment);
-  const scopeId = functionBuilder.lexicalScopeIdFor(scope);
+  const consRegion = new Region([]);
+  const consBlock = environment.createBlock();
+  let consYielded: Place | null = null;
+  functionBuilder.withStructureRegion(consRegion, () => {
+    functionBuilder.addBlock(consBlock);
+    functionBuilder.currentBlock = consBlock;
 
-  const assignBlock = environment.createBlock(scopeId);
-  functionBuilder.addBlock(assignBlock);
-  const mergeBlock = environment.createBlock(scopeId);
-  functionBuilder.addBlock(mergeBlock);
+    const rightPlace = buildNode(node.right, scope, functionBuilder, moduleBuilder, environment);
+    if (rightPlace === undefined || Array.isArray(rightPlace)) {
+      throw new Error("Logical member assignment right must be a single place");
+    }
+    const stabilizedRightPlace = stabilizePlace(rightPlace, functionBuilder, environment);
 
-  functionBuilder.currentBlock.terminal = new BranchOp(
+    functionBuilder.addOp(
+      createStoreMemberReferenceInstruction(
+        reference,
+        environment.createPlace(environment.createIdentifier()),
+        stabilizedRightPlace,
+        environment,
+      ),
+    );
+    consYielded = stabilizedRightPlace;
+    functionBuilder.currentBlock.terminal = new YieldOp(
+      createOperationId(environment),
+      [stabilizedRightPlace],
+    );
+  });
+
+  const altRegion = new Region([]);
+  const altBlock = environment.createBlock();
+  functionBuilder.withStructureRegion(altRegion, () => {
+    functionBuilder.addBlock(altBlock);
+    altBlock.terminal = new YieldOp(createOperationId(environment), [cachedPlace]);
+  });
+
+  if (consYielded === null) {
+    throw new Error("Logical member assignment cons arm did not yield a value");
+  }
+
+  const resultPlace = environment.createPlace(environment.createIdentifier());
+  const ifOp = new IfOp(
     createOperationId(environment),
     conditionPlace,
-    assignBlock.id,
-    mergeBlock.id,
-    mergeBlock.id,
+    [resultPlace],
+    consRegion,
+    altRegion,
   );
-
-  // Build the assignment in assignBlock.
-  functionBuilder.currentBlock = assignBlock;
-
-  const rightPlace = buildNode(node.right, scope, functionBuilder, moduleBuilder, environment);
-  if (rightPlace === undefined || Array.isArray(rightPlace)) {
-    throw new Error("Logical member assignment right must be a single place");
-  }
-  const stabilizedRightPlace = stabilizePlace(rightPlace, functionBuilder, environment);
-
-  // Store the property.
-  const storePlace = environment.createPlace(environment.createIdentifier());
-  functionBuilder.addOp(
-    createStoreMemberReferenceInstruction(reference, storePlace, stabilizedRightPlace, environment),
-  );
-
-  // _result = y;
-  emitResultUpdate(resultBinding, stabilizedRightPlace, functionBuilder, environment);
-
-  functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), mergeBlock.id);
-
-  // Load _result at the merge block. SSA creates a phi merging the
-  // initial value (skip path) and the updated value (assign path).
-  functionBuilder.currentBlock = mergeBlock;
-  const resultPlace = environment.createPlace(environment.createIdentifier());
-  functionBuilder.addOp(environment.createOperation(LoadLocalOp, resultPlace, resultBinding));
+  parentBlock.appendOp(ifOp);
+  functionBuilder.currentBlock = parentBlock;
   return resultPlace;
 }
 
 function buildDestructuringAssignment(
   node: AssignmentExpression,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
   statementContext: boolean,
@@ -584,7 +532,7 @@ function buildDestructuringAssignment(
 function buildAssignmentRight(
   node: AssignmentExpression,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
@@ -623,7 +571,7 @@ function buildAssignmentRight(
 function findTDZAssignmentTarget(
   left: AST.Pattern | MemberExpression,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
 ): string | undefined {
   if (left.type === "Identifier") {
     const declarationId = functionBuilder.getDeclarationId(left.name, scope);

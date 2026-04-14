@@ -2,7 +2,7 @@ import type { Function } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { FunctionDeclarationOp } from "../../../ir/ops/func/FunctionDeclaration";
 import { type Scope, type ScopeMap } from "../../scope/Scope";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { isBindingOwnedByScope } from "./isBindingOwnedByScope";
 import { isContextVariable } from "./isContextVariable";
@@ -16,7 +16,7 @@ export function registerFunctionDeclarationBinding(
   scope: Scope,
   _scopeMap: ScopeMap,
   node: Function,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ) {
   const functionName = node.id;
@@ -64,7 +64,7 @@ export function initializeFunctionDeclaration(
   scope: Scope,
   scopeMap: ScopeMap,
   node: Function,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
   moduleBuilder: ModuleIRBuilder,
 ) {
@@ -95,7 +95,7 @@ export function initializeFunctionDeclaration(
     throw new Error("Function declarations must have a body");
   }
   const fnScope = scopeMap.get(node) ?? scope;
-  const functionIRBuilder = new FunctionIRBuilder(
+  const funcOpBuilder = new FuncOpBuilder(
     params,
     body,
     fnScope,
@@ -104,16 +104,17 @@ export function initializeFunctionDeclaration(
     moduleBuilder,
     node.async ?? false,
     node.generator ?? false,
+    functionBuilder.funcOpId,
   );
-  const functionIR = functionIRBuilder.build();
+  const funcOp = funcOpBuilder.build();
 
-  functionBuilder.propagateCapturesFrom(functionIRBuilder);
-  const capturedPlaces = [...functionIRBuilder.captures.values()];
+  functionBuilder.propagateCapturesFrom(funcOpBuilder);
+  const capturedPlaces = [...funcOpBuilder.captures.values()];
 
   const instruction = environment.createOperation(
     FunctionDeclarationOp,
     identifierPlace,
-    functionIR,
+    funcOp,
     node.generator ?? false,
     node.async ?? false,
     capturedPlaces,

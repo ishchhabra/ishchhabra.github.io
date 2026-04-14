@@ -1,25 +1,23 @@
 import * as t from "@babel/types";
 import { BlockId } from "../../ir";
-import { FunctionIR } from "../../ir/core/FunctionIR";
+import { FuncOp } from "../../ir/core/FuncOp";
 import { CodeGenerator } from "../CodeGenerator";
-import { generateBackEdge } from "./generateBackEdge";
 import { generateOp } from "./ops/generateOp";
-import { generateStructure } from "./structures/generateStructure";
-import { generateTerminal } from "./terminals/generateTerminal";
 
+/**
+ * Walk a basic block's op stream and emit JS statements for each op,
+ * uniformly. Every op — regular instruction, structured op, or
+ * terminator — flows through {@link generateOp}, which routes by
+ * trait. There is no separate "structure" or "terminator" phase:
+ * structured ops live inline in `_ops` and produce their JS
+ * statements at their position in the sequence.
+ */
 export function generateBlock(
   blockId: BlockId,
-  functionIR: FunctionIR,
+  funcOp: FuncOp,
   generator: CodeGenerator,
 ): Array<t.Statement> {
   if (generator.generatedBlocks.has(blockId)) {
-    // Some blocks are referenced from multiple code paths (e.g. the update
-    // block in a `for` loop is reached by both the normal body fall-through
-    // and any `continue` statements). Return cloned cached statements so
-    // the block's code is correctly inlined at each reference site.
-    // Safe because back-edge blocks (loop headers) return early from
-    // generateBasicBlock before blockToStatements is set, so they will
-    // never be duplicated here.
     const cached = generator.blockToStatements.get(blockId);
     if (cached !== undefined && cached.length > 0) {
       return cached.map((stmt) => t.cloneNode(stmt, true));
@@ -29,46 +27,24 @@ export function generateBlock(
 
   generator.generatedBlocks.add(blockId);
 
-  const block = functionIR.maybeBlock(blockId);
-  if (block === undefined) {
-    throw new Error(`Block ${blockId} not found`);
-  }
-
-  const statements = generateBasicBlock(blockId, functionIR, generator);
+  const statements = generateBasicBlock(blockId, funcOp, generator);
   generator.blockToStatements.set(blockId, statements);
   return statements;
 }
 
 export function generateBasicBlock(
   blockId: BlockId,
-  functionIR: FunctionIR,
+  funcOp: FuncOp,
   generator: CodeGenerator,
 ): Array<t.Statement> {
-  const block = functionIR.maybeBlock(blockId);
+  const block = funcOp.maybeBlock(blockId);
   if (block === undefined) {
     throw new Error(`Block ${blockId} not found`);
   }
 
   const statements: Array<t.Statement> = [];
-
-  const structure = functionIR.structures.get(blockId);
-  if (structure) {
-    statements.push(...generateStructure(structure, functionIR, generator));
-    generator.blockToStatements.set(blockId, statements);
-    return statements;
-  }
-
-  for (const instruction of block.operations) {
-    statements.push(...generateOp(instruction, functionIR, generator));
-  }
-
-  if (generator.getLoopInfo(functionIR).getBackEdgePredecessors(blockId).size > 0) {
-    return generateBackEdge(blockId, functionIR, generator);
-  }
-
-  const terminal = block.terminal;
-  if (terminal !== undefined) {
-    statements.push(...generateTerminal(terminal, functionIR, generator));
+  for (const op of block.getAllOps()) {
+    statements.push(...generateOp(op, funcOp, generator));
   }
 
   generator.blockToStatements.set(blockId, statements);

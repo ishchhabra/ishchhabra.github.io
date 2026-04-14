@@ -5,30 +5,30 @@ import type * as AST from "../estree";
 import { type Scope } from "../scope/Scope";
 import { instantiateFunctionParamBindings } from "./bindings/instantiateFunctionParamBindings";
 import { buildNode } from "./buildNode";
-import { FunctionIRBuilder } from "./FunctionIRBuilder";
+import { FuncOpBuilder } from "./FuncOpBuilder";
 import { getValueFromStaticKey } from "./getValueFromStaticKey";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
 
 export interface BuiltFunctionParam {
   place: Place;
   target: DestructureTarget;
-  paramBindings: Place[];
 }
 
 /**
- * One formal parameter after lowering: the runtime param root `place`, the
- * source-level param `target`, and the leaf bindings defined by the param.
+ * One formal parameter after lowering: the runtime param root `place`
+ * and the source-level param `target`. The leaf binding Places are
+ * discoverable on demand by walking `target` via
+ * {@link collectDestructureTargetBindingPlaces}; nothing caches them.
  */
 interface ParamBuildResult {
   place: Place;
   target: DestructureTarget;
-  paramBindings: Place[];
 }
 
 export function buildFunctionParams(
   params: AST.Pattern[],
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): BuiltFunctionParam[] {
@@ -36,14 +36,14 @@ export function buildFunctionParams(
 
   return params.map((param) => {
     const result = buildFunctionParam(param, scope, functionBuilder, moduleBuilder, environment);
-    return { place: result.place, target: result.target, paramBindings: result.paramBindings };
+    return { place: result.place, target: result.target };
   });
 }
 
 function buildFunctionParam(
   param: AST.Pattern,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): ParamBuildResult {
@@ -87,7 +87,7 @@ function buildFunctionParam(
 function buildFunctionIdentifierParam(
   node: AST.Identifier,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ): ParamBuildResult {
   const place = buildFunctionIdentifierParamPlace(node, scope, functionBuilder, environment);
@@ -100,19 +100,17 @@ function buildFunctionIdentifierParam(
       place,
       storage: environment.contextDeclarationIds.has(declarationId) ? "context" : "local",
     },
-    paramBindings: [place],
   };
 }
 
 function buildFunctionArrayPatternParam(
   node: AST.ArrayPattern,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): ParamBuildResult {
   const paramPlace = environment.createPlace(environment.createIdentifier());
-  const paramBindings: Place[] = [];
   const elements = node.elements.map((element) => {
     // Holes in array patterns (e.g. `function([,b]){}`) are structural markers
     // in the pattern shape, not values in the data-flow graph.
@@ -121,25 +119,22 @@ function buildFunctionArrayPatternParam(
     }
 
     const result = buildFunctionParam(element, scope, functionBuilder, moduleBuilder, environment);
-    paramBindings.push(...result.paramBindings);
     return result.target;
   });
   return {
     place: paramPlace,
     target: { kind: "array", elements },
-    paramBindings,
   };
 }
 
 function buildFunctionObjectPatternParam(
   node: AST.ObjectPattern,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): ParamBuildResult {
   const place = environment.createPlace(environment.createIdentifier());
-  const paramBindings: Place[] = [];
   const properties: DestructureObjectProperty[] = node.properties.map((property) => {
     if (property.type === "Property") {
       let key: string | number | Place;
@@ -166,7 +161,6 @@ function buildFunctionObjectPatternParam(
         moduleBuilder,
         environment,
       );
-      paramBindings.push(...valueResult.paramBindings);
       return {
         key,
         computed: property.computed,
@@ -183,7 +177,6 @@ function buildFunctionObjectPatternParam(
         moduleBuilder,
         environment,
       );
-      paramBindings.push(...argumentResult.paramBindings);
       return {
         key: "rest",
         computed: false,
@@ -200,7 +193,6 @@ function buildFunctionObjectPatternParam(
   return {
     place,
     target: { kind: "object", properties },
-    paramBindings,
   };
 }
 
@@ -217,7 +209,7 @@ function buildFunctionObjectPropertyKey(keyNode: Expression | PrivateIdentifier)
 function buildFunctionAssignmentPatternParam(
   node: AST.AssignmentPattern,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): ParamBuildResult {
@@ -245,14 +237,13 @@ function buildFunctionAssignmentPatternParam(
       left: leftResult.target,
       right: rightPlace,
     },
-    paramBindings: leftResult.paramBindings,
   };
 }
 
 function buildFunctionRestElementParam(
   node: AST.RestElement,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): ParamBuildResult {
@@ -269,14 +260,13 @@ function buildFunctionRestElementParam(
       kind: "rest",
       argument: argumentResult.target,
     },
-    paramBindings: argumentResult.paramBindings,
   };
 }
 
 function buildFunctionIdentifierParamPlace(
   node: AST.Identifier,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ): Place {
   const name = node.name;

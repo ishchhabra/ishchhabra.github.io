@@ -6,16 +6,15 @@ import { ClassExpressionOp } from "../../../ir/ops/class/ClassExpression";
 import { type Scope } from "../../scope/Scope";
 import { buildClassBody } from "../buildClassElements";
 import { buildNode } from "../buildNode";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildClassDeclaration(
   node: Class,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-  options: { emit?: boolean } = {},
 ) {
   if (node.decorators && node.decorators.length > 0) {
     throw new Error("Unsupported: class decorators");
@@ -55,8 +54,6 @@ export function buildClassDeclaration(
     environment,
   );
 
-  const emit = options.emit !== false;
-
   // Context (`let`) class bindings must stay as expression + assignment — there
   // is no `let class Foo {}` form in JS.
   const isContext = environment.contextDeclarationIds.has(declarationId);
@@ -93,7 +90,6 @@ export function buildClassDeclaration(
     identifierPlace,
     superClassPlace,
     elements,
-    emit,
   );
   functionBuilder.addOp(classDecl);
   environment.registerDeclarationOp(identifierPlace, classDecl);

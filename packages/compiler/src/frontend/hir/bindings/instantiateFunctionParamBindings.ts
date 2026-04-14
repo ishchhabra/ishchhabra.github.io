@@ -2,13 +2,13 @@ import type * as AST from "../../estree";
 import type { Node } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { type Scope } from "../../scope/Scope";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { isContextVariable } from "./isContextVariable";
 
 export function instantiateFunctionParamBindings(
   params: AST.Pattern[],
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ) {
   for (const param of params) {
@@ -19,7 +19,7 @@ export function instantiateFunctionParamBindings(
 function instantiateParamBinding(
   node: AST.Pattern,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ) {
   if (node.type === "Identifier") {
@@ -71,7 +71,7 @@ function instantiateParamBinding(
 function instantiateIdentifierParamBinding(
   node: AST.Identifier,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ) {
   const originalName = node.name;

@@ -1,1 +1,1 @@
-console.log(10);
+console.log((($1_0) => $1_0 * 2)(5));

@@ -1,9 +1,9 @@
 import { OperationId } from "../../core";
 import { Identifier, Place } from "../../core";
-import { FunctionIR } from "../../core/FunctionIR";
+import { FuncOp } from "../../core/FuncOp";
 
 import { Operation } from "../../core/Operation";
-import type { CloneContext } from "../../core/Operation";
+import { makeCloneContext, type CloneContext } from "../../core/Operation";
 /**
  * Represents a class field (a.k.a. public class property).
  *
@@ -21,7 +21,7 @@ import type { CloneContext } from "../../core/Operation";
  * Keeping fields as first-class IR nodes lets codegen emit the original
  * class-field syntax and delegates those semantics to the JS runtime.
  *
- * The initializer is stored as its own {@link FunctionIR} "thunk" so
+ * The initializer is stored as its own {@link FuncOp} "thunk" so
  * that capture analysis and per-instance evaluation work naturally.
  * Codegen extracts the thunk's single return expression and plants it
  * into the emitted `t.classProperty` node. For an uninitialized field
@@ -36,7 +36,7 @@ export class ClassPropertyOp extends Operation {
     id: OperationId,
     public override readonly place: Place,
     public readonly key: Place,
-    public readonly value: FunctionIR | null,
+    public readonly value: FuncOp | null,
     public readonly computed: boolean,
     public readonly isStatic: boolean,
     public readonly captures: Place[] = [],
@@ -52,7 +52,7 @@ export class ClassPropertyOp extends Operation {
       ClassPropertyOp,
       place,
       this.key,
-      this.value,
+      this.value === null ? null : this.value.clone(makeCloneContext(moduleIR)),
       this.computed,
       this.isStatic,
       this.captures,

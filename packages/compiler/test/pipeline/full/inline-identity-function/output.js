@@ -1,4 +1,4 @@
 function $0_0($1_0) {
   return $1_0;
 }
-console.log(42);
+console.log($0_0(42));

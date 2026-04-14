@@ -1,12 +1,17 @@
-Number.isFinite;
-Math.floor;
-Number.isNaN;
-Object.is;
-Number.isInteger;
-Number.isSafeInteger;
-Math.max;
-Math.pow;
-String.fromCharCode;
-Date.parse;
-JSON.parse;
-console.log(true, true, 4, 10, true, true, true, true, 7, 32, "AB", "a%20b", 0, true, 5);
+console.log(
+  Number.isFinite(parseFloat("3.5")),
+  isFinite("4"),
+  Math.floor(4.9),
+  parseInt("10", 10),
+  Number.isNaN(NaN),
+  Object.is(-0, -0),
+  Number.isInteger(8),
+  Number.isSafeInteger(42),
+  Math.max(1, 7, 3),
+  Math.pow(2, 5),
+  String.fromCharCode(65, 66),
+  encodeURIComponent("a b"),
+  Date.parse("1970-01-01T00:00:00.000Z"),
+  JSON.parse("true"),
+  Number("5"),
+);

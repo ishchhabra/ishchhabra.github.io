@@ -15,7 +15,7 @@ import {
   UnaryExpressionOp,
   makeOperationId,
 } from "../../../ir";
-import { FunctionIR } from "../../../ir/core/FunctionIR";
+import { FuncOp } from "../../../ir/core/FuncOp";
 import { Place } from "../../../ir/core/Place";
 import { SpreadElementOp } from "../../../ir/ops/prim/SpreadElement";
 import { StoreDynamicPropertyOp } from "../../../ir/ops/prop/StoreDynamicProperty";
@@ -102,11 +102,11 @@ import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
  */
 export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
   constructor(
-    protected readonly functionIR: FunctionIR,
+    protected readonly funcOp: FuncOp,
     private readonly environment: Environment,
     private readonly AM: AnalysisManager,
   ) {
-    super(functionIR);
+    super(funcOp);
   }
 
   protected step(): OptimizationResult {
@@ -127,7 +127,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
   private stepDestructuring(): boolean {
     let changed = false;
 
-    for (const block of this.functionIR.allBlocks()) {
+    for (const block of this.funcOp.allBlocks()) {
       for (let i = 0; i < block.operations.length; i++) {
         const instr = block.operations[i];
         let valuePlace: Place;
@@ -179,7 +179,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
   // ---------------------------------------------------------------------------
 
   private stepMemberAccess(): boolean {
-    const escapeResult = this.AM.get(EscapeAnalysis, this.functionIR);
+    const escapeResult = this.AM.get(EscapeAnalysis, this.funcOp);
 
     // 1. Find non-escaping, unmodified object literals.
     const candidates = new Map<
@@ -187,7 +187,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
       { objExpr: ObjectExpressionOp; propMap: Map<string, Place> }
     >();
 
-    for (const block of this.functionIR.allBlocks()) {
+    for (const block of this.funcOp.allBlocks()) {
       for (const instr of block.operations) {
         if (!(instr instanceof ObjectExpressionOp)) continue;
         if (!escapeResult.doesNotEscape(instr.place.identifier.id)) continue;
@@ -210,7 +210,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
     const rewrites = new Map<Identifier, Place>();
     const toRemove = new Map<BasicBlock, number[]>();
 
-    for (const block of this.functionIR.allBlocks()) {
+    for (const block of this.funcOp.allBlocks()) {
       for (let i = 0; i < block.operations.length; i++) {
         const instr = block.operations[i];
         if (!(instr instanceof LoadStaticPropertyOp)) continue;
@@ -245,21 +245,13 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
       }
     }
 
-    // 4. Rewrite all uses of the removed loads to point to the property values.
-    for (const block of this.functionIR.allBlocks()) {
+    // 4. Rewrite all uses of the removed loads to point to the property
+    //    values. `block.rewriteAll` walks terminators too — including
+    //    their block-args edge operands — so no separate merge-value
+    //    fixup is needed.
+    for (const block of this.funcOp.allBlocks()) {
       block.rewriteAll(rewrites);
     }
-
-    // Also rewrite phi operands.
-    for (const phi of this.functionIR.phis) {
-      for (const [blockId, place] of phi.operands) {
-        const rewritten = rewrites.get(place.identifier);
-        if (rewritten) {
-          phi.operands.set(blockId, rewritten);
-        }
-      }
-    }
-
     return true;
   }
 
@@ -297,7 +289,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
   private removeModifiedObjects(
     candidates: Map<IdentifierId, { objExpr: ObjectExpressionOp; propMap: Map<string, Place> }>,
   ): void {
-    for (const block of this.functionIR.allBlocks()) {
+    for (const block of this.funcOp.allBlocks()) {
       for (const instr of block.operations) {
         // Direct property stores.
         if (instr instanceof StoreStaticPropertyOp || instr instanceof StoreDynamicPropertyOp) {
@@ -338,11 +330,11 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
    * carried across control-flow edges.
    */
   private stepStoreToLoadForwarding(): boolean {
-    const escapeResult = this.AM.get(EscapeAnalysis, this.functionIR);
+    const escapeResult = this.AM.get(EscapeAnalysis, this.funcOp);
     const rewrites = new Map<Identifier, Place>();
     const toRemove = new Map<BasicBlock, number[]>();
 
-    for (const block of this.functionIR.allBlocks()) {
+    for (const block of this.funcOp.allBlocks()) {
       // Virtual state: objectId → (propertyKey → current value Place)
       const virtualState = new Map<IdentifierId, Map<string, Place>>();
 
@@ -433,19 +425,12 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
     }
 
     // Rewrite all uses of forwarded loads to the property values.
-    for (const block of this.functionIR.allBlocks()) {
+    // `block.rewriteAll` walks terminators too, so the block-args
+    // edge operands are rewritten in the same sweep; we just rebuild
+    // phis from the updated block args afterward.
+    for (const block of this.funcOp.allBlocks()) {
       block.rewriteAll(rewrites);
     }
-
-    for (const phi of this.functionIR.phis) {
-      for (const [blockId, place] of phi.operands) {
-        const rewritten = rewrites.get(place.identifier);
-        if (rewritten) {
-          phi.operands.set(blockId, rewritten);
-        }
-      }
-    }
-
     return true;
   }
 
@@ -464,10 +449,10 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
    * can be safely removed.
    */
   private stepDeadPropertyLoadElimination(): boolean {
-    const escapeResult = this.AM.get(EscapeAnalysis, this.functionIR);
+    const escapeResult = this.AM.get(EscapeAnalysis, this.funcOp);
     const toRemove = new Map<BasicBlock, number[]>();
 
-    for (const block of this.functionIR.allBlocks()) {
+    for (const block of this.funcOp.allBlocks()) {
       for (let i = 0; i < block.operations.length; i++) {
         const instr = block.operations[i];
 

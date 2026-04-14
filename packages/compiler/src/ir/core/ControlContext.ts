@@ -1,24 +1,42 @@
 import { BlockId } from "./Block";
 
 /**
- * Frontend control stack entry. Tracks the closest enclosing
- * loop / switch / labeled block that a `break` / `continue` statement
- * can target.
+ * Control stack entry for `break` / `continue` resolution.
  *
- * The `structured` flag distinguishes structured ops (BlockOp,
- * LabeledBlockOp, ForOfOp, ForInOp) — which CFG analysis resolves via
- * region-based structural successors and which therefore use
- * `BreakOp` / `ContinueOp` — from flat constructs (while, for, do-while,
- * switch) which still use raw `JumpOp(target)` because they have no
- * enclosing structure op for the analysis to walk up to.
+ * Frontend: tracks the closest enclosing loop / switch / labeled
+ * block that a source-level `break` / `continue` can target. A
+ * `structured` flag indicates whether break/continue should be
+ * emitted as a structural `BreakOp` / `ContinueOp` (resolved via
+ * region walk at analysis time) or as a raw `JumpOp` to an explicit
+ * block id (for constructs with internal back-edges that need
+ * targeted jumps).
+ *
+ * Backend: tracks the same, for label selection during codegen.
+ *
+ * Under the textbook MLIR model every structured control-flow op
+ * (IfOp, WhileOp, ForInOp, ForOfOp, BlockOp, LabeledBlockOp,
+ * SwitchOp, TryOp) is inline in its parent block — there are no
+ * explicit fallthrough blocks — so `breakTarget` / `continueTarget`
+ * are `undefined` for structured entries. Legacy flat entries keep
+ * the explicit BlockId fields.
  */
 export type ControlContext =
   | {
       kind: "loop";
       label?: string;
-      breakTarget: BlockId;
-      continueTarget: BlockId;
+      breakTarget: BlockId | undefined;
+      continueTarget: BlockId | undefined;
       structured?: boolean;
     }
-  | { kind: "switch"; label?: string; breakTarget: BlockId; structured?: boolean }
-  | { kind: "label"; label: string; breakTarget: BlockId; structured?: boolean };
+  | {
+      kind: "switch";
+      label?: string;
+      breakTarget: BlockId | undefined;
+      structured?: boolean;
+    }
+  | {
+      kind: "label";
+      label: string;
+      breakTarget: BlockId | undefined;
+      structured?: boolean;
+    };

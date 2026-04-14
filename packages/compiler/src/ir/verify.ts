@@ -1,5 +1,5 @@
 /**
- * Whole-function IR verification. Walks every op in a {@link FunctionIR}
+ * Whole-function IR verification. Walks every op in a {@link FuncOp}
  * and calls `op.verify()` on each. Also asserts function-level
  * invariants like "every block has a terminal" and "every block id in
  * a terminal's getBlockRefs() is a known block".
@@ -9,26 +9,29 @@
  * violation with a descriptive error.
  */
 import type { BlockId } from "./core/Block";
-import type { FunctionIR } from "./core/FunctionIR";
+import type { FuncOp } from "./core/FuncOp";
 import { Operation, VerifyError } from "./core/Operation";
 
-export function verifyFunction(functionIR: FunctionIR): void {
-  const blockIds = new Set<BlockId>(functionIR.blockIds());
+export function verifyFunction(funcOp: FuncOp): void {
+  const blockIds = new Set<BlockId>(funcOp.blockIds());
 
-  // 1. Every op verifies itself.
+  // 1. Every op verifies itself. Block params live on each block
+  //    directly (not as ops), so they have no `verify()` to call —
+  //    use-chain registration happens at construction. Any
+  //    verification of param liveness is covered by LivenessAnalysis.
   const verifyOp = (op: Operation) => {
     op.verify();
   };
-  for (const op of functionIR.source.header) verifyOp(op);
-  for (const op of functionIR.runtime.prologue) verifyOp(op);
-  for (const block of functionIR.allBlocks()) {
+  for (const op of funcOp.prologue) verifyOp(op);
+  for (const block of funcOp.allBlocks()) {
+    // `getAllOps` yields every op in the block — all ordinary
+    // instructions plus the terminator. Structured ops are
+    // ordinary ops under the textbook MLIR model.
     for (const op of block.getAllOps()) verifyOp(op);
   }
-  for (const phi of functionIR.phis) verifyOp(phi);
-  for (const structure of functionIR.structures.values()) verifyOp(structure);
 
   // 2. Every block has a terminal.
-  for (const block of functionIR.allBlocks()) {
+  for (const block of funcOp.allBlocks()) {
     if (block.terminal === undefined) {
       throw new Error(`IR verify: block bb${block.id} has no terminal`);
     }
@@ -40,12 +43,9 @@ export function verifyFunction(functionIR: FunctionIR): void {
       throw new VerifyError(op, `references non-existent block bb${ref}`);
     }
   };
-  for (const block of functionIR.allBlocks()) {
-    if (block.terminal) {
-      for (const ref of block.terminal.getBlockRefs()) checkBlockRef(block.terminal, ref);
+  for (const block of funcOp.allBlocks()) {
+    for (const op of block.getAllOps()) {
+      for (const ref of op.getBlockRefs()) checkBlockRef(op, ref);
     }
-  }
-  for (const structure of functionIR.structures.values()) {
-    for (const ref of structure.getBlockRefs()) checkBlockRef(structure, ref);
   }
 }

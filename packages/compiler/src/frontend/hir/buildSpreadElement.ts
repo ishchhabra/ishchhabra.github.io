@@ -2,14 +2,14 @@ import type { SpreadElement } from "oxc-parser";
 import { Environment } from "../../environment";
 import { Place, SpreadElementOp } from "../../ir";
 import { type Scope } from "../scope/Scope";
-import { FunctionIRBuilder } from "./FunctionIRBuilder";
+import { FuncOpBuilder } from "./FuncOpBuilder";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
 import { buildNode } from "./buildNode";
 
 export function buildSpreadElement(
   node: SpreadElement,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {

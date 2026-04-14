@@ -5,7 +5,7 @@ import type * as AST from "../estree";
 import { type Scope } from "../scope/Scope";
 import { buildMemberReference } from "./expressions/buildMemberReference";
 import { buildNode } from "./buildNode";
-import { FunctionIRBuilder } from "./FunctionIRBuilder";
+import { FuncOpBuilder } from "./FuncOpBuilder";
 import { getValueFromStaticKey } from "./getValueFromStaticKey";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
 
@@ -16,7 +16,7 @@ export type LValMode =
 export function buildLVal(
   node: AST.Pattern | MemberExpression,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
   mode: LValMode,
@@ -94,7 +94,7 @@ export function buildLVal(
 function buildIdentifierLVal(
   node: AST.Identifier,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
   mode: LValMode,
 ): DestructureTarget {
@@ -167,7 +167,7 @@ function buildIdentifierLVal(
 function buildMemberExpressionLVal(
   node: MemberExpression,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): DestructureTarget {
@@ -190,7 +190,7 @@ function buildMemberExpressionLVal(
 function buildObjectPropertyLVal(
   property: AST.Property | AST.RestElement,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
   mode: LValMode,
@@ -242,7 +242,7 @@ function buildStaticPropertyKey(node: Expression | PrivateIdentifier): string | 
 function buildComputedPropertyKey(
   node: AST.Property["key"],
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
@@ -262,7 +262,7 @@ function buildComputedPropertyKey(
 function buildRequiredPlace(
   node: Expression,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
   message: string,

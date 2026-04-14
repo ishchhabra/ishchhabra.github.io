@@ -12,14 +12,14 @@ import {
 } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { throwTDZAccessError } from "../buildIdentifier";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildMemberExpressionUpdate } from "./buildMemberExpression";
 
 export function buildUpdateExpression(
   node: UpdateExpression,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {

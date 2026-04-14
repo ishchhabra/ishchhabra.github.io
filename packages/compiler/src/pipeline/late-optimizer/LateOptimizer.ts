@@ -1,5 +1,5 @@
 import { CompilerOptions } from "../../compile";
-import { FunctionIR } from "../../ir/core/FunctionIR";
+import { FuncOp } from "../../ir/core/FuncOp";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { LateConstantPropagationPass } from "./passes/LateConstantPropagationPass";
@@ -25,7 +25,7 @@ interface LateOptimizerResult {
 export class LateOptimizer {
   constructor(
     private readonly moduleIR: ModuleIR,
-    private readonly functionIR: FunctionIR,
+    private readonly funcOp: FuncOp,
     private readonly options: CompilerOptions,
     private readonly AM: AnalysisManager,
   ) {}
@@ -38,39 +38,39 @@ export class LateOptimizer {
       iterationChanged = false;
 
       if (this.options.enableLateConstantPropagationPass) {
-        if (new LateConstantPropagationPass(this.functionIR, this.AM).run().changed) {
+        if (new LateConstantPropagationPass(this.funcOp, this.AM).run().changed) {
           iterationChanged = true;
-          this.AM.invalidateFunction(this.functionIR);
+          this.AM.invalidateFunction(this.funcOp);
         }
       }
 
       if (this.options.enableLateCopyPropagationPass) {
-        if (new LateCopyPropagationPass(this.functionIR, this.AM).run().changed) {
+        if (new LateCopyPropagationPass(this.funcOp, this.AM).run().changed) {
           iterationChanged = true;
-          this.AM.invalidateFunction(this.functionIR);
+          this.AM.invalidateFunction(this.funcOp);
         }
       }
 
       if (this.options.enableLateCopyFoldingPass) {
-        if (new LateCopyFoldingPass(this.functionIR).run().changed) {
+        if (new LateCopyFoldingPass(this.funcOp).run().changed) {
           iterationChanged = true;
-          this.AM.invalidateFunction(this.functionIR);
+          this.AM.invalidateFunction(this.funcOp);
         }
       }
 
       if (this.options.enableLateCopyCoalescingPass) {
-        if (new LateCopyCoalescingPass(this.functionIR).run().changed) {
+        if (new LateCopyCoalescingPass(this.funcOp).run().changed) {
           iterationChanged = true;
-          this.AM.invalidateFunction(this.functionIR);
+          this.AM.invalidateFunction(this.funcOp);
         }
       }
 
       if (this.options.enableLateDeadCodeEliminationPass) {
         if (
-          new LateDeadCodeEliminationPass(this.functionIR, this.moduleIR.environment).run().changed
+          new LateDeadCodeEliminationPass(this.funcOp, this.moduleIR.environment).run().changed
         ) {
           iterationChanged = true;
-          this.AM.invalidateFunction(this.functionIR);
+          this.AM.invalidateFunction(this.funcOp);
         }
       }
 

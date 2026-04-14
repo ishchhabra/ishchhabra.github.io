@@ -1,9 +1,9 @@
 import { OperationId } from "../../core";
 import { Identifier, Place } from "../../core";
-import { FunctionIR } from "../../core/FunctionIR";
+import { FuncOp } from "../../core/FuncOp";
 
 import { Operation } from "../../core/Operation";
-import type { CloneContext } from "../../core/Operation";
+import { makeCloneContext, type CloneContext } from "../../core/Operation";
 /**
  * Represents a class method in the IR.
  *
@@ -15,7 +15,7 @@ import type { CloneContext } from "../../core/Operation";
  *
  * Mirrors {@link ObjectMethodOp} but adds the `static` flag and the
  * "constructor" kind. As with object methods, the body is its own
- * {@link FunctionIR} so existing function-level optimizations apply
+ * {@link FuncOp} so existing function-level optimizations apply
  * uniformly. Non-computed keys are stored as a `Place` referencing a
  * {@link LiteralOp}, matching the convention in
  * {@link ObjectPropertyOp}.
@@ -25,7 +25,7 @@ export class ClassMethodOp extends Operation {
     id: OperationId,
     public override readonly place: Place,
     public readonly key: Place,
-    public readonly body: FunctionIR,
+    public readonly body: FuncOp,
     public readonly kind: "constructor" | "method" | "get" | "set",
     public readonly computed: boolean,
     public readonly isStatic: boolean,
@@ -44,7 +44,7 @@ export class ClassMethodOp extends Operation {
       ClassMethodOp,
       place,
       this.key,
-      this.body,
+      this.body.clone(makeCloneContext(moduleIR)),
       this.kind,
       this.computed,
       this.isStatic,

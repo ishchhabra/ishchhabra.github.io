@@ -1,2 +1,2 @@
 let $0_0 = undefined;
-const $1_0 = true;
+const $1_0 = $0_0 === undefined;

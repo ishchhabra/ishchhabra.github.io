@@ -1,4 +1,4 @@
-import { FunctionIR } from "../../core/FunctionIR";
+import { FuncOp } from "../../core/FuncOp";
 import { Identifier, Place } from "../../core";
 
 import { Operation } from "../../core/Operation";
@@ -7,11 +7,10 @@ export class FunctionDeclarationOp extends Operation {
   constructor(
     public readonly id: import("../../core").OperationId,
     public override readonly place: Place,
-    public readonly functionIR: FunctionIR,
+    public readonly funcOp: FuncOp,
     public readonly generator: boolean,
     public readonly async: boolean,
     public readonly captures: Place[] = [],
-    public emit = true,
   ) {
     super(id);
   }
@@ -24,16 +23,15 @@ export class FunctionDeclarationOp extends Operation {
     // can't collide at codegen time.
     const identifier = moduleIR.environment.createIdentifier();
     const place = moduleIR.environment.createPlace(identifier);
-    // Recursively deep-clone the nested FunctionIR into the same target
+    // Recursively deep-clone the nested FuncOp into the same target
     // module so the cloned declaration owns an independent body.
     return moduleIR.environment.createOperation(
       FunctionDeclarationOp,
       place,
-      this.functionIR.clone(makeCloneContext(moduleIR)),
+      this.funcOp.clone(makeCloneContext(moduleIR)),
       this.generator,
       this.async,
       this.captures,
-      this.emit,
     );
   }
 
@@ -47,11 +45,10 @@ export class FunctionDeclarationOp extends Operation {
     return new FunctionDeclarationOp(
       this.id,
       this.place,
-      this.functionIR,
+      this.funcOp,
       this.generator,
       this.async,
       newCaptures,
-      this.emit,
     );
   }
 

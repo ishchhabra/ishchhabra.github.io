@@ -1,18 +1,10 @@
 let $0_0 = 0;
-let $27_phi_34 = undefined;
-$27_phi_34 = $0_0;
-outer: while ($27_phi_34 < 3) {
-  let $5_0 = 0;
-  let $28_phi_35 = undefined;
-  $28_phi_35 = $5_0;
-  while ($28_phi_35 < 3) {
-    if ($28_phi_35 === 1) {
+outer: for (; $0_0 < 3; $0_0 = $0_0 + 1) {
+  let $6_0 = 0;
+  for (; $6_0 < 3; $6_0 = $6_0 + 1) {
+    if ($6_0 === 1) {
       break outer;
     }
-    console.log($27_phi_34, $28_phi_35);
-    $5_0 = $28_phi_35 + 1;
-    $28_phi_35 = $5_0;
+    console.log($0_0, $6_0);
   }
-  $0_0 = $27_phi_34 + 1;
-  $27_phi_34 = $0_0;
 }

@@ -7,7 +7,9 @@ import {
   StoreLocalOp,
   TPrimitiveValue,
 } from "../../../ir";
-import { FunctionIR } from "../../../ir/core/FunctionIR";
+import { BasicBlock } from "../../../ir/core/Block";
+import { FuncOp } from "../../../ir/core/FuncOp";
+import { Trait } from "../../../ir/core/Operation";
 import { AnalysisManager } from "../../analysis/AnalysisManager";
 import { ControlFlowGraphAnalysis } from "../../analysis/ControlFlowGraphAnalysis";
 import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
@@ -29,10 +31,10 @@ import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
  */
 export class LateConstantPropagationPass extends BaseOptimizationPass {
   constructor(
-    protected readonly functionIR: FunctionIR,
+    protected readonly funcOp: FuncOp,
     private readonly AM: AnalysisManager,
   ) {
-    super(functionIR);
+    super(funcOp);
   }
 
   protected step(): OptimizationResult {
@@ -40,37 +42,11 @@ export class LateConstantPropagationPass extends BaseOptimizationPass {
 
     let changed = false;
 
-    for (const block of this.functionIR.allBlocks()) {
+    for (const block of this.funcOp.allBlocks()) {
       const blockId = block.id;
       const state = this.meet(blockId, outState);
 
-      for (let i = 0; i < block.operations.length; i++) {
-        const instr = block.operations[i];
-
-        // ------------------------------------------------------------
-        // Rewrite loads using known constants
-        // ------------------------------------------------------------
-
-        if (instr instanceof LoadLocalOp) {
-          const decl = instr.value.identifier.declarationId;
-          const value = state.get(decl);
-
-          if (value && value.kind === "const") {
-            const litInstr = new LiteralOp(instr.id, instr.place, value.value);
-
-            block.replaceOp(i, litInstr);
-
-            changed = true;
-            continue;
-          }
-        }
-
-        // ------------------------------------------------------------
-        // Transfer
-        // ------------------------------------------------------------
-
-        this.transfer(instr, state);
-      }
+      if (this.processBlock(block, state)) changed = true;
 
       outState.set(blockId, state);
     }
@@ -78,8 +54,62 @@ export class LateConstantPropagationPass extends BaseOptimizationPass {
     return { changed };
   }
 
+  /**
+   * Walk a block's ops, folding LoadLocal → Literal where the reaching
+   * value is a constant, and updating state via `transfer`.
+   * Structured ops are walked recursively so variables mutated in
+   * nested regions are marked as TOP on return.
+   */
+  private processBlock(block: BasicBlock, state: ConstState): boolean {
+    let changed = false;
+    for (let i = 0; i < block.operations.length; i++) {
+      const instr = block.operations[i];
+
+      if (instr instanceof LoadLocalOp) {
+        const decl = instr.value.identifier.declarationId;
+        const value = state.get(decl);
+        if (value && value.kind === "const") {
+          const litInstr = new LiteralOp(instr.id, instr.place, value.value);
+          block.replaceOp(i, litInstr);
+          changed = true;
+          continue;
+        }
+      }
+
+      if (instr.hasTrait(Trait.HasRegions)) {
+        // Conservative handling: any declaration stored to in any
+        // region becomes TOP in the parent state.
+        for (const decl of this.collectStoredDecls(instr)) {
+          state.set(decl, TOP);
+        }
+        continue;
+      }
+
+      this.transfer(instr, state);
+    }
+    return changed;
+  }
+
+  private collectStoredDecls(op: Operation): Set<DeclarationId> {
+    const decls = new Set<DeclarationId>();
+    const walk = (inner: Operation) => {
+      if (inner instanceof StoreLocalOp) {
+        decls.add(inner.lval.identifier.declarationId);
+      }
+      if (inner.hasTrait(Trait.HasRegions)) {
+        for (const region of inner.regions) {
+          for (const block of region.blocks) {
+            for (const op2 of block.operations) walk(op2);
+          }
+        }
+      }
+    };
+    walk(op);
+    return decls;
+  }
+
   private meet(blockId: BlockId, outState: Map<BlockId, ConstState>): ConstState {
-    const preds = this.AM.get(ControlFlowGraphAnalysis, this.functionIR).predecessors.get(blockId);
+    const preds = this.AM.get(ControlFlowGraphAnalysis, this.funcOp).predecessors.get(blockId);
 
     if (!preds || preds.size === 0) {
       return new Map();
@@ -110,6 +140,14 @@ export class LateConstantPropagationPass extends BaseOptimizationPass {
   private transfer(instr: Operation, state: ConstState): void {
     if (instr instanceof StoreLocalOp) {
       const x = instr.lval.identifier.declarationId;
+
+      // Only `const` bindings can carry a known literal value — `let`
+      // variables can be reassigned, so their value at any later use
+      // site is not statically knowable from a single store.
+      if (instr.type !== "const") {
+        state.set(x, TOP);
+        return;
+      }
 
       const valueDef = instr.value.identifier.definer;
 

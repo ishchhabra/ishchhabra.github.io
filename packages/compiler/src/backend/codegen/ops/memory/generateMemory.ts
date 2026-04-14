@@ -6,7 +6,6 @@ import {
   LoadDynamicPropertyOp,
   LoadGlobalOp,
   LoadLocalOp,
-  LoadPhiOp,
   ObjectDestructureOp,
   StoreContextOp,
   StoreLocalOp,
@@ -22,7 +21,6 @@ import { generateLoadContextOp } from "./generateLoadContext";
 import { generateLoadDynamicPropertyOp } from "./generateLoadDynamicProperty";
 import { generateLoadGlobalOp } from "./generateLoadGlobal";
 import { generateLoadLocalOp } from "./generateLoadLocal";
-import { generateLoadPhiOp } from "./generateLoadPhi";
 import { generateLoadStaticPropertyOp } from "./generateLoadStaticProperty";
 import { generateObjectDestructureOp } from "./generateObjectDestructure";
 import { generateStoreContextOp } from "./generateStoreContext";
@@ -41,8 +39,6 @@ export function generateMemoryOp(instruction: MemoryOp, generator: CodeGenerator
     return generateLoadGlobalOp(instruction, generator);
   } else if (instruction instanceof LoadLocalOp) {
     return generateLoadLocalOp(instruction, generator);
-  } else if (instruction instanceof LoadPhiOp) {
-    return generateLoadPhiOp(instruction, generator);
   } else if (instruction instanceof LoadStaticPropertyOp) {
     return generateLoadStaticPropertyOp(instruction, generator);
   } else if (instruction instanceof LoadDynamicPropertyOp) {

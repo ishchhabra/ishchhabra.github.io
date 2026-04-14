@@ -16,12 +16,6 @@ import {
   makeDeclarationId,
   makeIdentifierId,
 } from "./ir/core/Identifier";
-import {
-  LexicalScope,
-  makeLexicalScopeId,
-  type LexicalScopeId,
-  type LexicalScopeKind,
-} from "./ir/core/LexicalScope";
 import { makePlaceId, Place, PlaceId } from "./ir/core/Place";
 import { ProjectEnvironment } from "./ProjectEnvironment";
 
@@ -33,16 +27,6 @@ export class Environment {
   public readonly places: Map<PlaceId, Place> = new Map();
   public readonly operations: Map<OperationId, Operation> = new Map();
   public readonly blocks: Map<BlockId, BasicBlock> = new Map();
-  public readonly scopes: Map<LexicalScopeId, LexicalScope> = new Map();
-
-  private nextScopeId = 0;
-
-  public createScope(parent: LexicalScopeId | null, kind: LexicalScopeKind): LexicalScope {
-    const id = makeLexicalScopeId(this.nextScopeId++);
-    const scope = new LexicalScope(id, parent, kind);
-    this.scopes.set(id, scope);
-    return scope;
-  }
 
   /**
    * Maps each `DeclarationId` (representing a declared variable or function name)
@@ -84,7 +68,7 @@ export class Environment {
   contextDeclarationIds: Set<DeclarationId> = new Set();
 
   /**
-   * Per-module counter for function IDs. Unlike other counters, FunctionIRId
+   * Per-module counter for function IDs. Unlike other counters, FuncOpId
    * stays per-module because the codegen assumes the entry function is always
    * ID 0 within each module (see {@link CodeGenerator.entryFunction}).
    */
@@ -149,9 +133,9 @@ export class Environment {
     return op;
   }
 
-  public createBlock(scopeId: LexicalScopeId): BasicBlock {
+  public createBlock(): BasicBlock {
     const blockId = makeBlockId(this.projectEnvironment.nextBlockId++);
-    const block = new BasicBlock(blockId, scopeId, [], undefined);
+    const block = new BasicBlock(blockId, [], undefined);
     this.blocks.set(blockId, block);
     return block;
   }
@@ -175,8 +159,8 @@ export class Environment {
 
     existing.kind = metadata.kind;
     existing.sourceName = metadata.sourceName;
-    if (metadata.scopeId !== undefined) {
-      existing.scopeId = metadata.scopeId;
+    if (metadata.funcOpId !== undefined) {
+      existing.funcOpId = metadata.funcOpId;
     }
     if (metadata.bindingPlaceId !== undefined) {
       existing.bindingPlaceId = metadata.bindingPlaceId;

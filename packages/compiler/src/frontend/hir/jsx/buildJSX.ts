@@ -15,7 +15,7 @@ import type {
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildJSXAttribute } from "./buildJSXAttribute";
 import { buildJSXSpreadAttribute } from "./buildJSXSpreadAttribute";
@@ -47,7 +47,7 @@ type JSXNode =
 export function buildJSX(
   node: JSXNode,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place | undefined {

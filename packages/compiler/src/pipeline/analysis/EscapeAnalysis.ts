@@ -1,4 +1,5 @@
 import {
+  type BlockId,
   CallExpressionOp,
   CopyOp,
   FunctionDeclarationOp,
@@ -6,19 +7,20 @@ import {
   LoadContextOp,
   LoadDynamicPropertyOp,
   LoadLocalOp,
-  LoadPhiOp,
   LoadStaticPropertyOp,
   NewExpressionOp,
   ObjectExpressionOp,
   ArrayExpressionOp,
+  type Place,
   StoreContextOp,
   StoreLocalOp,
   ReturnOp,
   ThrowOp,
 } from "../../ir";
+import { forEachOutgoingEdge } from "../ssa/blockArgs";
 import { StoreStaticPropertyOp } from "../../ir/ops/prop/StoreStaticProperty";
 import { StoreDynamicPropertyOp } from "../../ir/ops/prop/StoreDynamicProperty";
-import { FunctionIR } from "../../ir/core/FunctionIR";
+import { FuncOp } from "../../ir/core/FuncOp";
 import { ArrowFunctionExpressionOp } from "../../ir/ops/func/ArrowFunctionExpression";
 import { FunctionExpressionOp } from "../../ir/ops/func/FunctionExpression";
 import { YieldExpressionOp } from "../../ir/ops/call/YieldExpression";
@@ -79,7 +81,7 @@ export class EscapeAnalysisResult {
  * and `x` escapes, then `y` also escapes. Propagation runs to fixpoint.
  */
 export class EscapeAnalysis extends FunctionAnalysis<EscapeAnalysisResult> {
-  run(functionIR: FunctionIR, _AM: AnalysisManager): EscapeAnalysisResult {
+  run(funcOp: FuncOp, _AM: AnalysisManager): EscapeAnalysisResult {
     const states = new Map<IdentifierId, EscapeState>();
 
     const raise = (id: IdentifierId, state: EscapeState) => {
@@ -102,7 +104,7 @@ export class EscapeAnalysis extends FunctionAnalysis<EscapeAnalysisResult> {
     };
 
     // Phase 1: Walk all instructions and classify uses.
-    for (const block of functionIR.allBlocks()) {
+    for (const block of funcOp.allBlocks()) {
       for (const instr of block.operations) {
         // Ensure every defined identifier has an entry.
         for (const place of instr.getDefs()) {
@@ -117,11 +119,6 @@ export class EscapeAnalysis extends FunctionAnalysis<EscapeAnalysisResult> {
         }
 
         if (instr instanceof LoadLocalOp) {
-          addAlias(instr.value.identifier.id, instr.place.identifier.id);
-          continue;
-        }
-
-        if (instr instanceof LoadPhiOp) {
           addAlias(instr.value.identifier.id, instr.place.identifier.id);
           continue;
         }
@@ -237,6 +234,7 @@ export class EscapeAnalysis extends FunctionAnalysis<EscapeAnalysisResult> {
     }
 
     // Phase 2: Propagate escape states through aliases to fixpoint.
+    const incomingEdgeArgs = buildIncomingEdgeArgsIndex(funcOp);
     let changed = true;
     while (changed) {
       changed = false;
@@ -251,13 +249,24 @@ export class EscapeAnalysis extends FunctionAnalysis<EscapeAnalysisResult> {
         }
       }
 
-      for (const phi of functionIR.phis) {
-        const resultState = states.get(phi.place.identifier.id) ?? EscapeState.NoEscape;
-        for (const [, operand] of phi.operands) {
-          const operandState = states.get(operand.identifier.id) ?? EscapeState.NoEscape;
-          if (resultState > operandState) {
-            states.set(operand.identifier.id, resultState);
-            changed = true;
+      // Block-args propagation: if a block param escapes, every
+      // incoming edge arg at that position escapes too (the param
+      // may forward any of them out of the function).
+      for (const block of funcOp.allBlocks()) {
+        if (block.params.length === 0) continue;
+        const incoming = incomingEdgeArgs.get(block.id);
+        if (incoming === undefined) continue;
+        for (let i = 0; i < block.params.length; i++) {
+          const paramState = states.get(block.params[i].identifier.id) ?? EscapeState.NoEscape;
+          if (paramState === EscapeState.NoEscape) continue;
+          for (const args of incoming) {
+            const arg = args[i];
+            if (arg === undefined) continue;
+            const argState = states.get(arg.identifier.id) ?? EscapeState.NoEscape;
+            if (paramState > argState) {
+              states.set(arg.identifier.id, paramState);
+              changed = true;
+            }
           }
         }
       }
@@ -265,4 +274,27 @@ export class EscapeAnalysis extends FunctionAnalysis<EscapeAnalysisResult> {
 
     return new EscapeAnalysisResult(states);
   }
+}
+
+/**
+ * Index the args lists flowing into each block from every
+ * outgoing edge of every predecessor. A single predecessor may
+ * contribute more than one arg list to the same successor (e.g.
+ * a switch with several cases pointing at the same block).
+ */
+function buildIncomingEdgeArgsIndex(
+  funcOp: FuncOp,
+): Map<BlockId, readonly (readonly Place[])[]> {
+  const index = new Map<BlockId, (readonly Place[])[]>();
+  for (const predBlock of funcOp.allBlocks()) {
+    forEachOutgoingEdge(predBlock, (succId, args) => {
+      let list = index.get(succId);
+      if (list === undefined) {
+        list = [];
+        index.set(succId, list);
+      }
+      list.push(args);
+    });
+  }
+  return index;
 }

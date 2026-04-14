@@ -1,4 +1,4 @@
-import type { LexicalScopeId } from "./LexicalScope";
+import type { FuncOpId } from "./FuncOp";
 import type { PlaceId } from "./Place";
 
 export type DeclarationKind =
@@ -14,7 +14,13 @@ export type DeclarationKind =
 export interface DeclarationMetadata {
   kind: DeclarationKind;
   sourceName: string;
-  scopeId?: LexicalScopeId;
+  /**
+   * The {@link FuncOpId} of the FuncOp that lexically contains this
+   * declaration. Used by the function inliner's visibility check:
+   * walking `FuncOp.parentFuncOpId` gives a simple, LexicalScope-free
+   * ancestry test for captured declarations.
+   */
+  funcOpId?: FuncOpId;
   bindingPlaceId?: PlaceId;
 }
 

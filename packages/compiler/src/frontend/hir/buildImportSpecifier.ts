@@ -8,7 +8,7 @@ import { Environment } from "../../environment";
 import { ImportSpecifierOp } from "../../ir";
 import type * as AST from "../estree";
 import { type Scope } from "../scope/Scope";
-import { FunctionIRBuilder } from "./FunctionIRBuilder";
+import { FuncOpBuilder } from "./FuncOpBuilder";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
 import { resolveModulePath } from "./resolveModulePath";
 
@@ -16,7 +16,7 @@ export function buildImportSpecifier(
   specifierNode: ImportSpecifier | ImportDefaultSpecifier | ImportNamespaceSpecifier,
   declarationNode: ImportDeclaration,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {

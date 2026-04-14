@@ -1,4 +1,5 @@
-if (true) {
+while (true) {
   {
+    break;
   }
 }

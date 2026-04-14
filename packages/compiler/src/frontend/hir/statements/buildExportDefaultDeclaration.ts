@@ -7,21 +7,24 @@ import { buildNode } from "../buildNode";
 import { buildClassDeclaration } from "./buildClassDeclaration";
 import { buildClassExpression } from "../expressions/buildClassExpression";
 import { buildFunctionExpression } from "../expressions/buildFunctionExpression";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildExportDefaultDeclaration(
   node: ExportDefaultDeclaration,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
   const declaration = node.declaration;
 
   // Anonymous default function/class → expression builders. Named default
-  // function is reused from scope instantiation (`emit: false`); named default
-  // class uses `buildClassDeclaration` with `emit: false`.
+  // function is reused from the scope-instantiation hoisting; named
+  // default class uses `buildClassDeclaration`. Codegen detects that
+  // these declarations are claimed by the surrounding
+  // `ExportDefaultDeclarationOp` via the use chain and suppresses
+  // their standalone emission automatically.
   let declarationPlace;
   if (declaration.type === "FunctionDeclaration") {
     if (declaration.id === null) {
@@ -42,7 +45,6 @@ export function buildExportDefaultDeclaration(
             ? environment.operations.get(declarationInstructionId)
             : undefined;
         if (declarationInstruction instanceof FunctionDeclarationOp) {
-          declarationInstruction.emit = false;
           declarationPlace = declarationInstruction.place;
         }
       }
@@ -63,7 +65,6 @@ export function buildExportDefaultDeclaration(
         functionBuilder,
         moduleBuilder,
         environment,
-        { emit: false },
       );
     }
   } else {

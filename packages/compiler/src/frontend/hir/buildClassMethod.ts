@@ -3,14 +3,14 @@ import { Environment } from "../../environment";
 import { ClassMethodOp, LiteralOp, Place } from "../../ir";
 import { type Scope } from "../scope/Scope";
 import { buildNode } from "./buildNode";
-import { FunctionIRBuilder } from "./FunctionIRBuilder";
+import { FuncOpBuilder } from "./FuncOpBuilder";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
 
 /**
  * Builds a class method from an OXC MethodDefinition node.
  *
  * Mirrors {@link buildObjectMethod}: the method body becomes its own
- * {@link FunctionIR} so existing function-level optimizations apply.
+ * {@link FuncOp} so existing function-level optimizations apply.
  * Non-computed identifier keys are emitted as {@link LiteralOp}s
  * so the property name survives SSA transformations unchanged (matching
  * the convention in {@link buildObjectProperty}).
@@ -18,7 +18,7 @@ import { ModuleIRBuilder } from "./ModuleIRBuilder";
 export function buildClassMethod(
   node: MethodDefinition,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
@@ -52,7 +52,7 @@ export function buildClassMethod(
   }
 
   const fnScope = functionBuilder.scopeFor(fn);
-  const methodIRBuilder = new FunctionIRBuilder(
+  const methodIRBuilder = new FuncOpBuilder(
     fn.params,
     fn.body,
     fnScope,
@@ -61,6 +61,7 @@ export function buildClassMethod(
     moduleBuilder,
     fn.async ?? false,
     fn.generator ?? false,
+    functionBuilder.funcOpId,
   );
   const bodyIR = methodIRBuilder.build();
 

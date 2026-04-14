@@ -3,14 +3,14 @@ import { Environment } from "../../../environment";
 import { ImportDeclarationOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildImportSpecifier } from "../buildImportSpecifier";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { resolveModulePath } from "../resolveModulePath";
 
 export function buildImportDeclaration(
   node: ImportDeclaration,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {

@@ -13,10 +13,8 @@ import {
   Place,
   Region,
   ReturnOp,
-  type Structure,
 } from "../../ir";
-import { FunctionIR, makeFunctionIRId } from "../../ir/core/FunctionIR";
-import type { LexicalScopeId, LexicalScopeKind } from "../../ir/core/LexicalScope";
+import { FuncOp, type FuncOpId, makeFuncOpId } from "../../ir/core/FuncOp";
 import type * as AST from "../estree";
 import { isExpression, unwrapTSTypeWrappers } from "../estree";
 import { type Scope, type ScopeMap } from "../scope/Scope";
@@ -28,26 +26,55 @@ import { buildStatementList } from "./statements/buildStatementList";
 
 export type DeclarationState = "uninitialized" | "initialized";
 
-export class FunctionIRBuilder {
+export class FuncOpBuilder {
   public currentBlock: BasicBlock;
-  public readonly blocks: Map<BlockId, BasicBlock> = new Map();
-  public readonly structures: Map<BlockId, Structure> = new Map();
-  public readonly sourceHeader: Operation[] = [];
-  public readonly runtimePrologue: Operation[] = [];
+  /**
+   * Full list of entry-time setup ops, handed to `FuncOp.prologue`
+   * at build time. Includes everything in {@link header} plus any
+   * runtime-only ops (param-array gathering, lowered destructuring)
+   * that passes see but codegen doesn't.
+   */
+  public readonly prologue: Operation[] = [];
+  /**
+   * Strict subset of {@link prologue}: ops that codegen walks during
+   * signature emission (default values, computed destructure keys).
+   * `addHeaderOp` pushes to both; runtime-only ops go into `prologue`
+   * alone.
+   */
+  public readonly header: Operation[] = [];
   public readonly controlStack: ControlContext[] = [];
   public readonly blockLabels: Map<BlockId, string> = new Map();
 
   /**
-   * Stack of in-progress structure regions. When non-empty, new blocks
-   * created via {@link addBlock} are claimed by the top region; when
-   * empty, new blocks are unclaimed and end up in the function's
-   * top-level `body` region at `FunctionIR` construction time.
-   *
-   * Used by structured-CF builders (for-of, for-in, block, labeled
-   * block) to populate their nested MLIR regions with body blocks as
-   * the body is being built.
+   * The function's top-level body region. The source of truth for
+   * block ownership — `addBlock` always appends to the region on top
+   * of {@link regionStack}, which starts with this body region and
+   * grows when structured-CF builders push a nested region.
    */
-  private regionStack: Region[] = [];
+  public readonly bodyRegion: Region;
+
+  /**
+   * Region stack. Always non-empty: the bottom is the function's
+   * body region, and structured-CF builders push inner regions on
+   * top via {@link withStructureRegion} so blocks created while the
+   * inner region is on top land inside it.
+   */
+  private readonly regionStack: Region[];
+
+  /**
+   * Transient set of every block id that belongs to this builder's
+   * function, populated on every {@link addBlock}. Used only during
+   * the building phase so queries like {@link isOwnDeclaration} can
+   * check "is this block mine?" before the region hierarchy is fully
+   * attached — when a nested structure region is still floating
+   * (its owning BlockOp / IfOp / ... hasn't been instantiated yet)
+   * its blocks are not yet reachable from `bodyRegion.allBlocks()`.
+   *
+   * This is NOT exposed on the built `FuncOp`: once building is done
+   * and every region is attached to its owning op, the region tree
+   * is the single source of truth.
+   */
+  private readonly ownedBlockIds: Set<BlockId> = new Set();
 
   /**
    * Places captured from enclosing scopes, keyed by DeclarationId to
@@ -71,6 +98,22 @@ export class FunctionIRBuilder {
   public readonly captureParams = new Map<DeclarationId, Place>();
   public readonly declarationStates = new Map<DeclarationId, DeclarationState>();
 
+  /**
+   * Stable id of the FuncOp this builder is producing. Allocated at
+   * construction time (before the body is built) so that declaration
+   * metadata can reference the owning function while the body is still
+   * being built.
+   */
+  public readonly funcOpId: FuncOpId;
+
+  /**
+   * Id of the FuncOp that lexically encloses this one, or `null` for
+   * top-level (module) functions. Used by declaration metadata and by
+   * the function inliner's visibility checks to walk up the function
+   * nesting tree without consulting `LexicalScope`.
+   */
+  public readonly parentFuncOpId: FuncOpId | null;
+
   constructor(
     public readonly params: AST.Pattern[],
     public readonly bodyNode: Program | BlockStatement | Expression,
@@ -80,28 +123,32 @@ export class FunctionIRBuilder {
     public readonly moduleBuilder: ModuleIRBuilder,
     public readonly async: boolean,
     public readonly generator: boolean,
+    parentFuncOpId: FuncOpId | null = null,
   ) {
-    const entryScopeId = this.ensureIRScope(scope);
-    const entryBlock = this.environment.createBlock(entryScopeId);
-    this.blocks.set(entryBlock.id, entryBlock);
+    this.funcOpId = makeFuncOpId(this.environment.nextFunctionId++);
+    this.parentFuncOpId = parentFuncOpId;
+    this.bodyRegion = new Region([]);
+    this.regionStack = [this.bodyRegion];
+    const entryBlock = this.environment.createBlock();
+    this.addBlock(entryBlock);
     this.currentBlock = entryBlock;
   }
 
   /**
-   * Register a newly-created block with the builder. Adds it to the
-   * flat {@link blocks} id index and — if a structure region is
-   * currently on the region stack — claims the block into that
-   * region. Unclaimed blocks are placed into the function's top-level
-   * body region at `FunctionIR` construction.
-   *
-   * Replaces direct `functionBuilder.blocks.set(block.id, block)`
-   * calls so block creation is uniformly region-aware.
+   * Register a newly-created block with the builder by appending it
+   * to the region on top of {@link regionStack}. The stack always
+   * has the function's {@link bodyRegion} at the bottom, so blocks
+   * created outside any structured-CF builder land in the body
+   * region. Structured-CF builders push their own region via
+   * {@link withStructureRegion} so blocks built while that region is
+   * on top land inside it. The block id is also recorded in the
+   * transient {@link ownedBlockIds} set so `isOwnDeclaration` can
+   * tell "this block is mine" before the whole region hierarchy is
+   * attached.
    */
   public addBlock(block: BasicBlock): void {
-    this.blocks.set(block.id, block);
-    if (this.regionStack.length > 0) {
-      this.regionStack[this.regionStack.length - 1].appendBlock(block);
-    }
+    this.regionStack[this.regionStack.length - 1].appendBlock(block);
+    this.ownedBlockIds.add(block.id);
   }
 
   /**
@@ -118,41 +165,20 @@ export class FunctionIRBuilder {
     }
   }
 
-  /**
-   * Ensure a frontend Scope has a corresponding IR scope. Creates one
-   * if it doesn't exist yet. The `kind` parameter overrides the frontend
-   * scope's coarse kind with a specific IR ScopeKind (e.g. "switch",
-   * "for", "catch") so the IR keeps the lexical construct kind even
-   * when the frontend scope uses the coarse "block" classification.
-   */
-  public ensureIRScope(frontendScope: Scope, kind?: LexicalScopeKind): LexicalScopeId {
-    const existing = this.moduleBuilder.scopeToLexicalScope.get(frontendScope);
-    if (existing !== undefined) return existing;
-    const parentId = frontendScope.parent ? this.ensureIRScope(frontendScope.parent) : null;
-    const irScope = this.environment.createScope(parentId, kind ?? frontendScope.kind);
-    this.moduleBuilder.scopeToLexicalScope.set(frontendScope, irScope.id);
-    return irScope.id;
-  }
-
-  /** Resolve a frontend scope to its lexical scope id, creating it if needed. */
-  public lexicalScopeIdFor(frontendScope: Scope, kind?: LexicalScopeKind): LexicalScopeId {
-    return this.ensureIRScope(frontendScope, kind);
-  }
-
   /** Resolve the scope for a given AST node. */
   public scopeFor(node: Node): Scope {
     return this.scopeMap.get(node) ?? this.scope;
   }
 
   /**
-   * Build the function body into a FunctionIR.
+   * Build the function body into a FuncOp.
    *
    * @param preamble - Optional callback invoked after scope bindings are
    *   instantiated but before the body statements are built. Used by the
    *   class field desugaring to inject `this.<key> = <value>` instructions
    *   at the start of a constructor body.
    */
-  public build(preamble?: (builder: FunctionIRBuilder) => void): FunctionIR {
+  public build(preamble?: (builder: FuncOpBuilder) => void): FuncOp {
     const builtParams = buildFunctionParams(
       this.params,
       this.scope,
@@ -162,7 +188,6 @@ export class FunctionIRBuilder {
     );
     const params = builtParams.map((p) => p.place);
     const paramTargets = builtParams.map((p) => p.target);
-    const paramBindings = builtParams.map((p) => p.paramBindings);
     const requiresRuntimeParamDestructure = builtParams.some(
       (param) => param.target.kind !== "binding" || param.target.place !== param.place,
     );
@@ -172,7 +197,7 @@ export class FunctionIRBuilder {
         this.environment.createPlace(this.environment.createIdentifier()),
         params,
       );
-      this.runtimePrologue.push(runtimeParamArray);
+      this.prologue.push(runtimeParamArray);
       this.environment.placeToOp.set(runtimeParamArray.place.id, runtimeParamArray);
 
       const runtimeParamDestructure = this.environment.createOperation(
@@ -182,13 +207,12 @@ export class FunctionIRBuilder {
         runtimeParamArray.place,
         "declaration",
         "const",
-        true,
       );
-      this.runtimePrologue.push(runtimeParamDestructure);
+      this.prologue.push(runtimeParamDestructure);
       this.environment.placeToOp.set(runtimeParamDestructure.place.id, runtimeParamDestructure);
     }
 
-    const functionId = makeFunctionIRId(this.environment.nextFunctionId++);
+    const functionId = this.funcOpId;
 
     const effectiveBody = unwrapTSTypeWrappers(this.bodyNode) as
       | Program
@@ -228,28 +252,31 @@ export class FunctionIRBuilder {
       );
     }
 
+    // Textbook MLIR: function parameters are the entry block's block
+    // parameters. Each formal param's SSA root Place binds to the
+    // entry block's params[i] slot, and the caller supplies argument
+    // values when it invokes the function. Same Place instances that
+    // used to live in `FunctionRuntime.params`.
+    this.bodyRegion.entry.params = params;
+
     // The constructor self-registers in moduleIR.functions, so no explicit
     // registration step is needed here.
-    const source = { header: this.sourceHeader, params: paramTargets };
-    const runtime = {
-      params,
-      paramTargets,
-      paramBindings,
-      prologue: this.runtimePrologue,
-      captureParams: [...this.captureParams.values()],
-    };
-    const functionIR = new FunctionIR(
+    const bodyScopeKind = this.scope.kind === "program" ? "program" : "function";
+    const funcOp = new FuncOp(
       this.moduleBuilder.moduleIR,
       functionId,
-      source,
-      runtime,
+      this.prologue,
+      this.header,
+      paramTargets,
+      [...this.captureParams.values()],
       this.async,
       this.generator,
-      this.blocks,
-      this.structures,
+      this.bodyRegion,
       this.blockLabels,
+      this.parentFuncOpId,
+      bodyScopeKind,
     );
-    return functionIR;
+    return funcOp;
   }
 
   public addOp<T extends Operation>(instruction: T) {
@@ -258,13 +285,13 @@ export class FunctionIRBuilder {
   }
 
   public addHeaderOp(instruction: Operation) {
-    this.sourceHeader.push(instruction);
-    this.runtimePrologue.push(instruction);
+    this.prologue.push(instruction);
+    this.header.push(instruction);
   }
 
   public addHeaderOps(ops: Operation[]) {
-    this.sourceHeader.push(...ops);
-    this.runtimePrologue.push(...ops);
+    this.prologue.push(...ops);
+    this.header.push(...ops);
   }
 
   public registerDeclarationName(name: string, declarationId: DeclarationId, scope: Scope) {
@@ -286,12 +313,12 @@ export class FunctionIRBuilder {
     declarationId: DeclarationId,
     kind: DeclarationKind,
     name: string,
-    scope?: Scope,
+    _scope?: Scope,
   ) {
     this.environment.registerDeclarationMetadata(declarationId, {
       kind,
       sourceName: name,
-      scopeId: scope ? this.ensureIRScope(scope) : undefined,
+      funcOpId: this.funcOpId,
     });
     if (!this.declarationStates.has(declarationId)) {
       this.declarationStates.set(declarationId, getInitialDeclarationState(kind));
@@ -329,10 +356,10 @@ export class FunctionIRBuilder {
   public isOwnDeclaration(declarationId: DeclarationId): boolean {
     const entries = this.environment.declToPlaces.get(declarationId);
     if (!entries || entries.length === 0) return false;
-    return this.blocks.has(entries[0].blockId);
+    return this.ownedBlockIds.has(entries[0].blockId);
   }
 
-  public propagateCapturesFrom(child: FunctionIRBuilder): void {
+  public propagateCapturesFrom(child: FuncOpBuilder): void {
     for (const [declId, capture] of child.captures) {
       if (!this.isOwnDeclaration(declId)) {
         this.captures.set(declId, capture);

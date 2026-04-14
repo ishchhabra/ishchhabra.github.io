@@ -1,14 +1,14 @@
 import type { BlockId } from "../../ir";
 import { describe, expect, it } from "vitest";
 import { ProjectBuilder } from "../../frontend/ProjectBuilder";
-import { makeFunctionIRId } from "../../ir/core/FunctionIR";
+import { makeFuncOpId } from "../../ir/core/FuncOp";
 import { AnalysisManager } from "./AnalysisManager";
 import { ControlFlowGraph, ControlFlowGraphAnalysis } from "./ControlFlowGraphAnalysis";
 
 function getFirstFunction(source: string) {
   const unit = new ProjectBuilder().buildFromSource(source, "m.js");
   const moduleIR = unit.modules.get("m.js")!;
-  const fn = moduleIR.functions.get(makeFunctionIRId(0));
+  const fn = moduleIR.functions.get(makeFuncOpId(0));
   if (!fn) {
     throw new Error("expected function id 0");
   }
@@ -39,9 +39,4 @@ describe("ControlFlowGraph", () => {
     }
   });
 
-  it("getExitBlockId is the block with no successors", () => {
-    const fn = getFirstFunction(`export function f() { return 1; }`);
-    const cfg = ControlFlowGraph.compute(fn);
-    expect(cfg.successors.get(cfg.getExitBlockId())?.size).toBe(0);
-  });
 });

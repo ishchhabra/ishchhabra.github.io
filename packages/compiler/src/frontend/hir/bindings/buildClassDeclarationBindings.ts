@@ -1,14 +1,14 @@
 import type { Class } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { type Scope } from "../../scope/Scope";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { isBindingOwnedByScope } from "./isBindingOwnedByScope";
 import { isContextVariable } from "./isContextVariable";
 
 export function buildClassDeclarationBindings(
   scope: Scope,
   node: Class,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ) {
   const idNode = node.id;

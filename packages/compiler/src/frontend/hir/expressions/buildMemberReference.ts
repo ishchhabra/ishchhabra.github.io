@@ -7,7 +7,7 @@ import { StoreDynamicPropertyOp } from "../../../ir/ops/prop/StoreDynamicPropert
 import { StoreStaticPropertyOp } from "../../../ir/ops/prop/StoreStaticProperty";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { stabilizePlace } from "../materializePlace";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
@@ -64,7 +64,7 @@ function getValueFromStaticKey(node: Expression | PrivateIdentifier): string | n
 export function buildMemberReference(
   node: MemberExpression,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
   { reusable = false }: { reusable?: boolean } = {},
@@ -147,7 +147,7 @@ export function createLoadMemberReferenceInstruction(
 
 export function loadMemberReference(
   reference: MemberReference,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ): Place {
   const place = environment.createPlace(environment.createIdentifier());
@@ -183,7 +183,7 @@ export function createStoreMemberReferenceInstruction(
 export function storeMemberReference(
   reference: MemberReference,
   valuePlace: Place,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ): Place {
   const place = environment.createPlace(environment.createIdentifier());
@@ -196,7 +196,7 @@ export function storeMemberReference(
 export function emitMemberReferenceStore(
   reference: MemberReference,
   valuePlace: Place,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ): Place {
   // The store instruction is already added by storeMemberReference.

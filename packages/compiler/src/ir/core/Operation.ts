@@ -63,13 +63,13 @@ export const enum Trait {
  *
  *   - `moduleIR` — target module. Used for allocating fresh
  *     {@link OperationId}s (`nextId(ctx)`) and for cloning nested
- *     function bodies (`this.functionIR.clone(ctx.moduleIR)`).
+ *     function bodies (`this.funcOp.clone(ctx.moduleIR)`).
  *   - `blockMap` — old → new {@link BlockId} remap. Terminators and
  *     structured CF ops use this to rewire their block references
  *     when the whole CFG is being deep-cloned.
  *   - `identifierMap` — old {@link Identifier} → new {@link Place}
  *     remap. Used to rewire operand places after phase 1 of the
- *     two-phase `FunctionIR.clone()` protocol has allocated fresh
+ *     two-phase `FuncOp.clone()` protocol has allocated fresh
  *     places for every def.
  *
  * For a single-op clone with no cross-block remapping (the common
@@ -110,8 +110,8 @@ export function nextId(ctx: CloneContext): OperationId {
  * environment. Returns a fresh Region; the original is untouched.
  *
  * Used by structured-CF op clones (ForOfOp, ForInOp, BlockOp,
- * LabeledBlockOp, TernaryOp) to preserve region ownership when their
- * owning function is deep-cloned.
+ * LabeledBlockOp, IfOp, WhileOp) to preserve region ownership when
+ * their owning function is deep-cloned.
  */
 export function remapRegion(ctx: CloneContext, region: Region): Region {
   const newBlocks: BasicBlock[] = [];
@@ -145,7 +145,7 @@ export function remapRegion(ctx: CloneContext, region: Region): Region {
  *   - Static `traits` + `hasTrait(t)` for compile-time categorization.
  *   - Abstract `getOperands()`, `rewrite()`, `clone(ctx)`.
  *   - Sensible defaults for `getDefs()`, `hasSideEffects()`,
- *     `isDeterministic`, `isPure()`, `getBlockRefs()`, `getJoinTarget()`,
+ *     `isDeterministic`, `isPure()`, `getBlockRefs()`,
  *     `remap()`, `print()`, `toString()`.
  *
  * Concrete ops override only what they need.
@@ -170,6 +170,19 @@ export abstract class Operation {
    * replacement regions.
    */
   public readonly regions: readonly Region[];
+
+  /**
+   * Back-pointer to the {@link BasicBlock} that contains this op.
+   * Set by `BasicBlock` when the op is attached, cleared when
+   * detached. `null` for ops that are unattached (transient
+   * construction state) or for `FuncOp` itself (owned by a module,
+   * not a block).
+   *
+   * Enables upward walks from any op — e.g. scope resolution,
+   * which walks `op → owningBlock → parent region → parent op → …`
+   * up to the function body region.
+   */
+  public parentBlock: BasicBlock | null = null;
 
   static readonly traits: ReadonlySet<Trait> = new Set();
 
@@ -222,7 +235,7 @@ export abstract class Operation {
    *
    * Per-op rewrites (the common case) accept the
    * `{ rewriteDefinitions?: boolean }` option to also rewrite
-   * definition sites. Function-level `FunctionIR.rewrite` overrides
+   * definition sites. Function-level `FuncOp.rewrite` overrides
    * with a different option shape (`{ skipBlock?, skipInstructionIndex? }`)
    * because it walks every block in place, not a single op — so the
    * options parameter here is intentionally typed as `object` to
@@ -254,10 +267,6 @@ export abstract class Operation {
     return [];
   }
 
-  getJoinTarget(): BlockId | null {
-    return null;
-  }
-
   remap(_from: BlockId, _to: BlockId): void {
     // no-op
   }
@@ -273,9 +282,7 @@ export abstract class Operation {
   //   - every def is a non-null Place.
   //   - the op's own `place`, if declared, appears in `getDefs()`.
   //
-  // Concrete ops override to add op-specific invariants (e.g.
-  // `BranchOp` asserts 3 distinct block refs, `PhiOp` asserts at
-  // least 2 operands, etc.).
+  // Concrete ops override to add op-specific invariants.
   // -----------------------------------------------------------------
 
   verify(): void {

@@ -9,22 +9,16 @@ import type { ResolveConstantHook } from "./pipeline/passes/resolveConstant";
 export const CompilerOptionsSchema = z.object({
   /** Whether to enable the optimizer */
   enableOptimizer: z.boolean().default(true),
-  /** Whether to enable the constant propagation pass */
-  enableConstantPropagationPass: z.boolean().default(true),
   /** Whether to enable the algebraic simplification pass */
   enableAlgebraicSimplificationPass: z.boolean().default(true),
   /** Whether to enable the expression inlining pass */
   enableExpressionInliningPass: z.boolean().default(true),
-  /** Whether to enable the function inlining pass */
-  enableFunctionInliningPass: z.boolean().default(true),
   /** Whether to enable the unused export elimination pass */
   enableUnusedExportEliminationPass: z.boolean().default(true),
   /** Whether to enable the capture pruning pass */
   enableCapturePruningPass: z.boolean().default(true),
   /** Whether to enable the dead code elimination pass */
   enableDeadCodeEliminationPass: z.boolean().default(true),
-  /** Whether to enable the phi optimization pass */
-  enablePhiOptimizationPass: z.boolean().default(true),
 
   /** Whether to enable the late optimizer */
   enableLateOptimizer: z.boolean().default(true),

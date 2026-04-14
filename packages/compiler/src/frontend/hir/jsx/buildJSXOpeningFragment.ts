@@ -1,11 +1,11 @@
 import type { JSXOpeningFragment } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { JSXOpeningFragmentOp, Place } from "../../../ir";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 
 export function buildJSXOpeningFragment(
   _node: JSXOpeningFragment,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ): Place {
   const identifier = environment.createIdentifier();

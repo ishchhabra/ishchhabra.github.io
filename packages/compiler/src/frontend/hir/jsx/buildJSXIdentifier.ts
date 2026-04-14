@@ -10,7 +10,7 @@ import {
 } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { throwTDZAccessError } from "../buildIdentifier";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 
 /**
  * Lower a JSX tag name. React treats names starting with a lowercase ASCII letter
@@ -22,7 +22,7 @@ import { FunctionIRBuilder } from "../FunctionIRBuilder";
 export function buildJSXIdentifier(
   node: JSXIdentifier,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ): Place {
   const name = node.name;

@@ -1,7 +1,7 @@
 import type { Statement } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { buildNode } from "../buildNode";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { instantiateScopeBindings } from "../bindings";
 import { buildStatementList } from "./buildStatementList";
@@ -18,7 +18,7 @@ import { type Scope } from "../../scope/Scope";
 export function buildOwnedBody(
   node: Statement,
   fallbackScope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): void {
@@ -28,7 +28,6 @@ export function buildOwnedBody(
   }
 
   const blockScope = functionBuilder.scopeFor(node);
-  functionBuilder.lexicalScopeIdFor(blockScope);
   instantiateScopeBindings(node, blockScope, functionBuilder, environment, moduleBuilder);
   buildStatementList(node.body, blockScope, functionBuilder, moduleBuilder, environment);
 }

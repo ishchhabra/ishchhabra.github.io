@@ -1,6 +1,6 @@
 import * as t from "@babel/types";
 import { DeclareLocalOp } from "../../ir";
-import { FunctionIR } from "../../ir/core/FunctionIR";
+import { FuncOp } from "../../ir/core/FuncOp";
 import { Place } from "../../ir/core/Place";
 import { CodeGenerator } from "../CodeGenerator";
 import { generateBlock } from "./generateBlock";
@@ -12,13 +12,13 @@ import { generateDestructureTarget } from "./ops/memory/generateDestructureTarge
  * Generates the body of a function.
  *
  * @param captures - Outer-scope Places this function captures, aligned
- *   by index with `functionIR.runtime.captureParams`. When present, each
+ *   by index with `funcOp.runtime.captureParams`. When present, each
  *   `captureParams[i]` is bound to `captures[i]`'s generated node so
  *   the function body can reference captured variables through the
  *   indirection layer.
  */
 export function generateFunction(
-  functionIR: FunctionIR,
+  funcOp: FuncOp,
   captures: Place[],
   generator: CodeGenerator,
 ): {
@@ -28,11 +28,11 @@ export function generateFunction(
   return generator.withFunctionState(() => {
     // Bind capture parameters to outer captures so the function body
     // resolves captured variables through the indirection layer.
-    for (let i = 0; i < functionIR.runtime.captureParams.length; i++) {
+    for (let i = 0; i < funcOp.captureParams.length; i++) {
       if (i < captures.length) {
         const outerNode = generator.places.get(captures[i].id);
         if (outerNode !== undefined) {
-          generator.places.set(functionIR.runtime.captureParams[i].id, outerNode);
+          generator.places.set(funcOp.captureParams[i].id, outerNode);
         }
       }
     }
@@ -40,13 +40,13 @@ export function generateFunction(
     // Pre-register all binding identifiers across ALL blocks of this function.
     // This ensures closures defined in earlier blocks can reference variables
     // declared in later blocks (e.g. phi variables in merge blocks).
-    for (const instruction of functionIR.source.header) {
+    for (const instruction of funcOp.header) {
       if (instruction instanceof DeclareLocalOp) {
         generateDeclareLocalOp(instruction, generator);
       }
     }
 
-    for (const block of functionIR.allBlocks()) {
+    for (const block of funcOp.allBlocks()) {
       for (const instruction of block.operations) {
         if (instruction instanceof DeclareLocalOp) {
           generateDeclareLocalOp(instruction, generator);
@@ -54,19 +54,19 @@ export function generateFunction(
       }
     }
 
-    generateHeader(functionIR, generator);
-    const params = generateFunctionParams(functionIR, generator);
+    generateHeader(funcOp, generator);
+    const params = generateFunctionParams(funcOp, generator);
 
-    const statements = generateBlock(functionIR.entryBlockId, functionIR, generator);
+    const statements = generateBlock(funcOp.entryBlockId, funcOp, generator);
     return { params, statements };
   });
 }
 
 function generateFunctionParams(
-  functionIR: FunctionIR,
+  funcOp: FuncOp,
   generator: CodeGenerator,
 ): Array<t.Identifier | t.RestElement | t.Pattern> {
-  return functionIR.source.params.map((param) => {
+  return funcOp.paramPatterns.map((param) => {
     const node = generateDestructureTarget(param, generator);
     if (!(t.isIdentifier(node) || t.isPattern(node) || t.isRestElement(node))) {
       throw new Error(`Unsupported function param: ${node.type}`);
@@ -75,8 +75,8 @@ function generateFunctionParams(
   });
 }
 
-function generateHeader(functionIR: FunctionIR, generator: CodeGenerator) {
-  for (const instruction of functionIR.source.header) {
-    generateOp(instruction, functionIR, generator);
+function generateHeader(funcOp: FuncOp, generator: CodeGenerator) {
+  for (const instruction of funcOp.header) {
+    generateOp(instruction, funcOp, generator);
   }
 }

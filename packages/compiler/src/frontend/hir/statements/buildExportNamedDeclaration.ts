@@ -12,7 +12,7 @@ import { ExportFromOp } from "../../../ir/ops/module/ExportFrom";
 import { ExportSpecifierOp } from "../../../ir/ops/module/ExportSpecifier";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { resolveModulePath } from "../resolveModulePath";
 import { isTSOnlyNode } from "../../estree";
@@ -20,7 +20,7 @@ import { isTSOnlyNode } from "../../estree";
 export function buildExportNamedDeclaration(
   node: ExportNamedDeclaration,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
@@ -104,7 +104,7 @@ export function buildExportNamedDeclaration(
 function buildExportDeclarationAsSpecifiers(
   declaration: Declaration,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
@@ -199,7 +199,7 @@ function collectPatternNames(pattern: AST.Pattern): string[] {
 function buildExportFrom(
   node: ExportNamedDeclaration,
   _scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {

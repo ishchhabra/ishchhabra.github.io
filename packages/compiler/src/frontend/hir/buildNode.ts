@@ -11,7 +11,7 @@ import { buildObjectProperty } from "./buildObjectProperty";
 import { buildSpreadElement } from "./buildSpreadElement";
 import { buildHole } from "./expressions";
 import { buildExpression } from "./expressions/buildExpression";
-import { FunctionIRBuilder } from "./FunctionIRBuilder";
+import { FuncOpBuilder } from "./FuncOpBuilder";
 import { buildJSX } from "./jsx/buildJSX";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
 import { buildStatement } from "./statements/buildStatement";
@@ -19,7 +19,7 @@ import { buildStatement } from "./statements/buildStatement";
 export function buildNode(
   node: Node | null,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place | Place[] | undefined {

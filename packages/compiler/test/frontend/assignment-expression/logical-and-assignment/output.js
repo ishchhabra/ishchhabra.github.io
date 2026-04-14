@@ -1,14 +1,14 @@
 function $0_0($1_0) {
-  let $2_0 = $1_0;
-  let $10_phi_11 = undefined;
-  let $11_phi_12 = undefined;
-  $11_phi_12 = $2_0;
+  let $4_0 = undefined;
+  let $8_0 = undefined;
   if ($1_0) {
     $1_0 = 20;
-    $2_0 = 20;
-    $10_phi_11 = $1_0;
-    $11_phi_12 = $2_0;
+    $4_0 = 20;
+    $8_0 = $1_0;
+  } else {
+    $4_0 = $1_0;
+    $8_0 = $1_0;
   }
-  return $11_phi_12;
+  return $4_0;
 }
 export { $0_0 as f };

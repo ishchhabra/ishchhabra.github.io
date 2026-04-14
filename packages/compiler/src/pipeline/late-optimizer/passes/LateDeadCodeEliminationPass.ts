@@ -1,6 +1,6 @@
 import { Environment } from "../../../environment";
 import { Operation, StoreLocalOp } from "../../../ir";
-import { FunctionIR } from "../../../ir/core/FunctionIR";
+import { FuncOp } from "../../../ir/core/FuncOp";
 import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
 
 /**
@@ -15,16 +15,16 @@ import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
  */
 export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
   constructor(
-    protected readonly functionIR: FunctionIR,
+    protected readonly funcOp: FuncOp,
     private readonly environment: Environment,
   ) {
-    super(functionIR);
+    super(funcOp);
   }
 
   protected step(): OptimizationResult {
     let changed = false;
 
-    for (const block of this.functionIR.allBlocks()) {
+    for (const block of this.funcOp.allBlocks()) {
       for (let i = block.operations.length - 1; i >= 0; i--) {
         const instr = block.operations[i];
         if (instr.hasSideEffects(this.environment)) continue;

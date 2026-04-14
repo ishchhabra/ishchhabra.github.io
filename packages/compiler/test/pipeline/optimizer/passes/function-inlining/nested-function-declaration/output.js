@@ -4,7 +4,4 @@ function $0_0() {
   }
   return $1_0;
 }
-function $7_0() {
-  return 1;
-}
-console.log($7_0);
+console.log($0_0());

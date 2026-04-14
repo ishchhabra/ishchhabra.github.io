@@ -6,28 +6,21 @@ function $0_0($4_0, $5_0) {
     left: $4_0.left - $5_0.width,
   };
 }
-function $1_0($27_0) {
-  return $2_0.some(($29_0) => $27_0[$29_0] >= 0);
+function $1_0($35_0) {
+  return $2_0.some(($38_0) => $35_0[$38_0] >= 0);
 }
 const $2_0 = ["top", "right", "bottom", "left"];
-const $3_0 = function ($41_0) {
+const $3_0 = function ($52_0) {
   return {
     name: "hide",
-    options: $41_0,
-    async fn($48_0) {
-      const { rects: $49_0, platform: $50_0 } = $48_0;
-      const $114_0 = await $50_0.detectOverflow($48_0);
-      const $116_0 = $49_0.reference;
-      const $52_0 = {
-        top: $114_0.top - $116_0.height,
-        right: $114_0.right - $116_0.width,
-        bottom: $114_0.bottom - $116_0.height,
-        left: $114_0.left - $116_0.width,
-      };
+    options: $52_0,
+    async fn($60_0) {
+      const { rects: $61_0, platform: $62_0 } = $60_0;
+      const $64_0 = $0_0(await $62_0.detectOverflow($60_0), $61_0.reference);
       return {
         data: {
-          referenceHiddenOffsets: $52_0,
-          referenceHidden: $2_0.some(($29_0) => $52_0[$29_0] >= 0),
+          referenceHiddenOffsets: $64_0,
+          referenceHidden: $1_0($64_0),
         },
       };
     },

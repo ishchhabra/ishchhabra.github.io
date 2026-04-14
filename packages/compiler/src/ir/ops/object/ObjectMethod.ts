@@ -1,9 +1,9 @@
 import { OperationId } from "../../core";
 import { Identifier, Place } from "../../core";
-import { FunctionIR } from "../../core/FunctionIR";
+import { FuncOp } from "../../core/FuncOp";
 
 import { Operation } from "../../core/Operation";
-import type { CloneContext } from "../../core/Operation";
+import { makeCloneContext, type CloneContext } from "../../core/Operation";
 /**
  * Represents an object method in the IR.
  *
@@ -15,7 +15,7 @@ export class ObjectMethodOp extends Operation {
     id: OperationId,
     public override readonly place: Place,
     public readonly key: Place,
-    public readonly body: FunctionIR,
+    public readonly body: FuncOp,
     public readonly computed: boolean,
     public readonly generator: boolean,
     public readonly async: boolean,
@@ -33,7 +33,7 @@ export class ObjectMethodOp extends Operation {
       ObjectMethodOp,
       place,
       this.key,
-      this.body,
+      this.body.clone(makeCloneContext(moduleIR)),
       this.computed,
       this.generator,
       this.async,

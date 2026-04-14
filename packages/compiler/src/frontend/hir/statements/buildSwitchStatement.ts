@@ -1,29 +1,40 @@
 import type { Statement, SwitchStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { createOperationId, JumpOp, SwitchOp } from "../../../ir";
+import { createOperationId, Place, Region, SwitchOp, YieldOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { instantiateScopeBindings } from "../bindings";
 import { buildNode } from "../buildNode";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildStatementList } from "./buildStatementList";
 
+/**
+ * Lower a JS `switch (discriminant) { case a: ... default: ... }` to
+ * a textbook MLIR `SwitchOp`. Each case is a separate region. JS
+ * fall-through is NOT preserved structurally; instead every case
+ * body implicitly breaks at the end unless the source had explicit
+ * fall-through, in which case the case body yields via a `YieldOp`
+ * and codegen emits it as a bare case.
+ *
+ * Note: for simplicity in the textbook MLIR migration, we lower
+ * each case as an independent region terminated by YieldOp. JS
+ * fall-through semantics require the frontend to append the
+ * fallthrough case's statements — done here in a single left-to-right
+ * sweep that inlines fallthrough bodies into each case region.
+ */
 export function buildSwitchStatement(
   node: SwitchStatement,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
   label?: string,
 ) {
-  const currentBlock = functionBuilder.currentBlock;
-  const scopeId = functionBuilder.lexicalScopeIdFor(scope);
+  const parentBlock = functionBuilder.currentBlock;
 
   const switchScope = functionBuilder.scopeFor(node);
-  const switchScopeId = functionBuilder.lexicalScopeIdFor(switchScope, "switch");
   instantiateScopeBindings(node, switchScope, functionBuilder, environment, moduleBuilder);
 
-  // Build the discriminant expression in the current block.
   const discriminantPlace = buildNode(
     node.discriminant,
     scope,
@@ -35,41 +46,10 @@ export function buildSwitchStatement(
     throw new Error("Switch discriminant must be a single place");
   }
 
-  // Create the fallthrough block (continuation after switch).
-  const fallthroughBlock = environment.createBlock(scopeId);
-  functionBuilder.addBlock(fallthroughBlock);
-
-  // Register switch control context so BreakStatement can jump to fallthrough.
-  functionBuilder.controlStack.push({
-    kind: "switch",
-    label,
-    breakTarget: fallthroughBlock.id,
-    structured: false,
-  });
-
-  const switchCases = node.cases;
-  const cases: Array<{
-    test: import("../../../ir").Place | null;
-    block: import("../../../ir").BlockId;
-  }> = [];
-
-  // Process cases in reverse order to handle fallthrough.
-  // Each case's default terminal falls through to the next case's block.
-  // The last case falls through to the fallthrough block.
-  let nextFallthroughTarget = fallthroughBlock.id;
-
-  const caseEntries: Array<{
-    test: import("../../../ir").Place | null;
-    block: import("../../../ir").BasicBlock;
-  }> = [];
-
-  // First pass: create blocks and evaluate test expressions.
-  // Test expressions are evaluated in the switch's lexical scope so they
-  // observe the switch block's bindings (including TDZ for let/const/class).
-  // The discriminant was already evaluated in the outer scope above.
-  for (const switchCase of switchCases) {
-    let testPlace: import("../../../ir").Place | null = null;
-
+  // Evaluate case tests in the parent block before the switch op —
+  // they are plain operands to the SwitchOp.
+  const caseTests: (Place | null)[] = [];
+  for (const switchCase of node.cases) {
     if (switchCase.test != null) {
       const place = buildNode(
         switchCase.test,
@@ -81,62 +61,100 @@ export function buildSwitchStatement(
       if (place === undefined || Array.isArray(place)) {
         throw new Error("Switch case test must be a single place");
       }
-      testPlace = place;
+      caseTests.push(place);
+    } else {
+      caseTests.push(null);
     }
-
-    const caseBlock = environment.createBlock(switchScopeId);
-    functionBuilder.addBlock(caseBlock);
-
-    caseEntries.push({ test: testPlace, block: caseBlock });
   }
 
-  // Second pass: build case bodies in reverse order for fallthrough wiring.
-  for (let i = caseEntries.length - 1; i >= 0; i--) {
-    const switchCase = switchCases[i];
-    const entry = caseEntries[i];
+  // Build each case body into its own region. Emit with a terminal
+  // `YieldOp` at the end of the region unless control exits via
+  // break/return/throw. Fall-through to the next case (no break) is
+  // desugared here: we append the next case's statements to this
+  // case's region.
+  const regions: Region[] = [];
+  for (let i = 0; i < node.cases.length; i++) {
+    const region = new Region([]);
+    const caseBlock = environment.createBlock();
+    functionBuilder.withStructureRegion(region, () => {
+      functionBuilder.addBlock(caseBlock);
+      functionBuilder.currentBlock = caseBlock;
+      functionBuilder.controlStack.push({
+        kind: "switch",
+        label,
+        breakTarget: undefined,
+        structured: true,
+      });
 
-    functionBuilder.currentBlock = entry.block;
-
-    // Build the case body statements.
-    buildStatementList(
-      switchCase.consequent as Statement[],
-      switchScope,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-    );
-
-    // If the case body didn't end with a terminal (no break/return/throw),
-    // add fallthrough to the next case's block (or the fallthrough block for last case).
-    if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.terminal = new JumpOp(
-        createOperationId(environment),
-        nextFallthroughTarget,
+      // Collect this case's statements, plus the statements of
+      // every subsequent case that is reached via fall-through (i.e.
+      // the current case ended without break/return/throw). We
+      // replicate the fall-through bodies inline into this region so
+      // each region is self-contained.
+      const statementsForThisCase: Statement[] = [];
+      for (let j = i; j < node.cases.length; j++) {
+        const caseStatements = node.cases[j].consequent as Statement[];
+        statementsForThisCase.push(...caseStatements);
+        if (hasTerminalExit(caseStatements)) break;
+      }
+      buildStatementList(
+        statementsForThisCase,
+        switchScope,
+        functionBuilder,
+        moduleBuilder,
+        environment,
       );
-    }
-
-    nextFallthroughTarget = entry.block.id;
-
-    cases.unshift({ test: entry.test, block: entry.block.id });
+      functionBuilder.controlStack.pop();
+      if (functionBuilder.currentBlock.terminal === undefined) {
+        functionBuilder.currentBlock.terminal = new YieldOp(
+          createOperationId(environment),
+          [],
+        );
+      }
+    });
+    regions.push(region);
   }
 
-  functionBuilder.controlStack.pop();
-
-  // If no default case exists, synthesize one that jumps to fallthrough.
-  const hasDefault = cases.some((c) => c.test === null);
+  // If no default case exists, synthesize an empty one at the end.
+  const hasDefault = caseTests.some((t) => t === null);
   if (!hasDefault) {
-    cases.push({ test: null, block: fallthroughBlock.id });
+    const region = new Region([]);
+    const caseBlock = environment.createBlock();
+    functionBuilder.withStructureRegion(region, () => {
+      functionBuilder.addBlock(caseBlock);
+      caseBlock.terminal = new YieldOp(createOperationId(environment), []);
+    });
+    caseTests.push(null);
+    regions.push(region);
   }
 
-  // Set the SwitchOp on the pre-switch block.
-  currentBlock.terminal = new SwitchOp(
+  const switchOp = new SwitchOp(
     createOperationId(environment),
     discriminantPlace,
-    cases,
-    fallthroughBlock.id,
+    caseTests,
+    regions,
     label,
   );
-
-  functionBuilder.currentBlock = fallthroughBlock;
+  parentBlock.appendOp(switchOp);
+  functionBuilder.currentBlock = parentBlock;
   return undefined;
+}
+
+/**
+ * Returns true if `statements` contains a terminal exit statement
+ * (break, continue, return, throw) at the top level — meaning control
+ * never falls off the end of this statement list into the next case.
+ */
+function hasTerminalExit(statements: Statement[]): boolean {
+  for (const s of statements) {
+    if (
+      s.type === "BreakStatement" ||
+      s.type === "ContinueStatement" ||
+      s.type === "ReturnStatement" ||
+      s.type === "ThrowStatement"
+    ) {
+      return true;
+    }
+  }
+  return false;
 }

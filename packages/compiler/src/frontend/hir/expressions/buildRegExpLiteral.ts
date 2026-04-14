@@ -1,11 +1,11 @@
 import type { RegExpLiteral } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { RegExpLiteralOp } from "../../../ir";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 
 export function buildRegExpLiteral(
   node: RegExpLiteral,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ) {
   const identifier = environment.createIdentifier();

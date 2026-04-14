@@ -1,162 +1,155 @@
 import type { Expression, ForStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { BranchOp, JumpOp, LiteralOp, makeOperationId } from "../../../ir";
+import {
+  ConditionOp,
+  createOperationId,
+  ForOp,
+  LiteralOp,
+  Region,
+  YieldOp,
+} from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { instantiateScopeBindings } from "../bindings";
 import { buildNode } from "../buildNode";
 import { buildAssignmentExpression } from "../expressions/buildAssignmentExpression";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildOwnedBody } from "./buildOwnedBody";
 import { buildStatement } from "./buildStatement";
 
+/**
+ * Lower `for (init; test; update) { body }` to a structured
+ * {@link ForOp}.
+ *
+ *   parentBlock: [..., <init ops>, ForOp, ...]
+ *     ForOp.beforeRegion: [beforeBlock]
+ *       beforeBlock: [...test ops..., ConditionOp(test_result)]
+ *     ForOp.bodyRegion:   [bodyBlock]
+ *       bodyBlock: [...body ops..., YieldOp]
+ *     ForOp.updateRegion: [updateBlock]
+ *       updateBlock: [...update ops..., YieldOp]
+ *
+ * The init expression / declarations live in the parent block before
+ * the ForOp. JS `continue` inside the body must run the update
+ * expression before re-evaluating the test, so update is its own
+ * region — collapsing it into the body would break `continue`
+ * semantics.
+ */
 export function buildForStatement(
   node: ForStatement,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
   label?: string,
 ) {
-  const currentBlock = functionBuilder.currentBlock;
+  const parentBlock = functionBuilder.currentBlock;
 
   const init = node.init;
-  // If the for-statement has a lexical init, use the for-scope for the entire loop.
   const forScope =
     init?.type === "VariableDeclaration" && (init.kind === "let" || init.kind === "const")
       ? functionBuilder.scopeFor(node)
       : scope;
-  const forScopeId =
-    forScope !== scope
-      ? functionBuilder.lexicalScopeIdFor(forScope, "for")
-      : functionBuilder.lexicalScopeIdFor(forScope);
-  const scopeId = functionBuilder.lexicalScopeIdFor(scope);
 
-  // Build the init block.
-  const initBlock = environment.createBlock(forScopeId);
-  functionBuilder.addBlock(initBlock);
-
-  functionBuilder.currentBlock = initBlock;
   if (init != null) {
     if (init.type === "VariableDeclaration") {
       instantiateScopeBindings(node, forScope, functionBuilder, environment, moduleBuilder);
       buildStatement(init, forScope, functionBuilder, moduleBuilder, environment);
     } else {
-      // Expression init (e.g. `for (i = 0; ...)`)
       buildExpressionAsStatement(init, scope, functionBuilder, moduleBuilder, environment);
     }
   }
-  const initBlockTerminus = functionBuilder.currentBlock;
 
-  // Build the test block.
-  const testBlock = environment.createBlock(forScopeId);
-  functionBuilder.addBlock(testBlock);
-
-  functionBuilder.currentBlock = testBlock;
-
-  let testPlace;
-  if (node.test != null) {
-    testPlace = buildNode(node.test, forScope, functionBuilder, moduleBuilder, environment);
-  } else {
-    // If the test is not provided, it is equivalent to while(true).
-    const truePlace = environment.createPlace(environment.createIdentifier());
-    functionBuilder.addOp(environment.createOperation(LiteralOp, truePlace, true));
-    testPlace = truePlace;
-  }
-  if (testPlace === undefined || Array.isArray(testPlace)) {
-    throw new Error("For statement test place must be a single place");
-  }
-  const testBlockTerminus = functionBuilder.currentBlock;
-
-  // Build the exit block (created early so break statements can reference it).
-  const exitBlock = environment.createBlock(scopeId);
-  functionBuilder.addBlock(exitBlock);
-
-  // Build the body block. When the body is a BlockStatement, use its
-  // scope so it merges with the body block — the loop syntax provides { }.
-  const bodyScope =
-    node.body.type === "BlockStatement" ? functionBuilder.scopeFor(node.body) : forScope;
-  const bodyScopeId = functionBuilder.lexicalScopeIdFor(bodyScope);
-  const bodyBlock = environment.createBlock(bodyScopeId);
-  functionBuilder.addBlock(bodyBlock);
-
-  const update = node.update;
-  const updateBlock = update != null ? environment.createBlock(forScopeId) : undefined;
-  if (updateBlock !== undefined) {
-    functionBuilder.addBlock(updateBlock);
-  }
-
-  functionBuilder.currentBlock = bodyBlock;
-  functionBuilder.controlStack.push({
-    kind: "loop",
-    label,
-    breakTarget: exitBlock.id,
-    continueTarget: updateBlock?.id ?? testBlock.id,
-    structured: false,
+  // Before region: test ops + ConditionOp. If the source omits a
+  // test (`for (;;) {}`), the test defaults to literal `true`.
+  const beforeRegion = new Region([]);
+  const beforeBlock = environment.createBlock();
+  functionBuilder.withStructureRegion(beforeRegion, () => {
+    functionBuilder.addBlock(beforeBlock);
+    functionBuilder.currentBlock = beforeBlock;
+    let testPlace;
+    if (node.test != null) {
+      testPlace = buildNode(node.test, forScope, functionBuilder, moduleBuilder, environment);
+    } else {
+      const truePlace = environment.createPlace(environment.createIdentifier());
+      functionBuilder.addOp(environment.createOperation(LiteralOp, truePlace, true));
+      testPlace = truePlace;
+    }
+    if (testPlace === undefined || Array.isArray(testPlace)) {
+      throw new Error("For statement test place must be a single place");
+    }
+    functionBuilder.currentBlock.terminal = new ConditionOp(
+      createOperationId(environment),
+      testPlace,
+    );
   });
-  if (label) {
-    functionBuilder.blockLabels.set(testBlock.id, label);
-  }
-  buildOwnedBody(node.body, forScope, functionBuilder, moduleBuilder, environment);
-  functionBuilder.controlStack.pop();
 
-  // For `continue`, run the update before the test (ECMAScript for-loop semantics).
-  // Normal fall-through from the body also reaches the update when present.
-  if (updateBlock !== undefined && update != null) {
+  const bodyRegion = new Region([]);
+  const bodyBlock = environment.createBlock();
+  functionBuilder.withStructureRegion(bodyRegion, () => {
+    functionBuilder.addBlock(bodyBlock);
+    functionBuilder.currentBlock = bodyBlock;
+    functionBuilder.controlStack.push({
+      kind: "loop",
+      label,
+      breakTarget: undefined,
+      continueTarget: undefined,
+      structured: true,
+    });
+    buildOwnedBody(node.body, forScope, functionBuilder, moduleBuilder, environment);
+    functionBuilder.controlStack.pop();
     if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.terminal = new JumpOp(
-        makeOperationId(functionBuilder.environment.nextOperationId++),
-        updateBlock.id,
+      functionBuilder.currentBlock.terminal = new YieldOp(
+        createOperationId(environment),
+        [],
       );
     }
+  });
+
+  // Update region: always present (even when the source omits the
+  // update expression) so ForOp's three-region invariant holds. An
+  // empty update is just a YieldOp-only block.
+  const updateRegion = new Region([]);
+  const updateBlock = environment.createBlock();
+  functionBuilder.withStructureRegion(updateRegion, () => {
+    functionBuilder.addBlock(updateBlock);
     functionBuilder.currentBlock = updateBlock;
-    buildExpressionAsStatement(update, forScope, functionBuilder, moduleBuilder, environment);
-  }
+    if (node.update != null) {
+      buildExpressionAsStatement(
+        node.update,
+        forScope,
+        functionBuilder,
+        moduleBuilder,
+        environment,
+      );
+    }
+    if (functionBuilder.currentBlock.terminal === undefined) {
+      functionBuilder.currentBlock.terminal = new YieldOp(
+        createOperationId(environment),
+        [],
+      );
+    }
+  });
 
-  const bodyBlockTerminus = functionBuilder.currentBlock;
-
-  // Set the jump terminal for init block to test block.
-  initBlockTerminus.terminal = new JumpOp(
-    makeOperationId(functionBuilder.environment.nextOperationId++),
-    testBlock.id,
+  const forOp = new ForOp(
+    createOperationId(environment),
+    beforeRegion,
+    bodyRegion,
+    updateRegion,
+    label,
   );
-
-  // Set the branch terminal for test block.
-  testBlockTerminus.terminal = new BranchOp(
-    makeOperationId(functionBuilder.environment.nextOperationId++),
-    testPlace,
-    bodyBlock.id,
-    exitBlock.id,
-    exitBlock.id,
-  );
-
-  // Set the jump terminal for body block to create a back edge (unless the body
-  // already ended with break/return/throw, which owns the terminal).
-  if (bodyBlockTerminus.terminal === undefined) {
-    bodyBlockTerminus.terminal = new JumpOp(
-      makeOperationId(functionBuilder.environment.nextOperationId++),
-      testBlock.id,
-    );
-  }
-
-  // Set the jump terminal for the current block.
-  currentBlock.terminal = new JumpOp(
-    makeOperationId(functionBuilder.environment.nextOperationId++),
-    initBlock.id,
-  );
-
-  functionBuilder.currentBlock = exitBlock;
+  parentBlock.appendOp(forOp);
+  functionBuilder.currentBlock = parentBlock;
   return undefined;
 }
 
 function buildExpressionAsStatement(
   expression: Expression,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  // Assignment expressions in for-loop init/update don't need result stabilization.
   if (expression.type === "AssignmentExpression") {
     return buildAssignmentExpression(
       expression,
@@ -172,8 +165,5 @@ function buildExpressionAsStatement(
   if (expressionPlace === undefined || Array.isArray(expressionPlace)) {
     throw new Error("Expression place is undefined");
   }
-
-  // The value instruction is already in the block. Codegen will flush it
-  // as an expression statement if it has zero uses.
   return expressionPlace;
 }

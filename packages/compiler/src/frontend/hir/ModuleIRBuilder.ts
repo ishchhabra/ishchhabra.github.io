@@ -2,23 +2,21 @@ import type { Program } from "oxc-parser";
 import { parseSync } from "oxc-parser";
 import { readFileSync } from "fs";
 import { Environment } from "../../environment";
-import type { LexicalScopeId } from "../../ir/core/LexicalScope";
 import { ModuleIR } from "../../ir/core/ModuleIR";
-import { analyzeScopes, type Scope } from "../scope/Scope";
-import { FunctionIRBuilder } from "./FunctionIRBuilder";
+import { analyzeScopes } from "../scope/Scope";
+import { FuncOpBuilder } from "./FuncOpBuilder";
 
 /**
  * Drives the parse-and-lower walk for a single module. Owns the
  * {@link ModuleIR} that is being populated; constructed up-front (with
- * empty registries) so that {@link FunctionIRBuilder} can set the
- * `moduleIR` back-pointer on every {@link FunctionIR} it creates.
+ * empty registries) so that {@link FuncOpBuilder} can set the
+ * `moduleIR` back-pointer on every {@link FuncOp} it creates.
  * Callers should reach through `moduleIR.functions` / `moduleIR.exports`
  * / etc. directly — the builder is purely a parse driver, not a
  * façade over the module.
  */
 export class ModuleIRBuilder {
   public readonly moduleIR: ModuleIR;
-  public readonly scopeToLexicalScope: Map<Scope, LexicalScopeId> = new Map();
 
   constructor(path: string, environment: Environment) {
     this.moduleIR = new ModuleIR(path, environment);
@@ -47,7 +45,7 @@ export class ModuleIRBuilder {
     const program = result.program as unknown as Program;
     const { programScope, scopeMap } = analyzeScopes(program);
 
-    new FunctionIRBuilder(
+    new FuncOpBuilder(
       [],
       program,
       programScope,

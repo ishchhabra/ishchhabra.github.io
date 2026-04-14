@@ -4,7 +4,7 @@ import { ClassPropertyOp, LiteralOp, Place } from "../../ir";
 import type { Scope } from "../scope/Scope";
 import { buildClassMethod } from "./buildClassMethod";
 import { buildNode } from "./buildNode";
-import { FunctionIRBuilder } from "./FunctionIRBuilder";
+import { FuncOpBuilder } from "./FuncOpBuilder";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
 
 /**
@@ -19,7 +19,7 @@ import { ModuleIRBuilder } from "./ModuleIRBuilder";
 export function buildClassBody(
   elements: ClassElement[],
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place[] {
@@ -52,7 +52,7 @@ export function buildClassBody(
 function buildClassProperty(
   node: PropertyDefinition,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
@@ -79,7 +79,7 @@ function buildClassProperty(
     keyPlace = built;
   }
 
-  // Build the initializer as a zero-arg FunctionIR "thunk" whose body is
+  // Build the initializer as a zero-arg FuncOp "thunk" whose body is
   // the initializer expression. This matches the spec's model — each
   // initializer is conceptually a function closed over the class body
   // scope, invoked per-instance with `this` bound to the new instance —
@@ -88,10 +88,10 @@ function buildClassProperty(
   // At codegen time the thunk's single return expression is extracted
   // and planted as the value of the emitted `t.classProperty` node,
   // preserving spec-correct per-instance evaluation semantics.
-  let valueIR: ReturnType<FunctionIRBuilder["build"]> | null = null;
+  let valueIR: ReturnType<FuncOpBuilder["build"]> | null = null;
   let capturedPlaces: Place[] = [];
   if (node.value != null) {
-    const initBuilder = new FunctionIRBuilder(
+    const initBuilder = new FuncOpBuilder(
       [],
       node.value as Expression,
       scope,
@@ -100,6 +100,7 @@ function buildClassProperty(
       moduleBuilder,
       false,
       false,
+      functionBuilder.funcOpId,
     );
     valueIR = initBuilder.build();
     functionBuilder.propagateCapturesFrom(initBuilder);

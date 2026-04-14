@@ -1,6 +1,7 @@
 import { Operation, BlockId, LoadGlobalOp } from "../../ir";
-import { FunctionIR } from "../../ir/core/FunctionIR";
+import { FuncOp } from "../../ir/core/FuncOp";
 import { ModuleIR } from "../../ir/core/ModuleIR";
+import { ReturnOp, ThrowOp } from "../../ir/ops/control";
 import { StoreStaticPropertyOp } from "../../ir/ops/prop/StoreStaticProperty";
 import { AnalysisManager } from "../../pipeline/analysis/AnalysisManager";
 import { DominatorTreeAnalysis } from "../../pipeline/analysis/DominatorTreeAnalysis";
@@ -24,13 +25,13 @@ const EXPORTS_PROPERTY_NAME = "exports";
  */
 export class CommonJSExportCollectorPass {
   constructor(
-    private readonly functionIR: FunctionIR,
+    private readonly funcOp: FuncOp,
     private readonly moduleIR: ModuleIR,
     private readonly AM: AnalysisManager,
   ) {}
 
   public run() {
-    for (const block of this.functionIR.allBlocks()) {
+    for (const block of this.funcOp.allBlocks()) {
       const blockId = block.id;
       if (!this.isAlwaysExecutedBlock(blockId)) {
         continue;
@@ -69,9 +70,25 @@ export class CommonJSExportCollectorPass {
     return true;
   }
 
-  private isAlwaysExecutedBlock(blockId: BlockId) {
-    const exitBlockId = this.functionIR.exitBlockId;
-    const domTree = this.AM.get(DominatorTreeAnalysis, this.functionIR);
-    return domTree.dominates(blockId, exitBlockId);
+  /**
+   * A block is "always executed" iff every path from the function
+   * entry to any exit passes through it — equivalently, it dominates
+   * every exit block. MLIR-style: walk for return-like terminators
+   * (ReturnOp, ThrowOp) instead of asking the function for a single
+   * canonical exit (functions can have multiple).
+   *
+   * If the function has no exit blocks (infinite loop, all paths
+   * Yield/Jump indefinitely), we treat the question as vacuously
+   * true: any export assignment that's reached at all is observed
+   * before the function leaves.
+   */
+  private isAlwaysExecutedBlock(blockId: BlockId): boolean {
+    const domTree = this.AM.get(DominatorTreeAnalysis, this.funcOp);
+    for (const block of this.funcOp.allBlocks()) {
+      const term = block.terminal;
+      if (!(term instanceof ReturnOp || term instanceof ThrowOp)) continue;
+      if (!domTree.dominates(blockId, block.id)) return false;
+    }
+    return true;
   }
 }

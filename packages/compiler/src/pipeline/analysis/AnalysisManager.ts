@@ -1,4 +1,4 @@
-import type { FunctionIR } from "../../ir/core/FunctionIR";
+import type { FuncOp } from "../../ir/core/FuncOp";
 import type { ProjectUnit } from "../../frontend/ProjectBuilder";
 
 /**
@@ -12,7 +12,7 @@ import type { ProjectUnit } from "../../frontend/ProjectBuilder";
  * the result is cached until invalidated.
  */
 export abstract class FunctionAnalysis<Result> {
-  abstract run(functionIR: FunctionIR, AM: AnalysisManager): Result;
+  abstract run(funcOp: FuncOp, AM: AnalysisManager): Result;
 }
 
 /**
@@ -75,7 +75,7 @@ export class PreservedAnalyses {
  * Analyses are computed on first access via `get()` and cached until
  * a transform pass invalidates them. Supports two levels:
  *
- * - **Function-level**: cached per FunctionIR, invalidated when that
+ * - **Function-level**: cached per FuncOp, invalidated when that
  *   function's IR changes.
  * - **Project-level**: cached once for the whole ProjectUnit,
  *   invalidated when cross-module structure changes.
@@ -85,18 +85,18 @@ export class PreservedAnalyses {
  *
  * Usage:
  * ```ts
- * const liveness = AM.get(LivenessAnalysis, functionIR);
+ * const liveness = AM.get(LivenessAnalysis, funcOp);
  * const callGraph = AM.get(CallGraphAnalysis, projectUnit);
  * ```
  */
 export class AnalysisManager {
   /**
-   * Per-function analysis caches, keyed by {@link FunctionIR} **identity**
-   * (not {@link FunctionIRId}): ids are unique per module, so two entry
+   * Per-function analysis caches, keyed by {@link FuncOp} **identity**
+   * (not {@link FuncOpId}): ids are unique per module, so two entry
    * functions in different modules can share the same numeric id.
    */
   private readonly functionCaches = new Map<
-    FunctionIR,
+    FuncOp,
     Map<FunctionAnalysisClass<unknown>, unknown>
   >();
 
@@ -104,22 +104,22 @@ export class AnalysisManager {
   private readonly projectCache = new Map<ProjectAnalysisClass<unknown>, unknown>();
 
   /**
-   * Get an analysis result for a FunctionIR or ProjectUnit.
+   * Get an analysis result for a FuncOp or ProjectUnit.
    *
    * Dispatches based on the second argument's type:
-   * - FunctionIR → function-level analysis (cached per function)
+   * - FuncOp → function-level analysis (cached per function)
    * - ProjectUnit → project-level analysis (cached globally)
    *
    * Computes lazily on first access, returns cached result on
    * subsequent calls until invalidated.
    */
-  get<Result>(analysisClass: FunctionAnalysisClass<Result>, ir: FunctionIR): Result;
+  get<Result>(analysisClass: FunctionAnalysisClass<Result>, ir: FuncOp): Result;
   get<Result>(analysisClass: ProjectAnalysisClass<Result>, ir: ProjectUnit): Result;
   get<Result>(
     analysisClass: FunctionAnalysisClass<Result> | ProjectAnalysisClass<Result>,
-    ir: FunctionIR | ProjectUnit,
+    ir: FuncOp | ProjectUnit,
   ): Result {
-    if (isFunctionIR(ir)) {
+    if (isFuncOp(ir)) {
       return this.getFunction(analysisClass as FunctionAnalysisClass<Result>, ir);
     }
     return this.getProject(analysisClass as ProjectAnalysisClass<Result>, ir);
@@ -127,18 +127,18 @@ export class AnalysisManager {
 
   private getFunction<Result>(
     analysisClass: FunctionAnalysisClass<Result>,
-    functionIR: FunctionIR,
+    funcOp: FuncOp,
   ): Result {
-    let cache = this.functionCaches.get(functionIR);
+    let cache = this.functionCaches.get(funcOp);
     if (!cache) {
       cache = new Map();
-      this.functionCaches.set(functionIR, cache);
+      this.functionCaches.set(funcOp, cache);
     }
 
     const key = analysisClass as FunctionAnalysisClass<unknown>;
     if (!cache.has(key)) {
       const analysis = new (analysisClass as new () => FunctionAnalysis<Result>)();
-      cache.set(key, analysis.run(functionIR, this));
+      cache.set(key, analysis.run(funcOp, this));
     }
 
     return cache.get(key) as Result;
@@ -164,10 +164,10 @@ export class AnalysisManager {
    * Accepts a PreservedAnalyses to selectively keep valid caches.
    */
   invalidateFunction(
-    functionIR: FunctionIR,
+    funcOp: FuncOp,
     preserved: PreservedAnalyses = PreservedAnalyses.none(),
   ): void {
-    const cache = this.functionCaches.get(functionIR);
+    const cache = this.functionCaches.get(funcOp);
     if (!cache) return;
 
     for (const analysisClass of cache.keys()) {
@@ -192,6 +192,6 @@ export class AnalysisManager {
   }
 }
 
-function isFunctionIR(ir: FunctionIR | ProjectUnit): ir is FunctionIR {
-  return "blocks" in ir && "id" in ir;
+function isFuncOp(ir: FuncOp | ProjectUnit): ir is FuncOp {
+  return "body" in ir && "id" in ir;
 }

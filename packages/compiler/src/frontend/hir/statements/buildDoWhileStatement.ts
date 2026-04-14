@@ -1,114 +1,119 @@
 import type { DoWhileStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { BranchOp, createOperationId, JumpOp, LiteralOp, UnaryExpressionOp } from "../../../ir";
+import {
+  BreakOp,
+  ConditionOp,
+  createOperationId,
+  IfOp,
+  LiteralOp,
+  Region,
+  UnaryExpressionOp,
+  WhileOp,
+  YieldOp,
+} from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildOwnedBody } from "./buildOwnedBody";
 
 /**
- * Lowers `do { body } while (test)` to the equivalent:
+ * Lower `do { body } while (test)` to `while (true) { body; if (!test) break; }`.
  *
- *   while (true) { body; if (!test) break; }
+ *   parentBlock: [..., WhileOp, ...]
+ *     WhileOp.beforeRegion: [beforeBlock]
+ *       beforeBlock: [LiteralOp true, ConditionOp(true)]
+ *     WhileOp.bodyRegion: [bodyBlock]
+ *       bodyBlock: [...body ops..., !test, IfOp, YieldOp]
+ *         IfOp.consequentRegion: [consBlock]
+ *           consBlock: [BreakOp]
  *
- * This reuses the existing while-loop back-edge codegen. The header
- * block uses a `true` literal as the while condition so that the loop
- * body always executes first. The test is evaluated at the end of the
- * body, and a conditional break exits the loop when the test is false.
+ * The before region's `condition true` is structurally a no-op test
+ * — codegen can recognize the pattern and emit `do { body } while
+ * (test)` instead of `while (true) { body; if (!test) break; }`. For
+ * now we keep the desugared shape because it round-trips correctly
+ * even without that recognition.
  */
 export function buildDoWhileStatement(
   node: DoWhileStatement,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
   label?: string,
 ) {
-  const currentBlock = functionBuilder.currentBlock;
-  const scopeId = functionBuilder.lexicalScopeIdFor(scope);
+  const parentBlock = functionBuilder.currentBlock;
 
-  // Build the test block — the `while(true)` header.
-  const testBlock = environment.createBlock(scopeId);
-  functionBuilder.addBlock(testBlock);
-
-  // Emit `true` as the while condition.
-  functionBuilder.currentBlock = testBlock;
-  const truePlace = environment.createPlace(environment.createIdentifier());
-  functionBuilder.addOp(environment.createOperation(LiteralOp, truePlace, true));
-  const testBlockTerminus = functionBuilder.currentBlock;
-
-  // Build the exit block (created early so break statements can reference it).
-  const exitBlock = environment.createBlock(scopeId);
-  functionBuilder.addBlock(exitBlock);
-
-  // Build the body block. When the body is a BlockStatement, use its
-  // scope so it merges with the body block — the loop syntax provides { }.
-  const bodyScope =
-    node.body.type === "BlockStatement" ? functionBuilder.scopeFor(node.body) : scope;
-  const bodyScopeId = functionBuilder.lexicalScopeIdFor(bodyScope);
-  const bodyBlock = environment.createBlock(bodyScopeId);
-  functionBuilder.addBlock(bodyBlock);
-
-  functionBuilder.currentBlock = bodyBlock;
-  functionBuilder.controlStack.push({
-    kind: "loop",
-    label,
-    breakTarget: exitBlock.id,
-    continueTarget: testBlock.id,
-    structured: false,
-  });
-  if (label) {
-    functionBuilder.blockLabels.set(testBlock.id, label);
-  }
-  buildOwnedBody(node.body, scope, functionBuilder, moduleBuilder, environment);
-
-  // After the body, evaluate the do-while test. If false, break.
-  const doWhileTestPlace = buildNode(node.test, scope, functionBuilder, moduleBuilder, environment);
-  if (doWhileTestPlace === undefined || Array.isArray(doWhileTestPlace)) {
-    throw new Error("Do-while statement test must be a single place");
-  }
-
-  // Emit: if (!test) break — negate the test, then branch to a break
-  // block. When test is true, fall through to the next iteration.
-  const notTestPlace = environment.createPlace(environment.createIdentifier());
-  functionBuilder.addOp(
-    environment.createOperation(UnaryExpressionOp, notTestPlace, "!", doWhileTestPlace),
-  );
-
-  const breakBlock = environment.createBlock(scopeId);
-  functionBuilder.addBlock(breakBlock);
-  breakBlock.terminal = new JumpOp(createOperationId(functionBuilder.environment), exitBlock.id);
-
-  const loopBackBlock = environment.createBlock(scopeId);
-  functionBuilder.addBlock(loopBackBlock);
-  loopBackBlock.terminal = new JumpOp(createOperationId(functionBuilder.environment), testBlock.id);
-
-  const bodyBlockTerminus = functionBuilder.currentBlock;
-  if (bodyBlockTerminus.terminal === undefined) {
-    bodyBlockTerminus.terminal = new BranchOp(
-      createOperationId(functionBuilder.environment),
-      notTestPlace,
-      breakBlock.id,
-      loopBackBlock.id,
-      loopBackBlock.id,
+  // Before region: `condition true` (loop never exits via the test).
+  const beforeRegion = new Region([]);
+  const beforeBlock = environment.createBlock();
+  functionBuilder.withStructureRegion(beforeRegion, () => {
+    functionBuilder.addBlock(beforeBlock);
+    functionBuilder.currentBlock = beforeBlock;
+    const truePlace = environment.createPlace(environment.createIdentifier());
+    functionBuilder.addOp(environment.createOperation(LiteralOp, truePlace, true));
+    functionBuilder.currentBlock.terminal = new ConditionOp(
+      createOperationId(environment),
+      truePlace,
     );
-  }
+  });
 
-  functionBuilder.controlStack.pop();
+  const bodyRegion = new Region([]);
+  const bodyBlock = environment.createBlock();
+  functionBuilder.withStructureRegion(bodyRegion, () => {
+    functionBuilder.addBlock(bodyBlock);
+    functionBuilder.currentBlock = bodyBlock;
+    functionBuilder.controlStack.push({
+      kind: "loop",
+      label,
+      breakTarget: undefined,
+      continueTarget: undefined,
+      structured: true,
+    });
+    buildOwnedBody(node.body, scope, functionBuilder, moduleBuilder, environment);
 
-  // Set the branch terminal for the test block (while(true) -> always enter body).
-  testBlockTerminus.terminal = new BranchOp(
-    createOperationId(functionBuilder.environment),
-    truePlace,
-    bodyBlock.id,
-    exitBlock.id,
-    exitBlock.id,
+    // if (!test) break;
+    const testPlace = buildNode(node.test, scope, functionBuilder, moduleBuilder, environment);
+    if (testPlace === undefined || Array.isArray(testPlace)) {
+      throw new Error("Do-while statement test must be a single place");
+    }
+    const notTestPlace = environment.createPlace(environment.createIdentifier());
+    functionBuilder.addOp(
+      environment.createOperation(UnaryExpressionOp, notTestPlace, "!", testPlace),
+    );
+
+    const consRegion = new Region([]);
+    const consBlock = environment.createBlock();
+    functionBuilder.withStructureRegion(consRegion, () => {
+      functionBuilder.addBlock(consBlock);
+      consBlock.terminal = new BreakOp(createOperationId(environment), label);
+    });
+
+    const ifOp = new IfOp(
+      createOperationId(environment),
+      notTestPlace,
+      [],
+      consRegion,
+      undefined,
+    );
+    functionBuilder.currentBlock.appendOp(ifOp);
+    functionBuilder.controlStack.pop();
+
+    if (functionBuilder.currentBlock.terminal === undefined) {
+      functionBuilder.currentBlock.terminal = new YieldOp(
+        createOperationId(environment),
+        [],
+      );
+    }
+  });
+
+  const whileOp = new WhileOp(
+    createOperationId(environment),
+    beforeRegion,
+    bodyRegion,
+    label,
   );
-
-  // Entry jumps to the test block.
-  currentBlock.terminal = new JumpOp(createOperationId(functionBuilder.environment), testBlock.id);
-
-  functionBuilder.currentBlock = exitBlock;
+  parentBlock.appendOp(whileOp);
+  functionBuilder.currentBlock = parentBlock;
   return undefined;
 }

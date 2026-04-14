@@ -5,7 +5,6 @@ import { printModuleIR } from "../ir/printer";
 import { AnalysisManager } from "./analysis/AnalysisManager";
 import { LateOptimizer } from "./late-optimizer/LateOptimizer";
 import { ExportDeclarationMergingPass } from "./late-optimizer/passes/ExportDeclarationMergingPass";
-import { CFGSimplificationPass } from "./CFGSimplificationPass";
 import { Optimizer } from "./optimizer/Optimizer";
 import { computeProcessingOrder } from "./processingOrder";
 import { UnusedExportEliminationPass } from "./passes/UnusedExportEliminationPass";
@@ -45,37 +44,28 @@ export class StagedPipeline {
       const moduleIR = this.projectUnit.modules.get(moduleName)!;
       const processingOrder = computeProcessingOrder(moduleIR);
 
-      for (const functionIR of processingOrder) {
-        new CommonJSExportCollectorPass(functionIR, moduleIR, AM).run();
-        new CFGSimplificationPass(functionIR, moduleIR, AM).run();
-        AM.invalidateFunction(functionIR);
+      for (const funcOp of processingOrder) {
+        new CommonJSExportCollectorPass(funcOp, moduleIR, AM).run();
+        AM.invalidateFunction(funcOp);
 
-        new SSABuilder(functionIR, moduleIR, AM).build();
+        new SSABuilder(funcOp, moduleIR, AM).build();
         snapshots.ssa = printModuleIR(moduleIR);
 
         if (this.options.enableOptimizer) {
-          new Optimizer(
-            functionIR,
-            moduleIR,
-            { phis: functionIR.phis },
-            this.projectUnit,
-            this.options,
-            context,
-            AM,
-          ).run();
+          new Optimizer(funcOp, moduleIR, this.projectUnit, this.options, context, AM).run();
         }
         snapshots.optimized = printModuleIR(moduleIR);
 
-        new SSAEliminator(functionIR, moduleIR).eliminate();
-        AM.invalidateFunction(functionIR);
+        new SSAEliminator(funcOp, moduleIR).eliminate();
+        AM.invalidateFunction(funcOp);
         snapshots.ssaEliminated = printModuleIR(moduleIR);
 
         if (this.options.enableLateOptimizer) {
-          new LateOptimizer(moduleIR, functionIR, this.options, AM).run();
+          new LateOptimizer(moduleIR, funcOp, this.options, AM).run();
         }
 
         if (this.options.enableExportDeclarationMergingPass) {
-          new ExportDeclarationMergingPass(functionIR).run();
+          new ExportDeclarationMergingPass(funcOp).run();
         }
         snapshots.lateOptimized = printModuleIR(moduleIR);
       }

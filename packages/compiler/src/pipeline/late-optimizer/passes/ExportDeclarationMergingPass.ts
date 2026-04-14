@@ -43,15 +43,17 @@ import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
  * 1. Renames the BindingIdentifier to the exported name
  * 2. Points the ExportNamedDeclaration's `declaration` at the declaration
  *    instruction's place and clears its specifiers
- * 3. Marks StoreLocal instructions as non-emitting (codegen still populates
- *    `generator.places` but does not emit a standalone statement)
- * 4. Removes the now-unnecessary ExportSpecifier
+ * 3. Removes the now-unnecessary ExportSpecifier
+ *
+ * Codegen detects that the declaration's place is referenced by an
+ * export wrapper via the embedded use chain and suppresses the
+ * standalone statement automatically — no `emit` flag is required.
  */
 export class ExportDeclarationMergingPass extends BaseOptimizationPass {
   protected step(): OptimizationResult {
     let changed = false;
 
-    for (const block of this.functionIR.allBlocks()) {
+    for (const block of this.funcOp.allBlocks()) {
       if (this.mergeExportDeclarationsInBlock(block)) {
         changed = true;
       }
@@ -109,11 +111,6 @@ export class ExportDeclarationMergingPass extends BaseOptimizationPass {
       // binding. Merging a hoisted var's undefined init into a default export
       // would permanently export `undefined` instead of the final value.
       if (exportSpec.exported === "default" && decl.type === "var") continue;
-
-      // Suppress the standalone statement for the declaration.
-      // Codegen still runs (populating generator.places) but won't emit
-      // a standalone statement. The export wraps it instead.
-      decl.emit = false;
 
       const declIndex = instrs.indexOf(decl);
       const exportDeclIndex = instrs.indexOf(exportDecl);

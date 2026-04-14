@@ -9,10 +9,8 @@ import {
   getCodegenDeclarationKind,
   Place,
   PlaceId,
-  LexicalScope,
-  type LexicalScopeId,
 } from "../ir";
-import { FunctionIR, makeFunctionIRId } from "../ir/core/FunctionIR";
+import { FuncOp, makeFuncOpId } from "../ir/core/FuncOp";
 import { ModuleIR } from "../ir/core/ModuleIR";
 import { AnalysisManager } from "../pipeline/analysis/AnalysisManager";
 import { LoopInfo, LoopInfoAnalysis } from "../pipeline/analysis/LoopInfoAnalysis";
@@ -41,7 +39,6 @@ export class CodeGenerator {
   public blockToStatements: Map<BlockId, Array<t.Statement>> = new Map();
   public generatedBlocks: Set<BlockId> = new Set();
   public readonly controlStack: ControlContext[] = [];
-  public readonly scopes: Map<LexicalScopeId, LexicalScope> = new Map();
 
   /** Tracks which declarations have already emitted their first variable statement. */
   public declaredDeclarations: Set<DeclarationId> = new Set();
@@ -112,8 +109,8 @@ export class CodeGenerator {
     return this.projectUnit.modules.get(this.path)!;
   }
 
-  public get entryFunction(): FunctionIR {
-    return this.moduleIR.functions.get(makeFunctionIRId(0))!;
+  public get entryFunction(): FuncOp {
+    return this.moduleIR.functions.get(makeFuncOpId(0))!;
   }
 
   public getDeclarationMetadata(declarationId: DeclarationId) {
@@ -121,8 +118,8 @@ export class CodeGenerator {
   }
 
   /** Loop nest and back-edge classification (LLVM-style {@link LoopInfo}). */
-  getLoopInfo(functionIR: FunctionIR): LoopInfo {
-    return this.analysisManager.get(LoopInfoAnalysis, functionIR);
+  getLoopInfo(funcOp: FuncOp): LoopInfo {
+    return this.analysisManager.get(LoopInfoAnalysis, funcOp);
   }
 
   public getPlaceIdentifier(place: Place): t.Identifier {
@@ -160,10 +157,6 @@ export class CodeGenerator {
   }
 
   generate(): string {
-    // Populate the scope tree so the codegen can detect scope transitions.
-    for (const [id, scope] of this.moduleIR.environment.scopes) {
-      this.scopes.set(id, scope);
-    }
     this.preRegisterBindingIdentifiers(this.moduleIR);
     const { statements } = generateFunction(this.entryFunction, [], this);
     const program = t.program(statements);
@@ -206,11 +199,8 @@ export class CodeGenerator {
     }
 
     const generator = new CodeGenerator(modulePath, this.projectUnit);
-    for (const [id, scope] of moduleIR.environment.scopes) {
-      generator.scopes.set(id, scope);
-    }
     generator.preRegisterBindingIdentifiers(moduleIR);
-    const entryFunction = moduleIR.functions.get(makeFunctionIRId(0))!;
+    const entryFunction = moduleIR.functions.get(makeFuncOpId(0))!;
     const { statements } = generateFunction(entryFunction, [], generator);
     const program = t.program(statements);
     return generate(program).code;
@@ -241,8 +231,8 @@ export class CodeGenerator {
       }
     }
 
-    for (const [, functionIR] of moduleIR.functions) {
-      for (const instruction of functionIR.source.header) {
+    for (const [, funcOp] of moduleIR.functions) {
+      for (const instruction of funcOp.header) {
         if (instruction instanceof FunctionDeclarationOp) {
           this.places.set(instruction.place.id, this.getPlaceIdentifier(instruction.place));
         }

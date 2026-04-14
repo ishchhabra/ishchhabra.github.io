@@ -4,7 +4,7 @@ import { Environment } from "../../environment";
 import { ObjectMethodOp, Place } from "../../ir";
 import { type Scope } from "../scope/Scope";
 import { buildNode } from "./buildNode";
-import { FunctionIRBuilder } from "./FunctionIRBuilder";
+import { FuncOpBuilder } from "./FuncOpBuilder";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
 
 /**
@@ -17,7 +17,7 @@ import { ModuleIRBuilder } from "./ModuleIRBuilder";
 export function buildObjectMethod(
   node: AST.Property,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
@@ -36,7 +36,7 @@ export function buildObjectMethod(
   }
 
   const fnScope = functionBuilder.scopeFor(fn);
-  const functionIRBuilder = new FunctionIRBuilder(
+  const funcOpBuilder = new FuncOpBuilder(
     params,
     body,
     fnScope,
@@ -45,12 +45,13 @@ export function buildObjectMethod(
     moduleBuilder,
     fn.async ?? false,
     fn.generator ?? false,
+    functionBuilder.funcOpId,
   );
-  const bodyIR = functionIRBuilder.build();
+  const bodyIR = funcOpBuilder.build();
 
-  functionBuilder.propagateCapturesFrom(functionIRBuilder);
+  functionBuilder.propagateCapturesFrom(funcOpBuilder);
 
-  const capturedPlaces = [...functionIRBuilder.captures.values()];
+  const capturedPlaces = [...funcOpBuilder.captures.values()];
   const methodIdentifier = environment.createIdentifier();
   const methodPlace = environment.createPlace(methodIdentifier);
   const instruction = environment.createOperation(

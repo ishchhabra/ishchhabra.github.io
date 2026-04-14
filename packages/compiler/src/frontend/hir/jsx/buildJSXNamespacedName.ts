@@ -1,11 +1,11 @@
 import type { JSXNamespacedName } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { JSXNamespacedNameOp, Place } from "../../../ir";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 
 export function buildJSXNamespacedName(
   node: JSXNamespacedName,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ): Place {
   const identifier = environment.createIdentifier();

@@ -1,12 +1,12 @@
 import type { ExportAllDeclaration } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { ExportAllOp } from "../../../ir/ops/module/ExportAll";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 export function buildExportAllDeclaration(
   node: ExportAllDeclaration,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   _moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {

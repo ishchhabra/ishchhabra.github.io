@@ -18,7 +18,7 @@ import {
 } from "../../../../ir";
 import type { ValueOp } from "../../../../ir/categories";
 import { ImportExpressionOp } from "../../../../ir/ops/call/ImportExpression";
-import { FunctionIR } from "../../../../ir/core/FunctionIR";
+import { FuncOp } from "../../../../ir/core/FuncOp";
 import { RegExpLiteralOp } from "../../../../ir/ops/prim/RegExpLiteral";
 import { ArrowFunctionExpressionOp } from "../../../../ir/ops/func/ArrowFunctionExpression";
 import { AwaitExpressionOp } from "../../../../ir/ops/call/AwaitExpression";
@@ -61,7 +61,7 @@ import { generateYieldExpressionOp } from "./generateYieldExpression";
 
 export function generateValueOp(
   instruction: ValueOp,
-  functionIR: FunctionIR,
+  funcOp: FuncOp,
   generator: CodeGenerator,
 ): t.Expression | t.ObjectMethod | t.ObjectProperty | t.ClassMethod | t.ClassProperty | null {
   if (instruction instanceof ClassExpressionOp) {

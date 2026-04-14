@@ -1,11 +1,11 @@
 import type * as AST from "../../estree";
 import { Environment } from "../../../environment";
 import { LiteralOp, TPrimitiveValue } from "../../../ir";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 
 export function buildLiteral(
   node: AST.Literal,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ) {
   const value = nodeToValue(node);

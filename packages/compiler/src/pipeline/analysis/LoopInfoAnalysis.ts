@@ -1,6 +1,6 @@
 import type { BlockId } from "../../ir";
 import { getBackEdgesWithDominance } from "../../frontend/cfg";
-import type { FunctionIR } from "../../ir/core/FunctionIR";
+import type { FuncOp } from "../../ir/core/FuncOp";
 import { AnalysisManager, FunctionAnalysis } from "./AnalysisManager";
 import type { ControlFlowGraph } from "./ControlFlowGraphAnalysis";
 import { ControlFlowGraphAnalysis } from "./ControlFlowGraphAnalysis";
@@ -64,13 +64,13 @@ export class LoopInfo {
     return this.backEdgeIntoHeader.get(header) ?? new Set();
   }
 
-  static compute(functionIR: FunctionIR, dom: DominatorTree, cfg: ControlFlowGraph): LoopInfo {
+  static compute(funcOp: FuncOp, dom: DominatorTree, cfg: ControlFlowGraph): LoopInfo {
     const predecessors = cfg.predecessors;
-    const backEdgeMap = getBackEdgesWithDominance(functionIR, predecessors, (b) =>
+    const backEdgeMap = getBackEdgesWithDominance(funcOp, predecessors, (b) =>
       dom.getDominators(b),
     );
 
-    const headersWithBackEdges = [...functionIR.allBlocks()]
+    const headersWithBackEdges = [...funcOp.allBlocks()]
       .map((_b) => _b.id)
       .filter((h) => (backEdgeMap.get(h)?.size ?? 0) > 0);
 
@@ -119,7 +119,7 @@ export class LoopInfo {
     const topLevel = topLevelRaws.map((r) => buildLoop(r, null));
 
     const innermost = new Map<BlockId, Loop>();
-    for (const blockId of functionIR.blockIds()) {
+    for (const blockId of funcOp.blockIds()) {
       const containing = raws.filter((r) => r.blocks.has(blockId));
       if (containing.length === 0) continue;
       const smallest = containing.reduce((a, b) => (a.blocks.size <= b.blocks.size ? a : b));
@@ -185,9 +185,9 @@ function naturalLoopBlocks(
  * Invalidate when the CFG changes.
  */
 export class LoopInfoAnalysis extends FunctionAnalysis<LoopInfo> {
-  run(functionIR: FunctionIR, AM: AnalysisManager): LoopInfo {
-    const cfg = AM.get(ControlFlowGraphAnalysis, functionIR);
-    const dom = AM.get(DominatorTreeAnalysis, functionIR);
-    return LoopInfo.compute(functionIR, dom, cfg);
+  run(funcOp: FuncOp, AM: AnalysisManager): LoopInfo {
+    const cfg = AM.get(ControlFlowGraphAnalysis, funcOp);
+    const dom = AM.get(DominatorTreeAnalysis, funcOp);
+    return LoopInfo.compute(funcOp, dom, cfg);
   }
 }

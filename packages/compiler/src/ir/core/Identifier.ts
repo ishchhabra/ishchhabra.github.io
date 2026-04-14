@@ -52,6 +52,19 @@ export class Identifier {
    */
   public readonly uses: Set<User> = new Set();
 
+  /**
+   * For SSA block-parameter identifiers, the *original* declaration
+   * the param merges values of. The identifier itself has its own
+   * fresh `declarationId` so codegen treats it as a distinct JS
+   * variable; this field lets the rename pass and out-of-SSA lowering
+   * connect the param back to the variable it represents (e.g., to
+   * find the first declaration site of the original variable when
+   * placing the `let` declaration for the merged value).
+   *
+   * `undefined` for ordinary identifiers.
+   */
+  public originalDeclarationId: DeclarationId | undefined;
+
   constructor(
     public readonly id: IdentifierId,
     public readonly version: string,

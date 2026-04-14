@@ -1,5 +1,4 @@
 function $0_0($2_0) {
   console.log($2_0);
 }
-console.log("world");
-console.log(undefined);
+console.log($0_0("world"));

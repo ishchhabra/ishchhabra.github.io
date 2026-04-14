@@ -5,6 +5,7 @@ export {
   type DeclarationMetadata,
 } from "./Declaration";
 export {
+  collectDestructureTargetBindingPlaces,
   destructureTargetHasObservableWrites,
   getDestructureTargetDefs,
   getDestructureTargetOperands,
@@ -24,12 +25,7 @@ export {
   type DeclarationId,
   type IdentifierId,
 } from "./Identifier";
-export {
-  LexicalScope,
-  makeLexicalScopeId,
-  type LexicalScopeId,
-  type LexicalScopeKind,
-} from "./LexicalScope";
+export { type LexicalScopeKind } from "./LexicalScope";
 export {
   makeCloneContext,
   makeOperationId,

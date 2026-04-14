@@ -1,6 +1,6 @@
 import type { BlockId } from "../../ir";
 import { getDominanceFrontier, getDominators, getImmediateDominators } from "../../frontend/cfg";
-import type { FunctionIR } from "../../ir/core/FunctionIR";
+import type { FuncOp } from "../../ir/core/FuncOp";
 import { AnalysisManager, FunctionAnalysis } from "./AnalysisManager";
 import { ControlFlowGraph, ControlFlowGraphAnalysis } from "./ControlFlowGraphAnalysis";
 
@@ -8,11 +8,11 @@ import { ControlFlowGraph, ControlFlowGraphAnalysis } from "./ControlFlowGraphAn
  * Dominance information for a function's CFG, analogous to LLVM's
  * `llvm::DominatorTree`. Loop structure and back edges live in {@link LoopInfo}.
  *
- * Depends on current {@link ControlFlowGraph} (predecessor map) and {@link FunctionIR#blocks}.
+ * Depends on current {@link ControlFlowGraph} (predecessor map) and {@link FuncOp#blocks}.
  * Obtain via {@link AnalysisManager#get} with {@link DominatorTreeAnalysis}. To call
  * {@link DominatorTree.compute} directly, pass `cfg` from
- * {@link AnalysisManager#get}({@link ControlFlowGraphAnalysis}, functionIR) — tests may use
- * {@link ControlFlowGraph.compute}(functionIR) instead.
+ * {@link AnalysisManager#get}({@link ControlFlowGraphAnalysis}, funcOp) — tests may use
+ * {@link ControlFlowGraph.compute}(funcOp) instead.
  */
 export class DominatorTree {
   constructor(
@@ -88,8 +88,8 @@ export class DominatorTree {
   /**
    * Builds a tree from a function and its control-flow graph (predecessor map).
    */
-  static compute(functionIR: FunctionIR, cfg: ControlFlowGraph): DominatorTree {
-    const entry = functionIR.entryBlockId;
+  static compute(funcOp: FuncOp, cfg: ControlFlowGraph): DominatorTree {
+    const entry = funcOp.entryBlockId;
     const predecessors = cfg.predecessors;
     const dominators = getDominators(predecessors, entry);
     const immediateDominators = getImmediateDominators(dominators);
@@ -116,8 +116,8 @@ export class DominatorTree {
  * {@link AnalysisManager#invalidateFunction} so the next `get` recomputes.
  */
 export class DominatorTreeAnalysis extends FunctionAnalysis<DominatorTree> {
-  run(functionIR: FunctionIR, AM: AnalysisManager): DominatorTree {
-    const cfg = AM.get(ControlFlowGraphAnalysis, functionIR);
-    return DominatorTree.compute(functionIR, cfg);
+  run(funcOp: FuncOp, AM: AnalysisManager): DominatorTree {
+    const cfg = AM.get(ControlFlowGraphAnalysis, funcOp);
+    return DominatorTree.compute(funcOp, cfg);
   }
 }

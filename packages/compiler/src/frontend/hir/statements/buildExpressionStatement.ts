@@ -3,7 +3,7 @@ import { castArray } from "lodash-es";
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildNode } from "../buildNode";
 import { buildAssignmentExpression } from "../expressions/buildAssignmentExpression";
@@ -11,7 +11,7 @@ import { buildAssignmentExpression } from "../expressions/buildAssignmentExpress
 export function buildExpressionStatement(
   node: ExpressionStatement,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place[] | undefined {

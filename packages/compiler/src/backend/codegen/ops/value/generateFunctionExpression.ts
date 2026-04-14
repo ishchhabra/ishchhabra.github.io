@@ -13,7 +13,7 @@ export function generateFunctionExpressionOp(
   }
 
   const { params, statements } = generateFunction(
-    instruction.functionIR,
+    instruction.funcOp,
     instruction.captures,
     generator,
   );

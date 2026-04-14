@@ -2,7 +2,7 @@ import type { ModuleDeclaration, Node, Statement } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { Place } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildBlockStatement } from "./buildBlockStatement";
 import { buildBreakStatement } from "./buildBreakStatement";
@@ -31,7 +31,7 @@ import { buildWhileStatement } from "./buildWhileStatement";
 export function buildStatement(
   node: Statement | ModuleDeclaration,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place | Place[] | undefined {

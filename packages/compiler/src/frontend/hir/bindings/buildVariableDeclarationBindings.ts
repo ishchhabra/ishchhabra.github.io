@@ -3,14 +3,14 @@ import type { Node, VariableDeclaration } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { type DeclarationKind, LiteralOp, StoreLocalOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { isBindingOwnedByScope } from "./isBindingOwnedByScope";
 import { isContextVariable } from "./isContextVariable";
 
 export function buildVariableDeclarationBindings(
   scope: Scope,
   node: VariableDeclaration,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ) {
   if (node.kind !== "var" && node.kind !== "let" && node.kind !== "const") {
@@ -26,7 +26,7 @@ function buildLValBindings(
   scope: Scope,
   node: AST.Pattern | AST.Property,
   declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ) {
   switch (node.type) {
@@ -57,7 +57,7 @@ function buildIdentifierBindings(
   scope: Scope,
   node: AST.Identifier,
   declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ) {
   const originalName = node.name;
@@ -118,7 +118,7 @@ function buildArrayPatternBindings(
   scope: Scope,
   node: AST.ArrayPattern,
   declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ) {
   for (const element of node.elements) {
@@ -134,7 +134,7 @@ function buildAssignmentPatternBindings(
   scope: Scope,
   node: AST.AssignmentPattern,
   declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ) {
   buildLValBindings(scope, node.left, declarationKind, functionBuilder, environment);
@@ -144,7 +144,7 @@ function buildObjectPatternBindings(
   scope: Scope,
   node: AST.ObjectPattern,
   declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ) {
   for (const property of node.properties) {
@@ -156,7 +156,7 @@ function buildObjectPropertyBindings(
   scope: Scope,
   node: AST.Property,
   declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ) {
   const value = node.value;
@@ -176,7 +176,7 @@ function buildRestElementBindings(
   scope: Scope,
   node: AST.RestElement,
   declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   environment: Environment,
 ) {
   buildLValBindings(scope, node.argument, declarationKind, functionBuilder, environment);

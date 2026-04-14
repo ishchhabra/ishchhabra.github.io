@@ -1,5 +1,4 @@
 import type { OperationId } from "../../core";
-import type { BlockId } from "../../core/Block";
 import {
   type DestructureTarget,
   getDestructureTargetDefs,
@@ -11,7 +10,6 @@ import {
   type CloneContext,
   nextId,
   Operation,
-  remapBlockId,
   remapPlace,
   remapRegion,
   Trait,
@@ -20,37 +18,29 @@ import {
 import type { Place } from "../../core/Place";
 import { Region } from "../../core/Region";
 
-/** `for (key in object) { body }`. Replaces `ForInStructure`. */
+/**
+ * `for (key in object) { body }`.
+ *
+ * Inline structured op — lives directly in its parent block, owns
+ * a single body region, no fallthrough field.
+ */
 export class ForInOp extends Operation {
   static override readonly traits = new Set<Trait>([Trait.HasRegions]);
 
   constructor(
     id: OperationId,
-    public header: BlockId,
     public readonly iterationValue: Place,
     public readonly iterationTarget: DestructureTarget,
     public readonly object: Place,
-    public fallthrough: BlockId,
     bodyRegion: Region,
     public readonly label?: string,
   ) {
+    bodyRegion.scopeKind = "for";
     super(id, [bodyRegion]);
   }
 
-  /** Entry block id of the body region. */
-  get body(): BlockId {
-    return this.regions[0].entry.id;
-  }
-
-  getEdges(): Array<[BlockId, BlockId]> {
-    return [
-      [this.header, this.body],
-      [this.header, this.fallthrough],
-    ];
-  }
-
-  override getBlockRefs(): BlockId[] {
-    return [this.body, this.fallthrough];
+  get bodyRegion(): Region {
+    return this.regions[0];
   }
 
   getOperands(): Place[] {
@@ -77,11 +67,9 @@ export class ForInOp extends Operation {
 
     return new ForInOp(
       this.id,
-      this.header,
       iterationValue,
       iterationTarget,
       object,
-      this.fallthrough,
       this.regions[0],
       this.label,
     );
@@ -90,31 +78,20 @@ export class ForInOp extends Operation {
   clone(ctx: CloneContext): ForInOp {
     return new ForInOp(
       nextId(ctx),
-      remapBlockId(ctx, this.header),
       remapPlace(ctx, this.iterationValue),
       rewriteDestructureTarget(this.iterationTarget, ctx.identifierMap, {
         rewriteDefinitions: true,
       }),
       remapPlace(ctx, this.object),
-      remapBlockId(ctx, this.fallthrough),
       remapRegion(ctx, this.regions[0]),
       this.label,
     );
   }
 
-  override remap(from: BlockId, to: BlockId): void {
-    if (this.header === from) this.header = to;
-    if (this.fallthrough === from) this.fallthrough = to;
-    // body is derived from regions[0].entry.id.
-  }
-
   override verify(): void {
     super.verify();
-    if (this.body === this.fallthrough) {
-      throw new VerifyError(this, `body === fallthrough (bb${this.body})`);
-    }
-    if (this.header === this.fallthrough) {
-      throw new VerifyError(this, `header === fallthrough (bb${this.header})`);
+    if (this.regions.length !== 1) {
+      throw new VerifyError(this, `expected 1 region, got ${this.regions.length}`);
     }
   }
 }

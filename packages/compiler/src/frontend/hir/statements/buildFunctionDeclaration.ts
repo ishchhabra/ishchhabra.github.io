@@ -1,6 +1,6 @@
 import { type Function } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
 /**
@@ -10,7 +10,7 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
  */
 export function buildFunctionDeclaration(
   _node: Function,
-  _functionBuilder: FunctionIRBuilder,
+  _functionBuilder: FuncOpBuilder,
   _moduleBuilder: ModuleIRBuilder,
   _environment: Environment,
 ) {

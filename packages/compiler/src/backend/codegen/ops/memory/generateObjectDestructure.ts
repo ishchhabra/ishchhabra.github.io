@@ -43,6 +43,8 @@ export function generateObjectDestructureOp(
     node = t.expressionStatement(t.assignmentExpression("=", pattern, value));
   }
 
-  generator.places.set(instruction.place.id, instruction.emit ? pattern : node);
+  // Always cache the full Declaration so an export wrapper that
+  // claims this destructure can read it.
+  generator.places.set(instruction.place.id, node);
   return node;
 }

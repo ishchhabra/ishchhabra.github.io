@@ -3,13 +3,13 @@ import type { ExportSpecifier } from "oxc-parser";
 import { Environment } from "../../environment";
 import { ExportSpecifierOp, Place } from "../../ir";
 import { type Scope } from "../scope/Scope";
-import { FunctionIRBuilder } from "./FunctionIRBuilder";
+import { FuncOpBuilder } from "./FuncOpBuilder";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
 
 export function buildExportSpecifier(
   node: ExportSpecifier,
   scope: Scope,
-  functionBuilder: FunctionIRBuilder,
+  functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {

@@ -11,11 +11,10 @@ import {
   ThisExpressionOp,
 } from "../../ir";
 import { isMemoryOp, isValueOp } from "../../ir/categories";
-import { FunctionIR } from "../../ir/core/FunctionIR";
+import { FuncOp } from "../../ir/core/FuncOp";
 import { Identifier } from "../../ir/core/Identifier";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { Place } from "../../ir/core/Place";
-import { LoadPhiOp } from "../../ir/ops/mem/LoadPhi";
 
 /**
  * Lowering pass: materializes multi-use SSA values into StoreLocal
@@ -34,14 +33,14 @@ import { LoadPhiOp } from "../../ir/ops/mem/LoadPhi";
  */
 export class ValueMaterializationPass {
   constructor(
-    private readonly functionIR: FunctionIR,
+    private readonly funcOp: FuncOp,
     private readonly moduleIR: ModuleIR,
   ) {}
 
   public run(): void {
     const environment = this.moduleIR.environment;
 
-    for (const block of this.functionIR.allBlocks()) {
+    for (const block of this.funcOp.allBlocks()) {
       for (let i = 0; i < block.operations.length; i++) {
         const instruction = block.operations[i];
 
@@ -78,7 +77,10 @@ export class ValueMaterializationPass {
    * and codegen would duplicate the expression without a variable.
    */
   private needsMaterialization(instruction: Operation): boolean {
-    if (instruction.place!.identifier.uses.size <= 1) {
+    if (instruction.place === undefined) {
+      return false;
+    }
+    if (instruction.place.identifier.uses.size <= 1) {
       return false;
     }
 
@@ -126,12 +128,12 @@ export class ValueMaterializationPass {
       return true;
     }
 
-    // LoadLocal/LoadPhi are trivially duplicable when the loaded value
-    // is a declared variable (StoreLocal, DeclareLocal, parameter, or
+    // LoadLocal is trivially duplicable when the loaded value is a
+    // declared variable (StoreLocal, DeclareLocal, parameter, or
     // capture — all of which codegen emits as a named identifier).
     // If the source is a bare SSA temp from a ValueInstruction, codegen
     // would chase the def chain and emit the full expression inline.
-    if (instruction instanceof LoadLocalOp || instruction instanceof LoadPhiOp) {
+    if (instruction instanceof LoadLocalOp) {
       const source = instruction.value.identifier.definer;
       // No definer → parameter or capture (always named).
       // StoreLocal/DeclareLocal → declared variable (always named).
@@ -158,71 +160,36 @@ export class ValueMaterializationPass {
   }
 
   /**
-   * Rewrites all users of `instruction.place` to use `newPlace` instead,
-   * except for the StoreLocal we just inserted (which references the
-   * original place as its value).
+   * Rewrite every use of `instruction.place` to use `newPlace`
+   * instead, except for the StoreLocal we just inserted. Walks
+   * every op in every block uniformly.
    */
   private rewriteUses(instruction: Operation, newPlace: Place): void {
     const oldIdentifier = instruction.place!.identifier;
-    const users = [...oldIdentifier.uses];
+    const map = new Map<Identifier, Place>([[oldIdentifier, newPlace]]);
 
-    for (const user of users) {
-      // Don't rewrite the StoreLocal we just created — it needs to
-      // reference the original value as its RHS.
-      if (user instanceof StoreLocalOp && user.value === instruction.place) {
-        continue;
-      }
-
-      if (user instanceof Operation) {
-        this.rewriteInstructionUser(user, oldIdentifier, newPlace);
-      }
-    }
-
-    // Rewrite terminal references.
-    for (const block of this.functionIR.allBlocks()) {
-      if (block.terminal) {
-        const operands = block.terminal.getOperands();
-        if (operands.some((op) => op.identifier === oldIdentifier)) {
-          const map = new Map<Identifier, Place>([[oldIdentifier, newPlace]]);
-          block.replaceTerminal(
-            block.terminal.rewrite(map) as import("../../ir/ops/control").Terminal,
-          );
+    for (const block of this.funcOp.allBlocks()) {
+      for (let i = 0; i < block.operations.length; i++) {
+        const op = block.operations[i];
+        if (op instanceof StoreLocalOp && op.value === instruction.place) {
+          // Don't rewrite the StoreLocal we just created — it needs
+          // to reference the original value as its RHS.
+          continue;
+        }
+        const rewritten = op.rewrite(map);
+        if (rewritten !== op) {
+          block.replaceOp(i, rewritten);
+          if (rewritten.place !== undefined) {
+            this.moduleIR.environment.placeToOp.set(rewritten.place.id, rewritten);
+          }
         }
       }
-    }
-
-    // Rewrite structure references.
-    for (const [blockId, structure] of this.functionIR.structures) {
-      const operands = structure.getOperands();
-      if (operands.some((op) => op.identifier === oldIdentifier)) {
-        const map = new Map<Identifier, Place>([[oldIdentifier, newPlace]]);
-        const rewritten = structure.rewrite(map);
-        if (rewritten !== structure) {
-          this.functionIR.setStructure(
-            blockId,
-            rewritten as import("../../ir/ops/control").Structure,
-          );
+      if (block.terminal !== undefined) {
+        const rewrittenTerminal = block.terminal.rewrite(map) as import("../../ir/ops/control").Terminal;
+        if (rewrittenTerminal !== block.terminal) {
+          block.replaceTerminal(rewrittenTerminal);
         }
       }
-    }
-  }
-
-  private rewriteInstructionUser(
-    user: Operation,
-    oldIdentifier: Identifier,
-    newPlace: Place,
-  ): void {
-    for (const block of this.functionIR.allBlocks()) {
-      const index = block.operations.indexOf(user);
-      if (index === -1) continue;
-
-      const map = new Map<Identifier, Place>([[oldIdentifier, newPlace]]);
-      const rewritten = user.rewrite(map);
-      if (rewritten !== user) {
-        block.replaceOp(index, rewritten);
-        this.moduleIR.environment.placeToOp.set(rewritten.place!.id, rewritten);
-      }
-      return;
     }
   }
 }
