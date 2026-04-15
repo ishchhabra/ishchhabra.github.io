@@ -44,7 +44,11 @@ export class Optimizer {
 
       if (this.options.enableExpressionInliningPass) {
         runPass(
-          new ExpressionInliningPass(this.funcOp, this.moduleIR.environment).run().changed,
+          new ExpressionInliningPass(
+            this.funcOp,
+            this.moduleIR.environment,
+            this.AM,
+          ).run().changed,
         );
       }
 

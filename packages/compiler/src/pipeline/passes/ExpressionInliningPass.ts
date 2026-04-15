@@ -1,66 +1,69 @@
 import { Environment } from "../../environment";
-import { Operation, LoadLocalOp, StoreLocalOp } from "../../ir";
+import {
+  ArrowFunctionExpressionOp,
+  ClassMethodOp,
+  FunctionExpressionOp,
+  LoadContextOp,
+  LoadLocalOp,
+  ObjectMethodOp,
+  Operation,
+  StoreLocalOp,
+} from "../../ir";
 import { isValueOp } from "../../ir/categories";
-import { isClaimedByExportDeclaration } from "../../ir/exportClaim";
-import { AwaitExpressionOp } from "../../ir/ops/call/AwaitExpression";
-import { ArrowFunctionExpressionOp } from "../../ir/ops/func/ArrowFunctionExpression";
-import { FunctionExpressionOp } from "../../ir/ops/func/FunctionExpression";
-import { ObjectMethodOp } from "../../ir/ops/object/ObjectMethod";
-import { ClassMethodOp } from "../../ir/ops/class/ClassMethod";
-import { isTerminal } from "../../ir/ops/control";
+import { BasicBlock } from "../../ir/core/Block";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { Identifier } from "../../ir/core/Identifier";
+import { Trait } from "../../ir/core/Operation";
 import { Place } from "../../ir/core/Place";
+import { isClaimedByExportDeclaration } from "../../ir/exportClaim";
+import { AnalysisManager } from "../analysis/AnalysisManager";
+import { MutabilityAnalysis, MutabilityInfo } from "../analysis/MutabilityAnalysis";
 import { BaseOptimizationPass, OptimizationResult } from "../late-optimizer/OptimizationPass";
 
 /**
- * SSA expression inlining via single-use forward substitution.
+ * Single-use forward substitution.
  *
- * Rewrites a single-use SSA local binding:
+ * Rewrites
+ *     const t = expr
+ *     use(t)
+ * into
+ *     use(expr)
+ * when the store is a true SSA binding (const, single definition,
+ * single use) and removing it preserves observable semantics.
  *
- *   const t = expr
- *   use(t)
+ * This is the JS analogue of GCC's `tree-ssa-forwprop` and LLVM's
+ * forwarding combine: it fires only for exactly-one-use values within
+ * a single block and leaves everything else to DCE and copy propagation.
  *
- * into:
- *
- *   use(expr)
- *
- * then deletes the now-dead definition.
- *
- * For pure values, inlining is safe when the user is the immediately next
- * instruction. For impure values (calls, await, etc.), inlining is also
- * safe when no side-effecting statement would be emitted between the store
- * and its sole use — JavaScript's left-to-right evaluation order within
- * the composed expression preserves the original ordering.
- *
- * The pass processes instructions in reverse order so that inner single-use
- * stores are inlined first, naturally shrinking the gap for outer stores.
+ * Stores are processed back-to-front so that inner single-use chains
+ * collapse before outer ones, exposing new candidates within the same
+ * fixpoint iteration.
  */
 export class ExpressionInliningPass extends BaseOptimizationPass {
+  /** Cached for the current {@link step}; refreshed on each iteration. */
+  private mutability: MutabilityInfo = new MutabilityInfo(new Map());
+
   constructor(
     protected readonly funcOp: FuncOp,
     private readonly environment: Environment,
+    private readonly AM: AnalysisManager,
   ) {
     super(funcOp);
   }
 
   protected step(): OptimizationResult {
-    let changed = false;
+    this.mutability = this.AM.get(MutabilityAnalysis, this.funcOp);
 
+    let changed = false;
     for (const block of this.funcOp.allBlocks()) {
       for (let i = block.operations.length - 1; i >= 0; i--) {
-        const instruction = block.operations[i];
-        if (!(instruction instanceof StoreLocalOp)) continue;
+        const store = block.operations[i];
+        if (!(store instanceof StoreLocalOp)) continue;
 
-        const candidate = this.getInliningCandidate(block, i, instruction);
-        if (!candidate) continue;
+        const user = this.findInliningCandidate(block, i, store);
+        if (user === undefined) continue;
 
-        const rewriteMap = new Map<Identifier, Place>([
-          [instruction.place.identifier, instruction.value],
-          [instruction.lval.identifier, instruction.value],
-        ]);
-
-        if (!this.rewriteUser(candidate.user, rewriteMap)) continue;
+        if (!this.rewriteUser(user, this.buildRewriteMap(store))) continue;
 
         block.removeOpAt(i);
         changed = true;
@@ -70,129 +73,104 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
     return { changed };
   }
 
-  private getInliningCandidate(
-    block: { operations: readonly Operation[] },
-    index: number,
-    instruction: StoreLocalOp,
-  ): { user: Operation } | undefined {
-    // Only inline const-typed stores (not assignments to mutable variables).
-    if (instruction.type !== "const") {
-      return undefined;
+  // --------------------------------------------------------------------
+  // Candidate selection
+  // --------------------------------------------------------------------
+
+  private findInliningCandidate(
+    block: BasicBlock,
+    storeIndex: number,
+    store: StoreLocalOp,
+  ): Operation | undefined {
+    if (!this.isSsaStore(store)) return undefined;
+
+    const user = this.getSingleUser(store);
+    if (user === undefined) return undefined;
+
+    // Terminator user: only safe when the store is the last
+    // non-terminator op — no gap ⇒ no intervening side effects.
+    if (user.hasTrait(Trait.Terminator)) {
+      return user.parentBlock === block && storeIndex === block.operations.length - 1
+        ? user
+        : undefined;
     }
 
-    // Destructuring stores have complex binding semantics.
-    if (instruction.bindings.length > 0) {
-      return undefined;
-    }
+    if (user.parentBlock !== block) return undefined;
 
-    // The lval must be truly single-definition. After SSA destruction, a
-    // `let` variable might have multiple StoreLocals sharing the same
-    // declarationId (initial declaration + loop updates). The type check
-    // above catches reassignments (type "assignment"), but the initial
-    // declaration has type "const" — we must verify no other StoreLocal
-    // targets the same declarationId.
-    if (this.hasMultipleDefinitions(instruction)) {
-      return undefined;
-    }
+    // Only ops that embed operands as expressions can absorb an inlined
+    // expression. Declaration / module / JSX ops need a named binding.
+    if (!this.isInlinableUser(user)) return undefined;
 
-    const uses = new Set([
-      ...instruction.place.identifier.uses,
-      ...instruction.lval.identifier.uses,
-    ]);
-    if (uses.size !== 1) {
-      return undefined;
-    }
+    // Function-forming ops capture by closure. Inlining would move
+    // evaluation from definition time to call time, changing semantics.
+    if (this.isFunctionFormingOp(user)) return undefined;
 
-    const [user] = uses;
-    if (!(user instanceof Operation)) {
-      return undefined;
-    }
-
-    // Terminal users: the store must be the last instruction in the block.
-    if (isTerminal(user)) {
-      if (index !== block.operations.length - 1) {
-        return undefined;
-      }
-      return { user };
-    }
-
-    // Instruction users: must be in the same block and must be a type
-    // that embeds operands as expressions (ValueInstruction, LoadLocal,
-    // StoreLocal). Module/JSX/Declaration instructions need the declared
-    // binding name, not an inlined expression.
-    if (!isValueOp(user) && !(user instanceof StoreLocalOp) && !(user instanceof LoadLocalOp)) {
+    // `const snapshot = i` where `i` is mutable must stay materialized:
+    // inlining would let later mutations of `i` be seen by the read.
+    if (user instanceof LoadLocalOp && this.readsMutableState(store.value)) {
       return undefined;
     }
 
     const userIndex = block.operations.indexOf(user);
-    if (userIndex === -1) {
-      return undefined;
-    }
+    if (this.hasInterveningSideEffect(block, storeIndex, userIndex)) return undefined;
 
-    // An `await` expression can only appear inside an async function.
-    // If the user is a non-async function expression (arrow, function,
-    // object method, class method), the await would be inlined into its
-    // captures and emitted inside the non-async body — a syntax error.
-    if (instruction.value.identifier.definer instanceof AwaitExpressionOp) {
-      if (this.isNonAsyncFunction(user)) {
-        return undefined;
-      }
-    }
-
-    // Check that no side-effecting statement would be emitted between
-    // the store and its use. If one exists, removing the store would
-    // delay the value's execution past that statement, reordering
-    // observable side effects.
-    if (this.hasInterveningSideEffect(block, index, userIndex)) {
-      return undefined;
-    }
-
-    return { user };
+    return user;
   }
 
-  /**
-   * Returns true if another StoreLocal in the function writes to the same
-   * declarationId. This catches loop-carried variables where the initial
-   * `const`-typed declaration is followed by an `assignment`-typed update
-   * to the same declaration.
-   */
-  private hasMultipleDefinitions(instruction: StoreLocalOp): boolean {
-    const declId = instruction.lval.identifier.declarationId;
-    for (const block of this.funcOp.allBlocks()) {
-      for (const instr of block.operations) {
-        if (instr === instruction) continue;
-        if (instr instanceof StoreLocalOp && instr.lval.identifier.declarationId === declId) {
-          return true;
-        }
-      }
-    }
-    return false;
+  private isSsaStore(store: StoreLocalOp): boolean {
+    if (store.type !== "const") return false;
+    if (store.bindings.length > 0) return false;
+    return this.mutability.isSingleAssignment(store.lval.identifier.declarationId);
   }
 
-  /**
-   * Returns true if any instruction between indices (start, end) exclusive
-   * would produce a side-effecting statement in the output.
-   */
+  private getSingleUser(store: StoreLocalOp): Operation | undefined {
+    const uses = new Set<Operation>();
+    for (const u of store.place.identifier.uses) {
+      if (u instanceof Operation) uses.add(u);
+    }
+    for (const u of store.lval.identifier.uses) {
+      if (u instanceof Operation) uses.add(u);
+    }
+    if (uses.size !== 1) return undefined;
+    return uses.values().next().value;
+  }
+
+  private isInlinableUser(user: Operation): boolean {
+    return isValueOp(user) || user instanceof StoreLocalOp || user instanceof LoadLocalOp;
+  }
+
+  private isFunctionFormingOp(op: Operation): boolean {
+    return (
+      op instanceof ArrowFunctionExpressionOp ||
+      op instanceof FunctionExpressionOp ||
+      op instanceof ObjectMethodOp ||
+      op instanceof ClassMethodOp
+    );
+  }
+
+  private readsMutableState(place: Place): boolean {
+    const declarationId = place.identifier.declarationId;
+    if (place.identifier.definer instanceof LoadContextOp) return true;
+    if (this.environment.contextDeclarationIds.has(declarationId)) return true;
+    return this.mutability.getStoreCount(declarationId) > 1;
+  }
+
   private hasInterveningSideEffect(
-    block: { operations: readonly Operation[] },
-    start: number,
-    end: number,
+    block: BasicBlock,
+    storeIndex: number,
+    userIndex: number,
   ): boolean {
-    for (let j = start + 1; j < end; j++) {
-      const instr = block.operations[j];
+    for (let j = storeIndex + 1; j < userIndex; j++) {
+      const op = block.operations[j];
 
-      // A StoreLocal that's not claimed by a downstream export
-      // wrapper emits a const/let/var declaration statement.
-      if (instr instanceof StoreLocalOp && !isClaimedByExportDeclaration(instr)) {
-        return true;
-      }
+      // Unclaimed StoreLocals lower to declaration statements.
+      if (op instanceof StoreLocalOp && !isClaimedByExportDeclaration(op)) return true;
 
-      // A zero-use side-effecting value op gets flushed as an
-      // expression statement by codegen.
+      // Zero-use value ops with side effects flush as expression statements.
       if (
-        isValueOp(instr) &&
-        instr.place.identifier.uses.size === 0 &&
-        instr.hasSideEffects(this.environment)
+        isValueOp(op) &&
+        op.place.identifier.uses.size === 0 &&
+        op.hasSideEffects(this.environment)
       ) {
         return true;
       }
@@ -200,12 +178,15 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
     return false;
   }
 
-  private isNonAsyncFunction(instruction: Operation): boolean {
-    if (instruction instanceof ArrowFunctionExpressionOp) return !instruction.async;
-    if (instruction instanceof FunctionExpressionOp) return !instruction.async;
-    if (instruction instanceof ObjectMethodOp) return !instruction.async;
-    if (instruction instanceof ClassMethodOp) return !instruction.async;
-    return false;
+  // --------------------------------------------------------------------
+  // Rewriting
+  // --------------------------------------------------------------------
+
+  private buildRewriteMap(store: StoreLocalOp): Map<Identifier, Place> {
+    return new Map<Identifier, Place>([
+      [store.place.identifier, store.value],
+      [store.lval.identifier, store.value],
+    ]);
   }
 
   private rewriteUser(user: Operation, values: Map<Identifier, Place>): boolean {
