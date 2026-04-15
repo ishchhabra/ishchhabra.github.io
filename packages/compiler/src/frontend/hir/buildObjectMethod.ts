@@ -1,7 +1,7 @@
 import type * as AST from "../estree";
 import type { Function } from "oxc-parser";
 import { Environment } from "../../environment";
-import { ObjectMethodOp, Place } from "../../ir";
+import { LiteralOp, ObjectMethodOp, Place } from "../../ir";
 import { type Scope } from "../scope/Scope";
 import { buildNode } from "./buildNode";
 import { FuncOpBuilder } from "./FuncOpBuilder";
@@ -21,10 +21,21 @@ export function buildObjectMethod(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Place {
-  // Build the key place
-  const keyPlace = buildNode(node.key, scope, functionBuilder, moduleBuilder, environment);
-  if (keyPlace === undefined || Array.isArray(keyPlace)) {
-    throw new Error(`Unable to build key place for Property (method)`);
+  // Non-computed identifier keys are property labels (string literals),
+  // not variable references. Emit a LiteralOp so the key survives SSA
+  // transformations unchanged.
+  let keyPlace: Place;
+  if (!node.computed && node.key.type === "Identifier") {
+    const keyIdentifier = environment.createIdentifier();
+    keyPlace = environment.createPlace(keyIdentifier);
+    const keyInstruction = environment.createOperation(LiteralOp, keyPlace, node.key.name);
+    functionBuilder.addOp(keyInstruction);
+  } else {
+    const built = buildNode(node.key, scope, functionBuilder, moduleBuilder, environment);
+    if (built === undefined || Array.isArray(built)) {
+      throw new Error(`Unable to build key place for Property (method)`);
+    }
+    keyPlace = built;
   }
 
   // The value of a method Property is a FunctionExpression
