@@ -12,7 +12,17 @@ export function generateSuperPropertyOp(
   }
   t.assertExpression(property);
 
-  const node = t.memberExpression(t.super(), property, instruction.computed);
+  // Non-computed keys are stored as LiteralOp → StringLiteral in the IR.
+  // t.memberExpression requires an Identifier for non-computed access;
+  // convert back here, mirroring generateLoadStaticPropertyOp.
+  let key: t.Expression;
+  if (!instruction.computed && t.isStringLiteral(property) && t.isValidIdentifier(property.value, true)) {
+    key = t.identifier(property.value);
+  } else {
+    key = property;
+  }
+
+  const node = t.memberExpression(t.super(), key, instruction.computed);
   generator.places.set(instruction.place.id, node);
   return node;
 }
