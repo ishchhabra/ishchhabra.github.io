@@ -272,14 +272,7 @@ export class SSABuilder {
     if (rewritten === op) return;
     const parent = op.parentBlock;
     if (parent === null) return;
-    if (op.hasTrait(Trait.Terminator)) {
-      parent.replaceTerminal(rewritten as import("../../ir/ops/control").Terminal);
-    } else {
-      const idx = parent.operations.indexOf(op);
-      if (idx >= 0) {
-        parent.replaceOp(idx, rewritten);
-      }
-    }
+    parent.replaceOp(op, rewritten);
     if (rewritten.place !== undefined) {
       this.moduleIR.environment.placeToOp.set(rewritten.place.id, rewritten);
     }
@@ -389,7 +382,7 @@ export class SSABuilder {
           const armTop = armTops.get(decl) ?? snapshot.get(decl) ?? undefSeed;
           newValues.push(armTop);
         }
-        lastBlock.replaceTerminal(new YieldOp(terminal.id, newValues));
+        lastBlock.replaceOp(terminal, new YieldOp(terminal.id, newValues));
       }
 
       // If the IfOp has no alternate, synthesize one that yields
@@ -417,7 +410,7 @@ export class SSABuilder {
           currentOp.regions[0],
           altRegion,
         );
-        parentBlock.replaceOp(opIndex, newIfOp);
+        parentBlock.replaceOp(currentOp, newIfOp);
       } else {
         const newIfOp = new IfOp(
           currentOp.id,
@@ -426,7 +419,7 @@ export class SSABuilder {
           currentOp.regions[0],
           currentOp.regions[1],
         );
-        parentBlock.replaceOp(opIndex, newIfOp);
+        parentBlock.replaceOp(currentOp, newIfOp);
       }
 
       // Push the new result places onto the parent rename stack.
@@ -560,6 +553,6 @@ export class SSABuilder {
       }
       return undefSeed;
     });
-    block.replaceTerminal(new JumpOp(terminal.id, terminal.target, args));
+    block.replaceOp(terminal, new JumpOp(terminal.id, terminal.target, args));
   }
 }

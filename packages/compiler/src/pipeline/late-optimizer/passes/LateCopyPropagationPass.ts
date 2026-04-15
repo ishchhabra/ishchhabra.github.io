@@ -46,15 +46,13 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
       /** Current copy state at block entry (IN[B]). */
       const state = this.meet(blockId, outState);
 
-      for (let i = 0; i < block.operations.length; i++) {
-        const instr = block.operations[i];
-
+      for (const instr of block.operations) {
         if (instr instanceof LoadLocalOp) {
           const srcDecl = instr.value.identifier.declarationId;
           const resolved = this.resolve(state, srcDecl);
 
           if (resolved && resolved.identifier.declarationId !== srcDecl) {
-            block.replaceOp(i, new LoadLocalOp(instr.id, instr.place, resolved));
+            block.replaceOp(instr, new LoadLocalOp(instr.id, instr.place, resolved));
             changed = true;
           }
           continue;

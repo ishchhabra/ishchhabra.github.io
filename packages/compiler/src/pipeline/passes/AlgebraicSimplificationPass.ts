@@ -97,7 +97,7 @@ export class AlgebraicSimplificationPass extends BaseOptimizationPass {
   private simplifyBlock(block: BasicBlock): boolean {
     let changed = false;
 
-    for (const [index, instruction] of block.operations.entries()) {
+    for (const instruction of block.operations) {
       let replacement: Operation | undefined;
 
       if (instruction instanceof BinaryExpressionOp) {
@@ -107,7 +107,7 @@ export class AlgebraicSimplificationPass extends BaseOptimizationPass {
       }
 
       if (replacement !== undefined) {
-        block.replaceOp(index, replacement);
+        block.replaceOp(instruction, replacement);
         if (replacement instanceof LiteralOp) {
           this.literals.set(replacement.place.identifier.id, replacement.value);
         }

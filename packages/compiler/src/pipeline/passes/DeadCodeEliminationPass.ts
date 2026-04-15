@@ -89,7 +89,7 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
         );
       }
       if (terminal !== predBlock.terminal) {
-        predBlock.replaceTerminal(terminal);
+        predBlock.replaceOp(predBlock.terminal, terminal);
       }
     }
 

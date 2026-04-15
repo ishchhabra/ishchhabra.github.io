@@ -603,14 +603,17 @@ export class FuncOp extends Operation {
         const op = block.operations[i];
         const rewritten = op.rewrite(values);
         if (rewritten !== op) {
-          block.replaceOp(i, rewritten);
+          block.replaceOp(op, rewritten);
           if (rewritten.place !== undefined) {
             this.moduleIR.environment.placeToOp.set(rewritten.place.id, rewritten);
           }
         }
       }
       if (block.terminal) {
-        block.replaceTerminal(block.terminal.rewrite(values));
+        const rewrittenTerminal = block.terminal.rewrite(values);
+        if (rewrittenTerminal !== block.terminal) {
+          block.replaceOp(block.terminal, rewrittenTerminal);
+        }
       }
     }
 

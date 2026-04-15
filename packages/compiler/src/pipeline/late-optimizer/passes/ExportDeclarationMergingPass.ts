@@ -134,7 +134,7 @@ export class ExportDeclarationMergingPass extends BaseOptimizationPass {
         block.removeOpAt(exportDeclIndex);
         block.insertOpAt(declIndex + 1, merged);
       } else {
-        block.replaceOp(exportDeclIndex, merged);
+        block.replaceOp(exportDecl, merged);
       }
 
       // 4. Mark the ExportSpecifier for removal.

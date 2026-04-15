@@ -62,15 +62,13 @@ export class LateConstantPropagationPass extends BaseOptimizationPass {
    */
   private processBlock(block: BasicBlock, state: ConstState): boolean {
     let changed = false;
-    for (let i = 0; i < block.operations.length; i++) {
-      const instr = block.operations[i];
-
+    for (const instr of block.operations) {
       if (instr instanceof LoadLocalOp) {
         const decl = instr.value.identifier.declarationId;
         const value = state.get(decl);
         if (value && value.kind === "const") {
           const litInstr = new LiteralOp(instr.id, instr.place, value.value);
-          block.replaceOp(i, litInstr);
+          block.replaceOp(instr, litInstr);
           changed = true;
           continue;
         }

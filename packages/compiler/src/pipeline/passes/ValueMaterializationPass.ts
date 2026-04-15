@@ -1,11 +1,11 @@
 import {
-  Operation,
   DeclareLocalOp,
   LiteralOp,
   LoadContextOp,
   LoadGlobalOp,
   LoadLocalOp,
   MetaPropertyOp,
+  Operation,
   RegExpLiteralOp,
   StoreLocalOp,
   ThisExpressionOp,
@@ -169,25 +169,19 @@ export class ValueMaterializationPass {
     const map = new Map<Identifier, Place>([[oldIdentifier, newPlace]]);
 
     for (const block of this.funcOp.allBlocks()) {
-      for (let i = 0; i < block.operations.length; i++) {
-        const op = block.operations[i];
+      for (const op of block.getAllOps()) {
         if (op instanceof StoreLocalOp && op.value === instruction.place) {
           // Don't rewrite the StoreLocal we just created — it needs
           // to reference the original value as its RHS.
           continue;
         }
+
         const rewritten = op.rewrite(map);
         if (rewritten !== op) {
-          block.replaceOp(i, rewritten);
+          block.replaceOp(op, rewritten);
           if (rewritten.place !== undefined) {
             this.moduleIR.environment.placeToOp.set(rewritten.place.id, rewritten);
           }
-        }
-      }
-      if (block.terminal !== undefined) {
-        const rewrittenTerminal = block.terminal.rewrite(map) as import("../../ir/ops/control").Terminal;
-        if (rewrittenTerminal !== block.terminal) {
-          block.replaceTerminal(rewrittenTerminal);
         }
       }
     }

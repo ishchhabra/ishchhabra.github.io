@@ -205,23 +205,29 @@ export class BasicBlock {
     this._ops.push(op);
   }
 
-  /** Replace the op at `index` (addressing the non-terminator slice). */
-  replaceOp(index: number, newOp: Operation): void {
-    const end = this.terminatorIndex() >= 0 ? this.terminatorIndex() : this._ops.length;
-    if (index < 0 || index >= end) {
+  /**
+   * Replace `oldOp` with `newOp` by identity. Works for both regular
+   * ops and terminators, but terminator-ness must be preserved — a
+   * terminator can only be swapped for a terminator, and a regular op
+   * for a regular op.
+   */
+  replaceOp(oldOp: Operation, newOp: Operation): void {
+    const index = this._ops.indexOf(oldOp);
+    if (index < 0) {
       throw new Error(
-        `BasicBlock.replaceOp: index ${index} is out of range [0, ${end})`,
+        `BasicBlock.replaceOp: op ${oldOp.constructor.name} not found in bb${this.id}`,
       );
     }
-    if (newOp.hasTrait(Trait.Terminator)) {
+    const oldIsTerm = oldOp.hasTrait(Trait.Terminator);
+    const newIsTerm = newOp.hasTrait(Trait.Terminator);
+    if (oldIsTerm !== newIsTerm) {
       throw new Error(
-        `BasicBlock.replaceOp: cannot replace a regular op with a terminator — use the terminal setter`,
+        `BasicBlock.replaceOp: terminator-ness mismatch (old=${oldOp.constructor.name} term=${oldIsTerm}, new=${newOp.constructor.name} term=${newIsTerm})`,
       );
     }
-    const old = this._ops[index];
-    if (old === newOp) return;
-    detach(old);
-    unregisterUses(old);
+    if (oldOp === newOp) return;
+    detach(oldOp);
+    unregisterUses(oldOp);
     registerUses(newOp);
     attach(newOp, this);
     this._ops[index] = newOp;
@@ -295,11 +301,6 @@ export class BasicBlock {
     const removed = this._ops.splice(start, end - start);
     for (const op of removed) detach(op);
     return removed;
-  }
-
-  /** Replace the terminal. */
-  replaceTerminal(newTerminal: Terminal | undefined): void {
-    this.terminal = newTerminal;
   }
 
   // -----------------------------------------------------------------------

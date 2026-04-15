@@ -79,8 +79,7 @@ export class CapturePruningPass extends BaseOptimizationPass {
     let changed = false;
 
     for (const block of this.funcOp.allBlocks()) {
-      for (let i = 0; i < block.operations.length; i++) {
-        const instr = block.operations[i];
+      for (const instr of block.operations) {
         const fields = getFunctionBearingFields(instr);
         if (!fields || fields.captures.length === 0) {
           continue;
@@ -117,7 +116,7 @@ export class CapturePruningPass extends BaseOptimizationPass {
         const newCaptures = liveIndices.map((j) => captures[j]);
         const newCaptureParams = liveIndices.map((j) => captureParams[j]);
 
-        block.replaceOp(i, rebuildWithCaptures(instr as FunctionBearingInstruction, newCaptures));
+        block.replaceOp(instr, rebuildWithCaptures(instr as FunctionBearingInstruction, newCaptures));
 
         // Update captureParams on the inner FuncOp to match. Assigning
         // a fresh readonly array replaces the old list in one shot

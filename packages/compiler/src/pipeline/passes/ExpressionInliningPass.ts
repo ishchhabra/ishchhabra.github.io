@@ -7,7 +7,7 @@ import { ArrowFunctionExpressionOp } from "../../ir/ops/func/ArrowFunctionExpres
 import { FunctionExpressionOp } from "../../ir/ops/func/FunctionExpression";
 import { ObjectMethodOp } from "../../ir/ops/object/ObjectMethod";
 import { ClassMethodOp } from "../../ir/ops/class/ClassMethod";
-import { isTerminal, Terminal } from "../../ir/ops/control";
+import { isTerminal } from "../../ir/ops/control";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { Identifier } from "../../ir/core/Identifier";
 import { Place } from "../../ir/core/Place";
@@ -71,10 +71,10 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
   }
 
   private getInliningCandidate(
-    block: { operations: readonly Operation[]; terminal?: Terminal },
+    block: { operations: readonly Operation[] },
     index: number,
     instruction: StoreLocalOp,
-  ): { user: Operation | Terminal } | undefined {
+  ): { user: Operation } | undefined {
     // Only inline const-typed stores (not assignments to mutable variables).
     if (instruction.type !== "const") {
       return undefined;
@@ -104,7 +104,7 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
     }
 
     const [user] = uses;
-    if (!(user instanceof Operation) && !isTerminal(user)) {
+    if (!(user instanceof Operation)) {
       return undefined;
     }
 
@@ -208,51 +208,14 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
     return false;
   }
 
-  private rewriteUser(user: Operation | Terminal, values: Map<Identifier, Place>): boolean {
-    return this.rewriteInstructionUser(user, values) || this.rewriteTerminalUser(user, values);
-  }
+  private rewriteUser(user: Operation, values: Map<Identifier, Place>): boolean {
+    const block = user.parentBlock;
+    if (block === null) return false;
 
-  private rewriteInstructionUser(
-    user: Operation | Terminal,
-    values: Map<Identifier, Place>,
-  ): boolean {
-    if (!(user instanceof Operation)) {
-      return false;
-    }
+    const rewritten = user.rewrite(values);
+    if (rewritten === user) return false;
 
-    for (const block of this.funcOp.allBlocks()) {
-      const index = block.operations.indexOf(user);
-      if (index === -1) continue;
-
-      const rewritten = user.rewrite(values);
-      if (rewritten === user) {
-        return false;
-      }
-
-      block.replaceOp(index, rewritten);
-      return true;
-    }
-
-    return false;
-  }
-
-  private rewriteTerminalUser(user: Operation | Terminal, values: Map<Identifier, Place>): boolean {
-    if (!isTerminal(user)) {
-      return false;
-    }
-
-    for (const block of this.funcOp.allBlocks()) {
-      if (block.terminal !== user) continue;
-
-      const rewritten = user.rewrite(values) as Terminal;
-      if (rewritten === user) {
-        return false;
-      }
-
-      block.replaceTerminal(rewritten);
-      return true;
-    }
-
-    return false;
+    block.replaceOp(user, rewritten);
+    return true;
   }
 }
