@@ -1,8 +1,7 @@
-import { OperationId } from "../../core";
-import { Identifier, Place } from "../../core";
+import { Identifier, OperationId, Place } from "../../core";
 
-import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
+import { Operation } from "../../core/Operation";
 export class SequenceExpressionOp extends Operation {
   constructor(
     id: OperationId,
@@ -29,5 +28,9 @@ export class SequenceExpressionOp extends Operation {
 
   getOperands(): Place[] {
     return [...this.expressions];
+  }
+
+  public override hasSideEffects(): boolean {
+    return false;
   }
 }

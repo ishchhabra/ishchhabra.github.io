@@ -1,3 +1,3 @@
-while (true) {
+for (; true; ) {
   console.log("infinite");
 }

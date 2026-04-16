@@ -1,4 +1,3 @@
-console.log("start");
-while (false) {
+for (console.log("start"); false; ) {
   console.log("body");
 }

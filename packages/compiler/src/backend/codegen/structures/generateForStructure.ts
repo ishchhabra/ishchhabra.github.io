@@ -6,17 +6,22 @@ import { generateBasicBlock } from "../generateBlock";
 import { computeConditionExpression } from "./generateWhileStructure";
 
 /**
- * Emit a JS `for (; test; update) { body }` for a {@link ForOp}.
- * The init expression / declarations live in the parent block before
- * the ForOp; codegen for those happens inline as the parent block is
- * walked, so we don't emit an init clause here.
+ * Emit a `ForOp` as a JS `for (init; test; update) body`.
  *
- * The before region computes the test (via {@link computeConditionExpression}),
- * the body region emits the loop body, and the update region's ops
- * are collapsed into a single comma-expression for the JS for-clause.
- * If the source omitted the update, the update region contains only
- * a `YieldOp`, the collapse returns `undefined`, and we still emit
- * the for-statement (with no update clause).
+ * Per ECMA §14.7.4 the four slots have three distinct AST-level
+ * shapes: init is `[Expression] | var VariableDeclarationList |
+ * LexicalDeclaration`, test and update are `[Expression]`. No legal
+ * JS source produces anything else in any slot.
+ *
+ * The IR carries each slot as its own region on the ForOp. Codegen
+ * walks each region, converts its emitted statements into the
+ * corresponding AST shape, and fits the result into the JS for
+ * syntax. VariableDeclarations that `SSAEliminator` inserted into
+ * the update region (to preserve pre-mutation SSA values past a
+ * later store) are merged into the init slot's declarator list;
+ * each in-update initializer becomes a plain AssignmentExpression
+ * that fits in the update clause. This is the normalization Closure
+ * Compiler applies.
  */
 export function generateForStructure(
   structure: ForOp,
@@ -30,36 +35,33 @@ export function generateForStructure(
     continueTarget: undefined,
   });
 
-  const testNode = computeConditionExpression(
-    structure.beforeRegion,
+  const initStatements = generateBasicBlock(
+    structure.initRegion.entry.id,
     funcOp,
     generator,
   );
-
-  const bodyStatements = generateBasicBlock(
-    structure.bodyRegion.entry.id,
-    funcOp,
-    generator,
-  );
-
+  const testNode = computeConditionExpression(structure.beforeRegion, funcOp, generator);
+  const bodyStatements = generateBasicBlock(structure.bodyRegion.entry.id, funcOp, generator);
   const updateStatements = generateBasicBlock(
     structure.updateRegion.entry.id,
     funcOp,
     generator,
   );
-  const updateExpression = collapseUpdateStatements(updateStatements);
 
   generator.controlStack.pop();
 
-  // When the update region collapses to nothing (the source omitted
-  // the update clause, or every op in it was DCE'd away), emit a
-  // `while (test) { body }` instead of `for (; test; ) { body }`.
-  // The two are observationally identical and `while` is the more
-  // idiomatic JS surface form.
-  const loopNode: t.Statement =
-    updateExpression !== undefined
-      ? t.forStatement(null, testNode, updateExpression, t.blockStatement(bodyStatements))
-      : t.whileStatement(testNode, t.blockStatement(bodyStatements));
+  const { updateExpression, hoistedDeclarators, hoistedAssignments } =
+    lowerUpdateRegion(updateStatements);
+
+  const initNode = lowerInitRegion(initStatements, hoistedDeclarators);
+  const updateWithHoistedAssignments = prependAssignments(hoistedAssignments, updateExpression);
+
+  const loopNode: t.Statement = t.forStatement(
+    initNode,
+    testNode,
+    updateWithHoistedAssignments,
+    t.blockStatement(bodyStatements),
+  );
   const labeled: t.Statement = structure.label
     ? t.labeledStatement(t.identifier(structure.label), loopNode)
     : loopNode;
@@ -68,21 +70,156 @@ export function generateForStructure(
 }
 
 /**
- * Collapse a list of expression statements from the update region
- * into a single comma-separated expression for the `for` loop's
- * update clause. If the list is empty (only a YieldOp was emitted),
- * return `undefined`.
+ * Walk the init region's emitted statements and collect them into a
+ * single for-init AST node. The init slot accepts only one of three
+ * shapes (per the grammar); we pick based on what's present:
+ *
+ *   - All VariableDeclarations with a consistent kind → merge their
+ *     declarators into one VariableDeclaration, then append any
+ *     hoisted declarators from the update region.
+ *   - All ExpressionStatements → comma-join into a single Expression.
+ *   - Empty → the init slot becomes `null`, with any hoisted update
+ *     declarators emitted as a standalone `let` that becomes the
+ *     init slot.
+ *
+ * Throws on mixed shapes or on unsupported statement types. A mixed
+ * init region shouldn't arise from legal source and isn't produced
+ * by any current pass.
  */
-function collapseUpdateStatements(
-  statements: readonly t.Statement[],
-): t.Expression | undefined {
+function lowerInitRegion(
+  initStatements: readonly t.Statement[],
+  hoistedDeclarators: readonly t.VariableDeclarator[],
+): t.VariableDeclaration | t.Expression | null {
+  const declarators: t.VariableDeclarator[] = [];
+  const expressions: t.Expression[] = [];
+  let declKind: "var" | "let" | "const" | undefined;
+
+  for (const stmt of initStatements) {
+    if (t.isVariableDeclaration(stmt)) {
+      if (declKind === undefined) {
+        declKind = stmt.kind as "var" | "let" | "const";
+      } else if (declKind !== stmt.kind) {
+        throw new Error(
+          `generateForStructure: mixed declaration kinds in for-init ` +
+            `(${declKind} vs ${stmt.kind}). Source-level JS can't produce this.`,
+        );
+      }
+      declarators.push(...stmt.declarations);
+      continue;
+    }
+    if (t.isExpressionStatement(stmt)) {
+      expressions.push(stmt.expression);
+      continue;
+    }
+    throw new Error(
+      `generateForStructure: unsupported statement type ${stmt.type} in for-init region.`,
+    );
+  }
+
+  if (declarators.length > 0 && expressions.length > 0) {
+    throw new Error(
+      `generateForStructure: for-init region contains both declarations and expression statements. ` +
+        `JS syntax allows only one shape in the init slot.`,
+    );
+  }
+
+  if (declarators.length > 0) {
+    declarators.push(...hoistedDeclarators);
+    return t.variableDeclaration(declKind ?? "let", declarators);
+  }
+
+  // No source-level declarations. Hoisted update declarators (if any)
+  // must still land somewhere. Per §14.7.4 the init slot accepts a
+  // LexicalDeclaration even when the source's init was an expression
+  // or absent — we just can't put both shapes in the same slot, so
+  // the expressions go in the init slot only if there are no hoists.
+  if (hoistedDeclarators.length > 0) {
+    if (expressions.length > 0) {
+      // Rare edge case: source used expression init AND we synthesized
+      // snapshots whose declarations need hoisting. Keep the expressions
+      // in the init slot and emit the hoisted declarators as a standalone
+      // let *before* the for — callers splice this into the parent block.
+      // (This branch is currently unreachable; source-level expression
+      // inits don't generate ops that SSAEliminator would snapshot. If it
+      // ever fires, the shape below is still grammatically valid.)
+      throw new Error(
+        `generateForStructure: cannot combine an expression-init with ` +
+          `hoisted declarators from the update region. Update handling if this fires.`,
+      );
+    }
+    return t.variableDeclaration("let", [...hoistedDeclarators]);
+  }
+
+  if (expressions.length === 0) return null;
+  if (expressions.length === 1) return expressions[0];
+  return t.sequenceExpression(expressions);
+}
+
+/**
+ * Walk the update region's emitted statements and split them into:
+ *
+ *   - `hoistedDeclarators` — each synthesized `const $x = v` from the
+ *     update region becomes a bare `$x` declarator (no initializer)
+ *     appended to the init slot's declarator list.
+ *   - `hoistedAssignments` — each such declaration's initializer `v`
+ *     becomes `$x = v`, prepended to the update expression so it runs
+ *     once per iteration like the original.
+ *   - `updateExpression` — the remaining ExpressionStatements
+ *     comma-joined into a single Expression.
+ */
+function lowerUpdateRegion(statements: readonly t.Statement[]): {
+  updateExpression: t.Expression | undefined;
+  hoistedDeclarators: t.VariableDeclarator[];
+  hoistedAssignments: t.Expression[];
+} {
   const exprs: t.Expression[] = [];
+  const hoistedDeclarators: t.VariableDeclarator[] = [];
+  const hoistedAssignments: t.Expression[] = [];
+
   for (const stmt of statements) {
     if (t.isExpressionStatement(stmt)) {
       exprs.push(stmt.expression);
+      continue;
     }
+    if (t.isVariableDeclaration(stmt)) {
+      for (const decl of stmt.declarations) {
+        if (!t.isIdentifier(decl.id)) {
+          throw new Error(
+            `generateForStructure: cannot hoist VariableDeclaration with non-identifier id ` +
+              `(${decl.id.type}) out of for-update clause.`,
+          );
+        }
+        hoistedDeclarators.push(t.variableDeclarator(t.identifier(decl.id.name)));
+        if (decl.init) {
+          hoistedAssignments.push(
+            t.assignmentExpression("=", t.identifier(decl.id.name), decl.init),
+          );
+        }
+      }
+      continue;
+    }
+    throw new Error(
+      `generateForStructure: unsupported statement type ${stmt.type} in for-update region. ` +
+        `ECMA §14.7.4 types the update slot as an Expression, so this should not arise from ` +
+        `legal JS source; a pass has produced an unexpected op shape here.`,
+    );
   }
-  if (exprs.length === 0) return undefined;
-  if (exprs.length === 1) return exprs[0];
-  return t.sequenceExpression(exprs);
+
+  let updateExpression: t.Expression | undefined;
+  if (exprs.length === 1) {
+    updateExpression = exprs[0];
+  } else if (exprs.length > 1) {
+    updateExpression = t.sequenceExpression(exprs);
+  }
+  return { updateExpression, hoistedDeclarators, hoistedAssignments };
+}
+
+function prependAssignments(
+  assignments: readonly t.Expression[],
+  update: t.Expression | undefined,
+): t.Expression | undefined {
+  if (assignments.length === 0) return update;
+  const combined = update === undefined ? [...assignments] : [...assignments, update];
+  if (combined.length === 1) return combined[0];
+  return t.sequenceExpression(combined);
 }

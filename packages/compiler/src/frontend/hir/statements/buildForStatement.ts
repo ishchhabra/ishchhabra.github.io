@@ -21,19 +21,26 @@ import { buildStatement } from "./buildStatement";
  * Lower `for (init; test; update) { body }` to a structured
  * {@link ForOp}.
  *
- *   parentBlock: [..., <init ops>, ForOp, ...]
+ *   parentBlock: [..., ForOp, ...]
+ *     ForOp.initRegion:   [initBlock]
+ *       initBlock:   [...init ops...,   YieldOp]
  *     ForOp.beforeRegion: [beforeBlock]
- *       beforeBlock: [...test ops..., ConditionOp(test_result)]
+ *       beforeBlock: [...test ops...,   ConditionOp(test_result)]
  *     ForOp.bodyRegion:   [bodyBlock]
- *       bodyBlock: [...body ops..., YieldOp]
+ *       bodyBlock:   [...body ops...,   YieldOp]
  *     ForOp.updateRegion: [updateBlock]
  *       updateBlock: [...update ops..., YieldOp]
  *
- * The init expression / declarations live in the parent block before
- * the ForOp. JS `continue` inside the body must run the update
- * expression before re-evaluating the test, so update is its own
- * region — collapsing it into the body would break `continue`
- * semantics.
+ * Every region is always present so ForOp's four-region invariant
+ * holds. An absent slot is a YieldOp-only block. Keeping init in
+ * its own region (rather than inline in the parent block) makes the
+ * ForOp self-contained: passes walking its regions see the full
+ * control flow, and codegen emits the init as the for-statement's
+ * init slot rather than as statements preceding the loop.
+ *
+ * JS `continue` inside the body must run the update expression
+ * before re-evaluating the test, so update is its own region —
+ * collapsing it into the body would break `continue` semantics.
  */
 export function buildForStatement(
   node: ForStatement,
@@ -51,14 +58,25 @@ export function buildForStatement(
       ? functionBuilder.scopeFor(node)
       : scope;
 
-  if (init != null) {
-    if (init.type === "VariableDeclaration") {
-      instantiateScopeBindings(node, forScope, functionBuilder, environment, moduleBuilder);
-      buildStatement(init, forScope, functionBuilder, moduleBuilder, environment);
-    } else {
-      buildExpressionAsStatement(init, scope, functionBuilder, moduleBuilder, environment);
+  // Init region: runs once before the first iteration. Empty when
+  // the source omits the init clause.
+  const initRegion = new Region([]);
+  const initBlock = environment.createBlock();
+  functionBuilder.withStructureRegion(initRegion, () => {
+    functionBuilder.addBlock(initBlock);
+    functionBuilder.currentBlock = initBlock;
+    if (init != null) {
+      if (init.type === "VariableDeclaration") {
+        instantiateScopeBindings(node, forScope, functionBuilder, environment, moduleBuilder);
+        buildStatement(init, forScope, functionBuilder, moduleBuilder, environment);
+      } else {
+        buildExpressionAsStatement(init, scope, functionBuilder, moduleBuilder, environment);
+      }
     }
-  }
+    if (functionBuilder.currentBlock.terminal === undefined) {
+      functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), []);
+    }
+  });
 
   // Before region: test ops + ConditionOp. If the source omits a
   // test (`for (;;) {}`), the test defaults to literal `true`.
@@ -107,8 +125,7 @@ export function buildForStatement(
   });
 
   // Update region: always present (even when the source omits the
-  // update expression) so ForOp's three-region invariant holds. An
-  // empty update is just a YieldOp-only block.
+  // update expression) so ForOp's four-region invariant holds.
   const updateRegion = new Region([]);
   const updateBlock = environment.createBlock();
   functionBuilder.withStructureRegion(updateRegion, () => {
@@ -133,6 +150,7 @@ export function buildForStatement(
 
   const forOp = new ForOp(
     createOperationId(environment),
+    initRegion,
     beforeRegion,
     bodyRegion,
     updateRegion,
