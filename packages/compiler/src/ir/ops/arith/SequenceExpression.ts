@@ -1,7 +1,7 @@
 import { Identifier, OperationId, Place } from "../../core";
-
 import type { CloneContext } from "../../core/Operation";
 import { Operation } from "../../core/Operation";
+
 export class SequenceExpressionOp extends Operation {
   constructor(
     id: OperationId,
