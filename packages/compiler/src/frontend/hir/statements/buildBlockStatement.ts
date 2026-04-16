@@ -33,10 +33,7 @@ export function buildBlockStatement(
     functionBuilder.currentBlock = bodyBlock;
     buildOwnedBody(node, scope, functionBuilder, moduleBuilder, environment);
     if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.terminal = new YieldOp(
-        createOperationId(environment),
-        [],
-      );
+      functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), []);
     }
   });
 

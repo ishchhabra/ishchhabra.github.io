@@ -143,9 +143,7 @@ function nonEdgeTerminalOperands(terminal: Terminal): readonly Place[] {
   return terminal.getOperands();
 }
 
-function buildIncomingEdgeIndex(
-  funcOp: FuncOp,
-): Map<BlockId, readonly (readonly Place[])[]> {
+function buildIncomingEdgeIndex(funcOp: FuncOp): Map<BlockId, readonly (readonly Place[])[]> {
   const index = new Map<BlockId, (readonly Place[])[]>();
   for (const predBlock of funcOp.allBlocks()) {
     forEachOutgoingEdge(predBlock, (succId, args) => {

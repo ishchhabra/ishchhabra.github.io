@@ -72,12 +72,7 @@ export function generateIfStructure(
   let alternateStatements: t.Statement[] | undefined;
   if (altEntry !== undefined) {
     alternateStatements = generateBasicBlock(altEntry.id, funcOp, generator);
-    appendYieldStores(
-      structure.alternateRegion!,
-      structure,
-      alternateStatements,
-      generator,
-    );
+    appendYieldStores(structure.alternateRegion!, structure, alternateStatements, generator);
   }
 
   const ifNode = t.ifStatement(
@@ -115,9 +110,7 @@ function appendYieldStores(
     const valueNode = generator.places.get(valuePlace.id);
     if (valueNode === undefined) continue;
     t.assertExpression(valueNode);
-    statements.push(
-      t.expressionStatement(t.assignmentExpression("=", resultIdent, valueNode)),
-    );
+    statements.push(t.expressionStatement(t.assignmentExpression("=", resultIdent, valueNode)));
   }
 }
 

@@ -96,10 +96,7 @@ export function buildForInStatement(
     functionBuilder.controlStack.pop();
 
     if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.terminal = new YieldOp(
-        createOperationId(environment),
-        [],
-      );
+      functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), []);
     }
   });
 

@@ -95,10 +95,7 @@ export class AnalysisManager {
    * (not {@link FuncOpId}): ids are unique per module, so two entry
    * functions in different modules can share the same numeric id.
    */
-  private readonly functionCaches = new Map<
-    FuncOp,
-    Map<FunctionAnalysisClass<unknown>, unknown>
-  >();
+  private readonly functionCaches = new Map<FuncOp, Map<FunctionAnalysisClass<unknown>, unknown>>();
 
   /** Project-level analysis cache. */
   private readonly projectCache = new Map<ProjectAnalysisClass<unknown>, unknown>();

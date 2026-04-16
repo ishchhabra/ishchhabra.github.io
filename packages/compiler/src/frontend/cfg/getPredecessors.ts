@@ -1,8 +1,4 @@
-import {
-  BasicBlock,
-  BlockId,
-  JumpOp,
-} from "../../ir";
+import { BasicBlock, BlockId, JumpOp } from "../../ir";
 
 /**
  * Minimal subset of `FuncOp`'s block API used by this analysis.

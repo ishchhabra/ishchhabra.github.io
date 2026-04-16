@@ -40,7 +40,10 @@ export class Region {
    */
   public scopeKind: LexicalScopeKind | undefined;
 
-  constructor(public readonly blocks: BasicBlock[], scopeKind?: LexicalScopeKind) {
+  constructor(
+    public readonly blocks: BasicBlock[],
+    scopeKind?: LexicalScopeKind,
+  ) {
     this.scopeKind = scopeKind;
     // Maintain the back-pointer invariant: every block in a region
     // points back to the region it belongs to.

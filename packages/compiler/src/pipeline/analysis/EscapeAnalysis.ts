@@ -276,9 +276,7 @@ export class EscapeAnalysis extends FunctionAnalysis<EscapeAnalysisResult> {
  * contribute more than one arg list to the same successor (e.g.
  * a switch with several cases pointing at the same block).
  */
-function buildIncomingEdgeArgsIndex(
-  funcOp: FuncOp,
-): Map<BlockId, readonly (readonly Place[])[]> {
+function buildIncomingEdgeArgsIndex(funcOp: FuncOp): Map<BlockId, readonly (readonly Place[])[]> {
   const index = new Map<BlockId, (readonly Place[])[]>();
   for (const predBlock of funcOp.allBlocks()) {
     forEachOutgoingEdge(predBlock, (succId, args) => {

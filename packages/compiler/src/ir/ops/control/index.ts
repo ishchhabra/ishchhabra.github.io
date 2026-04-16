@@ -50,14 +50,7 @@ import { TryOp } from "./Try";
 import { WhileOp } from "./While";
 
 /** Union of all terminator ops. */
-export type Terminal =
-  | BreakOp
-  | ConditionOp
-  | ContinueOp
-  | JumpOp
-  | ReturnOp
-  | ThrowOp
-  | YieldOp;
+export type Terminal = BreakOp | ConditionOp | ContinueOp | JumpOp | ReturnOp | ThrowOp | YieldOp;
 
 export function isTerminal(op: unknown): op is Terminal {
   return (

@@ -86,10 +86,7 @@ export class WhileOp extends Operation {
   override verify(): void {
     super.verify();
     if (this.regions.length !== 2) {
-      throw new VerifyError(
-        this,
-        `expected 2 regions (before, body), got ${this.regions.length}`,
-      );
+      throw new VerifyError(this, `expected 2 regions (before, body), got ${this.regions.length}`);
     }
   }
 }

@@ -43,10 +43,7 @@ export interface LoopLike {
 /** Runtime predicate matching the {@link LoopLike} interface. */
 export function isLoopLike(op: unknown): op is Operation & LoopLike {
   return (
-    op instanceof ForInOp ||
-    op instanceof ForOfOp ||
-    op instanceof ForOp ||
-    op instanceof WhileOp
+    op instanceof ForInOp || op instanceof ForOfOp || op instanceof ForOp || op instanceof WhileOp
   );
 }
 
@@ -81,9 +78,7 @@ export interface NestedFunctionOwner {
   readonly funcOp: FuncOp;
 }
 
-export function isNestedFunctionOwner(
-  op: unknown,
-): op is Operation & { readonly funcOp: FuncOp } {
+export function isNestedFunctionOwner(op: unknown): op is Operation & { readonly funcOp: FuncOp } {
   return (
     op instanceof FunctionExpressionOp ||
     op instanceof ArrowFunctionExpressionOp ||

@@ -84,13 +84,7 @@ export class IfOp extends Operation {
   rewrite(values: Map<Identifier, Place>): IfOp {
     const test = values.get(this.test.identifier) ?? this.test;
     if (test === this.test) return this;
-    return new IfOp(
-      this.id,
-      test,
-      this.resultPlaces,
-      this.regions[0],
-      this.regions[1],
-    );
+    return new IfOp(this.id, test, this.resultPlaces, this.regions[0], this.regions[1]);
   }
 
   clone(ctx: CloneContext): IfOp {

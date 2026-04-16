@@ -1,12 +1,6 @@
 import type { OperationId } from "../../core";
 import type { Identifier } from "../../core/Identifier";
-import {
-  type CloneContext,
-  nextId,
-  Operation,
-  remapRegion,
-  Trait,
-} from "../../core/Operation";
+import { type CloneContext, nextId, Operation, remapRegion, Trait } from "../../core/Operation";
 import type { Place } from "../../core/Place";
 import { Region } from "../../core/Region";
 

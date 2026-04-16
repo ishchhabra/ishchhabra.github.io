@@ -237,9 +237,7 @@ export class BasicBlock {
   removeOpAt(index: number): void {
     const end = this.terminatorIndex() >= 0 ? this.terminatorIndex() : this._ops.length;
     if (index < 0 || index >= end) {
-      throw new Error(
-        `BasicBlock.removeOpAt: index ${index} is out of range [0, ${end})`,
-      );
+      throw new Error(`BasicBlock.removeOpAt: index ${index} is out of range [0, ${end})`);
     }
     detach(this._ops[index]);
     unregisterUses(this._ops[index]);
@@ -250,9 +248,7 @@ export class BasicBlock {
   insertOpAt(index: number, op: Operation): void {
     const end = this.terminatorIndex() >= 0 ? this.terminatorIndex() : this._ops.length;
     if (index < 0 || index > end) {
-      throw new Error(
-        `BasicBlock.insertOpAt: index ${index} is out of range [0, ${end}]`,
-      );
+      throw new Error(`BasicBlock.insertOpAt: index ${index} is out of range [0, ${end}]`);
     }
     if (op.hasTrait(Trait.Terminator)) {
       throw new Error(

@@ -35,18 +35,10 @@ export function generateForStructure(
     continueTarget: undefined,
   });
 
-  const initStatements = generateBasicBlock(
-    structure.initRegion.entry.id,
-    funcOp,
-    generator,
-  );
+  const initStatements = generateBasicBlock(structure.initRegion.entry.id, funcOp, generator);
   const testNode = computeConditionExpression(structure.beforeRegion, funcOp, generator);
   const bodyStatements = generateBasicBlock(structure.bodyRegion.entry.id, funcOp, generator);
-  const updateStatements = generateBasicBlock(
-    structure.updateRegion.entry.id,
-    funcOp,
-    generator,
-  );
+  const updateStatements = generateBasicBlock(structure.updateRegion.entry.id, funcOp, generator);
 
   generator.controlStack.pop();
 

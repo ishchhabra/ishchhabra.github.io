@@ -1,13 +1,6 @@
 import type { Expression, ForStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import {
-  ConditionOp,
-  createOperationId,
-  ForOp,
-  LiteralOp,
-  Region,
-  YieldOp,
-} from "../../../ir";
+import { ConditionOp, createOperationId, ForOp, LiteralOp, Region, YieldOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { instantiateScopeBindings } from "../bindings";
 import { buildNode } from "../buildNode";
@@ -117,10 +110,7 @@ export function buildForStatement(
     buildOwnedBody(node.body, forScope, functionBuilder, moduleBuilder, environment);
     functionBuilder.controlStack.pop();
     if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.terminal = new YieldOp(
-        createOperationId(environment),
-        [],
-      );
+      functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), []);
     }
   });
 
@@ -141,10 +131,7 @@ export function buildForStatement(
       );
     }
     if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.terminal = new YieldOp(
-        createOperationId(environment),
-        [],
-      );
+      functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), []);
     }
   });
 

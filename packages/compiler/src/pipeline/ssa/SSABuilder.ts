@@ -490,9 +490,7 @@ export class SSABuilder {
     }
   }
 
-  private snapshotTops(
-    stacks: Map<DeclarationId, Place[]>,
-  ): Map<DeclarationId, Place> {
+  private snapshotTops(stacks: Map<DeclarationId, Place[]>): Map<DeclarationId, Place> {
     const snap = new Map<DeclarationId, Place>();
     for (const [decl, stack] of stacks) {
       if (stack.length > 0) snap.set(decl, stack[stack.length - 1]);

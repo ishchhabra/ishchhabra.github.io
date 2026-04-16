@@ -54,10 +54,7 @@ export function generateWhileStructure(
 
   generator.controlStack.pop();
 
-  const loopNode: t.Statement = t.whileStatement(
-    testExpression,
-    t.blockStatement(bodyStatements),
-  );
+  const loopNode: t.Statement = t.whileStatement(testExpression, t.blockStatement(bodyStatements));
   const labeled: t.Statement = structure.label
     ? t.labeledStatement(t.identifier(structure.label), loopNode)
     : loopNode;

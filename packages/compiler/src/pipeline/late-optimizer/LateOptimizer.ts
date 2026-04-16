@@ -50,9 +50,7 @@ export class LateOptimizer {
       }
 
       if (this.options.enableLateDeadCodeEliminationPass) {
-        if (
-          new LateDeadCodeEliminationPass(this.funcOp, this.moduleIR.environment).run().changed
-        ) {
+        if (new LateDeadCodeEliminationPass(this.funcOp, this.moduleIR.environment).run().changed) {
           iterationChanged = true;
           this.AM.invalidateFunction(this.funcOp);
         }

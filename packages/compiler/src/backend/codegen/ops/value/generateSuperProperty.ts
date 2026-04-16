@@ -16,7 +16,11 @@ export function generateSuperPropertyOp(
   // t.memberExpression requires an Identifier for non-computed access;
   // convert back here, mirroring generateLoadStaticPropertyOp.
   let key: t.Expression;
-  if (!instruction.computed && t.isStringLiteral(property) && t.isValidIdentifier(property.value, true)) {
+  if (
+    !instruction.computed &&
+    t.isStringLiteral(property) &&
+    t.isValidIdentifier(property.value, true)
+  ) {
     key = t.identifier(property.value);
   } else {
     key = property;

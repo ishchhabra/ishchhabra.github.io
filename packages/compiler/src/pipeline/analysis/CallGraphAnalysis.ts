@@ -208,10 +208,7 @@ export class CallGraphAnalysis extends ProjectAnalysis<CallGraphResult> {
  * - `const f = function() {}` — StoreLocal whose value is a FunctionExpressionOp
  * - `const f = () => {}` — StoreLocal whose value is an ArrowFunctionExpressionOp
  */
-function gatherDeclarations(
-  moduleIR: ModuleIR,
-  moduleDecls: Map<DeclarationId, FuncOpId>,
-): void {
+function gatherDeclarations(moduleIR: ModuleIR, moduleDecls: Map<DeclarationId, FuncOpId>): void {
   for (const funcIR of moduleIR.functions.values()) {
     for (const block of funcIR.allBlocks()) {
       for (const instr of block.operations) {

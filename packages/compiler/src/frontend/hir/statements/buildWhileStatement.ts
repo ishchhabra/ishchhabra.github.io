@@ -65,19 +65,11 @@ export function buildWhileStatement(
     buildOwnedBody(node.body, scope, functionBuilder, moduleBuilder, environment);
     functionBuilder.controlStack.pop();
     if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.terminal = new YieldOp(
-        createOperationId(environment),
-        [],
-      );
+      functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), []);
     }
   });
 
-  const whileOp = new WhileOp(
-    createOperationId(environment),
-    beforeRegion,
-    bodyRegion,
-    label,
-  );
+  const whileOp = new WhileOp(createOperationId(environment), beforeRegion, bodyRegion, label);
   parentBlock.appendOp(whileOp);
   functionBuilder.currentBlock = parentBlock;
   return undefined;

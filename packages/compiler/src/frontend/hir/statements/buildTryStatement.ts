@@ -25,10 +25,7 @@ export function buildTryStatement(
     functionBuilder.currentBlock = tryBlock;
     buildOwnedBody(node.block, scope, functionBuilder, moduleBuilder, environment);
     if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.terminal = new YieldOp(
-        createOperationId(environment),
-        [],
-      );
+      functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), []);
     }
   });
 
@@ -75,10 +72,7 @@ export function buildTryStatement(
       buildOwnedBody(catchClause.body, scope, functionBuilder, moduleBuilder, environment);
 
       if (functionBuilder.currentBlock.terminal === undefined) {
-        functionBuilder.currentBlock.terminal = new YieldOp(
-          createOperationId(environment),
-          [],
-        );
+        functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), []);
       }
     });
 
@@ -94,10 +88,7 @@ export function buildTryStatement(
       functionBuilder.currentBlock = finallyBlock;
       buildOwnedBody(node.finalizer!, scope, functionBuilder, moduleBuilder, environment);
       if (functionBuilder.currentBlock.terminal === undefined) {
-        functionBuilder.currentBlock.terminal = new YieldOp(
-          createOperationId(environment),
-          [],
-        );
+        functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), []);
       }
     });
   }

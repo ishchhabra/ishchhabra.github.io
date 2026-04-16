@@ -287,11 +287,7 @@ export class SSAEliminator {
     block.insertOpAt(defIdx + 1, storeOp);
     env.placeToOp.set(storeResultPlace.id, storeOp);
 
-    const newLoad = new LoadLocalOp(
-      makeOperationId(env.nextOperationId++),
-      load.place,
-      snapPlace,
-    );
+    const newLoad = new LoadLocalOp(makeOperationId(env.nextOperationId++), load.place, snapPlace);
     block.replaceOp(load, newLoad);
     env.placeToOp.set(load.place.id, newLoad);
 

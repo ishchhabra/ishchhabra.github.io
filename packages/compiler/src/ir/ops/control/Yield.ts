@@ -1,13 +1,7 @@
 import type { OperationId } from "../../core";
 import type { BlockId } from "../../core/Block";
 import type { Identifier } from "../../core/Identifier";
-import {
-  type CloneContext,
-  nextId,
-  Operation,
-  remapPlace,
-  Trait,
-} from "../../core/Operation";
+import { type CloneContext, nextId, Operation, remapPlace, Trait } from "../../core/Operation";
 import type { Place } from "../../core/Place";
 
 /**
@@ -48,7 +42,10 @@ export class YieldOp extends Operation {
   }
 
   clone(ctx: CloneContext): YieldOp {
-    return new YieldOp(nextId(ctx), this.values.map((v) => remapPlace(ctx, v)));
+    return new YieldOp(
+      nextId(ctx),
+      this.values.map((v) => remapPlace(ctx, v)),
+    );
   }
 
   override remap(_from: BlockId, _to: BlockId): void {

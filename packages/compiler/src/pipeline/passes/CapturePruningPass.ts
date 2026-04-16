@@ -116,7 +116,10 @@ export class CapturePruningPass extends BaseOptimizationPass {
         const newCaptures = liveIndices.map((j) => captures[j]);
         const newCaptureParams = liveIndices.map((j) => captureParams[j]);
 
-        block.replaceOp(instr, rebuildWithCaptures(instr as FunctionBearingInstruction, newCaptures));
+        block.replaceOp(
+          instr,
+          rebuildWithCaptures(instr as FunctionBearingInstruction, newCaptures),
+        );
 
         // Update captureParams on the inner FuncOp to match. Assigning
         // a fresh readonly array replaces the old list in one shot

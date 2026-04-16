@@ -364,16 +364,11 @@ export class FuncOp extends Operation {
     return false;
   }
 
-  public findOwningIf(
-    blockId: BlockId,
-  ): { headerBlockId: BlockId; structure: IfOp } | null {
+  public findOwningIf(blockId: BlockId): { headerBlockId: BlockId; structure: IfOp } | null {
     for (const block of this.allBlocks()) {
       for (const op of block.getAllOps()) {
         if (!(op instanceof IfOp)) continue;
-        if (
-          op.consequentRegion.entry.id === blockId ||
-          op.alternateRegion?.entry.id === blockId
-        ) {
+        if (op.consequentRegion.entry.id === blockId || op.alternateRegion?.entry.id === blockId) {
           return { headerBlockId: block.id, structure: op };
         }
       }

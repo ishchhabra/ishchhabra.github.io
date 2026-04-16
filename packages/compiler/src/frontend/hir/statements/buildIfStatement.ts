@@ -44,10 +44,7 @@ export function buildIfStatement(
     functionBuilder.currentBlock = consequentBlock;
     buildOwnedBody(node.consequent, scope, functionBuilder, moduleBuilder, environment);
     if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.terminal = new YieldOp(
-        createOperationId(environment),
-        [],
-      );
+      functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), []);
     }
   });
 
@@ -61,10 +58,7 @@ export function buildIfStatement(
       functionBuilder.currentBlock = alternateBlock;
       buildOwnedBody(node.alternate!, scope, functionBuilder, moduleBuilder, environment);
       if (functionBuilder.currentBlock.terminal === undefined) {
-        functionBuilder.currentBlock.terminal = new YieldOp(
-          createOperationId(environment),
-          [],
-        );
+        functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), []);
       }
     });
   }

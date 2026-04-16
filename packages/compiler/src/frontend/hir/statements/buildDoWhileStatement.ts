@@ -89,30 +89,16 @@ export function buildDoWhileStatement(
       consBlock.terminal = new BreakOp(createOperationId(environment), label);
     });
 
-    const ifOp = new IfOp(
-      createOperationId(environment),
-      notTestPlace,
-      [],
-      consRegion,
-      undefined,
-    );
+    const ifOp = new IfOp(createOperationId(environment), notTestPlace, [], consRegion, undefined);
     functionBuilder.currentBlock.appendOp(ifOp);
     functionBuilder.controlStack.pop();
 
     if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.terminal = new YieldOp(
-        createOperationId(environment),
-        [],
-      );
+      functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), []);
     }
   });
 
-  const whileOp = new WhileOp(
-    createOperationId(environment),
-    beforeRegion,
-    bodyRegion,
-    label,
-  );
+  const whileOp = new WhileOp(createOperationId(environment), beforeRegion, bodyRegion, label);
   parentBlock.appendOp(whileOp);
   functionBuilder.currentBlock = parentBlock;
   return undefined;

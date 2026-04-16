@@ -21,7 +21,5 @@ export function generateLabeledBlockStructure(
   const bodyStatements = generateBasicBlock(bodyEntryId, funcOp, generator);
   generator.controlStack.pop();
 
-  return [
-    t.labeledStatement(t.identifier(structure.label), t.blockStatement(bodyStatements)),
-  ];
+  return [t.labeledStatement(t.identifier(structure.label), t.blockStatement(bodyStatements))];
 }

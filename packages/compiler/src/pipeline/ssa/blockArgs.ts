@@ -54,10 +54,7 @@ export function forEachIncomingEdge(
  * Return the args list for the first edge `block → succBlockId`,
  * or `undefined` if no such edge exists.
  */
-export function getEdgeArgs(
-  block: BasicBlock,
-  succBlockId: BlockId,
-): readonly Place[] | undefined {
+export function getEdgeArgs(block: BasicBlock, succBlockId: BlockId): readonly Place[] | undefined {
   const terminal = block.terminal;
   if (terminal instanceof JumpOp && terminal.target === succBlockId) {
     return terminal.args;

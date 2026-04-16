@@ -301,10 +301,9 @@ function buildLogicalIdentifierAssignment(
           ),
     );
     consYielded = stabilizedRightPlace;
-    functionBuilder.currentBlock.terminal = new YieldOp(
-      createOperationId(environment),
-      [stabilizedRightPlace],
-    );
+    functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), [
+      stabilizedRightPlace,
+    ]);
   });
 
   // Alternate region: yield old value unchanged.
@@ -412,12 +411,7 @@ function buildLogicalMemberAssignment(
 
   const parentBlock = functionBuilder.currentBlock;
   const cachedPlace = loadMemberReference(reference, functionBuilder, environment);
-  const conditionPlace = buildLogicalCondition(
-    operator,
-    cachedPlace,
-    functionBuilder,
-    environment,
-  );
+  const conditionPlace = buildLogicalCondition(operator, cachedPlace, functionBuilder, environment);
 
   const consRegion = new Region([]);
   const consBlock = environment.createBlock();
@@ -441,10 +435,9 @@ function buildLogicalMemberAssignment(
       ),
     );
     consYielded = stabilizedRightPlace;
-    functionBuilder.currentBlock.terminal = new YieldOp(
-      createOperationId(environment),
-      [stabilizedRightPlace],
-    );
+    functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), [
+      stabilizedRightPlace,
+    ]);
   });
 
   const altRegion = new Region([]);

@@ -35,20 +35,8 @@ export function buildConditionalExpression(
     throw new Error("Conditional expression test must be a single place");
   }
 
-  const consResult = buildArm(
-    node.consequent,
-    scope,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-  );
-  const altResult = buildArm(
-    node.alternate,
-    scope,
-    functionBuilder,
-    moduleBuilder,
-    environment,
-  );
+  const consResult = buildArm(node.consequent, scope, functionBuilder, moduleBuilder, environment);
+  const altResult = buildArm(node.alternate, scope, functionBuilder, moduleBuilder, environment);
 
   const resultPlace = environment.createPlace(environment.createIdentifier());
 
@@ -83,10 +71,7 @@ function buildArm(
     }
 
     if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.terminal = new YieldOp(
-        createOperationId(environment),
-        [place],
-      );
+      functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), [place]);
     }
   });
   return { region };

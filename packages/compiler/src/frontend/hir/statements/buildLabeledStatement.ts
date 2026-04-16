@@ -59,10 +59,7 @@ export function buildLabeledStatement(
     buildOwnedBody(body, scope, functionBuilder, moduleBuilder, environment);
     functionBuilder.controlStack.pop();
     if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.terminal = new YieldOp(
-        createOperationId(environment),
-        [],
-      );
+      functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), []);
     }
   });
 
