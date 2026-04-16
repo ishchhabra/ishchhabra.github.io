@@ -2,7 +2,6 @@ import type { UpdateExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
 import {
   BinaryExpressionOp,
-  DeclareLocalOp,
   LiteralOp,
   LoadContextOp,
   LoadLocalOp,
@@ -75,29 +74,22 @@ export function buildUpdateExpression(
     throw new Error(`Unable to find the place for ${argument.name} (${declarationId})`);
   }
 
-  // For postfix operations, snapshot the original value into a temporary
-  // so that codegen emits a distinct variable for the pre-increment value.
-  // Without this, in loops with phi nodes the original place gets reassigned
-  // before codegen can read the pre-increment value.
+  // For postfix operations, the "old value" is the pre-mutation SSA value.
+  // We express it as a plain LoadLocal whose SSA result is the postfix's
+  // return place. If that result outlives the later `StoreLocal(assignment)`
+  // in this block, `ValueMaterializationPass` will materialize it into a
+  // `const $snap = src` binding before codegen. When the result is unused
+  // or entirely dies before the store, no materialization happens — clean
+  // output without a dead const declaration.
   let oldValLoadPlace = originalPlace;
   if (!node.prefix) {
-    const oldValBinding = environment.createIdentifier();
-    const oldValBindingPlace = environment.createPlace(oldValBinding);
-    functionBuilder.addOp(environment.createOperation(DeclareLocalOp, oldValBindingPlace, "const"));
-    const oldValStorePlace = environment.createPlace(environment.createIdentifier());
-    functionBuilder.addOp(
-      environment.createOperation(
-        StoreLocalOp,
-        oldValStorePlace,
-        oldValBindingPlace,
-        originalPlace,
-        "const",
-        "declaration",
-      ),
-    );
     oldValLoadPlace = environment.createPlace(environment.createIdentifier());
     functionBuilder.addOp(
-      environment.createOperation(LoadLocalOp, oldValLoadPlace, oldValBindingPlace),
+      environment.createOperation(
+        isContext ? LoadContextOp : LoadLocalOp,
+        oldValLoadPlace,
+        originalPlace,
+      ),
     );
   }
 
