@@ -45,10 +45,7 @@ export function generateForStructure(
   const { updateExpression, hoistedDeclarators, hoistedAssignments } =
     lowerUpdateRegion(updateStatements);
 
-  const { initNode, hoistedInitStatements } = lowerInitRegion(
-    initStatements,
-    hoistedDeclarators,
-  );
+  const { initNode, hoistedInitStatements } = lowerInitRegion(initStatements, hoistedDeclarators);
   const updateWithHoistedAssignments = prependAssignments(hoistedAssignments, updateExpression);
 
   const loopNode: t.Statement = t.forStatement(
@@ -132,9 +129,7 @@ function lowerInitRegion(
       hoistedInitStatements.push(t.expressionStatement(expr));
     }
     const initNode: t.VariableDeclaration | null =
-      hoistedDeclarators.length > 0
-        ? t.variableDeclaration("let", [...hoistedDeclarators])
-        : null;
+      hoistedDeclarators.length > 0 ? t.variableDeclaration("let", [...hoistedDeclarators]) : null;
     return { initNode, hoistedInitStatements };
   }
 

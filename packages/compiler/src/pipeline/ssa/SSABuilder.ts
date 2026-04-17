@@ -457,9 +457,9 @@ export class SSABuilder {
     block.replaceOp(terminal, new TerminalCtor(terminal.id, terminal.label, args));
   }
 
-  private resolveLoopContext(label: string | undefined):
-    | (typeof this.loopContexts)[number]
-    | undefined {
+  private resolveLoopContext(
+    label: string | undefined,
+  ): (typeof this.loopContexts)[number] | undefined {
     for (let i = this.loopContexts.length - 1; i >= 0; i--) {
       const ctx = this.loopContexts[i];
       if (label === undefined || ctx.label === label) return ctx;
@@ -766,9 +766,12 @@ export class SSABuilder {
     // region, plus anything introduced by init that's written or read
     // in any later region.
     const carriedSet = new Set<DeclarationId>();
-    for (const decl of beforeWrites) if (snapshot.has(decl) || initWrites.has(decl)) carriedSet.add(decl);
-    for (const decl of bodyWrites) if (snapshot.has(decl) || initWrites.has(decl)) carriedSet.add(decl);
-    for (const decl of updateWrites) if (snapshot.has(decl) || initWrites.has(decl)) carriedSet.add(decl);
+    for (const decl of beforeWrites)
+      if (snapshot.has(decl) || initWrites.has(decl)) carriedSet.add(decl);
+    for (const decl of bodyWrites)
+      if (snapshot.has(decl) || initWrites.has(decl)) carriedSet.add(decl);
+    for (const decl of updateWrites)
+      if (snapshot.has(decl) || initWrites.has(decl)) carriedSet.add(decl);
     // Init-introduced decls that subsequent regions read become
     // carried too — even if they're not re-written. The simplest
     // safe heuristic: init-written decls that appear anywhere later.
@@ -832,8 +835,7 @@ export class SSABuilder {
       const initYieldVals: Place[] = [];
       for (const decl of carriedDecls) {
         const stack = stacks.get(decl);
-        const top =
-          stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
+        const top = stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
         initYieldVals.push(top ?? this.undefSeed);
       }
       this.popPushed(stacks, initPushed);
@@ -847,8 +849,7 @@ export class SSABuilder {
       const condArgs: Place[] = [];
       for (const decl of carriedDecls) {
         const stack = stacks.get(decl);
-        const top =
-          stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
+        const top = stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
         condArgs.push(top ?? this.undefSeed);
       }
       this.popPushed(stacks, beforePushed);
@@ -861,8 +862,7 @@ export class SSABuilder {
       const bodyYieldVals: Place[] = [];
       for (const decl of carriedDecls) {
         const stack = stacks.get(decl);
-        const top =
-          stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
+        const top = stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
         bodyYieldVals.push(top ?? this.undefSeed);
       }
       this.popPushed(stacks, bodyPushed);
@@ -875,8 +875,7 @@ export class SSABuilder {
       const updateYieldVals: Place[] = [];
       for (const decl of carriedDecls) {
         const stack = stacks.get(decl);
-        const top =
-          stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
+        const top = stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
         updateYieldVals.push(top ?? this.undefSeed);
       }
       this.popPushed(stacks, updatePushed);
@@ -1000,8 +999,7 @@ export class SSABuilder {
       const yieldVals: Place[] = [];
       for (const decl of carriedDecls) {
         const stack = stacks.get(decl);
-        const top =
-          stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
+        const top = stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
         yieldVals.push(top ?? this.undefSeed);
       }
       this.popPushed(stacks, bodyPushed);
@@ -1076,8 +1074,7 @@ export class SSABuilder {
       const yieldVals: Place[] = [];
       for (const decl of carriedDecls) {
         const stack = stacks.get(decl);
-        const top =
-          stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
+        const top = stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
         yieldVals.push(top ?? this.undefSeed);
       }
       this.popPushed(stacks, bodyPushed);

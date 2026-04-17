@@ -631,10 +631,7 @@ type BreakTargetOp = LoopOp | LabeledBlockOp;
 
 function isLoopOp(op: unknown): op is LoopOp {
   return (
-    op instanceof WhileOp ||
-    op instanceof ForOp ||
-    op instanceof ForInOp ||
-    op instanceof ForOfOp
+    op instanceof WhileOp || op instanceof ForOp || op instanceof ForInOp || op instanceof ForOfOp
   );
 }
 
@@ -666,10 +663,7 @@ function resolveBreakTarget(
  * Resolve a `continue [label]` target. Continue only targets loops,
  * not switches or labeled blocks.
  */
-function resolveContinueTarget(
-  block: BasicBlock,
-  label: string | undefined,
-): LoopOp | undefined {
+function resolveContinueTarget(block: BasicBlock, label: string | undefined): LoopOp | undefined {
   let region = block.parent;
   while (region !== null) {
     const op = region.parent;
