@@ -7,6 +7,7 @@ function $0_0($1_0) {
       typeof $4_0.column === "number" &&
       $4_0.column > 0
     ) {
+      let $61_0 = undefined;
       return {
         line: $4_0.line,
         column: $4_0.column,

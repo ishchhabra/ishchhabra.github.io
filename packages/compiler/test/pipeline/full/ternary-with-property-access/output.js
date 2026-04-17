@@ -1,2 +1,9 @@
 const $0_0 = globalThis.project;
-console.log(!$0_0.external ? `lab-${$0_0.slug}-title` : undefined);
+let $12_0 = undefined;
+if (!$0_0.external) {
+  const $20_0 = `lab-${$0_0.slug}-title`;
+  $12_0 = `lab-${$0_0.slug}-title`;
+} else {
+  $12_0 = undefined;
+}
+console.log($12_0);

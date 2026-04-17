@@ -64,20 +64,21 @@ export class SSAEliminator {
     // so sorting each sink's params by their own ids keeps emission
     // order deterministic regardless of block iteration.
     //
-    // Only params that carry an `originalDeclarationId` are SSA
-    // merge points — those synthesized by SSABuilder at IDF placement
-    // sites or by the IfOp/WhileOp iter-arg lowering. Params without
-    // it are ordinary op defs (e.g. a frontend-created IfOp result
-    // place for a `cond ? a : b` ternary expression): codegen already
-    // handles them (reading the YieldOp value operand directly), so
-    // SSAEliminator skips them entirely — no declaration, no copy
-    // store.
+    // Every merge param needs a backing `let` declaration and per-
+    // edge copy stores. That includes both SSABuilder-synthesized
+    // params (with `originalDeclarationId`, e.g. IDF-placed block
+    // params and IfOp/WhileOp iter-arg lifts) AND frontend-created
+    // result places with no source-level binding (e.g. IfOp result
+    // for a `cond ? a : b` ternary or a `x ??= y` logical
+    // assignment). Codegen's ternary fast-path will bypass the
+    // emitted copy stores when both arms qualify; non-ternary paths
+    // rely on the declaration to back downstream references to the
+    // result place.
     type SinkSite = { sink: EdgeSink; param: Place; index: number };
     const sites: SinkSite[] = [];
     for (const sink of collectAllSinks(this.funcOp)) {
       const params = sinkParams(sink);
       for (let i = 0; i < params.length; i++) {
-        if (params[i].identifier.originalDeclarationId === undefined) continue;
         sites.push({ sink, param: params[i], index: i });
       }
     }
@@ -119,11 +120,11 @@ export class SSAEliminator {
    *     user-source declarations at the top of the entry block.
    */
   #insertParamDeclaration(sink: EdgeSink, param: Place): void {
-    const origDeclId = param.identifier.originalDeclarationId;
-    if (origDeclId === undefined) {
-      throw new Error(`SSA merge param ${param.identifier.name} is missing originalDeclarationId`);
-    }
-
+    // Declaration metadata is keyed by the param's own declarationId.
+    // Frontend-created result places (e.g. ??= / ternary) have no
+    // `originalDeclarationId` — they're SSA-internal merge points —
+    // but they still need a backing `let` so downstream references
+    // resolve at runtime.
     this.moduleIR.environment.ensureSyntheticDeclarationMetadata(
       param.identifier.declarationId,
       "let",

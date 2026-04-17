@@ -6,6 +6,7 @@ function $0_0() {
     }),
   });
   return useMemo(() => {
+    let $25_0 = undefined;
     return $2_0 ? $3_0 : null;
   }, [$2_0, $3_0]);
 }

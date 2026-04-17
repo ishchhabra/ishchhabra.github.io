@@ -59,15 +59,34 @@ export class StoreLocalOp extends Operation {
   }
 
   getOperands(): Place[] {
-    return [this.value];
+    // Mirror LLVM's `store addr, val`: the address is a use, the
+    // value is a use, and the store itself produces no SSA value.
+    // For assignment-kind stores, `lval` names the binding location
+    // that must already exist — it's a use, not a def. For
+    // declaration-kind stores, `lval` names the binding being
+    // introduced; that's handled by `getDefs` below.
+    return this.kind === "assignment" ? [this.value, this.lval] : [this.value];
   }
 
   override getDefs(): Place[] {
-    return [this.place, this.lval, ...this.bindings];
+    // Declarations introduce the binding — `lval` is a new def,
+    // analogous to `alloca`. Assignments do not produce a new
+    // binding; they mutate memory at an existing `lval`, matching
+    // `store`'s void return in LLVM.
+    return this.kind === "assignment"
+      ? [this.place, ...this.bindings]
+      : [this.place, this.lval, ...this.bindings];
   }
 
   public override hasSideEffects(): boolean {
-    return false;
+    // An assignment writes to an existing binding — the effect is
+    // observable to any later load. DCE alone (which reasons about
+    // SSA defs) cannot prove such a write is dead; that's the job
+    // of a memory-aware Dead Store Elimination pass. Mark
+    // assignments as side-effectful so DCE leaves them alone until
+    // DSE lands; a declaration introduces a fresh binding and
+    // stays removable when nothing reads or writes it.
+    return this.kind === "assignment";
   }
 
   public override print(): string {
