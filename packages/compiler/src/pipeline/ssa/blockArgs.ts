@@ -7,8 +7,12 @@ import {
   BreakOp,
   ConditionOp,
   ContinueOp,
+  ForInOp,
+  ForOfOp,
+  ForOp,
   IfOp,
   JumpOp,
+  LabeledBlockOp,
   WhileOp,
   YieldOp,
 } from "../../ir/ops/control";
@@ -90,9 +94,13 @@ export interface Edge {
  */
 export function sinkParams(sink: EdgeSink): readonly Place[] {
   if (sink.kind === "block") return sink.block.params;
-  // Structured op-results: only WhileOp/IfOp carry `resultPlaces`.
+  // Structured op-results.
   if (sink.op instanceof WhileOp) return sink.op.resultPlaces;
+  if (sink.op instanceof ForOp) return sink.op.resultPlaces;
+  if (sink.op instanceof ForInOp) return sink.op.resultPlaces;
+  if (sink.op instanceof ForOfOp) return sink.op.resultPlaces;
   if (sink.op instanceof IfOp) return sink.op.resultPlaces;
+  if (sink.op instanceof LabeledBlockOp) return sink.op.resultPlaces;
   return [];
 }
 
@@ -144,6 +152,12 @@ export function forEachOutgoingEdge(
         visit(makeConditionTrueEdge(block, terminal, bodyEntry));
       }
       visit(makeConditionFalseEdge(block, terminal, enclosing));
+    } else if (enclosing instanceof ForOp) {
+      const bodyEntry = enclosing.bodyRegion.blocks[0];
+      if (bodyEntry !== undefined) {
+        visit(makeConditionTrueEdge(block, terminal, bodyEntry));
+      }
+      visit(makeConditionFalseEdge(block, terminal, enclosing));
     }
   } else if (terminal instanceof YieldOp) {
     const enclosing = resolveEnclosingStructuredOp(block);
@@ -152,8 +166,43 @@ export function forEachOutgoingEdge(
       if (beforeEntry !== undefined && enclosing.inits.length > 0) {
         visit(makeYieldBackEdge(block, terminal, enclosing, beforeEntry));
       }
+    } else if (enclosing instanceof ForOp) {
+      // Route yield to the right region-entry depending on which
+      // region this yield lives in. ForOp has three yield-edge
+      // shapes: init → before, body → update, update → before.
+      const yieldRegion = block.parent;
+      if (yieldRegion === enclosing.initRegion) {
+        const beforeEntry = enclosing.beforeRegion.blocks[0];
+        if (beforeEntry !== undefined && enclosing.resultPlaces.length > 0) {
+          visit(makeForYieldEdge(block, terminal, beforeEntry));
+        }
+      } else if (yieldRegion === enclosing.bodyRegion) {
+        const updateEntry = enclosing.updateRegion.blocks[0];
+        if (updateEntry !== undefined && enclosing.resultPlaces.length > 0) {
+          visit(makeForYieldEdge(block, terminal, updateEntry));
+        }
+      } else if (yieldRegion === enclosing.updateRegion) {
+        const beforeEntry = enclosing.beforeRegion.blocks[0];
+        if (beforeEntry !== undefined && enclosing.resultPlaces.length > 0) {
+          visit(makeForYieldEdge(block, terminal, beforeEntry));
+        }
+      }
+    } else if (enclosing instanceof ForInOp || enclosing instanceof ForOfOp) {
+      // Body yield both feeds the next iteration's body params and
+      // the op's resultPlaces (iterator exhaustion is normal exit).
+      if (enclosing.resultPlaces.length > 0) {
+        const bodyEntry = enclosing.bodyRegion.blocks[0];
+        if (bodyEntry !== undefined) {
+          visit(makeForYieldEdge(block, terminal, bodyEntry));
+        }
+        visit(makeForInOrForOfYieldToResultsEdge(block, terminal, enclosing));
+      }
     } else if (enclosing instanceof IfOp) {
       visit(makeYieldToResultsEdge(block, terminal, enclosing));
+    } else if (enclosing instanceof LabeledBlockOp) {
+      if (enclosing.resultPlaces.length > 0) {
+        visit(makeLabeledBlockYieldToResultsEdge(block, terminal, enclosing));
+      }
     }
   } else if (terminal instanceof BreakOp) {
     const target = resolveBreakTarget(block, terminal.label);
@@ -177,7 +226,12 @@ export function forEachOutgoingEdge(
     if (op instanceof WhileOp && op.inits.length > 0) {
       const beforeEntry = op.beforeRegion.blocks[0];
       if (beforeEntry !== undefined) {
-        visit(makeOpEntryEdge(block, op, beforeEntry));
+        visit(makeWhileOpEntryEdge(block, op, beforeEntry));
+      }
+    } else if ((op instanceof ForInOp || op instanceof ForOfOp) && op.inits.length > 0) {
+      const bodyEntry = op.bodyRegion.blocks[0];
+      if (bodyEntry !== undefined) {
+        visit(makeForInOrForOfOpEntryEdge(block, op, bodyEntry));
       }
     }
   }
@@ -212,7 +266,15 @@ export function collectAllSinks(funcOp: FuncOp): EdgeSink[] {
       sinks.push({ kind: "block", block });
     }
     for (const op of block.operations) {
-      if ((op instanceof WhileOp || op instanceof IfOp) && op.resultPlaces.length > 0) {
+      if (
+        (op instanceof WhileOp ||
+          op instanceof ForOp ||
+          op instanceof ForInOp ||
+          op instanceof ForOfOp ||
+          op instanceof IfOp ||
+          op instanceof LabeledBlockOp) &&
+        op.resultPlaces.length > 0
+      ) {
         sinks.push({ kind: "op-results", op });
       }
     }
@@ -258,7 +320,11 @@ function makeConditionTrueEdge(
   };
 }
 
-function makeConditionFalseEdge(pred: BasicBlock, terminal: ConditionOp, op: WhileOp): Edge {
+function makeConditionFalseEdge(
+  pred: BasicBlock,
+  terminal: ConditionOp,
+  op: WhileOp | ForOp,
+): Edge {
   return {
     pred,
     sink: { kind: "op-results", op },
@@ -304,6 +370,29 @@ function makeYieldBackEdge(
   };
 }
 
+function makeLabeledBlockYieldToResultsEdge(
+  pred: BasicBlock,
+  terminal: YieldOp,
+  op: LabeledBlockOp,
+): Edge {
+  const n = op.resultPlaces.length;
+  const tailStart = Math.max(terminal.values.length - n, 0);
+  const args = terminal.values.slice(tailStart);
+  return {
+    pred,
+    sink: { kind: "op-results", op },
+    args,
+    apply(newArgs): void {
+      const head = terminal.values.slice(0, tailStart);
+      const merged = [...head, ...newArgs];
+      pred.replaceOp(terminal, new YieldOp(terminal.id, merged));
+    },
+    insertCopyStore(store): void {
+      pred.appendOp(store);
+    },
+  };
+}
+
 function makeYieldToResultsEdge(pred: BasicBlock, terminal: YieldOp, op: IfOp): Edge {
   return {
     pred,
@@ -329,7 +418,7 @@ function makeYieldToResultsEdge(pred: BasicBlock, terminal: YieldOp, op: IfOp): 
  * followed by post-loop instructions (e.g. `console.log($result)`)
  * and the init must execute before the first iteration runs.
  */
-function makeOpEntryEdge(pred: BasicBlock, op: WhileOp, beforeEntry: BasicBlock): Edge {
+function makeWhileOpEntryEdge(pred: BasicBlock, op: WhileOp, beforeEntry: BasicBlock): Edge {
   return {
     pred,
     sink: { kind: "block", block: beforeEntry },
@@ -351,6 +440,52 @@ function makeOpEntryEdge(pred: BasicBlock, op: WhileOp, beforeEntry: BasicBlock)
   };
 }
 
+function makeForInOrForOfOpEntryEdge(
+  pred: BasicBlock,
+  op: ForInOp | ForOfOp,
+  bodyEntry: BasicBlock,
+): Edge {
+  return {
+    pred,
+    sink: { kind: "block", block: bodyEntry },
+    args: op.inits,
+    apply(newArgs): void {
+      if (newArgs === op.inits) return;
+      const rebuilt =
+        op instanceof ForInOp
+          ? new ForInOp(
+              op.id,
+              op.iterationValue,
+              op.iterationTarget,
+              op.object,
+              op.bodyRegion,
+              op.label,
+              op.resultPlaces,
+              newArgs,
+            )
+          : new ForOfOp(
+              op.id,
+              op.iterationValue,
+              op.iterationTarget,
+              op.iterable,
+              op.isAwait,
+              op.bodyRegion,
+              op.label,
+              op.resultPlaces,
+              newArgs,
+            );
+      pred.replaceOp(op, rebuilt);
+    },
+    insertCopyStore(store): void {
+      const opIndex = pred.operations.indexOf(op);
+      if (opIndex < 0) {
+        throw new Error("op-entry edge: structured op not found in predecessor block");
+      }
+      pred.insertOpAt(opIndex, store);
+    },
+  };
+}
+
 /**
  * Break edge: from the block terminating in `BreakOp` to the
  * enclosing loop (or labeled block / switch) that the break targets.
@@ -359,7 +494,11 @@ function makeOpEntryEdge(pred: BasicBlock, op: WhileOp, beforeEntry: BasicBlock)
  *
  * Copy-store site is *before* the BreakOp terminator.
  */
-function makeBreakEdge(pred: BasicBlock, terminal: BreakOp, op: WhileOp): Edge {
+function makeBreakEdge(
+  pred: BasicBlock,
+  terminal: BreakOp,
+  op: WhileOp | ForOp | ForInOp | ForOfOp | LabeledBlockOp,
+): Edge {
   return {
     pred,
     sink: { kind: "op-results", op },
@@ -376,20 +515,89 @@ function makeBreakEdge(pred: BasicBlock, terminal: BreakOp, op: WhileOp): Edge {
 
 /**
  * Continue edge: from the block terminating in `ContinueOp` to the
- * enclosing loop's header region entry. For `WhileOp` that's
- * `beforeRegion.blocks[0]` — the test block's params. (For a future
- * `ForOp` lift it would be the update-region entry, since the update
- * runs before the test on `continue`.)
+ * enclosing loop's "next iteration" entry. For `WhileOp` that's
+ * `beforeRegion.blocks[0]`. For `ForOp` it's `updateRegion.blocks[0]`
+ * — continue in a for-loop runs the update expression before
+ * re-testing.
  */
-function makeContinueEdge(pred: BasicBlock, terminal: ContinueOp, op: WhileOp): Edge {
-  const beforeEntry = op.beforeRegion.blocks[0];
+function makeContinueEdge(
+  pred: BasicBlock,
+  terminal: ContinueOp,
+  op: WhileOp | ForOp | ForInOp | ForOfOp,
+): Edge {
+  // Continue targets:
+  //   - ForOp: updateRegion entry (update runs before re-test)
+  //   - ForInOp/ForOfOp: bodyRegion entry (next iteration value via iterator)
+  //   - WhileOp: beforeRegion entry (re-test)
+  const targetEntry =
+    op instanceof ForOp
+      ? op.updateRegion.blocks[0]
+      : op instanceof ForInOp || op instanceof ForOfOp
+        ? op.bodyRegion.blocks[0]
+        : op.beforeRegion.blocks[0];
   return {
     pred,
-    sink: { kind: "block", block: beforeEntry },
+    sink: { kind: "block", block: targetEntry },
     args: terminal.args,
     apply(newArgs): void {
       if (newArgs === terminal.args) return;
       pred.replaceOp(terminal, new ContinueOp(terminal.id, terminal.label, newArgs));
+    },
+    insertCopyStore(store): void {
+      pred.appendOp(store);
+    },
+  };
+}
+
+/**
+ * ForInOp/ForOfOp yield-to-results edge. The body's natural YieldOp
+ * also signals iterator exhaustion, which is the loop's normal exit
+ * path carrying values to `resultPlaces`.
+ */
+function makeForInOrForOfYieldToResultsEdge(
+  pred: BasicBlock,
+  terminal: YieldOp,
+  op: ForInOp | ForOfOp,
+): Edge {
+  const n = op.resultPlaces.length;
+  const tailStart = Math.max(terminal.values.length - n, 0);
+  const args = terminal.values.slice(tailStart);
+  return {
+    pred,
+    sink: { kind: "op-results", op },
+    args,
+    apply(newArgs): void {
+      const head = terminal.values.slice(0, tailStart);
+      const merged = [...head, ...newArgs];
+      pred.replaceOp(terminal, new YieldOp(terminal.id, merged));
+    },
+    insertCopyStore(store): void {
+      pred.appendOp(store);
+    },
+  };
+}
+
+/**
+ * ForOp yield-to-block edge. Routes:
+ *   - initRegion yield   → beforeRegion entry params (initial values)
+ *   - bodyRegion yield   → updateRegion entry params (post-body)
+ *   - updateRegion yield → beforeRegion entry params (back-edge)
+ *
+ * In all three cases the edge's args are the *trailing* slice of the
+ * YieldOp's values matching the target's param count.
+ */
+function makeForYieldEdge(pred: BasicBlock, terminal: YieldOp, target: BasicBlock): Edge {
+  const n = target.params.length;
+  const tailStart = Math.max(terminal.values.length - n, 0);
+  const args = terminal.values.slice(tailStart);
+  return {
+    pred,
+    sink: { kind: "block", block: target },
+    args,
+    apply(newArgs): void {
+      const head = terminal.values.slice(0, tailStart);
+      const merged = [...head, ...newArgs];
+      pred.replaceOp(terminal, new YieldOp(terminal.id, merged));
     },
     insertCopyStore(store): void {
       pred.appendOp(store);
@@ -415,17 +623,39 @@ function resolveEnclosingStructuredOp(block: BasicBlock): Operation | undefined 
  * upward. Labeled break matches the nearest enclosing op with that
  * label; unlabeled break matches the nearest loop / switch.
  *
- * Today only `WhileOp` carries result places (IfOp exists but can't
- * be a break target). Extend the accepted-target list as other
- * structured ops gain the lift (ForOp, SwitchOp, LabeledBlockOp).
+ * Accepts WhileOp and ForOp today; extend as SwitchOp and
+ * LabeledBlockOp gain the lift.
  */
-function resolveBreakTarget(block: BasicBlock, label: string | undefined): WhileOp | undefined {
+type LoopOp = WhileOp | ForOp | ForInOp | ForOfOp;
+type BreakTargetOp = LoopOp | LabeledBlockOp;
+
+function isLoopOp(op: unknown): op is LoopOp {
+  return (
+    op instanceof WhileOp ||
+    op instanceof ForOp ||
+    op instanceof ForInOp ||
+    op instanceof ForOfOp
+  );
+}
+
+function isBreakTargetOp(op: unknown): op is BreakTargetOp {
+  return isLoopOp(op) || op instanceof LabeledBlockOp;
+}
+
+function resolveBreakTarget(
+  block: BasicBlock,
+  label: string | undefined,
+): BreakTargetOp | undefined {
   let region = block.parent;
   while (region !== null) {
     const op = region.parent;
     if (op === null) return undefined;
-    if (op instanceof WhileOp) {
-      if (label === undefined || op.label === label) return op;
+    if (isBreakTargetOp(op)) {
+      if (label === undefined) {
+        if (isLoopOp(op)) return op;
+      } else if (op.label === label) {
+        return op;
+      }
     }
     region = op.parentBlock?.parent ?? null;
   }
@@ -436,12 +666,15 @@ function resolveBreakTarget(block: BasicBlock, label: string | undefined): While
  * Resolve a `continue [label]` target. Continue only targets loops,
  * not switches or labeled blocks.
  */
-function resolveContinueTarget(block: BasicBlock, label: string | undefined): WhileOp | undefined {
+function resolveContinueTarget(
+  block: BasicBlock,
+  label: string | undefined,
+): LoopOp | undefined {
   let region = block.parent;
   while (region !== null) {
     const op = region.parent;
     if (op === null) return undefined;
-    if (op instanceof WhileOp) {
+    if (isLoopOp(op)) {
       if (label === undefined || op.label === label) return op;
     }
     region = op.parentBlock?.parent ?? null;

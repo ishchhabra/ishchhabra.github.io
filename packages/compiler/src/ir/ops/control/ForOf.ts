@@ -24,9 +24,16 @@ import { Region } from "../../core/Region";
  * Inline structured op — lives directly in its parent block, owns a
  * single body region, no fallthrough field. Completion of the op
  * transfers control to the next op in the parent block.
+ *
+ * `resultPlaces` receive values on body's natural exit (iterator
+ * exhaustion) and from any `BreakOp` targeting this loop. Empty for
+ * loops with no loop-carried SSA values.
  */
 export class ForOfOp extends Operation {
   static override readonly traits = new Set<Trait>([Trait.HasRegions]);
+
+  public readonly resultPlaces: readonly Place[];
+  public readonly inits: readonly Place[];
 
   constructor(
     id: OperationId,
@@ -36,9 +43,13 @@ export class ForOfOp extends Operation {
     public readonly isAwait: boolean,
     bodyRegion: Region,
     public readonly label?: string,
+    resultPlaces: readonly Place[] = [],
+    inits: readonly Place[] = [],
   ) {
     bodyRegion.scopeKind = "for";
     super(id, [bodyRegion]);
+    this.resultPlaces = resultPlaces;
+    this.inits = inits;
   }
 
   get bodyRegion(): Region {
@@ -50,7 +61,11 @@ export class ForOfOp extends Operation {
   }
 
   override getDefs(): Place[] {
-    return [this.iterationValue, ...getDestructureTargetDefs(this.iterationTarget)];
+    return [
+      this.iterationValue,
+      ...getDestructureTargetDefs(this.iterationTarget),
+      ...this.resultPlaces,
+    ];
   }
 
   rewrite(values: Map<Identifier, Place>): ForOfOp {
@@ -75,6 +90,8 @@ export class ForOfOp extends Operation {
       this.isAwait,
       this.regions[0],
       this.label,
+      this.resultPlaces,
+      this.inits,
     );
   }
 
@@ -89,6 +106,8 @@ export class ForOfOp extends Operation {
       this.isAwait,
       remapRegion(ctx, this.regions[0]),
       this.label,
+      this.resultPlaces.map((p) => remapPlace(ctx, p)),
+      this.inits.map((p) => remapPlace(ctx, p)),
     );
   }
 

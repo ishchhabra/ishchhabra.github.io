@@ -13,12 +13,7 @@ function $0_0($1_0) {
         href: `/${$1_0.startsWith("/") ? $1_0 : $1_0}`,
       },
     ];
-    $29_0 = [
-      {
-        rel: "canonical",
-        href: `/${$1_0.startsWith("/") ? $1_0 : $1_0}`,
-      },
-    ];
+    $29_0 = $51_0;
   } else {
     $29_0 = undefined;
   }

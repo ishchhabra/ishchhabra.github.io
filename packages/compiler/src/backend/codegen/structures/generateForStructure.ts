@@ -45,7 +45,10 @@ export function generateForStructure(
   const { updateExpression, hoistedDeclarators, hoistedAssignments } =
     lowerUpdateRegion(updateStatements);
 
-  const initNode = lowerInitRegion(initStatements, hoistedDeclarators);
+  const { initNode, hoistedInitStatements } = lowerInitRegion(
+    initStatements,
+    hoistedDeclarators,
+  );
   const updateWithHoistedAssignments = prependAssignments(hoistedAssignments, updateExpression);
 
   const loopNode: t.Statement = t.forStatement(
@@ -57,6 +60,16 @@ export function generateForStructure(
   const labeled: t.Statement = structure.label
     ? t.labeledStatement(t.identifier(structure.label), loopNode)
     : loopNode;
+
+  // When SSAEliminator inserts iter-arg copy stores alongside
+  // source-level declarations in the init region, the init slot
+  // cannot express both shapes. Emit the declarations (plus their
+  // copy stores, if any) as prepended statements above the
+  // for-statement, preserving the let/const block-scope by wrapping
+  // both in a block.
+  if (hoistedInitStatements.length > 0) {
+    return [t.blockStatement([...hoistedInitStatements, labeled])];
+  }
 
   return [labeled];
 }
@@ -81,22 +94,23 @@ export function generateForStructure(
 function lowerInitRegion(
   initStatements: readonly t.Statement[],
   hoistedDeclarators: readonly t.VariableDeclarator[],
-): t.VariableDeclaration | t.Expression | null {
-  const declarators: t.VariableDeclarator[] = [];
+): {
+  initNode: t.VariableDeclaration | t.Expression | null;
+  /**
+   * Statements that must be emitted **before** the for-statement,
+   * inside an enclosing block. Populated when the init region has
+   * both source-level declarations and iter-arg copy stores emitted
+   * by SSAEliminator — JS grammar forbids mixing the two in a single
+   * init slot.
+   */
+  hoistedInitStatements: readonly t.Statement[];
+} {
+  const declarations: t.VariableDeclaration[] = [];
   const expressions: t.Expression[] = [];
-  let declKind: "var" | "let" | "const" | undefined;
 
   for (const stmt of initStatements) {
     if (t.isVariableDeclaration(stmt)) {
-      if (declKind === undefined) {
-        declKind = stmt.kind as "var" | "let" | "const";
-      } else if (declKind !== stmt.kind) {
-        throw new Error(
-          `generateForStructure: mixed declaration kinds in for-init ` +
-            `(${declKind} vs ${stmt.kind}). Source-level JS can't produce this.`,
-        );
-      }
-      declarators.push(...stmt.declarations);
+      declarations.push(stmt);
       continue;
     }
     if (t.isExpressionStatement(stmt)) {
@@ -108,43 +122,63 @@ function lowerInitRegion(
     );
   }
 
-  if (declarators.length > 0 && expressions.length > 0) {
-    throw new Error(
-      `generateForStructure: for-init region contains both declarations and expression statements. ` +
-        `JS syntax allows only one shape in the init slot.`,
-    );
+  // Mixed shape — source-level decls AND SSA-eliminator iter-arg
+  // copy stores coexist in the init region. Hoist both (decls and
+  // their trailing copies) above the for-statement; the caller wraps
+  // in a block to preserve let/const block-scope.
+  if (declarations.length > 0 && expressions.length > 0) {
+    const hoistedInitStatements: t.Statement[] = [...declarations];
+    for (const expr of expressions) {
+      hoistedInitStatements.push(t.expressionStatement(expr));
+    }
+    const initNode: t.VariableDeclaration | null =
+      hoistedDeclarators.length > 0
+        ? t.variableDeclaration("let", [...hoistedDeclarators])
+        : null;
+    return { initNode, hoistedInitStatements };
   }
 
-  if (declarators.length > 0) {
+  if (declarations.length > 0) {
+    const declarators: t.VariableDeclarator[] = [];
+    let declKind: "var" | "let" | "const" | undefined;
+    for (const decl of declarations) {
+      if (declKind === undefined) {
+        declKind = decl.kind as "var" | "let" | "const";
+      } else if (declKind !== decl.kind) {
+        throw new Error(
+          `generateForStructure: mixed declaration kinds in for-init ` +
+            `(${declKind} vs ${decl.kind}). Source-level JS can't produce this.`,
+        );
+      }
+      declarators.push(...decl.declarations);
+    }
     declarators.push(...hoistedDeclarators);
-    return t.variableDeclaration(declKind ?? "let", declarators);
+    return {
+      initNode: t.variableDeclaration(declKind ?? "let", declarators),
+      hoistedInitStatements: [],
+    };
   }
 
-  // No source-level declarations. Hoisted update declarators (if any)
-  // must still land somewhere. Per §14.7.4 the init slot accepts a
-  // LexicalDeclaration even when the source's init was an expression
-  // or absent — we just can't put both shapes in the same slot, so
-  // the expressions go in the init slot only if there are no hoists.
   if (hoistedDeclarators.length > 0) {
     if (expressions.length > 0) {
-      // Rare edge case: source used expression init AND we synthesized
-      // snapshots whose declarations need hoisting. Keep the expressions
-      // in the init slot and emit the hoisted declarators as a standalone
-      // let *before* the for — callers splice this into the parent block.
-      // (This branch is currently unreachable; source-level expression
-      // inits don't generate ops that SSAEliminator would snapshot. If it
-      // ever fires, the shape below is still grammatically valid.)
       throw new Error(
         `generateForStructure: cannot combine an expression-init with ` +
           `hoisted declarators from the update region. Update handling if this fires.`,
       );
     }
-    return t.variableDeclaration("let", [...hoistedDeclarators]);
+    return {
+      initNode: t.variableDeclaration("let", [...hoistedDeclarators]),
+      hoistedInitStatements: [],
+    };
   }
 
-  if (expressions.length === 0) return null;
-  if (expressions.length === 1) return expressions[0];
-  return t.sequenceExpression(expressions);
+  if (expressions.length === 0) {
+    return { initNode: null, hoistedInitStatements: [] };
+  }
+  if (expressions.length === 1) {
+    return { initNode: expressions[0], hoistedInitStatements: [] };
+  }
+  return { initNode: t.sequenceExpression(expressions), hoistedInitStatements: [] };
 }
 
 /**

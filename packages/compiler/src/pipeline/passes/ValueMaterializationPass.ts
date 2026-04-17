@@ -64,7 +64,7 @@ export class ValueMaterializationPass {
         environment.placeToOp.set(store.place.id, store);
 
         // Rewrite all users to reference the StoreLocal's lval.
-        this.rewriteUses(instruction, store.lval);
+        this.rewriteUses(instruction, store.lval, store);
 
         // Skip past the inserted StoreLocal.
         i++;
@@ -161,20 +161,23 @@ export class ValueMaterializationPass {
 
   /**
    * Rewrite every use of `instruction.place` to use `newPlace`
-   * instead, except for the StoreLocal we just inserted. Walks
-   * every op in every block uniformly.
+   * instead, except for `materializedStore` itself — that store's
+   * RHS must keep referencing the original value as its source of
+   * truth. Skip by identity, not by value-match, because other
+   * stores (e.g. SSA copy stores) may also have `instruction.place`
+   * as their value and those DO need to be rewritten.
    */
-  private rewriteUses(instruction: Operation, newPlace: Place): void {
+  private rewriteUses(
+    instruction: Operation,
+    newPlace: Place,
+    materializedStore: StoreLocalOp,
+  ): void {
     const oldIdentifier = instruction.place!.identifier;
     const map = new Map<Identifier, Place>([[oldIdentifier, newPlace]]);
 
     for (const block of this.funcOp.allBlocks()) {
       for (const op of block.getAllOps()) {
-        if (op instanceof StoreLocalOp && op.value === instruction.place) {
-          // Don't rewrite the StoreLocal we just created — it needs
-          // to reference the original value as its RHS.
-          continue;
-        }
+        if (op === materializedStore) continue;
 
         const rewritten = op.rewrite(map);
         if (rewritten !== op) {

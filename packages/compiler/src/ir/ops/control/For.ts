@@ -4,6 +4,7 @@ import {
   type CloneContext,
   nextId,
   Operation,
+  remapPlace,
   remapRegion,
   Trait,
   VerifyError,
@@ -21,33 +22,34 @@ import { Region } from "../../core/Region";
  * The op owns four regions, matching the four semantic slots of a
  * JS for-statement:
  *
- *   - `initRegion` (regions[0]) — the init expression / declarations.
+ *   - `initRegion` (regions[0]) — init expression / declarations.
  *     Runs once, before the first iteration. Terminates in a
- *     {@link YieldOp}. An empty init is just a YieldOp-only block.
+ *     {@link YieldOp} carrying the initial values of iter-args.
  *   - `beforeRegion` (regions[1]) — the test. Re-entered every
- *     iteration. Terminates in a {@link ConditionOp} carrying the
- *     boolean result.
+ *     iteration. Terminates in a {@link ConditionOp} whose args
+ *     carry the current iter values to the body (true path) or
+ *     to {@link resultPlaces} (false path, exit).
  *   - `bodyRegion` (regions[2]) — the loop body. Terminates in a
- *     {@link YieldOp} on natural fall-through, or in a
- *     `BreakOp` / `ContinueOp` / `ReturnOp` for structural exits.
- *     A `ContinueOp` inside the body targets the start of the
- *     update region.
+ *     {@link YieldOp} on natural fall-through carrying values to
+ *     the update region; or `BreakOp` (→ resultPlaces) / `ContinueOp`
+ *     (→ updateRegion.entry) / `ReturnOp`.
  *   - `updateRegion` (regions[3]) — the update expression. Runs at
  *     the end of every iteration (and at every `continue`) before
- *     the test is re-evaluated. Terminates in a {@link YieldOp}.
+ *     the test is re-evaluated. Terminates in a {@link YieldOp}
+ *     carrying the post-update iter values back to beforeRegion.
  *
- * Every region is present, even when the source omits its
- * corresponding slot: an absent slot is represented by a region
- * whose entry block terminates in a YieldOp with no values. This
- * keeps the ForOp self-contained — a pass walking a ForOp's regions
- * sees the entire control-flow graph without peeking at the parent
- * block for init ops.
+ * `resultPlaces` receive values on the false-path of the
+ * `ConditionOp` and from any `BreakOp` that targets this loop. Empty
+ * when the loop has no loop-carried SSA values — a pure memory-form
+ * ForOp for side-effecting for-statements.
  *
  * Inline structured op — lives in its parent block, control
  * continues with the next op when the loop exits.
  */
 export class ForOp extends Operation {
   static override readonly traits = new Set<Trait>([Trait.HasRegions]);
+
+  public readonly resultPlaces: readonly Place[];
 
   constructor(
     id: OperationId,
@@ -56,8 +58,10 @@ export class ForOp extends Operation {
     bodyRegion: Region,
     updateRegion: Region,
     public readonly label?: string,
+    resultPlaces: readonly Place[] = [],
   ) {
     super(id, [initRegion, beforeRegion, bodyRegion, updateRegion]);
+    this.resultPlaces = resultPlaces;
   }
 
   get initRegion(): Region {
@@ -81,7 +85,7 @@ export class ForOp extends Operation {
   }
 
   override getDefs(): Place[] {
-    return [];
+    return [...this.resultPlaces];
   }
 
   rewrite(_values: Map<Identifier, Place>): ForOp {
@@ -96,6 +100,7 @@ export class ForOp extends Operation {
       remapRegion(ctx, this.regions[2]),
       remapRegion(ctx, this.regions[3]),
       this.label,
+      this.resultPlaces.map((p) => remapPlace(ctx, p)),
     );
   }
 

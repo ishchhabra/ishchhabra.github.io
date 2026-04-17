@@ -7,6 +7,7 @@ import {
   LoadLocalOp,
   ObjectMethodOp,
   Operation,
+  StoreContextOp,
   StoreLocalOp,
 } from "../../ir";
 import { isValueOp } from "../../ir/categories";
@@ -169,6 +170,10 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
 
       // Unclaimed StoreLocals lower to declaration statements.
       if (op instanceof StoreLocalOp && !isClaimedByExportDeclaration(op)) return true;
+
+      // Context stores mutate captured bindings — inlining a read
+      // across one risks observing the post-mutation value.
+      if (op instanceof StoreContextOp) return true;
 
       // Zero-use value ops with side effects flush as expression statements.
       if (

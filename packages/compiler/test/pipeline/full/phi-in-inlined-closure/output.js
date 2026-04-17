@@ -8,7 +8,7 @@ function $1_0() {
     let $25_0 = undefined;
     if ($7_0) {
       const $37_0 = $8_0 ?? "default";
-      $25_0 = $8_0 ?? "default";
+      $25_0 = $37_0;
     } else {
       $25_0 = "fallback";
     }

@@ -27,6 +27,9 @@ import { Region } from "../../core/Region";
 export class ForInOp extends Operation {
   static override readonly traits = new Set<Trait>([Trait.HasRegions]);
 
+  public readonly resultPlaces: readonly Place[];
+  public readonly inits: readonly Place[];
+
   constructor(
     id: OperationId,
     public readonly iterationValue: Place,
@@ -34,9 +37,13 @@ export class ForInOp extends Operation {
     public readonly object: Place,
     bodyRegion: Region,
     public readonly label?: string,
+    resultPlaces: readonly Place[] = [],
+    inits: readonly Place[] = [],
   ) {
     bodyRegion.scopeKind = "for";
     super(id, [bodyRegion]);
+    this.resultPlaces = resultPlaces;
+    this.inits = inits;
   }
 
   get bodyRegion(): Region {
@@ -48,7 +55,11 @@ export class ForInOp extends Operation {
   }
 
   override getDefs(): Place[] {
-    return [this.iterationValue, ...getDestructureTargetDefs(this.iterationTarget)];
+    return [
+      this.iterationValue,
+      ...getDestructureTargetDefs(this.iterationTarget),
+      ...this.resultPlaces,
+    ];
   }
 
   rewrite(values: Map<Identifier, Place>): ForInOp {
@@ -72,6 +83,8 @@ export class ForInOp extends Operation {
       object,
       this.regions[0],
       this.label,
+      this.resultPlaces,
+      this.inits,
     );
   }
 
@@ -85,6 +98,8 @@ export class ForInOp extends Operation {
       remapPlace(ctx, this.object),
       remapRegion(ctx, this.regions[0]),
       this.label,
+      this.resultPlaces.map((p) => remapPlace(ctx, p)),
+      this.inits.map((p) => remapPlace(ctx, p)),
     );
   }
 
