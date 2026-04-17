@@ -1,8 +1,7 @@
 import * as t from "@babel/types";
-import { IfOp, YieldOp } from "../../../ir";
+import { IfOp, StoreLocalOp, YieldOp } from "../../../ir";
 import type { BasicBlock } from "../../../ir/core/Block";
 import { FuncOp } from "../../../ir/core/FuncOp";
-import type { Region } from "../../../ir/core/Region";
 import { CodeGenerator } from "../../CodeGenerator";
 import { generateBasicBlock } from "../generateBlock";
 
@@ -11,6 +10,17 @@ import { generateBasicBlock } from "../generateBlock";
  * block — emission produces only the `if (...) { ... }` statement
  * (or a ternary expression, when eligible). The parent block's
  * walker continues emitting subsequent ops after this returns.
+ *
+ * SSAEliminator has already lowered the op's SSA merge form:
+ * `resultPlaces` are declared as `let` at function entry, and each
+ * arm's YieldOp-feeding edge has been materialized as a
+ * `StoreLocalOp(resultPlace, yieldValue, "assignment")` right
+ * before the terminator. The codegen here just walks the region's
+ * ops — including the SSA-inserted copy stores — and emits the
+ * `if` statement. For the ternary fast path the copy stores are
+ * ignored; the ternary expression is built directly from the
+ * YieldOp's value operands and written into `generator.places` for
+ * the IfOp's single result place.
  */
 export function generateIfStructure(
   structure: IfOp,
@@ -30,8 +40,8 @@ export function generateIfStructure(
   if (
     structure.resultPlaces.length === 1 &&
     altEntry !== undefined &&
-    isPureExpressionArm(consEntry) &&
-    isPureExpressionArm(altEntry)
+    isPureExpressionArm(consEntry, structure) &&
+    isPureExpressionArm(altEntry, structure)
   ) {
     generateBasicBlock(consEntry.id, funcOp, generator);
     generateBasicBlock(altEntry.id, funcOp, generator);
@@ -54,26 +64,17 @@ export function generateIfStructure(
     return [];
   }
 
-  // Statement path: emit let bindings for each result place, then
-  // the if/else statement. Each arm ends with assignments from its
-  // YieldOp's values into the result places.
-  const resultDeclarations: t.Statement[] = [];
+  // Statement path: result places are already declared by
+  // SSAEliminator; each arm's copy stores (also SSAEliminator-
+  // inserted) are walked as ordinary ops. No codegen-level
+  // declaration or store synthesis needed.
   for (const place of structure.resultPlaces) {
-    const name = generator.getPlaceIdentifier(place);
-    resultDeclarations.push(
-      t.variableDeclaration("let", [t.variableDeclarator(name, t.identifier("undefined"))]),
-    );
-    generator.places.set(place.id, name);
+    generator.places.set(place.id, generator.getPlaceIdentifier(place));
   }
 
   const consequentStatements = generateBasicBlock(consEntry.id, funcOp, generator);
-  appendYieldStores(structure.consequentRegion, structure, consequentStatements, generator);
-
-  let alternateStatements: t.Statement[] | undefined;
-  if (altEntry !== undefined) {
-    alternateStatements = generateBasicBlock(altEntry.id, funcOp, generator);
-    appendYieldStores(structure.alternateRegion!, structure, alternateStatements, generator);
-  }
+  const alternateStatements =
+    altEntry !== undefined ? generateBasicBlock(altEntry.id, funcOp, generator) : undefined;
 
   const ifNode = t.ifStatement(
     testNode,
@@ -81,56 +82,38 @@ export function generateIfStructure(
     alternateStatements !== undefined ? t.blockStatement(alternateStatements) : null,
   );
 
-  return [...resultDeclarations, ifNode];
-}
-
-/**
- * Append assignment statements to the end of `statements` that write
- * the arm's YieldOp values into the IfOp's result places.
- */
-function appendYieldStores(
-  region: Region,
-  op: IfOp,
-  statements: t.Statement[],
-  generator: CodeGenerator,
-): void {
-  let yieldOp: YieldOp | undefined;
-  for (const block of region.blocks) {
-    if (block.terminal instanceof YieldOp) {
-      yieldOp = block.terminal;
-      break;
-    }
-  }
-  if (yieldOp === undefined) return;
-  for (let i = 0; i < op.resultPlaces.length; i++) {
-    const resultPlace = op.resultPlaces[i];
-    const valuePlace = yieldOp.values[i];
-    if (valuePlace === undefined) continue;
-    const resultIdent = generator.getPlaceIdentifier(resultPlace);
-    const valueNode = generator.places.get(valuePlace.id);
-    if (valueNode === undefined) continue;
-    t.assertExpression(valueNode);
-    statements.push(t.expressionStatement(t.assignmentExpression("=", resultIdent, valueNode)));
-  }
+  return [ifNode];
 }
 
 /**
  * Recognises arm shapes lowerable to a ternary arm: a single block
  * terminating in `YieldOp([value])` and containing only pure
- * expression ops. Nested `IfOp` is allowed if it is itself a
- * ternary-eligible single-result expression.
+ * expression ops. A single {@link StoreLocalOp} assigning to the
+ * enclosing IfOp's result place is allowed — it's the SSA copy
+ * store that SSAEliminator inserts on the yield-to-results edge,
+ * and the ternary path intentionally bypasses it by reading the
+ * YieldOp's value operand directly. Nested `IfOp` is allowed if it
+ * is itself a ternary-eligible single-result expression.
  */
-function isPureExpressionArm(block: BasicBlock): boolean {
+function isPureExpressionArm(block: BasicBlock, enclosingIf: IfOp): boolean {
   if (!(block.terminal instanceof YieldOp)) return false;
   if (block.terminal.values.length !== 1) return false;
+  const resultDecls = new Set(enclosingIf.resultPlaces.map((p) => p.identifier.declarationId));
   for (const op of block.operations) {
     if (op instanceof IfOp) {
       if (op.resultPlaces.length !== 1) return false;
       const innerCons = op.consequentRegion.entry;
       const innerAlt = op.alternateRegion?.entry;
       if (innerAlt === undefined) return false;
-      if (!isPureExpressionArm(innerCons)) return false;
-      if (!isPureExpressionArm(innerAlt)) return false;
+      if (!isPureExpressionArm(innerCons, op)) return false;
+      if (!isPureExpressionArm(innerAlt, op)) return false;
+      continue;
+    }
+    if (
+      op instanceof StoreLocalOp &&
+      op.kind === "assignment" &&
+      resultDecls.has(op.lval.identifier.declarationId)
+    ) {
       continue;
     }
     const name = op.constructor.name;

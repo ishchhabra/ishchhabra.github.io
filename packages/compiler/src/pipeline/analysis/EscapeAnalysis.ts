@@ -279,13 +279,15 @@ export class EscapeAnalysis extends FunctionAnalysis<EscapeAnalysisResult> {
 function buildIncomingEdgeArgsIndex(funcOp: FuncOp): Map<BlockId, readonly (readonly Place[])[]> {
   const index = new Map<BlockId, (readonly Place[])[]>();
   for (const predBlock of funcOp.allBlocks()) {
-    forEachOutgoingEdge(predBlock, (succId, args) => {
+    forEachOutgoingEdge(funcOp, predBlock, (edge) => {
+      if (edge.sink.kind !== "block") return;
+      const succId = edge.sink.block.id;
       let list = index.get(succId);
       if (list === undefined) {
         list = [];
         index.set(succId, list);
       }
-      list.push(args);
+      list.push(edge.args);
     });
   }
   return index;

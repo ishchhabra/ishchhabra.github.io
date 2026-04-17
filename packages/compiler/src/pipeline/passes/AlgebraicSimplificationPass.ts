@@ -11,6 +11,8 @@ import {
 } from "../../ir";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { Place } from "../../ir/core/Place";
+import { AnalysisManager } from "../analysis/AnalysisManager";
+import { MutabilityAnalysis, MutabilityInfo } from "../analysis/MutabilityAnalysis";
 import { BaseOptimizationPass } from "../late-optimizer/OptimizationPass";
 
 /**
@@ -41,9 +43,15 @@ export class AlgebraicSimplificationPass extends BaseOptimizationPass {
    */
   private readonly literals: Map<IdentifierId, TPrimitiveValue>;
 
-  constructor(protected readonly funcOp: FuncOp) {
+  private readonly mutability: MutabilityInfo;
+
+  constructor(
+    protected readonly funcOp: FuncOp,
+    private readonly AM: AnalysisManager,
+  ) {
     super(funcOp);
     this.literals = new Map();
+    this.mutability = this.AM.get(MutabilityAnalysis, this.funcOp);
 
     // Pre-scan to find literal values. Walk every op — including
     // ops inside structured ops' regions — uniformly.
@@ -61,11 +69,14 @@ export class AlgebraicSimplificationPass extends BaseOptimizationPass {
             this.literals.set(op.place.identifier.id, val);
           }
         } else if (op instanceof StoreLocalOp) {
-          // Only track literal values through `const` bindings —
-          // `let` variables can be reassigned, so their binding
-          // place cannot carry a known literal value for uses
-          // later in the program.
-          if (op.type === "const") {
+          // Only track literal values through source bindings with
+          // a single store in the function body. That is the
+          // declarationId-layer "true SSA binding" query — the
+          // IR-level `type === "const"` flag is not sufficient
+          // because reassignments can share a declarationId and
+          // because the frontend may emit non-"let" types on
+          // assignment stores.
+          if (this.mutability.isSingleAssignment(op.lval.identifier.declarationId)) {
             const val = this.literals.get(op.value.identifier.id);
             if (val !== undefined) {
               this.literals.set(op.lval.identifier.id, val);

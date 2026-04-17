@@ -1,12 +1,10 @@
 import { Environment } from "../../environment";
-import type { BlockId } from "../../ir";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { Operation, Trait } from "../../ir/core/Operation";
-import type { Place } from "../../ir/core/Place";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { LivenessAnalysis, LivenessResult } from "../analysis/LivenessAnalysis";
 import { BaseOptimizationPass, OptimizationResult } from "../late-optimizer/OptimizationPass";
-import { rewriteOutgoingEdgeArgs } from "../ssa/blockArgs";
+import { Edge, forEachIncomingEdge, forEachOutgoingEdge } from "../ssa/blockArgs";
 
 /**
  * SSA-phase Dead Code Elimination.
@@ -14,6 +12,18 @@ import { rewriteOutgoingEdgeArgs } from "../ssa/blockArgs";
  * Uniform walk over every op in every block's `_ops` — structured
  * ops, instructions, terminators alike. Removes ops whose results
  * are not live.
+ *
+ * Block-param shrinking works through the uniform edge API
+ * ({@link forEachIncomingEdge} / {@link Edge.apply}) so it's
+ * agnostic to whether the edges come from `JumpOp`s or structured-op
+ * ports. Blocks whose params receive values from structured-op
+ * virtual edges (iter-arg region entries, if-arm yields) are left
+ * alone here — their params are positionally bound to multi-slot
+ * port bundles (`WhileOp.inits` ↔ before-region params ↔
+ * `ConditionOp.args` ↔ body-region params ↔ yield values ↔
+ * `resultPlaces`) that must shrink together. That synchronized
+ * shrink is an op-canonicalization concern, not a generic-DCE one —
+ * MLIR draws the same line.
  */
 export class DeadCodeEliminationPass extends BaseOptimizationPass {
   constructor(
@@ -69,31 +79,45 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
   private removeDeadBlockParams(liveness: LivenessResult): boolean {
     let changed = false;
 
-    const keepMask = new Map<BlockId, boolean[]>();
     for (const block of this.funcOp.allBlocks()) {
       if (block.params.length === 0) continue;
+      if (this.hasStructuredOpIncomingEdge(block)) continue;
+
       const mask = block.params.map((p) => liveness.isLive(p.identifier.id));
       if (mask.every((live) => live)) continue;
-      keepMask.set(block.id, mask);
+
       block.params = block.params.filter((_, i) => mask[i]);
       changed = true;
-    }
-    if (!changed) return false;
 
+      // Rewrite every incoming edge's args to the new mask via the
+      // uniform edge API. Works for any edge kind.
+      forEachIncomingEdge(this.funcOp, { kind: "block", block }, (edge: Edge) => {
+        edge.apply(edge.args.filter((_, i) => mask[i]));
+      });
+    }
+
+    return changed;
+  }
+
+  /**
+   * True if any incoming edge to `block` originates from a
+   * structured-op virtual terminator (ConditionOp / YieldOp) or an
+   * op-entry port (WhileOp.inits). Such blocks belong to an iter-arg
+   * bundle and shouldn't be shrunk by generic DCE.
+   */
+  private hasStructuredOpIncomingEdge(block: import("../../ir/core/Block").BasicBlock): boolean {
+    let flagged = false;
     for (const predBlock of this.funcOp.allBlocks()) {
-      if (predBlock.terminal === undefined) continue;
-      let terminal = predBlock.terminal;
-      for (const [succId, mask] of keepMask) {
-        terminal = rewriteOutgoingEdgeArgs(terminal, succId, (args: readonly Place[]) =>
-          args.filter((_, i) => mask[i]),
-        );
-      }
-      if (terminal !== predBlock.terminal) {
-        predBlock.replaceOp(predBlock.terminal, terminal);
-      }
+      forEachOutgoingEdge(this.funcOp, predBlock, (edge) => {
+        if (flagged) return;
+        if (edge.sink.kind !== "block" || edge.sink.block !== block) return;
+        const term = predBlock.terminal;
+        const isJump = term !== undefined && term.constructor.name === "JumpOp";
+        if (!isJump) flagged = true;
+      });
+      if (flagged) break;
     }
-
-    return true;
+    return flagged;
   }
 
   private removeDeadInstructions(liveness: LivenessResult): boolean {

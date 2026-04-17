@@ -1,17 +1,23 @@
-import { IdentifierId, type BlockId } from "../../ir";
+import { IdentifierId } from "../../ir";
+import { BasicBlock } from "../../ir/core/Block";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { Operation, Trait } from "../../ir/core/Operation";
 import type { Place } from "../../ir/core/Place";
-import { JumpOp, Terminal } from "../../ir/ops/control";
-import { forEachOutgoingEdge } from "../ssa/blockArgs";
+import {
+  collectAllSinks,
+  forEachIncomingEdge,
+  forEachOutgoingEdge,
+  sinkParams,
+} from "../ssa/blockArgs";
 import { FunctionAnalysis, AnalysisManager } from "./AnalysisManager";
 
 /**
  * The result of liveness analysis: the set of identifiers that are
  * live in the function.
  *
- * Seeds from directly-read places and propagates through block
- * params + structured-op results.
+ * Seeds from directly-read places and propagates through edge args
+ * (both flat-CFG JumpOp edges and structured-op virtual edges,
+ * uniformly via {@link forEachIncomingEdge}).
  */
 export class LivenessResult {
   constructor(private readonly liveIds: ReadonlySet<IdentifierId>) {}
@@ -26,39 +32,45 @@ export class LivenessAnalysis extends FunctionAnalysis<LivenessResult> {
     const liveIds = new Set<IdentifierId>();
 
     // Seed: every directly-read place anywhere in the function's IR,
-    // walked uniformly through region tree. Block-arg edge operands
-    // are deferred to the propagation phase.
+    // walked uniformly through region tree. Edge-arg operands (JumpOp
+    // args, ConditionOp trailing args, YieldOp values flowing to a
+    // sink) are deferred to the edge-arg propagation phase — they're
+    // only live when their sink param is live.
     for (const block of funcOp.allBlocks()) {
-      seedLiveReads(block, liveIds);
+      seedLiveReads(funcOp, block, liveIds);
     }
 
-    const incomingEdges = buildIncomingEdgeIndex(funcOp);
+    const sinks = collectAllSinks(funcOp);
 
     let changed = true;
     while (changed) {
       changed = false;
 
-      // Block-args propagation: if a block param is live, every
-      // matching arg on each incoming edge is live too.
-      for (const block of funcOp.allBlocks()) {
-        if (block.params.length === 0) continue;
-        const preds = incomingEdges.get(block.id);
-        if (preds === undefined) continue;
-        for (let i = 0; i < block.params.length; i++) {
-          if (!liveIds.has(block.params[i].identifier.id)) continue;
-          for (const args of preds) {
-            const arg = args[i];
+      // Edge-args propagation: if a sink param is live, every
+      // matching arg on each incoming edge is live too. Uniform over
+      // block.params (target of JumpOp / op-entry / condition-true /
+      // yield-back) and op.resultPlaces (target of condition-false /
+      // yield-to-results).
+      for (const sink of sinks) {
+        const params = sinkParams(sink);
+        if (params.length === 0) continue;
+        forEachIncomingEdge(funcOp, sink, (edge) => {
+          for (let i = 0; i < params.length; i++) {
+            if (!liveIds.has(params[i].identifier.id)) continue;
+            const arg = edge.args[i];
             if (arg === undefined) continue;
             if (!liveIds.has(arg.identifier.id)) {
               liveIds.add(arg.identifier.id);
               changed = true;
             }
           }
-        }
+        });
       }
 
       // Structured-op propagation: if a structure is live (side
-      // effects, live def, or live nested def) its operands are live.
+      // effects, live def, or live nested def) its operands are
+      // live. This covers any flat-operand ports not already reached
+      // through edges.
       for (const block of funcOp.allBlocks()) {
         for (const op of block.operations) {
           if (!op.hasTrait(Trait.HasRegions)) continue;
@@ -83,13 +95,10 @@ export class LivenessAnalysis extends FunctionAnalysis<LivenessResult> {
 }
 
 /**
- * Walk a block and seed every directly-read place as live. For
- * structured ops, recurses into their regions.
+ * Walk a block and seed every directly-read place as live. Edge-arg
+ * operands are excluded (they'll be propagated by the edge walker).
  */
-function seedLiveReads(
-  block: { operations: readonly Operation[]; terminal?: Terminal },
-  liveIds: Set<IdentifierId>,
-): void {
+function seedLiveReads(funcOp: FuncOp, block: BasicBlock, liveIds: Set<IdentifierId>): void {
   for (const op of block.operations) {
     for (const place of op.getOperands()) {
       liveIds.add(place.identifier.id);
@@ -97,13 +106,13 @@ function seedLiveReads(
     if (op.hasTrait(Trait.HasRegions)) {
       for (const region of op.regions) {
         for (const innerBlock of region.blocks) {
-          seedLiveReads(innerBlock, liveIds);
+          seedLiveReads(funcOp, innerBlock, liveIds);
         }
       }
     }
   }
   if (block.terminal !== undefined) {
-    for (const place of nonEdgeTerminalOperands(block.terminal)) {
+    for (const place of nonEdgeTerminalOperands(funcOp, block)) {
       liveIds.add(place.identifier.id);
     }
   }
@@ -132,28 +141,16 @@ function structureHasLiveInternalDef(
 }
 
 /**
- * Return the operands of a terminator that are *not* block-edge
- * arguments. Only `JumpOp` has edge arguments; every other
- * terminator's operands are unconditional reads.
+ * Return the operands of `block.terminal` that are *not* edge args.
+ * Edge args propagate separately through the edge walker; seeding
+ * them here would mark them live unconditionally, defeating DCE.
  */
-function nonEdgeTerminalOperands(terminal: Terminal): readonly Place[] {
-  if (terminal instanceof JumpOp) {
-    return [];
-  }
-  return terminal.getOperands();
-}
-
-function buildIncomingEdgeIndex(funcOp: FuncOp): Map<BlockId, readonly (readonly Place[])[]> {
-  const index = new Map<BlockId, (readonly Place[])[]>();
-  for (const predBlock of funcOp.allBlocks()) {
-    forEachOutgoingEdge(predBlock, (succId, args) => {
-      let list = index.get(succId);
-      if (list === undefined) {
-        list = [];
-        index.set(succId, list);
-      }
-      list.push(args);
-    });
-  }
-  return index;
+function nonEdgeTerminalOperands(funcOp: FuncOp, block: BasicBlock): Place[] {
+  const terminal = block.terminal;
+  if (terminal === undefined) return [];
+  const edgeArgPlaces = new Set<Place>();
+  forEachOutgoingEdge(funcOp, block, (edge) => {
+    for (const arg of edge.args) edgeArgPlaces.add(arg);
+  });
+  return terminal.getOperands().filter((p) => !edgeArgPlaces.has(p));
 }

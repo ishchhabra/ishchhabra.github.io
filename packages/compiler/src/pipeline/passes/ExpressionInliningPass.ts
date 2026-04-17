@@ -118,8 +118,12 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
   }
 
   private isSsaStore(store: StoreLocalOp): boolean {
-    if (store.type !== "const") return false;
     if (store.bindings.length > 0) return false;
+    // Canonical "true SSA binding" query: a single store to the
+    // declarationId anywhere in the function body. The IR-level
+    // `type === "const"` flag is neither necessary nor sufficient —
+    // reassignments can share a declarationId and frontend builders
+    // may emit `type: "const"` on assignment stores.
     return this.mutability.isSingleAssignment(store.lval.identifier.declarationId);
   }
 

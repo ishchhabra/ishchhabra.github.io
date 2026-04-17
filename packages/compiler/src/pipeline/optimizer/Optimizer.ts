@@ -39,7 +39,7 @@ export class Optimizer {
       };
 
       if (this.options.enableAlgebraicSimplificationPass) {
-        runPass(new AlgebraicSimplificationPass(this.funcOp).run().changed);
+        runPass(new AlgebraicSimplificationPass(this.funcOp, this.AM).run().changed);
       }
 
       if (this.options.enableExpressionInliningPass) {
