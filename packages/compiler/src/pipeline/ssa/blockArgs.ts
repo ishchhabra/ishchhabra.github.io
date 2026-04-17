@@ -3,7 +3,15 @@ import type { FuncOp } from "../../ir/core/FuncOp";
 import type { Operation } from "../../ir/core/Operation";
 import { Trait } from "../../ir/core/Operation";
 import type { Place } from "../../ir/core/Place";
-import { ConditionOp, IfOp, JumpOp, WhileOp, YieldOp } from "../../ir/ops/control";
+import {
+  BreakOp,
+  ConditionOp,
+  ContinueOp,
+  IfOp,
+  JumpOp,
+  WhileOp,
+  YieldOp,
+} from "../../ir/ops/control";
 
 /**
  * Uniform control-flow edge abstraction, inspired by MLIR's
@@ -146,6 +154,16 @@ export function forEachOutgoingEdge(
       }
     } else if (enclosing instanceof IfOp) {
       visit(makeYieldToResultsEdge(block, terminal, enclosing));
+    }
+  } else if (terminal instanceof BreakOp) {
+    const target = resolveBreakTarget(block, terminal.label);
+    if (target !== undefined) {
+      visit(makeBreakEdge(block, terminal, target));
+    }
+  } else if (terminal instanceof ContinueOp) {
+    const target = resolveContinueTarget(block, terminal.label);
+    if (target !== undefined) {
+      visit(makeContinueEdge(block, terminal, target));
     }
   }
 
@@ -333,6 +351,52 @@ function makeOpEntryEdge(pred: BasicBlock, op: WhileOp, beforeEntry: BasicBlock)
   };
 }
 
+/**
+ * Break edge: from the block terminating in `BreakOp` to the
+ * enclosing loop (or labeled block / switch) that the break targets.
+ * The sink is the target's `op-results` — break carries the loop's
+ * exit values.
+ *
+ * Copy-store site is *before* the BreakOp terminator.
+ */
+function makeBreakEdge(pred: BasicBlock, terminal: BreakOp, op: WhileOp): Edge {
+  return {
+    pred,
+    sink: { kind: "op-results", op },
+    args: terminal.args,
+    apply(newArgs): void {
+      if (newArgs === terminal.args) return;
+      pred.replaceOp(terminal, new BreakOp(terminal.id, terminal.label, newArgs));
+    },
+    insertCopyStore(store): void {
+      pred.appendOp(store);
+    },
+  };
+}
+
+/**
+ * Continue edge: from the block terminating in `ContinueOp` to the
+ * enclosing loop's header region entry. For `WhileOp` that's
+ * `beforeRegion.blocks[0]` — the test block's params. (For a future
+ * `ForOp` lift it would be the update-region entry, since the update
+ * runs before the test on `continue`.)
+ */
+function makeContinueEdge(pred: BasicBlock, terminal: ContinueOp, op: WhileOp): Edge {
+  const beforeEntry = op.beforeRegion.blocks[0];
+  return {
+    pred,
+    sink: { kind: "block", block: beforeEntry },
+    args: terminal.args,
+    apply(newArgs): void {
+      if (newArgs === terminal.args) return;
+      pred.replaceOp(terminal, new ContinueOp(terminal.id, terminal.label, newArgs));
+    },
+    insertCopyStore(store): void {
+      pred.appendOp(store);
+    },
+  };
+}
+
 // ---------------------------------------------------------------------
 // Walk-up helpers (region → op)
 // ---------------------------------------------------------------------
@@ -344,6 +408,45 @@ function resolveEnclosingStructuredOp(block: BasicBlock): Operation | undefined 
   if (op === null) return undefined;
   if (!op.hasTrait(Trait.HasRegions)) return undefined;
   return op;
+}
+
+/**
+ * Resolve a `break [label]` target by walking the region-tree
+ * upward. Labeled break matches the nearest enclosing op with that
+ * label; unlabeled break matches the nearest loop / switch.
+ *
+ * Today only `WhileOp` carries result places (IfOp exists but can't
+ * be a break target). Extend the accepted-target list as other
+ * structured ops gain the lift (ForOp, SwitchOp, LabeledBlockOp).
+ */
+function resolveBreakTarget(block: BasicBlock, label: string | undefined): WhileOp | undefined {
+  let region = block.parent;
+  while (region !== null) {
+    const op = region.parent;
+    if (op === null) return undefined;
+    if (op instanceof WhileOp) {
+      if (label === undefined || op.label === label) return op;
+    }
+    region = op.parentBlock?.parent ?? null;
+  }
+  return undefined;
+}
+
+/**
+ * Resolve a `continue [label]` target. Continue only targets loops,
+ * not switches or labeled blocks.
+ */
+function resolveContinueTarget(block: BasicBlock, label: string | undefined): WhileOp | undefined {
+  let region = block.parent;
+  while (region !== null) {
+    const op = region.parent;
+    if (op === null) return undefined;
+    if (op instanceof WhileOp) {
+      if (label === undefined || op.label === label) return op;
+    }
+    region = op.parentBlock?.parent ?? null;
+  }
+  return undefined;
 }
 
 // ---------------------------------------------------------------------

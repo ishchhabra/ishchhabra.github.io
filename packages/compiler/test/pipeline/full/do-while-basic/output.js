@@ -6,6 +6,7 @@ let $19_blockparam_20 = undefined;
 while ((($18_blockparam_19 = $17_blockparam_18), ($19_blockparam_20 = $17_blockparam_18), true)) {
   $0_0 = $18_blockparam_19 + 1;
   if (!($0_0 < 10)) {
+    $19_blockparam_20 = $0_0;
     break;
   }
   $17_blockparam_18 = $0_0;

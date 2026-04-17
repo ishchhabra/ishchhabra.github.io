@@ -49,6 +49,9 @@ function $0_0($1_0) {
           $74_0 = $71_blockparam_71;
           $74_0 = $71_blockparam_71;
         }
+        $64_blockparam_64 = $1_0;
+        $67_blockparam_67 = $73_0;
+        $70_blockparam_70 = $74_0;
         continue;
       } else {
         $75_0 = $65_blockparam_65;
@@ -73,6 +76,9 @@ function $0_0($1_0) {
     let $81_0 = undefined;
     if ($80_0 !== undefined) {
       $2_0 = $1_0.nextSub;
+      $64_blockparam_64 = $1_0;
+      $67_blockparam_67 = $79_0;
+      $70_blockparam_70 = $2_0;
       continue;
     } else {
       $81_0 = $80_0;
@@ -104,6 +110,9 @@ function $0_0($1_0) {
       let $91_0 = undefined;
       if ($1_0 !== undefined) {
         $2_0 = $1_0.nextSub;
+        $64_blockparam_64 = $1_0;
+        $67_blockparam_67 = $3_0;
+        $70_blockparam_70 = $2_0;
         continue top;
       } else {
         $91_0 = $89_blockparam_89;
@@ -114,8 +123,14 @@ function $0_0($1_0) {
       $88_blockparam_88 = $91_0;
     }
     if (!true) {
+      $66_blockparam_66 = $84_blockparam_84;
+      $69_blockparam_69 = $87_blockparam_87;
+      $72_blockparam_72 = $90_blockparam_90;
       break top;
     }
+    $66_blockparam_66 = $84_blockparam_84;
+    $69_blockparam_69 = $87_blockparam_87;
+    $72_blockparam_72 = $90_blockparam_90;
     break;
   }
 }

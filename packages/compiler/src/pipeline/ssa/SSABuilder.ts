@@ -18,7 +18,9 @@ import {
   getDestructureTargetDefs,
 } from "../../ir/core/Destructure";
 import {
+  BreakOp,
   ConditionOp,
+  ContinueOp,
   ForInOp,
   ForOfOp,
   IfOp,
@@ -81,6 +83,18 @@ export class SSABuilder {
   private domTree!: DominatorTree;
   private readonly blockRegion = new Map<BlockId, Region>();
   private readonly domTreeChildren = new Map<BlockId, BlockId[]>();
+
+  /**
+   * Stack of enclosing loop contexts, pushed/popped around body
+   * renames. Break/Continue terminators inside a body consult this
+   * stack (matching by label, or innermost unlabeled) to find which
+   * loop's iter-args they must fill.
+   */
+  private readonly loopContexts: Array<{
+    op: WhileOp;
+    label: string | undefined;
+    carriedDecls: readonly DeclarationId[];
+  }> = [];
 
   constructor(funcOp: FuncOp, moduleIR: ModuleIR, AM: AnalysisManager) {
     this.funcOp = funcOp;
@@ -394,8 +408,46 @@ export class SSABuilder {
       this.renameOpOperands(block.terminal, stacks);
       if (block.terminal instanceof JumpOp) {
         this.fillJumpArgs(block, block.terminal, stacks);
+      } else if (block.terminal instanceof BreakOp || block.terminal instanceof ContinueOp) {
+        this.fillLoopExitArgs(block, block.terminal, stacks);
       }
     }
+  }
+
+  /**
+   * Fill `Break`/`Continue` args from the rename stack tops at the
+   * terminator's position. Matches against the current loop-context
+   * stack by label (innermost unlabeled if absent). A break/continue
+   * that doesn't resolve to a lifted loop is left with empty args —
+   * memory-form loops don't use iter-args.
+   */
+  private fillLoopExitArgs(
+    block: BasicBlock,
+    terminal: BreakOp | ContinueOp,
+    stacks: Stacks,
+  ): void {
+    const ctx = this.resolveLoopContext(terminal.label);
+    if (ctx === undefined || ctx.carriedDecls.length === 0) return;
+
+    const args: Place[] = [];
+    for (const decl of ctx.carriedDecls) {
+      const stack = stacks.get(decl);
+      const top = stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
+      args.push(top ?? this.undefSeed);
+    }
+
+    const TerminalCtor = terminal instanceof BreakOp ? BreakOp : ContinueOp;
+    block.replaceOp(terminal, new TerminalCtor(terminal.id, terminal.label, args));
+  }
+
+  private resolveLoopContext(label: string | undefined):
+    | (typeof this.loopContexts)[number]
+    | undefined {
+    for (let i = this.loopContexts.length - 1; i >= 0; i--) {
+      const ctx = this.loopContexts[i];
+      if (label === undefined || ctx.label === label) return ctx;
+    }
+    return undefined;
   }
 
   // ---------------------------------------------------------------------------
@@ -580,39 +632,47 @@ export class SSABuilder {
       inits.push(snapshot.get(decl) ?? this.undefSeed);
     }
 
-    // Rename beforeRegion. Block params are pushed by the linear
-    // walk as it processes the entry block. After the walk, each
-    // carried decl's stack top is the reaching def at the end of
-    // beforeRegion — these become ConditionOp.args.
-    this.restoreTops(stacks, snapshot);
-    const beforePushed: DeclarationId[] = [];
-    this.renameRegionLinear(op.beforeRegion, stacks, beforePushed);
-    const condArgs: Place[] = [];
-    for (const decl of carriedDecls) {
-      const stack = stacks.get(decl);
-      const top = stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
-      condArgs.push(top ?? this.undefSeed);
-    }
-    this.popPushed(stacks, beforePushed);
+    // Push the loop context so Break/Continue in body (and
+    // transitively in nested structured ops) can resolve to this
+    // loop and snapshot the rename stack for their args. The
+    // context stays pushed across both region walks because a
+    // `break` in the test expression still targets this loop.
+    this.loopContexts.push({ op, label: op.label, carriedDecls });
+    try {
+      // Rename beforeRegion. Block params are pushed by the linear
+      // walk as it processes the entry block. After the walk, each
+      // carried decl's stack top is the reaching def at the end of
+      // beforeRegion — these become ConditionOp.args.
+      this.restoreTops(stacks, snapshot);
+      const beforePushed: DeclarationId[] = [];
+      this.renameRegionLinear(op.beforeRegion, stacks, beforePushed);
+      const condArgs: Place[] = [];
+      for (const decl of carriedDecls) {
+        const stack = stacks.get(decl);
+        const top = stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
+        condArgs.push(top ?? this.undefSeed);
+      }
+      this.popPushed(stacks, beforePushed);
 
-    // Rename bodyRegion. After the walk, stack tops for carried
-    // decls are the values to feed back via YieldOp (the back-edge
-    // values for the next iteration's before-region params).
-    this.restoreTops(stacks, snapshot);
-    const bodyPushed: DeclarationId[] = [];
-    this.renameRegionLinear(op.bodyRegion, stacks, bodyPushed);
-    const yieldVals: Place[] = [];
-    for (const decl of carriedDecls) {
-      const stack = stacks.get(decl);
-      const top = stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
-      yieldVals.push(top ?? this.undefSeed);
-    }
-    this.popPushed(stacks, bodyPushed);
+      // Rename bodyRegion. After the walk, stack tops for carried
+      // decls are the values to feed back via YieldOp (the back-edge
+      // values for the next iteration's before-region params).
+      this.restoreTops(stacks, snapshot);
+      const bodyPushed: DeclarationId[] = [];
+      this.renameRegionLinear(op.bodyRegion, stacks, bodyPushed);
+      const yieldVals: Place[] = [];
+      for (const decl of carriedDecls) {
+        const stack = stacks.get(decl);
+        const top = stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
+        yieldVals.push(top ?? this.undefSeed);
+      }
+      this.popPushed(stacks, bodyPushed);
 
-    // Wire up the region terminators with the trailing-arg / value
-    // lists computed above.
-    this.attachConditionArgs(op.beforeRegion, condArgs);
-    this.appendYieldValues(op.bodyRegion, yieldVals);
+      this.attachConditionArgs(op.beforeRegion, condArgs);
+      this.appendYieldValues(op.bodyRegion, yieldVals);
+    } finally {
+      this.loopContexts.pop();
+    }
 
     // Replace the WhileOp with one that carries the new ports.
     const newWhileOp = new WhileOp(
