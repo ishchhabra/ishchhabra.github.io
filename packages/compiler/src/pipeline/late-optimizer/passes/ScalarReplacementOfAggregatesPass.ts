@@ -456,7 +456,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
         }
 
         // Result must be unused.
-        if (instr.place.useCount > 0) continue;
+        if (instr.place.uses.size > 0) continue;
 
         // Object must be a NoEscape literal.
         const objExpr = this.resolveToObjectExpression(instr.object);
@@ -489,7 +489,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
    * to a `delete` UnaryExpression.
    */
   private feedsDeleteExpression(instr: LoadStaticPropertyOp): boolean {
-    for (const user of instr.place.uses()) {
+    for (const user of instr.place.uses) {
       if (user instanceof UnaryExpressionOp && user.operator === "delete") {
         return true;
       }

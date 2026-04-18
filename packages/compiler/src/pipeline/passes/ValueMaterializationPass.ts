@@ -78,7 +78,7 @@ export class ValueMaterializationPass {
     if (instruction.place === undefined) {
       return false;
     }
-    if (instruction.place.useCount <= 1) {
+    if (instruction.place.uses.size <= 1) {
       return false;
     }
 
@@ -149,7 +149,7 @@ export class ValueMaterializationPass {
    * instruction's output, making materialization unnecessary.
    */
   private hasStoreLocal(instruction: Operation): boolean {
-    for (const user of instruction.place!.uses()) {
+    for (const user of instruction.place!.uses) {
       if (user instanceof StoreLocalOp && user.value === instruction.place) {
         return true;
       }

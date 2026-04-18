@@ -103,7 +103,7 @@ export class CapturePruningPass extends BaseOptimizationPass {
         const liveIndices: number[] = [];
         for (let j = 0; j < captureParams.length; j++) {
           const param = captureParams[j];
-          if (param.useCount > 0 || isRead(param.id)) {
+          if (param.uses.size > 0 || isRead(param.id)) {
             liveIndices.push(j);
           }
         }

@@ -351,17 +351,13 @@ export class BasicBlock {
     this.#uses.delete(user);
   }
 
-  /** Iterate every op (across the function) whose block-refs include this block. */
-  *uses(): IterableIterator<UseChainNode> {
-    yield* this.#uses;
-  }
-
-  get useCount(): number {
-    return this.#uses.size;
-  }
-
-  hasUses(): boolean {
-    return this.#uses.size > 0;
+  /**
+   * Read-only view of every op whose `getBlockRefs()` includes this
+   * block — i.e. the CFG predecessor edges, raw. Use {@link predecessors}
+   * for the set of predecessor blocks.
+   */
+  get uses(): ReadonlySet<UseChainNode> {
+    return this.#uses;
   }
 
   /**

@@ -284,13 +284,13 @@ export class SSAEliminator {
    */
   #interferes(block: BasicBlock, load: LoadLocalOp | LoadContextOp, defIdx: number): boolean {
     const resultId = load.place;
-    if (resultId.useCount === 0) return false;
+    if (resultId.uses.size === 0) return false;
 
     const srcDecl = load.value.declarationId;
     const ops = block.operations;
 
     let lastUseIdx = -1;
-    for (const user of resultId.uses()) {
+    for (const user of resultId.uses) {
       if (!(user instanceof Operation)) continue;
       if (user.parentBlock !== block) return true;
       const userIdx = ops.indexOf(user);

@@ -50,10 +50,10 @@ export type User = {
  *     fresh `declarationId`; this back-pointer lets out-of-SSA
  *     lowering reach the source variable.
  *   - `#definer` / `#uses` — encapsulated def-use state. Private JS
- *     fields; external code reads via `definer` / `uses()` / `useCount`
- *     / `hasUses()`. Mutation is possible only through the `_*`
- *     methods, which are reserved for `BasicBlock`'s use-chain
- *     helpers and `Environment.createOperation`.
+ *     fields; external code reads via `definer` / `uses`. Mutation
+ *     is possible only through the `_*` methods, which are reserved
+ *     for `BasicBlock`'s use-chain helpers and
+ *     `Environment.createOperation`.
  */
 export class Value {
   public name: string;
@@ -79,17 +79,14 @@ export class Value {
     return this.#definer;
   }
 
-  /** Iterate every op that uses this value. */
-  *uses(): IterableIterator<User> {
-    yield* this.#uses;
-  }
-
-  get useCount(): number {
-    return this.#uses.size;
-  }
-
-  hasUses(): boolean {
-    return this.#uses.size > 0;
+  /**
+   * Read-only view of every op that uses this value. Backed by the
+   * internal `Set<User>`, so `.size` / `.has(op)` / iteration are all
+   * O(1) — but the `ReadonlySet` type prevents `.add` / `.delete` at
+   * the type level so external code can't corrupt the use list.
+   */
+  get uses(): ReadonlySet<User> {
+    return this.#uses;
   }
 
   /**
