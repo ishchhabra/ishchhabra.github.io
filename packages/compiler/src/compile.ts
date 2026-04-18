@@ -3,7 +3,7 @@ import { CodeGenerator } from "./backend/CodeGenerator";
 import { ProjectBuilder } from "./frontend/ProjectBuilder";
 import { printModuleIR } from "./ir/printer";
 import { Pipeline } from "./pipeline/Pipeline";
-import { StagedPipeline } from "./pipeline/StagedPipeline";
+import type { PipelineObserver, PipelineStage } from "./pipeline/Observer";
 import type { ResolveConstantHook } from "./pipeline/passes/resolveConstant";
 
 export const CompilerOptionsSchema = z.object({
@@ -77,6 +77,13 @@ export interface CompilationStages {
   output: string;
 }
 
+/**
+ * Compile and capture an IR snapshot at each stage boundary. Used by
+ * the compiler playground / diagnostic tooling to visualize the
+ * per-stage output. Under the hood: a `PipelineObserver` attached to
+ * the unified {@link Pipeline} — same transform path as {@link compile},
+ * just with a snapshot tap at each stage.
+ */
 export function compileFromSourceWithStages(
   source: string,
   options: CompilerOptions = CompilerOptionsSchema.parse({}),
@@ -87,16 +94,22 @@ export function compileFromSourceWithStages(
 
   const hir = printModuleIR(moduleIR);
 
-  const snapshots = new StagedPipeline(projectUnit, options).run();
+  const snapshots: Partial<Record<PipelineStage, string>> = {};
+  const observer: PipelineObserver = {
+    onStage(stage, mod) {
+      snapshots[stage] = printModuleIR(mod);
+    },
+  };
+  new Pipeline(projectUnit, options, undefined, observer).run();
 
   const output = new CodeGenerator(virtualPath, projectUnit).generate();
 
   return {
     hir,
-    ssa: snapshots.ssa ?? hir,
-    optimized: snapshots.optimized ?? snapshots.ssa ?? hir,
-    ssaEliminated: snapshots.ssaEliminated ?? snapshots.optimized ?? hir,
-    lateOptimized: snapshots.lateOptimized ?? snapshots.ssaEliminated ?? hir,
+    ssa: snapshots["ssa-built"] ?? hir,
+    optimized: snapshots["optimized"] ?? snapshots["ssa-built"] ?? hir,
+    ssaEliminated: snapshots["ssa-eliminated"] ?? snapshots["optimized"] ?? hir,
+    lateOptimized: snapshots["late-optimized"] ?? snapshots["ssa-eliminated"] ?? hir,
     output,
   };
 }

@@ -43,6 +43,7 @@ type ProjectAnalysisClass<Result> = new (...args: never[]) => ProjectAnalysis<Re
 export class PreservedAnalyses {
   private readonly preserved = new Set<unknown>();
   private _all = false;
+  private readonly _invalidated = new Set<unknown>();
 
   /** Mark a specific analysis as still valid. */
   preserve(analysisClass: FunctionAnalysisClass<unknown> | ProjectAnalysisClass<unknown>): void {
@@ -53,6 +54,7 @@ export class PreservedAnalyses {
   isPreserved(
     analysisClass: FunctionAnalysisClass<unknown> | ProjectAnalysisClass<unknown>,
   ): boolean {
+    if (this._invalidated.has(analysisClass)) return false;
     return this._all || this.preserved.has(analysisClass);
   }
 
@@ -65,6 +67,21 @@ export class PreservedAnalyses {
   static all(): PreservedAnalyses {
     const pa = new PreservedAnalyses();
     pa._all = true;
+    return pa;
+  }
+
+  /**
+   * Preserve every analysis *except* the ones listed. The idiomatic
+   * form for passes that know exactly which structural property they
+   * invalidate (e.g. CFG-editing passes invalidate
+   * `DominatorTreeAnalysis` and `LoopInfoAnalysis` but preserve
+   * everything else).
+   */
+  static allExcept(
+    ...invalidated: Array<FunctionAnalysisClass<unknown> | ProjectAnalysisClass<unknown>>
+  ): PreservedAnalyses {
+    const pa = PreservedAnalyses.all();
+    for (const cls of invalidated) pa._invalidated.add(cls);
     return pa;
   }
 }
