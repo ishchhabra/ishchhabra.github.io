@@ -78,6 +78,7 @@
     "drizzle-kit": "^0.31.9",
     "eslint-plugin-react-compiler": "19.1.0-rc.2",
     "eslint-plugin-react-hooks": "^7.0.0",
+    "nf3": "^0.3.10",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "oxlint-tsgolint": "catalog:",
