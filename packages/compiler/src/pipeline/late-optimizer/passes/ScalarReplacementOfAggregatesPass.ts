@@ -247,7 +247,10 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
     //    their block-args edge operands — so no separate merge-value
     //    fixup is needed.
     for (const block of this.funcOp.allBlocks()) {
-      block.rewriteAll(rewrites);
+      for (const op of [...block.getAllOps()]) {
+        const rewritten = op.rewrite(rewrites);
+        if (rewritten !== op) block.replaceOp(op, rewritten);
+      }
     }
     return true;
   }
@@ -424,7 +427,10 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
     // edge operands are rewritten in the same sweep; we just rebuild
     // phis from the updated block args afterward.
     for (const block of this.funcOp.allBlocks()) {
-      block.rewriteAll(rewrites);
+      for (const op of [...block.getAllOps()]) {
+        const rewritten = op.rewrite(rewrites);
+        if (rewritten !== op) block.replaceOp(op, rewritten);
+      }
     }
     return true;
   }

@@ -1,11 +1,8 @@
-import { Environment } from "../../environment";
 import { Value } from "./Value";
-import { type LexicalScopeKind } from "./LexicalScope";
-import type { ModuleIR } from "./ModuleIR";
-import type { CloneContext } from "./Operation";
 import { Operation, Trait } from "./Operation";
 import type { Region } from "./Region";
 import { Terminal } from "../ops/control";
+import { registerUses, unregisterUses, type User } from "./Use";
 
 /**
  * Simulated opaque type for BlockId to prevent using normal numbers
@@ -18,58 +15,12 @@ export function makeBlockId(id: number): BlockId {
   return id as BlockId;
 }
 
-// ---------------------------------------------------------------------------
-// Use-chain helpers
-// ---------------------------------------------------------------------------
-
-type UseChainNode = {
-  getOperands(): readonly Value[];
-  getDefs?: () => readonly Value[];
-  getBlockRefs?: () => readonly BasicBlock[];
-};
-
-function registerUses(user: UseChainNode): void {
-  for (const value of user.getOperands()) {
-    value._addUse(user);
-  }
-  if (user.getDefs) {
-    for (const value of user.getDefs()) {
-      value._setDefiner(user);
-    }
-  }
-  if (user.getBlockRefs) {
-    for (const block of user.getBlockRefs()) {
-      block._addUse(user);
-    }
-  }
+function attach(op: Operation, block: BasicBlock): void {
+  op.parentBlock = block;
 }
 
-function unregisterUses(user: UseChainNode): void {
-  for (const value of user.getOperands()) {
-    value._removeUse(user);
-  }
-  if (user.getDefs) {
-    for (const value of user.getDefs()) {
-      value._clearDefinerIf(user);
-    }
-  }
-  if (user.getBlockRefs) {
-    for (const block of user.getBlockRefs()) {
-      block._removeUse(user);
-    }
-  }
-}
-
-function attach(op: Operation | undefined, block: BasicBlock): void {
-  if (op !== undefined) {
-    op.parentBlock = block;
-  }
-}
-
-function detach(op: Operation | undefined): void {
-  if (op !== undefined) {
-    op.parentBlock = null;
-  }
+function detach(op: Operation): void {
+  op.parentBlock = null;
 }
 
 // ---------------------------------------------------------------------------
@@ -77,18 +28,18 @@ function detach(op: Operation | undefined): void {
 // ---------------------------------------------------------------------------
 
 /**
- * A textbook MLIR basic block: an ordered list of operations whose
- * last op is a terminator.
+ * A textbook MLIR basic block: an ordered list of non-terminator
+ * operations plus a terminator. Matches `mlir::Block`: non-terminator
+ * ops live in one list, the terminator sits in its own slot. No
+ * "terminator must be last in the array" invariant, no slice math.
  *
- * `_ops` is the physical list of every operation owned by this
- * block, in program order. No parallel storage slots. Structured
- * ops (IfOp, WhileOp, ForOfOp, ...) are just ordinary ops in this
- * list — they can appear anywhere, in any order, alongside regular
- * instructions. The block's terminator (the op with
- * `Trait.Terminator`) must be the LAST op in `_ops` if it exists.
+ * Structured ops (IfOp, WhileOp, ForOfOp, …) are ordinary non-terminator
+ * ops — they live in `_ops` alongside regular instructions and can
+ * appear at any position.
  */
 export class BasicBlock {
   private _ops: Operation[] = [];
+  private _terminal: Terminal | null = null;
 
   /**
    * MLIR-style region ownership back-pointer: the {@link Region}
@@ -108,15 +59,13 @@ export class BasicBlock {
    * on every mutation. Reading this set is equivalent to "which
    * terminators refer to this block?" — i.e. the CFG predecessor
    * edges, always current, never stale.
-   *
-   * Private; external code reads via {@link predecessors}.
    */
-  readonly #uses: Set<UseChainNode> = new Set();
+  readonly #uses: Set<User> = new Set();
 
   constructor(
     public readonly id: BlockId,
-    initialOps: Operation[],
-    terminal: Terminal | undefined,
+    initialOps: Operation[] = [],
+    terminal: Terminal | undefined = undefined,
   ) {
     for (const op of initialOps) {
       if (op.hasTrait(Trait.Terminator)) {
@@ -129,37 +78,23 @@ export class BasicBlock {
       attach(op, this);
     }
     if (terminal !== undefined) {
-      this._ops.push(terminal);
+      this._terminal = terminal;
       registerUses(terminal);
       attach(terminal, this);
     }
   }
 
   // -----------------------------------------------------------------------
-  // Op storage
+  // Accessors
   // -----------------------------------------------------------------------
 
-  /** Index of the terminator in `_ops`, or -1 if absent. */
-  private terminatorIndex(): number {
-    const n = this._ops.length;
-    if (n === 0) return -1;
-    return this._ops[n - 1].hasTrait(Trait.Terminator) ? n - 1 : -1;
-  }
-
-  /**
-   * All non-terminator ops in the block, in program order. Includes
-   * structured ops (IfOp / WhileOp / ...) — they are ordinary ops
-   * in the sequence, no longer segregated into a separate slot.
-   */
+  /** Non-terminator ops in program order. */
   get operations(): readonly Operation[] {
-    const ti = this.terminatorIndex();
-    if (ti < 0) return this._ops;
-    return this._ops.slice(0, ti);
+    return this._ops;
   }
 
   get terminal(): Terminal | undefined {
-    const ti = this.terminatorIndex();
-    return ti >= 0 ? (this._ops[ti] as Terminal) : undefined;
+    return this._terminal ?? undefined;
   }
 
   set terminal(newTerminal: Terminal | undefined) {
@@ -168,34 +103,27 @@ export class BasicBlock {
         `BasicBlock.terminal setter: op ${newTerminal.constructor.name} lacks Trait.Terminator`,
       );
     }
-    const ti = this.terminatorIndex();
-    if (ti >= 0) {
-      detach(this._ops[ti]);
-      unregisterUses(this._ops[ti]);
-      if (newTerminal === undefined) {
-        this._ops.splice(ti, 1);
-      } else {
-        this._ops[ti] = newTerminal;
-        registerUses(newTerminal);
-        attach(newTerminal, this);
-      }
-    } else if (newTerminal !== undefined) {
-      this._ops.push(newTerminal);
-      registerUses(newTerminal);
-      attach(newTerminal, this);
+    if (this._terminal !== null) {
+      detach(this._terminal);
+      unregisterUses(this._terminal);
+    }
+    this._terminal = newTerminal ?? null;
+    if (this._terminal !== null) {
+      registerUses(this._terminal);
+      attach(this._terminal, this);
     }
   }
 
-  /** The last op in the block — terminator if present, else last instr. */
+  /** The last op in the block — terminator if present, else last non-terminator. */
   get lastOp(): Operation | undefined {
-    return this._ops[this._ops.length - 1];
+    return this._terminal ?? this._ops[this._ops.length - 1];
   }
 
   // -----------------------------------------------------------------------
-  // Instruction mutations
+  // Mutation
   // -----------------------------------------------------------------------
 
-  /** Append a non-terminator op before the terminator (or at the end). */
+  /** Append a non-terminator op. The terminator (if any) stays in place. */
   appendOp(op: Operation): void {
     if (op.hasTrait(Trait.Terminator)) {
       throw new Error(
@@ -204,70 +132,15 @@ export class BasicBlock {
     }
     registerUses(op);
     attach(op, this);
-    const ti = this.terminatorIndex();
-    if (ti >= 0) {
-      this._ops.splice(ti, 0, op);
-    } else {
-      this._ops.push(op);
-    }
-  }
-
-  /** Append a non-terminator op to the end of the block, unconditionally. */
-  pushOp(op: Operation): void {
-    if (op.hasTrait(Trait.Terminator)) {
-      throw new Error(
-        `BasicBlock.pushOp: use the terminal setter for terminators (got ${op.constructor.name})`,
-      );
-    }
-    registerUses(op);
-    attach(op, this);
     this._ops.push(op);
   }
 
-  /**
-   * Replace `oldOp` with `newOp` by identity. Works for both regular
-   * ops and terminators, but terminator-ness must be preserved — a
-   * terminator can only be swapped for a terminator, and a regular op
-   * for a regular op.
-   */
-  replaceOp(oldOp: Operation, newOp: Operation): void {
-    const index = this._ops.indexOf(oldOp);
-    if (index < 0) {
-      throw new Error(
-        `BasicBlock.replaceOp: op ${oldOp.constructor.name} not found in bb${this.id}`,
-      );
-    }
-    const oldIsTerm = oldOp.hasTrait(Trait.Terminator);
-    const newIsTerm = newOp.hasTrait(Trait.Terminator);
-    if (oldIsTerm !== newIsTerm) {
-      throw new Error(
-        `BasicBlock.replaceOp: terminator-ness mismatch (old=${oldOp.constructor.name} term=${oldIsTerm}, new=${newOp.constructor.name} term=${newIsTerm})`,
-      );
-    }
-    if (oldOp === newOp) return;
-    detach(oldOp);
-    unregisterUses(oldOp);
-    registerUses(newOp);
-    attach(newOp, this);
-    this._ops[index] = newOp;
-  }
-
-  /** Remove the op at `index` (addressing the non-terminator slice). */
-  removeOpAt(index: number): void {
-    const end = this.terminatorIndex() >= 0 ? this.terminatorIndex() : this._ops.length;
-    if (index < 0 || index >= end) {
-      throw new Error(`BasicBlock.removeOpAt: index ${index} is out of range [0, ${end})`);
-    }
-    detach(this._ops[index]);
-    unregisterUses(this._ops[index]);
-    this._ops.splice(index, 1);
-  }
-
-  /** Insert an op at `index` (addressing the non-terminator slice). */
+  /** Insert a non-terminator op at `index` in the non-terminator list. */
   insertOpAt(index: number, op: Operation): void {
-    const end = this.terminatorIndex() >= 0 ? this.terminatorIndex() : this._ops.length;
-    if (index < 0 || index > end) {
-      throw new Error(`BasicBlock.insertOpAt: index ${index} is out of range [0, ${end}]`);
+    if (index < 0 || index > this._ops.length) {
+      throw new Error(
+        `BasicBlock.insertOpAt: index ${index} is out of range [0, ${this._ops.length}]`,
+      );
     }
     if (op.hasTrait(Trait.Terminator)) {
       throw new Error(
@@ -279,41 +152,66 @@ export class BasicBlock {
     this._ops.splice(index, 0, op);
   }
 
-  /** Remove all non-terminator ops, preserving the terminator. */
-  clearInstructions(): void {
-    const end = this.terminatorIndex() >= 0 ? this.terminatorIndex() : this._ops.length;
-    for (let i = 0; i < end; i++) {
-      detach(this._ops[i]);
-      unregisterUses(this._ops[i]);
+  /** Remove the non-terminator op at `index`. */
+  removeOpAt(index: number): void {
+    if (index < 0 || index >= this._ops.length) {
+      throw new Error(
+        `BasicBlock.removeOpAt: index ${index} is out of range [0, ${this._ops.length})`,
+      );
     }
-    this._ops.splice(0, end);
+    const [removed] = this._ops.splice(index, 1);
+    detach(removed);
+    unregisterUses(removed);
   }
 
   /**
-   * Absorb all ops from `other` into this block. Ops are moved — their
-   * instance identity and use-chain registrations are preserved.
-   *
-   * The target block must not already have a terminator.
+   * Replace `oldOp` with `newOp` by identity. Terminator-ness must
+   * match — you can't swap a regular op for a terminator or vice
+   * versa.
    */
-  absorbFrom(other: BasicBlock): void {
-    if (this.terminatorIndex() >= 0) {
-      throw new Error(`BasicBlock.absorbFrom: target bb${this.id} still has a terminator`);
+  replaceOp(oldOp: Operation, newOp: Operation): void {
+    if (oldOp === newOp) return;
+    const oldIsTerm = oldOp.hasTrait(Trait.Terminator);
+    const newIsTerm = newOp.hasTrait(Trait.Terminator);
+    if (oldIsTerm !== newIsTerm) {
+      throw new Error(
+        `BasicBlock.replaceOp: terminator-ness mismatch (old=${oldOp.constructor.name} term=${oldIsTerm}, new=${newOp.constructor.name} term=${newIsTerm})`,
+      );
     }
-    for (const op of other._ops) {
-      attach(op, this);
-      this._ops.push(op);
+    if (oldIsTerm) {
+      if (this._terminal !== oldOp) {
+        throw new Error(
+          `BasicBlock.replaceOp: terminator ${oldOp.constructor.name} is not this block's terminal`,
+        );
+      }
+      detach(oldOp);
+      unregisterUses(oldOp);
+      registerUses(newOp);
+      attach(newOp, this);
+      this._terminal = newOp as Terminal;
+      return;
     }
-    other._ops = [];
+    const index = this._ops.indexOf(oldOp);
+    if (index < 0) {
+      throw new Error(
+        `BasicBlock.replaceOp: op ${oldOp.constructor.name} not found in bb${this.id}`,
+      );
+    }
+    detach(oldOp);
+    unregisterUses(oldOp);
+    registerUses(newOp);
+    attach(newOp, this);
+    this._ops[index] = newOp;
   }
 
   /**
-   * Remove and return ops from `start` to the end of the non-terminator
-   * slice. Ops are moved; caller inherits use-chain registrations.
+   * Remove and return non-terminator ops from `start` to the end of
+   * the list. Ops are moved; caller inherits use-chain registrations
+   * (nothing is unregistered).
    */
   spliceInstructions(start: number): Operation[] {
-    const end = this.terminatorIndex() >= 0 ? this.terminatorIndex() : this._ops.length;
-    if (start >= end) return [];
-    const removed = this._ops.splice(start, end - start);
+    if (start >= this._ops.length) return [];
+    const removed = this._ops.splice(start);
     for (const op of removed) detach(op);
     return removed;
   }
@@ -322,41 +220,32 @@ export class BasicBlock {
   // Walkers
   // -----------------------------------------------------------------------
 
-  /** Yield every op in this block in program order. */
+  /** Yield every op in this block in program order, terminator last. */
   *getAllOps(): IterableIterator<Operation> {
     for (const op of this._ops) yield op;
-  }
-
-  get numOps(): number {
-    return this._ops.length;
+    if (this._terminal !== null) yield this._terminal;
   }
 
   // -----------------------------------------------------------------------
   // CFG use-list — predecessors, always current
-  //
-  // Every op whose `getBlockRefs()` includes this block is recorded
-  // in `#uses` by the register/unregister helpers above. That means
-  // "who jumps here?" is a walk of the use-list, never a scan of the
-  // whole function. The LLVM/MLIR model: predecessors are a property
-  // of the block, not a separate analysis.
   // -----------------------------------------------------------------------
 
   /** @internal */
-  _addUse(user: UseChainNode): void {
+  _addUse(user: User): void {
     this.#uses.add(user);
   }
 
   /** @internal */
-  _removeUse(user: UseChainNode): void {
+  _removeUse(user: User): void {
     this.#uses.delete(user);
   }
 
   /**
    * Read-only view of every op whose `getBlockRefs()` includes this
-   * block — i.e. the CFG predecessor edges, raw. Use {@link predecessors}
-   * for the set of predecessor blocks.
+   * block — i.e. the raw CFG in-edges. Use {@link predecessors} for
+   * the set of predecessor blocks.
    */
-  get uses(): ReadonlySet<UseChainNode> {
+  get uses(): ReadonlySet<User> {
     return this.#uses;
   }
 
@@ -377,118 +266,5 @@ export class BasicBlock {
       if (owning !== null) preds.add(owning);
     }
     return preds;
-  }
-
-  /**
-   * The ECMAScript lexical scope kind this block executes within,
-   * derived by walking the region-parent chain upward.
-   */
-  get resolvedScopeKind(): LexicalScopeKind | undefined {
-    let region: Region | null = this.parent;
-    while (region !== null) {
-      if (region.scopeKind !== undefined) return region.scopeKind;
-      const owningOp = region.parent;
-      if (owningOp === null) return undefined;
-      region = owningOp.parentBlock?.parent ?? null;
-    }
-    return undefined;
-  }
-
-  /**
-   * Rewrite all ops through the given identifier → place mapping.
-   */
-  rewriteAll(values: Map<Value, Value>): void {
-    for (let i = 0; i < this._ops.length; i++) {
-      const op = this._ops[i];
-      const rewritten = op.rewrite(values);
-      if (rewritten !== op) {
-        detach(op);
-        unregisterUses(op);
-        registerUses(rewritten);
-        attach(rewritten, this);
-        this._ops[i] = rewritten;
-      }
-    }
-  }
-
-  // -----------------------------------------------------------------------
-  // Deep cloning — phase 1 / phase 2
-  // -----------------------------------------------------------------------
-
-  /**
-   * Phase-1 deep clone. Clones each non-region op with empty maps.
-   * Region-owning ops are deferred to phase 2 because their clone()
-   * calls remapRegion, which requires every block to already exist
-   * in the target module's blockMap.
-   */
-  public clone(moduleIR: ModuleIR): BasicBlock {
-    const environment = moduleIR.environment;
-    const newBlock = environment.createBlock();
-    const ctx: CloneContext = {
-      environment,
-      moduleIR,
-      blockMap: new Map(),
-      valueMap: new Map(),
-    };
-    for (const op of this._ops) {
-      if (op.hasTrait(Trait.HasRegions)) continue;
-      const cloned = op.clone(ctx);
-      newBlock._ops.push(cloned);
-      registerUses(cloned);
-      attach(cloned, newBlock);
-    }
-    newBlock.params = [...this.params];
-    return newBlock;
-  }
-
-  /**
-   * Phase-2 deep clone. Rewrites every op's operands through
-   * `valueMap`, and re-clones the terminal and any region-owning
-   * ops through `blockMap` + `valueMap`.
-   */
-  public rewrite(
-    environment: Environment,
-    blockMap: Map<BasicBlock, BasicBlock>,
-    valueMap: Map<Value, Value>,
-    options: { rewriteDefinitions?: boolean } = {},
-  ): void {
-    const ctx: CloneContext = {
-      environment,
-      moduleIR: undefined,
-      blockMap,
-      valueMap,
-    };
-    for (let i = 0; i < this._ops.length; i++) {
-      const op = this._ops[i];
-      if (op.hasTrait(Trait.Terminator)) {
-        detach(op);
-        unregisterUses(op);
-        const rewritten = op.clone(ctx) as Terminal;
-        registerUses(rewritten);
-        attach(rewritten, this);
-        this._ops[i] = rewritten;
-      } else {
-        const rewritten = op.rewrite(valueMap, options) as Operation & {
-          readonly place: Value;
-        };
-        if (rewritten !== op) {
-          detach(op);
-          unregisterUses(op);
-          registerUses(rewritten);
-          attach(rewritten, this);
-          this._ops[i] = rewritten;
-        }
-      }
-    }
-    if (this.params.length > 0) {
-      const newParams: Value[] = [];
-      let changed = false;
-      for (const param of this.params) {
-        const mapped = valueMap.get(param) ?? param;
-        if (mapped !== param) changed = true;
-        newParams.push(mapped);
-      }
-      if (changed) this.params = newParams;
-    }
   }
 }

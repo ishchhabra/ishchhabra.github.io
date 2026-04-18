@@ -2,6 +2,7 @@ import { FunctionDeclarationOp } from "../ops/func/FunctionDeclaration";
 import { ArrowFunctionExpressionOp } from "../ops/func/ArrowFunctionExpression";
 import { FunctionExpressionOp } from "../ops/func/FunctionExpression";
 import { BasicBlock, BlockId } from "./Block";
+import type { Environment } from "../../environment";
 import {
   collectDestructureTargetBindingPlaces,
   type DestructureTarget,
@@ -19,7 +20,70 @@ import {
   Trait,
 } from "./Operation";
 import { Region } from "./Region";
-import { IfOp } from "../ops/control";
+import { IfOp, type Terminal } from "../ops/control";
+
+// ---------------------------------------------------------------------
+// Block clone helpers (used by FuncOp.clone only)
+// ---------------------------------------------------------------------
+
+/**
+ * Phase-1 block clone: allocate a fresh block, deep-clone every
+ * non-region op into it. Region-owning ops are skipped — they're
+ * cloned in phase 2, once every block has been allocated and the
+ * clone context's `blockMap` is fully populated.
+ */
+function phase1CloneBlock(oldBlock: BasicBlock, moduleIR: ModuleIR): BasicBlock {
+  const environment = moduleIR.environment;
+  const newBlock = environment.createBlock();
+  const ctx: CloneContext = {
+    environment,
+    moduleIR,
+    blockMap: new Map(),
+    valueMap: new Map(),
+  };
+  for (const op of oldBlock.operations) {
+    if (op.hasTrait(Trait.HasRegions)) continue;
+    const cloned = op.clone(ctx);
+    newBlock.appendOp(cloned);
+  }
+  newBlock.params = [...oldBlock.params];
+  return newBlock;
+}
+
+/**
+ * Phase-2 block rewrite: walk every op already in `block` and
+ * substitute operands through `valueMap`. Terminators are re-cloned
+ * (their clone wires successor block refs through `blockMap`);
+ * non-terminators are rewritten in place when `rewrite()` returns a
+ * fresh op. Block params are remapped too if present.
+ */
+function phase2RewriteBlock(
+  block: BasicBlock,
+  environment: Environment,
+  blockMap: Map<BasicBlock, BasicBlock>,
+  valueMap: Map<Value, Value>,
+  options: { rewriteDefinitions?: boolean } = {},
+): void {
+  const ctx: CloneContext = { environment, moduleIR: undefined, blockMap, valueMap };
+  for (const op of [...block.operations]) {
+    const rewritten = op.rewrite(valueMap, options);
+    if (rewritten !== op) block.replaceOp(op, rewritten);
+  }
+  if (block.terminal !== undefined) {
+    const rewrittenTerminal = block.terminal.clone(ctx) as Terminal;
+    block.replaceOp(block.terminal, rewrittenTerminal);
+  }
+  if (block.params.length > 0) {
+    const newParams: Value[] = [];
+    let changed = false;
+    for (const param of block.params) {
+      const mapped = valueMap.get(param) ?? param;
+      if (mapped !== param) changed = true;
+      newParams.push(mapped);
+    }
+    if (changed) block.params = newParams;
+  }
+}
 
 /**
  * Stable id for a {@link FuncOp}. Since `FuncOp` is now a
@@ -304,12 +368,17 @@ export class FuncOp extends Operation {
   }
 
   /**
-   * Rewrite all instructions and terminals across all blocks using the
-   * given identifier → place mapping (delegates to {@link BasicBlock.rewriteAll}).
+   * Rewrite every op in every block through the given value mapping.
+   * Each op's `rewrite(values)` returns either itself (no change) or
+   * a fresh op with substituted operands; the fresh op replaces the
+   * original in the block.
    */
   rewriteAllBlocks(values: Map<Value, Value>): void {
     for (const block of this.allBlocks()) {
-      block.rewriteAll(values);
+      for (const op of [...block.getAllOps()]) {
+        const rewritten = op.rewrite(values);
+        if (rewritten !== op) block.replaceOp(op, rewritten);
+      }
     }
   }
 
@@ -435,7 +504,7 @@ export class FuncOp extends Operation {
     const oldBlocks = [...this.body.allBlocks()];
     const oldToNewBlock = new Map<BasicBlock, BasicBlock>();
     for (const oldBlock of oldBlocks) {
-      const newBlock = oldBlock.clone(targetModule);
+      const newBlock = phase1CloneBlock(oldBlock, targetModule);
       blockMap.set(oldBlock, newBlock);
       oldToNewBlock.set(oldBlock, newBlock);
       for (let i = 0; i < oldBlock.operations.length; i++) {
@@ -493,7 +562,7 @@ export class FuncOp extends Operation {
       }
     }
     for (const newBlock of oldToNewBlock.values()) {
-      newBlock.rewrite(environment, blockMap, valueMap, { rewriteDefinitions: true });
+      phase2RewriteBlock(newBlock, environment, blockMap, valueMap, { rewriteDefinitions: true });
     }
 
     // Phase 2: clone region-owning ops. Block.clone skipped them in

@@ -1,3 +1,5 @@
+import type { User } from "./Use";
+
 /**
  * Simulated opaque type for ValueId to prevent using normal numbers as
  * ids accidentally.
@@ -18,16 +20,6 @@ export type DeclarationId = number & { [opaqueDeclarationId]: "DeclarationId" };
 export function makeDeclarationId(id: number): DeclarationId {
   return id as DeclarationId;
 }
-
-/**
- * An op-shaped user of a {@link Value}.
- *
- * Kept structural (any object with `getOperands()`) to avoid a cyclic
- * import with `Operation`. Every `Operation` satisfies this.
- */
-export type User = {
-  getOperands(): readonly Value[];
-};
 
 /**
  * SSA value — MLIR's `Value` analogue. The single unit of SSA identity

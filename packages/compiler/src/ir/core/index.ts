@@ -23,9 +23,9 @@ export {
   makeValueId,
   makeDeclarationId,
   type DeclarationId,
-  type User,
   type ValueId,
 } from "./Value";
+export { registerUses, unregisterUses, type User } from "./Use";
 export { type LexicalScopeKind } from "./LexicalScope";
 export {
   makeCloneContext,
