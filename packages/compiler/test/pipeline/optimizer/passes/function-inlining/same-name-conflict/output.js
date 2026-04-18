@@ -1,6 +1,6 @@
-function $0_0($4_0) {
-  return $4_0;
+function $0($4) {
+  return $4;
 }
-const $1_0 = 0;
-const $2_0 = $0_0(1);
-const $3_0 = $0_0(2);
+const $1 = 0;
+const $2 = $0(1);
+const $3 = $0(2);

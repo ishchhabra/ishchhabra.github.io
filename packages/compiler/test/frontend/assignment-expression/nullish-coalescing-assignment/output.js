@@ -1,14 +1,14 @@
-function $0_0($1_0) {
-  let $6_0 = undefined;
-  let $10_0 = undefined;
-  if ($1_0 == null) {
-    $1_0 = 30;
-    $6_0 = 30;
-    $10_0 = $1_0;
+function $0($1) {
+  let $6 = undefined;
+  let $10 = undefined;
+  if ($1 == null) {
+    $1 = 30;
+    $6 = 30;
+    $10 = $1;
   } else {
-    $6_0 = $1_0;
-    $10_0 = $1_0;
+    $6 = $1;
+    $10 = $1;
   }
-  return $6_0;
+  return $6;
 }
-export { $0_0 as f };
+export { $0 as f };

@@ -1,3 +1,3 @@
-function $0_0() {
+function $0() {
   return this.name;
 }

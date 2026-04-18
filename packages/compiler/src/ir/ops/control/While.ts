@@ -1,5 +1,5 @@
 import type { OperationId } from "../../core";
-import type { Identifier } from "../../core/Identifier";
+import type { Value } from "../../core/Value";
 import {
   type CloneContext,
   nextId,
@@ -9,7 +9,6 @@ import {
   Trait,
   VerifyError,
 } from "../../core/Operation";
-import type { Place } from "../../core/Place";
 import { Region } from "../../core/Region";
 
 /**
@@ -50,7 +49,7 @@ import { Region } from "../../core/Region";
  *      enclosing scope when the loop exits. Bound to the condition's
  *      trailing args on the `false` iteration.
  *
- * Type-cycle invariant (all must match in count and Place types):
+ * Type-cycle invariant (all must match in count and Value types):
  *
  *     inits.length
  *   = beforeRegion.blocks[0].params.length
@@ -74,16 +73,16 @@ import { Region } from "../../core/Region";
 export class WhileOp extends Operation {
   static override readonly traits = new Set<Trait>([Trait.HasRegions]);
 
-  public readonly inits: readonly Place[];
-  public readonly resultPlaces: readonly Place[];
+  public readonly inits: readonly Value[];
+  public readonly resultPlaces: readonly Value[];
 
   constructor(
     id: OperationId,
     beforeRegion: Region,
     bodyRegion: Region,
     public readonly label?: string,
-    inits: readonly Place[] = [],
-    resultPlaces: readonly Place[] = [],
+    inits: readonly Value[] = [],
+    resultPlaces: readonly Value[] = [],
   ) {
     super(id, [beforeRegion, bodyRegion]);
     this.inits = inits;
@@ -98,19 +97,19 @@ export class WhileOp extends Operation {
     return this.regions[1];
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [...this.inits];
   }
 
-  override getDefs(): Place[] {
+  override getDefs(): Value[] {
     return [...this.resultPlaces];
   }
 
-  rewrite(values: Map<Identifier, Place>): WhileOp {
+  rewrite(values: Map<Value, Value>): WhileOp {
     let changed = false;
-    const newInits: Place[] = [];
+    const newInits: Value[] = [];
     for (const init of this.inits) {
-      const next = values.get(init.identifier) ?? init;
+      const next = values.get(init) ?? init;
       if (next !== init) changed = true;
       newInits.push(next);
     }

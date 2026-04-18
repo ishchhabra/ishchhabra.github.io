@@ -1,6 +1,6 @@
 import type { ConditionalExpression, Expression } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { createOperationId, IfOp, Place, Region, YieldOp } from "../../../ir";
+import { createOperationId, IfOp, Value, Region, YieldOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -27,7 +27,7 @@ export function buildConditionalExpression(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
+): Value {
   const parentBlock = functionBuilder.currentBlock;
 
   const testPlace = buildNode(node.test, scope, functionBuilder, moduleBuilder, environment);
@@ -38,7 +38,7 @@ export function buildConditionalExpression(
   const consResult = buildArm(node.consequent, scope, functionBuilder, moduleBuilder, environment);
   const altResult = buildArm(node.alternate, scope, functionBuilder, moduleBuilder, environment);
 
-  const resultPlace = environment.createPlace(environment.createIdentifier());
+  const resultPlace = environment.createValue();
 
   const ifOp = new IfOp(
     createOperationId(environment),

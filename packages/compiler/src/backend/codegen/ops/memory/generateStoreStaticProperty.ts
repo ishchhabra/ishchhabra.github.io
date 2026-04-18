@@ -14,15 +14,15 @@ export function generateStoreStaticPropertyOp(
   instruction: StoreStaticPropertyOp,
   generator: CodeGenerator,
 ) {
-  const objectNode = generator.places.get(instruction.object.id);
+  const objectNode = generator.values.get(instruction.object.id);
   if (!objectNode) {
-    throw new Error(`Place ${instruction.object.id} not found`);
+    throw new Error(`Value ${instruction.object.id} not found`);
   }
   t.assertExpression(objectNode);
 
-  const valueNode = generator.places.get(instruction.value.id);
+  const valueNode = generator.values.get(instruction.value.id);
   if (!valueNode) {
-    throw new Error(`Place ${instruction.value.id} not found`);
+    throw new Error(`Value ${instruction.value.id} not found`);
   }
   t.assertExpression(valueNode);
 
@@ -37,6 +37,6 @@ export function generateStoreStaticPropertyOp(
   const memberExpr = t.memberExpression(objectNode, propertyNode, isComputed);
 
   const node = t.assignmentExpression("=", memberExpr, valueNode);
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

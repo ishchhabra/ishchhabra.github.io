@@ -7,9 +7,9 @@ export function generateTemplateLiteralOp(
   generator: CodeGenerator,
 ): t.Expression {
   const expressions = instruction.expressions.map((expr) => {
-    const node = generator.places.get(expr.id);
+    const node = generator.values.get(expr.id);
     if (!node) {
-      throw new Error(`Place not found for template literal expression: ${expr.id}`);
+      throw new Error(`Value not found for template literal expression: ${expr.id}`);
     }
     t.assertExpression(node);
     return node;
@@ -19,6 +19,6 @@ export function generateTemplateLiteralOp(
     t.templateElement({ raw: q.value.raw, cooked: q.value.cooked ?? q.value.raw }, q.tail),
   );
   const node = t.templateLiteral(quasis, expressions);
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

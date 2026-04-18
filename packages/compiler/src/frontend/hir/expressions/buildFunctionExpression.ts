@@ -36,8 +36,7 @@ export function buildFunctionExpression(
   functionBuilder.propagateCapturesFrom(funcOpBuilder);
 
   const capturedPlaces = [...funcOpBuilder.captures.values()];
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(
     FunctionExpressionOp,
     place,

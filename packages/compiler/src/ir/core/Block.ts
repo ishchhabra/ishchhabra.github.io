@@ -1,10 +1,9 @@
 import { Environment } from "../../environment";
-import { Identifier } from "./Identifier";
+import { Value } from "./Value";
 import { type LexicalScopeKind } from "./LexicalScope";
 import type { ModuleIR } from "./ModuleIR";
 import type { CloneContext } from "./Operation";
 import { Operation, Trait } from "./Operation";
-import { Place } from "./Place";
 import type { Region } from "./Region";
 import { Terminal } from "../ops/control";
 
@@ -24,30 +23,28 @@ export function makeBlockId(id: number): BlockId {
 // ---------------------------------------------------------------------------
 
 type UseChainNode = {
-  getOperands(): readonly Place[];
-  getDefs?: () => readonly Place[];
+  getOperands(): readonly Value[];
+  getDefs?: () => readonly Value[];
 };
 
 function registerUses(user: UseChainNode): void {
-  for (const place of user.getOperands()) {
-    place.identifier.uses.add(user);
+  for (const value of user.getOperands()) {
+    value._addUse(user);
   }
   if (user.getDefs) {
-    for (const place of user.getDefs()) {
-      place.identifier.definer = user;
+    for (const value of user.getDefs()) {
+      value._setDefiner(user);
     }
   }
 }
 
 function unregisterUses(user: UseChainNode): void {
-  for (const place of user.getOperands()) {
-    place.identifier.uses.delete(user);
+  for (const value of user.getOperands()) {
+    value._removeUse(user);
   }
   if (user.getDefs) {
-    for (const place of user.getDefs()) {
-      if (place.identifier.definer === user) {
-        place.identifier.definer = undefined;
-      }
+    for (const value of user.getDefs()) {
+      value._clearDefinerIf(user);
     }
   }
 }
@@ -92,7 +89,7 @@ export class BasicBlock {
    * MLIR / Cranelift-style block parameters. Populated by the SSA
    * builder when the block is a merge point in a multi-block region.
    */
-  public params: Place[] = [];
+  public params: Value[] = [];
 
   constructor(
     public readonly id: BlockId,
@@ -330,7 +327,7 @@ export class BasicBlock {
   /**
    * Rewrite all ops through the given identifier → place mapping.
    */
-  rewriteAll(values: Map<Identifier, Place>): void {
+  rewriteAll(values: Map<Value, Value>): void {
     for (let i = 0; i < this._ops.length; i++) {
       const op = this._ops[i];
       const rewritten = op.rewrite(values);
@@ -358,9 +355,10 @@ export class BasicBlock {
     const environment = moduleIR.environment;
     const newBlock = environment.createBlock();
     const ctx: CloneContext = {
+      environment,
       moduleIR,
       blockMap: new Map(),
-      identifierMap: new Map(),
+      valueMap: new Map(),
     };
     for (const op of this._ops) {
       if (op.hasTrait(Trait.HasRegions)) continue;
@@ -375,19 +373,20 @@ export class BasicBlock {
 
   /**
    * Phase-2 deep clone. Rewrites every op's operands through
-   * `identifierMap`, and re-clones the terminal and any region-owning
-   * ops through `blockMap` + `identifierMap`.
+   * `valueMap`, and re-clones the terminal and any region-owning
+   * ops through `blockMap` + `valueMap`.
    */
   public rewrite(
     environment: Environment,
     blockMap: Map<BlockId, BlockId>,
-    identifierMap: Map<Identifier, Place>,
+    valueMap: Map<Value, Value>,
     options: { rewriteDefinitions?: boolean } = {},
   ): void {
     const ctx: CloneContext = {
-      moduleIR: { environment } as unknown as CloneContext["moduleIR"],
+      environment,
+      moduleIR: undefined,
       blockMap,
-      identifierMap,
+      valueMap,
     };
     for (let i = 0; i < this._ops.length; i++) {
       const op = this._ops[i];
@@ -399,8 +398,8 @@ export class BasicBlock {
         attach(rewritten, this);
         this._ops[i] = rewritten;
       } else {
-        const rewritten = op.rewrite(identifierMap, options) as Operation & {
-          readonly place: Place;
+        const rewritten = op.rewrite(valueMap, options) as Operation & {
+          readonly place: Value;
         };
         if (rewritten !== op) {
           detach(op);
@@ -408,17 +407,14 @@ export class BasicBlock {
           registerUses(rewritten);
           attach(rewritten, this);
           this._ops[i] = rewritten;
-          if (rewritten.place !== undefined) {
-            environment.placeToOp.set(rewritten.place.id, rewritten);
-          }
         }
       }
     }
     if (this.params.length > 0) {
-      const newParams: Place[] = [];
+      const newParams: Value[] = [];
       let changed = false;
       for (const param of this.params) {
-        const mapped = identifierMap.get(param.identifier) ?? param;
+        const mapped = valueMap.get(param) ?? param;
         if (mapped !== param) changed = true;
         newParams.push(mapped);
       }

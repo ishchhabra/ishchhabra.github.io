@@ -1,4 +1,4 @@
-function $0_0($2_0) {
-  console.log($2_0);
+function $0($2) {
+  console.log($2);
 }
-console.log($0_0("world"));
+console.log($0("world"));

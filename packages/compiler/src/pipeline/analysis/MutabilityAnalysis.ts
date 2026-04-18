@@ -1,6 +1,6 @@
 import { StoreContextOp, StoreLocalOp } from "../../ir";
 import type { FuncOp } from "../../ir/core/FuncOp";
-import type { DeclarationId } from "../../ir/core/Identifier";
+import type { DeclarationId } from "../../ir/core/Value";
 import { AnalysisManager, FunctionAnalysis } from "./AnalysisManager";
 
 /** A store op that writes to a source-level declaration. */
@@ -19,12 +19,12 @@ const NO_DEF_SITES: readonly StoreOp[] = Object.freeze([]);
  *
  * # Why a second layer?
  *
- * Post-SSA, the `Place`/`Identifier` axis already has use-def chains
+ * Post-SSA, the `Value`/`Value` axis already has use-def chains
  * and is single-assignment by construction. But our IR still carries
  * `DeclarationId` as a second identity axis — it survives SSA so
  * codegen can emit named source variables. A `let` declared once and
  * reassigned in a loop produces several `StoreLocalOp`s that share a
- * `DeclarationId` while having distinct `IdentifierId`s. SSA use-def
+ * `DeclarationId` while having distinct `ValueId`s. SSA use-def
  * tells you "this read consumes that SSA value"; this analysis tells
  * you "this source variable has more than one assignment point."
  *
@@ -76,7 +76,7 @@ export class MutabilityInfo {
     for (const block of funcOp.allBlocks()) {
       for (const op of block.operations) {
         if (op instanceof StoreLocalOp || op instanceof StoreContextOp) {
-          const decl = op.lval.identifier.declarationId;
+          const decl = op.lval.declarationId;
           let sites = defSites.get(decl);
           if (sites === undefined) {
             sites = [];

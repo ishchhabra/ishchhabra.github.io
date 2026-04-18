@@ -1,10 +1,10 @@
-let $0_0 = 0;
-let $14_0 = undefined;
+let $0 = 0;
+let $14 = undefined;
 if (globalThis.cond) {
-  $0_0 = globalThis.compute();
-  $14_0 = $0_0;
+  $0 = globalThis.compute();
+  $14 = $0;
 } else {
-  $14_0 = $0_0;
-  $14_0 = $0_0;
+  $14 = $0;
+  $14 = $0;
 }
-console.log($14_0);
+console.log($14);

@@ -7,6 +7,6 @@ export function generateJSXClosingFragmentOp(
   generator: CodeGenerator,
 ): t.JSXClosingFragment {
   const node = t.jsxClosingFragment();
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

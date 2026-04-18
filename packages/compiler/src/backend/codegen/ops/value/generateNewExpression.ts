@@ -6,16 +6,16 @@ export function generateNewExpressionOp(
   instruction: NewExpressionOp,
   generator: CodeGenerator,
 ): t.Expression {
-  const callee = generator.places.get(instruction.callee.id);
+  const callee = generator.values.get(instruction.callee.id);
   if (!callee) {
-    throw new Error(`Place not found for new expression callee: ${instruction.callee.id}`);
+    throw new Error(`Value not found for new expression callee: ${instruction.callee.id}`);
   }
   t.assertExpression(callee);
 
   const args = instruction.args.map((argument) => {
-    const node = generator.places.get(argument.id);
+    const node = generator.values.get(argument.id);
     if (!node) {
-      throw new Error(`Place not found for new expression argument: ${argument.id}`);
+      throw new Error(`Value not found for new expression argument: ${argument.id}`);
     }
     if (!t.isExpression(node) && !t.isSpreadElement(node)) {
       throw new Error(`Expected Expression or SpreadElement but got ${node.type}`);
@@ -24,6 +24,6 @@ export function generateNewExpressionOp(
   });
 
   const node = t.newExpression(callee, args);
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

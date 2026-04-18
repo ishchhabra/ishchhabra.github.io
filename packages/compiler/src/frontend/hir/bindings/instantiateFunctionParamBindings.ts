@@ -69,7 +69,7 @@ function instantiateParamBinding(
 }
 
 function instantiateIdentifierParamBinding(
-  node: AST.Identifier,
+  node: AST.Value,
   scope: Scope,
   functionBuilder: FuncOpBuilder,
   environment: Environment,
@@ -80,20 +80,15 @@ function instantiateIdentifierParamBinding(
   }
 
   const binding = scope.getBinding(originalName);
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
 
-  functionBuilder.registerDeclarationName(originalName, identifier.declarationId, scope);
-  functionBuilder.instantiateDeclaration(identifier.declarationId, "param", originalName, scope);
+  functionBuilder.registerDeclarationName(originalName, place.declarationId, scope);
+  functionBuilder.instantiateDeclaration(place.declarationId, "param", originalName, scope);
 
   if (binding && isContextVariable(binding, scope)) {
-    environment.contextDeclarationIds.add(identifier.declarationId);
+    environment.contextDeclarationIds.add(place.declarationId);
   }
 
-  environment.registerDeclaration(
-    identifier.declarationId,
-    functionBuilder.currentBlock.id,
-    place.id,
-  );
-  environment.setDeclarationBindingPlace(identifier.declarationId, place.id);
+  environment.registerDeclaration(place.declarationId, functionBuilder.currentBlock.id, place.id);
+  environment.setDeclarationBinding(place.declarationId, place.id);
 }

@@ -1,11 +1,11 @@
-function $0_0() {
+function $0() {
   return (
     <div>
-      <$1_0.Panel />
+      <$1.Panel />
     </div>
   );
 }
-const $1_0 = {
+const $1 = {
   Panel: () => <aside />,
 };
-export { $0_0 as Page };
+export { $0 as Page };

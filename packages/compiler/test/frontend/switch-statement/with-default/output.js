@@ -1,5 +1,5 @@
-const $0_0 = "hello";
-switch ($0_0) {
+const $0 = "hello";
+switch ($0) {
   case "a":
     console.log("matched a");
     break;

@@ -1,11 +1,10 @@
 import {
-  Place,
+  Value,
   destructureTargetHasObservableWrites,
   getDestructureTargetDefs,
   getDestructureTargetOperands,
   rewriteDestructureTarget,
   type DestructureObjectProperty,
-  type Identifier,
 } from "../../core";
 import { OperationId } from "../../core";
 import type { StoreLocalKind } from "../mem/StoreLocal";
@@ -15,9 +14,9 @@ import type { CloneContext } from "../../core/Operation";
 export class ObjectDestructureOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
+    public override readonly place: Value,
     public readonly properties: DestructureObjectProperty[],
-    public readonly value: Place,
+    public readonly value: Value,
     public readonly kind: StoreLocalKind,
     public readonly declarationKind: "let" | "const" | "var" | null = null,
   ) {
@@ -25,9 +24,9 @@ export class ObjectDestructureOp extends Operation {
   }
 
   public clone(ctx: CloneContext): ObjectDestructureOp {
-    const moduleIR = ctx.moduleIR;
-    const place = moduleIR.environment.createPlace(moduleIR.environment.createIdentifier());
-    return moduleIR.environment.createOperation(
+    const env = ctx.environment;
+    const place = env.createValue();
+    return env.createOperation(
       ObjectDestructureOp,
       place,
       this.properties,
@@ -38,7 +37,7 @@ export class ObjectDestructureOp extends Operation {
   }
 
   rewrite(
-    values: Map<Identifier, Place>,
+    values: Map<Value, Value>,
     { rewriteDefinitions = false }: { rewriteDefinitions?: boolean } = {},
   ): ObjectDestructureOp {
     return new ObjectDestructureOp(
@@ -47,7 +46,7 @@ export class ObjectDestructureOp extends Operation {
       this.properties.map((property) => ({
         ...property,
         key:
-          property.computed && property.key instanceof Place
+          property.computed && property.key instanceof Value
             ? property.key.rewrite(values)
             : property.key,
         value: rewriteDestructureTarget(property.value, values, { rewriteDefinitions }),
@@ -58,14 +57,14 @@ export class ObjectDestructureOp extends Operation {
     );
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [
       this.value,
       ...getDestructureTargetOperands({ kind: "object", properties: this.properties }),
     ];
   }
 
-  override getDefs(): Place[] {
+  override getDefs(): Value[] {
     return [
       this.place,
       ...getDestructureTargetDefs({ kind: "object", properties: this.properties }),

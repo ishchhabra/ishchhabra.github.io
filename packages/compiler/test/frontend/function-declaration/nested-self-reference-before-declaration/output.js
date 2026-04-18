@@ -1,19 +1,19 @@
-function $0_0($1_0) {
-  function $2_0($3_0) {
-    const $4_0 = ($3_0 && $3_0.position && $3_0.position[$1_0]) || {};
+function $0($1) {
+  function $2($3) {
+    const $4 = ($3 && $3.position && $3.position[$1]) || {};
     if (
-      typeof $4_0.line === "number" &&
-      $4_0.line > 0 &&
-      typeof $4_0.column === "number" &&
-      $4_0.column > 0
+      typeof $4.line === "number" &&
+      $4.line > 0 &&
+      typeof $4.column === "number" &&
+      $4.column > 0
     ) {
-      let $61_0 = undefined;
+      let $62 = undefined;
       return {
-        line: $4_0.line,
-        column: $4_0.column,
-        offset: typeof $4_0.offset === "number" && $4_0.offset > -1 ? $4_0.offset : undefined,
+        line: $4.line,
+        column: $4.column,
+        offset: typeof $4.offset === "number" && $4.offset > -1 ? $4.offset : undefined,
       };
     }
   }
-  return $2_0;
+  return $2;
 }

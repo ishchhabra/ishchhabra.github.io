@@ -6,23 +6,23 @@ export function generateClassDeclarationOp(
   instruction: ClassDeclarationOp,
   generator: CodeGenerator,
 ): t.ClassDeclaration {
-  const name = instruction.place.identifier.name ?? `$${instruction.place.identifier.id}`;
+  const name = instruction.place.name ?? `$${instruction.place.id}`;
   const idNode = t.identifier(name);
 
   let superClass: t.Expression | null = null;
   if (instruction.superClass) {
-    const node = generator.places.get(instruction.superClass.id);
+    const node = generator.values.get(instruction.superClass.id);
     if (node === undefined) {
-      throw new Error(`Place ${instruction.superClass.id} not found`);
+      throw new Error(`Value ${instruction.superClass.id} not found`);
     }
     t.assertExpression(node);
     superClass = node;
   }
 
   const body: t.ClassBody["body"] = instruction.elements.map((elementPlace) => {
-    const node = generator.places.get(elementPlace.id);
+    const node = generator.values.get(elementPlace.id);
     if (node === undefined) {
-      throw new Error(`Place ${elementPlace.id} not found`);
+      throw new Error(`Value ${elementPlace.id} not found`);
     }
     if (node === null) {
       throw new Error(`Class body element is null (hole)`);
@@ -43,7 +43,7 @@ export function generateClassDeclarationOp(
   });
 
   const node = t.classDeclaration(idNode, superClass, t.classBody(body));
-  generator.declaredDeclarations.add(instruction.place.identifier.declarationId);
-  generator.places.set(instruction.place.id, node);
+  generator.declaredDeclarations.add(instruction.place.declarationId);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

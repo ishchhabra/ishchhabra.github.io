@@ -6,9 +6,9 @@ export function generateJSXMemberExpressionOp(
   instruction: JSXMemberExpressionOp,
   generator: CodeGenerator,
 ): t.JSXMemberExpression {
-  const object = generator.places.get(instruction.object.id);
+  const object = generator.values.get(instruction.object.id);
   if (object === undefined) {
-    throw new Error(`Place ${instruction.object.id} not found for JSX member expression object`);
+    throw new Error(`Value ${instruction.object.id} not found for JSX member expression object`);
   }
   if (!t.isJSXIdentifier(object) && !t.isJSXMemberExpression(object)) {
     throw new Error(
@@ -17,6 +17,6 @@ export function generateJSXMemberExpressionOp(
   }
 
   const node = t.jsxMemberExpression(object, t.jsxIdentifier(instruction.property));
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

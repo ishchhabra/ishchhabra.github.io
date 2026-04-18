@@ -7,6 +7,6 @@ export function generateDebuggerStatementOp(
   generator: CodeGenerator,
 ): t.DebuggerStatement {
   const node = t.debuggerStatement();
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

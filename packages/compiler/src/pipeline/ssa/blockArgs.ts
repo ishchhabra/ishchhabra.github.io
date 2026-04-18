@@ -2,7 +2,7 @@ import type { BasicBlock } from "../../ir/core/Block";
 import type { FuncOp } from "../../ir/core/FuncOp";
 import type { Operation } from "../../ir/core/Operation";
 import { Trait } from "../../ir/core/Operation";
-import type { Place } from "../../ir/core/Place";
+import type { Value } from "../../ir/core/Value";
 import {
   BreakOp,
   ConditionOp,
@@ -67,8 +67,8 @@ export type EdgeSink =
 export interface Edge {
   readonly pred: BasicBlock;
   readonly sink: EdgeSink;
-  readonly args: readonly Place[];
-  apply(newArgs: readonly Place[]): void;
+  readonly args: readonly Value[];
+  apply(newArgs: readonly Value[]): void;
   /**
    * Insert `store` into `pred` at the position where this edge's
    * copy-store semantically fires — i.e., just before the flow
@@ -92,7 +92,7 @@ export interface Edge {
  * with the edge's `args` is enforced at construction time (same
  * length).
  */
-export function sinkParams(sink: EdgeSink): readonly Place[] {
+export function sinkParams(sink: EdgeSink): readonly Value[] {
   if (sink.kind === "block") return sink.block.params;
   // Structured op-results.
   if (sink.op instanceof WhileOp) return sink.op.resultPlaces;
@@ -690,7 +690,7 @@ function resolveContinueTarget(block: BasicBlock, label: string | undefined): Lo
 export function getEdgeArgs(
   block: BasicBlock,
   succBlock: BasicBlock,
-): readonly Place[] | undefined {
+): readonly Value[] | undefined {
   const terminal = block.terminal;
   if (terminal instanceof JumpOp && terminal.target === succBlock.id) {
     return terminal.args;

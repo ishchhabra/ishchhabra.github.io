@@ -1,3 +1,3 @@
-function $0_0({ a: $1_0, b: $2_0 }) {
-  return $1_0 + $2_0;
+function $0({ a: $1, b: $2 }) {
+  return $1 + $2;
 }

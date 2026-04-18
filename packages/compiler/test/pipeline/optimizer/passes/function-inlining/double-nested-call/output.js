@@ -1,10 +1,10 @@
-function $0_0() {
+function $0() {
   return 42;
 }
-function $1_0() {
-  return $0_0();
+function $1() {
+  return $0();
 }
-function $2_0() {
-  return $1_0();
+function $2() {
+  return $1();
 }
-const $3_0 = $2_0();
+const $3 = $2();

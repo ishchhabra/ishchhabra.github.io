@@ -1,6 +1,6 @@
 import type { Expression, MemberExpression, PrivateIdentifier } from "oxc-parser";
 import { Environment } from "../../environment";
-import { type DestructureObjectProperty, type DestructureTarget, Place } from "../../ir";
+import { type DestructureObjectProperty, type DestructureTarget, Value } from "../../ir";
 import type * as AST from "../estree";
 import { type Scope } from "../scope/Scope";
 import { buildMemberReference } from "./expressions/buildMemberReference";
@@ -92,7 +92,7 @@ export function buildLVal(
 }
 
 function buildIdentifierLVal(
-  node: AST.Identifier,
+  node: AST.Value,
   scope: Scope,
   functionBuilder: FuncOpBuilder,
   environment: Environment,
@@ -113,11 +113,8 @@ function buildIdentifierLVal(
         }
         functionBuilder.captures.set(declarationId, declarationPlace);
         if (!functionBuilder.captureParams.has(declarationId)) {
-          const paramIdentifier = environment.createIdentifier(declarationId);
-          functionBuilder.captureParams.set(
-            declarationId,
-            environment.createPlace(paramIdentifier),
-          );
+          const paramIdentifier = environment.createValue(declarationId);
+          functionBuilder.captureParams.set(declarationId, paramIdentifier);
         }
         return {
           kind: "binding",
@@ -129,7 +126,7 @@ function buildIdentifierLVal(
       const bindingPlace = environment.getDeclarationBinding(declarationId);
       const place =
         bindingPlace ??
-        environment.places.get(environment.getLatestDeclaration(declarationId)!.placeId);
+        environment.values.get(environment.getLatestDeclaration(declarationId)!.valueId);
       if (place === undefined) {
         throw new Error(`Unable to find the place for ${name} (${declarationId})`);
       }
@@ -149,7 +146,7 @@ function buildIdentifierLVal(
   }
 
   const latestDeclaration = environment.getLatestDeclaration(declarationId);
-  const place = environment.places.get(latestDeclaration.placeId);
+  const place = environment.values.get(latestDeclaration.valueId);
   if (place === undefined) {
     throw new Error(`Unable to find the place for ${name} (${declarationId})`);
   }
@@ -245,7 +242,7 @@ function buildComputedPropertyKey(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
+): Value {
   if (node.type === "PrivateIdentifier") {
     throw new Error("PrivateIdentifier is not supported in object pattern destructuring");
   }
@@ -266,7 +263,7 @@ function buildRequiredPlace(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
   message: string,
-): Place {
+): Value {
   const place = buildNode(node, scope, functionBuilder, moduleBuilder, environment);
   if (place === undefined || Array.isArray(place)) {
     throw new Error(message);

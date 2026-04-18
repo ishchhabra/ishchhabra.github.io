@@ -3,17 +3,17 @@ import { JSXElementOp } from "../../../../ir";
 import { CodeGenerator } from "../../../CodeGenerator";
 
 export function generateJSXElementOp(instruction: JSXElementOp, generator: CodeGenerator) {
-  const openingElement = generator.places.get(instruction.openingElement.id);
+  const openingElement = generator.values.get(instruction.openingElement.id);
   t.assertJSXOpeningElement(openingElement);
 
   let closingElement = null;
   if (instruction.closingElement !== undefined) {
-    closingElement = generator.places.get(instruction.closingElement.id);
+    closingElement = generator.values.get(instruction.closingElement.id);
     t.assertJSXClosingElement(closingElement);
   }
 
   const children = instruction.children.map((child) => {
-    const node = generator.places.get(child.id);
+    const node = generator.values.get(child.id);
     if (
       t.isJSXText(node) ||
       t.isJSXExpressionContainer(node) ||
@@ -29,6 +29,6 @@ export function generateJSXElementOp(instruction: JSXElementOp, generator: CodeG
 
   const selfClosing = closingElement === null;
   const node = t.jsxElement(openingElement, closingElement, children, selfClosing);
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

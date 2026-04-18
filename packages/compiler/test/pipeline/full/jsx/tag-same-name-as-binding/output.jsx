@@ -1,7 +1,7 @@
-function $0_0($3_0, $4_0) {
-  return $3_0 + $4_0;
+function $0($3, $4) {
+  return $3 + $4;
 }
-function $1_0({ code: $8_0, lang: $9_0 }) {
+function $1({ code: $8, lang: $9 }) {
   return (
     <pre>
       <code
@@ -9,14 +9,14 @@ function $1_0({ code: $8_0, lang: $9_0 }) {
           fontFamily: "mono",
         }}
         dangerouslySetInnerHTML={{
-          __html: $0_0($8_0, $9_0),
+          __html: $0($8, $9),
         }}
       />
     </pre>
   );
 }
-function $2_0() {
-  return <$1_0 code="x" lang="js" />;
+function $2() {
+  return <$1 code="x" lang="js" />;
 }
-export { $1_0 as HighlightedCode };
-export { $2_0 as Example };
+export { $1 as HighlightedCode };
+export { $2 as Example };

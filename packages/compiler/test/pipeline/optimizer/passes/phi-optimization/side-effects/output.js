@@ -1,11 +1,11 @@
-const $0_0 = globalThis.project;
-let $1_0 = undefined;
-let $21_0 = undefined;
-if (!$0_0.external) {
-  $1_0 = `lab-${$0_0.slug}-title`;
-  $21_0 = $1_0;
+const $0 = globalThis.project;
+let $1 = undefined;
+let $21 = undefined;
+if (!$0.external) {
+  $1 = `lab-${$0.slug}-title`;
+  $21 = $1;
 } else {
-  $1_0 = undefined;
-  $21_0 = $1_0;
+  $1 = undefined;
+  $21 = $1;
 }
-console.log($21_0);
+console.log($21);

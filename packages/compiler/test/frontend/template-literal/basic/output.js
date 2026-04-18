@@ -1,2 +1,2 @@
-const $0_0 = "world";
-const $1_0 = `Hello, ${$0_0}!`;
+const $0 = "world";
+const $1 = `Hello, ${$0}!`;

@@ -1,7 +1,7 @@
-const $0_0 = {
+const $0 = {
   a: 1,
   b: 2,
 };
-for (const $10_0 in $0_0) {
-  console.log($10_0);
+for (const $10 in $0) {
+  console.log($10);
 }

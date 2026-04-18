@@ -1,14 +1,14 @@
-let $0_0 = 0;
-let $17_blockparam_18 = undefined;
-$17_blockparam_18 = $0_0;
-let $18_blockparam_19 = undefined;
-let $19_blockparam_20 = undefined;
-while ((($18_blockparam_19 = $17_blockparam_18), ($19_blockparam_20 = $17_blockparam_18), true)) {
-  $0_0 = $18_blockparam_19 + 1;
-  if (!($0_0 < 10)) {
-    $19_blockparam_20 = $0_0;
+let $0 = 0;
+let blockparam_18 = undefined;
+blockparam_18 = $0;
+let blockparam_19 = undefined;
+let blockparam_20 = undefined;
+while (((blockparam_19 = blockparam_18), (blockparam_20 = blockparam_18), true)) {
+  $0 = blockparam_19 + 1;
+  if (!($0 < 10)) {
+    blockparam_20 = $0;
     break;
   }
-  $17_blockparam_18 = $0_0;
+  blockparam_18 = $0;
 }
-console.log($19_blockparam_20);
+console.log(blockparam_20);

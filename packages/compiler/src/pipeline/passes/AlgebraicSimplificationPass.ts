@@ -2,7 +2,7 @@ import {
   Operation,
   BasicBlock,
   BinaryExpressionOp,
-  IdentifierId,
+  ValueId,
   LiteralOp,
   LoadLocalOp,
   LogicalExpressionOp,
@@ -10,7 +10,7 @@ import {
   TPrimitiveValue,
 } from "../../ir";
 import { FuncOp } from "../../ir/core/FuncOp";
-import { Place } from "../../ir/core/Place";
+import { Value } from "../../ir/core/Value";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { MutabilityAnalysis, MutabilityInfo } from "../analysis/MutabilityAnalysis";
 import { BaseOptimizationPass } from "../late-optimizer/OptimizationPass";
@@ -41,7 +41,7 @@ export class AlgebraicSimplificationPass extends BaseOptimizationPass {
    * Maps identifier ids to their known literal values.
    * Tracks values through LiteralOp, LoadLocal, and StoreLocal chains.
    */
-  private readonly literals: Map<IdentifierId, TPrimitiveValue>;
+  private readonly literals: Map<ValueId, TPrimitiveValue>;
 
   private readonly mutability: MutabilityInfo;
 
@@ -62,11 +62,11 @@ export class AlgebraicSimplificationPass extends BaseOptimizationPass {
     const walkOps = (ops: readonly Operation[]) => {
       for (const op of ops) {
         if (op instanceof LiteralOp) {
-          this.literals.set(op.place.identifier.id, op.value);
+          this.literals.set(op.place.id, op.value);
         } else if (op instanceof LoadLocalOp) {
-          const val = this.literals.get(op.value.identifier.id);
+          const val = this.literals.get(op.value.id);
           if (val !== undefined) {
-            this.literals.set(op.place.identifier.id, val);
+            this.literals.set(op.place.id, val);
           }
         } else if (op instanceof StoreLocalOp) {
           // Only track literal values through source bindings with
@@ -76,10 +76,10 @@ export class AlgebraicSimplificationPass extends BaseOptimizationPass {
           // because reassignments can share a declarationId and
           // because the frontend may emit non-"let" types on
           // assignment stores.
-          if (this.mutability.isSingleAssignment(op.lval.identifier.declarationId)) {
-            const val = this.literals.get(op.value.identifier.id);
+          if (this.mutability.isSingleAssignment(op.lval.declarationId)) {
+            const val = this.literals.get(op.value.id);
             if (val !== undefined) {
-              this.literals.set(op.lval.identifier.id, val);
+              this.literals.set(op.lval.id, val);
             }
           }
         }
@@ -120,7 +120,7 @@ export class AlgebraicSimplificationPass extends BaseOptimizationPass {
       if (replacement !== undefined) {
         block.replaceOp(instruction, replacement);
         if (replacement instanceof LiteralOp) {
-          this.literals.set(replacement.place.identifier.id, replacement.value);
+          this.literals.set(replacement.place.id, replacement.value);
         }
         changed = true;
       }
@@ -129,33 +129,33 @@ export class AlgebraicSimplificationPass extends BaseOptimizationPass {
     return changed;
   }
 
-  private getLiteral(place: Place): TPrimitiveValue | undefined {
-    return this.literals.get(place.identifier.id);
+  private getLiteral(place: Value): TPrimitiveValue | undefined {
+    return this.literals.get(place.id);
   }
 
-  private isLiteral(place: Place): boolean {
-    return this.literals.has(place.identifier.id);
+  private isLiteral(place: Value): boolean {
+    return this.literals.has(place.id);
   }
 
-  private isLiteralNumber(place: Place): boolean {
+  private isLiteralNumber(place: Value): boolean {
     if (!this.isLiteral(place)) return false;
     const val = this.getLiteral(place);
     return typeof val === "number";
   }
 
-  private isInt32Literal(place: Place): boolean {
+  private isInt32Literal(place: Value): boolean {
     if (!this.isLiteralNumber(place)) return false;
     const val = this.getLiteral(place) as number;
     return Number.isInteger(val) && val >= -2147483648 && val <= 2147483647;
   }
 
-  private isFiniteNumber(place: Place): boolean {
+  private isFiniteNumber(place: Value): boolean {
     if (!this.isLiteralNumber(place)) return false;
     const val = this.getLiteral(place) as number;
     return Number.isFinite(val);
   }
 
-  private forwardPlace(instruction: Operation, source: Place): Operation {
+  private forwardPlace(instruction: Operation, source: Value): Operation {
     return new LoadLocalOp(instruction.id, instruction.place!, source);
   }
 

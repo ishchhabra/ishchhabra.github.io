@@ -1,10 +1,10 @@
-function $0_0($3_0) {
-  function $4_0($5_0) {
-    return $5_0 && $5_0.position && $5_0.position[$3_0];
+function $0($3) {
+  function $4($5) {
+    return $5 && $5.position && $5.position[$3];
   }
-  return $4_0;
+  return $4;
 }
-const $1_0 = $0_0("end");
-export { $1_0 as pointEnd };
-const $2_0 = $0_0("start");
-export { $2_0 as pointStart };
+const $1 = $0("end");
+export { $1 as pointEnd };
+const $2 = $0("start");
+export { $2 as pointStart };

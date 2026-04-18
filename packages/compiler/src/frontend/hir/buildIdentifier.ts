@@ -1,6 +1,6 @@
 import type * as AST from "../estree";
 import { Environment } from "../../environment";
-import { LoadContextOp, LoadGlobalOp, LoadLocalOp, Place } from "../../ir";
+import { LoadContextOp, LoadGlobalOp, LoadLocalOp, Value } from "../../ir";
 import { type Scope } from "../scope/Scope";
 import { FuncOpBuilder } from "./FuncOpBuilder";
 
@@ -9,15 +9,15 @@ import { FuncOpBuilder } from "./FuncOpBuilder";
  * buildNode are reference-position identifiers (binding-position identifiers
  * are handled by buildLVal, buildImportSpecifier, etc. directly).
  *
- * @param node - The ESTree Identifier node
+ * @param node - The ESTree Value node
  * @param scope - The scope info for this node
  * @param builder - The FuncOpBuilder managing IR state
  * @param environment - The environment managing IR state
  *
- * @returns The `Place` representing this identifier in the IR
+ * @returns The `Value` representing this identifier in the IR
  */
 export function buildIdentifier(
-  node: AST.Identifier,
+  node: AST.Value,
   scope: Scope,
   builder: FuncOpBuilder,
   environment: Environment,
@@ -30,28 +30,28 @@ export function throwTDZAccessError(name: string): never {
 }
 
 export function buildBindingIdentifier(
-  node: AST.Identifier,
+  node: AST.Value,
   scope: Scope,
   builder: FuncOpBuilder,
   environment: Environment,
 ) {
   const name = node.name;
 
-  let place: Place | undefined;
+  let place: Value | undefined;
   const declarationId = builder.getDeclarationId(name, scope);
   if (declarationId !== undefined) {
     place = environment.getDeclarationBinding(declarationId);
   }
 
   if (place === undefined) {
-    const identifier = environment.createIdentifier();
-    place = environment.createPlace(identifier);
+    const identifier = environment.createValue();
+    place = identifier;
   }
   return place;
 }
 
 function buildReferencedIdentifier(
-  node: AST.Identifier,
+  node: AST.Value,
   scope: Scope,
   builder: FuncOpBuilder,
   environment: Environment,
@@ -62,8 +62,7 @@ function buildReferencedIdentifier(
   // LoadLocal produces a temp SSA value that isn't a new version of
   // the source variable — it's just a read. Use a fresh identifier
   // so SSA rename stacks don't confuse it with the source.
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
 
   const declarationKind =
     declarationId !== undefined
@@ -93,8 +92,8 @@ function buildReferencedIdentifier(
       }
       builder.captures.set(declarationId, declarationPlace);
       if (!builder.captureParams.has(declarationId)) {
-        const paramIdentifier = environment.createIdentifier(declarationId);
-        builder.captureParams.set(declarationId, environment.createPlace(paramIdentifier));
+        const paramIdentifier = environment.createValue(declarationId);
+        builder.captureParams.set(declarationId, paramIdentifier);
       }
       const captureParam = builder.captureParams.get(declarationId)!;
       const LoadClass = environment.contextDeclarationIds.has(declarationId)
@@ -104,7 +103,7 @@ function buildReferencedIdentifier(
       builder.addOp(instruction);
     } else {
       const latestDeclaration = environment.getLatestDeclaration(declarationId);
-      const declarationPlace = environment.places.get(latestDeclaration.placeId);
+      const declarationPlace = environment.values.get(latestDeclaration.valueId);
       if (declarationPlace === undefined) {
         throw new Error(`Unable to find the place for ${name} (${declarationId})`);
       }

@@ -3,14 +3,14 @@ import { JSXFragmentOp } from "../../../../ir";
 import { CodeGenerator } from "../../../CodeGenerator";
 
 export function generateJSXFragmentOp(instruction: JSXFragmentOp, generator: CodeGenerator) {
-  const openingFragment = generator.places.get(instruction.openingFragment.id);
+  const openingFragment = generator.values.get(instruction.openingFragment.id);
   t.assertJSXOpeningFragment(openingFragment);
 
-  const closingFragment = generator.places.get(instruction.closingFragment.id);
+  const closingFragment = generator.values.get(instruction.closingFragment.id);
   t.assertJSXClosingFragment(closingFragment);
 
   const children = instruction.children.map((child) => {
-    const node = generator.places.get(child.id);
+    const node = generator.values.get(child.id);
     if (
       t.isJSXText(node) ||
       t.isJSXExpressionContainer(node) ||
@@ -25,6 +25,6 @@ export function generateJSXFragmentOp(instruction: JSXFragmentOp, generator: Cod
   });
 
   const node = t.jsxFragment(openingFragment, closingFragment, children);
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

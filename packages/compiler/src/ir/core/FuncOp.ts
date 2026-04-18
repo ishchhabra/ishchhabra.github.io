@@ -7,7 +7,7 @@ import {
   type DestructureTarget,
   rewriteDestructureTarget,
 } from "./Destructure";
-import { Identifier } from "./Identifier";
+import { Value } from "./Value";
 import type { LexicalScopeKind } from "./LexicalScope";
 import { ModuleIR } from "./ModuleIR";
 import {
@@ -18,7 +18,6 @@ import {
   type OperationId,
   Trait,
 } from "./Operation";
-import { Place } from "./Place";
 import { Region } from "./Region";
 import { IfOp } from "../ops/control";
 
@@ -71,8 +70,8 @@ export class FuncOp extends Operation {
 
   /**
    * Function formal parameters, MLIR-style: the entry block's block
-   * parameters. Each `params[i]` is the SSA root Place of the
-   * corresponding formal parameter — the same Place that instructions
+   * parameters. Each `params[i]` is the SSA root Value of the
+   * corresponding formal parameter — the same Value that instructions
    * in the body read from. At call sites, the caller's argument i is
    * bound to `params[i]` on entry; conceptually the call is an
    * outgoing edge into the entry block carrying those args.
@@ -82,7 +81,7 @@ export class FuncOp extends Operation {
    * the body executes. The destructure targets for codegen's JS
    * signature emission live in `paramPatterns`.
    */
-  get params(): readonly Place[] {
+  get params(): readonly Value[] {
     return this.entryBlock.params;
   }
 
@@ -194,12 +193,12 @@ export class FuncOp extends Operation {
      */
     public readonly paramPatterns: readonly DestructureTarget[],
     /**
-     * Closure capture bindings: one Place per captured outer-scope
+     * Closure capture bindings: one Value per captured outer-scope
      * variable. The inner function's blocks resolve captured reads
      * through these indirection places so the body stays decoupled
      * from the parent scope's identifiers.
      */
-    public readonly captureParams: readonly Place[],
+    public readonly captureParams: readonly Value[],
     /** Whether the function is `async`. */
     public readonly async: boolean,
     /** Whether the function is a generator (`function*`, etc.). */
@@ -246,7 +245,7 @@ export class FuncOp extends Operation {
   // -----------------------------------------------------------------------
 
   /** A function-as-op has no SSA operands at the op level. */
-  override getOperands(): Place[] {
+  override getOperands(): Value[] {
     return [];
   }
 
@@ -308,7 +307,7 @@ export class FuncOp extends Operation {
    * Rewrite all instructions and terminals across all blocks using the
    * given identifier → place mapping (delegates to {@link BasicBlock.rewriteAll}).
    */
-  rewriteAllBlocks(values: Map<Identifier, Place>): void {
+  rewriteAllBlocks(values: Map<Value, Value>): void {
     for (const block of this.allBlocks()) {
       block.rewriteAll(values);
     }
@@ -318,28 +317,28 @@ export class FuncOp extends Operation {
     const ownPlaceIds = new Set<number>();
 
     for (const param of this.params) {
-      ownPlaceIds.add(param.identifier.id);
+      ownPlaceIds.add(param.id);
     }
     for (const pattern of this.paramPatterns) {
       for (const binding of collectDestructureTargetBindingPlaces(pattern)) {
-        ownPlaceIds.add(binding.identifier.id);
+        ownPlaceIds.add(binding.id);
       }
     }
     for (const captureParam of this.captureParams) {
-      ownPlaceIds.add(captureParam.identifier.id);
+      ownPlaceIds.add(captureParam.id);
     }
     for (const instr of this.prologue) {
-      ownPlaceIds.add(instr.place!.identifier.id);
+      ownPlaceIds.add(instr.place!.id);
     }
     for (const block of this.allBlocks()) {
       for (const instr of block.operations) {
-        ownPlaceIds.add(instr.place!.identifier.id);
+        ownPlaceIds.add(instr.place!.id);
       }
     }
 
     for (const instr of this.prologue) {
       for (const place of instr.getOperands()) {
-        if (!ownPlaceIds.has(place.identifier.id)) {
+        if (!ownPlaceIds.has(place.id)) {
           return true;
         }
       }
@@ -347,14 +346,14 @@ export class FuncOp extends Operation {
     for (const block of this.allBlocks()) {
       for (const instr of block.operations) {
         for (const place of instr.getOperands()) {
-          if (!ownPlaceIds.has(place.identifier.id)) {
+          if (!ownPlaceIds.has(place.id)) {
             return true;
           }
         }
       }
       if (block.terminal) {
         for (const place of block.terminal.getOperands()) {
-          if (!ownPlaceIds.has(place.identifier.id)) {
+          if (!ownPlaceIds.has(place.id)) {
             return true;
           }
         }
@@ -388,15 +387,20 @@ export class FuncOp extends Operation {
    * behavior.
    */
   override clone(ctx: CloneContext): FuncOp {
+    if (ctx.moduleIR === undefined) {
+      throw new Error(
+        "FuncOp.clone: moduleIR is required. Build the context via makeCloneContext(moduleIR).",
+      );
+    }
     const targetModule = ctx.moduleIR;
     const environment = targetModule.environment;
     const blockMap = new Map<BlockId, BlockId>();
-    const identifierMap = new Map<Identifier, Place>();
+    const valueMap = new Map<Value, Value>();
     // Function-level clone builds its own cross-block context — the
     // caller-provided `ctx`'s maps are not relevant here.
     const childCtx = makeCloneContext(targetModule);
     (childCtx as { blockMap: Map<BlockId, BlockId> }).blockMap = blockMap;
-    (childCtx as { identifierMap: Map<Identifier, Place> }).identifierMap = identifierMap;
+    (childCtx as { valueMap: Map<Value, Value> }).valueMap = valueMap;
     // Clone the full prologue. Track the old→new mapping so we can
     // rebuild `header` (a strict subset of `prologue`) against the
     // same cloned instances — preserving the invariant that every
@@ -407,8 +411,8 @@ export class FuncOp extends Operation {
       const clonedInstructions: Operation[] = [];
       for (const instr of instructions) {
         const cloned = instr.clone(childCtx);
-        identifierMap.set(instr.place!.identifier, cloned.place!);
-        this.registerAdditionalDefinitionPlaces(instr, identifierMap, environment);
+        valueMap.set(instr.place!, cloned.place!);
+        this.registerAdditionalDefinitionPlaces(instr, valueMap, environment);
         clonedInstructions.push(cloned);
         prologueCloneMap.set(instr, cloned);
       }
@@ -435,24 +439,17 @@ export class FuncOp extends Operation {
       blockMap.set(oldBlock.id, newBlock.id);
       oldToNewBlock.set(oldBlock, newBlock);
       for (let i = 0; i < oldBlock.operations.length; i++) {
-        identifierMap.set(
-          oldBlock.operations[i]!.place!.identifier,
-          newBlock.operations[i]!.place!,
-        );
-        this.registerAdditionalDefinitionPlaces(
-          oldBlock.operations[i]!,
-          identifierMap,
-          environment,
-        );
+        valueMap.set(oldBlock.operations[i]!.place!, newBlock.operations[i]!.place!);
+        this.registerAdditionalDefinitionPlaces(oldBlock.operations[i]!, valueMap, environment);
       }
     }
 
     // Ensure region-owning-op and block-param identifiers are in
-    // the identifierMap BEFORE rewriting instructions. Region-owning
+    // the valueMap BEFORE rewriting instructions. Region-owning
     // ops (IfOp result places, Switch/Try catch-param places, etc.)
     // and block params may reference identifiers created by
     // optimization passes that aren't instruction outputs — they'd
-    // be missed by the instruction-based identifierMap population
+    // be missed by the instruction-based valueMap population
     // above. Without remapping, the clone would share PlaceIds with
     // the original, causing collisions in CodeGenerator's shared
     // places map.
@@ -460,37 +457,34 @@ export class FuncOp extends Operation {
       for (const op of oldBlock.getAllOps()) {
         if (!op.hasTrait(Trait.HasRegions)) continue;
         for (const place of [...op.getOperands(), ...op.getDefs()]) {
-          if (!identifierMap.has(place.identifier)) {
-            identifierMap.set(
-              place.identifier,
-              environment.createPlace(environment.createIdentifier()),
-            );
+          if (!valueMap.has(place)) {
+            valueMap.set(place, environment.createValue());
           }
         }
       }
     }
     for (const oldBlock of oldBlocks) {
       for (const param of oldBlock.params) {
-        if (identifierMap.has(param.identifier)) continue;
-        const newIdentifier = environment.createIdentifier();
+        if (valueMap.has(param)) continue;
+        const newIdentifier = environment.createValue();
         // Carry the original variable's declarationId onto the clone's
         // param identifier so `SSAEliminator` / `LivenessAnalysis` /
         // `rebuildPhisFromBlockArgs` can locate the backing
         // declaration in the cloned function exactly the way they
         // do in the source.
-        newIdentifier.originalDeclarationId = param.identifier.originalDeclarationId;
-        identifierMap.set(param.identifier, environment.createPlace(newIdentifier));
+        newIdentifier.originalDeclarationId = param.originalDeclarationId;
+        valueMap.set(param, newIdentifier);
       }
     }
 
-    // Now rewrite all instructions with the complete identifierMap.
+    // Now rewrite all instructions with the complete valueMap.
     // Preserve the header subset invariant: the rewritten prologue
     // op replaces the entry in both arrays, so if a header-subset
     // element is rewritten to a fresh instance we update the header
     // slot too.
     for (let i = 0; i < newPrologue.length; i++) {
       const before = newPrologue[i];
-      const after = before.rewrite(identifierMap, { rewriteDefinitions: true });
+      const after = before.rewrite(valueMap, { rewriteDefinitions: true });
       if (after !== before) {
         newPrologue[i] = after;
         for (let h = 0; h < newHeader.length; h++) {
@@ -499,7 +493,7 @@ export class FuncOp extends Operation {
       }
     }
     for (const newBlock of oldToNewBlock.values()) {
-      newBlock.rewrite(environment, blockMap, identifierMap, { rewriteDefinitions: true });
+      newBlock.rewrite(environment, blockMap, valueMap, { rewriteDefinitions: true });
     }
 
     // Phase 2: clone region-owning ops. Block.clone skipped them in
@@ -539,9 +533,9 @@ export class FuncOp extends Operation {
     }
     const newBodyRegion = new Region(newBodyBlocks);
 
-    const remapPlace = (place: Place): Place => identifierMap.get(place.identifier) ?? place;
+    const remapPlace = (place: Value): Value => valueMap.get(place) ?? place;
     const remapTarget = (target: DestructureTarget): DestructureTarget =>
-      rewriteDestructureTarget(target, identifierMap, { rewriteDefinitions: true });
+      rewriteDestructureTarget(target, valueMap, { rewriteDefinitions: true });
     const newParamPatterns = this.paramPatterns.map(remapTarget);
     // Entry block params are cloned as part of `block.clone` +
     // `block.rewrite` above — no separate remapping step needed.
@@ -584,7 +578,7 @@ export class FuncOp extends Operation {
    * rewritten as part of the terminal's own `rewrite` call above.
    */
   override rewrite(
-    values: Map<Identifier, Place>,
+    values: Map<Value, Value>,
     options: { skipBlock?: BasicBlock; skipInstructionIndex?: number } = {},
   ): FuncOp {
     for (const block of this.allBlocks()) {
@@ -600,7 +594,6 @@ export class FuncOp extends Operation {
         if (rewritten !== op) {
           block.replaceOp(op, rewritten);
           if (rewritten.place !== undefined) {
-            this.moduleIR.environment.placeToOp.set(rewritten.place.id, rewritten);
           }
         }
       }
@@ -617,14 +610,14 @@ export class FuncOp extends Operation {
 
   private registerAdditionalDefinitionPlaces(
     instr: Operation,
-    map: Map<Identifier, Place>,
+    map: Map<Value, Value>,
     environment: ModuleIR["environment"],
   ): void {
     for (const def of instr.getDefs()) {
-      if (def.identifier === instr.place!.identifier || map.has(def.identifier)) {
+      if (def === instr.place! || map.has(def)) {
         continue;
       }
-      map.set(def.identifier, environment.createPlace(environment.createIdentifier()));
+      map.set(def, environment.createValue());
     }
   }
 }

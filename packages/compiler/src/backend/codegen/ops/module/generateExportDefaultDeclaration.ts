@@ -6,9 +6,9 @@ export function generateExportDefaultDeclarationOp(
   instruction: ExportDefaultDeclarationOp,
   generator: CodeGenerator,
 ): t.ExportDefaultDeclaration {
-  const declaration = generator.places.get(instruction.declaration.id);
+  const declaration = generator.values.get(instruction.declaration.id);
   if (declaration === undefined) {
-    throw new Error(`Place ${instruction.declaration.id} not found`);
+    throw new Error(`Value ${instruction.declaration.id} not found`);
   }
 
   // When ExportDeclarationMergingPass converts `export { x as default }`

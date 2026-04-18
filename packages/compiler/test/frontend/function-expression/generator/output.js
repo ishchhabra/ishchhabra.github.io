@@ -1,12 +1,12 @@
-const $0_0 = function* () {
-  let $1_0 = 0;
-  let $13_blockparam_14 = undefined;
-  $13_blockparam_14 = $1_0;
-  let $14_blockparam_15 = undefined;
-  let $15_blockparam_16 = undefined;
-  while ((($14_blockparam_15 = $13_blockparam_14), ($15_blockparam_16 = $13_blockparam_14), true)) {
-    $1_0 = $14_blockparam_15 + 1;
-    yield $14_blockparam_15;
-    $13_blockparam_14 = $1_0;
+const $0 = function* () {
+  let $1 = 0;
+  let blockparam_14 = undefined;
+  blockparam_14 = $1;
+  let blockparam_15 = undefined;
+  let blockparam_16 = undefined;
+  while (((blockparam_15 = blockparam_14), (blockparam_16 = blockparam_14), true)) {
+    $1 = blockparam_15 + 1;
+    yield blockparam_15;
+    blockparam_14 = $1;
   }
 };

@@ -1,1 +1,1 @@
-const $1_0 = undefined === undefined;
+const $1 = undefined === undefined;

@@ -1,16 +1,16 @@
-function $0_0() {
-  const { a: $2_0, b: $3_0 } = useRouterState({
-    select: ($6_0) => ({
-      a: $6_0.a,
-      b: $6_0.b,
+function $0() {
+  const { a: $2, b: $3 } = useRouterState({
+    select: ($6) => ({
+      a: $6.a,
+      b: $6.b,
     }),
   });
   return useMemo(() => {
-    let $25_0 = undefined;
-    return $2_0 ? $3_0 : null;
-  }, [$2_0, $3_0]);
+    let $27 = undefined;
+    return $2 ? $3 : null;
+  }, [$2, $3]);
 }
-function $1_0() {
-  return <div>{$0_0()}</div>;
+function $1() {
+  return <div>{$0()}</div>;
 }
-export { $1_0 as App };
+export { $1 as App };

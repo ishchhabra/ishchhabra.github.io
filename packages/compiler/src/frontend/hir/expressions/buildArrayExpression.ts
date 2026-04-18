@@ -22,8 +22,7 @@ export function buildArrayExpression(
     return elementPlace;
   });
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(ArrayExpressionOp, place, elementPlaces);
   functionBuilder.addOp(instruction);
   return place;

@@ -8,8 +8,7 @@ export function buildThisExpression(
   functionBuilder: FuncOpBuilder,
   environment: Environment,
 ) {
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(ThisExpressionOp, place);
   functionBuilder.addOp(instruction);
   return place;

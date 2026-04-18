@@ -1,8 +1,7 @@
 import type { OperationId } from "../../core";
 import type { BlockId } from "../../core/Block";
-import type { Identifier } from "../../core/Identifier";
+import type { Value } from "../../core/Value";
 import { type CloneContext, nextId, Operation, Trait } from "../../core/Operation";
-import type { Place } from "../../core/Place";
 
 /**
  * `return;` or `return value;`. Terminator with no CFG successors.
@@ -13,25 +12,24 @@ export class ReturnOp extends Operation {
 
   constructor(
     id: OperationId,
-    public readonly value: Place | null,
+    public readonly value: Value | null,
   ) {
     super(id);
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return this.value ? [this.value] : [];
   }
 
-  rewrite(values: Map<Identifier, Place>): ReturnOp {
+  rewrite(values: Map<Value, Value>): ReturnOp {
     if (!this.value) return this;
-    const value = values.get(this.value.identifier) ?? this.value;
+    const value = values.get(this.value) ?? this.value;
     if (value === this.value) return this;
     return new ReturnOp(this.id, value);
   }
 
   clone(ctx: CloneContext): ReturnOp {
-    const value =
-      this.value === null ? null : (ctx.identifierMap.get(this.value.identifier) ?? this.value);
+    const value = this.value === null ? null : (ctx.valueMap.get(this.value) ?? this.value);
     return new ReturnOp(nextId(ctx), value);
   }
 

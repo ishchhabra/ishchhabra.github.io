@@ -6,7 +6,7 @@ export function generateLoadLocalOp(
   instruction: LoadLocalOp,
   generator: CodeGenerator,
 ): t.Expression {
-  let maybeNode = generator.places.get(instruction.value.id);
+  let maybeNode = generator.values.get(instruction.value.id);
   if (!maybeNode) {
     maybeNode = generator.getPlaceIdentifier(instruction.value);
   }
@@ -19,6 +19,6 @@ export function generateLoadLocalOp(
   }
 
   t.assertExpression(maybeNode);
-  generator.places.set(instruction.place.id, maybeNode);
+  generator.values.set(instruction.place.id, maybeNode);
   return maybeNode;
 }

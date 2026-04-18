@@ -1,3 +1,3 @@
-var $0_0 = undefined;
-console.log($0_0);
-$0_0 = 5;
+var $0 = undefined;
+console.log($0);
+$0 = 5;

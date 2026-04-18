@@ -1,8 +1,7 @@
 import type { OperationId } from "../../core";
 import type { BlockId } from "../../core/Block";
-import type { Identifier } from "../../core/Identifier";
+import type { Value } from "../../core/Value";
 import { type CloneContext, nextId, Operation, remapBlockId, Trait } from "../../core/Operation";
-import type { Place } from "../../core/Place";
 
 /**
  * Unconditional jump to a successor block. Terminator. Replaces
@@ -18,27 +17,27 @@ import type { Place } from "../../core/Place";
 export class JumpOp extends Operation {
   static override readonly traits = new Set<Trait>([Trait.Terminator]);
 
-  public readonly args: readonly Place[];
+  public readonly args: readonly Value[];
 
   constructor(
     id: OperationId,
     public target: BlockId,
-    args: readonly Place[] = [],
+    args: readonly Value[] = [],
   ) {
     super(id);
     this.args = args;
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [...this.args];
   }
 
-  rewrite(values: Map<Identifier, Place>): JumpOp {
+  rewrite(values: Map<Value, Value>): JumpOp {
     if (this.args.length === 0) return this;
     let changed = false;
-    const newArgs: Place[] = [];
+    const newArgs: Value[] = [];
     for (const arg of this.args) {
-      const rewritten = values.get(arg.identifier) ?? arg;
+      const rewritten = values.get(arg) ?? arg;
       if (rewritten !== arg) changed = true;
       newArgs.push(rewritten);
     }
@@ -47,7 +46,7 @@ export class JumpOp extends Operation {
   }
 
   clone(ctx: CloneContext): JumpOp {
-    const newArgs = this.args.map((a) => ctx.identifierMap.get(a.identifier) ?? a);
+    const newArgs = this.args.map((a) => ctx.valueMap.get(a) ?? a);
     return new JumpOp(nextId(ctx), remapBlockId(ctx, this.target), newArgs);
   }
 

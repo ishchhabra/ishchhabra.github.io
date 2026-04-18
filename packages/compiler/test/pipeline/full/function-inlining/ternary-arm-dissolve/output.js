@@ -1,23 +1,23 @@
-function $0_0({ x: $2_0, ...$3_0 }) {
-  return $3_0;
+function $0({ x: $2, ...$3 }) {
+  return $3;
 }
-function $1_0($8_0) {
-  let $9_0 = $8_0;
-  let $29_blockparam_30 = undefined;
-  $29_blockparam_30 = $9_0;
-  let $30_blockparam_31 = undefined;
-  for (const $15_0 of [1, 2]) {
-    let $31_0 = undefined;
-    if ($15_0) {
-      $9_0 = $0_0($29_blockparam_30);
-      $31_0 = $9_0;
+function $1($8) {
+  let $9 = $8;
+  let blockparam_30 = undefined;
+  blockparam_30 = $9;
+  let blockparam_31 = undefined;
+  for (const $15 of [1, 2]) {
+    let $32 = undefined;
+    if ($15) {
+      $9 = $0(blockparam_30);
+      $32 = $9;
     } else {
-      $9_0 = $8_0;
-      $31_0 = $9_0;
+      $9 = $8;
+      $32 = $9;
     }
-    $29_blockparam_30 = $31_0;
-    $30_blockparam_31 = $31_0;
+    blockparam_30 = $32;
+    blockparam_31 = $32;
   }
-  return $30_blockparam_31;
+  return blockparam_31;
 }
-export { $1_0 as f };
+export { $1 as f };

@@ -13,9 +13,8 @@ import {
 import { isValueOp } from "../../ir/categories";
 import { BasicBlock } from "../../ir/core/Block";
 import { FuncOp } from "../../ir/core/FuncOp";
-import { Identifier } from "../../ir/core/Identifier";
+import { Value } from "../../ir/core/Value";
 import { Trait } from "../../ir/core/Operation";
-import { Place } from "../../ir/core/Place";
 import { isClaimedByExportDeclaration } from "../../ir/exportClaim";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { MutabilityAnalysis, MutabilityInfo } from "../analysis/MutabilityAnalysis";
@@ -125,15 +124,15 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
     // `type === "const"` flag is neither necessary nor sufficient —
     // reassignments can share a declarationId and frontend builders
     // may emit `type: "const"` on assignment stores.
-    return this.mutability.isSingleAssignment(store.lval.identifier.declarationId);
+    return this.mutability.isSingleAssignment(store.lval.declarationId);
   }
 
   private getSingleUser(store: StoreLocalOp): Operation | undefined {
     const uses = new Set<Operation>();
-    for (const u of store.place.identifier.uses) {
+    for (const u of store.place.uses()) {
       if (u instanceof Operation) uses.add(u);
     }
-    for (const u of store.lval.identifier.uses) {
+    for (const u of store.lval.uses()) {
       if (u instanceof Operation) uses.add(u);
     }
     if (uses.size !== 1) return undefined;
@@ -153,9 +152,9 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
     );
   }
 
-  private readsMutableState(place: Place): boolean {
-    const declarationId = place.identifier.declarationId;
-    if (place.identifier.definer instanceof LoadContextOp) return true;
+  private readsMutableState(place: Value): boolean {
+    const declarationId = place.declarationId;
+    if (place.definer instanceof LoadContextOp) return true;
     if (this.environment.contextDeclarationIds.has(declarationId)) return true;
     return this.mutability.getStoreCount(declarationId) > 1;
   }
@@ -176,11 +175,7 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
       if (op instanceof StoreContextOp) return true;
 
       // Zero-use value ops with side effects flush as expression statements.
-      if (
-        isValueOp(op) &&
-        op.place.identifier.uses.size === 0 &&
-        op.hasSideEffects(this.environment)
-      ) {
+      if (isValueOp(op) && op.place.useCount === 0 && op.hasSideEffects(this.environment)) {
         return true;
       }
     }
@@ -191,14 +186,14 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
   // Rewriting
   // --------------------------------------------------------------------
 
-  private buildRewriteMap(store: StoreLocalOp): Map<Identifier, Place> {
-    return new Map<Identifier, Place>([
-      [store.place.identifier, store.value],
-      [store.lval.identifier, store.value],
+  private buildRewriteMap(store: StoreLocalOp): Map<Value, Value> {
+    return new Map<Value, Value>([
+      [store.place, store.value],
+      [store.lval, store.value],
     ]);
   }
 
-  private rewriteUser(user: Operation, values: Map<Identifier, Place>): boolean {
+  private rewriteUser(user: Operation, values: Map<Value, Value>): boolean {
     const block = user.parentBlock;
     if (block === null) return false;
 

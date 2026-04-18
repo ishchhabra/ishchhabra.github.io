@@ -1,32 +1,32 @@
-let $0_0 = 0;
-let $21_blockparam_22 = undefined;
-let $22_blockparam_23 = undefined;
-let $23_blockparam_24 = undefined;
-let $24_blockparam_25 = undefined;
-let $25_blockparam_26 = undefined;
-let $26_blockparam_27 = undefined;
-let $27_blockparam_28 = undefined;
-let $28_blockparam_29 = undefined;
+let $0 = 0;
+let blockparam_22 = undefined;
+let blockparam_23 = undefined;
+let blockparam_24 = undefined;
+let blockparam_25 = undefined;
+let blockparam_26 = undefined;
+let blockparam_27 = undefined;
+let blockparam_28 = undefined;
+let blockparam_29 = undefined;
 {
-  let $3_0 = 0;
-  $21_blockparam_22 = $0_0;
-  $25_blockparam_26 = $3_0;
+  let $3 = 0;
+  blockparam_22 = $0;
+  blockparam_26 = $3;
   for (
     ;
-    ($22_blockparam_23 = $21_blockparam_22),
-      ($24_blockparam_25 = $21_blockparam_22),
-      ($26_blockparam_27 = $25_blockparam_26),
-      ($28_blockparam_29 = $25_blockparam_26),
-      $25_blockparam_26 < 10;
-    $3_0 = $27_blockparam_28 + 1, $21_blockparam_22 = $23_blockparam_24, $25_blockparam_26 = $3_0
+    (blockparam_23 = blockparam_22),
+      (blockparam_25 = blockparam_22),
+      (blockparam_27 = blockparam_26),
+      (blockparam_29 = blockparam_26),
+      blockparam_26 < 10;
+    $3 = blockparam_28 + 1, blockparam_22 = blockparam_24, blockparam_26 = $3
   ) {
-    if ($26_blockparam_27 === 5) {
-      $23_blockparam_24 = $22_blockparam_23;
-      $27_blockparam_28 = $26_blockparam_27;
+    if (blockparam_27 === 5) {
+      blockparam_24 = blockparam_23;
+      blockparam_28 = blockparam_27;
       continue;
     }
-    $0_0 = $22_blockparam_23 + $26_blockparam_27;
-    $23_blockparam_24 = $0_0;
-    $27_blockparam_28 = $26_blockparam_27;
+    $0 = blockparam_23 + blockparam_27;
+    blockparam_24 = $0;
+    blockparam_28 = blockparam_27;
   }
 }

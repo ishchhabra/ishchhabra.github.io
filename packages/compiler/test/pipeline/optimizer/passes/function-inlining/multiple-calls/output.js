@@ -1,5 +1,5 @@
-function $0_0($3_0) {
-  return $3_0;
+function $0($3) {
+  return $3;
 }
-const $1_0 = $0_0(1);
-const $2_0 = $0_0(2);
+const $1 = $0(1);
+const $2 = $0(2);

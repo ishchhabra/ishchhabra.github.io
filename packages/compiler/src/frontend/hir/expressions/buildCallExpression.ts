@@ -1,6 +1,6 @@
 import { type CallExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { CallExpressionOp, Place, SuperCallOp } from "../../../ir";
+import { CallExpressionOp, Value, SuperCallOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FuncOpBuilder } from "../FuncOpBuilder";
@@ -12,11 +12,11 @@ export function buildCallExpression(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
+): Value {
   const callee = node.callee;
 
   // super(...args) — emit a dedicated SuperCallOp.
-  // `super` is not a value and must not be lowered to a Place.
+  // `super` is not a value and must not be lowered to a Value.
   if (callee.type === "Super") {
     return buildSuperCall(node, scope, functionBuilder, moduleBuilder, environment);
   }
@@ -32,8 +32,7 @@ export function buildCallExpression(
 
   const argumentPlaces = buildArguments(node, scope, functionBuilder, moduleBuilder, environment);
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(
     CallExpressionOp,
     place,
@@ -51,10 +50,9 @@ function buildSuperCall(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
+): Value {
   const argumentPlaces = buildArguments(node, scope, functionBuilder, moduleBuilder, environment);
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(SuperCallOp, place, argumentPlaces);
   functionBuilder.addOp(instruction);
   return place;
@@ -66,7 +64,7 @@ function buildArguments(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place[] {
+): Value[] {
   return node.arguments.map((argument) => {
     const argumentPlace = buildNode(argument, scope, functionBuilder, moduleBuilder, environment);
     if (argumentPlace === undefined || Array.isArray(argumentPlace)) {

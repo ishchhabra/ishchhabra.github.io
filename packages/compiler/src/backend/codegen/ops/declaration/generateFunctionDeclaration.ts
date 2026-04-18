@@ -12,7 +12,7 @@ export function generateFunctionDeclarationOp(
     instruction.captures,
     generator,
   );
-  const name = instruction.place.identifier.name ?? `$${instruction.place.identifier.id}`;
+  const name = instruction.place.name ?? `$${instruction.place.id}`;
   const node = t.functionDeclaration(
     t.identifier(name),
     params,
@@ -20,6 +20,6 @@ export function generateFunctionDeclarationOp(
     instruction.generator,
     instruction.async,
   );
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

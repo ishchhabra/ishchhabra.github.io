@@ -1,7 +1,7 @@
 import type { ExpressionStatement } from "oxc-parser";
 import { castArray } from "lodash-es";
 import { Environment } from "../../../environment";
-import { Place } from "../../../ir";
+import { Value } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -14,7 +14,7 @@ export function buildExpressionStatement(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place[] | undefined {
+): Value[] | undefined {
   const expression = node.expression;
 
   // Assignment expressions in statement context don't need result stabilization.

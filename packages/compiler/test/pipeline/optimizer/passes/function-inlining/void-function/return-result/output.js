@@ -1,6 +1,6 @@
-function $0_0($2_0) {
-  console.log($2_0);
+function $0($2) {
+  console.log($2);
 }
-function $1_0() {
-  return $0_0("world");
+function $1() {
+  return $0("world");
 }

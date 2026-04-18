@@ -1,13 +1,13 @@
-async function $0_0($1_0) {
-  for (const $4_0 of $1_0.matches) {
-    const $6_0 = executeHead($1_0, $4_0.id);
-    if ($6_0) {
-      const $14_0 = await $6_0;
-      $1_0.updateMatch($4_0.id, ($22_0) => ({
-        ...$22_0,
-        ...$14_0,
+async function $0($1) {
+  for (const $4 of $1.matches) {
+    const $6 = executeHead($1, $4.id);
+    if ($6) {
+      const $14 = await $6;
+      $1.updateMatch($4.id, ($22) => ({
+        ...$22,
+        ...$14,
       }));
     }
   }
 }
-export { $0_0 as loadMatches };
+export { $0 as loadMatches };

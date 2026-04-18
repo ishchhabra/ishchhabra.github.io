@@ -1,4 +1,4 @@
-function $0_0($1_0) {
+function $0($1) {
   debugger;
-  return $1_0 + 1;
+  return $1 + 1;
 }

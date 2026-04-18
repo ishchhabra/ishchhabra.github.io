@@ -1,32 +1,31 @@
-import type { Identifier } from "./Identifier";
-import { Place } from "./Place";
+import { Value } from "./Value";
 
 export type DestructureBindingStorage = "local" | "context";
 
 export interface DestructureBindingTarget {
   kind: "binding";
-  place: Place;
+  place: Value;
   storage: DestructureBindingStorage;
 }
 
 export interface DestructureStaticMemberTarget {
   kind: "static-member";
-  object: Place;
+  object: Value;
   property: string | number;
   optional: boolean;
 }
 
 export interface DestructureDynamicMemberTarget {
   kind: "dynamic-member";
-  object: Place;
-  property: Place;
+  object: Value;
+  property: Value;
   optional: boolean;
 }
 
 export interface DestructureAssignmentTarget {
   kind: "assignment";
   left: DestructureTarget;
-  right: Place;
+  right: Value;
 }
 
 export interface DestructureRestTarget {
@@ -35,7 +34,7 @@ export interface DestructureRestTarget {
 }
 
 export interface DestructureObjectProperty {
-  key: string | number | Place;
+  key: string | number | Value;
   computed: boolean;
   shorthand: boolean;
   value: DestructureTarget;
@@ -60,7 +59,7 @@ export type DestructureTarget =
   | ArrayDestructureTarget
   | ObjectDestructureTarget;
 
-export function getDestructureTargetOperands(target: DestructureTarget): Place[] {
+export function getDestructureTargetOperands(target: DestructureTarget): Value[] {
   switch (target.kind) {
     case "binding":
       return [];
@@ -78,13 +77,13 @@ export function getDestructureTargetOperands(target: DestructureTarget): Place[]
       );
     case "object":
       return target.properties.flatMap((property) => [
-        ...(property.computed && property.key instanceof Place ? [property.key] : []),
+        ...(property.computed && property.key instanceof Value ? [property.key] : []),
         ...getDestructureTargetOperands(property.value),
       ]);
   }
 }
 
-export function getDestructureTargetDefs(target: DestructureTarget): Place[] {
+export function getDestructureTargetDefs(target: DestructureTarget): Value[] {
   switch (target.kind) {
     case "binding":
       return target.storage === "local" ? [target.place] : [];
@@ -116,7 +115,7 @@ export function getDestructureTargetDefs(target: DestructureTarget): Place[] {
  * seeding for function parameters, and "places owned by this
  * function" scans.
  */
-export function collectDestructureTargetBindingPlaces(target: DestructureTarget): Place[] {
+export function collectDestructureTargetBindingPlaces(target: DestructureTarget): Value[] {
   switch (target.kind) {
     case "binding":
       return [target.place];
@@ -162,7 +161,7 @@ export function destructureTargetHasObservableWrites(target: DestructureTarget):
 
 export function rewriteDestructureTarget(
   target: DestructureTarget,
-  values: Map<Identifier, Place>,
+  values: Map<Value, Value>,
   { rewriteDefinitions = false }: { rewriteDefinitions?: boolean } = {},
 ): DestructureTarget {
   switch (target.kind) {
@@ -208,7 +207,7 @@ export function rewriteDestructureTarget(
         properties: target.properties.map((property) => ({
           ...property,
           key:
-            property.computed && property.key instanceof Place
+            property.computed && property.key instanceof Value
               ? property.key.rewrite(values)
               : property.key,
           value: rewriteDestructureTarget(property.value, values, { rewriteDefinitions }),
@@ -240,7 +239,7 @@ export function printDestructureTarget(target: DestructureTarget): string {
             return `...${printDestructureTarget(property.value.argument)}`;
           }
           let keyLabel: string;
-          if (property.computed && property.key instanceof Place) {
+          if (property.computed && property.key instanceof Value) {
             keyLabel = `[${property.key.print()}]`;
           } else if (typeof property.key === "number") {
             keyLabel = String(property.key);

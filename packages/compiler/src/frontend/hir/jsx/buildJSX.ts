@@ -13,7 +13,7 @@ import type {
   JSXText,
 } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { Place } from "../../../ir";
+import { Value } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -50,7 +50,7 @@ export function buildJSX(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place | undefined {
+): Value | undefined {
   switch (node.type) {
     case "JSXElement":
       return buildJSXElement(node, scope, functionBuilder, moduleBuilder, environment);

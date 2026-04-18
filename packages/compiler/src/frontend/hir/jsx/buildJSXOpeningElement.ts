@@ -1,6 +1,6 @@
 import type { JSXOpeningElement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { Place } from "../../../ir";
+import { Value } from "../../../ir";
 import { JSXOpeningElementOp } from "../../../ir/ops/jsx/JSXOpeningElement";
 import { type Scope } from "../../scope/Scope";
 import { FuncOpBuilder } from "../FuncOpBuilder";
@@ -13,7 +13,7 @@ export function buildJSXOpeningElement(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
+): Value {
   const selfClosing = node.selfClosing;
 
   // Build attributes through buildNode (they may be JSXAttribute, JSXSpreadAttribute, etc.)
@@ -30,8 +30,7 @@ export function buildJSXOpeningElement(
     throw new Error("JSX tag name should be a single place");
   }
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(
     JSXOpeningElementOp,
     place,

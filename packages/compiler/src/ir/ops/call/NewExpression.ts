@@ -1,35 +1,34 @@
 import { OperationId } from "../../core";
-import { Identifier, Place } from "../../core";
+import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
 export class NewExpressionOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
-    public readonly callee: Place,
-    public readonly args: Place[],
+    public override readonly place: Value,
+    public readonly callee: Value,
+    public readonly args: Value[],
   ) {
     super(id);
   }
 
   public clone(ctx: CloneContext): NewExpressionOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
-    return moduleIR.environment.createOperation(NewExpressionOp, place, this.callee, this.args);
+    const env = ctx.environment;
+    const place = env.createValue();
+    return env.createOperation(NewExpressionOp, place, this.callee, this.args);
   }
 
-  rewrite(values: Map<Identifier, Place>): Operation {
+  rewrite(values: Map<Value, Value>): Operation {
     return new NewExpressionOp(
       this.id,
       this.place,
-      values.get(this.callee.identifier) ?? this.callee,
-      this.args.map((arg) => values.get(arg.identifier) ?? arg),
+      values.get(this.callee) ?? this.callee,
+      this.args.map((arg) => values.get(arg) ?? arg),
     );
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [this.callee, ...this.args];
   }
 }

@@ -1,57 +1,57 @@
-function $0_0($2_0) {
-  switch ($2_0.type) {
+function $0($2) {
+  switch ($2.type) {
     case "comment":
       {
-        const $7_0 = $2_0;
+        const $7 = $2;
         return {
           type: "comment",
-          value: $7_0.data,
+          value: $7.data,
         };
       }
       {
-        const $18_0 = $2_0;
+        const $18 = $2;
         return {
           type: "text",
-          value: $18_0.value,
+          value: $18.value,
         };
       }
       {
-        const $29_0 = $2_0;
+        const $29 = $2;
         return {
           type: "element",
-          tag: $29_0.tagName,
+          tag: $29.tagName,
         };
       }
       break;
     case "text":
       {
-        const $18_0 = $2_0;
+        const $18 = $2;
         return {
           type: "text",
-          value: $18_0.value,
+          value: $18.value,
         };
       }
       {
-        const $29_0 = $2_0;
+        const $29 = $2;
         return {
           type: "element",
-          tag: $29_0.tagName,
+          tag: $29.tagName,
         };
       }
       break;
     default:
       {
-        const $29_0 = $2_0;
+        const $29 = $2;
         return {
           type: "element",
-          tag: $29_0.tagName,
+          tag: $29.tagName,
         };
       }
       break;
   }
 }
-const $1_0 = $0_0({
+const $1 = $0({
   type: "text",
   value: "hello",
 });
-export { $1_0 as result };
+export { $1 as result };

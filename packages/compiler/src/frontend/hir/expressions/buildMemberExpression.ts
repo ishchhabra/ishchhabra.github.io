@@ -1,6 +1,6 @@
 import type { MemberExpression, UpdateExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { BinaryExpressionOp, LiteralOp, Place, SuperPropertyOp } from "../../../ir";
+import { BinaryExpressionOp, LiteralOp, Value, SuperPropertyOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FuncOpBuilder } from "../FuncOpBuilder";
@@ -20,7 +20,7 @@ export function buildMemberExpression(
   environment: Environment,
 ) {
   // super.foo or super[expr] — emit a dedicated SuperPropertyOp.
-  // `super` is not a value and must not be lowered to a Place.
+  // `super` is not a value and must not be lowered to a Value.
   if (node.object.type === "Super") {
     return buildSuperPropertyAccess(node, scope, functionBuilder, moduleBuilder, environment);
   }
@@ -35,12 +35,12 @@ function buildSuperPropertyAccess(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
-  let propertyPlace: Place;
+): Value {
+  let propertyPlace: Value;
   if (!node.computed && node.property.type === "Identifier") {
     // Non-computed key → emit as a LiteralOp so the name survives SSA.
-    const keyId = environment.createIdentifier();
-    propertyPlace = environment.createPlace(keyId);
+    const keyId = environment.createValue();
+    propertyPlace = keyId;
     functionBuilder.addOp(
       environment.createOperation(LiteralOp, propertyPlace, node.property.name),
     );
@@ -52,8 +52,7 @@ function buildSuperPropertyAccess(
     propertyPlace = built;
   }
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(
     SuperPropertyOp,
     place,
@@ -81,7 +80,7 @@ export function buildMemberExpressionUpdate(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
+): Value {
   const reference = buildMemberReference(
     memberNode,
     scope,
@@ -99,15 +98,13 @@ export function buildMemberExpressionUpdate(
   const oldValLoadPlace = materializePlace(loadPlace, functionBuilder, environment);
 
   // 4. Create literal 1
-  const oneIdentifier = environment.createIdentifier();
-  const onePlace = environment.createPlace(oneIdentifier);
+  const onePlace = environment.createValue();
   const oneInstruction = environment.createOperation(LiteralOp, onePlace, 1);
   functionBuilder.addOp(oneInstruction);
 
   // 5. Compute value +/- 1
   const isIncrement = updateNode.operator === "++";
-  const resultIdentifier = environment.createIdentifier();
-  const resultPlace = environment.createPlace(resultIdentifier);
+  const resultPlace = environment.createValue();
   const binaryInstruction = environment.createOperation(
     BinaryExpressionOp,
     resultPlace,

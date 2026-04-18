@@ -1,17 +1,17 @@
-function $0_0($1_0) {
+function $0($1) {
   while (true) {
-    let $3_0 = $1_0.flags;
-    let $24_0 = undefined;
-    if (!($3_0 & (4 | 32))) {
-      $1_0.flags = $3_0 | 32;
-      $24_0 = $3_0;
+    let $3 = $1.flags;
+    let $24 = undefined;
+    if (!($3 & (4 | 32))) {
+      $1.flags = $3 | 32;
+      $24 = $3;
     } else {
-      $3_0 = 0;
-      $24_0 = $3_0;
+      $3 = 0;
+      $24 = $3;
     }
     if (!true) {
       break;
     }
-    return $24_0;
+    return $24;
   }
 }

@@ -4,8 +4,7 @@ import {
   getDestructureTargetOperands,
   rewriteDestructureTarget,
   type DestructureTarget,
-  type Identifier,
-  type Place,
+  type Value,
 } from "../../core";
 import { OperationId } from "../../core";
 import type { StoreLocalKind } from "../mem/StoreLocal";
@@ -15,9 +14,9 @@ import type { CloneContext } from "../../core/Operation";
 export class ArrayDestructureOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
+    public override readonly place: Value,
     public readonly elements: Array<DestructureTarget | null>,
-    public readonly value: Place,
+    public readonly value: Value,
     public readonly kind: StoreLocalKind,
     public readonly declarationKind: "let" | "const" | "var" | null = null,
   ) {
@@ -25,9 +24,9 @@ export class ArrayDestructureOp extends Operation {
   }
 
   public clone(ctx: CloneContext): ArrayDestructureOp {
-    const moduleIR = ctx.moduleIR;
-    const place = moduleIR.environment.createPlace(moduleIR.environment.createIdentifier());
-    return moduleIR.environment.createOperation(
+    const env = ctx.environment;
+    const place = env.createValue();
+    return env.createOperation(
       ArrayDestructureOp,
       place,
       this.elements,
@@ -38,7 +37,7 @@ export class ArrayDestructureOp extends Operation {
   }
 
   rewrite(
-    values: Map<Identifier, Place>,
+    values: Map<Value, Value>,
     { rewriteDefinitions = false }: { rewriteDefinitions?: boolean } = {},
   ): ArrayDestructureOp {
     return new ArrayDestructureOp(
@@ -53,14 +52,14 @@ export class ArrayDestructureOp extends Operation {
     );
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [
       this.value,
       ...getDestructureTargetOperands({ kind: "array", elements: this.elements }),
     ];
   }
 
-  override getDefs(): Place[] {
+  override getDefs(): Value[] {
     return [this.place, ...getDestructureTargetDefs({ kind: "array", elements: this.elements })];
   }
 

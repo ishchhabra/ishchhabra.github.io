@@ -7,7 +7,7 @@ export function generateExportSpecifierOp(
   instruction: ExportSpecifierOp,
   generator: CodeGenerator,
 ): t.ExportSpecifier {
-  const localNode = generator.places.get(instruction.localPlace.id);
+  const localNode = generator.values.get(instruction.localPlace.id);
   let local: t.Identifier;
   if (t.isIdentifier(localNode)) {
     local = localNode;
@@ -21,6 +21,6 @@ export function generateExportSpecifierOp(
   const exported = toIdentifierOrStringLiteral(instruction.exported);
 
   const node = t.exportSpecifier(local, exported);
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

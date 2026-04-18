@@ -1,5 +1,5 @@
 import { OperationId } from "../../core";
-import { Identifier, Place } from "../../core";
+import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
@@ -15,21 +15,20 @@ export type StoreContextKind = "declaration" | "assignment";
 export class StoreContextOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
-    public readonly lval: Place,
-    public readonly value: Place,
+    public override readonly place: Value,
+    public readonly lval: Value,
+    public readonly value: Value,
     public readonly type: "let" | "var",
     public readonly kind: StoreContextKind,
-    public readonly bindings: Place[] = [],
+    public readonly bindings: Value[] = [],
   ) {
     super(id);
   }
 
   public clone(ctx: CloneContext): StoreContextOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
-    return moduleIR.environment.createOperation(
+    const env = ctx.environment;
+    const place = env.createValue();
+    return env.createOperation(
       StoreContextOp,
       place,
       this.lval,
@@ -41,7 +40,7 @@ export class StoreContextOp extends Operation {
   }
 
   rewrite(
-    values: Map<Identifier, Place>,
+    values: Map<Value, Value>,
     { rewriteDefinitions = false }: { rewriteDefinitions?: boolean } = {},
   ): StoreContextOp {
     const value = this.value.rewrite(values);
@@ -60,11 +59,11 @@ export class StoreContextOp extends Operation {
     return new StoreContextOp(this.id, this.place, lval, value, this.type, this.kind, bindings);
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [this.lval, this.value];
   }
 
-  override getDefs(): Place[] {
+  override getDefs(): Value[] {
     return [this.place, ...this.bindings];
   }
 

@@ -1,11 +1,11 @@
-let $0_0 = undefined;
-let $14_blockparam_14 = undefined;
-$14_blockparam_14 = $0_0;
-let $15_blockparam_15 = undefined;
-for (let $0_0 of items) {
-  $0_0 = $14_blockparam_14;
-  console.log($0_0);
-  $14_blockparam_14 = $0_0;
-  $15_blockparam_15 = $0_0;
+let $0 = undefined;
+let blockparam_14 = undefined;
+blockparam_14 = $0;
+let blockparam_15 = undefined;
+for (let $0 of items) {
+  $0 = blockparam_14;
+  console.log($0);
+  blockparam_14 = $0;
+  blockparam_15 = $0;
 }
-console.log($15_blockparam_15);
+console.log(blockparam_15);

@@ -6,9 +6,9 @@ export function generateObjectPropertyOp(
   instruction: ObjectPropertyOp,
   generator: CodeGenerator,
 ): t.ObjectProperty {
-  let key = generator.places.get(instruction.key.id);
+  let key = generator.values.get(instruction.key.id);
   if (key === undefined) {
-    throw new Error(`Place ${instruction.key.id} not found`);
+    throw new Error(`Value ${instruction.key.id} not found`);
   }
 
   // Non-computed identifier keys are lowered to LiteralInstructions in the
@@ -20,11 +20,11 @@ export function generateObjectPropertyOp(
     key = t.identifier(key.value);
   }
 
-  let value = generator.places.get(instruction.value.id);
+  let value = generator.values.get(instruction.value.id);
   if (value === undefined) {
-    const name = instruction.value.identifier.name ?? `$${instruction.value.identifier.id}`;
+    const name = instruction.value.name ?? `$${instruction.value.id}`;
     value = t.identifier(name);
-    generator.places.set(instruction.value.id, value);
+    generator.values.set(instruction.value.id, value);
   }
 
   t.assertExpression(key);
@@ -33,6 +33,6 @@ export function generateObjectPropertyOp(
   }
 
   const node = t.objectProperty(key, value, instruction.computed, instruction.shorthand);
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

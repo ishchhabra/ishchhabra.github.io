@@ -1,11 +1,11 @@
-function $0_0({ to: $2_0, label: $3_0 }) {
-  return <a href={$2_0}>{$3_0}</a>;
+function $0({ to: $2, label: $3 }) {
+  return <a href={$2}>{$3}</a>;
 }
-function $1_0() {
+function $1() {
   return (
     <nav>
-      <$0_0 to="/" label="Home" />
+      <$0 to="/" label="Home" />
     </nav>
   );
 }
-export { $1_0 as Header };
+export { $1 as Header };

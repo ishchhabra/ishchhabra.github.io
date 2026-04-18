@@ -1,6 +1,6 @@
 import type { Expression, MemberExpression, PrivateIdentifier } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { Place } from "../../../ir";
+import { Value } from "../../../ir";
 import { LoadDynamicPropertyOp } from "../../../ir/ops/prop/LoadDynamicProperty";
 import { LoadStaticPropertyOp } from "../../../ir/ops/prop/LoadStaticProperty";
 import { StoreDynamicPropertyOp } from "../../../ir/ops/prop/StoreDynamicProperty";
@@ -14,14 +14,14 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
 export type MemberReference =
   | {
       kind: "static";
-      object: Place;
+      object: Value;
       property: string;
       optional: boolean;
     }
   | {
       kind: "dynamic";
-      object: Place;
-      property: Place;
+      object: Value;
+      property: Value;
       optional: boolean;
     };
 
@@ -123,7 +123,7 @@ export function buildMemberReference(
 
 export function createLoadMemberReferenceInstruction(
   reference: MemberReference,
-  place: Place,
+  place: Value,
   environment: Environment,
 ) {
   if (reference.kind === "static") {
@@ -149,16 +149,16 @@ export function loadMemberReference(
   reference: MemberReference,
   functionBuilder: FuncOpBuilder,
   environment: Environment,
-): Place {
-  const place = environment.createPlace(environment.createIdentifier());
+): Value {
+  const place = environment.createValue();
   functionBuilder.addOp(createLoadMemberReferenceInstruction(reference, place, environment));
   return place;
 }
 
 export function createStoreMemberReferenceInstruction(
   reference: MemberReference,
-  place: Place,
-  valuePlace: Place,
+  place: Value,
+  valuePlace: Value,
   environment: Environment,
 ) {
   if (reference.kind === "static") {
@@ -182,11 +182,11 @@ export function createStoreMemberReferenceInstruction(
 
 export function storeMemberReference(
   reference: MemberReference,
-  valuePlace: Place,
+  valuePlace: Value,
   functionBuilder: FuncOpBuilder,
   environment: Environment,
-): Place {
-  const place = environment.createPlace(environment.createIdentifier());
+): Value {
+  const place = environment.createValue();
   functionBuilder.addOp(
     createStoreMemberReferenceInstruction(reference, place, valuePlace, environment),
   );
@@ -195,10 +195,10 @@ export function storeMemberReference(
 
 export function emitMemberReferenceStore(
   reference: MemberReference,
-  valuePlace: Place,
+  valuePlace: Value,
   functionBuilder: FuncOpBuilder,
   environment: Environment,
-): Place {
+): Value {
   // The store instruction is already added by storeMemberReference.
   // Codegen will flush it as an expression statement if zero-use.
   return storeMemberReference(reference, valuePlace, functionBuilder, environment);

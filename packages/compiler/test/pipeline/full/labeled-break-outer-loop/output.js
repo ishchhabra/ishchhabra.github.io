@@ -1,39 +1,35 @@
-let $29_blockparam_31 = undefined;
-let $30_blockparam_32 = undefined;
-let $31_blockparam_33 = undefined;
-let $32_blockparam_34 = undefined;
+let blockparam_31 = undefined;
+let blockparam_32 = undefined;
+let blockparam_33 = undefined;
+let blockparam_34 = undefined;
 {
-  let $0_0 = 0;
-  $29_blockparam_31 = $0_0;
+  let $0 = 0;
+  blockparam_31 = $0;
   outer: for (
     ;
-    ($30_blockparam_32 = $29_blockparam_31),
-      ($32_blockparam_34 = $29_blockparam_31),
-      $29_blockparam_31 < 3;
-    $0_0 = $31_blockparam_33 + 1, $29_blockparam_31 = $0_0
+    (blockparam_32 = blockparam_31), (blockparam_34 = blockparam_31), blockparam_31 < 3;
+    $0 = blockparam_33 + 1, blockparam_31 = $0
   ) {
-    let $33_blockparam_35 = undefined;
-    let $34_blockparam_36 = undefined;
-    let $35_blockparam_37 = undefined;
-    let $36_blockparam_38 = undefined;
+    let blockparam_35 = undefined;
+    let blockparam_36 = undefined;
+    let blockparam_37 = undefined;
+    let blockparam_38 = undefined;
     {
-      let $6_0 = 0;
-      $33_blockparam_35 = $6_0;
+      let $6 = 0;
+      blockparam_35 = $6;
       for (
         ;
-        ($34_blockparam_36 = $33_blockparam_35),
-          ($36_blockparam_38 = $33_blockparam_35),
-          $33_blockparam_35 < 3;
-        $6_0 = $35_blockparam_37 + 1, $33_blockparam_35 = $6_0
+        (blockparam_36 = blockparam_35), (blockparam_38 = blockparam_35), blockparam_35 < 3;
+        $6 = blockparam_37 + 1, blockparam_35 = $6
       ) {
-        if ($34_blockparam_36 === 1) {
-          $32_blockparam_34 = $30_blockparam_32;
+        if (blockparam_36 === 1) {
+          blockparam_34 = blockparam_32;
           break outer;
         }
-        console.log($30_blockparam_32, $34_blockparam_36);
-        $35_blockparam_37 = $34_blockparam_36;
+        console.log(blockparam_32, blockparam_36);
+        blockparam_37 = blockparam_36;
       }
     }
-    $31_blockparam_33 = $30_blockparam_32;
+    blockparam_33 = blockparam_32;
   }
 }

@@ -7,7 +7,7 @@ export function generateFunctionExpressionOp(
   instruction: FunctionExpressionOp,
   generator: CodeGenerator,
 ): t.FunctionExpression {
-  const idNode = instruction.identifier ? generator.places.get(instruction.identifier.id) : null;
+  const idNode = instruction.binding ? generator.values.get(instruction.binding.id) : null;
   if (idNode !== null && !t.isIdentifier(idNode)) {
     throw new Error("Function expression identifier is not an identifier");
   }
@@ -24,6 +24,6 @@ export function generateFunctionExpressionOp(
     instruction.generator,
     instruction.async,
   );
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

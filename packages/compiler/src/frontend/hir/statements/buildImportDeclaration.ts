@@ -46,8 +46,7 @@ export function buildImportDeclaration(
     return importSpecifierPlace;
   });
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(
     ImportDeclarationOp,
     place,

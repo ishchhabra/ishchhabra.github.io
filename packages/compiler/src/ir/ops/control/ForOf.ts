@@ -5,7 +5,7 @@ import {
   getDestructureTargetOperands,
   rewriteDestructureTarget,
 } from "../../core/Destructure";
-import type { Identifier } from "../../core/Identifier";
+import type { Value } from "../../core/Value";
 import {
   type CloneContext,
   nextId,
@@ -15,7 +15,6 @@ import {
   Trait,
   VerifyError,
 } from "../../core/Operation";
-import type { Place } from "../../core/Place";
 import { Region } from "../../core/Region";
 
 /**
@@ -32,19 +31,19 @@ import { Region } from "../../core/Region";
 export class ForOfOp extends Operation {
   static override readonly traits = new Set<Trait>([Trait.HasRegions]);
 
-  public readonly resultPlaces: readonly Place[];
-  public readonly inits: readonly Place[];
+  public readonly resultPlaces: readonly Value[];
+  public readonly inits: readonly Value[];
 
   constructor(
     id: OperationId,
-    public readonly iterationValue: Place,
+    public readonly iterationValue: Value,
     public readonly iterationTarget: DestructureTarget,
-    public readonly iterable: Place,
+    public readonly iterable: Value,
     public readonly isAwait: boolean,
     bodyRegion: Region,
     public readonly label?: string,
-    resultPlaces: readonly Place[] = [],
-    inits: readonly Place[] = [],
+    resultPlaces: readonly Value[] = [],
+    inits: readonly Value[] = [],
   ) {
     bodyRegion.scopeKind = "for";
     super(id, [bodyRegion]);
@@ -56,11 +55,11 @@ export class ForOfOp extends Operation {
     return this.regions[0];
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [...getDestructureTargetOperands(this.iterationTarget), this.iterable];
   }
 
-  override getDefs(): Place[] {
+  override getDefs(): Value[] {
     return [
       this.iterationValue,
       ...getDestructureTargetDefs(this.iterationTarget),
@@ -68,7 +67,7 @@ export class ForOfOp extends Operation {
     ];
   }
 
-  rewrite(values: Map<Identifier, Place>): ForOfOp {
+  rewrite(values: Map<Value, Value>): ForOfOp {
     const iterationValue = this.iterationValue.rewrite(values);
     const iterationTarget = rewriteDestructureTarget(this.iterationTarget, values, {
       rewriteDefinitions: true,
@@ -99,7 +98,7 @@ export class ForOfOp extends Operation {
     return new ForOfOp(
       nextId(ctx),
       remapPlace(ctx, this.iterationValue),
-      rewriteDestructureTarget(this.iterationTarget, ctx.identifierMap, {
+      rewriteDestructureTarget(this.iterationTarget, ctx.valueMap, {
         rewriteDefinitions: true,
       }),
       remapPlace(ctx, this.iterable),

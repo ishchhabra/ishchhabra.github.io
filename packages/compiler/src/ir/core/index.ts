@@ -19,12 +19,13 @@ export {
 } from "./Destructure";
 export type { ControlContext } from "./ControlContext";
 export {
-  Identifier,
+  Value,
+  makeValueId,
   makeDeclarationId,
-  makeIdentifierId,
   type DeclarationId,
-  type IdentifierId,
-} from "./Identifier";
+  type User,
+  type ValueId,
+} from "./Value";
 export { type LexicalScopeKind } from "./LexicalScope";
 export {
   makeCloneContext,
@@ -33,10 +34,10 @@ export {
   Operation,
   remapBlockId,
   remapPlace,
+  requireModuleIR,
   Trait,
   VerifyError,
   type CloneContext,
   type OperationId,
 } from "./Operation";
-export { Place, type PlaceId } from "./Place";
 export { Region } from "./Region";

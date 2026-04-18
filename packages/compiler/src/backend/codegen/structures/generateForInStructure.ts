@@ -17,9 +17,9 @@ export function generateForInStructure(
   const iterationValue = generateDestructureTarget(structure.iterationTarget, generator);
   t.assertLVal(iterationValue);
 
-  const object = generator.places.get(structure.object.id);
+  const object = generator.values.get(structure.object.id);
   if (object === undefined) {
-    throw new Error(`Place ${structure.object.id} not found`);
+    throw new Error(`Value ${structure.object.id} not found`);
   }
   t.assertExpression(object);
 
@@ -50,7 +50,7 @@ function resolveIterationKind(
   generator: CodeGenerator,
 ): "let" | "const" | "var" {
   if (target.kind === "binding") {
-    const metadata = generator.getDeclarationMetadata(target.place.identifier.declarationId);
+    const metadata = generator.getDeclarationMetadata(target.place.declarationId);
     if (metadata?.kind === "let" || metadata?.kind === "var") return metadata.kind;
   }
   return "const";

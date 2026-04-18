@@ -1,12 +1,12 @@
 import { OperationId } from "../../core";
-import { Place } from "../../core";
+import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
 export class RegExpLiteralOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
+    public override readonly place: Value,
     public readonly pattern: string,
     public readonly flags: string,
   ) {
@@ -14,17 +14,16 @@ export class RegExpLiteralOp extends Operation {
   }
 
   public clone(ctx: CloneContext): RegExpLiteralOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
-    return moduleIR.environment.createOperation(RegExpLiteralOp, place, this.pattern, this.flags);
+    const env = ctx.environment;
+    const place = env.createValue();
+    return env.createOperation(RegExpLiteralOp, place, this.pattern, this.flags);
   }
 
   rewrite(): Operation {
     return this;
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [];
   }
 

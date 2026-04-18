@@ -1,6 +1,6 @@
-function $0_0($1_0) {
-  const $12_0 = $1_0;
-  let $7_0 = undefined;
-  return !$12_0.x ? 10 : $12_0.x;
+function $0($1) {
+  const $15 = $1;
+  let $7 = undefined;
+  return !$15.x ? 10 : $15.x;
 }
-export { $0_0 as f };
+export { $0 as f };

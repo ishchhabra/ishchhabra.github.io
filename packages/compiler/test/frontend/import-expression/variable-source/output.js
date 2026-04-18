@@ -1,2 +1,2 @@
-const $0_0 = "./module";
-import($0_0).then(($6_0) => console.log($6_0));
+const $0 = "./module";
+import($0).then(($6) => console.log($6));

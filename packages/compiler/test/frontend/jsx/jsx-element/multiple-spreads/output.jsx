@@ -1,7 +1,7 @@
-const $0_0 = {
+const $0 = {
   id: "x",
 };
-const $1_0 = {
+const $1 = {
   className: "y",
 };
-const $2_0 = <div {...$0_0} {...$1_0} />;
+const $2 = <div {...$0} {...$1} />;

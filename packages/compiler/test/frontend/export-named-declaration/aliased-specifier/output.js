@@ -1,2 +1,2 @@
-const $0_0 = 42;
-export { $0_0 as external };
+const $0 = 42;
+export { $0 as external };

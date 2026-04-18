@@ -27,9 +27,9 @@ export function generateIfStructure(
   funcOp: FuncOp,
   generator: CodeGenerator,
 ): Array<t.Statement> {
-  const testNode = generator.places.get(structure.test.id);
+  const testNode = generator.values.get(structure.test.id);
   if (testNode === undefined) {
-    throw new Error(`Place ${structure.test.id} not found for if test`);
+    throw new Error(`Value ${structure.test.id} not found for if test`);
   }
   t.assertExpression(testNode);
 
@@ -48,19 +48,19 @@ export function generateIfStructure(
 
     const consYield = consEntry.terminal as YieldOp;
     const altYield = altEntry.terminal as YieldOp;
-    const consValue = generator.places.get(consYield.values[0].id);
-    const altValue = generator.places.get(altYield.values[0].id);
+    const consValue = generator.values.get(consYield.values[0].id);
+    const altValue = generator.values.get(altYield.values[0].id);
     if (consValue === undefined) {
-      throw new Error(`Place ${consYield.values[0].id} not found for if cons yield`);
+      throw new Error(`Value ${consYield.values[0].id} not found for if cons yield`);
     }
     if (altValue === undefined) {
-      throw new Error(`Place ${altYield.values[0].id} not found for if alt yield`);
+      throw new Error(`Value ${altYield.values[0].id} not found for if alt yield`);
     }
     t.assertExpression(consValue);
     t.assertExpression(altValue);
 
     const ternaryNode = t.conditionalExpression(testNode, consValue, altValue);
-    generator.places.set(structure.resultPlaces[0].id, ternaryNode);
+    generator.values.set(structure.resultPlaces[0].id, ternaryNode);
     return [];
   }
 
@@ -69,7 +69,7 @@ export function generateIfStructure(
   // inserted) are walked as ordinary ops. No codegen-level
   // declaration or store synthesis needed.
   for (const place of structure.resultPlaces) {
-    generator.places.set(place.id, generator.getPlaceIdentifier(place));
+    generator.values.set(place.id, generator.getPlaceIdentifier(place));
   }
 
   const consequentStatements = generateBasicBlock(consEntry.id, funcOp, generator);
@@ -98,7 +98,7 @@ export function generateIfStructure(
 function isPureExpressionArm(block: BasicBlock, enclosingIf: IfOp): boolean {
   if (!(block.terminal instanceof YieldOp)) return false;
   if (block.terminal.values.length !== 1) return false;
-  const resultDecls = new Set(enclosingIf.resultPlaces.map((p) => p.identifier.declarationId));
+  const resultDecls = new Set(enclosingIf.resultPlaces.map((p) => p.declarationId));
   for (const op of block.operations) {
     if (op instanceof IfOp) {
       if (op.resultPlaces.length !== 1) return false;
@@ -112,7 +112,7 @@ function isPureExpressionArm(block: BasicBlock, enclosingIf: IfOp): boolean {
     if (
       op instanceof StoreLocalOp &&
       op.kind === "assignment" &&
-      resultDecls.has(op.lval.identifier.declarationId)
+      resultDecls.has(op.lval.declarationId)
     ) {
       continue;
     }

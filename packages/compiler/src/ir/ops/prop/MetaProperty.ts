@@ -1,5 +1,5 @@
 import { OperationId } from "../../core";
-import { Place } from "../../core";
+import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
@@ -13,7 +13,7 @@ import type { CloneContext } from "../../core/Operation";
 export class MetaPropertyOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
+    public override readonly place: Value,
     public readonly meta: string,
     public readonly property: string,
   ) {
@@ -21,17 +21,16 @@ export class MetaPropertyOp extends Operation {
   }
 
   public clone(ctx: CloneContext): MetaPropertyOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
-    return moduleIR.environment.createOperation(MetaPropertyOp, place, this.meta, this.property);
+    const env = ctx.environment;
+    const place = env.createValue();
+    return env.createOperation(MetaPropertyOp, place, this.meta, this.property);
   }
 
   rewrite(): Operation {
     return this;
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [];
   }
 

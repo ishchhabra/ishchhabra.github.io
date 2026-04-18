@@ -1,18 +1,16 @@
-let $15_blockparam_16 = undefined;
-let $16_blockparam_17 = undefined;
-let $17_blockparam_18 = undefined;
-let $18_blockparam_19 = undefined;
+let blockparam_16 = undefined;
+let blockparam_17 = undefined;
+let blockparam_18 = undefined;
+let blockparam_19 = undefined;
 {
-  let $0_0 = 0;
-  $15_blockparam_16 = $0_0;
+  let $0 = 0;
+  blockparam_16 = $0;
   for (
     ;
-    ($16_blockparam_17 = $15_blockparam_16),
-      ($18_blockparam_19 = $15_blockparam_16),
-      $15_blockparam_16 < 10;
-    $0_0 = $17_blockparam_18 + 1, $15_blockparam_16 = $0_0
+    (blockparam_17 = blockparam_16), (blockparam_19 = blockparam_16), blockparam_16 < 10;
+    $0 = blockparam_18 + 1, blockparam_16 = $0
   ) {
-    console.log($16_blockparam_17);
-    $17_blockparam_18 = $16_blockparam_17;
+    console.log(blockparam_17);
+    blockparam_18 = blockparam_17;
   }
 }

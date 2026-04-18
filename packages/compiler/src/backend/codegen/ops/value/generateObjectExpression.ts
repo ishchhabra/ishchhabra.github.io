@@ -7,9 +7,9 @@ export function generateObjectExpressionOp(
   generator: CodeGenerator,
 ): t.ObjectExpression {
   const properties = instruction.properties.map((property) => {
-    const propertyNode = generator.places.get(property.id);
+    const propertyNode = generator.values.get(property.id);
     if (propertyNode === undefined) {
-      throw new Error(`Place ${property.id} not found`);
+      throw new Error(`Value ${property.id} not found`);
     }
 
     if (
@@ -24,6 +24,6 @@ export function generateObjectExpressionOp(
   });
 
   const node = t.objectExpression(properties);
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

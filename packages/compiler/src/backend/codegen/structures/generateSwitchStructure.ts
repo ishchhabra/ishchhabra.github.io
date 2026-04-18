@@ -15,9 +15,9 @@ export function generateSwitchStructure(
   funcOp: FuncOp,
   generator: CodeGenerator,
 ): Array<t.Statement> {
-  const discriminantNode = generator.places.get(structure.discriminant.id);
+  const discriminantNode = generator.values.get(structure.discriminant.id);
   if (discriminantNode === undefined) {
-    throw new Error(`Place ${structure.discriminant.id} not found for switch discriminant`);
+    throw new Error(`Value ${structure.discriminant.id} not found for switch discriminant`);
   }
   t.assertExpression(discriminantNode);
 
@@ -35,9 +35,9 @@ export function generateSwitchStructure(
 
     let testNode: t.Expression | null = null;
     if (test !== null) {
-      const node = generator.places.get(test.id);
+      const node = generator.values.get(test.id);
       if (node === undefined) {
-        throw new Error(`Place ${test.id} not found for switch case test`);
+        throw new Error(`Value ${test.id} not found for switch case test`);
       }
       t.assertExpression(node);
       testNode = node;

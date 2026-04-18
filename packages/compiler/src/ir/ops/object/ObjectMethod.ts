@@ -1,9 +1,9 @@
 import { OperationId } from "../../core";
-import { Identifier, Place } from "../../core";
+import { Value } from "../../core";
 import { FuncOp } from "../../core/FuncOp";
 
 import { Operation } from "../../core/Operation";
-import { makeCloneContext, type CloneContext } from "../../core/Operation";
+import { makeCloneContext, requireModuleIR, type CloneContext } from "../../core/Operation";
 /**
  * Represents an object method in the IR.
  *
@@ -13,23 +13,23 @@ import { makeCloneContext, type CloneContext } from "../../core/Operation";
 export class ObjectMethodOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
-    public readonly key: Place,
+    public override readonly place: Value,
+    public readonly key: Value,
     public readonly body: FuncOp,
     public readonly computed: boolean,
     public readonly generator: boolean,
     public readonly async: boolean,
     public readonly kind: "method" | "get" | "set",
-    public readonly captures: Place[] = [],
+    public readonly captures: Value[] = [],
   ) {
     super(id);
   }
 
   public clone(ctx: CloneContext): ObjectMethodOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
-    return moduleIR.environment.createOperation(
+    const moduleIR = requireModuleIR(ctx);
+    const env = moduleIR.environment;
+    const place = env.createValue();
+    return env.createOperation(
       ObjectMethodOp,
       place,
       this.key,
@@ -42,8 +42,8 @@ export class ObjectMethodOp extends Operation {
     );
   }
 
-  rewrite(values: Map<Identifier, Place>): Operation {
-    const newKey = values.get(this.key.identifier) ?? this.key;
+  rewrite(values: Map<Value, Value>): Operation {
+    const newKey = values.get(this.key) ?? this.key;
     const newCaptures = this.captures.map((c) => c.rewrite(values));
     const capturesChanged = newCaptures.some((c, i) => c !== this.captures[i]);
     if (newKey === this.key && !capturesChanged) {
@@ -62,7 +62,7 @@ export class ObjectMethodOp extends Operation {
     );
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [this.key, ...this.captures];
   }
 }

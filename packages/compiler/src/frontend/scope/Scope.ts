@@ -29,7 +29,7 @@ export type BindingKind = "var" | "let" | "const" | "function" | "class" | "para
 
 /** A resolved reference to a binding, annotated with the scope it occurs in. */
 export interface Reference {
-  node: AST.Identifier;
+  node: AST.Value;
   scope: Scope;
 }
 
@@ -619,7 +619,7 @@ function registerBinding(name: string, kind: BindingKind, scope: Scope): void {
 
 function collectReferences(node: Node, scope: Scope, scopeMap: ScopeMap): void {
   switch (node.type) {
-    // ----- Identifier: handled by callers via collectRefFromExpr -----
+    // ----- Value: handled by callers via collectRefFromExpr -----
     case "Identifier":
       return;
 
@@ -865,7 +865,7 @@ function collectDefaultValueReferences(
 
 function collectRefFromExpr(node: Node, scope: Scope, scopeMap: ScopeMap): void {
   if (node.type === "Identifier") {
-    addReference(node as AST.Identifier, scope);
+    addReference(node as AST.Value, scope);
     return;
   }
   collectReferences(node, scope, scopeMap);
@@ -914,7 +914,7 @@ function collectJSXNameReferences(node: JSXElementName, scope: Scope): void {
     if (name[0] && name[0] === name[0].toUpperCase() && name[0] !== name[0].toLowerCase()) {
       const binding = scope.getBinding(name);
       if (binding) {
-        binding.references.push({ node: node as unknown as AST.Identifier, scope });
+        binding.references.push({ node: node as unknown as AST.Value, scope });
       }
     }
   } else if (node.type === "JSXMemberExpression") {
@@ -922,14 +922,14 @@ function collectJSXNameReferences(node: JSXElementName, scope: Scope): void {
   }
 }
 
-function addReference(id: AST.Identifier, scope: Scope): void {
+function addReference(id: AST.Value, scope: Scope): void {
   const binding = scope.getBinding(id.name);
   if (binding) {
     binding.references.push({ node: id, scope });
   }
 }
 
-function addMutation(id: AST.Identifier, scope: Scope): void {
+function addMutation(id: AST.Value, scope: Scope): void {
   const binding = scope.getBinding(id.name);
   if (binding) {
     binding.mutations.push({ node: id, scope });
@@ -980,7 +980,7 @@ function collectReferencesChildren(node: Node, scope: Scope, scopeMap: ScopeMap)
         if (item && typeof item === "object" && typeof (item as Node).type === "string") {
           const childNode = item as Node;
           if (childNode.type === "Identifier") {
-            addReference(childNode as AST.Identifier, scope);
+            addReference(childNode as AST.Value, scope);
           } else {
             collectReferences(childNode, scope, scopeMap);
           }
@@ -989,7 +989,7 @@ function collectReferencesChildren(node: Node, scope: Scope, scopeMap: ScopeMap)
     } else if (typeof child === "object" && typeof (child as Node).type === "string") {
       const childNode = child as Node;
       if (childNode.type === "Identifier") {
-        addReference(childNode as AST.Identifier, scope);
+        addReference(childNode as AST.Value, scope);
       } else {
         collectReferences(childNode, scope, scopeMap);
       }

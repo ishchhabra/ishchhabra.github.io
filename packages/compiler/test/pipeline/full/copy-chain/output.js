@@ -1,11 +1,11 @@
-const $1_0 = 1;
-let $2_0 = undefined;
-let $20_0 = undefined;
+const $1 = 1;
+let $2 = undefined;
+let $20 = undefined;
 if (globalThis.flag) {
-  $2_0 = $1_0;
-  $20_0 = $2_0;
+  $2 = $1;
+  $20 = $2;
 } else {
-  $2_0 = 2;
-  $20_0 = $2_0;
+  $2 = 2;
+  $20 = $2;
 }
-console.log($20_0);
+console.log($20);

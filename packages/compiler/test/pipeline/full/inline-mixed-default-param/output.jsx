@@ -1,16 +1,16 @@
-function $0_0($3_0, $4_0 = 5) {
-  return $3_0.slice(0, $4_0).map(($15_0) => ({
-    slug: $15_0.slug,
+function $0($3, $4 = 5) {
+  return $3.slice(0, $4).map(($15) => ({
+    slug: $15.slug,
   }));
 }
-function $1_0() {
+function $1() {
   return (
     <div>
-      {$0_0($2_0).map(($37_0) => (
-        <span key={$37_0.slug}>{$37_0.slug}</span>
+      {$0($2).map(($39) => (
+        <span key={$39.slug}>{$39.slug}</span>
       ))}
     </div>
   );
 }
-const $2_0 = [];
-export { $1_0 as Home };
+const $2 = [];
+export { $1 as Home };

@@ -1,5 +1,5 @@
 import { OperationId } from "../../core";
-import { Identifier, Place } from "../../core";
+import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
@@ -13,42 +13,35 @@ import type { CloneContext } from "../../core/Operation";
 export class AssignmentPatternOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
-    public readonly left: Place,
-    public readonly right: Place,
-    public readonly bindings: Place[] = [],
+    public override readonly place: Value,
+    public readonly left: Value,
+    public readonly right: Value,
+    public readonly bindings: Value[] = [],
   ) {
     super(id);
   }
 
   public clone(ctx: CloneContext): AssignmentPatternOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
-    return moduleIR.environment.createOperation(
-      AssignmentPatternOp,
-      place,
-      this.left,
-      this.right,
-      this.bindings,
-    );
+    const env = ctx.environment;
+    const place = env.createValue();
+    return env.createOperation(AssignmentPatternOp, place, this.left, this.right, this.bindings);
   }
 
-  public rewrite(values: Map<Identifier, Place>): Operation {
+  public rewrite(values: Map<Value, Value>): Operation {
     return new AssignmentPatternOp(
       this.id,
       this.place,
-      values.get(this.left.identifier) ?? this.left,
-      values.get(this.right.identifier) ?? this.right,
-      this.bindings.map((binding) => values.get(binding.identifier) ?? binding),
+      values.get(this.left) ?? this.left,
+      values.get(this.right) ?? this.right,
+      this.bindings.map((binding) => values.get(binding) ?? binding),
     );
   }
 
-  public getOperands(): Place[] {
+  public getOperands(): Value[] {
     return [this.right];
   }
 
-  public override getDefs(): Place[] {
+  public override getDefs(): Value[] {
     return [this.place, ...this.bindings];
   }
 

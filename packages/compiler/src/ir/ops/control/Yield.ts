@@ -1,8 +1,7 @@
 import type { OperationId } from "../../core";
 import type { BlockId } from "../../core/Block";
-import type { Identifier } from "../../core/Identifier";
+import type { Value } from "../../core/Value";
 import { type CloneContext, nextId, Operation, remapPlace, Trait } from "../../core/Operation";
-import type { Place } from "../../core/Place";
 
 /**
  * Structured-op yield. The MLIR `scf.yield` analog: terminates a
@@ -20,20 +19,20 @@ export class YieldOp extends Operation {
 
   constructor(
     id: OperationId,
-    public readonly values: readonly Place[],
+    public readonly values: readonly Value[],
   ) {
     super(id);
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [...this.values];
   }
 
-  rewrite(values: Map<Identifier, Place>): YieldOp {
+  rewrite(values: Map<Value, Value>): YieldOp {
     let changed = false;
-    const out: Place[] = [];
+    const out: Value[] = [];
     for (const v of this.values) {
-      const next = values.get(v.identifier) ?? v;
+      const next = values.get(v) ?? v;
       if (next !== v) changed = true;
       out.push(next);
     }

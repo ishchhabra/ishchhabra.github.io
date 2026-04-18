@@ -10,9 +10,9 @@ export function generateReturnTerminal(
     return [t.returnStatement()];
   }
 
-  const value = generator.places.get(terminal.value.id);
+  const value = generator.values.get(terminal.value.id);
   if (value === undefined) {
-    throw new Error(`Place ${terminal.value.id} not found`);
+    throw new Error(`Value ${terminal.value.id} not found`);
   }
 
   t.assertExpression(value);

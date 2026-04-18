@@ -6,7 +6,7 @@ export function generateLoadContextOp(
   instruction: LoadContextOp,
   generator: CodeGenerator,
 ): t.Expression {
-  let node = generator.places.get(instruction.value.id);
+  let node = generator.values.get(instruction.value.id);
   if (node === undefined || node === null) {
     node = generator.getPlaceIdentifier(instruction.value);
   }
@@ -17,6 +17,6 @@ export function generateLoadContextOp(
       ? node.id
       : node;
   t.assertExpression(expression);
-  generator.places.set(instruction.place.id, expression);
+  generator.values.set(instruction.place.id, expression);
   return expression;
 }

@@ -1,5 +1,5 @@
 import { OperationId } from "../../core";
-import { Identifier, Place } from "../../core";
+import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
@@ -13,19 +13,18 @@ import type { CloneContext } from "../../core/Operation";
 export class JSXFragmentOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
-    public readonly openingFragment: Place,
-    public readonly closingFragment: Place,
-    public readonly children: Place[],
+    public override readonly place: Value,
+    public readonly openingFragment: Value,
+    public readonly closingFragment: Value,
+    public readonly children: Value[],
   ) {
     super(id);
   }
 
   public clone(ctx: CloneContext): JSXFragmentOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
-    return moduleIR.environment.createOperation(
+    const env = ctx.environment;
+    const place = env.createValue();
+    return env.createOperation(
       JSXFragmentOp,
       place,
       this.openingFragment,
@@ -34,17 +33,17 @@ export class JSXFragmentOp extends Operation {
     );
   }
 
-  rewrite(values: Map<Identifier, Place>): JSXFragmentOp {
+  rewrite(values: Map<Value, Value>): JSXFragmentOp {
     return new JSXFragmentOp(
       this.id,
       this.place,
       this.openingFragment,
       this.closingFragment,
-      this.children.map((child) => values.get(child.identifier) ?? child),
+      this.children.map((child) => values.get(child) ?? child),
     );
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [this.openingFragment, this.closingFragment, ...this.children];
   }
 

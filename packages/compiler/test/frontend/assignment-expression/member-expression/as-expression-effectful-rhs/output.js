@@ -1,9 +1,9 @@
-function $0_0() {
+function $0() {
   return 3;
 }
-let $1_0 = {
+let $1 = {
   b: 1,
 };
-const $12_0 = $0_0();
-$1_0.b = $12_0;
-const $2_0 = $12_0;
+const $12 = $0();
+$1.b = $12;
+const $2 = $12;

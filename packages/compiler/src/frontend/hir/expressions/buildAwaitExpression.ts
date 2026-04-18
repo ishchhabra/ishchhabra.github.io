@@ -24,8 +24,7 @@ export function buildAwaitExpression(
     throw new Error("Await expression argument must be a single place");
   }
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(AwaitExpressionOp, place, argumentPlace);
   functionBuilder.addOp(instruction);
   return place;

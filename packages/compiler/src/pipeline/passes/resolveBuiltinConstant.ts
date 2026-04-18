@@ -352,7 +352,7 @@ export function resolveBuiltinConstant(
     return;
   }
 
-  const calleeInstruction = ctx.environment.placeToOp.get(instruction.callee.id);
+  const calleeInstruction = instruction.callee.definer as Operation | undefined;
   if (calleeInstruction === undefined) {
     return;
   }

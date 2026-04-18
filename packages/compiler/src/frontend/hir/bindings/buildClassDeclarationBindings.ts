@@ -23,7 +23,7 @@ export function buildClassDeclarationBindings(
     return;
   }
 
-  const identifier = environment.createIdentifier();
+  const identifier = environment.createValue();
   functionBuilder.registerDeclarationName(idNode.name, identifier.declarationId, scope);
   functionBuilder.instantiateDeclaration(identifier.declarationId, "class", idNode.name, scope);
 
@@ -32,11 +32,11 @@ export function buildClassDeclarationBindings(
     environment.contextDeclarationIds.add(identifier.declarationId);
   }
 
-  const place = environment.createPlace(identifier);
+  const place = identifier;
   environment.registerDeclaration(
     identifier.declarationId,
     functionBuilder.currentBlock.id,
     place.id,
   );
-  environment.setDeclarationBindingPlace(identifier.declarationId, place.id);
+  environment.setDeclarationBinding(identifier.declarationId, place.id);
 }

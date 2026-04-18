@@ -1,29 +1,29 @@
-function $0_0($4_0, $5_0) {
+function $0($4, $5) {
   return {
-    top: $4_0.top - $5_0.height,
-    right: $4_0.right - $5_0.width,
-    bottom: $4_0.bottom - $5_0.height,
-    left: $4_0.left - $5_0.width,
+    top: $4.top - $5.height,
+    right: $4.right - $5.width,
+    bottom: $4.bottom - $5.height,
+    left: $4.left - $5.width,
   };
 }
-function $1_0($35_0) {
-  return $2_0.some(($38_0) => $35_0[$38_0] >= 0);
+function $1($35) {
+  return $2.some(($39) => $35[$39] >= 0);
 }
-const $2_0 = ["top", "right", "bottom", "left"];
-const $3_0 = function ($52_0) {
+const $2 = ["top", "right", "bottom", "left"];
+const $3 = function ($54) {
   return {
     name: "hide",
-    options: $52_0,
-    async fn($60_0) {
-      const { rects: $61_0, platform: $62_0 } = $60_0;
-      const $64_0 = $0_0(await $62_0.detectOverflow($60_0), $61_0.reference);
+    options: $54,
+    async fn($62) {
+      const { rects: $63, platform: $64 } = $62;
+      const $66 = $0(await $64.detectOverflow($62), $63.reference);
       return {
         data: {
-          referenceHiddenOffsets: $64_0,
-          referenceHidden: $1_0($64_0),
+          referenceHiddenOffsets: $66,
+          referenceHidden: $1($66),
         },
       };
     },
   };
 };
-export { $3_0 as hide };
+export { $3 as hide };

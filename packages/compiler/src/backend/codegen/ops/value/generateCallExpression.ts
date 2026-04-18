@@ -6,17 +6,17 @@ export function generateCallExpression(
   instruction: CallExpressionOp,
   generator: CodeGenerator,
 ): t.Expression {
-  const callee = generator.places.get(instruction.callee.id);
+  const callee = generator.values.get(instruction.callee.id);
   if (callee === undefined) {
-    throw new Error(`Place ${instruction.callee.id} not found`);
+    throw new Error(`Value ${instruction.callee.id} not found`);
   }
 
   t.assertExpression(callee);
 
   const args = instruction.args.map((argument) => {
-    const node = generator.places.get(argument.id);
+    const node = generator.values.get(argument.id);
     if (node == null) {
-      throw new Error(`Place ${argument.id} not found`);
+      throw new Error(`Value ${argument.id} not found`);
     }
 
     if (!t.isExpression(node) && !t.isSpreadElement(node)) {
@@ -32,6 +32,6 @@ export function generateCallExpression(
   const node = inOptionalChain
     ? t.optionalCallExpression(callee, args, instruction.optional)
     : t.callExpression(callee, args);
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

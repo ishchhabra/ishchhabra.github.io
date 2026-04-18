@@ -1,5 +1,5 @@
 import { OperationId } from "../../core";
-import { Place } from "../../core";
+import { Value } from "../../core";
 import { createOperationId } from "../../utils";
 
 import { Operation } from "../../core/Operation";
@@ -13,16 +13,15 @@ import type { CloneContext } from "../../core/Operation";
 export class HoleOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
+    public override readonly place: Value,
   ) {
     super(id);
   }
 
   public clone(ctx: CloneContext): HoleOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
-    const instructionId = createOperationId(moduleIR.environment);
+    const env = ctx.environment;
+    const place = env.createValue();
+    const instructionId = createOperationId(env);
     return new HoleOp(instructionId, place);
   }
 
@@ -31,7 +30,7 @@ export class HoleOp extends Operation {
     return this;
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [];
   }
 

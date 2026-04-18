@@ -122,7 +122,7 @@ export class ExportDeclarationMergingPass extends BaseOptimizationPass {
         merged = new ExportDefaultDeclarationOp(exportDecl.id, exportDecl.place, decl.place);
       } else {
         // For named exports, rename the BI and convert to declaration form.
-        bi.place.identifier.name = exportSpec.exported;
+        bi.place.name = exportSpec.exported;
 
         merged = new ExportNamedDeclarationOp(exportDecl.id, exportDecl.place, [], decl.place);
       }

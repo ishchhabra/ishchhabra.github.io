@@ -1,7 +1,7 @@
 try {
-  const $0_0 = JSON.parse("{}");
-} catch ($6_0) {
-  console.log($6_0);
+  const $0 = JSON.parse("{}");
+} catch ($6) {
+  console.log($6);
 } finally {
   console.log("done");
 }

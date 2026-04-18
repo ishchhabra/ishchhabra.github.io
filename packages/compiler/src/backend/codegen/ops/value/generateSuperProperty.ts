@@ -6,14 +6,14 @@ export function generateSuperPropertyOp(
   instruction: SuperPropertyOp,
   generator: CodeGenerator,
 ): t.MemberExpression {
-  const property = generator.places.get(instruction.property.id);
+  const property = generator.values.get(instruction.property.id);
   if (property === undefined) {
-    throw new Error(`Place ${instruction.property.id} not found`);
+    throw new Error(`Value ${instruction.property.id} not found`);
   }
   t.assertExpression(property);
 
   // Non-computed keys are stored as LiteralOp → StringLiteral in the IR.
-  // t.memberExpression requires an Identifier for non-computed access;
+  // t.memberExpression requires an Value for non-computed access;
   // convert back here, mirroring generateLoadStaticPropertyOp.
   let key: t.Expression;
   if (
@@ -27,6 +27,6 @@ export function generateSuperPropertyOp(
   }
 
   const node = t.memberExpression(t.super(), key, instruction.computed);
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

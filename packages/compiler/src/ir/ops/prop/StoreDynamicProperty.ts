@@ -1,5 +1,5 @@
 import { OperationId } from "../../core";
-import { Identifier, Place } from "../../core";
+import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
@@ -10,19 +10,18 @@ import type { CloneContext } from "../../core/Operation";
 export class StoreDynamicPropertyOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
-    public readonly object: Place,
-    public readonly property: Place,
-    public readonly value: Place,
+    public override readonly place: Value,
+    public readonly object: Value,
+    public readonly property: Value,
+    public readonly value: Value,
   ) {
     super(id);
   }
 
   public clone(ctx: CloneContext): StoreDynamicPropertyOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
-    return moduleIR.environment.createOperation(
+    const env = ctx.environment;
+    const place = env.createValue();
+    return env.createOperation(
       StoreDynamicPropertyOp,
       place,
       this.object,
@@ -31,17 +30,17 @@ export class StoreDynamicPropertyOp extends Operation {
     );
   }
 
-  rewrite(values: Map<Identifier, Place>): StoreDynamicPropertyOp {
+  rewrite(values: Map<Value, Value>): StoreDynamicPropertyOp {
     return new StoreDynamicPropertyOp(
       this.id,
       this.place,
-      values.get(this.object.identifier) ?? this.object,
-      values.get(this.property.identifier) ?? this.property,
-      values.get(this.value.identifier) ?? this.value,
+      values.get(this.object) ?? this.object,
+      values.get(this.property) ?? this.property,
+      values.get(this.value) ?? this.value,
     );
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [this.object, this.property, this.value];
   }
 }

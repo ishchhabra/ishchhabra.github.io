@@ -1,1 +1,1 @@
-const $1_0 = foo();
+const $1 = foo();

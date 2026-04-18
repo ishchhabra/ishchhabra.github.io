@@ -1,5 +1,5 @@
 import { OperationId } from "../../core";
-import { Place } from "../../core";
+import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
@@ -16,17 +16,16 @@ export type TPrimitiveValue = string | number | boolean | null | undefined | big
 export class LiteralOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
+    public override readonly place: Value,
     public readonly value: TPrimitiveValue,
   ) {
     super(id);
   }
 
   public clone(ctx: CloneContext): LiteralOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
-    return moduleIR.environment.createOperation(LiteralOp, place, this.value);
+    const env = ctx.environment;
+    const place = env.createValue();
+    return env.createOperation(LiteralOp, place, this.value);
   }
 
   rewrite(): Operation {
@@ -34,7 +33,7 @@ export class LiteralOp extends Operation {
     return this;
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [];
   }
 

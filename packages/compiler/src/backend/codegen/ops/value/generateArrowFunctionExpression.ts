@@ -28,7 +28,7 @@ export function generateArrowFunctionExpressionOp(
   }
 
   const node = t.arrowFunctionExpression(params, body, instruction.async);
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }
 

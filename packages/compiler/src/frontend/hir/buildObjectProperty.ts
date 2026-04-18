@@ -18,8 +18,8 @@ export function buildObjectProperty(
     // Non-computed identifier keys are property labels (string literals),
     // not variable references.  Emit a LiteralOp so the key
     // survives SSA transformations (clone/rewrite) unchanged.
-    const keyIdentifier = environment.createIdentifier();
-    keyPlace = environment.createPlace(keyIdentifier);
+    const keyIdentifier = environment.createValue();
+    keyPlace = keyIdentifier;
     const keyInstruction = environment.createOperation(LiteralOp, keyPlace, node.key.name);
     functionBuilder.addOp(keyInstruction);
   } else {
@@ -34,8 +34,7 @@ export function buildObjectProperty(
     throw new Error(`Object property value must be a single place`);
   }
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(
     ObjectPropertyOp,
     place,

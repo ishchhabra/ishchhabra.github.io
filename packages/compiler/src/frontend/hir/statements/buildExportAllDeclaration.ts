@@ -12,8 +12,7 @@ export function buildExportAllDeclaration(
 ) {
   const source = node.source.value as string;
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(ExportAllOp, place, source);
   functionBuilder.addOp(instruction);
   return place;

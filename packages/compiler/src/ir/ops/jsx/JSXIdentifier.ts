@@ -1,5 +1,5 @@
 import { OperationId } from "../../core";
-import { Identifier, Place } from "../../core";
+import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
@@ -13,20 +13,19 @@ import type { CloneContext } from "../../core/Operation";
 export class JSXIdentifierOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
-    public readonly value: Place,
+    public override readonly place: Value,
+    public readonly value: Value,
   ) {
     super(id);
   }
 
   public clone(ctx: CloneContext): JSXIdentifierOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
-    return moduleIR.environment.createOperation(JSXIdentifierOp, place, this.value);
+    const env = ctx.environment;
+    const place = env.createValue();
+    return env.createOperation(JSXIdentifierOp, place, this.value);
   }
 
-  rewrite(values: Map<Identifier, Place>): Operation {
+  rewrite(values: Map<Value, Value>): Operation {
     const rewrittenValue = this.value.rewrite(values);
     if (rewrittenValue === this.value) {
       return this;
@@ -34,7 +33,7 @@ export class JSXIdentifierOp extends Operation {
     return new JSXIdentifierOp(this.id, this.place, rewrittenValue);
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [this.value];
   }
 

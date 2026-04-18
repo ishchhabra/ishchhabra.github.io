@@ -1,5 +1,5 @@
 import { OperationId } from "../../core";
-import { Place } from "../../core";
+import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
@@ -12,17 +12,16 @@ import type { CloneContext } from "../../core/Operation";
 export class JSXTextOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
+    public override readonly place: Value,
     public readonly value: string,
   ) {
     super(id);
   }
 
   public clone(ctx: CloneContext): JSXTextOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
-    return moduleIR.environment.createOperation(JSXTextOp, place, this.value);
+    const env = ctx.environment;
+    const place = env.createValue();
+    return env.createOperation(JSXTextOp, place, this.value);
   }
 
   rewrite(): Operation {
@@ -30,7 +29,7 @@ export class JSXTextOp extends Operation {
     return this;
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [];
   }
 

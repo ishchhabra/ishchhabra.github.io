@@ -7,8 +7,8 @@ import {
   DeclarationId,
   FunctionDeclarationOp,
   getCodegenDeclarationKind,
-  Place,
-  PlaceId,
+  Value,
+  ValueId,
 } from "../ir";
 import { FuncOp, makeFuncOpId } from "../ir/core/FuncOp";
 import { ModuleIR } from "../ir/core/ModuleIR";
@@ -34,7 +34,7 @@ export class CodeGenerator {
   /** Lazily caches analyses for nested functions during codegen (mirrors pipeline `AnalysisManager`). */
   public readonly analysisManager = new AnalysisManager();
 
-  public readonly places: Map<PlaceId, t.Node | null> = new Map();
+  public readonly values: Map<ValueId, t.Node | null> = new Map();
   public readonly declarationIdentifiers: Map<DeclarationId, t.Identifier> = new Map();
   public blockToStatements: Map<BlockId, Array<t.Statement>> = new Map();
   public generatedBlocks: Set<BlockId> = new Set();
@@ -122,37 +122,37 @@ export class CodeGenerator {
     return this.analysisManager.get(LoopInfoAnalysis, funcOp);
   }
 
-  public getPlaceIdentifier(place: Place): t.Identifier {
-    const existing = this.places.get(place.id);
+  public getPlaceIdentifier(place: Value): t.Identifier {
+    const existing = this.values.get(place.id);
     if (existing && t.isIdentifier(existing)) {
       return existing;
     }
     if (existing && t.isFunctionDeclaration(existing) && existing.id) {
-      this.places.set(place.id, existing.id);
+      this.values.set(place.id, existing.id);
       return existing.id;
     }
     if (existing && t.isClassDeclaration(existing) && existing.id) {
-      this.places.set(place.id, existing.id);
+      this.values.set(place.id, existing.id);
       return existing.id;
     }
 
-    const metadata = this.getDeclarationMetadata(place.identifier.declarationId);
+    const metadata = this.getDeclarationMetadata(place.declarationId);
     const aliasableDeclaration =
       metadata !== undefined && getCodegenDeclarationKind(metadata.kind) !== undefined;
     const existingDeclarationIdentifier = aliasableDeclaration
-      ? this.declarationIdentifiers.get(place.identifier.declarationId)
+      ? this.declarationIdentifiers.get(place.declarationId)
       : undefined;
     if (existingDeclarationIdentifier) {
-      this.places.set(place.id, existingDeclarationIdentifier);
+      this.values.set(place.id, existingDeclarationIdentifier);
       return existingDeclarationIdentifier;
     }
 
-    const name = place.identifier.name;
+    const name = place.name;
     const identifier = t.identifier(name);
     if (aliasableDeclaration) {
-      this.declarationIdentifiers.set(place.identifier.declarationId, identifier);
+      this.declarationIdentifiers.set(place.declarationId, identifier);
     }
-    this.places.set(place.id, identifier);
+    this.values.set(place.id, identifier);
     return identifier;
   }
 
@@ -214,18 +214,18 @@ export class CodeGenerator {
    */
   private preRegisterBindingIdentifiers(moduleIR: ModuleIR): void {
     for (const [declarationId, metadata] of moduleIR.environment.declarationMetadata) {
-      if (metadata.bindingPlaceId === undefined) {
+      if (metadata.bindingValueId === undefined) {
         continue;
       }
-      const place = moduleIR.environment.places.get(metadata.bindingPlaceId);
+      const place = moduleIR.environment.values.get(metadata.bindingValueId);
       if (place === undefined) {
         continue;
       }
-      const identifier = t.identifier(place.identifier.name);
+      const identifier = t.identifier(place.name);
       if (getCodegenDeclarationKind(metadata.kind) !== undefined) {
         this.declarationIdentifiers.set(declarationId, identifier);
       }
-      this.places.set(place.id, identifier);
+      this.values.set(place.id, identifier);
       if (metadata.kind === "param" || metadata.kind === "import" || metadata.kind === "catch") {
         this.declaredDeclarations.add(declarationId);
       }
@@ -234,7 +234,7 @@ export class CodeGenerator {
     for (const [, funcOp] of moduleIR.functions) {
       for (const instruction of funcOp.header) {
         if (instruction instanceof FunctionDeclarationOp) {
-          this.places.set(instruction.place.id, this.getPlaceIdentifier(instruction.place));
+          this.values.set(instruction.place.id, this.getPlaceIdentifier(instruction.place));
         }
       }
     }

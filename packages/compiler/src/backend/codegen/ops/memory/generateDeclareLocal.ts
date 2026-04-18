@@ -5,5 +5,5 @@ export function generateDeclareLocalOp(
   instruction: DeclareLocalOp,
   generator: CodeGenerator,
 ): void {
-  generator.places.set(instruction.place.id, generator.getPlaceIdentifier(instruction.place));
+  generator.values.set(instruction.place.id, generator.getPlaceIdentifier(instruction.place));
 }

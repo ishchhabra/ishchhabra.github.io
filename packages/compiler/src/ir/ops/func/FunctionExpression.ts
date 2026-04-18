@@ -1,33 +1,32 @@
-import { OperationId } from "../../core";
+import { OperationId, Value } from "../../core";
 import { FuncOp } from "../../core/FuncOp";
-import { Identifier } from "../../core/Identifier";
-import { Place } from "../../core/Place";
-
 import { Operation } from "../../core/Operation";
-import { makeCloneContext, type CloneContext } from "../../core/Operation";
+import { makeCloneContext, requireModuleIR, type CloneContext } from "../../core/Operation";
+
 export class FunctionExpressionOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
-    public readonly identifier: Place | null,
+    public override readonly place: Value,
+    /** Optional bound name for `function foo() {}`. `null` for anonymous expressions. */
+    public readonly binding: Value | null,
     public readonly funcOp: FuncOp,
     public readonly generator: boolean,
     public readonly async: boolean,
-    public readonly captures: Place[] = [],
+    public readonly captures: Value[] = [],
   ) {
     super(id);
   }
 
   public clone(ctx: CloneContext): FunctionExpressionOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
+    const moduleIR = requireModuleIR(ctx);
+    const env = moduleIR.environment;
+    const place = env.createValue();
     // Recursively deep-clone the nested FuncOp into the same target
     // module so the cloned function expression owns an independent body.
-    return moduleIR.environment.createOperation(
+    return env.createOperation(
       FunctionExpressionOp,
       place,
-      this.identifier,
+      this.binding,
       this.funcOp.clone(makeCloneContext(moduleIR)),
       this.generator,
       this.async,
@@ -35,20 +34,20 @@ export class FunctionExpressionOp extends Operation {
     );
   }
 
-  public rewrite(values: Map<Identifier, Place>): Operation {
-    const newIdentifier = this.identifier ? this.identifier.rewrite(values) : null;
+  public rewrite(values: Map<Value, Value>): Operation {
+    const newBinding = this.binding ? this.binding.rewrite(values) : null;
     const newCaptures = this.captures.map((c) => c.rewrite(values));
 
     const capturesChanged = newCaptures.some((c, i) => c !== this.captures[i]);
-    const identifierChanged = newIdentifier !== this.identifier;
-    if (!capturesChanged && !identifierChanged) {
+    const bindingChanged = newBinding !== this.binding;
+    if (!capturesChanged && !bindingChanged) {
       return this;
     }
 
     return new FunctionExpressionOp(
       this.id,
       this.place,
-      newIdentifier,
+      newBinding,
       this.funcOp,
       this.generator,
       this.async,
@@ -56,14 +55,14 @@ export class FunctionExpressionOp extends Operation {
     );
   }
 
-  public getOperands(): Place[] {
-    if (this.identifier !== null) {
-      return [this.identifier, ...this.captures];
+  public getOperands(): Value[] {
+    if (this.binding !== null) {
+      return [this.binding, ...this.captures];
     }
     return this.captures;
   }
 
-  public override getDefs(): Place[] {
+  public override getDefs(): Value[] {
     return [this.place];
   }
 

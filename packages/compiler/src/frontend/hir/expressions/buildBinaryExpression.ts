@@ -27,8 +27,7 @@ export function buildBinaryExpression(
     throw new Error("Binary expression right must be a single place");
   }
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(
     BinaryExpressionOp,
     place,

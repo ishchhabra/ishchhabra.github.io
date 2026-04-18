@@ -1,5 +1,5 @@
 import { OperationId } from "../../core";
-import { Identifier, Place } from "../../core";
+import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
@@ -13,19 +13,18 @@ import type { CloneContext } from "../../core/Operation";
 export class JSXElementOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
-    public readonly openingElement: Place,
-    public readonly closingElement: Place | undefined,
-    public readonly children: Place[],
+    public override readonly place: Value,
+    public readonly openingElement: Value,
+    public readonly closingElement: Value | undefined,
+    public readonly children: Value[],
   ) {
     super(id);
   }
 
   public clone(ctx: CloneContext): JSXElementOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
-    return moduleIR.environment.createOperation(
+    const env = ctx.environment;
+    const place = env.createValue();
+    return env.createOperation(
       JSXElementOp,
       place,
       this.openingElement,
@@ -34,19 +33,17 @@ export class JSXElementOp extends Operation {
     );
   }
 
-  public rewrite(values: Map<Identifier, Place>): Operation {
+  public rewrite(values: Map<Value, Value>): Operation {
     return new JSXElementOp(
       this.id,
       this.place,
-      values.get(this.openingElement.identifier) ?? this.openingElement,
-      this.closingElement
-        ? (values.get(this.closingElement.identifier) ?? this.closingElement)
-        : undefined,
-      this.children.map((child) => values.get(child.identifier) ?? child),
+      values.get(this.openingElement) ?? this.openingElement,
+      this.closingElement ? (values.get(this.closingElement) ?? this.closingElement) : undefined,
+      this.children.map((child) => values.get(child) ?? child),
     );
   }
 
-  public getOperands(): Place[] {
+  public getOperands(): Value[] {
     return [
       this.openingElement,
       ...(this.closingElement ? [this.closingElement] : []),

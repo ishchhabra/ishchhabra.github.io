@@ -7,9 +7,9 @@ export function generateArrayExpressionOp(
   generator: CodeGenerator,
 ): t.Expression {
   const elements = instruction.elements.map((element) => {
-    const node = generator.places.get(element.id);
+    const node = generator.values.get(element.id);
     if (node === undefined) {
-      throw new Error(`Place ${element.id} not found`);
+      throw new Error(`Value ${element.id} not found`);
     }
 
     if (node === null || t.isSpreadElement(node)) {
@@ -21,6 +21,6 @@ export function generateArrayExpressionOp(
   });
 
   const node = t.arrayExpression(elements);
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

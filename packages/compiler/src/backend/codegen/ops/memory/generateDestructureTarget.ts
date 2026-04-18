@@ -1,17 +1,17 @@
 import * as t from "@babel/types";
-import { type DestructureObjectProperty, type DestructureTarget, Place } from "../../../../ir";
+import { type DestructureObjectProperty, type DestructureTarget, Value } from "../../../../ir";
 import { CodeGenerator } from "../../../CodeGenerator";
 
 type PatternLVal = t.Identifier | t.MemberExpression | t.ArrayPattern | t.ObjectPattern;
 
-function getBindingIdentifier(place: Place, generator: CodeGenerator): t.Identifier {
+function getBindingIdentifier(place: Value, generator: CodeGenerator): t.Identifier {
   return generator.getPlaceIdentifier(place);
 }
 
-function getExpression(place: Place, generator: CodeGenerator): t.Expression {
-  const node = generator.places.get(place.id);
+function getExpression(place: Value, generator: CodeGenerator): t.Expression {
+  const node = generator.values.get(place.id);
   if (node === undefined) {
-    throw new Error(`Place ${place.id} not found`);
+    throw new Error(`Value ${place.id} not found`);
   }
   t.assertExpression(node);
   return node;
@@ -30,7 +30,7 @@ function generateObjectProperty(
   const value = generateDestructureTarget(property.value, generator);
   let key: t.Expression | t.Identifier | t.PrivateName;
   if (property.computed) {
-    if (!(property.key instanceof Place)) {
+    if (!(property.key instanceof Value)) {
       throw new Error("Computed destructure key must be a place");
     }
     key = getExpression(property.key, generator);

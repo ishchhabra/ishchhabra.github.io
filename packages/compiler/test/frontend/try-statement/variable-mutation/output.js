@@ -1,9 +1,9 @@
-function $0_0($1_0) {
-  let $2_0 = "default";
+function $0($1) {
+  let $2 = "default";
   try {
-    $2_0 = JSON.parse($1_0);
-  } catch ($10_0) {
-    $2_0 = "error";
+    $2 = JSON.parse($1);
+  } catch ($10) {
+    $2 = "error";
   }
-  return $2_0;
+  return $2;
 }

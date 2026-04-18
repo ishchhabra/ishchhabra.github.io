@@ -1,6 +1,6 @@
 import type { ExportDefaultDeclaration } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { ExportDefaultDeclarationOp } from "../../../ir";
+import { ExportDefaultDeclarationOp, Operation } from "../../../ir";
 import { FunctionDeclarationOp } from "../../../ir/ops/func/FunctionDeclaration";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
@@ -39,11 +39,8 @@ export function buildExportDefaultDeclaration(
       const name = declaration.id.name;
       const declarationId = functionBuilder.getDeclarationId(name, scope);
       if (declarationId !== undefined) {
-        const declarationInstructionId = environment.getDeclarationOp(declarationId);
-        const declarationInstruction =
-          declarationInstructionId !== undefined
-            ? environment.operations.get(declarationInstructionId)
-            : undefined;
+        const binding = environment.getDeclarationBinding(declarationId);
+        const declarationInstruction = binding?.definer;
         if (declarationInstruction instanceof FunctionDeclarationOp) {
           declarationPlace = declarationInstruction.place;
         }
@@ -75,8 +72,7 @@ export function buildExportDefaultDeclaration(
     throw new Error("Export default declaration must be a single place");
   }
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(
     ExportDefaultDeclarationOp,
     place,
@@ -84,18 +80,12 @@ export function buildExportDefaultDeclaration(
   );
   functionBuilder.addOp(instruction);
 
-  // Named declarations register via registerDeclarationOp; anonymous
-  // export default functions/classes only have a placeToOp entry.
-  const declarationInstructionId = environment.getDeclarationOp(
-    declarationPlace.identifier.declarationId,
-  );
-  const declarationInstr =
-    declarationInstructionId !== undefined
-      ? environment.operations.get(declarationInstructionId)
-      : environment.placeToOp.get(declarationPlace.id);
+  // The op that defined `declarationPlace` is the exported declaration —
+  // a FunctionDeclaration / ClassDeclaration for named default exports,
+  // or the anonymous expression op otherwise.
   moduleBuilder.moduleIR.exports.set("default", {
     instruction,
-    declaration: declarationInstr,
+    declaration: declarationPlace.definer as Operation | undefined,
   });
   return place;
 }

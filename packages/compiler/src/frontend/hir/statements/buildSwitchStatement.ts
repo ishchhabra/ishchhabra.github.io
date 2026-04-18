@@ -1,6 +1,6 @@
 import type { Statement, SwitchStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { createOperationId, Place, Region, SwitchOp, YieldOp } from "../../../ir";
+import { createOperationId, Value, Region, SwitchOp, YieldOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { instantiateScopeBindings } from "../bindings";
 import { buildNode } from "../buildNode";
@@ -48,7 +48,7 @@ export function buildSwitchStatement(
 
   // Evaluate case tests in the parent block before the switch op —
   // they are plain operands to the SwitchOp.
-  const caseTests: (Place | null)[] = [];
+  const caseTests: (Value | null)[] = [];
   for (const switchCase of node.cases) {
     if (switchCase.test != null) {
       const place = buildNode(

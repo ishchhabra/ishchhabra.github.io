@@ -1,7 +1,7 @@
 import type * as AST from "../estree";
 import type { ExportSpecifier } from "oxc-parser";
 import { Environment } from "../../environment";
-import { ExportSpecifierOp, Place } from "../../ir";
+import { ExportSpecifierOp, Operation, Value } from "../../ir";
 import { type Scope } from "../scope/Scope";
 import { FuncOpBuilder } from "./FuncOpBuilder";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
@@ -12,7 +12,7 @@ export function buildExportSpecifier(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
+): Value {
   const localName = getLocalName(node);
   const exportedName = getExportedName(node);
 
@@ -20,25 +20,25 @@ export function buildExportSpecifier(
   if (declarationId === undefined) {
     throw new Error(`Export specifier local '${localName}': no declaration id found`);
   }
-  const declarationInstructionId = environment.getDeclarationOp(declarationId)!;
-  const declarationInstruction = environment.operations.get(declarationInstructionId)!;
-
-  // Use the declaration's binding place directly so that ExportSpecifier
-  // holds a read-reference to it, preventing DCE from removing the declaration.
-  // We look up via declToPlaces rather than the declaration instruction's lval,
-  // because for destructured declarations (e.g. `const { x } = obj`) the
+  // Look up the declaration's binding place directly. ExportSpecifier
+  // holds a read-reference to it so DCE does not remove the declaration.
+  // We use declToValues (not the declaration instruction's lval) because
+  // for destructured declarations (e.g. `const { x } = obj`) the
   // StoreLocal's lval is the pattern place, not the individual binding place.
   const latestDeclaration = environment.getLatestDeclaration(declarationId);
   if (latestDeclaration === undefined) {
     throw new Error(`Export specifier local '${localName}': no declaration place found`);
   }
-  const localPlace = environment.places.get(latestDeclaration.placeId);
+  const localPlace = environment.values.get(latestDeclaration.valueId);
   if (localPlace === undefined) {
     throw new Error(`Export specifier local '${localName}': binding place not found`);
   }
+  const declarationInstruction = localPlace.definer as Operation | undefined;
+  if (declarationInstruction === undefined) {
+    throw new Error(`Export specifier local '${localName}': binding place has no definer`);
+  }
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(
     ExportSpecifierOp,
     place,
@@ -54,7 +54,7 @@ export function buildExportSpecifier(
   return place;
 }
 
-function getSpecifierName(specifier: AST.Identifier | AST.Literal): string {
+function getSpecifierName(specifier: AST.Value | AST.Literal): string {
   if (specifier.type === "Identifier") {
     return specifier.name;
   }

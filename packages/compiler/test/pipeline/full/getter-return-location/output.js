@@ -1,10 +1,10 @@
-function $0_0() {
-  let $1_0 = {
+function $0() {
+  let $1 = {
     pathname: "/",
   };
   return {
     get location() {
-      return $1_0;
+      return $1;
     },
   };
 }

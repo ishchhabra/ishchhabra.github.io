@@ -1,8 +1,8 @@
-function $0_0($2_0) {
-  if ($2_0) {
-    $1_0($2_0);
+function $0($2) {
+  if ($2) {
+    $1($2);
   }
 }
 import { create } from "./helper.js";
-const $1_0 = create(console.log);
-export { $0_0 as f };
+const $1 = create(console.log);
+export { $0 as f };

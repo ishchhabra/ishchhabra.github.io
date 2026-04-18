@@ -1,13 +1,13 @@
-function $0_0($1_0, $2_0, $3_0) {
-  let $4_0 = undefined;
-  let $25_0 = undefined;
-  if ($1_0) {
-    $4_0 = $2_0;
-    $25_0 = $4_0;
+function $0($1, $2, $3) {
+  let $4 = undefined;
+  let $25 = undefined;
+  if ($1) {
+    $4 = $2;
+    $25 = $4;
   } else {
-    $4_0 = $3_0;
-    $25_0 = $4_0;
+    $4 = $3;
+    $25 = $4;
   }
-  return $25_0;
+  return $25;
 }
-console.log($0_0(true, 1, 2));
+console.log($0(true, 1, 2));

@@ -10,7 +10,7 @@ import type {
   TSTypeAssertion,
 } from "oxc-parser";
 
-export type Identifier =
+export type Value =
   | Oxc.IdentifierName
   | Oxc.IdentifierReference
   | Oxc.BindingIdentifier
@@ -66,7 +66,7 @@ export type JSXNode =
   | Oxc.JSXSpreadChild
   | Oxc.JSXEmptyExpression;
 
-export function isIdentifier(node: Node): node is Identifier {
+export function isIdentifier(node: Node): node is Value {
   return node.type === "Identifier";
 }
 

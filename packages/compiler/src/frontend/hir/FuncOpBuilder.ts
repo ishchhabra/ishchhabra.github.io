@@ -10,7 +10,7 @@ import {
   createOperationId,
   DeclarationId,
   type DeclarationKind,
-  Place,
+  Value,
   Region,
   ReturnOp,
 } from "../../ir";
@@ -83,19 +83,19 @@ export class FuncOpBuilder {
    * them to optimization passes, preventing DCE from eliminating captured
    * variable definitions in the outer scope.
    */
-  public readonly captures = new Map<DeclarationId, Place>();
+  public readonly captures = new Map<DeclarationId, Value>();
 
   /**
    * Local places inside this function that correspond to each captured
    * variable. Aligned by key with `captures`: for each DeclarationId,
-   * `captureParams.get(declId)` is the local Place that instructions in
+   * `captureParams.get(declId)` is the local Value that instructions in
    * this function's blocks use to reference the captured variable.
    *
    * This indirection decouples the function's blocks from the parent
    * scope's identifiers, so rewriting captures (e.g. during SSA or
    * inlining) never requires modifying the function's blocks.
    */
-  public readonly captureParams = new Map<DeclarationId, Place>();
+  public readonly captureParams = new Map<DeclarationId, Value>();
   public readonly declarationStates = new Map<DeclarationId, DeclarationState>();
 
   /**
@@ -194,22 +194,20 @@ export class FuncOpBuilder {
     if (requiresRuntimeParamDestructure) {
       const runtimeParamArray = this.environment.createOperation(
         ArrayExpressionOp,
-        this.environment.createPlace(this.environment.createIdentifier()),
+        this.environment.createValue(),
         params,
       );
       this.prologue.push(runtimeParamArray);
-      this.environment.placeToOp.set(runtimeParamArray.place.id, runtimeParamArray);
 
       const runtimeParamDestructure = this.environment.createOperation(
         ArrayDestructureOp,
-        this.environment.createPlace(this.environment.createIdentifier()),
+        this.environment.createValue(),
         paramTargets,
         runtimeParamArray.place,
         "declaration",
         "const",
       );
       this.prologue.push(runtimeParamDestructure);
-      this.environment.placeToOp.set(runtimeParamDestructure.place.id, runtimeParamDestructure);
     }
 
     const functionId = this.funcOpId;
@@ -253,9 +251,9 @@ export class FuncOpBuilder {
     }
 
     // Textbook MLIR: function parameters are the entry block's block
-    // parameters. Each formal param's SSA root Place binds to the
+    // parameters. Each formal param's SSA root Value binds to the
     // entry block's params[i] slot, and the caller supplies argument
-    // values when it invokes the function. Same Place instances that
+    // values when it invokes the function. Same Value instances that
     // used to live in `FunctionRuntime.params`.
     this.bodyRegion.entry.params = params;
 
@@ -281,7 +279,6 @@ export class FuncOpBuilder {
 
   public addOp<T extends Operation>(instruction: T) {
     this.currentBlock.appendOp(instruction);
-    this.environment.placeToOp.set(instruction.place!.id, instruction);
   }
 
   public addHeaderOp(instruction: Operation) {
@@ -354,7 +351,7 @@ export class FuncOpBuilder {
   }
 
   public isOwnDeclaration(declarationId: DeclarationId): boolean {
-    const entries = this.environment.declToPlaces.get(declarationId);
+    const entries = this.environment.declToValues.get(declarationId);
     if (!entries || entries.length === 0) return false;
     return this.ownedBlockIds.has(entries[0].blockId);
   }
@@ -364,8 +361,8 @@ export class FuncOpBuilder {
       if (!this.isOwnDeclaration(declId)) {
         this.captures.set(declId, capture);
         if (!this.captureParams.has(declId)) {
-          const paramIdentifier = this.environment.createIdentifier(declId);
-          this.captureParams.set(declId, this.environment.createPlace(paramIdentifier));
+          const paramIdentifier = this.environment.createValue(declId);
+          this.captureParams.set(declId, paramIdentifier);
         }
         child.captures.set(declId, this.captureParams.get(declId)!);
       }

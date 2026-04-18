@@ -64,7 +64,7 @@ export class LateConstantPropagationPass extends BaseOptimizationPass {
     let changed = false;
     for (const instr of block.operations) {
       if (instr instanceof LoadLocalOp) {
-        const decl = instr.value.identifier.declarationId;
+        const decl = instr.value.declarationId;
         const value = state.get(decl);
         if (value && value.kind === "const") {
           const litInstr = new LiteralOp(instr.id, instr.place, value.value);
@@ -92,7 +92,7 @@ export class LateConstantPropagationPass extends BaseOptimizationPass {
     const decls = new Set<DeclarationId>();
     const walk = (inner: Operation) => {
       if (inner instanceof StoreLocalOp) {
-        decls.add(inner.lval.identifier.declarationId);
+        decls.add(inner.lval.declarationId);
       }
       if (inner.hasTrait(Trait.HasRegions)) {
         for (const region of inner.regions) {
@@ -137,7 +137,7 @@ export class LateConstantPropagationPass extends BaseOptimizationPass {
 
   private transfer(instr: Operation, state: ConstState): void {
     if (instr instanceof StoreLocalOp) {
-      const x = instr.lval.identifier.declarationId;
+      const x = instr.lval.declarationId;
 
       // Only `const` bindings can carry a known literal value — `let`
       // variables can be reassigned, so their value at any later use
@@ -147,7 +147,7 @@ export class LateConstantPropagationPass extends BaseOptimizationPass {
         return;
       }
 
-      const valueDef = instr.value.identifier.definer;
+      const valueDef = instr.value.definer;
 
       if (valueDef instanceof LiteralOp) {
         state.set(x, { kind: "const", value: valueDef.value });

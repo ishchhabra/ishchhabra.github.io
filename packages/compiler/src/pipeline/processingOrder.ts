@@ -26,14 +26,14 @@ export function computeProcessingOrder(moduleIR: ModuleIR): FuncOp[] {
     for (const block of funcIR.allBlocks()) {
       for (const instr of block.operations) {
         if (instr instanceof FunctionDeclarationOp) {
-          declToFunc.set(instr.place.identifier.declarationId, instr.funcOp.id);
+          declToFunc.set(instr.place.declarationId, instr.funcOp.id);
         } else if (instr instanceof StoreLocalOp) {
-          const definer = instr.value.identifier.definer;
+          const definer = instr.value.definer;
           if (
             definer instanceof FunctionExpressionOp ||
             definer instanceof ArrowFunctionExpressionOp
           ) {
-            declToFunc.set(instr.lval.identifier.declarationId, definer.funcOp.id);
+            declToFunc.set(instr.lval.declarationId, definer.funcOp.id);
           }
         }
       }
@@ -57,9 +57,9 @@ export function computeProcessingOrder(moduleIR: ModuleIR): FuncOp[] {
       for (const instr of block.operations) {
         if (!(instr instanceof CallExpressionOp)) continue;
 
-        const calleeInstr = moduleIR.environment.placeToOp.get(instr.callee.id);
+        const calleeInstr = instr.callee.definer;
         if (!(calleeInstr instanceof LoadLocalOp)) continue;
-        const calleeId = declToFunc.get(calleeInstr.value.identifier.declarationId);
+        const calleeId = declToFunc.get(calleeInstr.value.declarationId);
         if (calleeId !== undefined && calleeId !== funcIR.id) {
           funcDeps.add(calleeId);
         }

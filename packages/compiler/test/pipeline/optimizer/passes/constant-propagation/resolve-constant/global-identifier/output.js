@@ -1,2 +1,2 @@
-let $7_0 = undefined;
-const $1_0 = __DEV__ ? "debug" : "release";
+let $7 = undefined;
+const $1 = __DEV__ ? "debug" : "release";

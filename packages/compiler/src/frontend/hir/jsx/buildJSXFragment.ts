@@ -1,6 +1,6 @@
 import type { JSXFragment } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { JSXFragmentOp, Place } from "../../../ir";
+import { JSXFragmentOp, Value } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -12,7 +12,7 @@ export function buildJSXFragment(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place | undefined {
+): Value | undefined {
   const openingFragmentPlace = buildNode(
     node.openingFragment,
     scope,
@@ -35,7 +35,7 @@ export function buildJSXFragment(
     throw new Error("JSXFragment: closingFragment should be a single place");
   }
 
-  const childrenPlaces: Place[] = [];
+  const childrenPlaces: Value[] = [];
   for (const child of node.children) {
     const place = buildNode(child as any, scope, functionBuilder, moduleBuilder, environment);
     // JSXEmptyExpression (`{}`, `{/* ... */}`) yields no value and no IR child.
@@ -48,8 +48,7 @@ export function buildJSXFragment(
     childrenPlaces.push(place);
   }
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(
     JSXFragmentOp,
     place,

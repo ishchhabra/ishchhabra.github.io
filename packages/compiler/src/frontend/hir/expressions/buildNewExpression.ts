@@ -1,6 +1,6 @@
 import type { NewExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { Place } from "../../../ir";
+import { Value } from "../../../ir";
 import { NewExpressionOp } from "../../../ir/ops/call/NewExpression";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
@@ -13,7 +13,7 @@ export function buildNewExpression(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
+): Value {
   const callee = node.callee;
 
   const calleePlace = buildNode(callee, scope, functionBuilder, moduleBuilder, environment);
@@ -30,8 +30,7 @@ export function buildNewExpression(
     return argumentPlace;
   });
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(
     NewExpressionOp,
     place,

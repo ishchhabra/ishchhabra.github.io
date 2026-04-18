@@ -1,6 +1,6 @@
 import type { ClassElement, Expression, PropertyDefinition } from "oxc-parser";
 import { Environment } from "../../environment";
-import { ClassPropertyOp, LiteralOp, Place } from "../../ir";
+import { ClassPropertyOp, LiteralOp, Value } from "../../ir";
 import type { Scope } from "../scope/Scope";
 import { buildClassMethod } from "./buildClassMethod";
 import { buildNode } from "./buildNode";
@@ -22,8 +22,8 @@ export function buildClassBody(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place[] {
-  const result: Place[] = [];
+): Value[] {
+  const result: Value[] = [];
 
   for (const element of elements) {
     switch (element.type) {
@@ -55,7 +55,7 @@ function buildClassProperty(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
+): Value {
   if (node.decorators && node.decorators.length > 0) {
     throw new Error("Unsupported: class field decorators");
   }
@@ -66,10 +66,10 @@ function buildClassProperty(
   // Build the key. Non-computed identifier keys are property labels
   // (string literals), not variable references — same convention as
   // class methods and object properties.
-  let keyPlace: Place;
+  let keyPlace: Value;
   if (!node.computed && node.key.type === "Identifier") {
-    const keyIdentifier = environment.createIdentifier();
-    keyPlace = environment.createPlace(keyIdentifier);
+    const keyIdentifier = environment.createValue();
+    keyPlace = keyIdentifier;
     functionBuilder.addOp(environment.createOperation(LiteralOp, keyPlace, node.key.name));
   } else {
     const built = buildNode(node.key, scope, functionBuilder, moduleBuilder, environment);
@@ -89,7 +89,7 @@ function buildClassProperty(
   // and planted as the value of the emitted `t.classProperty` node,
   // preserving spec-correct per-instance evaluation semantics.
   let valueIR: ReturnType<FuncOpBuilder["build"]> | null = null;
-  let capturedPlaces: Place[] = [];
+  let capturedPlaces: Value[] = [];
   if (node.value != null) {
     const initBuilder = new FuncOpBuilder(
       [],
@@ -107,7 +107,7 @@ function buildClassProperty(
     capturedPlaces = [...initBuilder.captures.values()];
   }
 
-  const fieldPlace = environment.createPlace(environment.createIdentifier());
+  const fieldPlace = environment.createValue();
   functionBuilder.addOp(
     environment.createOperation(
       ClassPropertyOp,

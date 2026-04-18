@@ -1,6 +1,6 @@
 import type { Expression, Node, PrivateIdentifier } from "oxc-parser";
 import { Environment } from "../../environment";
-import { type DestructureObjectProperty, type DestructureTarget, Place } from "../../ir";
+import { type DestructureObjectProperty, type DestructureTarget, Value } from "../../ir";
 import type * as AST from "../estree";
 import { type Scope } from "../scope/Scope";
 import { instantiateFunctionParamBindings } from "./bindings/instantiateFunctionParamBindings";
@@ -10,7 +10,7 @@ import { getValueFromStaticKey } from "./getValueFromStaticKey";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
 
 export interface BuiltFunctionParam {
-  place: Place;
+  place: Value;
   target: DestructureTarget;
 }
 
@@ -21,7 +21,7 @@ export interface BuiltFunctionParam {
  * {@link collectDestructureTargetBindingPlaces}; nothing caches them.
  */
 interface ParamBuildResult {
-  place: Place;
+  place: Value;
   target: DestructureTarget;
 }
 
@@ -85,13 +85,13 @@ function buildFunctionParam(
 }
 
 function buildFunctionIdentifierParam(
-  node: AST.Identifier,
+  node: AST.Value,
   scope: Scope,
   functionBuilder: FuncOpBuilder,
   environment: Environment,
 ): ParamBuildResult {
   const place = buildFunctionIdentifierParamPlace(node, scope, functionBuilder, environment);
-  const declarationId = place.identifier.declarationId;
+  const declarationId = place.declarationId;
   functionBuilder.markDeclarationInitialized(declarationId);
   return {
     place,
@@ -110,7 +110,7 @@ function buildFunctionArrayPatternParam(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): ParamBuildResult {
-  const paramPlace = environment.createPlace(environment.createIdentifier());
+  const paramPlace = environment.createValue();
   const elements = node.elements.map((element) => {
     // Holes in array patterns (e.g. `function([,b]){}`) are structural markers
     // in the pattern shape, not values in the data-flow graph.
@@ -134,10 +134,10 @@ function buildFunctionObjectPatternParam(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): ParamBuildResult {
-  const place = environment.createPlace(environment.createIdentifier());
+  const place = environment.createValue();
   const properties: DestructureObjectProperty[] = node.properties.map((property) => {
     if (property.type === "Property") {
-      let key: string | number | Place;
+      let key: string | number | Value;
       if (property.computed) {
         // Computed keys emit normal value instructions; move them into the
         // function header so param codegen can resolve them during emission.
@@ -231,7 +231,7 @@ function buildFunctionAssignmentPatternParam(
     environment,
   );
   return {
-    place: environment.createPlace(environment.createIdentifier()),
+    place: environment.createValue(),
     target: {
       kind: "assignment",
       left: leftResult.target,
@@ -255,7 +255,7 @@ function buildFunctionRestElementParam(
     environment,
   );
   return {
-    place: environment.createPlace(environment.createIdentifier()),
+    place: environment.createValue(),
     target: {
       kind: "rest",
       argument: argumentResult.target,
@@ -264,11 +264,11 @@ function buildFunctionRestElementParam(
 }
 
 function buildFunctionIdentifierParamPlace(
-  node: AST.Identifier,
+  node: AST.Value,
   scope: Scope,
   functionBuilder: FuncOpBuilder,
   environment: Environment,
-): Place {
+): Value {
   const name = node.name;
   const declarationId = functionBuilder.getDeclarationId(name, scope);
   if (declarationId === undefined) {
@@ -276,7 +276,7 @@ function buildFunctionIdentifierParamPlace(
   }
 
   const latestDeclaration = environment.getLatestDeclaration(declarationId);
-  const place = environment.places.get(latestDeclaration.placeId);
+  const place = environment.values.get(latestDeclaration.valueId);
   if (place === undefined) {
     throw new Error(`Unable to find the place for ${name} (${declarationId})`);
   }

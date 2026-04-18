@@ -6,7 +6,7 @@ export function generateJSXOpeningElementOp(
   instruction: JSXOpeningElementOp,
   generator: CodeGenerator,
 ): t.JSXOpeningElement {
-  const tagName = generator.places.get(instruction.tagPlace.id);
+  const tagName = generator.values.get(instruction.tagPlace.id);
   if (
     !tagName ||
     (!t.isJSXIdentifier(tagName) &&
@@ -17,9 +17,9 @@ export function generateJSXOpeningElementOp(
   }
 
   const attributes = instruction.attributes.map((attrPlace) => {
-    const attrNode = generator.places.get(attrPlace.id);
+    const attrNode = generator.values.get(attrPlace.id);
     if (!attrNode) {
-      throw new Error(`Place not found for JSX attribute: ${attrPlace.id}`);
+      throw new Error(`Value not found for JSX attribute: ${attrPlace.id}`);
     }
     if (t.isJSXAttribute(attrNode)) {
       return attrNode;
@@ -32,6 +32,6 @@ export function generateJSXOpeningElementOp(
   });
 
   const node = t.jsxOpeningElement(tagName, attributes, instruction.selfClosing);
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

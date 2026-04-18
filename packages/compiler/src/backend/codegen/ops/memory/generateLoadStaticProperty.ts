@@ -6,9 +6,9 @@ export function generateLoadStaticPropertyOp(
   instruction: LoadStaticPropertyOp,
   generator: CodeGenerator,
 ) {
-  const object = generator.places.get(instruction.object.id);
+  const object = generator.values.get(instruction.object.id);
   if (object === undefined) {
-    throw new Error(`Place ${instruction.object.id} not found`);
+    throw new Error(`Value ${instruction.object.id} not found`);
   }
   t.assertExpression(object);
 
@@ -40,7 +40,7 @@ export function generateLoadStaticPropertyOp(
     node = t.memberExpression(object, property, true);
   }
 
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }
 

@@ -8,9 +8,9 @@ export function generateImportDeclarationOp(
 ): t.Statement {
   const source = t.valueToNode(instruction.source);
   const specifiers = instruction.specifiers.map((specifier) => {
-    const node = generator.places.get(specifier.id);
+    const node = generator.values.get(specifier.id);
     if (node === undefined) {
-      throw new Error(`Place ${specifier.id} not found`);
+      throw new Error(`Value ${specifier.id} not found`);
     }
 
     if (

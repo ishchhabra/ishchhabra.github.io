@@ -1,13 +1,13 @@
 if (true) {
   console.log("first");
 }
-let $0_0 = 10;
-let $16_0 = undefined;
+let $0 = 10;
+let $16 = undefined;
 if (true) {
-  $0_0 = 20;
-  $16_0 = $0_0;
+  $0 = 20;
+  $16 = $0;
 } else {
-  $16_0 = $0_0;
-  $16_0 = $0_0;
+  $16 = $0;
+  $16 = $0;
 }
-console.log($16_0);
+console.log($16);

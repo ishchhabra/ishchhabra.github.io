@@ -1,5 +1,5 @@
 import { OperationId } from "../../core";
-import { Identifier, Place } from "../../core";
+import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
@@ -16,35 +16,29 @@ export interface TemplateElement {
 export class TemplateLiteralOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
+    public override readonly place: Value,
     public readonly quasis: TemplateElement[],
-    public readonly expressions: Place[],
+    public readonly expressions: Value[],
   ) {
     super(id);
   }
 
   public clone(ctx: CloneContext): TemplateLiteralOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
-    return moduleIR.environment.createOperation(
-      TemplateLiteralOp,
-      place,
-      this.quasis,
-      this.expressions,
-    );
+    const env = ctx.environment;
+    const place = env.createValue();
+    return env.createOperation(TemplateLiteralOp, place, this.quasis, this.expressions);
   }
 
-  rewrite(values: Map<Identifier, Place>): Operation {
+  rewrite(values: Map<Value, Value>): Operation {
     return new TemplateLiteralOp(
       this.id,
       this.place,
       this.quasis,
-      this.expressions.map((expr) => values.get(expr.identifier) ?? expr),
+      this.expressions.map((expr) => values.get(expr) ?? expr),
     );
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [...this.expressions];
   }
 

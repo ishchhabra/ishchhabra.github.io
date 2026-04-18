@@ -1,8 +1,8 @@
-function $0_0($1_0) {
-  function $2_0() {}
-  switch ($1_0) {
+function $0($1) {
+  function $2() {}
+  switch ($1) {
     case "a":
-      return $2_0;
+      return $2;
       break;
     default:
       break;

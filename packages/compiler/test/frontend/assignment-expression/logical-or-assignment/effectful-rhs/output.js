@@ -1,16 +1,16 @@
-function $0_0() {
+function $0() {
   return 5;
 }
-let $1_0 = 0;
-let $12_0 = undefined;
-let $16_0 = undefined;
-if (!$1_0) {
-  const $9_0 = $0_0();
-  $1_0 = $9_0;
-  $12_0 = $9_0;
-  $16_0 = $1_0;
+let $1 = 0;
+let $12 = undefined;
+let $16 = undefined;
+if (!$1) {
+  const $9 = $0();
+  $1 = $9;
+  $12 = $9;
+  $16 = $1;
 } else {
-  $12_0 = $1_0;
-  $16_0 = $1_0;
+  $12 = $1;
+  $16 = $1;
 }
-const $2_0 = $12_0;
+const $2 = $12;

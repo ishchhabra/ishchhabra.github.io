@@ -1,8 +1,8 @@
 import { Environment } from "../../../environment";
 import {
   BasicBlock,
-  Identifier,
-  IdentifierId,
+  Value,
+  ValueId,
   LiteralOp,
   LoadDynamicPropertyOp,
   LoadLocalOp,
@@ -15,7 +15,6 @@ import {
   makeOperationId,
 } from "../../../ir";
 import { FuncOp } from "../../../ir/core/FuncOp";
-import { Place } from "../../../ir/core/Place";
 import { SpreadElementOp } from "../../../ir/ops/prim/SpreadElement";
 import { StoreDynamicPropertyOp } from "../../../ir/ops/prop/StoreDynamicProperty";
 import { StoreStaticPropertyOp } from "../../../ir/ops/prop/StoreStaticProperty";
@@ -129,7 +128,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
     for (const block of this.funcOp.allBlocks()) {
       for (let i = 0; i < block.operations.length; i++) {
         const instr = block.operations[i];
-        let valuePlace: Place;
+        let valuePlace: Value;
         let storeKind: StoreLocalOp["kind"];
         let declarationKind: StoreLocalOp["type"];
         let pattern: ObjectDestructureOp | null = null;
@@ -145,7 +144,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
 
         if (!pattern) continue;
 
-        const objectExpr = valuePlace.identifier.definer;
+        const objectExpr = valuePlace.definer;
         if (!(objectExpr instanceof ObjectExpressionOp)) continue;
 
         const objMap = this.buildObjectKeyToValue(objectExpr);
@@ -159,8 +158,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
         for (let j = 0; j < replacements.length; j++) {
           const { lval, value } = replacements[j];
           const id = makeOperationId(this.environment.nextOperationId++);
-          const identifier = this.environment.createIdentifier();
-          const place = this.environment.createPlace(identifier);
+          const place = this.environment.createValue();
           const scalar = new StoreLocalOp(id, place, lval, value, declarationKind, storeKind);
           block.insertOpAt(i + j, scalar);
         }
@@ -182,19 +180,19 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
 
     // 1. Find non-escaping, unmodified object literals.
     const candidates = new Map<
-      IdentifierId,
-      { objExpr: ObjectExpressionOp; propMap: Map<string, Place> }
+      ValueId,
+      { objExpr: ObjectExpressionOp; propMap: Map<string, Value> }
     >();
 
     for (const block of this.funcOp.allBlocks()) {
       for (const instr of block.operations) {
         if (!(instr instanceof ObjectExpressionOp)) continue;
-        if (!escapeResult.doesNotEscape(instr.place.identifier.id)) continue;
+        if (!escapeResult.doesNotEscape(instr.place.id)) continue;
 
         const propMap = this.buildObjectKeyToValue(instr);
         if (!propMap) continue;
 
-        candidates.set(instr.place.identifier.id, { objExpr: instr, propMap });
+        candidates.set(instr.place.id, { objExpr: instr, propMap });
       }
     }
 
@@ -206,7 +204,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
 
     // 2. Build a rewrite map: LoadStaticProperty result → property value.
     //    Also collect the LoadStaticProperty instructions to remove.
-    const rewrites = new Map<Identifier, Place>();
+    const rewrites = new Map<Value, Value>();
     const toRemove = new Map<BasicBlock, number[]>();
 
     for (const block of this.funcOp.allBlocks()) {
@@ -217,13 +215,13 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
         const objExpr = this.resolveToObjectExpression(instr.object);
         if (!objExpr) continue;
 
-        const candidate = candidates.get(objExpr.place.identifier.id);
+        const candidate = candidates.get(objExpr.place.id);
         if (!candidate) continue;
 
         const value = candidate.propMap.get(instr.property);
         if (value === undefined) continue;
 
-        rewrites.set(instr.place.identifier, value);
+        rewrites.set(instr.place, value);
 
         let indices = toRemove.get(block);
         if (!indices) {
@@ -259,15 +257,15 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
    * (LoadLocal, StoreLocal) back to its origin. Returns the
    * ObjectExpressionOp if found, null otherwise.
    */
-  private resolveToObjectExpression(place: Place): ObjectExpressionOp | null {
+  private resolveToObjectExpression(place: Value): ObjectExpressionOp | null {
     // oxlint-disable-next-line typescript/no-explicit-any
-    let current: any = place.identifier.definer;
+    let current: any = place.definer;
     for (let depth = 0; depth < 10 && current; depth++) {
       if (current instanceof ObjectExpressionOp) return current;
       if (current instanceof LoadLocalOp) {
-        current = current.value.identifier.definer;
+        current = current.value.definer;
       } else if (current instanceof StoreLocalOp) {
-        current = current.value.identifier.definer;
+        current = current.value.definer;
       } else {
         break;
       }
@@ -284,7 +282,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
    *   is a `LoadStaticProperty` on the object
    */
   private removeModifiedObjects(
-    candidates: Map<IdentifierId, { objExpr: ObjectExpressionOp; propMap: Map<string, Place> }>,
+    candidates: Map<ValueId, { objExpr: ObjectExpressionOp; propMap: Map<string, Value> }>,
   ): void {
     for (const block of this.funcOp.allBlocks()) {
       for (const instr of block.operations) {
@@ -292,17 +290,17 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
         if (instr instanceof StoreStaticPropertyOp || instr instanceof StoreDynamicPropertyOp) {
           const objExpr = this.resolveToObjectExpression(instr.object);
           if (objExpr) {
-            candidates.delete(objExpr.place.identifier.id);
+            candidates.delete(objExpr.place.id);
           }
         }
 
         // `delete obj.prop` — the delete argument is a LoadStaticProperty.
         if (instr instanceof UnaryExpressionOp && instr.operator === "delete") {
-          const argDefiner = instr.argument.identifier.definer;
+          const argDefiner = instr.argument.definer;
           if (argDefiner instanceof LoadStaticPropertyOp) {
             const objExpr = this.resolveToObjectExpression(argDefiner.object);
             if (objExpr) {
-              candidates.delete(objExpr.place.identifier.id);
+              candidates.delete(objExpr.place.id);
             }
           }
         }
@@ -328,22 +326,22 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
    */
   private stepStoreToLoadForwarding(): boolean {
     const escapeResult = this.AM.get(EscapeAnalysis, this.funcOp);
-    const rewrites = new Map<Identifier, Place>();
+    const rewrites = new Map<Value, Value>();
     const toRemove = new Map<BasicBlock, number[]>();
 
     for (const block of this.funcOp.allBlocks()) {
-      // Virtual state: objectId → (propertyKey → current value Place)
-      const virtualState = new Map<IdentifierId, Map<string, Place>>();
+      // Virtual state: objectId → (propertyKey → current value Value)
+      const virtualState = new Map<ValueId, Map<string, Value>>();
 
       for (let i = 0; i < block.operations.length; i++) {
         const instr = block.operations[i];
 
         // Initialize virtual state when we see a non-escaping object literal.
         if (instr instanceof ObjectExpressionOp) {
-          if (!escapeResult.doesNotEscape(instr.place.identifier.id)) continue;
+          if (!escapeResult.doesNotEscape(instr.place.id)) continue;
           const propMap = this.buildObjectKeyToValue(instr);
           if (propMap) {
-            virtualState.set(instr.place.identifier.id, new Map(propMap));
+            virtualState.set(instr.place.id, new Map(propMap));
           }
           continue;
         }
@@ -372,7 +370,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
 
         // `delete obj.prop` → invalidate the specific property.
         if (instr instanceof UnaryExpressionOp && instr.operator === "delete") {
-          const argDefiner = instr.argument.identifier.definer;
+          const argDefiner = instr.argument.definer;
           if (argDefiner instanceof LoadStaticPropertyOp) {
             const objId = this.resolveToObjectId(argDefiner.object);
             if (objId !== null) {
@@ -398,7 +396,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
           // `delete` needs the actual property reference, not the value.
           if (this.feedsDeleteExpression(instr)) continue;
 
-          rewrites.set(instr.place.identifier, value);
+          rewrites.set(instr.place, value);
 
           let indices = toRemove.get(block);
           if (!indices) {
@@ -458,12 +456,12 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
         }
 
         // Result must be unused.
-        if (instr.place.identifier.uses.size > 0) continue;
+        if (instr.place.useCount > 0) continue;
 
         // Object must be a NoEscape literal.
         const objExpr = this.resolveToObjectExpression(instr.object);
         if (!objExpr) continue;
-        if (!escapeResult.doesNotEscape(objExpr.place.identifier.id)) continue;
+        if (!escapeResult.doesNotEscape(objExpr.place.id)) continue;
 
         let indices = toRemove.get(block);
         if (!indices) {
@@ -491,7 +489,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
    * to a `delete` UnaryExpression.
    */
   private feedsDeleteExpression(instr: LoadStaticPropertyOp): boolean {
-    for (const user of instr.place.identifier.uses) {
+    for (const user of instr.place.uses()) {
       if (user instanceof UnaryExpressionOp && user.operator === "delete") {
         return true;
       }
@@ -500,12 +498,12 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
   }
 
   /**
-   * Resolve a place to the IdentifierId of its defining ObjectExpression,
+   * Resolve a place to the ValueId of its defining ObjectExpression,
    * or null if it doesn't trace back to one.
    */
-  private resolveToObjectId(place: Place): IdentifierId | null {
+  private resolveToObjectId(place: Value): ValueId | null {
     const objExpr = this.resolveToObjectExpression(place);
-    return objExpr ? objExpr.place.identifier.id : null;
+    return objExpr ? objExpr.place.id : null;
   }
 
   // ---------------------------------------------------------------------------
@@ -513,24 +511,24 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
   // ---------------------------------------------------------------------------
 
   /**
-   * Build a map from property key (as string) → value {@link Place} for
+   * Build a map from property key (as string) → value {@link Value} for
    * every property in an object literal.
    *
    * Returns `null` if any property is a spread element, has a computed
    * key, or has a non-literal key.
    */
-  private buildObjectKeyToValue(objectExpr: ObjectExpressionOp): Map<string, Place> | null {
-    const map = new Map<string, Place>();
+  private buildObjectKeyToValue(objectExpr: ObjectExpressionOp): Map<string, Value> | null {
+    const map = new Map<string, Value>();
 
     for (const propPlace of objectExpr.properties) {
-      const prop = propPlace.identifier.definer;
+      const prop = propPlace.definer;
 
       if (prop instanceof SpreadElementOp) return null;
       if (!(prop instanceof ObjectPropertyOp)) return null;
 
       if (prop.computed) return null;
 
-      const keyDefiner = prop.key.identifier.definer;
+      const keyDefiner = prop.key.definer;
       if (!(keyDefiner instanceof LiteralOp)) return null;
       if (typeof keyDefiner.value !== "string" && typeof keyDefiner.value !== "number") return null;
 
@@ -542,9 +540,9 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
 
   private matchDestructureToObject(
     pattern: ObjectDestructureOp,
-    objMap: Map<string, Place>,
-  ): Array<{ lval: Place; value: Place }> | null {
-    const replacements: Array<{ lval: Place; value: Place }> = [];
+    objMap: Map<string, Value>,
+  ): Array<{ lval: Value; value: Value }> | null {
+    const replacements: Array<{ lval: Value; value: Value }> = [];
 
     for (const property of pattern.properties) {
       if (property.value.kind === "rest") return null;

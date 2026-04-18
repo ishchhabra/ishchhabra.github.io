@@ -1,8 +1,7 @@
 import type { Environment } from "../../environment";
 import type { BasicBlock, BlockId } from "./Block";
-import type { Identifier } from "./Identifier";
 import type { ModuleIR } from "./ModuleIR";
-import type { Place } from "./Place";
+import type { Value } from "./Value";
 import { Region } from "./Region";
 
 // ---------------------------------------------------------------------
@@ -55,8 +54,8 @@ export const enum Trait {
  * Under the old hierarchy there were three different clone signatures:
  *
  *   - instruction-shaped: `clone(moduleIR)`
- *   - terminator-shaped:  `clone(env, blockMap, identifierMap)`
- *   - structure-shaped:   `clone(blockMap, identifierMap)`
+ *   - terminator-shaped:  `clone(env, blockMap, valueMap)`
+ *   - structure-shaped:   `clone(blockMap, valueMap)`
  *
  * `CloneContext` unifies those into a single bag passed as the only
  * argument. Each concrete op pulls whatever fields it needs:
@@ -67,7 +66,7 @@ export const enum Trait {
  *   - `blockMap` — old → new {@link BlockId} remap. Terminators and
  *     structured CF ops use this to rewire their block references
  *     when the whole CFG is being deep-cloned.
- *   - `identifierMap` — old {@link Identifier} → new {@link Place}
+ *   - `valueMap` — old {@link Value} → new {@link Value}
  *     remap. Used to rewire operand places after phase 1 of the
  *     two-phase `FuncOp.clone()` protocol has allocated fresh
  *     places for every def.
@@ -77,16 +76,34 @@ export const enum Trait {
  * empty maps.
  */
 export interface CloneContext {
-  readonly moduleIR: ModuleIR;
+  /**
+   * Target environment. Always present. Source of fresh ids and
+   * value/block lookups. Ops that only need id allocation or value
+   * lookup should prefer this over {@link moduleIR}.
+   */
+  readonly environment: Environment;
+  /**
+   * Target module. Present for module-scoped clones (e.g. cloning a
+   * function body into another module); absent for the within-block
+   * rewrite path used by {@link BasicBlock.rewrite}.
+   */
+  readonly moduleIR: ModuleIR | undefined;
   readonly blockMap: Map<BlockId, BlockId>;
-  readonly identifierMap: Map<Identifier, Place>;
+  /**
+   * Old → new {@link Value} remap, used to rewire operands after
+   * phase 1 of a deep clone has allocated fresh values for every def.
+   * (Historically named `valueMap` from the pre-merge era where
+   * {@link Value} was split into `Value` + `Value`.)
+   */
+  readonly valueMap: Map<Value, Value>;
 }
 
 export function makeCloneContext(moduleIR: ModuleIR): CloneContext {
   return {
+    environment: moduleIR.environment,
     moduleIR,
     blockMap: new Map(),
-    identifierMap: new Map(),
+    valueMap: new Map(),
   };
 }
 
@@ -94,13 +111,31 @@ export function remapBlockId(ctx: CloneContext, id: BlockId): BlockId {
   return ctx.blockMap.get(id) ?? id;
 }
 
-export function remapPlace(ctx: CloneContext, place: Place): Place {
-  return ctx.identifierMap.get(place.identifier) ?? place;
+export function remapPlace(ctx: CloneContext, place: Value): Value {
+  return ctx.valueMap.get(place) ?? place;
 }
 
 /** Allocate a fresh {@link OperationId} from the clone context's module. */
 export function nextId(ctx: CloneContext): OperationId {
-  return makeOperationId(ctx.moduleIR.environment.nextOperationId++);
+  return makeOperationId(ctx.environment.nextOperationId++);
+}
+
+/**
+ * Fetch `ctx.moduleIR`, throwing if it's `undefined`. Used by op
+ * `clone()` methods that need to recurse into nested function bodies
+ * (`this.funcOp.clone(makeCloneContext(moduleIR))`) — a full
+ * module-scoped clone is required for that, not just an environment.
+ *
+ * Callers using `ctx.environment` for id/value allocation don't need
+ * this helper.
+ */
+export function requireModuleIR(ctx: CloneContext): ModuleIR {
+  if (ctx.moduleIR === undefined) {
+    throw new Error(
+      "CloneContext.moduleIR is required for this clone — build the context with makeCloneContext(moduleIR).",
+    );
+  }
+  return ctx.moduleIR;
 }
 
 /**
@@ -117,7 +152,7 @@ export function remapRegion(ctx: CloneContext, region: Region): Region {
   const newBlocks: BasicBlock[] = [];
   for (const oldBlock of region.blocks) {
     const newBlockId = ctx.blockMap.get(oldBlock.id) ?? oldBlock.id;
-    const newBlock = ctx.moduleIR.environment.blocks.get(newBlockId);
+    const newBlock = ctx.environment.blocks.get(newBlockId);
     if (newBlock === undefined) {
       throw new Error(`remapRegion: block bb${newBlockId} not found in environment`);
     }
@@ -138,9 +173,9 @@ export function remapRegion(ctx: CloneContext, region: Region): Region {
  * What Operation provides:
  *
  *   - `id: OperationId` — every op has a stable id.
- *   - `place?: Place` — primary SSA result for ops that produce a
+ *   - `place?: Value` — primary SSA result for ops that produce a
  *     value. Terminators and structures leave it undefined;
- *     instructions narrow via `public override readonly place: Place`
+ *     instructions narrow via `public override readonly place: Value`
  *     in their constructors.
  *   - Static `traits` + `hasTrait(t)` for compile-time categorization.
  *   - Abstract `getOperands()`, `rewrite()`, `clone(ctx)`.
@@ -156,11 +191,11 @@ export abstract class Operation {
 
   /**
    * Primary result place. Undefined for terminators and structures.
-   * Instruction subclasses narrow this to `Place` via
-   * `public override readonly place: Place` in their constructor
+   * Instruction subclasses narrow this to `Value` via
+   * `public override readonly place: Value` in their constructor
    * parameter shorthand.
    */
-  public readonly place: Place | undefined = undefined;
+  public readonly place: Value | undefined = undefined;
 
   /**
    * Regions owned by this op. Most ops have none. Structured
@@ -204,22 +239,22 @@ export abstract class Operation {
   // Operand / def interface
   // -----------------------------------------------------------------
 
-  abstract getOperands(): Place[];
+  abstract getOperands(): Value[];
 
   /**
    * Places this op writes. Default: `[place]` if the op has a place,
    * empty otherwise. Multi-def ops (StoreLocal, destructure) override.
    */
-  getDefs(): Place[] {
+  getDefs(): Value[] {
     return this.place !== undefined ? [this.place] : [];
   }
 
   /** MLIR-style alias for {@link getDefs}. */
-  get results(): readonly Place[] {
+  get results(): readonly Value[] {
     return this.getDefs();
   }
 
-  getUses(): Place[] {
+  getUses(): Value[] {
     return this.getOperands();
   }
 
@@ -241,7 +276,7 @@ export abstract class Operation {
    * options parameter here is intentionally typed as `object` to
    * accommodate both shapes. Concrete ops narrow it via their override.
    */
-  abstract rewrite(values: Map<Identifier, Place>, options?: object): Operation;
+  abstract rewrite(values: Map<Value, Value>, options?: object): Operation;
 
   // -----------------------------------------------------------------
   // Side effects / purity
@@ -278,8 +313,8 @@ export abstract class Operation {
   // {@link VerifyError} with a descriptive message on failure.
   //
   // The default implementation checks that:
-  //   - every operand is a non-null Place.
-  //   - every def is a non-null Place.
+  //   - every operand is a non-null Value.
+  //   - every def is a non-null Value.
   //   - the op's own `place`, if declared, appears in `getDefs()`.
   //
   // Concrete ops override to add op-specific invariants.
@@ -287,12 +322,12 @@ export abstract class Operation {
 
   verify(): void {
     for (const operand of this.getOperands()) {
-      if (operand == null || operand.identifier == null) {
+      if (operand == null || operand == null) {
         throw new VerifyError(this, "has null operand");
       }
     }
     for (const def of this.getDefs()) {
-      if (def == null || def.identifier == null) {
+      if (def == null || def == null) {
         throw new VerifyError(this, "has null def");
       }
     }

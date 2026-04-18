@@ -3,10 +3,9 @@ import {
   BasicBlock,
   BlockId,
   DeclarationId,
-  Identifier,
+  Value,
   LiteralOp,
   makeOperationId,
-  Place,
   StoreLocalOp,
 } from "../../ir";
 import { FuncOp } from "../../ir/core/FuncOp";
@@ -34,9 +33,9 @@ import {
 } from "../../ir/ops/control";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { DominatorTreeAnalysis, type DominatorTree } from "../analysis/DominatorTreeAnalysis";
-import { createParamIdentifier } from "./utils";
+import { createParamValue } from "./utils";
 
-type Stacks = Map<DeclarationId, Place[]>;
+type Stacks = Map<DeclarationId, Value[]>;
 
 /**
  * Textbook SSA construction (Cytron et al., 1991), adapted to an
@@ -81,7 +80,7 @@ export class SSABuilder {
   private readonly moduleIR: ModuleIR;
   private readonly AM: AnalysisManager;
 
-  private undefSeed!: Place;
+  private undefSeed!: Value;
   private domTree!: DominatorTree;
   private readonly blockRegion = new Map<BlockId, Region>();
   private readonly domTreeChildren = new Map<BlockId, BlockId[]>();
@@ -109,7 +108,7 @@ export class SSABuilder {
     this.undefSeed = this.materializeUndefSeed();
     this.seedHeaderDefinitions(stacks);
 
-    // Place block params at iterated dominance frontiers for the
+    // Value block params at iterated dominance frontiers for the
     // flat CFG of the top-level region. Most JS functions end up
     // with a single body block after the frontend emits structured
     // ops, so this is usually a no-op — but multi-block regions
@@ -134,14 +133,13 @@ export class SSABuilder {
    * block. Used as the function-wide undef seed when a block param
    * has no reaching definition on some incoming edge.
    */
-  private materializeUndefSeed(): Place {
+  private materializeUndefSeed(): Value {
     const env = this.moduleIR.environment;
-    const place = env.createPlace(env.createIdentifier());
+    const place = env.createValue();
     const opId = makeOperationId(env.nextOperationId++);
     const literal = new LiteralOp(opId, place, undefined);
     const entryBlock = this.funcOp.getBlock(this.funcOp.entryBlockId);
     entryBlock.insertOpAt(0, literal);
-    env.placeToOp.set(place.id, literal);
     return place;
   }
 
@@ -217,7 +215,7 @@ export class SSABuilder {
 
     const domTree = this.AM.get(DominatorTreeAnalysis, this.funcOp);
 
-    for (const [declId, entries] of this.moduleIR.environment.declToPlaces) {
+    for (const [declId, entries] of this.moduleIR.environment.declToValues) {
       if (this.moduleIR.environment.contextDeclarationIds.has(declId)) continue;
 
       const defBlocks = entries
@@ -243,9 +241,9 @@ export class SSABuilder {
       for (const frontier of domTree.getDominanceFrontier(block)) {
         if (hasParam.has(frontier)) continue;
 
-        const id = createParamIdentifier(this.moduleIR.environment);
+        const id = createParamValue(this.moduleIR.environment);
         id.originalDeclarationId = declId;
-        const place = this.moduleIR.environment.createPlace(id);
+        const place = id;
 
         const frontierBlock = this.funcOp.getBlock(frontier);
         frontierBlock.params = [...frontierBlock.params, place];
@@ -274,7 +272,7 @@ export class SSABuilder {
     const pushed: DeclarationId[] = [];
 
     for (const param of block.params) {
-      if (param.identifier.originalDeclarationId !== undefined) {
+      if (param.originalDeclarationId !== undefined) {
         this.pushStack(stacks, param, pushed);
       }
     }
@@ -323,7 +321,6 @@ export class SSABuilder {
     if (parent === null) return;
     parent.replaceOp(op, rewritten);
     if (rewritten.place !== undefined) {
-      this.moduleIR.environment.placeToOp.set(rewritten.place.id, rewritten);
     }
   }
 
@@ -404,7 +401,7 @@ export class SSABuilder {
     regionPushed: DeclarationId[],
   ): void {
     for (const param of block.params) {
-      if (param.identifier.originalDeclarationId !== undefined) {
+      if (param.originalDeclarationId !== undefined) {
         this.pushStack(stacks, param, regionPushed);
       }
     }
@@ -446,7 +443,7 @@ export class SSABuilder {
     const ctx = this.resolveLoopContext(terminal.label);
     if (ctx === undefined || ctx.carriedDecls.length === 0) return;
 
-    const args: Place[] = [];
+    const args: Value[] = [];
     for (const decl of ctx.carriedDecls) {
       const stack = stacks.get(decl);
       const top = stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
@@ -479,7 +476,7 @@ export class SSABuilder {
     parentPushed: DeclarationId[],
   ): void {
     const snapshot = this.snapshotTops(stacks);
-    const perArmTops: Map<DeclarationId, Place>[] = [];
+    const perArmTops: Map<DeclarationId, Value>[] = [];
     const perArmWrites: Set<DeclarationId>[] = [];
 
     for (const region of op.regions) {
@@ -509,12 +506,12 @@ export class SSABuilder {
       return;
     }
 
-    const newResultPlaces: Place[] = [...op.resultPlaces];
+    const newResultPlaces: Value[] = [...op.resultPlaces];
     const newResultDecls: DeclarationId[] = [];
     for (const decl of mutatedDecls) {
-      const id = this.moduleIR.environment.createIdentifier();
+      const id = this.moduleIR.environment.createValue();
       id.originalDeclarationId = decl;
-      const place = this.moduleIR.environment.createPlace(id);
+      const place = id;
       newResultPlaces.push(place);
       newResultDecls.push(decl);
     }
@@ -525,7 +522,7 @@ export class SSABuilder {
       const lastBlock = region.blocks[region.blocks.length - 1];
       const terminal = lastBlock.terminal;
       if (!(terminal instanceof YieldOp)) continue;
-      const newValues: Place[] = [...terminal.values];
+      const newValues: Value[] = [...terminal.values];
       for (const decl of newResultDecls) {
         const armTop = armTops.get(decl) ?? snapshot.get(decl) ?? this.undefSeed;
         newValues.push(armTop);
@@ -538,7 +535,7 @@ export class SSABuilder {
       const altBlock = this.moduleIR.environment.createBlock();
       altRegion.appendBlock(altBlock);
       this.funcOp.addBlock(altBlock, altRegion);
-      const yieldValues: Place[] = [];
+      const yieldValues: Value[] = [];
       for (const decl of newResultDecls) {
         yieldValues.push(snapshot.get(decl) ?? this.undefSeed);
       }
@@ -628,9 +625,9 @@ export class SSABuilder {
 
     // Allocate block params on the before and body region entries,
     // plus result places on the WhileOp. One per loop-carried decl.
-    const beforeParams: Place[] = [];
-    const bodyParams: Place[] = [];
-    const newResultPlaces: Place[] = [];
+    const beforeParams: Value[] = [];
+    const bodyParams: Value[] = [];
+    const newResultPlaces: Value[] = [];
     for (const decl of carriedDecls) {
       beforeParams.push(this.makeCarriedPlace(decl));
       bodyParams.push(this.makeCarriedPlace(decl));
@@ -644,7 +641,7 @@ export class SSABuilder {
 
     // inits: the reaching def of each carried decl at the WhileOp's
     // position — the pre-loop snapshot top.
-    const inits: Place[] = [];
+    const inits: Value[] = [];
     for (const decl of carriedDecls) {
       inits.push(snapshot.get(decl) ?? this.undefSeed);
     }
@@ -663,7 +660,7 @@ export class SSABuilder {
       this.restoreTops(stacks, snapshot);
       const beforePushed: DeclarationId[] = [];
       this.renameRegionLinear(op.beforeRegion, stacks, beforePushed);
-      const condArgs: Place[] = [];
+      const condArgs: Value[] = [];
       for (const decl of carriedDecls) {
         const stack = stacks.get(decl);
         const top = stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
@@ -677,7 +674,7 @@ export class SSABuilder {
       this.restoreTops(stacks, snapshot);
       const bodyPushed: DeclarationId[] = [];
       this.renameRegionLinear(op.bodyRegion, stacks, bodyPushed);
-      const yieldVals: Place[] = [];
+      const yieldVals: Value[] = [];
       for (const decl of carriedDecls) {
         const stack = stacks.get(decl);
         const top = stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
@@ -702,7 +699,6 @@ export class SSABuilder {
     );
     parentBlock.replaceOp(op, newWhileOp);
     for (const place of newResultPlaces) {
-      env.placeToOp.set(place.id, newWhileOp);
     }
 
     // Restore to pre-loop snapshot, then push each result place as
@@ -789,10 +785,10 @@ export class SSABuilder {
 
     const env = this.moduleIR.environment;
 
-    const beforeParams: Place[] = [];
-    const bodyParams: Place[] = [];
-    const updateParams: Place[] = [];
-    const newResultPlaces: Place[] = [];
+    const beforeParams: Value[] = [];
+    const bodyParams: Value[] = [];
+    const updateParams: Value[] = [];
+    const newResultPlaces: Value[] = [];
     for (const decl of carriedDecls) {
       beforeParams.push(this.makeCarriedPlace(decl));
       bodyParams.push(this.makeCarriedPlace(decl));
@@ -821,7 +817,6 @@ export class SSABuilder {
     );
     parentBlock.replaceOp(op, newForOp);
     for (const place of newResultPlaces) {
-      env.placeToOp.set(place.id, newForOp);
     }
 
     this.loopContexts.push({ op: newForOp, label: op.label, carriedDecls });
@@ -832,7 +827,7 @@ export class SSABuilder {
       this.restoreTops(stacks, snapshot);
       const initPushed: DeclarationId[] = [];
       this.renameRegionLinear(op.initRegion, stacks, initPushed);
-      const initYieldVals: Place[] = [];
+      const initYieldVals: Value[] = [];
       for (const decl of carriedDecls) {
         const stack = stacks.get(decl);
         const top = stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
@@ -846,7 +841,7 @@ export class SSABuilder {
       this.restoreTops(stacks, snapshot);
       const beforePushed: DeclarationId[] = [];
       this.renameRegionLinear(op.beforeRegion, stacks, beforePushed);
-      const condArgs: Place[] = [];
+      const condArgs: Value[] = [];
       for (const decl of carriedDecls) {
         const stack = stacks.get(decl);
         const top = stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
@@ -859,7 +854,7 @@ export class SSABuilder {
       this.restoreTops(stacks, snapshot);
       const bodyPushed: DeclarationId[] = [];
       this.renameRegionLinear(op.bodyRegion, stacks, bodyPushed);
-      const bodyYieldVals: Place[] = [];
+      const bodyYieldVals: Value[] = [];
       for (const decl of carriedDecls) {
         const stack = stacks.get(decl);
         const top = stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
@@ -872,7 +867,7 @@ export class SSABuilder {
       this.restoreTops(stacks, snapshot);
       const updatePushed: DeclarationId[] = [];
       this.renameRegionLinear(op.updateRegion, stacks, updatePushed);
-      const updateYieldVals: Place[] = [];
+      const updateYieldVals: Value[] = [];
       for (const decl of carriedDecls) {
         const stack = stacks.get(decl);
         const top = stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
@@ -944,8 +939,8 @@ export class SSABuilder {
 
     const env = this.moduleIR.environment;
 
-    const bodyParams: Place[] = [];
-    const newResultPlaces: Place[] = [];
+    const bodyParams: Value[] = [];
+    const newResultPlaces: Value[] = [];
     for (const decl of carriedDecls) {
       bodyParams.push(this.makeCarriedPlace(decl));
       newResultPlaces.push(this.makeCarriedPlace(decl));
@@ -957,7 +952,7 @@ export class SSABuilder {
     // inits: pre-loop reaching defs for each carried decl — flow
     // into body entry on the first iteration via an op-entry edge
     // handled by SSAEliminator.
-    const inits: Place[] = [];
+    const inits: Value[] = [];
     for (const decl of carriedDecls) {
       inits.push(snapshot.get(decl) ?? this.undefSeed);
     }
@@ -987,7 +982,6 @@ export class SSABuilder {
           );
     parentBlock.replaceOp(op, newOp);
     for (const place of newResultPlaces) {
-      env.placeToOp.set(place.id, newOp);
     }
 
     this.loopContexts.push({ op: newOp, label: op.label, carriedDecls });
@@ -996,7 +990,7 @@ export class SSABuilder {
       const bodyPushed: DeclarationId[] = [];
       this.seedRegionBindings(newOp, op.bodyRegion, stacks, bodyPushed);
       this.renameRegionLinear(op.bodyRegion, stacks, bodyPushed);
-      const yieldVals: Place[] = [];
+      const yieldVals: Value[] = [];
       for (const decl of carriedDecls) {
         const stack = stacks.get(decl);
         const top = stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
@@ -1054,7 +1048,7 @@ export class SSABuilder {
     }
 
     const env = this.moduleIR.environment;
-    const newResultPlaces: Place[] = [];
+    const newResultPlaces: Value[] = [];
     for (const _ of carriedDecls) newResultPlaces.push(this.makeCarriedPlace(carriedDecls[0]));
     for (let i = 0; i < carriedDecls.length; i++) {
       newResultPlaces[i] = this.makeCarriedPlace(carriedDecls[i]);
@@ -1063,7 +1057,6 @@ export class SSABuilder {
     const newOp = new LabeledBlockOp(op.id, op.label, op.bodyRegion, newResultPlaces);
     parentBlock.replaceOp(op, newOp);
     for (const place of newResultPlaces) {
-      env.placeToOp.set(place.id, newOp);
     }
 
     this.loopContexts.push({ op: newOp, label: op.label, carriedDecls });
@@ -1071,7 +1064,7 @@ export class SSABuilder {
       this.restoreTops(stacks, snapshot);
       const bodyPushed: DeclarationId[] = [];
       this.renameRegionLinear(op.bodyRegion, stacks, bodyPushed);
-      const yieldVals: Place[] = [];
+      const yieldVals: Value[] = [];
       for (const decl of carriedDecls) {
         const stack = stacks.get(decl);
         const top = stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
@@ -1096,13 +1089,13 @@ export class SSABuilder {
     }
   }
 
-  private makeCarriedPlace(decl: DeclarationId): Place {
-    const id = createParamIdentifier(this.moduleIR.environment);
+  private makeCarriedPlace(decl: DeclarationId): Value {
+    const id = createParamValue(this.moduleIR.environment);
     id.originalDeclarationId = decl;
-    return this.moduleIR.environment.createPlace(id);
+    return id;
   }
 
-  private attachConditionArgs(beforeRegion: Region, args: Place[]): void {
+  private attachConditionArgs(beforeRegion: Region, args: Value[]): void {
     for (const block of beforeRegion.blocks) {
       const terminal = block.terminal;
       if (terminal instanceof ConditionOp) {
@@ -1111,7 +1104,7 @@ export class SSABuilder {
     }
   }
 
-  private appendYieldValues(bodyRegion: Region, extras: Place[]): void {
+  private appendYieldValues(bodyRegion: Region, extras: Value[]): void {
     if (extras.length === 0) return;
     const lastBlock = bodyRegion.blocks[bodyRegion.blocks.length - 1];
     const terminal = lastBlock.terminal;
@@ -1202,8 +1195,8 @@ export class SSABuilder {
   private fillJumpArgs(block: BasicBlock, terminal: JumpOp, stacks: Stacks): void {
     const succ = this.funcOp.maybeBlock(terminal.target);
     if (succ === undefined || succ.params.length === 0) return;
-    const args: Place[] = succ.params.map((param) => {
-      const decl = param.identifier.originalDeclarationId;
+    const args: Value[] = succ.params.map((param) => {
+      const decl = param.originalDeclarationId;
       if (decl === undefined) return this.undefSeed;
       const stack = stacks.get(decl);
       if (stack !== undefined && stack.length > 0) {
@@ -1226,8 +1219,8 @@ export class SSABuilder {
    * of the source variable find the synthetic place at the top. For
    * non-synthetic places, fall back to `declarationId`.
    */
-  private pushStack(stacks: Stacks, place: Place, pushed?: DeclarationId[]): void {
-    const decl = place.identifier.originalDeclarationId ?? place.identifier.declarationId;
+  private pushStack(stacks: Stacks, place: Value, pushed?: DeclarationId[]): void {
+    const decl = place.originalDeclarationId ?? place.declarationId;
     let stack = stacks.get(decl);
     if (stack === undefined) {
       stack = [];
@@ -1248,7 +1241,7 @@ export class SSABuilder {
     for (const block of region.blocks) {
       for (const op of block.operations) {
         if (op instanceof StoreLocalOp) {
-          writes.add(op.lval.identifier.declarationId);
+          writes.add(op.lval.declarationId);
         }
         if (op.hasTrait(Trait.HasRegions)) {
           for (const innerRegion of op.regions) {
@@ -1259,15 +1252,15 @@ export class SSABuilder {
     }
   }
 
-  private snapshotTops(stacks: Stacks): Map<DeclarationId, Place> {
-    const snap = new Map<DeclarationId, Place>();
+  private snapshotTops(stacks: Stacks): Map<DeclarationId, Value> {
+    const snap = new Map<DeclarationId, Value>();
     for (const [decl, stack] of stacks) {
       if (stack.length > 0) snap.set(decl, stack[stack.length - 1]);
     }
     return snap;
   }
 
-  private restoreTops(stacks: Stacks, snapshot: Map<DeclarationId, Place>): void {
+  private restoreTops(stacks: Stacks, snapshot: Map<DeclarationId, Value>): void {
     for (const [decl, stack] of stacks) {
       const snapTop = snapshot.get(decl);
       while (stack.length > 0 && stack[stack.length - 1] !== snapTop) {
@@ -1276,15 +1269,15 @@ export class SSABuilder {
     }
   }
 
-  private buildRewriteMap(reads: Place[], stacks: Stacks): Map<Identifier, Place> {
-    const map = new Map<Identifier, Place>();
+  private buildRewriteMap(reads: Value[], stacks: Stacks): Map<Value, Value> {
+    const map = new Map<Value, Value>();
     for (const place of reads) {
-      const decl = place.identifier.declarationId;
+      const decl = place.declarationId;
       const stack = stacks.get(decl);
       if (stack === undefined || stack.length === 0) continue;
       const top = stack[stack.length - 1];
-      if (top.identifier !== place.identifier) {
-        map.set(place.identifier, top);
+      if (top !== place) {
+        map.set(place, top);
       }
     }
     return map;

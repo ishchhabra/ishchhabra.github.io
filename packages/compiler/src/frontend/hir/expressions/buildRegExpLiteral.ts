@@ -8,8 +8,7 @@ export function buildRegExpLiteral(
   functionBuilder: FuncOpBuilder,
   environment: Environment,
 ) {
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(
     RegExpLiteralOp,
     place,
@@ -17,6 +16,5 @@ export function buildRegExpLiteral(
     node.regex.flags,
   );
   functionBuilder.addOp(instruction);
-  environment.registerDeclarationOp(place, instruction);
   return place;
 }

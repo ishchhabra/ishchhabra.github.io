@@ -10,11 +10,9 @@ export function buildLiteral(
 ) {
   const value = nodeToValue(node);
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(LiteralOp, place, value);
   functionBuilder.addOp(instruction);
-  environment.registerDeclarationOp(place, instruction);
   return place;
 }
 

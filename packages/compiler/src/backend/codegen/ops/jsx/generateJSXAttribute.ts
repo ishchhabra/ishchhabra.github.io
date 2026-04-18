@@ -10,9 +10,9 @@ export function generateJSXAttributeOp(
 
   let value: t.JSXAttribute["value"] = null;
   if (instruction.value !== undefined) {
-    const valueNode = generator.places.get(instruction.value.id);
+    const valueNode = generator.values.get(instruction.value.id);
     if (!valueNode) {
-      throw new Error(`Place not found for JSX attribute value: ${instruction.value.id}`);
+      throw new Error(`Value not found for JSX attribute value: ${instruction.value.id}`);
     }
     if (t.isStringLiteral(valueNode)) {
       value = valueNode;
@@ -30,7 +30,7 @@ export function generateJSXAttributeOp(
   }
 
   const node = t.jsxAttribute(name, value);
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }
 

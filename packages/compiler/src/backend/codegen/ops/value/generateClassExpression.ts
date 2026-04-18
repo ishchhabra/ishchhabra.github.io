@@ -7,10 +7,10 @@ export function generateClassExpressionOp(
   generator: CodeGenerator,
 ): t.ClassExpression {
   let idNode: t.Identifier | null = null;
-  if (instruction.identifier) {
-    const node = generator.places.get(instruction.identifier.id);
+  if (instruction.binding) {
+    const node = generator.values.get(instruction.binding.id);
     if (node === undefined) {
-      throw new Error(`Place ${instruction.identifier.id} not found`);
+      throw new Error(`Value ${instruction.binding.id} not found`);
     }
     if (!t.isIdentifier(node)) {
       throw new Error("Class expression identifier is not an identifier");
@@ -20,18 +20,18 @@ export function generateClassExpressionOp(
 
   let superClass: t.Expression | null = null;
   if (instruction.superClass) {
-    const node = generator.places.get(instruction.superClass.id);
+    const node = generator.values.get(instruction.superClass.id);
     if (node === undefined) {
-      throw new Error(`Place ${instruction.superClass.id} not found`);
+      throw new Error(`Value ${instruction.superClass.id} not found`);
     }
     t.assertExpression(node);
     superClass = node;
   }
 
   const body: t.ClassBody["body"] = instruction.elements.map((elementPlace) => {
-    const node = generator.places.get(elementPlace.id);
+    const node = generator.values.get(elementPlace.id);
     if (node === undefined) {
-      throw new Error(`Place ${elementPlace.id} not found`);
+      throw new Error(`Value ${elementPlace.id} not found`);
     }
     if (node === null) {
       throw new Error(`Class body element is null (hole)`);
@@ -52,6 +52,6 @@ export function generateClassExpressionOp(
   });
 
   const node = t.classExpression(idNode, superClass, t.classBody(body));
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

@@ -12,9 +12,8 @@ import {
 } from "../../ir";
 import { isMemoryOp, isValueOp } from "../../ir/categories";
 import { FuncOp } from "../../ir/core/FuncOp";
-import { Identifier } from "../../ir/core/Identifier";
+import { Value } from "../../ir/core/Value";
 import { ModuleIR } from "../../ir/core/ModuleIR";
-import { Place } from "../../ir/core/Place";
 
 /**
  * Lowering pass: materializes multi-use SSA values into StoreLocal
@@ -49,10 +48,10 @@ export class ValueMaterializationPass {
         }
 
         // Create: const $tmp = <value>
-        const lval = environment.createPlace(environment.createIdentifier());
+        const lval = environment.createValue();
         const store = environment.createOperation(
           StoreLocalOp,
-          environment.createPlace(environment.createIdentifier()),
+          environment.createValue(),
           lval,
           instruction.place!,
           "const",
@@ -61,7 +60,6 @@ export class ValueMaterializationPass {
 
         // Insert the StoreLocal immediately after the defining instruction.
         block.insertOpAt(i + 1, store);
-        environment.placeToOp.set(store.place.id, store);
 
         // Rewrite all users to reference the StoreLocal's lval.
         this.rewriteUses(instruction, store.lval, store);
@@ -73,14 +71,14 @@ export class ValueMaterializationPass {
   }
 
   /**
-   * Returns true if the instruction's output Place has multiple uses
+   * Returns true if the instruction's output Value has multiple uses
    * and codegen would duplicate the expression without a variable.
    */
   private needsMaterialization(instruction: Operation): boolean {
     if (instruction.place === undefined) {
       return false;
     }
-    if (instruction.place.identifier.uses.size <= 1) {
+    if (instruction.place.useCount <= 1) {
       return false;
     }
 
@@ -134,7 +132,7 @@ export class ValueMaterializationPass {
     // If the source is a bare SSA temp from a ValueInstruction, codegen
     // would chase the def chain and emit the full expression inline.
     if (instruction instanceof LoadLocalOp) {
-      const source = instruction.value.identifier.definer;
+      const source = instruction.value.definer;
       // No definer → parameter or capture (always named).
       // StoreLocal/DeclareLocal → declared variable (always named).
       // Anything else (ValueInstruction output) → SSA temp, not safe.
@@ -151,7 +149,7 @@ export class ValueMaterializationPass {
    * instruction's output, making materialization unnecessary.
    */
   private hasStoreLocal(instruction: Operation): boolean {
-    for (const user of instruction.place!.identifier.uses) {
+    for (const user of instruction.place!.uses()) {
       if (user instanceof StoreLocalOp && user.value === instruction.place) {
         return true;
       }
@@ -169,11 +167,11 @@ export class ValueMaterializationPass {
    */
   private rewriteUses(
     instruction: Operation,
-    newPlace: Place,
+    newPlace: Value,
     materializedStore: StoreLocalOp,
   ): void {
-    const oldIdentifier = instruction.place!.identifier;
-    const map = new Map<Identifier, Place>([[oldIdentifier, newPlace]]);
+    const oldIdentifier = instruction.place!;
+    const map = new Map<Value, Value>([[oldIdentifier, newPlace]]);
 
     for (const block of this.funcOp.allBlocks()) {
       for (const op of block.getAllOps()) {
@@ -183,7 +181,6 @@ export class ValueMaterializationPass {
         if (rewritten !== op) {
           block.replaceOp(op, rewritten);
           if (rewritten.place !== undefined) {
-            this.moduleIR.environment.placeToOp.set(rewritten.place.id, rewritten);
           }
         }
       }

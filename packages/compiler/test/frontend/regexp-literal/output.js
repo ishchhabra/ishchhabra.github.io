@@ -1,3 +1,3 @@
-const $0_0 = /hello/;
-const $1_0 = /world/gi;
+const $0 = /hello/;
+const $1 = /world/gi;
 "test".match(/foo(\d+)/);

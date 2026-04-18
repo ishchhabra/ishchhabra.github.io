@@ -1,5 +1,5 @@
 import { OperationId } from "../../core";
-import { Identifier, Place } from "../../core";
+import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
@@ -15,38 +15,31 @@ export type LogicalOperator = "||" | "&&" | "??";
 export class LogicalExpressionOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
+    public override readonly place: Value,
     public readonly operator: LogicalOperator,
-    public readonly left: Place,
-    public readonly right: Place,
+    public readonly left: Value,
+    public readonly right: Value,
   ) {
     super(id);
   }
 
   public clone(ctx: CloneContext): LogicalExpressionOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
-    return moduleIR.environment.createOperation(
-      LogicalExpressionOp,
-      place,
-      this.operator,
-      this.left,
-      this.right,
-    );
+    const env = ctx.environment;
+    const place = env.createValue();
+    return env.createOperation(LogicalExpressionOp, place, this.operator, this.left, this.right);
   }
 
-  rewrite(values: Map<Identifier, Place>): Operation {
+  rewrite(values: Map<Value, Value>): Operation {
     return new LogicalExpressionOp(
       this.id,
       this.place,
       this.operator,
-      values.get(this.left.identifier) ?? this.left,
-      values.get(this.right.identifier) ?? this.right,
+      values.get(this.left) ?? this.left,
+      values.get(this.right) ?? this.right,
     );
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [this.left, this.right];
   }
 

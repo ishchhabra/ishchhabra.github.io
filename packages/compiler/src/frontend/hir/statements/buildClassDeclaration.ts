@@ -1,6 +1,6 @@
 import type { Class } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { Place, StoreLocalOp } from "../../../ir";
+import { Value, StoreLocalOp } from "../../../ir";
 import { ClassDeclarationOp } from "../../../ir/ops/class/ClassDeclaration";
 import { ClassExpressionOp } from "../../../ir/ops/class/ClassExpression";
 import { type Scope } from "../../scope/Scope";
@@ -31,12 +31,12 @@ export function buildClassDeclaration(
   }
 
   const latestDeclaration = environment.getLatestDeclaration(declarationId);
-  const identifierPlace = environment.places.get(latestDeclaration.placeId);
+  const identifierPlace = environment.values.get(latestDeclaration.valueId);
   if (identifierPlace === undefined) {
     throw new Error(`Unable to find the place for ${id.name} (${declarationId})`);
   }
 
-  let superClassPlace: Place | null = null;
+  let superClassPlace: Value | null = null;
   if (node.superClass != null) {
     const built = buildNode(node.superClass, scope, functionBuilder, moduleBuilder, environment);
     if (built === undefined || Array.isArray(built)) {
@@ -58,7 +58,7 @@ export function buildClassDeclaration(
   // is no `let class Foo {}` form in JS.
   const isContext = environment.contextDeclarationIds.has(declarationId);
   if (isContext) {
-    const classPlace = environment.createPlace(environment.createIdentifier(declarationId));
+    const classPlace = environment.createValue(declarationId);
     const instruction = environment.createOperation(
       ClassExpressionOp,
       classPlace,
@@ -67,9 +67,8 @@ export function buildClassDeclaration(
       elements,
     );
     functionBuilder.addOp(instruction);
-    environment.registerDeclarationOp(classPlace, instruction);
 
-    const storePlace = environment.createPlace(environment.createIdentifier());
+    const storePlace = environment.createValue();
     functionBuilder.addOp(
       environment.createOperation(
         StoreLocalOp,
@@ -92,7 +91,6 @@ export function buildClassDeclaration(
     elements,
   );
   functionBuilder.addOp(classDecl);
-  environment.registerDeclarationOp(identifierPlace, classDecl);
   functionBuilder.markDeclarationInitialized(declarationId);
 
   return identifierPlace;

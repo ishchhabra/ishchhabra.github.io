@@ -7,7 +7,7 @@ import {
   type DestructureTarget,
   ForOfOp,
   ObjectDestructureOp,
-  Place,
+  Value,
   Region,
   StoreContextOp,
   StoreLocalOp,
@@ -45,7 +45,7 @@ export function buildForOfStatement(
   instantiateScopeBindings(node, forScope, functionBuilder, environment, moduleBuilder);
 
   const left = node.left;
-  let iterationValuePlace: Place;
+  let iterationValuePlace: Value;
   let iterationTarget: DestructureTarget;
   let bareLVal: AST.Pattern | MemberExpression | undefined;
 
@@ -63,16 +63,14 @@ export function buildForOfStatement(
       environment,
       { kind: "declaration", declarationKind: kind },
     );
-    iterationValuePlace = environment.createPlace(environment.createIdentifier());
+    iterationValuePlace = environment.createValue();
   } else {
     bareLVal = left as AST.Pattern | MemberExpression;
     iterationTarget = buildLVal(bareLVal, scope, functionBuilder, moduleBuilder, environment, {
       kind: "assignment",
     });
     iterationValuePlace =
-      iterationTarget.kind === "binding"
-        ? iterationTarget.place
-        : environment.createPlace(environment.createIdentifier());
+      iterationTarget.kind === "binding" ? iterationTarget.place : environment.createValue();
   }
 
   const bodyRegion = new Region([]);
@@ -121,7 +119,7 @@ export function buildForOfStatement(
 
 function emitLoopIterationAssignment(
   target: DestructureTarget,
-  valuePlace: Place,
+  valuePlace: Value,
   functionBuilder: FuncOpBuilder,
   environment: Environment,
 ): void {
@@ -130,7 +128,7 @@ function emitLoopIterationAssignment(
     functionBuilder.addOp(
       environment.createOperation(
         StoreInstruction,
-        environment.createPlace(environment.createIdentifier()),
+        environment.createValue(),
         target.place,
         valuePlace,
         "const",
@@ -144,7 +142,7 @@ function emitLoopIterationAssignment(
     functionBuilder.addOp(
       environment.createOperation(
         ArrayDestructureOp,
-        environment.createPlace(environment.createIdentifier()),
+        environment.createValue(),
         target.elements,
         valuePlace,
         "assignment",
@@ -158,7 +156,7 @@ function emitLoopIterationAssignment(
     functionBuilder.addOp(
       environment.createOperation(
         ObjectDestructureOp,
-        environment.createPlace(environment.createIdentifier()),
+        environment.createValue(),
         target.properties,
         valuePlace,
         "assignment",

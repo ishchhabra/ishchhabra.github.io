@@ -7,21 +7,21 @@ export function generateExportNamedDeclarationOp(
   generator: CodeGenerator,
 ): t.ExportNamedDeclaration {
   if (instruction.declaration !== undefined) {
-    const declaration = generator.places.get(instruction.declaration.id);
+    const declaration = generator.values.get(instruction.declaration.id);
     if (declaration === undefined) {
-      throw new Error(`Place ${instruction.declaration.id} not found`);
+      throw new Error(`Value ${instruction.declaration.id} not found`);
     }
 
     t.assertDeclaration(declaration);
     const node = t.exportNamedDeclaration(declaration, []);
-    generator.places.set(instruction.place.id, node);
+    generator.values.set(instruction.place.id, node);
     return node;
   }
 
   const specifiers = instruction.specifiers.map((specifier) => {
-    const node = generator.places.get(specifier.id);
+    const node = generator.values.get(specifier.id);
     if (node === undefined) {
-      throw new Error(`Place ${specifier.id} not found`);
+      throw new Error(`Value ${specifier.id} not found`);
     }
 
     t.assertExportSpecifier(node);
@@ -29,6 +29,6 @@ export function generateExportNamedDeclarationOp(
   });
 
   const node = t.exportNamedDeclaration(null, specifiers);
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

@@ -1,5 +1,5 @@
 import { OperationId } from "../../core";
-import { Identifier, Place } from "../../core";
+import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
@@ -12,39 +12,32 @@ import type { CloneContext } from "../../core/Operation";
 export class CallExpressionOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
-    public readonly callee: Place,
+    public override readonly place: Value,
+    public readonly callee: Value,
     // Using args instead of arguments since arguments is a reserved word
-    public readonly args: Place[],
+    public readonly args: Value[],
     public readonly optional: boolean = false,
   ) {
     super(id);
   }
 
   public clone(ctx: CloneContext): CallExpressionOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
-    return moduleIR.environment.createOperation(
-      CallExpressionOp,
-      place,
-      this.callee,
-      this.args,
-      this.optional,
-    );
+    const env = ctx.environment;
+    const place = env.createValue();
+    return env.createOperation(CallExpressionOp, place, this.callee, this.args, this.optional);
   }
 
-  rewrite(values: Map<Identifier, Place>): Operation {
+  rewrite(values: Map<Value, Value>): Operation {
     return new CallExpressionOp(
       this.id,
       this.place,
-      values.get(this.callee.identifier) ?? this.callee,
-      this.args.map((arg) => values.get(arg.identifier) ?? arg),
+      values.get(this.callee) ?? this.callee,
+      this.args.map((arg) => values.get(arg) ?? arg),
       this.optional,
     );
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [this.callee, ...this.args];
   }
 

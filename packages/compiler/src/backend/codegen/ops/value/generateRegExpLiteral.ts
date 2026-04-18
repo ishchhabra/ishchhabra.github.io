@@ -7,6 +7,6 @@ export function generateRegExpLiteralOp(
   generator: CodeGenerator,
 ): t.Expression {
   const node = t.regExpLiteral(instruction.pattern, instruction.flags);
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

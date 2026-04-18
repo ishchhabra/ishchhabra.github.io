@@ -1,4 +1,4 @@
-const $0_0 = {
+const $0 = {
   id: "main",
 };
-const $1_0 = <div className="container" {...$0_0} disabled />;
+const $1 = <div className="container" {...$0} disabled />;

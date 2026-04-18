@@ -1,47 +1,43 @@
-let $35_blockparam_37 = undefined;
-let $36_blockparam_38 = undefined;
-let $37_blockparam_39 = undefined;
-let $38_blockparam_40 = undefined;
+let blockparam_37 = undefined;
+let blockparam_38 = undefined;
+let blockparam_39 = undefined;
+let blockparam_40 = undefined;
 {
-  let $0_0 = 0;
-  $35_blockparam_37 = $0_0;
+  let $0 = 0;
+  blockparam_37 = $0;
   outer: for (
     ;
-    ($36_blockparam_38 = $35_blockparam_37),
-      ($38_blockparam_40 = $35_blockparam_37),
-      $35_blockparam_37 < 5;
-    $0_0 = $37_blockparam_39 + 1, $35_blockparam_37 = $0_0
+    (blockparam_38 = blockparam_37), (blockparam_40 = blockparam_37), blockparam_37 < 5;
+    $0 = blockparam_39 + 1, blockparam_37 = $0
   ) {
-    let $39_blockparam_41 = undefined;
-    let $40_blockparam_42 = undefined;
-    let $41_blockparam_43 = undefined;
-    let $42_blockparam_44 = undefined;
+    let blockparam_41 = undefined;
+    let blockparam_42 = undefined;
+    let blockparam_43 = undefined;
+    let blockparam_44 = undefined;
     {
-      let $6_0 = 0;
-      $39_blockparam_41 = $6_0;
+      let $6 = 0;
+      blockparam_41 = $6;
       inner: for (
         ;
-        ($40_blockparam_42 = $39_blockparam_41),
-          ($42_blockparam_44 = $39_blockparam_41),
-          $39_blockparam_41 < 5;
-        $6_0 = $41_blockparam_43 + 1, $39_blockparam_41 = $6_0
+        (blockparam_42 = blockparam_41), (blockparam_44 = blockparam_41), blockparam_41 < 5;
+        $6 = blockparam_43 + 1, blockparam_41 = $6
       ) {
-        if ($40_blockparam_42 === 2) {
-          $41_blockparam_43 = $40_blockparam_42;
+        if (blockparam_42 === 2) {
+          blockparam_43 = blockparam_42;
           continue inner;
         }
-        if ($40_blockparam_42 === 3) {
-          $37_blockparam_39 = $36_blockparam_38;
+        if (blockparam_42 === 3) {
+          blockparam_39 = blockparam_38;
           continue outer;
         }
-        if ($36_blockparam_38 === 4) {
-          $38_blockparam_40 = $36_blockparam_38;
+        if (blockparam_38 === 4) {
+          blockparam_40 = blockparam_38;
           break outer;
         }
-        console.log($36_blockparam_38, $40_blockparam_42);
-        $41_blockparam_43 = $40_blockparam_42;
+        console.log(blockparam_38, blockparam_42);
+        blockparam_43 = blockparam_42;
       }
     }
-    $37_blockparam_39 = $36_blockparam_38;
+    blockparam_39 = blockparam_38;
   }
 }

@@ -1,5 +1,5 @@
 import { OperationId } from "../../core";
-import { Identifier, Place } from "../../core";
+import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
@@ -13,28 +13,27 @@ import type { CloneContext } from "../../core/Operation";
 export class JSXSpreadAttributeOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
-    public readonly argument: Place,
+    public override readonly place: Value,
+    public readonly argument: Value,
   ) {
     super(id);
   }
 
   public clone(ctx: CloneContext): JSXSpreadAttributeOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
-    return moduleIR.environment.createOperation(JSXSpreadAttributeOp, place, this.argument);
+    const env = ctx.environment;
+    const place = env.createValue();
+    return env.createOperation(JSXSpreadAttributeOp, place, this.argument);
   }
 
-  public rewrite(values: Map<Identifier, Place>): Operation {
+  public rewrite(values: Map<Value, Value>): Operation {
     return new JSXSpreadAttributeOp(
       this.id,
       this.place,
-      values.get(this.argument.identifier) ?? this.argument,
+      values.get(this.argument) ?? this.argument,
     );
   }
 
-  public getOperands(): Place[] {
+  public getOperands(): Value[] {
     return [this.argument];
   }
 }

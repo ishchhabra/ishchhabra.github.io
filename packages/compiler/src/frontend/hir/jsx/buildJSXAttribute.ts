@@ -1,6 +1,6 @@
 import type { JSXAttribute, JSXIdentifier, JSXNamespacedName } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { JSXAttributeOp, Place } from "../../../ir";
+import { JSXAttributeOp, Value } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FuncOpBuilder } from "../FuncOpBuilder";
@@ -12,10 +12,10 @@ export function buildJSXAttribute(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
+): Value {
   const name = getJSXAttributeName(node.name);
 
-  let value: Place | undefined;
+  let value: Value | undefined;
   if (node.value != null) {
     const valuePlace = buildNode(node.value, scope, functionBuilder, moduleBuilder, environment);
     if (valuePlace === undefined || Array.isArray(valuePlace)) {
@@ -24,8 +24,7 @@ export function buildJSXAttribute(
     value = valuePlace;
   }
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(JSXAttributeOp, place, name, value);
   functionBuilder.addOp(instruction);
   return place;

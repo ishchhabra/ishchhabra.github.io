@@ -1,5 +1,5 @@
 import { Environment } from "../../environment";
-import { Operation, LoadGlobalOp, LoadStaticPropertyOp, Place, TPrimitiveValue } from "../../ir";
+import { Operation, LoadGlobalOp, LoadStaticPropertyOp, Value, TPrimitiveValue } from "../../ir";
 
 /**
  * Context passed to the `resolveConstant` hook, giving users the ability
@@ -9,9 +9,9 @@ export interface ResolveConstantContext {
   /** Set a compile-time constant value for the current instruction's output place. */
   set(value: TPrimitiveValue): void;
   /** Read a previously resolved constant for a given place. */
-  get(place: Place): TPrimitiveValue | undefined;
+  get(place: Value): TPrimitiveValue | undefined;
   /** Check whether a place has a known constant value. */
-  has(place: Place): boolean;
+  has(place: Value): boolean;
   /** The module environment, useful for tracing instruction chains. */
   environment: Environment;
 }
@@ -56,7 +56,7 @@ export function getQualifiedName(
 
     if (current instanceof LoadStaticPropertyOp) {
       segments.push(current.property);
-      const objectInstruction = environment.placeToOp.get(current.object.id);
+      const objectInstruction = current.object.definer as Operation | undefined;
       if (objectInstruction === undefined) {
         return undefined;
       }

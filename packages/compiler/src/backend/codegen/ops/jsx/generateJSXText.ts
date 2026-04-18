@@ -4,6 +4,6 @@ import { CodeGenerator } from "../../../CodeGenerator";
 
 export function generateJSXTextOp(instruction: JSXTextOp, generator: CodeGenerator) {
   const node = t.jsxText(instruction.value);
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

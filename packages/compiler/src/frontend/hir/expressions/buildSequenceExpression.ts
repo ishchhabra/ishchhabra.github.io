@@ -21,8 +21,7 @@ export function buildSequenceExpression(
     return exprPlace;
   });
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(SequenceExpressionOp, place, expressionPlaces);
   functionBuilder.addOp(instruction);
   return place;

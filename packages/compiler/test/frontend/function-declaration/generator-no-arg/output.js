@@ -1,4 +1,4 @@
-function* $0_0() {
+function* $0() {
   yield;
   yield 1;
 }

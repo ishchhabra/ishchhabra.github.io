@@ -7,6 +7,6 @@ export function generateJSXOpeningFragmentOp(
   generator: CodeGenerator,
 ): t.JSXOpeningFragment {
   const node = t.jsxOpeningFragment();
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

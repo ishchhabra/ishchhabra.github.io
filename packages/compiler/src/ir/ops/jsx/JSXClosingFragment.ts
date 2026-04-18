@@ -1,5 +1,5 @@
 import { OperationId } from "../../core";
-import { Place } from "../../core";
+import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
@@ -12,23 +12,22 @@ import type { CloneContext } from "../../core/Operation";
 export class JSXClosingFragmentOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
+    public override readonly place: Value,
   ) {
     super(id);
   }
 
   public clone(ctx: CloneContext): JSXClosingFragmentOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
-    return moduleIR.environment.createOperation(JSXClosingFragmentOp, place);
+    const env = ctx.environment;
+    const place = env.createValue();
+    return env.createOperation(JSXClosingFragmentOp, place);
   }
 
   rewrite(): Operation {
     return this;
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [];
   }
 

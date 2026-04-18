@@ -1,6 +1,6 @@
-import { Operation, IdentifierId } from "../../ir";
+import { Operation, ValueId } from "../../ir";
 import { FuncOp } from "../../ir/core/FuncOp";
-import { Place } from "../../ir/core/Place";
+import { Value } from "../../ir/core/Value";
 import { FunctionDeclarationOp } from "../../ir/ops/func/FunctionDeclaration";
 import { ArrowFunctionExpressionOp } from "../../ir/ops/func/ArrowFunctionExpression";
 import { FunctionExpressionOp } from "../../ir/ops/func/FunctionExpression";
@@ -13,7 +13,7 @@ type FunctionBearingInstruction =
 
 function getFunctionBearingFields(
   instr: Operation,
-): { funcOp: FuncOp; captures: Place[] } | undefined {
+): { funcOp: FuncOp; captures: Value[] } | undefined {
   if (
     instr instanceof FunctionDeclarationOp ||
     instr instanceof ArrowFunctionExpressionOp ||
@@ -24,7 +24,7 @@ function getFunctionBearingFields(
   return undefined;
 }
 
-function rebuildWithCaptures(instr: FunctionBearingInstruction, newCaptures: Place[]): Operation {
+function rebuildWithCaptures(instr: FunctionBearingInstruction, newCaptures: Value[]): Operation {
   if (instr instanceof FunctionDeclarationOp) {
     return new FunctionDeclarationOp(
       instr.id,
@@ -48,7 +48,7 @@ function rebuildWithCaptures(instr: FunctionBearingInstruction, newCaptures: Pla
     return new FunctionExpressionOp(
       instr.id,
       instr.place,
-      instr.identifier,
+      instr.binding,
       instr.funcOp,
       instr.generator,
       instr.async,
@@ -62,12 +62,12 @@ function rebuildWithCaptures(instr: FunctionBearingInstruction, newCaptures: Pla
  *
  * After any transformation that modifies a nested function's body (e.g.
  * inlining, constant propagation), a capture slot may become unused — the
- * outer-scope Place is still listed in `captures` but the corresponding
+ * outer-scope Value is still listed in `captures` but the corresponding
  * `captureParam` inside the inner FuncOp has no readers.
  *
  * This pass reconciles the two: for each function-bearing instruction, it
  * checks which captureParams are actually read inside the inner function
- * body (via the embedded {@link Identifier.uses} chain), and removes capture/captureParam
+ * body (via the embedded {@link Value.uses} chain), and removes capture/captureParam
  * pairs that are dead.
  */
 export class CapturePruningPass extends BaseOptimizationPass {
@@ -89,21 +89,21 @@ export class CapturePruningPass extends BaseOptimizationPass {
 
         // Check prologue reads (parameter bindings / lowered setup) —
         // these are not in blocks, so the embedded use-chains don't cover them.
-        const headerReadIds = new Set<IdentifierId>();
+        const headerReadIds = new Set<ValueId>();
         for (const headerInstr of innerFuncOp.prologue) {
           for (const place of headerInstr.getOperands()) {
-            headerReadIds.add(place.identifier.id);
+            headerReadIds.add(place.id);
           }
         }
 
-        const isRead = (id: IdentifierId): boolean => headerReadIds.has(id);
+        const isRead = (id: ValueId): boolean => headerReadIds.has(id);
 
         // Determine which capture slots are still live.
         const captureParams = innerFuncOp.captureParams;
         const liveIndices: number[] = [];
         for (let j = 0; j < captureParams.length; j++) {
           const param = captureParams[j];
-          if (param.identifier.uses.size > 0 || isRead(param.identifier.id)) {
+          if (param.useCount > 0 || isRead(param.id)) {
             liveIndices.push(j);
           }
         }
@@ -127,7 +127,7 @@ export class CapturePruningPass extends BaseOptimizationPass {
         // migration status — this cast is the one remaining place the
         // "captureParams is per-function immutable" invariant is
         // intentionally punctured.
-        (innerFuncOp as { captureParams: readonly Place[] }).captureParams = newCaptureParams;
+        (innerFuncOp as { captureParams: readonly Value[] }).captureParams = newCaptureParams;
 
         changed = true;
       }

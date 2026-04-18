@@ -1,8 +1,8 @@
-const $0_0 = {
-  add($2_0, $3_0) {
-    return $2_0 + $3_0;
+const $0 = {
+  add($2, $3) {
+    return $2 + $3;
   },
-  subtract($9_0, $10_0) {
-    return $9_0 - $10_0;
+  subtract($9, $10) {
+    return $9 - $10;
   },
 };

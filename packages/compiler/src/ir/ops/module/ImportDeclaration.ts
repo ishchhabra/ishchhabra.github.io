@@ -1,5 +1,5 @@
 import { OperationId } from "../../core";
-import { Place } from "../../core";
+import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
@@ -13,19 +13,18 @@ import type { CloneContext } from "../../core/Operation";
 export class ImportDeclarationOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
+    public override readonly place: Value,
     public readonly source: string,
     public readonly resolvedSource: string,
-    public readonly specifiers: Place[],
+    public readonly specifiers: Value[],
   ) {
     super(id);
   }
 
   public clone(ctx: CloneContext): ImportDeclarationOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
-    return moduleIR.environment.createOperation(
+    const env = ctx.environment;
+    const place = env.createValue();
+    return env.createOperation(
       ImportDeclarationOp,
       place,
       this.source,
@@ -38,7 +37,7 @@ export class ImportDeclarationOp extends Operation {
     return this;
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [...this.specifiers];
   }
 }

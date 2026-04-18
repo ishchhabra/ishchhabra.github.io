@@ -1,5 +1,5 @@
-async function $0_0($1_0) {
-  for await (const $3_0 of $1_0) {
-    console.log($3_0);
+async function $0($1) {
+  for await (const $3 of $1) {
+    console.log($3);
   }
 }

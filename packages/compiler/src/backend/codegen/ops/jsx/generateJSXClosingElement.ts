@@ -6,7 +6,7 @@ export function generateJSXClosingElementOp(
   instruction: JSXClosingElementOp,
   generator: CodeGenerator,
 ): t.JSXClosingElement {
-  const tagName = generator.places.get(instruction.tagPlace.id);
+  const tagName = generator.values.get(instruction.tagPlace.id);
   if (
     !tagName ||
     (!t.isJSXIdentifier(tagName) &&
@@ -17,6 +17,6 @@ export function generateJSXClosingElementOp(
   }
 
   const node = t.jsxClosingElement(tagName);
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

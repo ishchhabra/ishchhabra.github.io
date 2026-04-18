@@ -1,14 +1,14 @@
-function $0_0($1_0) {
-  let $4_0 = undefined;
-  let $8_0 = undefined;
-  if ($1_0) {
-    $1_0 = 20;
-    $4_0 = 20;
-    $8_0 = $1_0;
+function $0($1) {
+  let $4 = undefined;
+  let $8 = undefined;
+  if ($1) {
+    $1 = 20;
+    $4 = 20;
+    $8 = $1;
   } else {
-    $4_0 = $1_0;
-    $8_0 = $1_0;
+    $4 = $1;
+    $8 = $1;
   }
-  return $4_0;
+  return $4;
 }
-export { $0_0 as f };
+export { $0 as f };

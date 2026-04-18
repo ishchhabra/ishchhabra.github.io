@@ -1,4 +1,4 @@
-import { Operation, BlockId, DeclarationId, LoadLocalOp, Place, StoreLocalOp } from "../../../ir";
+import { Operation, BlockId, DeclarationId, LoadLocalOp, Value, StoreLocalOp } from "../../../ir";
 import { FuncOp } from "../../../ir/core/FuncOp";
 import { Trait } from "../../../ir/core/Operation";
 import { AnalysisManager } from "../../analysis/AnalysisManager";
@@ -48,10 +48,10 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
 
       for (const instr of block.operations) {
         if (instr instanceof LoadLocalOp) {
-          const srcDecl = instr.value.identifier.declarationId;
+          const srcDecl = instr.value.declarationId;
           const resolved = this.resolve(state, srcDecl);
 
-          if (resolved && resolved.identifier.declarationId !== srcDecl) {
+          if (resolved && resolved.declarationId !== srcDecl) {
             block.replaceOp(instr, new LoadLocalOp(instr.id, instr.place, resolved));
             changed = true;
           }
@@ -132,7 +132,7 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
     // ------------------------------------------------------------
 
     if (instr instanceof StoreLocalOp) {
-      const x = instr.lval.identifier.declarationId;
+      const x = instr.lval.declarationId;
       this.kill(state, x);
 
       // Only record a copy when the value is a direct variable load
@@ -140,13 +140,13 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
       // AwaitExpression, CallExpression) would cause codegen to re-emit
       // the defining expression at every use site, duplicating side
       // effects and computation.
-      const definer = instr.value.identifier.definer;
+      const definer = instr.value.definer;
       if (!(definer instanceof LoadLocalOp)) {
         return;
       }
 
-      const resolved = this.resolve(state, instr.value.identifier.declarationId) ?? instr.value;
-      if (resolved.identifier.declarationId !== x) {
+      const resolved = this.resolve(state, instr.value.declarationId) ?? instr.value;
+      if (resolved.declarationId !== x) {
         state.set(x, resolved);
       }
       return;
@@ -167,7 +167,7 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
     state.delete(x);
 
     for (const [k, v] of state) {
-      if (v.identifier.declarationId === x) {
+      if (v.declarationId === x) {
         state.delete(k);
       }
     }
@@ -177,7 +177,7 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
     const decls = new Set<DeclarationId>();
     const walk = (inner: Operation) => {
       if (inner instanceof StoreLocalOp) {
-        decls.add(inner.lval.identifier.declarationId);
+        decls.add(inner.lval.declarationId);
       }
       if (inner.hasTrait(Trait.HasRegions)) {
         for (const region of inner.regions) {
@@ -203,10 +203,10 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
    *
    * Cycles are prevented using a visited set.
    */
-  private resolve(state: CopyState, x: DeclarationId): Place | undefined {
+  private resolve(state: CopyState, x: DeclarationId): Value | undefined {
     const visited = new Set<DeclarationId>();
     let current = x;
-    let result: Place | undefined;
+    let result: Value | undefined;
 
     while (!visited.has(current)) {
       visited.add(current);
@@ -215,7 +215,7 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
       if (!next) break;
 
       result = next;
-      current = next.identifier.declarationId;
+      current = next.declarationId;
     }
 
     return result;
@@ -230,4 +230,4 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
  *
  * meaning `x` currently holds the same value as `y`.
  */
-type CopyState = Map<DeclarationId, Place>;
+type CopyState = Map<DeclarationId, Value>;

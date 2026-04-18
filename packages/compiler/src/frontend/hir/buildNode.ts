@@ -1,7 +1,7 @@
 import type * as AST from "../estree";
 import type { ExportSpecifier, Node, SpreadElement } from "oxc-parser";
 import { Environment } from "../../environment";
-import { Place } from "../../ir";
+import { Value } from "../../ir";
 import { isExpression, isJSX, isStatement, unwrapTSTypeWrappers } from "../estree";
 import { type Scope } from "../scope/Scope";
 import { buildExportSpecifier } from "./buildExportSpecifier";
@@ -22,7 +22,7 @@ export function buildNode(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place | Place[] | undefined {
+): Value | Value[] | undefined {
   if (node === null) {
     return buildHole(functionBuilder, environment);
   }

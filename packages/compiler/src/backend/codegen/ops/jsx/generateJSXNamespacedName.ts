@@ -10,6 +10,6 @@ export function generateJSXNamespacedNameOp(
     t.jsxIdentifier(instruction.namespace),
     t.jsxIdentifier(instruction.name),
   );
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

@@ -1,8 +1,7 @@
 import type { OperationId } from "../../core";
-import type { Identifier } from "../../core/Identifier";
+import type { Value } from "../../core/Value";
 import type { LexicalScopeKind } from "../../core/LexicalScope";
 import { type CloneContext, nextId, Operation, remapRegion, Trait } from "../../core/Operation";
-import type { Place } from "../../core/Place";
 import { Region } from "../../core/Region";
 
 /**
@@ -33,15 +32,15 @@ export class BlockOp extends Operation {
     return this.regions[0];
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [];
   }
 
-  override getDefs(): Place[] {
+  override getDefs(): Value[] {
     return [];
   }
 
-  rewrite(_values: Map<Identifier, Place>): BlockOp {
+  rewrite(_values: Map<Value, Value>): BlockOp {
     return this;
   }
 

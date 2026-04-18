@@ -1,5 +1,5 @@
 import type { OperationId } from "../../core";
-import type { Identifier } from "../../core/Identifier";
+import type { Value } from "../../core/Value";
 import {
   type CloneContext,
   nextId,
@@ -9,7 +9,6 @@ import {
   Trait,
   VerifyError,
 } from "../../core/Operation";
-import type { Place } from "../../core/Place";
 import { Region } from "../../core/Region";
 
 /**
@@ -28,14 +27,14 @@ import { Region } from "../../core/Region";
 export class TryOp extends Operation {
   static override readonly traits = new Set<Trait>([Trait.HasRegions]);
 
-  public readonly handlerParam: Place | null;
+  public readonly handlerParam: Value | null;
   public readonly hasHandler: boolean;
   public readonly hasFinalizer: boolean;
 
   constructor(
     id: OperationId,
     tryRegion: Region,
-    handler: { param: Place | null; region: Region } | null,
+    handler: { param: Value | null; region: Region } | null,
     finallyRegion: Region | null,
   ) {
     const regions: Region[] = [tryRegion];
@@ -65,17 +64,17 @@ export class TryOp extends Operation {
     return this.regions[idx];
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [];
   }
 
-  rewrite(_values: Map<Identifier, Place>): TryOp {
+  rewrite(_values: Map<Value, Value>): TryOp {
     return this;
   }
 
   clone(ctx: CloneContext): TryOp {
     const tryRegion = remapRegion(ctx, this.regions[0]);
-    let handler: { param: Place | null; region: Region } | null = null;
+    let handler: { param: Value | null; region: Region } | null = null;
     if (this.hasHandler) {
       handler = {
         param: this.handlerParam === null ? null : remapPlace(ctx, this.handlerParam),

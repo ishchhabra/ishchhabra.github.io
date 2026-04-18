@@ -1,6 +1,6 @@
 import type { JSXClosingElement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { JSXClosingElementOp, Place } from "../../../ir";
+import { JSXClosingElementOp, Value } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FuncOpBuilder } from "../FuncOpBuilder";
@@ -12,14 +12,13 @@ export function buildJSXClosingElement(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
+): Value {
   const tagPlace = buildNode(node.name, scope, functionBuilder, moduleBuilder, environment);
   if (tagPlace === undefined || Array.isArray(tagPlace)) {
     throw new Error("JSX closing element tag name should be a single place");
   }
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(JSXClosingElementOp, place, tagPlace);
   functionBuilder.addOp(instruction);
   return place;

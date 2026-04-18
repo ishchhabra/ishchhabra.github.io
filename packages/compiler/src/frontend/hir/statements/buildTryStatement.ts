@@ -30,7 +30,7 @@ export function buildTryStatement(
   });
 
   let handler: {
-    param: import("../../../ir").Place | null;
+    param: import("../../../ir").Value | null;
     region: Region;
   } | null = null;
   if (hasHandler) {
@@ -39,13 +39,13 @@ export function buildTryStatement(
     const catchRegion = new Region([]);
     const handlerBlock = environment.createBlock();
 
-    let paramPlace: import("../../../ir").Place | null = null;
+    let paramPlace: import("../../../ir").Value | null = null;
     functionBuilder.withStructureRegion(catchRegion, () => {
       functionBuilder.addBlock(handlerBlock);
       functionBuilder.currentBlock = handlerBlock;
 
       if (catchClause.param != null && catchClause.param.type === "Identifier") {
-        const identifier = environment.createIdentifier();
+        const identifier = environment.createValue();
         functionBuilder.registerDeclarationName(
           catchClause.param.name,
           identifier.declarationId,
@@ -57,14 +57,14 @@ export function buildTryStatement(
           catchClause.param.name,
           catchScope,
         );
-        const bindingPlace = environment.createPlace(identifier);
+        const bindingPlace = identifier;
 
         environment.registerDeclaration(
           identifier.declarationId,
           functionBuilder.currentBlock.id,
           bindingPlace.id,
         );
-        environment.setDeclarationBindingPlace(identifier.declarationId, bindingPlace.id);
+        environment.setDeclarationBinding(identifier.declarationId, bindingPlace.id);
 
         paramPlace = bindingPlace;
       }

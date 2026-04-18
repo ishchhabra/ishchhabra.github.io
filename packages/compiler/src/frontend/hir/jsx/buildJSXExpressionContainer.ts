@@ -1,6 +1,6 @@
 import type { JSXExpressionContainer } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { Place } from "../../../ir";
+import { Value } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FuncOpBuilder } from "../FuncOpBuilder";
@@ -12,7 +12,7 @@ export function buildJSXExpressionContainer(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place | undefined {
+): Value | undefined {
   const expression = node.expression;
   if (expression.type === "JSXEmptyExpression") {
     return undefined;

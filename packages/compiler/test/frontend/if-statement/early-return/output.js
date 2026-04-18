@@ -1,5 +1,5 @@
-function $0_0($1_0) {
-  if ($1_0) {
+function $0($1) {
+  if ($1) {
     return;
   }
   console.log("injected");

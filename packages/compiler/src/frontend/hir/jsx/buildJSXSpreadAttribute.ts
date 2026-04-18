@@ -1,6 +1,6 @@
 import type { JSXSpreadAttribute } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { Place } from "../../../ir";
+import { Value } from "../../../ir";
 import { JSXSpreadAttributeOp } from "../../../ir/ops/jsx/JSXSpreadAttribute";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
@@ -13,7 +13,7 @@ export function buildJSXSpreadAttribute(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
+): Value {
   const argumentPlace = buildNode(
     node.argument,
     scope,
@@ -25,8 +25,7 @@ export function buildJSXSpreadAttribute(
     throw new Error("JSX spread attribute argument should be a single place");
   }
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(JSXSpreadAttributeOp, place, argumentPlace);
   functionBuilder.addOp(instruction);
   return place;

@@ -1,5 +1,5 @@
 import type { OperationId } from "../../core";
-import type { Identifier } from "../../core/Identifier";
+import type { Value } from "../../core/Value";
 import {
   type CloneContext,
   nextId,
@@ -8,7 +8,6 @@ import {
   remapRegion,
   Trait,
 } from "../../core/Operation";
-import type { Place } from "../../core/Place";
 import { Region } from "../../core/Region";
 
 /**
@@ -30,19 +29,19 @@ export class SwitchOp extends Operation {
 
   constructor(
     id: OperationId,
-    public readonly discriminant: Place,
+    public readonly discriminant: Value,
     /**
      * Per-case test expressions. Parallel to `regions`: `caseTests[i]`
      * is the test for `regions[i]`. `null` marks the default case.
      */
-    public readonly caseTests: readonly (Place | null)[],
+    public readonly caseTests: readonly (Value | null)[],
     regions: readonly Region[],
     public readonly label?: string,
   ) {
     super(id, regions);
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     const places = [this.discriminant];
     for (const t of this.caseTests) {
       if (t !== null) places.push(t);
@@ -50,12 +49,12 @@ export class SwitchOp extends Operation {
     return places;
   }
 
-  rewrite(values: Map<Identifier, Place>): SwitchOp {
-    const discriminant = values.get(this.discriminant.identifier) ?? this.discriminant;
+  rewrite(values: Map<Value, Value>): SwitchOp {
+    const discriminant = values.get(this.discriminant) ?? this.discriminant;
     let changed = false;
     const newTests = this.caseTests.map((t) => {
       if (t === null) return null;
-      const next = values.get(t.identifier) ?? t;
+      const next = values.get(t) ?? t;
       if (next !== t) changed = true;
       return next;
     });

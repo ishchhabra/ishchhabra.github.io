@@ -1,8 +1,8 @@
-function $0_0($2_0) {
-  return $2_0.trim();
+function $0($2) {
+  return $2.trim();
 }
-function $1_0($6_0, $7_0) {
-  let $14_0 = undefined;
-  return $0_0($6_0) + ($7_0 ? "\n" : "");
+function $1($6, $7) {
+  let $15 = undefined;
+  return $0($6) + ($7 ? "\n" : "");
 }
-export default $1_0;
+export default $1;

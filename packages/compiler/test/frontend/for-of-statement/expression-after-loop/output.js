@@ -1,12 +1,12 @@
-function $0_0($1_0) {
-  let $2_0 = 0;
-  let $14_blockparam_14 = undefined;
-  $14_blockparam_14 = $2_0;
-  let $15_blockparam_15 = undefined;
-  for (const $6_0 of $1_0) {
-    $2_0 = $14_blockparam_14 + $6_0;
-    $14_blockparam_14 = $2_0;
-    $15_blockparam_15 = $2_0;
+function $0($1) {
+  let $2 = 0;
+  let blockparam_14 = undefined;
+  blockparam_14 = $2;
+  let blockparam_15 = undefined;
+  for (const $6 of $1) {
+    $2 = blockparam_14 + $6;
+    blockparam_14 = $2;
+    blockparam_15 = $2;
   }
-  return $15_blockparam_15;
+  return blockparam_15;
 }

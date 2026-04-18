@@ -1,9 +1,9 @@
-function $0_0($1_0) {
-  switch ($1_0) {
+function $0($1) {
+  switch ($1) {
     case "a":
-      let $2_0 = "";
-      $2_0 = $2_0 + "x";
-      return $2_0;
+      let $2 = "";
+      $2 = $2 + "x";
+      return $2;
       break;
     default:
       break;

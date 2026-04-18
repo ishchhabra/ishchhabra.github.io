@@ -1,5 +1,5 @@
 import { OperationId } from "../../core";
-import { Identifier, Place } from "../../core";
+import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
@@ -16,21 +16,20 @@ export type StoreLocalKind = "declaration" | "assignment";
 export class StoreLocalOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
-    public readonly lval: Place,
-    public readonly value: Place,
+    public override readonly place: Value,
+    public readonly lval: Value,
+    public readonly value: Value,
     public readonly type: "let" | "const" | "var",
     public readonly kind: StoreLocalKind = "assignment",
-    public readonly bindings: Place[] = [],
+    public readonly bindings: Value[] = [],
   ) {
     super(id);
   }
 
   public clone(ctx: CloneContext): StoreLocalOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
-    return moduleIR.environment.createOperation(
+    const env = ctx.environment;
+    const place = env.createValue();
+    return env.createOperation(
       StoreLocalOp,
       place,
       this.lval,
@@ -42,23 +41,23 @@ export class StoreLocalOp extends Operation {
   }
 
   rewrite(
-    values: Map<Identifier, Place>,
+    values: Map<Value, Value>,
     { rewriteDefinitions = false }: { rewriteDefinitions?: boolean } = {},
   ): StoreLocalOp {
     return new StoreLocalOp(
       this.id,
       this.place,
-      rewriteDefinitions ? (values.get(this.lval.identifier) ?? this.lval) : this.lval,
-      values.get(this.value.identifier) ?? this.value,
+      rewriteDefinitions ? (values.get(this.lval) ?? this.lval) : this.lval,
+      values.get(this.value) ?? this.value,
       this.type,
       this.kind,
       rewriteDefinitions
-        ? this.bindings.map((binding) => values.get(binding.identifier) ?? binding)
+        ? this.bindings.map((binding) => values.get(binding) ?? binding)
         : this.bindings,
     );
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     // Mirror LLVM's `store addr, val`: the address is a use, the
     // value is a use, and the store itself produces no SSA value.
     // For assignment-kind stores, `lval` names the binding location
@@ -68,7 +67,7 @@ export class StoreLocalOp extends Operation {
     return this.kind === "assignment" ? [this.value, this.lval] : [this.value];
   }
 
-  override getDefs(): Place[] {
+  override getDefs(): Value[] {
     // Declarations introduce the binding — `lval` is a new def,
     // analogous to `alloca`. Assignments do not produce a new
     // binding; they mutate memory at an existing `lval`, matching

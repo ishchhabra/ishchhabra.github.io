@@ -120,9 +120,9 @@ function lowerBeforeRegion(
     throw new Error("Loop before region must terminate in ConditionOp");
   }
 
-  const testNode = generator.places.get(conditionOp.value.id);
+  const testNode = generator.values.get(conditionOp.value.id);
   if (testNode === undefined) {
-    throw new Error(`Place ${conditionOp.value.id} not found for loop condition`);
+    throw new Error(`Value ${conditionOp.value.id} not found for loop condition`);
   }
   t.assertExpression(testNode);
 

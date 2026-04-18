@@ -22,8 +22,7 @@ export function buildObjectExpression(
     return propertyPlace;
   });
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(ObjectExpressionOp, place, propertyPlaces);
   functionBuilder.addOp(instruction);
   return place;

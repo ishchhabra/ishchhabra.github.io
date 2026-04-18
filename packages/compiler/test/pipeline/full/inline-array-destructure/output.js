@@ -1,4 +1,4 @@
-function $0_0([$1_0, $2_0]) {
-  return $1_0 + $2_0;
+function $0([$1, $2]) {
+  return $1 + $2;
 }
-console.log($0_0([10, 20]));
+console.log($0([10, 20]));

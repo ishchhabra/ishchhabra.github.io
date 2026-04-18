@@ -1,8 +1,8 @@
-function $0_0() {
+function $0() {
   return (
     <div>
       <span>hi</span>
     </div>
   );
 }
-export { $0_0 as Foo };
+export { $0 as Foo };

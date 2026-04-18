@@ -7,9 +7,9 @@ export function generateObjectMethodOp(
   instruction: ObjectMethodOp,
   generator: CodeGenerator,
 ): t.ObjectMethod {
-  const key = generator.places.get(instruction.key.id);
+  const key = generator.values.get(instruction.key.id);
   if (key === undefined) {
-    throw new Error(`Place ${instruction.key.id} not found`);
+    throw new Error(`Value ${instruction.key.id} not found`);
   }
 
   t.assertExpression(key);
@@ -29,6 +29,6 @@ export function generateObjectMethodOp(
     instruction.async,
   );
 
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

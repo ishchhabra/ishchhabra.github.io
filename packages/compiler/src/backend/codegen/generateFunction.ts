@@ -1,7 +1,7 @@
 import * as t from "@babel/types";
 import { DeclareLocalOp } from "../../ir";
 import { FuncOp } from "../../ir/core/FuncOp";
-import { Place } from "../../ir/core/Place";
+import { Value } from "../../ir/core/Value";
 import { CodeGenerator } from "../CodeGenerator";
 import { generateBlock } from "./generateBlock";
 import { generateOp } from "./ops/generateOp";
@@ -19,7 +19,7 @@ import { generateDestructureTarget } from "./ops/memory/generateDestructureTarge
  */
 export function generateFunction(
   funcOp: FuncOp,
-  captures: Place[],
+  captures: Value[],
   generator: CodeGenerator,
 ): {
   params: Array<t.Identifier | t.RestElement | t.Pattern>;
@@ -30,9 +30,9 @@ export function generateFunction(
     // resolves captured variables through the indirection layer.
     for (let i = 0; i < funcOp.captureParams.length; i++) {
       if (i < captures.length) {
-        const outerNode = generator.places.get(captures[i].id);
+        const outerNode = generator.values.get(captures[i].id);
         if (outerNode !== undefined) {
-          generator.places.set(funcOp.captureParams[i].id, outerNode);
+          generator.values.set(funcOp.captureParams[i].id, outerNode);
         }
       }
     }

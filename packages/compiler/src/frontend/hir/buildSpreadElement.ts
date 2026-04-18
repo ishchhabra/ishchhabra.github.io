@@ -1,6 +1,6 @@
 import type { SpreadElement } from "oxc-parser";
 import { Environment } from "../../environment";
-import { Place, SpreadElementOp } from "../../ir";
+import { Value, SpreadElementOp } from "../../ir";
 import { type Scope } from "../scope/Scope";
 import { FuncOpBuilder } from "./FuncOpBuilder";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
@@ -12,7 +12,7 @@ export function buildSpreadElement(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
+): Value {
   const argumentPlace = buildNode(
     node.argument,
     scope,
@@ -24,8 +24,7 @@ export function buildSpreadElement(
     throw new Error("Spread element argument must be a single place");
   }
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(SpreadElementOp, place, argumentPlace);
   functionBuilder.addOp(instruction);
   return place;

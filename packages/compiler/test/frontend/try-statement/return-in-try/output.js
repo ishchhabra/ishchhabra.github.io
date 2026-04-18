@@ -1,7 +1,7 @@
-function $0_0($1_0) {
+function $0($1) {
   try {
-    return JSON.parse($1_0);
-  } catch ($6_0) {
+    return JSON.parse($1);
+  } catch ($6) {
     return null;
   }
 }

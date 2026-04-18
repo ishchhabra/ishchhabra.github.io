@@ -11,7 +11,7 @@ import {
 import { BasicBlock } from "../../ir/core/Block";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { ModuleIR } from "../../ir/core/ModuleIR";
-import { Place } from "../../ir/core/Place";
+import { Value } from "../../ir/core/Value";
 import { collectAllSinks, Edge, EdgeSink, forEachIncomingEdge, sinkParams } from "./blockArgs";
 
 /**
@@ -74,7 +74,7 @@ export class SSAEliminator {
     // emitted copy stores when both arms qualify; non-ternary paths
     // rely on the declaration to back downstream references to the
     // result place.
-    type SinkSite = { sink: EdgeSink; param: Place; index: number };
+    type SinkSite = { sink: EdgeSink; param: Value; index: number };
     const sites: SinkSite[] = [];
     for (const sink of collectAllSinks(this.funcOp)) {
       const params = sinkParams(sink);
@@ -82,7 +82,7 @@ export class SSAEliminator {
         sites.push({ sink, param: params[i], index: i });
       }
     }
-    sites.sort((a, b) => a.param.identifier.id - b.param.identifier.id);
+    sites.sort((a, b) => a.param.id - b.param.id);
 
     for (const { sink, param, index } of sites) {
       this.#insertParamDeclaration(sink, param);
@@ -93,7 +93,7 @@ export class SSAEliminator {
         // `arg = param` edges where args forward unchanged (the two
         // condition edges of a WhileOp share args with their own
         // beforeRegion params when the loop body doesn't mutate).
-        if (arg.identifier.id === param.identifier.id) return;
+        if (arg.id === param.id) return;
         this.#insertCopyStore(edge, param, arg);
       });
     }
@@ -119,26 +119,22 @@ export class SSAEliminator {
    *     SSAEliminator) and avoids ordering conflicts with any
    *     user-source declarations at the top of the entry block.
    */
-  #insertParamDeclaration(sink: EdgeSink, param: Place): void {
+  #insertParamDeclaration(sink: EdgeSink, param: Value): void {
     // Declaration metadata is keyed by the param's own declarationId.
     // Frontend-created result places (e.g. ??= / ternary) have no
     // `originalDeclarationId` — they're SSA-internal merge points —
     // but they still need a backing `let` so downstream references
     // resolve at runtime.
-    this.moduleIR.environment.ensureSyntheticDeclarationMetadata(
-      param.identifier.declarationId,
-      "let",
-      param,
-    );
+    this.moduleIR.environment.ensureSyntheticDeclarationMetadata(param.declarationId, "let", param);
 
     const env = this.moduleIR.environment;
 
     const undefinedId = makeOperationId(env.nextOperationId++);
-    const undefinedPlace = env.createPlace(env.createIdentifier());
+    const undefinedPlace = env.createValue();
     const undefinedInstr = new LiteralOp(undefinedId, undefinedPlace, undefined);
 
     const storeId = makeOperationId(env.nextOperationId++);
-    const storePlace = env.createPlace(env.createIdentifier(param.identifier.declarationId));
+    const storePlace = env.createValue(param.declarationId);
     const storeInstr = new StoreLocalOp(
       storeId,
       storePlace,
@@ -156,9 +152,6 @@ export class SSAEliminator {
       insertion.block.insertOpAt(insertion.index, undefinedInstr);
       insertion.block.insertOpAt(insertion.index + 1, storeInstr);
     }
-
-    env.placeToOp.set(undefinedPlace.id, undefinedInstr);
-    env.placeToOp.set(storePlace.id, storeInstr);
   }
 
   /**
@@ -239,14 +232,11 @@ export class SSAEliminator {
     return op;
   }
 
-  #insertCopyStore(edge: Edge, param: Place, arg: Place): void {
+  #insertCopyStore(edge: Edge, param: Value, arg: Value): void {
     const storeId = makeOperationId(this.moduleIR.environment.nextOperationId++);
-    const storePlace = this.moduleIR.environment.createPlace(
-      this.moduleIR.environment.createIdentifier(param.identifier.declarationId),
-    );
+    const storePlace = this.moduleIR.environment.createValue(param.declarationId);
     const storeInstr = new StoreLocalOp(storeId, storePlace, param, arg, "let", "assignment");
     edge.insertCopyStore(storeInstr);
-    this.moduleIR.environment.placeToOp.set(storePlace.id, storeInstr);
   }
 
   // ---------------------------------------------------------------------
@@ -293,14 +283,14 @@ export class SSAEliminator {
    * reaches the consumer.
    */
   #interferes(block: BasicBlock, load: LoadLocalOp | LoadContextOp, defIdx: number): boolean {
-    const resultId = load.place.identifier;
-    if (resultId.uses.size === 0) return false;
+    const resultId = load.place;
+    if (resultId.useCount === 0) return false;
 
-    const srcDecl = load.value.identifier.declarationId;
+    const srcDecl = load.value.declarationId;
     const ops = block.operations;
 
     let lastUseIdx = -1;
-    for (const user of resultId.uses) {
+    for (const user of resultId.uses()) {
       if (!(user instanceof Operation)) continue;
       if (user.parentBlock !== block) return true;
       const userIdx = ops.indexOf(user);
@@ -309,7 +299,7 @@ export class SSAEliminator {
     const terminal = block.terminal;
     if (terminal !== undefined) {
       for (const p of terminal.getOperands()) {
-        if (p.identifier === resultId) {
+        if (p === resultId) {
           lastUseIdx = ops.length;
           break;
         }
@@ -322,7 +312,7 @@ export class SSAEliminator {
       if (
         (mid instanceof StoreLocalOp || mid instanceof StoreContextOp) &&
         mid.kind === "assignment" &&
-        mid.lval.identifier.declarationId === srcDecl
+        mid.lval.declarationId === srcDecl
       ) {
         return true;
       }
@@ -346,8 +336,7 @@ export class SSAEliminator {
   ): number {
     const env = this.moduleIR.environment;
 
-    const snapIdentifier = env.createIdentifier();
-    const snapPlace = env.createPlace(snapIdentifier);
+    const snapPlace = env.createValue();
 
     const declareOp = new DeclareLocalOp(
       makeOperationId(env.nextOperationId++),
@@ -355,7 +344,7 @@ export class SSAEliminator {
       "const",
     );
 
-    const storeResultPlace = env.createPlace(env.createIdentifier());
+    const storeResultPlace = env.createValue();
     const storeOp = new StoreLocalOp(
       makeOperationId(env.nextOperationId++),
       storeResultPlace,
@@ -367,11 +356,9 @@ export class SSAEliminator {
 
     block.insertOpAt(defIdx, declareOp);
     block.insertOpAt(defIdx + 1, storeOp);
-    env.placeToOp.set(storeResultPlace.id, storeOp);
 
     const newLoad = new LoadLocalOp(makeOperationId(env.nextOperationId++), load.place, snapPlace);
     block.replaceOp(load, newLoad);
-    env.placeToOp.set(load.place.id, newLoad);
 
     return 2;
   }

@@ -1,14 +1,14 @@
-let $0_0 = "unknown";
-const $1_0 = 2;
-switch ($1_0) {
+let $0 = "unknown";
+const $1 = 2;
+switch ($1) {
   case 1:
-    $0_0 = "one";
+    $0 = "one";
     break;
   case 2:
-    $0_0 = "two";
+    $0 = "two";
     break;
   default:
-    $0_0 = "other";
+    $0 = "other";
     break;
 }
-console.log($0_0);
+console.log($0);

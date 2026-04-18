@@ -8,15 +8,15 @@ export function generateYieldExpressionOp(
 ): t.Expression {
   let argument: t.Expression | undefined;
   if (instruction.argument) {
-    const argNode = generator.places.get(instruction.argument.id);
+    const argNode = generator.values.get(instruction.argument.id);
     if (!argNode) {
-      throw new Error(`Place not found for yield argument: ${instruction.argument.id}`);
+      throw new Error(`Value not found for yield argument: ${instruction.argument.id}`);
     }
     t.assertExpression(argNode);
     argument = argNode;
   }
 
   const node = t.yieldExpression(argument, instruction.delegate);
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

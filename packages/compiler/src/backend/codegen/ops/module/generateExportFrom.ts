@@ -14,6 +14,6 @@ export function generateExportFromOp(
 
   const source = t.stringLiteral(instruction.source);
   const node = t.exportNamedDeclaration(null, specifiers, source);
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

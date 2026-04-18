@@ -1,4 +1,4 @@
-import { Identifier, Place } from "../../core";
+import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
@@ -10,27 +10,21 @@ import type { CloneContext } from "../../core/Operation";
 export class ClassDeclarationOp extends Operation {
   constructor(
     public readonly id: import("../../core").OperationId,
-    public override readonly place: Place,
-    public readonly superClass: Place | null,
-    public readonly elements: Place[],
+    public override readonly place: Value,
+    public readonly superClass: Value | null,
+    public readonly elements: Value[],
   ) {
     super(id);
   }
 
   public clone(ctx: CloneContext): ClassDeclarationOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
-    return moduleIR.environment.createOperation(
-      ClassDeclarationOp,
-      place,
-      this.superClass,
-      this.elements,
-    );
+    const env = ctx.environment;
+    const place = env.createValue();
+    return env.createOperation(ClassDeclarationOp, place, this.superClass, this.elements);
   }
 
   public rewrite(
-    values: Map<Identifier, Place>,
+    values: Map<Value, Value>,
     _options?: { rewriteDefinitions?: boolean },
   ): Operation {
     const newSuper = this.superClass ? this.superClass.rewrite(values) : null;
@@ -43,14 +37,14 @@ export class ClassDeclarationOp extends Operation {
     return new ClassDeclarationOp(this.id, this.place, newSuper, newElements);
   }
 
-  public getOperands(): Place[] {
-    const operands: Place[] = [];
+  public getOperands(): Value[] {
+    const operands: Value[] = [];
     if (this.superClass !== null) operands.push(this.superClass);
     operands.push(...this.elements);
     return operands;
   }
 
-  public override getDefs(): Place[] {
+  public override getDefs(): Value[] {
     return [this.place];
   }
 }

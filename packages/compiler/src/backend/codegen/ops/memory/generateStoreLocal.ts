@@ -6,16 +6,16 @@ export function generateStoreLocalOp(
   instruction: StoreLocalOp,
   generator: CodeGenerator,
 ): t.Statement {
-  let lval = generator.places.get(instruction.lval.id);
+  let lval = generator.values.get(instruction.lval.id);
   if (lval === undefined || lval === null) {
     lval = generator.getPlaceIdentifier(instruction.lval);
   }
   t.assertLVal(lval);
 
-  const value = generator.places.get(instruction.value.id);
+  const value = generator.values.get(instruction.value.id);
   t.assertExpression(value);
 
-  const declId = instruction.lval.identifier.declarationId;
+  const declId = instruction.lval.declarationId;
   const metadata = generator.getDeclarationMetadata(declId);
   const kind = metadata ? getCodegenDeclarationKind(metadata.kind) : undefined;
 
@@ -41,6 +41,6 @@ export function generateStoreLocalOp(
   // `places[declaration.id]`) finds a node it can wrap. Standalone
   // emission is decided structurally in `generateOp`, not by an
   // `emit` flag on the op.
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

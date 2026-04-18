@@ -1,2 +1,2 @@
-const $0_0 = "Alice";
-const $1_0 = String.raw`Hello ${$0_0}\n`;
+const $0 = "Alice";
+const $1 = String.raw`Hello ${$0}\n`;

@@ -42,11 +42,9 @@ export class CommonJSExportCollectorPass {
           continue;
         }
 
-        const declarationId = instruction.value.identifier.declarationId;
-        const declarationInstructionId = this.moduleIR.environment.getDeclarationOp(declarationId)!;
         this.moduleIR.exports.set("default", {
           instruction,
-          declaration: this.moduleIR.environment.operations.get(declarationInstructionId)!,
+          declaration: instruction.value.definer as Operation,
         });
       }
     }
@@ -61,7 +59,7 @@ export class CommonJSExportCollectorPass {
     }
 
     const objectPlace = instruction.object;
-    const objectInstr = this.moduleIR.environment.placeToOp.get(objectPlace.id)!;
+    const objectInstr = objectPlace.definer!;
 
     if (!(objectInstr instanceof LoadGlobalOp) || objectInstr.name !== "module") {
       return false;

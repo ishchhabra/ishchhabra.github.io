@@ -8,7 +8,7 @@ import {
   IfOp,
   LiteralOp,
   ObjectDestructureOp,
-  Place,
+  Value,
   Region,
   StoreContextOp,
   StoreLocalOp,
@@ -37,7 +37,7 @@ export function buildAssignmentExpression(
   environment: Environment,
   /** When true, the result is not used as an expression value (e.g. ExpressionStatement, for-loop update). */
   statementContext: boolean = false,
-): Place {
+): Value {
   const left = node.left;
   if (left.type === "Identifier") {
     return buildIdentifierAssignment(
@@ -76,9 +76,9 @@ function buildIdentifierAssignment(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
   statementContext: boolean,
-): Place {
+): Value {
   const operator = node.operator;
-  const left = node.left as AST.Identifier;
+  const left = node.left as AST.Value;
   const name = left.name;
   const declarationId = functionBuilder.getDeclarationId(name, scope);
   if (declarationId === undefined) {
@@ -98,7 +98,7 @@ function buildIdentifierAssignment(
     );
   }
 
-  let resultPlace: Place;
+  let resultPlace: Value;
   if (operator === "=") {
     const rightPlace = buildAssignmentRight(
       node,
@@ -134,7 +134,7 @@ function buildIdentifierAssignment(
       throw new Error("Assignment expression right must be a single place");
     }
 
-    const computedPlace = environment.createPlace(environment.createIdentifier());
+    const computedPlace = environment.createValue();
     functionBuilder.addOp(
       environment.createOperation(
         BinaryExpressionOp,
@@ -161,8 +161,7 @@ function buildIdentifierAssignment(
     throw new Error(`Expected binding assignment target, got: ${target.kind}`);
   }
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const isContext = environment.contextDeclarationIds.has(declarationId);
   const instruction = isContext
     ? environment.createOperation(
@@ -194,12 +193,12 @@ function buildIdentifierAssignment(
  */
 function buildLogicalCondition(
   operator: string,
-  valuePlace: Place,
+  valuePlace: Value,
   functionBuilder: FuncOpBuilder,
   environment: Environment,
-): Place {
+): Value {
   if (operator === "||=") {
-    const place = environment.createPlace(environment.createIdentifier());
+    const place = environment.createValue();
     functionBuilder.addOp(environment.createOperation(UnaryExpressionOp, place, "!", valuePlace));
     return place;
   }
@@ -207,9 +206,9 @@ function buildLogicalCondition(
     return valuePlace;
   }
   // ??= : value == null (checks both null and undefined)
-  const nullPlace = environment.createPlace(environment.createIdentifier());
+  const nullPlace = environment.createValue();
   functionBuilder.addOp(environment.createOperation(LiteralOp, nullPlace, null));
-  const place = environment.createPlace(environment.createIdentifier());
+  const place = environment.createValue();
   functionBuilder.addOp(
     environment.createOperation(BinaryExpressionOp, place, "==", valuePlace, nullPlace),
   );
@@ -233,9 +232,9 @@ function buildLogicalIdentifierAssignment(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
+): Value {
   const operator = node.operator;
-  const left = node.left as AST.Identifier;
+  const left = node.left as AST.Value;
 
   const declarationId = functionBuilder.getDeclarationId(left.name, scope);
   if (declarationId === undefined) {
@@ -258,7 +257,7 @@ function buildLogicalIdentifierAssignment(
   // Consequent region: evaluate rhs, store into x, yield new value.
   const consRegion = new Region([]);
   const consBlock = environment.createBlock();
-  let consYielded: Place | null = null;
+  let consYielded: Value | null = null;
   functionBuilder.withStructureRegion(consRegion, () => {
     functionBuilder.addBlock(consBlock);
     functionBuilder.currentBlock = consBlock;
@@ -285,7 +284,7 @@ function buildLogicalIdentifierAssignment(
       isContext
         ? environment.createOperation(
             StoreContextOp,
-            environment.createPlace(environment.createIdentifier()),
+            environment.createValue(),
             target.place,
             stabilizedRightPlace,
             "let",
@@ -293,7 +292,7 @@ function buildLogicalIdentifierAssignment(
           )
         : environment.createOperation(
             StoreLocalOp,
-            environment.createPlace(environment.createIdentifier()),
+            environment.createValue(),
             target.place,
             stabilizedRightPlace,
             "const",
@@ -318,7 +317,7 @@ function buildLogicalIdentifierAssignment(
     throw new Error("Logical assignment cons arm did not yield a value");
   }
 
-  const resultPlace = environment.createPlace(environment.createIdentifier());
+  const resultPlace = environment.createValue();
   const ifOp = new IfOp(
     createOperationId(environment),
     conditionPlace,
@@ -338,7 +337,7 @@ function buildMemberExpressionAssignment(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
   statementContext: boolean,
-): Place {
+): Value {
   const operator = node.operator;
 
   if (operator === "||=" || operator === "&&=" || operator === "??=") {
@@ -350,7 +349,7 @@ function buildMemberExpressionAssignment(
     reusable: operator !== "=",
   });
 
-  let rightPlace: Place;
+  let rightPlace: Value;
   if (operator === "=") {
     rightPlace = buildAssignmentRight(node, scope, functionBuilder, moduleBuilder, environment);
   } else {
@@ -361,7 +360,7 @@ function buildMemberExpressionAssignment(
       throw new Error("Assignment expression right must be a single place");
     }
 
-    rightPlace = environment.createPlace(environment.createIdentifier());
+    rightPlace = environment.createValue();
     functionBuilder.addOp(
       environment.createOperation(
         BinaryExpressionOp,
@@ -402,7 +401,7 @@ function buildLogicalMemberAssignment(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
+): Value {
   const operator = node.operator;
   const left = node.left as MemberExpression;
   const reference = buildMemberReference(left, scope, functionBuilder, moduleBuilder, environment, {
@@ -415,7 +414,7 @@ function buildLogicalMemberAssignment(
 
   const consRegion = new Region([]);
   const consBlock = environment.createBlock();
-  let consYielded: Place | null = null;
+  let consYielded: Value | null = null;
   functionBuilder.withStructureRegion(consRegion, () => {
     functionBuilder.addBlock(consBlock);
     functionBuilder.currentBlock = consBlock;
@@ -429,7 +428,7 @@ function buildLogicalMemberAssignment(
     functionBuilder.addOp(
       createStoreMemberReferenceInstruction(
         reference,
-        environment.createPlace(environment.createIdentifier()),
+        environment.createValue(),
         stabilizedRightPlace,
         environment,
       ),
@@ -451,7 +450,7 @@ function buildLogicalMemberAssignment(
     throw new Error("Logical member assignment cons arm did not yield a value");
   }
 
-  const resultPlace = environment.createPlace(environment.createIdentifier());
+  const resultPlace = environment.createValue();
   const ifOp = new IfOp(
     createOperationId(environment),
     conditionPlace,
@@ -471,7 +470,7 @@ function buildDestructuringAssignment(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
   statementContext: boolean,
-): Place {
+): Value {
   const rightPlace = buildNode(node.right, scope, functionBuilder, moduleBuilder, environment);
   if (rightPlace === undefined || Array.isArray(rightPlace)) {
     throw new Error("Assignment expression right must be a single place");
@@ -495,7 +494,7 @@ function buildDestructuringAssignment(
     { kind: "assignment" },
   );
 
-  const place = environment.createPlace(environment.createIdentifier());
+  const place = environment.createValue();
   let instruction;
   if (target.kind === "array") {
     instruction = environment.createOperation(
@@ -528,7 +527,7 @@ function buildAssignmentRight(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
+): Value {
   const rightPlace = buildNode(node.right, scope, functionBuilder, moduleBuilder, environment);
   if (rightPlace === undefined || Array.isArray(rightPlace)) {
     throw new Error("Assignment expression right must be a single place");
@@ -546,8 +545,7 @@ function buildAssignmentRight(
     throw new Error("Assignment expression left must be a single place");
   }
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   functionBuilder.addOp(
     environment.createOperation(
       BinaryExpressionOp,

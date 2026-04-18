@@ -19,7 +19,7 @@ export function generateImportSpecifierOp(
 function generateImportDefaultSpecifier(instruction: ImportSpecifierOp, generator: CodeGenerator) {
   const local = t.identifier(instruction.local);
   const node = t.importDefaultSpecifier(local);
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }
 
@@ -29,7 +29,7 @@ function generateImportNamespaceSpecifier(
 ) {
   const local = t.identifier(instruction.local);
   const node = t.importNamespaceSpecifier(local);
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }
 
@@ -37,6 +37,6 @@ function generateImportSpecifier(instruction: ImportSpecifierOp, generator: Code
   const local = t.identifier(instruction.local);
   const imported = toIdentifierOrStringLiteral(instruction.imported);
   const node = t.importSpecifier(local, imported);
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

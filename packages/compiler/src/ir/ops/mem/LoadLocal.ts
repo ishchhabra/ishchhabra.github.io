@@ -1,5 +1,5 @@
 import { OperationId } from "../../core";
-import { Identifier, Place } from "../../core";
+import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
@@ -13,21 +13,20 @@ import type { CloneContext } from "../../core/Operation";
 export class LoadLocalOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
-    public readonly value: Place,
+    public override readonly place: Value,
+    public readonly value: Value,
   ) {
     super(id);
   }
 
   public clone(ctx: CloneContext): LoadLocalOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
-    return moduleIR.environment.createOperation(LoadLocalOp, place, this.value);
+    const env = ctx.environment;
+    const place = env.createValue();
+    return env.createOperation(LoadLocalOp, place, this.value);
   }
 
-  rewrite(values: Map<Identifier, Place>): Operation {
-    const rewrittenTarget = values.get(this.value.identifier) ?? this.value;
+  rewrite(values: Map<Value, Value>): Operation {
+    const rewrittenTarget = values.get(this.value) ?? this.value;
 
     if (rewrittenTarget === this.value) {
       return this;
@@ -36,7 +35,7 @@ export class LoadLocalOp extends Operation {
     return new LoadLocalOp(this.id, this.place, rewrittenTarget);
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [this.value];
   }
 

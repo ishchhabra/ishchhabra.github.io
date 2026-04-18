@@ -82,7 +82,7 @@ export function buildForStatement(
     if (node.test != null) {
       testPlace = buildNode(node.test, forScope, functionBuilder, moduleBuilder, environment);
     } else {
-      const truePlace = environment.createPlace(environment.createIdentifier());
+      const truePlace = environment.createValue();
       functionBuilder.addOp(environment.createOperation(LiteralOp, truePlace, true));
       testPlace = truePlace;
     }

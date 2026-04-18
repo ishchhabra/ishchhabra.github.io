@@ -1,1 +1,1 @@
-const $0_0 = import.meta;
+const $0 = import.meta;

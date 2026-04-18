@@ -120,7 +120,7 @@ export function generateOp(
     }
 
     if (
-      instruction.place.identifier.uses.size === 0 &&
+      instruction.place.useCount === 0 &&
       instruction.hasSideEffects(generator.moduleIR.environment) &&
       statement &&
       t.isExpression(statement)
@@ -145,7 +145,7 @@ export function generateOp(
   } else if (isValueOp(instruction)) {
     const node = generateValueOp(instruction, funcOp, generator);
     if (
-      instruction.place.identifier.uses.size === 0 &&
+      instruction.place.useCount === 0 &&
       instruction.hasSideEffects(generator.moduleIR.environment) &&
       node !== null &&
       t.isExpression(node)

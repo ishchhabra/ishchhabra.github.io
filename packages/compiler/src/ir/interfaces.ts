@@ -9,7 +9,7 @@
  */
 import type { FuncOp } from "./core/FuncOp";
 import type { Operation } from "./core/Operation";
-import type { Place } from "./core/Place";
+import type { Value } from "./core/Value";
 import { ArrowFunctionExpressionOp } from "./ops/func/ArrowFunctionExpression";
 import { FunctionDeclarationOp } from "./ops/func/FunctionDeclaration";
 import { FunctionExpressionOp } from "./ops/func/FunctionExpression";
@@ -56,8 +56,8 @@ export function isLoopLike(op: unknown): op is Operation & LoopLike {
  * Covers normal calls, `new`, tagged templates, and super calls.
  */
 export interface CallLike {
-  readonly callee?: Place;
-  readonly args: readonly Place[];
+  readonly callee?: Value;
+  readonly args: readonly Value[];
 }
 
 /** Runtime predicate matching the {@link CallLike} interface. */

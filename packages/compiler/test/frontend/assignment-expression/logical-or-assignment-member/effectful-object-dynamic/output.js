@@ -1,23 +1,23 @@
-function $0_0() {
-  return $3_0;
+function $0() {
+  return $3;
 }
-function $1_0() {
+function $1() {
   return "b";
 }
-function $2_0() {
+function $2() {
   return 3;
 }
-let $3_0 = {
+let $3 = {
   b: 0,
 };
-const $15_0 = $0_0();
-const $19_0 = $1_0();
-let $28_0 = undefined;
-if (!$15_0[$19_0]) {
-  const $25_0 = $2_0();
-  $15_0[$19_0] = $25_0;
-  $28_0 = $25_0;
+const $16 = $0();
+const $20 = $1();
+let $29 = undefined;
+if (!$16[$20]) {
+  const $26 = $2();
+  $16[$20] = $26;
+  $29 = $26;
 } else {
-  $28_0 = $15_0[$19_0];
+  $29 = $16[$20];
 }
-const $4_0 = $28_0;
+const $4 = $29;

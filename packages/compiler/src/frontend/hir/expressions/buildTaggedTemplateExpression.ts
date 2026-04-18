@@ -23,8 +23,7 @@ export function buildTaggedTemplateExpression(
     throw new Error("Tagged template quasi must be a single place");
   }
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(
     TaggedTemplateExpressionOp,
     place,

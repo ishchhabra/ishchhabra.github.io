@@ -1,3 +1,3 @@
-function $0_0([, $1_0]) {
-  console.log($1_0);
+function $0([, $1]) {
+  console.log($1);
 }

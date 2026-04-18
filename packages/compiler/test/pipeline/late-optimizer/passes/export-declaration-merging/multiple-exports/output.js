@@ -1,6 +1,6 @@
-const $0_0 = 1;
-export { $0_0 as A };
-const $1_0 = "hello";
-export { $1_0 as B };
-const $2_0 = true;
-export { $2_0 as C };
+const $0 = 1;
+export { $0 as A };
+const $1 = "hello";
+export { $1 as B };
+const $2 = true;
+export { $2 as C };

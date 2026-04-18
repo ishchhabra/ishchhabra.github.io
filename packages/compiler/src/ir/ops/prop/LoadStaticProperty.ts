@@ -1,5 +1,5 @@
 import { OperationId } from "../../core";
-import { Identifier, Place } from "../../core";
+import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
@@ -10,8 +10,8 @@ import type { CloneContext } from "../../core/Operation";
 export class LoadStaticPropertyOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
-    public readonly object: Place,
+    public override readonly place: Value,
+    public readonly object: Value,
     public readonly property: string,
     public readonly optional: boolean = false,
   ) {
@@ -19,10 +19,9 @@ export class LoadStaticPropertyOp extends Operation {
   }
 
   public clone(ctx: CloneContext): LoadStaticPropertyOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
-    return moduleIR.environment.createOperation(
+    const env = ctx.environment;
+    const place = env.createValue();
+    return env.createOperation(
       LoadStaticPropertyOp,
       place,
       this.object,
@@ -31,17 +30,17 @@ export class LoadStaticPropertyOp extends Operation {
     );
   }
 
-  rewrite(values: Map<Identifier, Place>): LoadStaticPropertyOp {
+  rewrite(values: Map<Value, Value>): LoadStaticPropertyOp {
     return new LoadStaticPropertyOp(
       this.id,
       this.place,
-      values.get(this.object.identifier) ?? this.object,
+      values.get(this.object) ?? this.object,
       this.property,
       this.optional,
     );
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [this.object];
   }
 

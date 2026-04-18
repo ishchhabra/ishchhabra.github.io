@@ -1,5 +1,5 @@
 import { OperationId } from "../../core";
-import { Identifier, Place } from "../../core";
+import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
@@ -12,28 +12,27 @@ import type { CloneContext } from "../../core/Operation";
 export class ObjectExpressionOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
-    public readonly properties: Place[],
+    public override readonly place: Value,
+    public readonly properties: Value[],
   ) {
     super(id);
   }
 
   public clone(ctx: CloneContext): ObjectExpressionOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
-    return moduleIR.environment.createOperation(ObjectExpressionOp, place, this.properties);
+    const env = ctx.environment;
+    const place = env.createValue();
+    return env.createOperation(ObjectExpressionOp, place, this.properties);
   }
 
-  rewrite(values: Map<Identifier, Place>): Operation {
+  rewrite(values: Map<Value, Value>): Operation {
     return new ObjectExpressionOp(
       this.id,
       this.place,
-      this.properties.map((property) => values.get(property.identifier) ?? property),
+      this.properties.map((property) => values.get(property) ?? property),
     );
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return this.properties;
   }
 

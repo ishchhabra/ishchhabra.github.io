@@ -1,2 +1,2 @@
-const { "foo-bar": $0_0 } = obj;
-console.log($0_0);
+const { "foo-bar": $0 } = obj;
+console.log($0);

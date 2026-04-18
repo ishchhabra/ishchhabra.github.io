@@ -1,17 +1,17 @@
-function $0_0() {
-  return $3_0;
+function $0() {
+  return $3;
 }
-function $1_0() {
+function $1() {
   return "b";
 }
-function $2_0() {
+function $2() {
   return 3;
 }
-let $3_0 = {
+let $3 = {
   b: 1,
 };
-const $15_0 = $0_0();
-const $19_0 = $1_0();
-const $25_0 = $15_0[$19_0] + $2_0();
-$15_0[$19_0] = $25_0;
-const $4_0 = $25_0;
+const $16 = $0();
+const $20 = $1();
+const $26 = $16[$20] + $2();
+$16[$20] = $26;
+const $4 = $26;

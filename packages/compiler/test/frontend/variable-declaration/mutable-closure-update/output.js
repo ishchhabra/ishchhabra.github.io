@@ -1,11 +1,11 @@
-function $0_0() {
-  let $1_0 = 0;
-  const $2_0 = () => {
-    const $20_0 = $1_0;
-    $1_0 = $1_0 + 1;
-    return $20_0;
+function $0() {
+  let $1 = 0;
+  const $2 = () => {
+    const $23 = $1;
+    $1 = $1 + 1;
+    return $23;
   };
-  const $3_0 = () => $1_0;
-  $2_0();
-  return $3_0();
+  const $3 = () => $1;
+  $2();
+  return $3();
 }

@@ -1,8 +1,7 @@
 import type { OperationId } from "../../core";
 import type { BlockId } from "../../core/Block";
-import type { Identifier } from "../../core/Identifier";
+import type { Value } from "../../core/Value";
 import { type CloneContext, nextId, Operation, Trait } from "../../core/Operation";
-import type { Place } from "../../core/Place";
 
 /**
  * Structured `continue` exit — MLIR-style structural successor.
@@ -22,27 +21,27 @@ import type { Place } from "../../core/Place";
 export class ContinueOp extends Operation {
   static override readonly traits = new Set<Trait>([Trait.Terminator]);
 
-  public readonly args: readonly Place[];
+  public readonly args: readonly Value[];
 
   constructor(
     id: OperationId,
     public readonly label?: string,
-    args: readonly Place[] = [],
+    args: readonly Value[] = [],
   ) {
     super(id);
     this.args = args;
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [...this.args];
   }
 
-  rewrite(values: Map<Identifier, Place>): ContinueOp {
+  rewrite(values: Map<Value, Value>): ContinueOp {
     if (this.args.length === 0) return this;
     let changed = false;
-    const newArgs: Place[] = [];
+    const newArgs: Value[] = [];
     for (const arg of this.args) {
-      const rewritten = values.get(arg.identifier) ?? arg;
+      const rewritten = values.get(arg) ?? arg;
       if (rewritten !== arg) changed = true;
       newArgs.push(rewritten);
     }
@@ -51,7 +50,7 @@ export class ContinueOp extends Operation {
   }
 
   clone(ctx: CloneContext): ContinueOp {
-    const newArgs = this.args.map((a) => ctx.identifierMap.get(a.identifier) ?? a);
+    const newArgs = this.args.map((a) => ctx.valueMap.get(a) ?? a);
     return new ContinueOp(nextId(ctx), this.label, newArgs);
   }
 

@@ -1,4 +1,4 @@
-const $0_0 = {
+const $0 = {
   name: "foo",
   greet() {
     return this.name;

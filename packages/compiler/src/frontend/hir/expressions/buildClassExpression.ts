@@ -1,6 +1,6 @@
 import type { Class } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { ClassExpressionOp, Place } from "../../../ir";
+import { ClassExpressionOp, Value } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildClassBody } from "../buildClassElements";
 import { buildNode } from "../buildNode";
@@ -20,7 +20,7 @@ export function buildClassExpression(
 
   const classScope = functionBuilder.scopeFor(node);
 
-  let identifierPlace: Place | null = null;
+  let identifierPlace: Value | null = null;
   if (node.id != null) {
     const built = buildNode(node.id, classScope, functionBuilder, moduleBuilder, environment);
     if (built === undefined || Array.isArray(built)) {
@@ -29,7 +29,7 @@ export function buildClassExpression(
     identifierPlace = built;
   }
 
-  let superClassPlace: Place | null = null;
+  let superClassPlace: Value | null = null;
   if (node.superClass != null) {
     const built = buildNode(node.superClass, scope, functionBuilder, moduleBuilder, environment);
     if (built === undefined || Array.isArray(built)) {
@@ -46,8 +46,7 @@ export function buildClassExpression(
     environment,
   );
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(
     ClassExpressionOp,
     place,

@@ -7,9 +7,9 @@ export function generateArrayDestructureOp(
   instruction: ArrayDestructureOp,
   generator: CodeGenerator,
 ): t.Statement {
-  const value = generator.places.get(instruction.value.id);
+  const value = generator.values.get(instruction.value.id);
   if (value === undefined) {
-    throw new Error(`Place ${instruction.value.id} not found`);
+    throw new Error(`Value ${instruction.value.id} not found`);
   }
   t.assertExpression(value);
   const pattern = t.arrayPattern(
@@ -27,7 +27,7 @@ export function generateArrayDestructureOp(
       kind: "array",
       elements: instruction.elements,
     })) {
-      generator.declaredDeclarations.add(place.identifier.declarationId);
+      generator.declaredDeclarations.add(place.declarationId);
     }
     node = t.variableDeclaration(instruction.declarationKind, [
       t.variableDeclarator(pattern, value),
@@ -38,6 +38,6 @@ export function generateArrayDestructureOp(
 
   // Always cache the full Declaration so an export wrapper that
   // claims this destructure can read it.
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

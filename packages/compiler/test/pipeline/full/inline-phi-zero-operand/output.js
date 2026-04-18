@@ -1,41 +1,41 @@
-function $0_0($1_0, $2_0, $3_0) {
-  var $4_0 = undefined;
-  var $7_0 = undefined;
-  $4_0 = undefined;
-  $7_0 = undefined;
-  let $30_0 = undefined;
-  let $45_0 = undefined;
-  let $46_0 = undefined;
-  if ($1_0) {
-    let $20_0 = undefined;
-    let $43_0 = undefined;
-    let $44_0 = undefined;
-    if ($2_0) {
-      $4_0 = $2_0;
-      $20_0 = $2_0;
-      $43_0 = $4_0;
-      $44_0 = $7_0;
+function $0($1, $2, $3) {
+  var $4 = undefined;
+  var $7 = undefined;
+  $4 = undefined;
+  $7 = undefined;
+  let $30 = undefined;
+  let $45 = undefined;
+  let $46 = undefined;
+  if ($1) {
+    let $20 = undefined;
+    let $43 = undefined;
+    let $44 = undefined;
+    if ($2) {
+      $4 = $2;
+      $20 = $2;
+      $43 = $4;
+      $44 = $7;
     } else {
-      $7_0 = $3_0;
-      $20_0 = $3_0;
-      $43_0 = $4_0;
-      $44_0 = $7_0;
+      $7 = $3;
+      $20 = $3;
+      $43 = $4;
+      $44 = $7;
     }
-    const $53_0 =
-      ($20_0,
+    const $71 =
+      ($20,
       {
-        x: $43_0,
-        y: $44_0,
+        x: $43,
+        y: $44,
       });
-    $30_0 = $53_0;
-    $45_0 = $43_0;
-    $46_0 = $44_0;
+    $30 = $71;
+    $45 = $43;
+    $46 = $44;
   } else {
-    const $55_0 = {};
-    $30_0 = $55_0;
-    $45_0 = $4_0;
-    $46_0 = $7_0;
+    const $73 = {};
+    $30 = $73;
+    $45 = $4;
+    $46 = $7;
   }
-  return $30_0;
+  return $30;
 }
-console.log($0_0(globalThis.c, globalThis.a, globalThis.b));
+console.log($0(globalThis.c, globalThis.a, globalThis.b));

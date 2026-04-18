@@ -1,5 +1,5 @@
 import type { OperationId } from "../../core";
-import type { Identifier } from "../../core/Identifier";
+import type { Value } from "../../core/Value";
 import {
   type CloneContext,
   nextId,
@@ -9,7 +9,6 @@ import {
   Trait,
   VerifyError,
 } from "../../core/Operation";
-import type { Place } from "../../core/Place";
 import { Region } from "../../core/Region";
 
 /**
@@ -45,12 +44,12 @@ import { Region } from "../../core/Region";
 export class IfOp extends Operation {
   static override readonly traits = new Set<Trait>([Trait.HasRegions]);
 
-  public readonly resultPlaces: readonly Place[];
+  public readonly resultPlaces: readonly Value[];
 
   constructor(
     id: OperationId,
-    public readonly test: Place,
-    resultPlaces: readonly Place[],
+    public readonly test: Value,
+    resultPlaces: readonly Value[],
     consequentRegion: Region,
     alternateRegion: Region | undefined,
   ) {
@@ -73,16 +72,16 @@ export class IfOp extends Operation {
     return this.regions.length > 1;
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [this.test];
   }
 
-  override getDefs(): Place[] {
+  override getDefs(): Value[] {
     return [...this.resultPlaces];
   }
 
-  rewrite(values: Map<Identifier, Place>): IfOp {
-    const test = values.get(this.test.identifier) ?? this.test;
+  rewrite(values: Map<Value, Value>): IfOp {
+    const test = values.get(this.test) ?? this.test;
     if (test === this.test) return this;
     return new IfOp(this.id, test, this.resultPlaces, this.regions[0], this.regions[1]);
   }

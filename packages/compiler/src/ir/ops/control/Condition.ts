@@ -1,8 +1,7 @@
 import type { OperationId } from "../../core";
 import type { BlockId } from "../../core/Block";
-import type { Identifier } from "../../core/Identifier";
+import type { Value } from "../../core/Value";
 import { type CloneContext, nextId, Operation, remapPlace, Trait } from "../../core/Operation";
-import type { Place } from "../../core/Place";
 
 /**
  * Loop-condition terminator. Lives at the end of a loop op's
@@ -33,27 +32,27 @@ import type { Place } from "../../core/Place";
 export class ConditionOp extends Operation {
   static override readonly traits = new Set<Trait>([Trait.Terminator]);
 
-  public readonly args: readonly Place[];
+  public readonly args: readonly Value[];
 
   constructor(
     id: OperationId,
-    public readonly value: Place,
-    args: readonly Place[] = [],
+    public readonly value: Value,
+    args: readonly Value[] = [],
   ) {
     super(id);
     this.args = args;
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [this.value, ...this.args];
   }
 
-  rewrite(values: Map<Identifier, Place>): ConditionOp {
-    const next = values.get(this.value.identifier) ?? this.value;
+  rewrite(values: Map<Value, Value>): ConditionOp {
+    const next = values.get(this.value) ?? this.value;
     let argsChanged = false;
-    const newArgs: Place[] = [];
+    const newArgs: Value[] = [];
     for (const arg of this.args) {
-      const nextArg = values.get(arg.identifier) ?? arg;
+      const nextArg = values.get(arg) ?? arg;
       if (nextArg !== arg) argsChanged = true;
       newArgs.push(nextArg);
     }

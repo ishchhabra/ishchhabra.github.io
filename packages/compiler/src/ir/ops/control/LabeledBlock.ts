@@ -1,5 +1,5 @@
 import type { OperationId } from "../../core";
-import type { Identifier } from "../../core/Identifier";
+import type { Value } from "../../core/Value";
 import {
   type CloneContext,
   nextId,
@@ -8,7 +8,6 @@ import {
   remapRegion,
   Trait,
 } from "../../core/Operation";
-import type { Place } from "../../core/Place";
 import { Region } from "../../core/Region";
 
 /**
@@ -25,13 +24,13 @@ import { Region } from "../../core/Region";
 export class LabeledBlockOp extends Operation {
   static override readonly traits = new Set<Trait>([Trait.HasRegions]);
 
-  public readonly resultPlaces: readonly Place[];
+  public readonly resultPlaces: readonly Value[];
 
   constructor(
     id: OperationId,
     public readonly label: string,
     bodyRegion: Region,
-    resultPlaces: readonly Place[] = [],
+    resultPlaces: readonly Value[] = [],
   ) {
     super(id, [bodyRegion]);
     this.resultPlaces = resultPlaces;
@@ -41,15 +40,15 @@ export class LabeledBlockOp extends Operation {
     return this.regions[0];
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [];
   }
 
-  override getDefs(): Place[] {
+  override getDefs(): Value[] {
     return [...this.resultPlaces];
   }
 
-  rewrite(_values: Map<Identifier, Place>): LabeledBlockOp {
+  rewrite(_values: Map<Value, Value>): LabeledBlockOp {
     return this;
   }
 

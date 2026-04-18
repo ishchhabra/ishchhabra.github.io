@@ -1,6 +1,6 @@
 import type { ModuleDeclaration, Node, Statement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { Place } from "../../../ir";
+import { Value } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -34,7 +34,7 @@ export function buildStatement(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place | Place[] | undefined {
+): Value | Value[] | undefined {
   switch (node.type) {
     case "BreakStatement":
       return buildBreakStatement(node, functionBuilder, environment);

@@ -63,7 +63,7 @@ export class CallGraphResult {
     moduleIR: ModuleIR,
     callExpression: CallExpressionOp,
   ): CallTarget | undefined {
-    const loadInstr = moduleIR.environment.placeToOp.get(callExpression.callee.id);
+    const loadInstr = callExpression.callee.definer;
 
     if (loadInstr instanceof LoadGlobalOp) {
       const global = moduleIR.globals.get(loadInstr.name);
@@ -71,7 +71,7 @@ export class CallGraphResult {
     }
 
     if (loadInstr instanceof LoadLocalOp) {
-      const declarationId = loadInstr.value.identifier.declarationId;
+      const declarationId = loadInstr.value.declarationId;
       const funcIRId = this.declarations.get(moduleIR.path)?.get(declarationId);
       if (funcIRId !== undefined) {
         return { modulePath: moduleIR.path, funcOpId: funcIRId };
@@ -127,7 +127,7 @@ export class CallGraphResult {
         continue;
       }
 
-      const funcDeclInstr = moduleIR.environment.placeToOp.get(exportPlace.declaration.place!.id);
+      const funcDeclInstr = exportPlace.declaration.place!.definer;
 
       if (funcDeclInstr instanceof FunctionDeclarationOp) {
         return { modulePath: source, funcOpId: funcDeclInstr.funcOp.id };
@@ -214,7 +214,7 @@ function gatherDeclarations(moduleIR: ModuleIR, moduleDecls: Map<DeclarationId, 
       for (const instr of block.operations) {
         // function foo() {} — hoisted declaration
         if (instr instanceof FunctionDeclarationOp) {
-          moduleDecls.set(instr.place.identifier.declarationId, instr.funcOp.id);
+          moduleDecls.set(instr.place.declarationId, instr.funcOp.id);
           continue;
         }
 
@@ -222,12 +222,12 @@ function gatherDeclarations(moduleIR: ModuleIR, moduleDecls: Map<DeclarationId, 
         if (!(instr instanceof StoreLocalOp)) {
           continue;
         }
-        const definer = instr.value.identifier.definer;
+        const definer = instr.value.definer;
         if (
           definer instanceof FunctionExpressionOp ||
           definer instanceof ArrowFunctionExpressionOp
         ) {
-          moduleDecls.set(instr.lval.identifier.declarationId, definer.funcOp.id);
+          moduleDecls.set(instr.lval.declarationId, definer.funcOp.id);
         }
       }
     }
@@ -266,7 +266,7 @@ function gatherCalls(
         }
 
         // Guard: the callee instruction must exist (filters out phantom refs).
-        if (moduleIR.environment.placeToOp.get(instr.callee.id) === undefined) {
+        if (instr.callee.definer === undefined) {
           continue;
         }
 

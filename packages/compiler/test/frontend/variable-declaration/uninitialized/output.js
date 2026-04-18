@@ -1,1 +1,1 @@
-let $0_0 = undefined;
+let $0 = undefined;

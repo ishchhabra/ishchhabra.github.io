@@ -56,16 +56,16 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
    */
   private structureHasLiveDef(op: Operation, liveness: LivenessResult): boolean {
     for (const p of op.getDefs()) {
-      if (liveness.isLive(p.identifier.id)) return true;
+      if (liveness.isLive(p.id)) return true;
     }
     for (const region of op.regions) {
       for (const block of region.blocks) {
         for (const param of block.params) {
-          if (liveness.isLive(param.identifier.id)) return true;
+          if (liveness.isLive(param.id)) return true;
         }
         for (const innerOp of block.operations) {
           for (const p of innerOp.getDefs()) {
-            if (liveness.isLive(p.identifier.id)) return true;
+            if (liveness.isLive(p.id)) return true;
           }
           if (innerOp.hasTrait(Trait.HasRegions)) {
             if (this.structureHasLiveDef(innerOp, liveness)) return true;
@@ -83,7 +83,7 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
       if (block.params.length === 0) continue;
       if (this.hasStructuredOpIncomingEdge(block)) continue;
 
-      const mask = block.params.map((p) => liveness.isLive(p.identifier.id));
+      const mask = block.params.map((p) => liveness.isLive(p.id));
       if (mask.every((live) => live)) continue;
 
       block.params = block.params.filter((_, i) => mask[i]);
@@ -134,7 +134,7 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
           continue;
         }
         if (op.hasSideEffects(this.environment)) continue;
-        if (op.getDefs().some((p) => liveness.isLive(p.identifier.id))) continue;
+        if (op.getDefs().some((p) => liveness.isLive(p.id))) continue;
         block.removeOpAt(i);
         changed = true;
       }

@@ -1,5 +1,5 @@
-class $0_0 {}
-class $1_0 extends $0_0 {
+class $0 {}
+class $1 extends $0 {
   greet() {
     return "hello";
   }

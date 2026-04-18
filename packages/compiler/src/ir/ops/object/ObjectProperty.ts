@@ -1,5 +1,5 @@
 import { OperationId } from "../../core";
-import { Identifier, Place } from "../../core";
+import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
@@ -17,21 +17,20 @@ import type { CloneContext } from "../../core/Operation";
 export class ObjectPropertyOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
-    public readonly key: Place,
-    public readonly value: Place,
+    public override readonly place: Value,
+    public readonly key: Value,
+    public readonly value: Value,
     public readonly computed: boolean,
     public readonly shorthand: boolean,
-    public readonly bindings: Place[] = [],
+    public readonly bindings: Value[] = [],
   ) {
     super(id);
   }
 
   public clone(ctx: CloneContext): ObjectPropertyOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
-    return moduleIR.environment.createOperation(
+    const env = ctx.environment;
+    const place = env.createValue();
+    return env.createOperation(
       ObjectPropertyOp,
       place,
       this.key,
@@ -42,19 +41,19 @@ export class ObjectPropertyOp extends Operation {
     );
   }
 
-  rewrite(values: Map<Identifier, Place>): Operation {
+  rewrite(values: Map<Value, Value>): Operation {
     return new ObjectPropertyOp(
       this.id,
       this.place,
-      values.get(this.key.identifier) ?? this.key,
-      values.get(this.value.identifier) ?? this.value,
+      values.get(this.key) ?? this.key,
+      values.get(this.value) ?? this.value,
       this.computed,
       this.shorthand,
-      this.bindings.map((binding) => values.get(binding.identifier) ?? binding),
+      this.bindings.map((binding) => values.get(binding) ?? binding),
     );
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     // In destructuring patterns, the value is a binding target (written, not read).
     // Only include it as a read when it's not one of the bindings.
     if (this.bindings.length > 0) {
@@ -63,7 +62,7 @@ export class ObjectPropertyOp extends Operation {
     return [this.key, this.value];
   }
 
-  override getDefs(): Place[] {
+  override getDefs(): Value[] {
     return [this.place, ...this.bindings];
   }
 

@@ -1,13 +1,13 @@
-function $0_0($3_0) {
-  if ($3_0 === 0) {
+function $0($3) {
+  if ($3 === 0) {
     return true;
   }
-  return $1_0($3_0 - 1);
+  return $1($3 - 1);
 }
-function $1_0($13_0) {
-  if ($13_0 === 0) {
+function $1($14) {
+  if ($14 === 0) {
     return false;
   }
-  return $0_0($13_0 - 1);
+  return $0($14 - 1);
 }
-const $2_0 = $0_0(4);
+const $2 = $0(4);

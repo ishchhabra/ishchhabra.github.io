@@ -1,6 +1,6 @@
 import type { JSXMemberExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { JSXMemberExpressionOp, Place } from "../../../ir";
+import { JSXMemberExpressionOp, Value } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FuncOpBuilder } from "../FuncOpBuilder";
@@ -12,14 +12,13 @@ export function buildJSXMemberExpression(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
+): Value {
   const objectPlace = buildNode(node.object, scope, functionBuilder, moduleBuilder, environment);
   if (objectPlace === undefined || Array.isArray(objectPlace)) {
     throw new Error("JSX member expression object should be a single place");
   }
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(
     JSXMemberExpressionOp,
     place,

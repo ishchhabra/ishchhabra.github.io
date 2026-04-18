@@ -1,32 +1,31 @@
-import { Identifier, OperationId, Place } from "../../core";
+import { Value, OperationId } from "../../core";
 import type { CloneContext } from "../../core/Operation";
 import { Operation } from "../../core/Operation";
 
 export class SequenceExpressionOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
-    public readonly expressions: Place[],
+    public override readonly place: Value,
+    public readonly expressions: Value[],
   ) {
     super(id);
   }
 
   public clone(ctx: CloneContext): SequenceExpressionOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
-    return moduleIR.environment.createOperation(SequenceExpressionOp, place, this.expressions);
+    const env = ctx.environment;
+    const place = env.createValue();
+    return env.createOperation(SequenceExpressionOp, place, this.expressions);
   }
 
-  rewrite(values: Map<Identifier, Place>): Operation {
+  rewrite(values: Map<Value, Value>): Operation {
     return new SequenceExpressionOp(
       this.id,
       this.place,
-      this.expressions.map((expr) => values.get(expr.identifier) ?? expr),
+      this.expressions.map((expr) => values.get(expr) ?? expr),
     );
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [...this.expressions];
   }
 

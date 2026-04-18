@@ -1,5 +1,5 @@
 import { OperationId } from "../../core";
-import { Identifier, Place } from "../../core";
+import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
@@ -20,35 +20,34 @@ import type { CloneContext } from "../../core/Operation";
 export class DeclareLocalOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
+    public override readonly place: Value,
     public readonly kind: "var" | "let" | "const",
   ) {
     super(id);
   }
 
   public clone(ctx: CloneContext): DeclareLocalOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
-    return moduleIR.environment.createOperation(DeclareLocalOp, place, this.kind);
+    const env = ctx.environment;
+    const place = env.createValue();
+    return env.createOperation(DeclareLocalOp, place, this.kind);
   }
 
   rewrite(
-    values: Map<Identifier, Place>,
+    values: Map<Value, Value>,
     { rewriteDefinitions = false }: { rewriteDefinitions?: boolean } = {},
   ): DeclareLocalOp {
     return new DeclareLocalOp(
       this.id,
-      rewriteDefinitions ? (values.get(this.place.identifier) ?? this.place) : this.place,
+      rewriteDefinitions ? (values.get(this.place) ?? this.place) : this.place,
       this.kind,
     );
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [];
   }
 
-  override getDefs(): Place[] {
+  override getDefs(): Value[] {
     return [this.place];
   }
 

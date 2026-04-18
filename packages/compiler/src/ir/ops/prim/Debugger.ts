@@ -1,11 +1,11 @@
 import { OperationId } from "../../core";
-import { Place } from "../../core";
+import { Value } from "../../core";
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
 export class DebuggerStatementOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
+    public override readonly place: Value,
   ) {
     super(id);
   }
@@ -15,10 +15,9 @@ export class DebuggerStatementOp extends Operation {
   }
 
   public clone(ctx: CloneContext): DebuggerStatementOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
-    return moduleIR.environment.createOperation(DebuggerStatementOp, place);
+    const env = ctx.environment;
+    const place = env.createValue();
+    return env.createOperation(DebuggerStatementOp, place);
   }
 
   rewrite(): Operation {

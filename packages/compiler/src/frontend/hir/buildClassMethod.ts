@@ -1,6 +1,6 @@
 import type { Function, MethodDefinition } from "oxc-parser";
 import { Environment } from "../../environment";
-import { ClassMethodOp, LiteralOp, Place } from "../../ir";
+import { ClassMethodOp, LiteralOp, Value } from "../../ir";
 import { type Scope } from "../scope/Scope";
 import { buildNode } from "./buildNode";
 import { FuncOpBuilder } from "./FuncOpBuilder";
@@ -21,7 +21,7 @@ export function buildClassMethod(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
+): Value {
   if (node.decorators && node.decorators.length > 0) {
     throw new Error("Unsupported: class method decorators");
   }
@@ -31,10 +31,10 @@ export function buildClassMethod(
 
   // Build the key place. Non-computed identifier keys are property labels
   // (string literals), not variable references.
-  let keyPlace: Place;
+  let keyPlace: Value;
   if (!node.computed && node.key.type === "Identifier") {
-    const keyIdentifier = environment.createIdentifier();
-    keyPlace = environment.createPlace(keyIdentifier);
+    const keyIdentifier = environment.createValue();
+    keyPlace = keyIdentifier;
     const keyInstruction = environment.createOperation(LiteralOp, keyPlace, node.key.name);
     functionBuilder.addOp(keyInstruction);
   } else {
@@ -68,8 +68,7 @@ export function buildClassMethod(
   functionBuilder.propagateCapturesFrom(methodIRBuilder);
 
   const capturedPlaces = [...methodIRBuilder.captures.values()];
-  const methodIdentifier = environment.createIdentifier();
-  const methodPlace = environment.createPlace(methodIdentifier);
+  const methodPlace = environment.createValue();
   const instruction = environment.createOperation(
     ClassMethodOp,
     methodPlace,

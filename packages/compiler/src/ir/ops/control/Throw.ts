@@ -1,8 +1,7 @@
 import type { OperationId } from "../../core";
 import type { BlockId } from "../../core/Block";
-import type { Identifier } from "../../core/Identifier";
+import type { Value } from "../../core/Value";
 import { type CloneContext, nextId, Operation, remapPlace, Trait } from "../../core/Operation";
-import type { Place } from "../../core/Place";
 
 /**
  * `throw value;`. Terminator. Control unwinds to the nearest catch
@@ -13,17 +12,17 @@ export class ThrowOp extends Operation {
 
   constructor(
     id: OperationId,
-    public readonly value: Place,
+    public readonly value: Value,
   ) {
     super(id);
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [this.value];
   }
 
-  rewrite(values: Map<Identifier, Place>): ThrowOp {
-    const value = values.get(this.value.identifier) ?? this.value;
+  rewrite(values: Map<Value, Value>): ThrowOp {
+    const value = values.get(this.value) ?? this.value;
     if (value === this.value) return this;
     return new ThrowOp(this.id, value);
   }

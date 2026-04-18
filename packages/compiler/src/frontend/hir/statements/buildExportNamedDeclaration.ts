@@ -7,7 +7,7 @@ import type {
   Node,
 } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { ExportNamedDeclarationOp, Place } from "../../../ir";
+import { ExportNamedDeclarationOp, Operation, Value } from "../../../ir";
 import { ExportFromOp } from "../../../ir/ops/module/ExportFrom";
 import { ExportSpecifierOp } from "../../../ir/ops/module/ExportSpecifier";
 import { type Scope } from "../../scope/Scope";
@@ -78,8 +78,7 @@ export function buildExportNamedDeclaration(
       return exportSpecifierPlace;
     });
 
-    const identifier = environment.createIdentifier();
-    const place = environment.createPlace(identifier);
+    const place = environment.createValue();
     const instruction = environment.createOperation(
       ExportNamedDeclarationOp,
       place,
@@ -107,7 +106,7 @@ function buildExportDeclarationAsSpecifiers(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
+): Value {
   // Collect declared names before building (needed for function/class which
   // don't go through VariableDeclaration).
   const names = collectDeclaredNames(declaration);
@@ -118,7 +117,7 @@ function buildExportDeclarationAsSpecifiers(
   buildNode(declaration, scope, functionBuilder, moduleBuilder, environment);
 
   // Create export specifiers for each declared name.
-  const specifierPlaces: Place[] = [];
+  const specifierPlaces: Value[] = [];
   for (const name of names) {
     const declarationId = functionBuilder.getDeclarationId(name, scope);
     if (declarationId === undefined) continue;
@@ -126,11 +125,10 @@ function buildExportDeclarationAsSpecifiers(
     const latestDeclaration = environment.getLatestDeclaration(declarationId);
     if (latestDeclaration === undefined) continue;
 
-    const localPlace = environment.places.get(latestDeclaration.placeId);
+    const localPlace = environment.values.get(latestDeclaration.valueId);
     if (localPlace === undefined) continue;
 
-    const specId = environment.createIdentifier();
-    const specPlace = environment.createPlace(specId);
+    const specPlace = environment.createValue();
     const specInstruction = environment.createOperation(
       ExportSpecifierOp,
       specPlace,
@@ -140,17 +138,16 @@ function buildExportDeclarationAsSpecifiers(
     functionBuilder.addOp(specInstruction);
     specifierPlaces.push(specPlace);
 
-    const declarationInstructionId = environment.getDeclarationOp(declarationId);
-    if (declarationInstructionId !== undefined) {
+    const declarationInstruction = localPlace.definer;
+    if (declarationInstruction !== undefined) {
       moduleBuilder.moduleIR.exports.set(name, {
         instruction: specInstruction,
-        declaration: environment.operations.get(declarationInstructionId)!,
+        declaration: declarationInstruction as Operation,
       });
     }
   }
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(
     ExportNamedDeclarationOp,
     place,
@@ -238,8 +235,7 @@ function buildExportFrom(
     });
   }
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(ExportFromOp, place, source, specifiers);
   functionBuilder.addOp(instruction);
 

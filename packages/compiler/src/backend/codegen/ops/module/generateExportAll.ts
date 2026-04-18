@@ -8,6 +8,6 @@ export function generateExportAllOp(
 ): t.ExportAllDeclaration {
   const source = t.stringLiteral(instruction.source);
   const node = t.exportAllDeclaration(source);
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

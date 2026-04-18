@@ -4,7 +4,7 @@ import { Environment } from "../../../environment";
 import {
   ArrayDestructureOp,
   ObjectDestructureOp,
-  Place,
+  Value,
   StoreContextOp,
   StoreLocalOp,
 } from "../../../ir";
@@ -21,7 +21,7 @@ export function buildVariableDeclaration(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place | Place[] | undefined {
+): Value | Value[] | undefined {
   const kind = node.kind;
   if (kind !== "var" && kind !== "let" && kind !== "const") {
     throw new Error(`Unsupported variable declaration kind: ${kind}`);
@@ -35,7 +35,7 @@ export function buildVariableDeclaration(
     let valuePlace;
     if (init == null) {
       // No initializer — emit LoadGlobal("undefined") instead of mutating the AST.
-      const undefinedPlace = environment.createPlace(environment.createIdentifier());
+      const undefinedPlace = environment.createValue();
       functionBuilder.addOp(environment.createOperation(LoadGlobalOp, undefinedPlace, "undefined"));
       valuePlace = undefinedPlace;
     } else {
@@ -53,8 +53,7 @@ export function buildVariableDeclaration(
       environment,
       { kind: "declaration", declarationKind: kind },
     );
-    const identifier = environment.createIdentifier();
-    const place = environment.createPlace(identifier);
+    const place = environment.createValue();
     if (target.kind === "binding") {
       // var declarations were already hoisted (DeclareLocal + StoreLocal/StoreContext
       // with undefined). The write here is an assignment to the existing binding,

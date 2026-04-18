@@ -1,10 +1,10 @@
-const $0_0 = {
+const $0 = {
   a: {
     b: 1,
   },
 };
-const $1_0 = $0_0?.a;
-const $2_0 = $0_0?.a?.b;
-const $3_0 = $0_0?.[0];
-const $4_0 = $0_0?.method();
-const $5_0 = $0_0?.a.b;
+const $1 = $0?.a;
+const $2 = $0?.a?.b;
+const $3 = $0?.[0];
+const $4 = $0?.method();
+const $5 = $0?.a.b;

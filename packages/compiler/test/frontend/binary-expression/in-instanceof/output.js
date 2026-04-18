@@ -1,5 +1,5 @@
-const $0_0 = {
+const $0 = {
   x: 1,
 };
-const $1_0 = "x" in $0_0;
-const $2_0 = [] instanceof Array;
+const $1 = "x" in $0;
+const $2 = [] instanceof Array;

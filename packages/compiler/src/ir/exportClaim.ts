@@ -9,7 +9,7 @@ import type { Operation } from "./core/Operation";
  * downstream export op is going to wrap this op as `export <decl>`
  * and codegen should suppress its standalone statement emission.
  *
- * Walks the embedded use chain on `op.place.identifier`. Every
+ * Walks the embedded use chain on `op.place`. Every
  * export wrapper that references this place via its `declaration`
  * field shows up in `uses` because `getOperands()` includes the
  * `declaration` field.
@@ -21,7 +21,7 @@ import type { Operation } from "./core/Operation";
  */
 export function isClaimedByExportDeclaration(op: Operation): boolean {
   if (op.place === undefined) return false;
-  for (const user of op.place.identifier.uses) {
+  for (const user of op.place.uses()) {
     if (user instanceof ExportNamedDeclarationOp && user.declaration === op.place) {
       return true;
     }

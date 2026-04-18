@@ -5,7 +5,7 @@ import {
   LiteralOp,
   LoadContextOp,
   LoadLocalOp,
-  Place,
+  Value,
   StoreContextOp,
   StoreLocalOp,
 } from "../../../ir";
@@ -54,12 +54,12 @@ export function buildUpdateExpression(
   const isContext = environment.contextDeclarationIds.has(declarationId);
   const isCaptured = !functionBuilder.isOwnDeclaration(declarationId);
 
-  let contextPlace: Place | undefined;
+  let contextPlace: Value | undefined;
   if (isContext && isCaptured) {
     functionBuilder.captures.set(declarationId, bindingPlace);
     if (!functionBuilder.captureParams.has(declarationId)) {
-      const paramIdentifier = environment.createIdentifier(declarationId);
-      functionBuilder.captureParams.set(declarationId, environment.createPlace(paramIdentifier));
+      const paramIdentifier = environment.createValue(declarationId);
+      functionBuilder.captureParams.set(declarationId, paramIdentifier);
     }
     contextPlace = functionBuilder.captureParams.get(declarationId)!;
   } else if (isContext) {
@@ -69,7 +69,7 @@ export function buildUpdateExpression(
   const latestDeclaration = environment.getLatestDeclaration(declarationId)!;
   const originalPlace = isContext
     ? contextPlace
-    : environment.places.get(latestDeclaration.placeId);
+    : environment.values.get(latestDeclaration.valueId);
   if (originalPlace === undefined) {
     throw new Error(`Unable to find the place for ${argument.name} (${declarationId})`);
   }
@@ -83,7 +83,7 @@ export function buildUpdateExpression(
   // output without a dead const declaration.
   let oldValLoadPlace = originalPlace;
   if (!node.prefix) {
-    oldValLoadPlace = environment.createPlace(environment.createIdentifier());
+    oldValLoadPlace = environment.createValue();
     functionBuilder.addOp(
       environment.createOperation(
         isContext ? LoadContextOp : LoadLocalOp,
@@ -93,7 +93,7 @@ export function buildUpdateExpression(
     );
   }
 
-  let lvalPlace: Place;
+  let lvalPlace: Value;
   if (isContext) {
     lvalPlace = originalPlace;
   } else {
@@ -102,8 +102,7 @@ export function buildUpdateExpression(
 
   // Build the binary expression inline instead of creating a synthetic path.
   // Load the argument value.
-  const argLoadIdentifier = environment.createIdentifier(declarationId);
-  const argLoadPlace = environment.createPlace(argLoadIdentifier);
+  const argLoadPlace = environment.createValue(declarationId);
   functionBuilder.addOp(
     environment.createOperation(
       isContext ? LoadContextOp : LoadLocalOp,
@@ -113,12 +112,12 @@ export function buildUpdateExpression(
   );
 
   // Create literal 1
-  const onePlace = environment.createPlace(environment.createIdentifier());
+  const onePlace = environment.createValue();
   functionBuilder.addOp(environment.createOperation(LiteralOp, onePlace, 1));
 
   // Compute value +/- 1
   const isIncrement = node.operator === "++";
-  const valuePlace = environment.createPlace(environment.createIdentifier());
+  const valuePlace = environment.createValue();
   functionBuilder.addOp(
     environment.createOperation(
       BinaryExpressionOp,
@@ -129,8 +128,7 @@ export function buildUpdateExpression(
     ),
   );
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = isContext
     ? environment.createOperation(StoreContextOp, place, lvalPlace, valuePlace, "let", "assignment")
     : environment.createOperation(
@@ -148,8 +146,7 @@ export function buildUpdateExpression(
     // For prefix (++i), return a LoadLocal of the stored value so codegen
     // references the named variable ($0_1) instead of re-emitting the
     // binary expression.
-    const loadIdentifier = environment.createIdentifier(declarationId);
-    const loadPlace = environment.createPlace(loadIdentifier);
+    const loadPlace = environment.createValue(declarationId);
     functionBuilder.addOp(
       environment.createOperation(isContext ? LoadContextOp : LoadLocalOp, loadPlace, lvalPlace),
     );

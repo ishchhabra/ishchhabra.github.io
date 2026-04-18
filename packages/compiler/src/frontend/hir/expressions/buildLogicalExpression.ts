@@ -23,8 +23,7 @@ export function buildLogicalExpression(
     throw new Error("Logical expression right must be a single place");
   }
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(
     LogicalExpressionOp,
     place,

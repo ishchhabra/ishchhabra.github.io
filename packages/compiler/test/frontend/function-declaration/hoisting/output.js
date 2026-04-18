@@ -1,4 +1,4 @@
-function $0_0() {
+function $0() {
   return 1;
 }
-const $1_0 = $0_0();
+const $1 = $0();

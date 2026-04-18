@@ -1,4 +1,4 @@
-function $0_0({ a: $1_0 = 1 }) {
-  return $1_0;
+function $0({ a: $1 = 1 }) {
+  return $1;
 }
-console.log($0_0({}));
+console.log($0({}));

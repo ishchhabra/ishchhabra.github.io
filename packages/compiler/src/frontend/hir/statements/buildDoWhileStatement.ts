@@ -50,7 +50,7 @@ export function buildDoWhileStatement(
   functionBuilder.withStructureRegion(beforeRegion, () => {
     functionBuilder.addBlock(beforeBlock);
     functionBuilder.currentBlock = beforeBlock;
-    const truePlace = environment.createPlace(environment.createIdentifier());
+    const truePlace = environment.createValue();
     functionBuilder.addOp(environment.createOperation(LiteralOp, truePlace, true));
     functionBuilder.currentBlock.terminal = new ConditionOp(
       createOperationId(environment),
@@ -77,7 +77,7 @@ export function buildDoWhileStatement(
     if (testPlace === undefined || Array.isArray(testPlace)) {
       throw new Error("Do-while statement test must be a single place");
     }
-    const notTestPlace = environment.createPlace(environment.createIdentifier());
+    const notTestPlace = environment.createValue();
     functionBuilder.addOp(
       environment.createOperation(UnaryExpressionOp, notTestPlace, "!", testPlace),
     );

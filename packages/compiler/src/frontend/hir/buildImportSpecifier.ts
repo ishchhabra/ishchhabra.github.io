@@ -23,8 +23,7 @@ export function buildImportSpecifier(
   const localName = getLocalName(specifierNode);
   const importedName = getImportedName(specifierNode);
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(
     ImportSpecifierOp,
     place,
@@ -33,26 +32,26 @@ export function buildImportSpecifier(
   );
   functionBuilder.addOp(instruction);
 
-  // Register the import binding so later loads/codegen can treat it as a
-  // source declaration without depending on a separate DeclareLocal node.
-  const bindingIdentifier = environment.createIdentifier();
-  bindingIdentifier.name = localName;
-  const bindingPlace = environment.createPlace(bindingIdentifier);
+  // The import binding is a distinct Value from the op's own `place`
+  // slot because codegen stores different Babel nodes in each:
+  // `place` holds the `t.ImportSpecifier` AST node, `bindingPlace`
+  // holds the source-visible `t.identifier(localName)` that reads
+  // (and re-exports) reference. We link `bindingPlace.definer` to the
+  // op so downstream export resolution (`localPlace.definer`) can walk
+  // from any read of the binding back to the ImportSpecifierOp that
+  // materialized it.
+  const bindingPlace = environment.createValue();
+  bindingPlace.name = localName;
+  bindingPlace._setDefiner(instruction);
 
-  functionBuilder.registerDeclarationName(localName, bindingIdentifier.declarationId, scope);
-  functionBuilder.instantiateDeclaration(
-    bindingIdentifier.declarationId,
-    "import",
-    localName,
-    scope,
-  );
+  functionBuilder.registerDeclarationName(localName, bindingPlace.declarationId, scope);
+  functionBuilder.instantiateDeclaration(bindingPlace.declarationId, "import", localName, scope);
   environment.registerDeclaration(
-    bindingIdentifier.declarationId,
+    bindingPlace.declarationId,
     functionBuilder.currentBlock.id,
     bindingPlace.id,
   );
-  environment.setDeclarationBindingPlace(bindingIdentifier.declarationId, bindingPlace.id);
-  environment.registerDeclarationOp(bindingPlace, instruction);
+  environment.setDeclarationBinding(bindingPlace.declarationId, bindingPlace.id);
 
   const source = declarationNode.source.value;
   moduleBuilder.moduleIR.globals.set(localName, {

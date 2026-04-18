@@ -6,7 +6,7 @@ import {
   LoadContextOp,
   LoadGlobalOp,
   LoadLocalOp,
-  Place,
+  Value,
 } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { throwTDZAccessError } from "../buildIdentifier";
@@ -24,13 +24,11 @@ export function buildJSXIdentifier(
   scope: Scope,
   functionBuilder: FuncOpBuilder,
   environment: Environment,
-): Place {
+): Value {
   const name = node.name;
-  const outIdentifier = environment.createIdentifier();
-  const outPlace = environment.createPlace(outIdentifier);
+  const outPlace = environment.createValue();
 
-  const valueIdentifier = environment.createIdentifier();
-  const valuePlace = environment.createPlace(valueIdentifier);
+  const valuePlace = environment.createValue();
 
   if (/^[a-z]/.test(name)) {
     functionBuilder.addOp(environment.createOperation(LiteralOp, valuePlace, name));
@@ -49,11 +47,8 @@ export function buildJSXIdentifier(
         }
         functionBuilder.captures.set(declarationId, declarationPlace);
         if (!functionBuilder.captureParams.has(declarationId)) {
-          const paramIdentifier = environment.createIdentifier(declarationId);
-          functionBuilder.captureParams.set(
-            declarationId,
-            environment.createPlace(paramIdentifier),
-          );
+          const paramIdentifier = environment.createValue(declarationId);
+          functionBuilder.captureParams.set(declarationId, paramIdentifier);
         }
         const captureParam = functionBuilder.captureParams.get(declarationId)!;
         const LoadClass = environment.contextDeclarationIds.has(declarationId)
@@ -62,7 +57,7 @@ export function buildJSXIdentifier(
         functionBuilder.addOp(environment.createOperation(LoadClass, valuePlace, captureParam));
       } else {
         const latestDeclaration = environment.getLatestDeclaration(declarationId);
-        const declarationPlace = environment.places.get(latestDeclaration.placeId);
+        const declarationPlace = environment.values.get(latestDeclaration.valueId);
         if (declarationPlace === undefined) {
           throw new Error(`Unable to find the place for ${name} (${declarationId})`);
         }

@@ -1,14 +1,14 @@
-const $0_0 = "greet";
-let $1_0 = undefined;
-switch ($0_0) {
+const $0 = "greet";
+let $1 = undefined;
+switch ($0) {
   case "greet":
-    $1_0 = "hello";
+    $1 = "hello";
     break;
   case "farewell":
-    $1_0 = "goodbye";
+    $1 = "goodbye";
     break;
   default:
-    $1_0 = "unknown action";
+    $1 = "unknown action";
     break;
 }
-console.log($1_0);
+console.log($1);

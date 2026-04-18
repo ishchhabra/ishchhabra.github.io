@@ -1,18 +1,15 @@
 import { Environment } from "../../environment";
-import { DeclarationId, Identifier, makeDeclarationId, makeIdentifierId } from "../../ir";
+import { DeclarationId, Value } from "../../ir";
 
 /**
- * Allocate a fresh identifier for a synthetic block parameter — the
- * SSA-merged value at a dominance frontier. The identifier gets a
+ * Allocate a fresh SSA {@link Value} for a synthetic block parameter —
+ * the SSA-merged value at a dominance frontier. The value gets a
  * unique declarationId by default so it codegens as a distinct JS
  * variable; the caller links it back to the source variable via
- * `identifier.originalDeclarationId`.
+ * `value.originalDeclarationId`.
  */
-export function createParamIdentifier(
-  environment: Environment,
-  declarationId?: DeclarationId,
-): Identifier {
-  declarationId ??= makeDeclarationId(environment.nextDeclarationId++);
-  const identifierId = makeIdentifierId(environment.nextIdentifierId++);
-  return new Identifier(identifierId, `blockparam_${identifierId}`, declarationId);
+export function createParamValue(environment: Environment, declarationId?: DeclarationId): Value {
+  const value = environment.createValue(declarationId);
+  value.name = `blockparam_${value.id}`;
+  return value;
 }

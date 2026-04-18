@@ -1,7 +1,7 @@
-function $0_0() {
+function $0() {
   return 5;
 }
-let $1_0 = undefined;
-const $8_0 = $0_0();
-$1_0 = $8_0;
-const $2_0 = $8_0;
+let $1 = undefined;
+const $8 = $0();
+$1 = $8;
+const $2 = $8;

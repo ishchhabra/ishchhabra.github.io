@@ -1,8 +1,8 @@
-function $0_0() {
-  var $1_0 = undefined;
-  var $4_0 = undefined;
-  $1_0 = 1;
-  $4_0 = undefined;
-  $4_0 = 2;
-  return $1_0 + $4_0;
+function $0() {
+  var $1 = undefined;
+  var $4 = undefined;
+  $1 = 1;
+  $4 = undefined;
+  $4 = 2;
+  return $1 + $4;
 }

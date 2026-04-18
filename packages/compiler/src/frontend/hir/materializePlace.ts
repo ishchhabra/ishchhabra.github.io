@@ -18,7 +18,7 @@ import {
   NewExpressionOp,
   ObjectExpressionOp,
   ObjectPropertyOp,
-  Place,
+  Value,
   RegExpLiteralOp,
   SequenceExpressionOp,
   StoreLocalOp,
@@ -33,21 +33,21 @@ import { FunctionExpressionOp } from "../../ir/ops/func/FunctionExpression";
 import { FuncOpBuilder } from "./FuncOpBuilder";
 
 export function materializePlace(
-  valuePlace: Place,
+  valuePlace: Value,
   functionBuilder: FuncOpBuilder,
   environment: Environment,
-): Place {
-  const bindingPlace = environment.createPlace(environment.createIdentifier());
+): Value {
+  const bindingPlace = environment.createValue();
   functionBuilder.addOp(environment.createOperation(DeclareLocalOp, bindingPlace, "const"));
   environment.registerDeclaration(
-    bindingPlace.identifier.declarationId,
+    bindingPlace.declarationId,
     functionBuilder.currentBlock.id,
     bindingPlace.id,
   );
   functionBuilder.addOp(
     environment.createOperation(
       StoreLocalOp,
-      environment.createPlace(environment.createIdentifier()),
+      environment.createValue(),
       bindingPlace,
       valuePlace,
       "const",
@@ -58,14 +58,14 @@ export function materializePlace(
 }
 
 export function isStablePlace(
-  place: Place,
+  place: Value,
   environment: Environment,
   seen = new Set<number>(),
 ): boolean {
   if (seen.has(place.id)) return true;
   seen.add(place.id);
 
-  const instruction = environment.placeToOp.get(place.id);
+  const instruction = place.definer;
   if (!instruction) {
     return true;
   }
@@ -135,10 +135,10 @@ export function isStablePlace(
 }
 
 export function stabilizePlace(
-  valuePlace: Place,
+  valuePlace: Value,
   functionBuilder: FuncOpBuilder,
   environment: Environment,
-): Place {
+): Value {
   if (isStablePlace(valuePlace, environment)) {
     return valuePlace;
   }

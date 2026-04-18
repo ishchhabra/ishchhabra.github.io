@@ -55,7 +55,7 @@ function buildLValBindings(
 
 function buildIdentifierBindings(
   scope: Scope,
-  node: AST.Identifier,
+  node: AST.Value,
   declarationKind: Extract<DeclarationKind, "var" | "let" | "const">,
   functionBuilder: FuncOpBuilder,
   environment: Environment,
@@ -71,7 +71,7 @@ function buildIdentifierBindings(
   // duplicate `var x` in the same function still needs deduplication.
   if (scope.data.get(originalName) !== undefined) return;
 
-  const identifier = environment.createIdentifier();
+  const identifier = environment.createValue();
   functionBuilder.registerDeclarationName(originalName, identifier.declarationId, scope);
   functionBuilder.instantiateDeclaration(
     identifier.declarationId,
@@ -85,21 +85,21 @@ function buildIdentifierBindings(
     environment.contextDeclarationIds.add(identifier.declarationId);
   }
 
-  const place = environment.createPlace(identifier);
+  const place = identifier;
   environment.registerDeclaration(
     identifier.declarationId,
     functionBuilder.currentBlock.id,
     place.id,
   );
-  environment.setDeclarationBindingPlace(identifier.declarationId, place.id);
+  environment.setDeclarationBinding(identifier.declarationId, place.id);
 
   // Preserve `var`'s hoisted-and-initialized semantics in the emitted JS.
   // Reifying this as `let` would introduce TDZ behavior and break both
   // source-level hoisting and ES module circular import semantics.
   if (declarationKind === "var") {
-    const undefPlace = environment.createPlace(environment.createIdentifier());
+    const undefPlace = environment.createValue();
     functionBuilder.addOp(environment.createOperation(LiteralOp, undefPlace, undefined));
-    const storePlace = environment.createPlace(environment.createIdentifier());
+    const storePlace = environment.createValue();
     functionBuilder.addOp(
       environment.createOperation(
         StoreLocalOp,

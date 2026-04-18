@@ -1,6 +1,6 @@
 import type { Expression, RegExpLiteral } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { Place } from "../../../ir";
+import { Value } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -35,7 +35,7 @@ export function buildExpression(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
+): Value {
   switch (node.type) {
     case "AwaitExpression":
       return buildAwaitExpression(node, scope, functionBuilder, moduleBuilder, environment);

@@ -1,8 +1,8 @@
-function $0_0() {
+function $0() {
   return typeof window !== "undefined";
 }
-function $1_0() {
-  if (!$0_0()) {
+function $1() {
+  if (!$0()) {
     return;
   }
   console.log("injected");

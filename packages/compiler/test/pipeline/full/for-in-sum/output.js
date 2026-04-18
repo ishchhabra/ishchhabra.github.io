@@ -1,13 +1,13 @@
-function $0_0($1_0) {
-  let $2_0 = 0;
-  let $20_blockparam_20 = undefined;
-  $20_blockparam_20 = $2_0;
-  let $21_blockparam_21 = undefined;
-  for (const $6_0 in $1_0) {
-    $2_0 = $20_blockparam_20 + 1;
-    $20_blockparam_20 = $2_0;
-    $21_blockparam_21 = $2_0;
+function $0($1) {
+  let $2 = 0;
+  let blockparam_20 = undefined;
+  blockparam_20 = $2;
+  let blockparam_21 = undefined;
+  for (const $6 in $1) {
+    $2 = blockparam_20 + 1;
+    blockparam_20 = $2;
+    blockparam_21 = $2;
   }
-  return $21_blockparam_21;
+  return blockparam_21;
 }
-console.log($0_0(myObj));
+console.log($0(myObj));

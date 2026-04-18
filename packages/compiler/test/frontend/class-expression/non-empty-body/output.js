@@ -1,8 +1,8 @@
-class $1_0 extends Base {
-  constructor($4_0) {
-    super($4_0);
-    this.value = $4_0;
+class $1 extends Base {
+  constructor($4) {
+    super($4);
+    this.value = $4;
   }
 }
-const $0_0 = new $1_0(1);
-export { $0_0 as foo };
+const $0 = new $1(1);
+export { $0 as foo };

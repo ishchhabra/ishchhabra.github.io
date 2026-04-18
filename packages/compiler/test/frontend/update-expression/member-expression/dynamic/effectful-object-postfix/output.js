@@ -1,13 +1,13 @@
-function $0_0() {
-  return $2_0;
+function $0() {
+  return $2;
 }
-function $1_0() {
+function $1() {
   return 0;
 }
-let $2_0 = [10];
-const $11_0 = $0_0();
-const $15_0 = $1_0();
-const $18_0 = $11_0[$15_0];
-const $22_0 = $18_0 + 1;
-$11_0[$15_0] = $22_0;
-const $3_0 = $18_0;
+let $2 = [10];
+const $12 = $0();
+const $16 = $1();
+const $19 = $12[$16];
+const $23 = $19 + 1;
+$12[$16] = $23;
+const $3 = $19;

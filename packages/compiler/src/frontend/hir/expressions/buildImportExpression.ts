@@ -1,6 +1,6 @@
 import type { ImportExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { ImportExpressionOp, Place } from "../../../ir";
+import { ImportExpressionOp, Value } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FuncOpBuilder } from "../FuncOpBuilder";
@@ -12,14 +12,13 @@ export function buildImportExpression(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
+): Value {
   const sourcePlace = buildNode(node.source, scope, functionBuilder, moduleBuilder, environment);
   if (sourcePlace === undefined || Array.isArray(sourcePlace)) {
     throw new Error("Dynamic import source must be a single place");
   }
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(ImportExpressionOp, place, sourcePlace);
   functionBuilder.addOp(instruction);
   return place;

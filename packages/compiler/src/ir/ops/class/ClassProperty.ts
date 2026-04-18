@@ -1,9 +1,9 @@
 import { OperationId } from "../../core";
-import { Identifier, Place } from "../../core";
+import { Value } from "../../core";
 import { FuncOp } from "../../core/FuncOp";
 
 import { Operation } from "../../core/Operation";
-import { makeCloneContext, type CloneContext } from "../../core/Operation";
+import { makeCloneContext, requireModuleIR, type CloneContext } from "../../core/Operation";
 /**
  * Represents a class field (a.k.a. public class property).
  *
@@ -27,28 +27,28 @@ import { makeCloneContext, type CloneContext } from "../../core/Operation";
  * into the emitted `t.classProperty` node. For an uninitialized field
  * (`x;`), the value is `null`.
  *
- * Non-computed identifier keys are stored as a {@link Place} referencing
+ * Non-computed identifier keys are stored as a {@link Value} referencing
  * a {@link LiteralOp}, matching the convention in
  * {@link ClassMethodOp} and {@link ObjectPropertyOp}.
  */
 export class ClassPropertyOp extends Operation {
   constructor(
     id: OperationId,
-    public override readonly place: Place,
-    public readonly key: Place,
+    public override readonly place: Value,
+    public readonly key: Value,
     public readonly value: FuncOp | null,
     public readonly computed: boolean,
     public readonly isStatic: boolean,
-    public readonly captures: Place[] = [],
+    public readonly captures: Value[] = [],
   ) {
     super(id);
   }
 
   public clone(ctx: CloneContext): ClassPropertyOp {
-    const moduleIR = ctx.moduleIR;
-    const identifier = moduleIR.environment.createIdentifier();
-    const place = moduleIR.environment.createPlace(identifier);
-    return moduleIR.environment.createOperation(
+    const moduleIR = requireModuleIR(ctx);
+    const env = moduleIR.environment;
+    const place = env.createValue();
+    return env.createOperation(
       ClassPropertyOp,
       place,
       this.key,
@@ -59,8 +59,8 @@ export class ClassPropertyOp extends Operation {
     );
   }
 
-  rewrite(values: Map<Identifier, Place>): Operation {
-    const newKey = values.get(this.key.identifier) ?? this.key;
+  rewrite(values: Map<Value, Value>): Operation {
+    const newKey = values.get(this.key) ?? this.key;
     const newCaptures = this.captures.map((c) => c.rewrite(values));
     const capturesChanged = newCaptures.some((c, i) => c !== this.captures[i]);
     if (newKey === this.key && !capturesChanged) {
@@ -77,7 +77,7 @@ export class ClassPropertyOp extends Operation {
     );
   }
 
-  getOperands(): Place[] {
+  getOperands(): Value[] {
     return [this.key, ...this.captures];
   }
 }

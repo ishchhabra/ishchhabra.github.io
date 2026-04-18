@@ -1,8 +1,8 @@
-function $0_0() {
-  function $1_0() {
-    return $2_0;
+function $0() {
+  function $1() {
+    return $2;
   }
-  let $2_0 = 0;
-  $2_0 = 1;
+  let $2 = 0;
+  $2 = 1;
   return 1;
 }

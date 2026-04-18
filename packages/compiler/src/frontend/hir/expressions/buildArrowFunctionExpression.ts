@@ -1,6 +1,6 @@
 import type { ArrowFunctionExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { Place } from "../../../ir";
+import { Value } from "../../../ir";
 import { ArrowFunctionExpressionOp } from "../../../ir/ops/func/ArrowFunctionExpression";
 import { isExpression, unwrapTSTypeWrappers } from "../../estree";
 import { type Scope } from "../../scope/Scope";
@@ -13,7 +13,7 @@ export function buildArrowFunctionExpression(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place {
+): Value {
   const body = node.body;
   const conciseExpressionBody = isExpression(unwrapTSTypeWrappers(body));
   const childScope = functionBuilder.scopeFor(node);
@@ -33,8 +33,7 @@ export function buildArrowFunctionExpression(
   functionBuilder.propagateCapturesFrom(funcOpBuilder);
 
   const capturedPlaces = [...funcOpBuilder.captures.values()];
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(
     ArrowFunctionExpressionOp,
     place,

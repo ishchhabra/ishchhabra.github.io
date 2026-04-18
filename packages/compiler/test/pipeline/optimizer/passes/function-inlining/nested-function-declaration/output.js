@@ -1,7 +1,7 @@
-function $0_0() {
-  function $1_0() {
+function $0() {
+  function $1() {
     return 1;
   }
-  return $1_0;
+  return $1;
 }
-console.log($0_0());
+console.log($0());

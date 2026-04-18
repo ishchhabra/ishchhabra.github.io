@@ -7,6 +7,6 @@ export function generateLoadGlobalOp(
   generator: CodeGenerator,
 ): t.Expression {
   const node = t.identifier(instruction.name);
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

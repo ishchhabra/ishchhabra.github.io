@@ -1,11 +1,11 @@
-function $0_0() {
-  function $1_0() {
-    $3_0 = $3_0 + 1;
+function $0() {
+  function $1() {
+    $3 = $3 + 1;
   }
-  function $2_0() {
-    return $3_0;
+  function $2() {
+    return $3;
   }
-  let $3_0 = 0;
-  $1_0();
-  return $2_0();
+  let $3 = 0;
+  $1();
+  return $2();
 }

@@ -1,6 +1,6 @@
-const $0_0 = 1;
-const $1_0 = {
+const $0 = 1;
+const $1 = {
   foo() {
-    return $0_0;
+    return $0;
   },
 };

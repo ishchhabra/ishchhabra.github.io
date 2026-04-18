@@ -1,2 +1,2 @@
-const $0_0 = 42;
-const $1_0 = <span>{$0_0}</span>;
+const $0 = 42;
+const $1 = <span>{$0}</span>;

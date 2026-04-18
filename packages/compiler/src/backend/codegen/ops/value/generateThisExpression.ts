@@ -7,6 +7,6 @@ export function generateThisExpressionOp(
   generator: CodeGenerator,
 ): t.Expression {
   const node = t.thisExpression();
-  generator.places.set(instruction.place.id, node);
+  generator.values.set(instruction.place.id, node);
   return node;
 }

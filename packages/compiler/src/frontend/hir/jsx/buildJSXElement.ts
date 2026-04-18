@@ -1,6 +1,6 @@
 import type { JSXElement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { JSXElementOp, Place } from "../../../ir";
+import { JSXElementOp, Value } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -13,7 +13,7 @@ export function buildJSXElement(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): Place | undefined {
+): Value | undefined {
   const openingElement = buildJSXOpeningElement(
     node.openingElement,
     scope,
@@ -36,7 +36,7 @@ export function buildJSXElement(
     throw new Error("JSXElement closing element should be a single place");
   }
 
-  const childrenPlaces: Place[] = [];
+  const childrenPlaces: Value[] = [];
   for (const child of node.children) {
     const place = buildNode(child as any, scope, functionBuilder, moduleBuilder, environment);
     // JSXEmptyExpression (`{}`, `{/* ... */}`) yields no value and no IR child.
@@ -49,8 +49,7 @@ export function buildJSXElement(
     childrenPlaces.push(place);
   }
 
-  const identifier = environment.createIdentifier();
-  const place = environment.createPlace(identifier);
+  const place = environment.createValue();
   const instruction = environment.createOperation(
     JSXElementOp,
     place,

@@ -1,11 +1,11 @@
-for (let $1_0 of items) {
-  let $13_0 = undefined;
+for (let $1 of items) {
+  let $13 = undefined;
   if (condition) {
-    $1_0 = $1_0 + 1;
-    $13_0 = $1_0;
+    $1 = $1 + 1;
+    $13 = $1;
   } else {
-    $13_0 = $1_0;
-    $13_0 = $1_0;
+    $13 = $1;
+    $13 = $1;
   }
-  console.log($13_0);
+  console.log($13);
 }
