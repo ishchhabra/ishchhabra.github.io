@@ -166,23 +166,29 @@ export default defineConfig(async (): Promise<UserConfig> => {
         // `getVariableForExportName`) when it enters the module graph. Marking
         // it external at the rollup level sidesteps the crash, but that also
         // bypasses nitro's externals tracer — so we copy oxc-parser into the
-        // function's node_modules ourselves via the `compiled` hook. Same
-        // pattern Nuxt uses internally. Drop this once upstream fixes land.
+        // function's node_modules ourselves. Same pattern Nuxt uses internally.
+        // Drop this once upstream fixes land.
+        //
+        // Note: register via `modules` (not `hooks.compiled`) so we append to
+        // Nitro's hookable rather than replacing the preset's own `compiled`
+        // hook (the vercel preset uses it to emit `.vercel/output/config.json`).
         rollupConfig: {
           external: ["oxc-parser", "@oxc-parser/core"],
         },
-        hooks: {
-          async compiled(nitro: Nitro) {
-            const { traceNodeModules } = await import("nf3");
-            const req = createRequire(path.join(__dirname, "package.json"));
-            await traceNodeModules([req.resolve("oxc-parser")], {
-              rootDir: nitro.options.rootDir,
-              outDir: nitro.options.output.serverDir,
-              writePackageJson: true,
-              conditions: nitro.options.exportConditions || ["default"],
+        modules: [
+          (nitro: Nitro) => {
+            nitro.hooks.hook("compiled", async () => {
+              const { traceNodeModules } = await import("nf3");
+              const req = createRequire(path.join(__dirname, "package.json"));
+              await traceNodeModules([req.resolve("oxc-parser")], {
+                rootDir: nitro.options.rootDir,
+                outDir: nitro.options.output.serverDir,
+                writePackageJson: true,
+                conditions: nitro.options.exportConditions || ["default"],
+              });
             });
           },
-        },
+        ],
         ...(process.env["VERCEL"] === "1" && {
           output: {
             dir: path.resolve(__dirname, ".vercel/output"),
