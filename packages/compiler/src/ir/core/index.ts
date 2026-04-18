@@ -18,13 +18,7 @@ export {
   type ObjectDestructureTarget,
 } from "./Destructure";
 export type { ControlContext } from "./ControlContext";
-export {
-  Value,
-  makeValueId,
-  makeDeclarationId,
-  type DeclarationId,
-  type ValueId,
-} from "./Value";
+export { Value, makeValueId, makeDeclarationId, type DeclarationId, type ValueId } from "./Value";
 export { registerUses, unregisterUses, type User } from "./Use";
 export { type LexicalScopeKind } from "./LexicalScope";
 export {
