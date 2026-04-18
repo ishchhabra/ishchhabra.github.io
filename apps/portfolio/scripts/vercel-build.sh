@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-sitemap_tmp="$(mktemp -t portfolio-sitemap.XXXXXX.xml)"
+prerender_tmp="$(mktemp -d -t portfolio-prerender.XXXXXX)"
 
 cleanup() {
-  rm -f "$sitemap_tmp"
+  rm -rf "$prerender_tmp"
 }
 
 trap cleanup EXIT
@@ -17,8 +17,21 @@ if [ "${ENABLE_AOT:-}" = "1" ]; then
   pnpm aot:compile
 fi
 
+# Pass 1: node-server preset — crawlable, produces prerendered HTML + sitemap.
+# Required because the vercel preset + prerender is broken upstream
+# (TanStack/router#6562 / nitrojs/nitro#3905).
 NITRO_PRESET=node-server pnpm build
-cp ".vercel/output/static/sitemap.xml" "$sitemap_tmp"
+cp -R .output/public/. "$prerender_tmp/"
 
+# Pass 2: vercel preset — produces the deployable .vercel/output/ (functions + assets).
 NITRO_PRESET=vercel pnpm build
-cp "$sitemap_tmp" ".vercel/output/static/sitemap.xml"
+
+# Merge prerendered HTML + sitemap into .vercel/output/static/.
+# Vercel's filesystem route handler (see .vercel/output/config.json) serves
+# these before invoking /__server, so prerendered routes are CDN-static.
+( cd "$prerender_tmp" && find . \( -name '*.html' -o -name 'sitemap.xml' \) -print0 ) \
+  | while IFS= read -r -d '' rel; do
+      dest=".vercel/output/static/${rel#./}"
+      mkdir -p "$(dirname "$dest")"
+      cp "$prerender_tmp/${rel#./}" "$dest"
+    done
