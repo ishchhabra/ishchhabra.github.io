@@ -35,13 +35,6 @@ export class Environment {
    */
   contextDeclarationIds: Set<DeclarationId> = new Set();
 
-  /**
-   * Per-module counter for function IDs. Unlike other counters, FuncOpId
-   * stays per-module because the codegen assumes the entry function is always
-   * ID 0 within each module (see {@link CodeGenerator.entryFunction}).
-   */
-  nextFunctionId = 0;
-
   constructor(private readonly projectEnvironment: ProjectEnvironment) {}
 
   /** Proxy getters/setters — delegates to ProjectEnvironment for global uniqueness. */

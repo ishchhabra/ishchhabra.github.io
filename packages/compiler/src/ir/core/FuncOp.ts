@@ -617,7 +617,7 @@ export class FuncOp extends Operation {
       if (newBlock !== undefined) newBlockLabels.set(newBlock.id, label);
     }
 
-    const newId = makeFuncOpId(environment.nextFunctionId++);
+    const newId = makeFuncOpId(environment.nextOperationId++);
     const populated = new FuncOp(
       targetModule,
       newId,

@@ -40,6 +40,16 @@ export class ModuleIR {
   public readonly globals: Map<string, ModuleGlobal> = new Map();
   public readonly exports: Map<string, ModuleExport> = new Map();
 
+  /**
+   * The module's top-level function — the implicit `function () { <module body> }`
+   * the frontend emits around every module. Set on the first {@link FuncOp}
+   * registration; never reassigned.
+   *
+   * Codegen walks out from here; pipeline passes iterate {@link functions}
+   * for all functions (entry + nested) without caring which is which.
+   */
+  public entryFuncOp: FuncOp | undefined = undefined;
+
   constructor(
     public readonly path: string,
     public readonly environment: Environment,

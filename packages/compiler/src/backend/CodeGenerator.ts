@@ -10,7 +10,7 @@ import {
   Value,
   ValueId,
 } from "../ir";
-import { FuncOp, makeFuncOpId } from "../ir/core/FuncOp";
+import { FuncOp } from "../ir/core/FuncOp";
 import { ModuleIR } from "../ir/core/ModuleIR";
 import { AnalysisManager } from "../pipeline/analysis/AnalysisManager";
 import { LoopInfo, LoopInfoAnalysis } from "../pipeline/analysis/LoopInfoAnalysis";
@@ -110,7 +110,11 @@ export class CodeGenerator {
   }
 
   public get entryFunction(): FuncOp {
-    return this.moduleIR.functions.get(makeFuncOpId(0))!;
+    const entry = this.moduleIR.entryFuncOp;
+    if (entry === undefined) {
+      throw new Error(`CodeGenerator: module ${this.path} has no entry function`);
+    }
+    return entry;
   }
 
   public getDeclarationMetadata(declarationId: DeclarationId) {
@@ -200,7 +204,10 @@ export class CodeGenerator {
 
     const generator = new CodeGenerator(modulePath, this.projectUnit);
     generator.preRegisterBindingIdentifiers(moduleIR);
-    const entryFunction = moduleIR.functions.get(makeFuncOpId(0))!;
+    const entryFunction = moduleIR.entryFuncOp;
+    if (entryFunction === undefined) {
+      throw new Error(`CodeGenerator: module ${modulePath} has no entry function`);
+    }
     const { statements } = generateFunction(entryFunction, [], generator);
     const program = t.program(statements);
     return generate(program).code;

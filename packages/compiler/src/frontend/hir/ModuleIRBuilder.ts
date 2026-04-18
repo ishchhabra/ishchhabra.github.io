@@ -45,7 +45,7 @@ export class ModuleIRBuilder {
     const program = result.program as unknown as Program;
     const { programScope, scopeMap } = analyzeScopes(program);
 
-    new FuncOpBuilder(
+    this.moduleIR.entryFuncOp = new FuncOpBuilder(
       [],
       program,
       programScope,

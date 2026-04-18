@@ -125,7 +125,7 @@ export class FuncOpBuilder {
     public readonly generator: boolean,
     parentFuncOpId: FuncOpId | null = null,
   ) {
-    this.funcOpId = makeFuncOpId(this.environment.nextFunctionId++);
+    this.funcOpId = makeFuncOpId(this.environment.nextOperationId++);
     this.parentFuncOpId = parentFuncOpId;
     this.bodyRegion = new Region([]);
     this.regionStack = [this.bodyRegion];

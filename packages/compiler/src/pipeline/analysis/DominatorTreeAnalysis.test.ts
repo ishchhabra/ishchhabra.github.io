@@ -1,14 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { ProjectBuilder } from "../../frontend/ProjectBuilder";
-import { makeFuncOpId } from "../../ir/core/FuncOp";
 import { DominatorTree } from "./DominatorTreeAnalysis";
 
 function getFirstFunction(source: string) {
   const unit = new ProjectBuilder().buildFromSource(source, "m.js");
   const moduleIR = unit.modules.get("m.js")!;
-  const fn = moduleIR.functions.get(makeFuncOpId(0));
+  const fn = moduleIR.entryFuncOp;
   if (!fn) {
-    throw new Error("expected function id 0");
+    throw new Error("expected entry function");
   }
   return fn;
 }
