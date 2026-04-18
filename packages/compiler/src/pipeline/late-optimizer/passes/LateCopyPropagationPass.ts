@@ -1,8 +1,6 @@
 import { Operation, BlockId, DeclarationId, LoadLocalOp, Value, StoreLocalOp } from "../../../ir";
 import { FuncOp } from "../../../ir/core/FuncOp";
 import { Trait } from "../../../ir/core/Operation";
-import { AnalysisManager } from "../../analysis/AnalysisManager";
-import { ControlFlowGraphAnalysis } from "../../analysis/ControlFlowGraphAnalysis";
 import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
 
 /**
@@ -22,10 +20,7 @@ import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
  *   z = y
  */
 export class LateCopyPropagationPass extends BaseOptimizationPass {
-  constructor(
-    protected readonly funcOp: FuncOp,
-    private readonly AM: AnalysisManager,
-  ) {
+  constructor(protected readonly funcOp: FuncOp) {
     super(funcOp);
   }
 
@@ -87,7 +82,8 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
    * Only copy relationships that agree across *all* predecessors survive.
    */
   private meet(blockId: BlockId, outState: Map<BlockId, CopyState>): CopyState {
-    const preds = this.AM.get(ControlFlowGraphAnalysis, this.funcOp).predecessors.get(blockId);
+    const block = this.funcOp.maybeBlock(blockId);
+    const preds = block?.predecessors();
 
     if (!preds || preds.size === 0) {
       return new Map();
@@ -96,7 +92,7 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
     let result: CopyState | undefined;
 
     for (const pred of preds) {
-      const predState = outState.get(pred);
+      const predState = outState.get(pred.id);
       if (!predState) continue;
 
       if (!result) {

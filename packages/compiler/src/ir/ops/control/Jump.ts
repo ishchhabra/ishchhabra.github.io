@@ -51,7 +51,13 @@ export class JumpOp extends Operation {
   }
 
   override remap(from: BasicBlock, to: BasicBlock): void {
-    if (this.target === from) this.target = to;
+    if (this.target !== from) return;
+    // In-place edge redirection: the old target loses us as a user,
+    // the new target gains us. Keeps the block use-list consistent
+    // without requiring the caller to go through block.replaceOp.
+    from._removeUse(this);
+    this.target = to;
+    to._addUse(this);
   }
 
   override getBlockRefs(): BasicBlock[] {

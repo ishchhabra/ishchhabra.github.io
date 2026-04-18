@@ -36,14 +36,14 @@ export class LateOptimizer {
       iterationChanged = false;
 
       if (this.options.enableLateConstantPropagationPass) {
-        if (new LateConstantPropagationPass(this.funcOp, this.AM).run().changed) {
+        if (new LateConstantPropagationPass(this.funcOp).run().changed) {
           iterationChanged = true;
           this.AM.invalidateFunction(this.funcOp);
         }
       }
 
       if (this.options.enableLateCopyPropagationPass) {
-        if (new LateCopyPropagationPass(this.funcOp, this.AM).run().changed) {
+        if (new LateCopyPropagationPass(this.funcOp).run().changed) {
           iterationChanged = true;
           this.AM.invalidateFunction(this.funcOp);
         }

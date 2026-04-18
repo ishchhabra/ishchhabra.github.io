@@ -25,6 +25,7 @@ export function makeBlockId(id: number): BlockId {
 type UseChainNode = {
   getOperands(): readonly Value[];
   getDefs?: () => readonly Value[];
+  getBlockRefs?: () => readonly BasicBlock[];
 };
 
 function registerUses(user: UseChainNode): void {
@@ -36,6 +37,11 @@ function registerUses(user: UseChainNode): void {
       value._setDefiner(user);
     }
   }
+  if (user.getBlockRefs) {
+    for (const block of user.getBlockRefs()) {
+      block._addUse(user);
+    }
+  }
 }
 
 function unregisterUses(user: UseChainNode): void {
@@ -45,6 +51,11 @@ function unregisterUses(user: UseChainNode): void {
   if (user.getDefs) {
     for (const value of user.getDefs()) {
       value._clearDefinerIf(user);
+    }
+  }
+  if (user.getBlockRefs) {
+    for (const block of user.getBlockRefs()) {
+      block._removeUse(user);
     }
   }
 }
@@ -90,6 +101,17 @@ export class BasicBlock {
    * builder when the block is a merge point in a multi-block region.
    */
   public params: Value[] = [];
+
+  /**
+   * Intrusive use-list of ops whose `getBlockRefs()` includes this
+   * block. Maintained automatically by `registerUses`/`unregisterUses`
+   * on every mutation. Reading this set is equivalent to "which
+   * terminators refer to this block?" — i.e. the CFG predecessor
+   * edges, always current, never stale.
+   *
+   * Private; external code reads via {@link predecessors}.
+   */
+  readonly #uses: Set<UseChainNode> = new Set();
 
   constructor(
     public readonly id: BlockId,
@@ -307,6 +329,58 @@ export class BasicBlock {
 
   get numOps(): number {
     return this._ops.length;
+  }
+
+  // -----------------------------------------------------------------------
+  // CFG use-list — predecessors, always current
+  //
+  // Every op whose `getBlockRefs()` includes this block is recorded
+  // in `#uses` by the register/unregister helpers above. That means
+  // "who jumps here?" is a walk of the use-list, never a scan of the
+  // whole function. The LLVM/MLIR model: predecessors are a property
+  // of the block, not a separate analysis.
+  // -----------------------------------------------------------------------
+
+  /** @internal */
+  _addUse(user: UseChainNode): void {
+    this.#uses.add(user);
+  }
+
+  /** @internal */
+  _removeUse(user: UseChainNode): void {
+    this.#uses.delete(user);
+  }
+
+  /** Iterate every op (across the function) whose block-refs include this block. */
+  *uses(): IterableIterator<UseChainNode> {
+    yield* this.#uses;
+  }
+
+  get useCount(): number {
+    return this.#uses.size;
+  }
+
+  hasUses(): boolean {
+    return this.#uses.size > 0;
+  }
+
+  /**
+   * The set of blocks that can transfer control to this block via a
+   * terminator with a direct block reference (currently: `JumpOp`).
+   *
+   * Computed from the use-list, so always reflects the current IR —
+   * there is no separate analysis to invalidate. Structured control
+   * flow (IfOp arm yields, WhileOp iter-arg ports, …) is not
+   * surfaced here because those edges are implicit in the region
+   * structure, not in explicit block refs.
+   */
+  predecessors(): Set<BasicBlock> {
+    const preds = new Set<BasicBlock>();
+    for (const user of this.#uses) {
+      const owning = (user as unknown as { parentBlock: BasicBlock | null }).parentBlock;
+      if (owning !== null) preds.add(owning);
+    }
+    return preds;
   }
 
   /**

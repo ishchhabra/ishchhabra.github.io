@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ProjectBuilder } from "../../frontend/ProjectBuilder";
 import { makeFuncOpId } from "../../ir/core/FuncOp";
-import { ControlFlowGraph } from "./ControlFlowGraphAnalysis";
 import { DominatorTree } from "./DominatorTreeAnalysis";
 
 function getFirstFunction(source: string) {
@@ -23,8 +22,7 @@ describe("DominatorTree", () => {
         return x;
       }
     `);
-    const cfg = ControlFlowGraph.compute(fn);
-    const dom = DominatorTree.compute(fn, cfg);
+    const dom = DominatorTree.compute(fn);
     const root = fn.entryBlockId;
     expect(dom.getRoot()).toBe(root);
     expect(dom.getImmediateDominator(root)).toBeUndefined();
@@ -42,8 +40,7 @@ describe("DominatorTree", () => {
         return a;
       }
     `);
-    const cfg = ControlFlowGraph.compute(fn);
-    const dom = DominatorTree.compute(fn, cfg);
+    const dom = DominatorTree.compute(fn);
     const root = fn.entryBlockId;
     for (const blockId of fn.blockIds()) {
       expect(dom.findNearestCommonDominator(root, blockId)).toBe(root);
@@ -58,8 +55,7 @@ describe("DominatorTree", () => {
         return x;
       }
     `);
-    const cfg = ControlFlowGraph.compute(fn);
-    const dom = DominatorTree.compute(fn, cfg);
+    const dom = DominatorTree.compute(fn);
     const root = fn.entryBlockId;
     for (const blockId of fn.blockIds()) {
       const idom = dom.getImmediateDominator(blockId);

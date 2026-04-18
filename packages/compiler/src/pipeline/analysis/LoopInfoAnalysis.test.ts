@@ -4,7 +4,6 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { ProjectBuilder } from "../../frontend/ProjectBuilder";
 import { makeFuncOpId } from "../../ir/core/FuncOp";
-import { ControlFlowGraph } from "./ControlFlowGraphAnalysis";
 import { DominatorTree } from "./DominatorTreeAnalysis";
 import { type Loop, LoopInfo } from "./LoopInfoAnalysis";
 
@@ -38,9 +37,8 @@ function allLoops(li: LoopInfo): Loop[] {
 describe("LoopInfo", () => {
   it("is empty for straight-line code", () => {
     const fn = getFirstFunction(`export function f() { return 1; }`);
-    const cfg = ControlFlowGraph.compute(fn);
-    const dom = DominatorTree.compute(fn, cfg);
-    const li = LoopInfo.compute(fn, dom, cfg);
+    const dom = DominatorTree.compute(fn);
+    const li = LoopInfo.compute(fn, dom);
     expect(li.getTopLevelLoops().length).toBe(0);
     expect(li.getBackEdgePredecessors(fn.entryBlockId).size).toBe(0);
   });
@@ -53,9 +51,8 @@ describe("LoopInfo", () => {
         return i;
       }
     `);
-    const cfg = ControlFlowGraph.compute(fn);
-    const dom = DominatorTree.compute(fn, cfg);
-    const li = LoopInfo.compute(fn, dom, cfg);
+    const dom = DominatorTree.compute(fn);
+    const li = LoopInfo.compute(fn, dom);
     for (const loop of allLoops(li)) {
       expect(loop.blocks.has(loop.header)).toBe(true);
       for (const pred of li.getBackEdgePredecessors(loop.header)) {
@@ -76,8 +73,8 @@ describe("LoopInfo", () => {
       "utf-8",
     );
     const fn = getFirstFunction(`export function f() {\n${body}\n}`);
-    const cfg = ControlFlowGraph.compute(fn);
-    const li = LoopInfo.compute(fn, DominatorTree.compute(fn, cfg), cfg);
+    const dom = DominatorTree.compute(fn);
+    const li = LoopInfo.compute(fn, dom);
     const roots = li.getTopLevelLoops();
     if (roots.length === 0) {
       return;

@@ -1,18 +1,16 @@
-import type { BlockId } from "../../ir";
 import { getDominanceFrontier, getDominators, getImmediateDominators } from "../../frontend/cfg";
+import type { BlockId } from "../../ir";
 import type { FuncOp } from "../../ir/core/FuncOp";
 import { AnalysisManager, FunctionAnalysis } from "./AnalysisManager";
-import { ControlFlowGraph, ControlFlowGraphAnalysis } from "./ControlFlowGraphAnalysis";
 
 /**
  * Dominance information for a function's CFG, analogous to LLVM's
  * `llvm::DominatorTree`. Loop structure and back edges live in {@link LoopInfo}.
  *
- * Depends on current {@link ControlFlowGraph} (predecessor map) and {@link FuncOp#blocks}.
- * Obtain via {@link AnalysisManager#get} with {@link DominatorTreeAnalysis}. To call
- * {@link DominatorTree.compute} directly, pass `cfg` from
- * {@link AnalysisManager#get}({@link ControlFlowGraphAnalysis}, funcOp) — tests may use
- * {@link ControlFlowGraph.compute}(funcOp) instead.
+ * Reads predecessors directly from each block's intrusive use-list —
+ * no separate CFG analysis. Obtain via {@link AnalysisManager#get}
+ * with {@link DominatorTreeAnalysis}; tests may call
+ * {@link DominatorTree.compute}(funcOp) directly.
  */
 export class DominatorTree {
   constructor(
@@ -86,11 +84,18 @@ export class DominatorTree {
   }
 
   /**
-   * Builds a tree from a function and its control-flow graph (predecessor map).
+   * Builds a dominator tree from a function. Predecessors are read
+   * directly from each block's CFG use-list, which is always current —
+   * no separate CFG analysis needed.
    */
-  static compute(funcOp: FuncOp, cfg: ControlFlowGraph): DominatorTree {
+  static compute(funcOp: FuncOp): DominatorTree {
     const entry = funcOp.entryBlockId;
-    const predecessors = cfg.predecessors;
+    const predecessors = new Map<BlockId, Set<BlockId>>();
+    for (const block of funcOp.allBlocks()) {
+      const preds = new Set<BlockId>();
+      for (const pred of block.predecessors()) preds.add(pred.id);
+      predecessors.set(block.id, preds);
+    }
     const dominators = getDominators(predecessors, entry);
     const immediateDominators = getImmediateDominators(dominators);
     const dominanceFrontier = getDominanceFrontier(predecessors, immediateDominators);
@@ -112,12 +117,12 @@ export class DominatorTree {
 /**
  * Cached {@link DominatorTree} for a function (LLVM: `DominatorTreeAnalysis`).
  *
- * Depends on {@link ControlFlowGraphAnalysis}. After structural CFG edits,
- * {@link AnalysisManager#invalidateFunction} so the next `get` recomputes.
+ * After structural CFG edits, {@link AnalysisManager#invalidateFunction}
+ * so the next `get` recomputes. Predecessors are always live (via the
+ * block use-list); this analysis caches dominance, not the CFG itself.
  */
 export class DominatorTreeAnalysis extends FunctionAnalysis<DominatorTree> {
-  run(funcOp: FuncOp, AM: AnalysisManager): DominatorTree {
-    const cfg = AM.get(ControlFlowGraphAnalysis, funcOp);
-    return DominatorTree.compute(funcOp, cfg);
+  run(funcOp: FuncOp): DominatorTree {
+    return DominatorTree.compute(funcOp);
   }
 }

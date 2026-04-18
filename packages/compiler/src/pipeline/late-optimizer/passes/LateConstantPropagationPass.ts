@@ -10,8 +10,6 @@ import {
 import { BasicBlock } from "../../../ir/core/Block";
 import { FuncOp } from "../../../ir/core/FuncOp";
 import { Trait } from "../../../ir/core/Operation";
-import { AnalysisManager } from "../../analysis/AnalysisManager";
-import { ControlFlowGraphAnalysis } from "../../analysis/ControlFlowGraphAnalysis";
 import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
 
 /**
@@ -30,10 +28,7 @@ import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
  *   const y = 1;
  */
 export class LateConstantPropagationPass extends BaseOptimizationPass {
-  constructor(
-    protected readonly funcOp: FuncOp,
-    private readonly AM: AnalysisManager,
-  ) {
+  constructor(protected readonly funcOp: FuncOp) {
     super(funcOp);
   }
 
@@ -107,7 +102,8 @@ export class LateConstantPropagationPass extends BaseOptimizationPass {
   }
 
   private meet(blockId: BlockId, outState: Map<BlockId, ConstState>): ConstState {
-    const preds = this.AM.get(ControlFlowGraphAnalysis, this.funcOp).predecessors.get(blockId);
+    const block = this.funcOp.maybeBlock(blockId);
+    const preds = block?.predecessors();
 
     if (!preds || preds.size === 0) {
       return new Map();
@@ -116,7 +112,7 @@ export class LateConstantPropagationPass extends BaseOptimizationPass {
     let result: ConstState | undefined;
 
     for (const pred of preds) {
-      const predState = outState.get(pred);
+      const predState = outState.get(pred.id);
       if (!predState) continue;
 
       if (!result) {

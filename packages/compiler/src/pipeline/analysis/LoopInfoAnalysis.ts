@@ -2,8 +2,6 @@ import type { BlockId } from "../../ir";
 import { getBackEdgesWithDominance } from "../../frontend/cfg";
 import type { FuncOp } from "../../ir/core/FuncOp";
 import { AnalysisManager, FunctionAnalysis } from "./AnalysisManager";
-import type { ControlFlowGraph } from "./ControlFlowGraphAnalysis";
-import { ControlFlowGraphAnalysis } from "./ControlFlowGraphAnalysis";
 import type { DominatorTree } from "./DominatorTreeAnalysis";
 import { DominatorTreeAnalysis } from "./DominatorTreeAnalysis";
 
@@ -32,7 +30,7 @@ export class Loop {
  * Per-function loop nest (LLVM: `LoopInfo`): natural loops, nesting, and
  * back-edge classification for loop headers.
  *
- * Depends on {@link DominatorTree} and {@link ControlFlowGraph} (predecessor map).
+ * Depends on {@link DominatorTree}; predecessors are always live via the block use-list.
  */
 interface RawNaturalLoop {
   header: BlockId;
@@ -64,8 +62,13 @@ export class LoopInfo {
     return this.backEdgeIntoHeader.get(header) ?? new Set();
   }
 
-  static compute(funcOp: FuncOp, dom: DominatorTree, cfg: ControlFlowGraph): LoopInfo {
-    const predecessors = cfg.predecessors;
+  static compute(funcOp: FuncOp, dom: DominatorTree): LoopInfo {
+    const predecessors = new Map<BlockId, Set<BlockId>>();
+    for (const block of funcOp.allBlocks()) {
+      const preds = new Set<BlockId>();
+      for (const pred of block.predecessors()) preds.add(pred.id);
+      predecessors.set(block.id, preds);
+    }
     const backEdgeMap = getBackEdgesWithDominance(funcOp, predecessors, (b) =>
       dom.getDominators(b),
     );
@@ -181,13 +184,12 @@ function naturalLoopBlocks(
 /**
  * Cached {@link LoopInfo} for a function (LLVM-style loop analysis).
  *
- * Depends on {@link DominatorTreeAnalysis} and {@link ControlFlowGraphAnalysis}.
- * Invalidate when the CFG changes.
+ * Depends on {@link DominatorTreeAnalysis}. Predecessors are always
+ * live via the block use-list, so no CFG analysis dependency.
  */
 export class LoopInfoAnalysis extends FunctionAnalysis<LoopInfo> {
   run(funcOp: FuncOp, AM: AnalysisManager): LoopInfo {
-    const cfg = AM.get(ControlFlowGraphAnalysis, funcOp);
     const dom = AM.get(DominatorTreeAnalysis, funcOp);
-    return LoopInfo.compute(funcOp, dom, cfg);
+    return LoopInfo.compute(funcOp, dom);
   }
 }
