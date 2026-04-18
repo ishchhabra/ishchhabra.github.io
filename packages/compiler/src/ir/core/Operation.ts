@@ -88,7 +88,7 @@ export interface CloneContext {
    * rewrite path used by {@link BasicBlock.rewrite}.
    */
   readonly moduleIR: ModuleIR | undefined;
-  readonly blockMap: Map<BlockId, BlockId>;
+  readonly blockMap: Map<BasicBlock, BasicBlock>;
   /**
    * Old → new {@link Value} remap, used to rewire operands after
    * phase 1 of a deep clone has allocated fresh values for every def.
@@ -107,8 +107,8 @@ export function makeCloneContext(moduleIR: ModuleIR): CloneContext {
   };
 }
 
-export function remapBlockId(ctx: CloneContext, id: BlockId): BlockId {
-  return ctx.blockMap.get(id) ?? id;
+export function remapBlock(ctx: CloneContext, block: BasicBlock): BasicBlock {
+  return ctx.blockMap.get(block) ?? block;
 }
 
 export function remapPlace(ctx: CloneContext, place: Value): Value {
@@ -151,12 +151,7 @@ export function requireModuleIR(ctx: CloneContext): ModuleIR {
 export function remapRegion(ctx: CloneContext, region: Region): Region {
   const newBlocks: BasicBlock[] = [];
   for (const oldBlock of region.blocks) {
-    const newBlockId = ctx.blockMap.get(oldBlock.id) ?? oldBlock.id;
-    const newBlock = ctx.environment.blocks.get(newBlockId);
-    if (newBlock === undefined) {
-      throw new Error(`remapRegion: block bb${newBlockId} not found in environment`);
-    }
-    newBlocks.push(newBlock);
+    newBlocks.push(ctx.blockMap.get(oldBlock) ?? oldBlock);
   }
   return new Region(newBlocks);
 }
@@ -298,11 +293,11 @@ export abstract class Operation {
   // Terminator helpers (default empty for non-terminators)
   // -----------------------------------------------------------------
 
-  getBlockRefs(): BlockId[] {
+  getBlockRefs(): BasicBlock[] {
     return [];
   }
 
-  remap(_from: BlockId, _to: BlockId): void {
+  remap(_from: BasicBlock, _to: BasicBlock): void {
     // no-op
   }
 

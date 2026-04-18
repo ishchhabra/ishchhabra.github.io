@@ -1,5 +1,5 @@
 import type { OperationId } from "../../core";
-import type { BlockId } from "../../core/Block";
+import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
 import { type CloneContext, nextId, Operation, remapPlace, Trait } from "../../core/Operation";
 
@@ -33,7 +33,7 @@ export class ThrowOp extends Operation {
 
   override remap(): void {}
 
-  override getBlockRefs(): BlockId[] {
+  override getBlockRefs(): BasicBlock[] {
     return [];
   }
 

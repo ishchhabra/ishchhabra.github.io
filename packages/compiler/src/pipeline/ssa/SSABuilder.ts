@@ -1193,8 +1193,8 @@ export class SSABuilder {
    * reaching defs resolve to the function-wide undef seed.
    */
   private fillJumpArgs(block: BasicBlock, terminal: JumpOp, stacks: Stacks): void {
-    const succ = this.funcOp.maybeBlock(terminal.target);
-    if (succ === undefined || succ.params.length === 0) return;
+    const succ = terminal.target;
+    if (succ.params.length === 0) return;
     const args: Value[] = succ.params.map((param) => {
       const decl = param.originalDeclarationId;
       if (decl === undefined) return this.undefSeed;

@@ -1,7 +1,7 @@
 import type { OperationId } from "../../core";
-import type { BlockId } from "../../core/Block";
+import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
-import { type CloneContext, nextId, Operation, remapBlockId, Trait } from "../../core/Operation";
+import { type CloneContext, nextId, Operation, remapBlock, Trait } from "../../core/Operation";
 
 /**
  * Unconditional jump to a successor block. Terminator. Replaces
@@ -21,7 +21,7 @@ export class JumpOp extends Operation {
 
   constructor(
     id: OperationId,
-    public target: BlockId,
+    public target: BasicBlock,
     args: readonly Value[] = [],
   ) {
     super(id);
@@ -47,20 +47,20 @@ export class JumpOp extends Operation {
 
   clone(ctx: CloneContext): JumpOp {
     const newArgs = this.args.map((a) => ctx.valueMap.get(a) ?? a);
-    return new JumpOp(nextId(ctx), remapBlockId(ctx, this.target), newArgs);
+    return new JumpOp(nextId(ctx), remapBlock(ctx, this.target), newArgs);
   }
 
-  override remap(from: BlockId, to: BlockId): void {
+  override remap(from: BasicBlock, to: BasicBlock): void {
     if (this.target === from) this.target = to;
   }
 
-  override getBlockRefs(): BlockId[] {
+  override getBlockRefs(): BasicBlock[] {
     return [this.target];
   }
 
   public override print(): string {
-    if (this.args.length === 0) return `jump bb${this.target}`;
+    if (this.args.length === 0) return `jump bb${this.target.id}`;
     const argStr = this.args.map((a) => a.print()).join(", ");
-    return `jump bb${this.target}(${argStr})`;
+    return `jump bb${this.target.id}(${argStr})`;
   }
 }

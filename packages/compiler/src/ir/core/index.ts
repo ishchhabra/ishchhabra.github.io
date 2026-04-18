@@ -32,7 +32,7 @@ export {
   makeOperationId,
   nextId,
   Operation,
-  remapBlockId,
+  remapBlock,
   remapPlace,
   requireModuleIR,
   Trait,

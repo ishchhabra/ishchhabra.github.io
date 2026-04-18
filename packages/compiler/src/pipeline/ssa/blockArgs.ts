@@ -140,10 +140,7 @@ export function forEachOutgoingEdge(
   // Edges contributed by this block's terminator.
   const terminal = block.terminal;
   if (terminal instanceof JumpOp) {
-    const succ = funcOp.maybeBlock(terminal.target);
-    if (succ !== undefined) {
-      visit(makeJumpEdge(block, terminal, succ));
-    }
+    visit(makeJumpEdge(block, terminal, terminal.target));
   } else if (terminal instanceof ConditionOp) {
     const enclosing = resolveEnclosingStructuredOp(block);
     if (enclosing instanceof WhileOp) {
@@ -692,7 +689,7 @@ export function getEdgeArgs(
   succBlock: BasicBlock,
 ): readonly Value[] | undefined {
   const terminal = block.terminal;
-  if (terminal instanceof JumpOp && terminal.target === succBlock.id) {
+  if (terminal instanceof JumpOp && terminal.target === succBlock) {
     return terminal.args;
   }
   return undefined;

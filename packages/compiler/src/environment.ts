@@ -14,8 +14,6 @@ import { ProjectEnvironment } from "./ProjectEnvironment";
 type OmitFirst<T extends unknown[]> = T extends [any, ...infer Rest] ? Rest : never;
 
 export class Environment {
-  public readonly blocks: Map<BlockId, BasicBlock> = new Map();
-
   /**
    * Maps each `DeclarationId` to the SSA versions assigned to it, in
    * order of appearance. Used by the frontend to wire subsequent
@@ -101,9 +99,7 @@ export class Environment {
 
   public createBlock(): BasicBlock {
     const blockId = makeBlockId(this.projectEnvironment.nextBlockId++);
-    const block = new BasicBlock(blockId, [], undefined);
-    this.blocks.set(blockId, block);
-    return block;
+    return new BasicBlock(blockId, [], undefined);
   }
 
   public registerDeclaration(declarationId: DeclarationId, blockId: BlockId, value: Value) {

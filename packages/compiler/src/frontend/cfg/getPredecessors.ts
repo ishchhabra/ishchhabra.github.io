@@ -31,7 +31,7 @@ export function getPredecessors(blocks: BlockSource) {
   for (const block of blocks.allBlocks()) {
     const terminal = block.terminal;
     if (terminal instanceof JumpOp) {
-      const succ = predecessors.get(terminal.target);
+      const succ = predecessors.get(terminal.target.id);
       if (succ !== undefined) {
         succ.add(block.id);
       }

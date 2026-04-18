@@ -378,7 +378,7 @@ export class BasicBlock {
    */
   public rewrite(
     environment: Environment,
-    blockMap: Map<BlockId, BlockId>,
+    blockMap: Map<BasicBlock, BasicBlock>,
     valueMap: Map<Value, Value>,
     options: { rewriteDefinitions?: boolean } = {},
   ): void {

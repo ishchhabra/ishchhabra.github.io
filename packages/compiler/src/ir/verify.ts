@@ -8,12 +8,12 @@
  * unconditionally at the end of the pipeline. Throws on the first
  * violation with a descriptive error.
  */
-import type { BlockId } from "./core/Block";
+import type { BasicBlock } from "./core/Block";
 import type { FuncOp } from "./core/FuncOp";
 import { Operation, VerifyError } from "./core/Operation";
 
 export function verifyFunction(funcOp: FuncOp): void {
-  const blockIds = new Set<BlockId>(funcOp.blockIds());
+  const knownBlocks = new Set<BasicBlock>(funcOp.allBlocks());
 
   // 1. Every op verifies itself. Block params live on each block
   //    directly (not as ops), so they have no `verify()` to call —
@@ -38,9 +38,9 @@ export function verifyFunction(funcOp: FuncOp): void {
   }
 
   // 3. Every block ref points at a block that exists in this function.
-  const checkBlockRef = (op: Operation, ref: BlockId) => {
-    if (!blockIds.has(ref)) {
-      throw new VerifyError(op, `references non-existent block bb${ref}`);
+  const checkBlockRef = (op: Operation, ref: BasicBlock) => {
+    if (!knownBlocks.has(ref)) {
+      throw new VerifyError(op, `references non-existent block bb${ref.id}`);
     }
   };
   for (const block of funcOp.allBlocks()) {

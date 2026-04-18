@@ -1,5 +1,5 @@
 import type { OperationId } from "../../core";
-import type { BlockId } from "../../core/Block";
+import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
 import { type CloneContext, nextId, Operation, remapPlace, Trait } from "../../core/Operation";
 
@@ -68,11 +68,11 @@ export class ConditionOp extends Operation {
     );
   }
 
-  override remap(_from: BlockId, _to: BlockId): void {
+  override remap(_from: BasicBlock, _to: BasicBlock): void {
     // ConditionOp has no block refs.
   }
 
-  override getBlockRefs(): BlockId[] {
+  override getBlockRefs(): BasicBlock[] {
     return [];
   }
 

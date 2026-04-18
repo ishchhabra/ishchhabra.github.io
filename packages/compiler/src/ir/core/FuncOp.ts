@@ -394,12 +394,12 @@ export class FuncOp extends Operation {
     }
     const targetModule = ctx.moduleIR;
     const environment = targetModule.environment;
-    const blockMap = new Map<BlockId, BlockId>();
+    const blockMap = new Map<BasicBlock, BasicBlock>();
     const valueMap = new Map<Value, Value>();
     // Function-level clone builds its own cross-block context — the
     // caller-provided `ctx`'s maps are not relevant here.
     const childCtx = makeCloneContext(targetModule);
-    (childCtx as { blockMap: Map<BlockId, BlockId> }).blockMap = blockMap;
+    (childCtx as { blockMap: Map<BasicBlock, BasicBlock> }).blockMap = blockMap;
     (childCtx as { valueMap: Map<Value, Value> }).valueMap = valueMap;
     // Clone the full prologue. Track the old→new mapping so we can
     // rebuild `header` (a strict subset of `prologue`) against the
@@ -436,7 +436,7 @@ export class FuncOp extends Operation {
     const oldToNewBlock = new Map<BasicBlock, BasicBlock>();
     for (const oldBlock of oldBlocks) {
       const newBlock = oldBlock.clone(targetModule);
-      blockMap.set(oldBlock.id, newBlock.id);
+      blockMap.set(oldBlock, newBlock);
       oldToNewBlock.set(oldBlock, newBlock);
       for (let i = 0; i < oldBlock.operations.length; i++) {
         valueMap.set(oldBlock.operations[i]!.place!, newBlock.operations[i]!.place!);
@@ -541,8 +541,11 @@ export class FuncOp extends Operation {
     // `block.rewrite` above — no separate remapping step needed.
     const newCaptureParams = this.captureParams.map(remapPlace);
     const newBlockLabels = new Map<BlockId, string>();
-    for (const [oldBlockId, label] of this.blockLabels) {
-      newBlockLabels.set(blockMap.get(oldBlockId)!, label);
+    for (const oldBlock of oldBlocks) {
+      const label = this.blockLabels.get(oldBlock.id);
+      if (label === undefined) continue;
+      const newBlock = blockMap.get(oldBlock);
+      if (newBlock !== undefined) newBlockLabels.set(newBlock.id, label);
     }
 
     const newId = makeFuncOpId(environment.nextFunctionId++);
