@@ -20,15 +20,8 @@ fi
 # Pass 1: node-server preset — crawlable, produces prerendered HTML + sitemap.
 # Required because the vercel preset + prerender is broken upstream
 # (TanStack/router#6562 / nitrojs/nitro#3905).
-# On Vercel CI, VERCEL=1 redirects Nitro output to .vercel/output/static
-# (see apps/portfolio/vite.config.ts). Locally, node-server writes to
-# .output/public. Handle both.
 NITRO_PRESET=node-server pnpm build
-if [ -d .vercel/output/static ]; then
-  cp -R .vercel/output/static/. "$prerender_tmp/"
-else
-  cp -R .output/public/. "$prerender_tmp/"
-fi
+cp -R .vercel/output/static/. "$prerender_tmp/"
 
 # Pass 2: vercel preset — produces the deployable .vercel/output/ (functions + assets).
 NITRO_PRESET=vercel pnpm build
