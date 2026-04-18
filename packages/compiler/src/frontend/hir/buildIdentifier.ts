@@ -103,7 +103,7 @@ function buildReferencedIdentifier(
       builder.addOp(instruction);
     } else {
       const latestDeclaration = environment.getLatestDeclaration(declarationId);
-      const declarationPlace = environment.values.get(latestDeclaration.valueId);
+      const declarationPlace = latestDeclaration.value;
       if (declarationPlace === undefined) {
         throw new Error(`Unable to find the place for ${name} (${declarationId})`);
       }

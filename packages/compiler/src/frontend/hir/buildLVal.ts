@@ -124,9 +124,7 @@ function buildIdentifierLVal(
       }
 
       const bindingPlace = environment.getDeclarationBinding(declarationId);
-      const place =
-        bindingPlace ??
-        environment.values.get(environment.getLatestDeclaration(declarationId)!.valueId);
+      const place = bindingPlace ?? environment.getLatestDeclaration(declarationId)?.value;
       if (place === undefined) {
         throw new Error(`Unable to find the place for ${name} (${declarationId})`);
       }
@@ -137,16 +135,12 @@ function buildIdentifierLVal(
     if (bindingPlace === undefined) {
       throw new Error(`Unable to find the binding for ${name} (${declarationId})`);
     }
-    environment.registerDeclaration(
-      declarationId,
-      functionBuilder.currentBlock.id,
-      bindingPlace.id,
-    );
+    environment.registerDeclaration(declarationId, functionBuilder.currentBlock.id, bindingPlace);
     return { kind: "binding", place: bindingPlace, storage: "local" };
   }
 
   const latestDeclaration = environment.getLatestDeclaration(declarationId);
-  const place = environment.values.get(latestDeclaration.valueId);
+  const place = latestDeclaration.value;
   if (place === undefined) {
     throw new Error(`Unable to find the place for ${name} (${declarationId})`);
   }

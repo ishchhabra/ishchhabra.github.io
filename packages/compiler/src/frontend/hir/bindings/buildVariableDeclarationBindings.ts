@@ -86,12 +86,8 @@ function buildIdentifierBindings(
   }
 
   const place = identifier;
-  environment.registerDeclaration(
-    identifier.declarationId,
-    functionBuilder.currentBlock.id,
-    place.id,
-  );
-  environment.setDeclarationBinding(identifier.declarationId, place.id);
+  environment.registerDeclaration(identifier.declarationId, functionBuilder.currentBlock.id, place);
+  environment.setDeclarationBinding(identifier.declarationId, place);
 
   // Preserve `var`'s hoisted-and-initialized semantics in the emitted JS.
   // Reifying this as `let` would introduce TDZ behavior and break both

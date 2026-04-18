@@ -67,9 +67,7 @@ export function buildUpdateExpression(
   }
 
   const latestDeclaration = environment.getLatestDeclaration(declarationId)!;
-  const originalPlace = isContext
-    ? contextPlace
-    : environment.values.get(latestDeclaration.valueId);
+  const originalPlace = isContext ? contextPlace : latestDeclaration.value;
   if (originalPlace === undefined) {
     throw new Error(`Unable to find the place for ${argument.name} (${declarationId})`);
   }
@@ -140,7 +138,7 @@ export function buildUpdateExpression(
         "assignment",
       );
   functionBuilder.addOp(instruction);
-  environment.registerDeclaration(declarationId, functionBuilder.currentBlock.id, lvalPlace.id);
+  environment.registerDeclaration(declarationId, functionBuilder.currentBlock.id, lvalPlace);
 
   if (node.prefix) {
     // For prefix (++i), return a LoadLocal of the stored value so codegen

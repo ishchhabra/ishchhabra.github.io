@@ -1,5 +1,5 @@
 import type { FuncOpId } from "./FuncOp";
-import type { ValueId } from "./Value";
+import type { Value } from "./Value";
 
 export type DeclarationKind =
   | "var"
@@ -21,8 +21,8 @@ export interface DeclarationMetadata {
    * ancestry test for captured declarations.
    */
   funcOpId?: FuncOpId;
-  /** Stable {@link ValueId} codegen uses for the declaration's binding. */
-  bindingValueId?: ValueId;
+  /** The {@link Value} codegen uses for the declaration's binding. */
+  bindingValue?: Value;
 }
 
 export function getCodegenDeclarationKind(

@@ -49,9 +49,9 @@ export function buildImportSpecifier(
   environment.registerDeclaration(
     bindingPlace.declarationId,
     functionBuilder.currentBlock.id,
-    bindingPlace.id,
+    bindingPlace,
   );
-  environment.setDeclarationBinding(bindingPlace.declarationId, bindingPlace.id);
+  environment.setDeclarationBinding(bindingPlace.declarationId, bindingPlace);
 
   const source = declarationNode.source.value;
   moduleBuilder.moduleIR.globals.set(localName, {

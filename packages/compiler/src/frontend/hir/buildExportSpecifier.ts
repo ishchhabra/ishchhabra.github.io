@@ -29,7 +29,7 @@ export function buildExportSpecifier(
   if (latestDeclaration === undefined) {
     throw new Error(`Export specifier local '${localName}': no declaration place found`);
   }
-  const localPlace = environment.values.get(latestDeclaration.valueId);
+  const localPlace = latestDeclaration.value;
   if (localPlace === undefined) {
     throw new Error(`Export specifier local '${localName}': binding place not found`);
   }

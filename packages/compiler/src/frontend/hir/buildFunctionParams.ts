@@ -276,7 +276,7 @@ function buildFunctionIdentifierParamPlace(
   }
 
   const latestDeclaration = environment.getLatestDeclaration(declarationId);
-  const place = environment.values.get(latestDeclaration.valueId);
+  const place = latestDeclaration.value;
   if (place === undefined) {
     throw new Error(`Unable to find the place for ${name} (${declarationId})`);
   }

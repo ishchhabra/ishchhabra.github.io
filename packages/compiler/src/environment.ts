@@ -8,20 +8,13 @@ import {
   Operation,
   OperationId,
 } from "./ir";
-import {
-  DeclarationId,
-  makeDeclarationId,
-  makeValueId,
-  Value,
-  type ValueId,
-} from "./ir/core/Value";
+import { DeclarationId, makeDeclarationId, makeValueId, Value } from "./ir/core/Value";
 import { ProjectEnvironment } from "./ProjectEnvironment";
 
 // oxlint-disable-next-line typescript/no-explicit-any
 type OmitFirst<T extends unknown[]> = T extends [any, ...infer Rest] ? Rest : never;
 
 export class Environment {
-  public readonly values: Map<ValueId, Value> = new Map();
   public readonly operations: Map<OperationId, Operation> = new Map();
   public readonly blocks: Map<BlockId, BasicBlock> = new Map();
 
@@ -30,7 +23,7 @@ export class Environment {
    * order of appearance. Used by the frontend to wire subsequent
    * reads of a declaration to its most recent SSA value.
    */
-  declToValues: Map<DeclarationId, Array<{ blockId: BlockId; valueId: ValueId }>> = new Map();
+  declToValues: Map<DeclarationId, Array<{ blockId: BlockId; value: Value }>> = new Map();
 
   /**
    * Source-level metadata for each declaration, keyed by stable DeclarationId.
@@ -84,9 +77,7 @@ export class Environment {
   public createValue(declarationId?: DeclarationId): Value {
     declarationId ??= makeDeclarationId(this.projectEnvironment.nextDeclarationId++);
     const valueId = makeValueId(this.projectEnvironment.nextValueId++);
-    const value = new Value(valueId, declarationId);
-    this.values.set(valueId, value);
-    return value;
+    return new Value(valueId, declarationId);
   }
 
   // oxlint-disable-next-line typescript/no-explicit-any
@@ -118,9 +109,9 @@ export class Environment {
     return block;
   }
 
-  public registerDeclaration(declarationId: DeclarationId, blockId: BlockId, valueId: ValueId) {
+  public registerDeclaration(declarationId: DeclarationId, blockId: BlockId, value: Value) {
     const entries = this.declToValues.get(declarationId) ?? [];
-    entries.push({ blockId, valueId });
+    entries.push({ blockId, value });
     this.declToValues.set(declarationId, entries);
   }
 
@@ -140,8 +131,8 @@ export class Environment {
     if (metadata.funcOpId !== undefined) {
       existing.funcOpId = metadata.funcOpId;
     }
-    if (metadata.bindingValueId !== undefined) {
-      existing.bindingValueId = metadata.bindingValueId;
+    if (metadata.bindingValue !== undefined) {
+      existing.bindingValue = metadata.bindingValue;
     }
   }
 
@@ -149,12 +140,12 @@ export class Environment {
     return this.declarationMetadata.get(declarationId);
   }
 
-  public setDeclarationBinding(declarationId: DeclarationId, valueId: ValueId) {
+  public setDeclarationBinding(declarationId: DeclarationId, value: Value) {
     const metadata = this.declarationMetadata.get(declarationId);
     if (metadata === undefined) {
       throw new Error(`Declaration metadata not found for ${declarationId}`);
     }
-    metadata.bindingValueId = valueId;
+    metadata.bindingValue = value;
   }
 
   public ensureSyntheticDeclarationMetadata(
@@ -166,14 +157,14 @@ export class Environment {
       this.registerDeclarationMetadata(declarationId, {
         kind,
         sourceName: bindingValue.name,
-        bindingValueId: bindingValue.id,
+        bindingValue,
       });
       return;
     }
 
     const metadata = this.declarationMetadata.get(declarationId)!;
-    if (metadata.bindingValueId === undefined) {
-      metadata.bindingValueId = bindingValue.id;
+    if (metadata.bindingValue === undefined) {
+      metadata.bindingValue = bindingValue;
     }
   }
 
@@ -183,13 +174,11 @@ export class Environment {
   }
 
   public getDeclarationBinding(declarationId: DeclarationId): Value | undefined {
-    const bindingId = this.declarationMetadata.get(declarationId)?.bindingValueId;
-    if (bindingId !== undefined) {
-      return this.values.get(bindingId);
+    const metadata = this.declarationMetadata.get(declarationId);
+    if (metadata?.bindingValue !== undefined) {
+      return metadata.bindingValue;
     }
-
     const entries = this.declToValues.get(declarationId) ?? [];
-    const first = entries[0];
-    return first ? this.values.get(first.valueId) : undefined;
+    return entries[0]?.value;
   }
 }

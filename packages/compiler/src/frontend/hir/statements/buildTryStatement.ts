@@ -62,9 +62,9 @@ export function buildTryStatement(
         environment.registerDeclaration(
           identifier.declarationId,
           functionBuilder.currentBlock.id,
-          bindingPlace.id,
+          bindingPlace,
         );
-        environment.setDeclarationBinding(identifier.declarationId, bindingPlace.id);
+        environment.setDeclarationBinding(identifier.declarationId, bindingPlace);
 
         paramPlace = bindingPlace;
       }

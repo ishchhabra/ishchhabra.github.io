@@ -89,6 +89,6 @@ function instantiateIdentifierParamBinding(
     environment.contextDeclarationIds.add(place.declarationId);
   }
 
-  environment.registerDeclaration(place.declarationId, functionBuilder.currentBlock.id, place.id);
-  environment.setDeclarationBinding(place.declarationId, place.id);
+  environment.registerDeclaration(place.declarationId, functionBuilder.currentBlock.id, place);
+  environment.setDeclarationBinding(place.declarationId, place);
 }

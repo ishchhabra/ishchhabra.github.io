@@ -46,12 +46,8 @@ export function registerFunctionDeclarationBinding(
   }
 
   const place = identifier;
-  environment.registerDeclaration(
-    identifier.declarationId,
-    functionBuilder.currentBlock.id,
-    place.id,
-  );
-  environment.setDeclarationBinding(identifier.declarationId, place.id);
+  environment.registerDeclaration(identifier.declarationId, functionBuilder.currentBlock.id, place);
+  environment.setDeclarationBinding(identifier.declarationId, place);
 }
 
 /**
@@ -84,7 +80,7 @@ export function initializeFunctionDeclaration(
   }
 
   const latestDeclaration = environment.getLatestDeclaration(declarationId);
-  const identifierPlace = environment.values.get(latestDeclaration.valueId);
+  const identifierPlace = latestDeclaration.value;
   if (identifierPlace === undefined) {
     throw new Error(`Unable to find the place for ${functionName.name} (${declarationId})`);
   }

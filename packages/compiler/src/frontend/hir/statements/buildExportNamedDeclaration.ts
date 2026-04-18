@@ -125,7 +125,7 @@ function buildExportDeclarationAsSpecifiers(
     const latestDeclaration = environment.getLatestDeclaration(declarationId);
     if (latestDeclaration === undefined) continue;
 
-    const localPlace = environment.values.get(latestDeclaration.valueId);
+    const localPlace = latestDeclaration.value;
     if (localPlace === undefined) continue;
 
     const specPlace = environment.createValue();

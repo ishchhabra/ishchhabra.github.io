@@ -42,7 +42,7 @@ export function materializePlace(
   environment.registerDeclaration(
     bindingPlace.declarationId,
     functionBuilder.currentBlock.id,
-    bindingPlace.id,
+    bindingPlace,
   );
   functionBuilder.addOp(
     environment.createOperation(

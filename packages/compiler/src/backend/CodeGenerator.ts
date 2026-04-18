@@ -214,10 +214,7 @@ export class CodeGenerator {
    */
   private preRegisterBindingIdentifiers(moduleIR: ModuleIR): void {
     for (const [declarationId, metadata] of moduleIR.environment.declarationMetadata) {
-      if (metadata.bindingValueId === undefined) {
-        continue;
-      }
-      const place = moduleIR.environment.values.get(metadata.bindingValueId);
+      const place = metadata.bindingValue;
       if (place === undefined) {
         continue;
       }

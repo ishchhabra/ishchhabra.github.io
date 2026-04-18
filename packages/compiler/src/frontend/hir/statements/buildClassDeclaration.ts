@@ -31,7 +31,7 @@ export function buildClassDeclaration(
   }
 
   const latestDeclaration = environment.getLatestDeclaration(declarationId);
-  const identifierPlace = environment.values.get(latestDeclaration.valueId);
+  const identifierPlace = latestDeclaration.value;
   if (identifierPlace === undefined) {
     throw new Error(`Unable to find the place for ${id.name} (${declarationId})`);
   }

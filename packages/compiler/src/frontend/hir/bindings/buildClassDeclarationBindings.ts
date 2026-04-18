@@ -33,10 +33,6 @@ export function buildClassDeclarationBindings(
   }
 
   const place = identifier;
-  environment.registerDeclaration(
-    identifier.declarationId,
-    functionBuilder.currentBlock.id,
-    place.id,
-  );
-  environment.setDeclarationBinding(identifier.declarationId, place.id);
+  environment.registerDeclaration(identifier.declarationId, functionBuilder.currentBlock.id, place);
+  environment.setDeclarationBinding(identifier.declarationId, place);
 }
