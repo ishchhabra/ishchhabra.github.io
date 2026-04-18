@@ -16,7 +16,7 @@ export function buildSrcdoc(): string {
     "style-src 'unsafe-inline'",
     "img-src data: blob:",
     "font-src data:",
-    "connect-src 'none'",
+    "connect-src https://unpkg.com",
     "frame-src 'none'",
     "form-action 'none'",
   ].join("; ");
