@@ -159,6 +159,9 @@ export default defineConfig(async (): Promise<UserConfig> => {
           "/ingest/static/**": { proxy: "https://us-assets.i.posthog.com/static/**" },
           "/ingest/**": { proxy: "https://us.i.posthog.com/**" },
         },
+        rollupConfig: {
+          external: ["oxc-parser", "@oxc-parser/core", "lightningcss", "lightningcss-core"],
+        },
         ...(process.env["VERCEL"] === "1" && {
           output: {
             dir: path.resolve(__dirname, ".vercel/output"),
