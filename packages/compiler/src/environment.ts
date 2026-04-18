@@ -6,7 +6,6 @@ import {
   makeBlockId,
   makeOperationId,
   Operation,
-  OperationId,
 } from "./ir";
 import { DeclarationId, makeDeclarationId, makeValueId, Value } from "./ir/core/Value";
 import { ProjectEnvironment } from "./ProjectEnvironment";
@@ -15,7 +14,6 @@ import { ProjectEnvironment } from "./ProjectEnvironment";
 type OmitFirst<T extends unknown[]> = T extends [any, ...infer Rest] ? Rest : never;
 
 export class Environment {
-  public readonly operations: Map<OperationId, Operation> = new Map();
   public readonly blocks: Map<BlockId, BasicBlock> = new Map();
 
   /**
@@ -87,7 +85,6 @@ export class Environment {
   ): InstanceType<C> {
     const opId = makeOperationId(this.projectEnvironment.nextOperationId++);
     const op = new Class(opId, ...args);
-    this.operations.set(opId, op);
     // Register every def of the newly-created op as defined by it.
     // A Value's definer is set exactly once, at the op's creation site,
     // by the same code path that allocates the op. Callers must use
