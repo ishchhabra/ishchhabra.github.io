@@ -3,6 +3,11 @@ import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
+import {
+  effects,
+  staticPropertyLocation,
+  type MemoryEffects,
+} from "../../memory/MemoryLocation";
 /**
  * An instruction that loads a **static** property for an object:
  * `object[0]` or `object.foo`.
@@ -55,6 +60,10 @@ export class LoadStaticPropertyOp extends Operation {
    */
   public override hasSideEffects(): boolean {
     return false;
+  }
+
+  public override getMemoryEffects(_env?: unknown): MemoryEffects {
+    return effects([staticPropertyLocation(this.object, this.property)], []);
   }
 
   public override print(): string {

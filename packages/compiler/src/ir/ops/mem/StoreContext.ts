@@ -3,6 +3,7 @@ import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
+import { contextLocation, effects, type MemoryEffects } from "../../memory/MemoryLocation";
 export type StoreContextKind = "declaration" | "assignment";
 
 /**
@@ -65,6 +66,10 @@ export class StoreContextOp extends Operation {
 
   override getDefs(): Value[] {
     return [this.place, ...this.bindings];
+  }
+
+  public override getMemoryEffects(_env?: unknown): MemoryEffects {
+    return effects([], [contextLocation(this.lval.declarationId)]);
   }
 
   public override print(): string {

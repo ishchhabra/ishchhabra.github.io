@@ -3,6 +3,7 @@ import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
+import { effects, UnknownLocation, type MemoryEffects } from "../../memory/MemoryLocation";
 /**
  * Represents a memory instruction that loads a value for a global variable to a place.
  *
@@ -35,6 +36,14 @@ export class LoadGlobalOp extends Operation {
 
   public override hasSideEffects(): boolean {
     return false;
+  }
+
+  public override getMemoryEffects(_env?: unknown): MemoryEffects {
+    // LoadGlobal reads an unspecified external cell. A later
+    // refinement (when we hook up ModuleSummary to the walker) can
+    // narrow this to a specific ExportedBinding; for now, "reads
+    // unknown" is sound and simple.
+    return effects([UnknownLocation], []);
   }
 
   public override print(): string {

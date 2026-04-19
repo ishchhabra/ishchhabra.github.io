@@ -14,6 +14,7 @@ import {
   UnaryExpressionOp,
   Value,
 } from "../../ir";
+import { getExportBindingPlace } from "../../ir/core/ModuleIR";
 import {
   BUILTIN_GLOBAL_CONSTANTS,
   BUILTIN_STATIC_CONSTANTS,
@@ -24,8 +25,10 @@ import {
 import { BasicBlock } from "../../ir/core/Block";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { ModuleIR } from "../../ir/core/ModuleIR";
+import { localLocation } from "../../ir/memory/MemoryLocation";
 import { JumpOp } from "../../ir/ops/control";
 import { TemplateLiteralOp } from "../../ir/ops/prim/TemplateLiteral";
+import { MemoryStateWalker } from "../analysis/MemoryStateWalker";
 import { getQualifiedName, type ResolveConstantContext } from "./resolveConstant";
 
 // ---------------------------------------------------------------------------
@@ -92,10 +95,9 @@ function meet(a: Lattice, b: Lattice): Lattice {
  *     any builtin resolution.
  *
  * Cross-module: the pass walks a single function; at the end, if the
- * function is the module's entry, each exported declaration's
- * lattice value is published to {@link ModuleIR.exportedConstants}
- * so downstream modules consume it via `LoadGlobal` of the matching
- * imported name.
+ * function is the module's entry, each exported binding's lattice
+ * value is published to {@link ModuleIR.summary} so downstream
+ * modules consume it via `LoadGlobal` of the matching imported name.
  *
  * **Not in this pass (intentional, handled elsewhere):**
  *
@@ -116,6 +118,22 @@ export class ConstantPropagationPass {
   private readonly builtinResolved = new Set<Value>();
   private readonly ssaWorklist: Value[] = [];
   private readonly resolveCtx: ResolveConstantContext;
+  /**
+   * Memory-state walker for this function. Rebuilt lazily on first
+   * query; used by {@link evaluate} to resolve `LoadLocalOp` reads to
+   * their reaching {@link StoreLocalOp} (replacing the prior
+   * `forward(op.place, op.value)` heuristic, which was unsound under
+   * mutable bindings — see Stage 2 pivot notes).
+   */
+  private readonly walker: MemoryStateWalker;
+  /**
+   * Reverse index: Value → LoadLocalOps that consulted the walker
+   * and learned the Value was their reaching-store's stored value.
+   * When the Value's lattice changes, these loads must be
+   * re-evaluated — the standard SSA `value.uses` chain misses them
+   * because the dependency is walker-mediated, not a direct operand.
+   */
+  private readonly walkerDeps = new Map<Value, Set<LoadLocalOp>>();
 
   constructor(
     private readonly funcOp: FuncOp,
@@ -134,13 +152,14 @@ export class ConstantPropagationPass {
       has: (place) => isConst(this.getLattice(place)),
       environment: this.moduleIR.environment,
     };
+    this.walker = new MemoryStateWalker(funcOp);
   }
 
   public run(): { changed: boolean } {
     this.seed();
     this.drain();
     const changed = this.apply();
-    this.exportConstants();
+    this.publishSummary();
     return { changed };
   }
 
@@ -183,6 +202,14 @@ export class ConstantPropagationPass {
           continue;
         }
         this.evaluate(op);
+      }
+      // Walker-mediated users: LoadLocals whose reaching-store's
+      // stored value is `value`. The SSA use chain doesn't include
+      // them (they read the binding cell, not the stored value),
+      // so re-enqueue here.
+      const deps = this.walkerDeps.get(value);
+      if (deps !== undefined) {
+        for (const load of deps) this.evaluate(load);
       }
     }
   }
@@ -265,7 +292,7 @@ export class ConstantPropagationPass {
     if (op instanceof UnaryExpressionOp) return this.evaluateUnary(op);
     if (op instanceof LogicalExpressionOp) return this.evaluateLogical(op);
     if (op instanceof TemplateLiteralOp) return this.evaluateTemplate(op);
-    if (op instanceof LoadLocalOp) return this.forward(op.place, op.value);
+    if (op instanceof LoadLocalOp) return this.evaluateLoadLocal(op);
     if (op instanceof StoreLocalOp) {
       // The store's own `place` and `lval` both carry the stored value.
       this.forward(op.place, op.value);
@@ -449,14 +476,55 @@ export class ConstantPropagationPass {
     this.setLattice(op.place, this.makeConst(s));
   }
 
+  /**
+   * Resolve a local-binding load's lattice using both the SSA
+   * binding-cell meet *and* the memory-state walker.
+   *
+   *   - Binding-cell forward (`op.value` is the lval): safe,
+   *     meet-combined over every writer. Conservatively BOTTOM on
+   *     any reassignment. SSA worklist naturally re-triggers this
+   *     via `op.value.uses`.
+   *   - Walker refinement: path-sensitive. When exactly one
+   *     `StoreLocalOp` reaches the load, use that store's stored
+   *     value's lattice instead — typically more precise than the
+   *     cell meet.
+   *
+   * The walker dependency (`reaching.value → this load`) is
+   * registered in {@link walkerDeps} so {@link drain} re-queues
+   * the load when the reaching value's lattice changes; without
+   * it, the load would observe a stale TOP and propagate it as
+   * a spurious constant.
+   */
+  private evaluateLoadLocal(op: LoadLocalOp): void {
+    const reaching = this.walker.reachingStore(op, localLocation(op.value.declarationId));
+    if (reaching instanceof StoreLocalOp) {
+      // Walker identified a unique reaching store. Register the
+      // walker dependency so a later change to the stored value's
+      // lattice re-enqueues this load (SSA worklist walks `value.uses`
+      // directly — it would miss this walker-mediated edge).
+      let deps = this.walkerDeps.get(reaching.value);
+      if (deps === undefined) {
+        deps = new Set();
+        this.walkerDeps.set(reaching.value, deps);
+      }
+      deps.add(op);
+      this.forward(op.place, reaching.value);
+      return;
+    }
+    // No unique reaching store (join ambiguity / Unknown wipe / …)
+    // — fall back to the binding cell's meet-combined lattice, which
+    // is sound-but-coarse.
+    this.forward(op.place, op.value);
+  }
+
   private evaluateLoadGlobal(op: LoadGlobalOp): void {
     const global = this.moduleIR.globals.get(op.name);
     if (global?.kind === "import") {
-      // Cross-module: look up on the source module's exportedConstants.
+      // Cross-module: consult the source module's summary.
       const target = this.projectUnit.modules.get(global.source);
-      const exported = target?.exportedConstants;
-      if (exported !== undefined && exported.has(global.name)) {
-        this.setLattice(op.place, this.makeConst(exported.get(global.name)!));
+      const exp = target?.summary.exports.get(global.name);
+      if (exp?.isEffectivelyConst) {
+        this.setLattice(op.place, this.makeConst(exp.constValue!));
         return;
       }
       this.setLattice(op.place, BOTTOM);
@@ -599,25 +667,30 @@ export class ConstantPropagationPass {
   }
 
   // -------------------------------------------------------------------------
-  // Cross-module export
+  // Summary publish
   // -------------------------------------------------------------------------
 
   /**
-   * Publish each export whose backing value has a constant lattice
-   * cell to `moduleIR.exportedConstants`, so `LoadGlobal` on an
-   * importing module can fold into a literal.
+   * Publish per-export facts into the module summary. Downstream
+   * modules importing from this one consume the summary (not the
+   * full IR) — mirroring LLVM ThinLTO. Today only `isEffectivelyConst`
+   * + `constValue` are computed; purity, return-lattice, call-graph
+   * summaries plug in here later.
    *
    * Only runs on the entry function — nested functions don't
    * contribute exports.
    */
-  private exportConstants(): void {
+  private publishSummary(): void {
     if (this.funcOp !== this.moduleIR.entryFuncOp) return;
     for (const [exportedName, exp] of this.moduleIR.exports) {
-      const place = exp.declaration?.place;
+      const place = getExportBindingPlace(exp);
       if (place === undefined) continue;
       const l = this.getLattice(place);
       if (!isConst(l)) continue;
-      this.moduleIR.exportedConstants.set(exportedName, l.value);
+      this.moduleIR.summary.exports.set(exportedName, {
+        isEffectivelyConst: true,
+        constValue: l.value,
+      });
     }
   }
 }

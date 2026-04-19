@@ -25,32 +25,9 @@ Frontend (Oxc parser) → HIR → SSA construction → optimization passes → c
 
 ## AOT Verification (End-to-End)
 
-When fixing compiler bugs that affect the portfolio site, verify with the full AOT pipeline. Do not claim a fix works without running this.
+When fixing compiler bugs that affect the portfolio site, verify with the full AOT pipeline. Do not claim a fix works without running it end-to-end in a browser.
 
-```bash
-# 1. Compile with AOT + node_modules
-cd apps/portfolio
-AOT_NODE_MODULES=1 pnpm aot:compile
-
-# 2. Build with Vite (AOT-compiled source)
-ENABLE_AOT=1 pnpm build
-
-# 3. Serve production build — NOT pnpm dev (dev server won't replicate AOT issues)
-pnpm start
-
-# 4. Verify in browser at localhost:3000 — check console for runtime errors
-```
-
-**Key env vars:**
-
-- `ENABLE_AOT=1` — switches source directory from `src/` to `.aot-src/`
-- `AOT_NODE_MODULES=1` — includes node_modules in AOT compilation
-
-**Shortcut scripts** (from apps/portfolio):
-
-- `pnpm build:aot` — compile source only + build
-- `pnpm build:aot-nm` — compile source + node_modules + build
-- `pnpm compare-build-sizes` — compare AOT vs non-AOT bundle sizes
+Use the **`verify-compiler-on-portfolio`** skill — it covers the compile → build → serve → Chrome MCP iteration loop, route sweep, console-reading cadence, and node_modules bisection.
 
 ## Anti-Patterns (Compiler-Specific)
 

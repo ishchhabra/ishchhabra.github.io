@@ -5,6 +5,7 @@ import { isPureBuiltin, lookupBuiltin } from "../../builtins";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
+import { effects, NoEffects, UnknownLocation, type MemoryEffects } from "../../memory/MemoryLocation";
 import { getQualifiedName } from "../../../pipeline/passes/resolveConstant";
 /**
  * Represents a call expression.
@@ -61,6 +62,17 @@ export class CallExpressionOp extends Operation {
     const qualified = getQualifiedName(calleeOp, environment);
     if (qualified === undefined) return true;
     return !isPureBuiltin(lookupBuiltin(qualified));
+  }
+
+  /**
+   * A pure builtin call has no memory effects; any other call may
+   * read and write arbitrary memory (treat as `Unknown` on both
+   * sides). This mirrors `hasSideEffects`: both use the same
+   * callee-resolution + builtin-table lookup.
+   */
+  public override getMemoryEffects(environment: Environment): MemoryEffects {
+    if (!this.hasSideEffects(environment)) return NoEffects;
+    return effects([UnknownLocation], [UnknownLocation]);
   }
 
   public override print(): string {

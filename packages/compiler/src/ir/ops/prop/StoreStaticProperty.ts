@@ -3,6 +3,11 @@ import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
+import {
+  effects,
+  staticPropertyLocation,
+  type MemoryEffects,
+} from "../../memory/MemoryLocation";
 /**
  * An instruction that stores a value into a **static** property for an object:
  * `object[0]` or `object.foo`.
@@ -42,5 +47,9 @@ export class StoreStaticPropertyOp extends Operation {
 
   getOperands(): Value[] {
     return [this.object, this.value];
+  }
+
+  public override getMemoryEffects(_env?: unknown): MemoryEffects {
+    return effects([], [staticPropertyLocation(this.object, this.property)]);
   }
 }

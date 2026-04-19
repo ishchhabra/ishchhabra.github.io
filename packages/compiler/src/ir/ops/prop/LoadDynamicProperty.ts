@@ -3,6 +3,11 @@ import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
+import {
+  computedPropertyLocation,
+  effects,
+  type MemoryEffects,
+} from "../../memory/MemoryLocation";
 /**
  * An instruction that loads a **dynamic** property for an object:
  * `object[property]`.
@@ -42,6 +47,10 @@ export class LoadDynamicPropertyOp extends Operation {
 
   getOperands(): Value[] {
     return [this.object, this.property];
+  }
+
+  public override getMemoryEffects(_env?: unknown): MemoryEffects {
+    return effects([computedPropertyLocation(this.object)], []);
   }
 
   public override print(): string {

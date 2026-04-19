@@ -1,5 +1,7 @@
 import type { Environment } from "../../environment";
 import type { BasicBlock, BlockId } from "./Block";
+import type { MemoryEffects } from "../memory/MemoryLocation";
+import { NoEffects } from "../memory/MemoryLocation";
 import type { ModuleIR } from "./ModuleIR";
 import type { Value } from "./Value";
 import { Region } from "./Region";
@@ -287,6 +289,20 @@ export abstract class Operation {
 
   isPure(environment: Environment): boolean {
     return !this.hasSideEffects(environment) && this.isDeterministic;
+  }
+
+  /**
+   * Memory effects this op produces — the alphabet memory-aware
+   * analyses speak (see {@link MemoryStateWalker}). Default: no
+   * effects. Effectful ops (loads, stores, calls) override. Passes
+   * that don't care about memory can ignore this entirely.
+   *
+   * `environment` is passed so ops that need module-scope context
+   * (e.g. `CallExpressionOp` consulting the builtin table for
+   * purity) can resolve it; most overrides ignore it.
+   */
+  getMemoryEffects(_environment?: Environment): MemoryEffects {
+    return NoEffects;
   }
 
   // -----------------------------------------------------------------

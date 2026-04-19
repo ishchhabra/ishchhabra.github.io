@@ -1,6 +1,6 @@
 let $0 = 10;
 let $16 = undefined;
-if ($0 < 5) {
+if (false) {
   $0 = 10;
   $16 = $0;
 } else {

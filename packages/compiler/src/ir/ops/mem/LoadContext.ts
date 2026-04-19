@@ -3,6 +3,7 @@ import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
+import { contextLocation, effects, type MemoryEffects } from "../../memory/MemoryLocation";
 /**
  * Represents an instruction that loads a value from a context variable —
  * a mutable variable captured across closure boundaries. Semantically identical
@@ -41,6 +42,10 @@ export class LoadContextOp extends Operation {
 
   public override hasSideEffects(): boolean {
     return false;
+  }
+
+  public override getMemoryEffects(_env?: unknown): MemoryEffects {
+    return effects([contextLocation(this.value.declarationId)], []);
   }
 
   public override print(): string {

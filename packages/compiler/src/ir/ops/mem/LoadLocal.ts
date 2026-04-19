@@ -3,6 +3,7 @@ import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
+import { effects, localLocation, type MemoryEffects } from "../../memory/MemoryLocation";
 /**
  * Represents an instruction that loads a value from one place to another place.
  * This is used to move values between different memory locations in the IR.
@@ -41,6 +42,10 @@ export class LoadLocalOp extends Operation {
 
   public override hasSideEffects(): boolean {
     return false;
+  }
+
+  public override getMemoryEffects(_env?: unknown): MemoryEffects {
+    return effects([localLocation(this.value.declarationId)], []);
   }
 
   public override print(): string {

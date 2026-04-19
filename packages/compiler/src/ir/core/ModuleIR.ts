@@ -1,7 +1,10 @@
 import { Environment } from "../../environment";
 import { FuncOp, FuncOpId } from "./FuncOp";
 import { Operation } from "./Operation";
-import type { TPrimitiveValue } from "../ops/prim/Literal";
+import type { Value } from "./Value";
+import { emptyModuleSummary, type ModuleSummary } from "./ModuleSummary";
+import { ExportSpecifierOp } from "../ops/module/ExportSpecifier";
+import { StoreLocalOp } from "../ops/mem/StoreLocal";
 
 export type ModuleGlobal =
   | {
@@ -19,6 +22,24 @@ export interface ModuleExport {
 
   /** The instruction that declares the exported variable (undefined for anonymous export default) */
   declaration?: Operation;
+}
+
+/**
+ * The binding place (SSA Value) this export references, or undefined
+ * for anonymous-expression exports (`export default 5`). Normalizes
+ * over the two shapes: `ExportSpecifier` carries a `localPlace`; a
+ * declaration-form export (`export const X = …`) carries the
+ * declaration store whose `lval` is the binding.
+ *
+ * Consumers reasoning about the exported binding (memory analyses,
+ * cross-module folding) should use this rather than branching on
+ * the export's shape.
+ */
+export function getExportBindingPlace(exp: ModuleExport): Value | undefined {
+  if (exp.instruction instanceof ExportSpecifierOp) return exp.instruction.localPlace;
+  const decl = exp.declaration;
+  if (decl instanceof StoreLocalOp) return decl.lval;
+  return decl?.place;
 }
 
 /**
@@ -52,16 +73,12 @@ export class ModuleIR {
   public entryFuncOp: FuncOp | undefined = undefined;
 
   /**
-   * Exported names whose value has been proven to be a compile-time
-   * constant. Populated by {@link ConstantPropagationPass} on this
-   * module's entry function; consumed by the same pass on downstream
-   * modules when evaluating a `LoadGlobal` of an imported binding.
-   *
-   * Empty for modules that haven't run constant propagation yet, or
-   * whose exports aren't constants. A missing entry means "not known
-   * to be constant" — not "known to be non-constant."
+   * Cross-module facts about this module. Populated by the module's
+   * own passes (currently {@link ConstantPropagationPass}); consumed
+   * by analyses running on downstream modules that import from this
+   * one. Mirrors LLVM ThinLTO module summaries.
    */
-  public readonly exportedConstants: Map<string, TPrimitiveValue> = new Map();
+  public readonly summary: ModuleSummary = emptyModuleSummary();
 
   constructor(
     public readonly path: string,

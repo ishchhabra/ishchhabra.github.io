@@ -3,6 +3,7 @@ import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
+import { effects, localLocation, type MemoryEffects } from "../../memory/MemoryLocation";
 export type StoreLocalKind = "declaration" | "assignment";
 
 /**
@@ -86,6 +87,14 @@ export class StoreLocalOp extends Operation {
     // DSE lands; a declaration introduces a fresh binding and
     // stays removable when nothing reads or writes it.
     return this.kind === "assignment";
+  }
+
+  public override getMemoryEffects(_env?: unknown): MemoryEffects {
+    // Both declarations and assignments write the binding cell. A
+    // declaration is the first write; assignments layer on top. The
+    // cell identity is the lval's declarationId — stable across
+    // versions (SSABuilder doesn't promote mutable bindings).
+    return effects([], [localLocation(this.lval.declarationId)]);
   }
 
   public override print(): string {
