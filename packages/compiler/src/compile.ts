@@ -11,6 +11,8 @@ export const CompilerOptionsSchema = z.object({
   enableOptimizer: z.boolean().default(true),
   /** Whether to enable the algebraic simplification pass */
   enableAlgebraicSimplificationPass: z.boolean().default(true),
+  /** Whether to enable the reassociation pass (canonicalize *, &, |, ^ chains). */
+  enableReassociationPass: z.boolean().default(true),
   /** Whether to enable constant propagation pass */
   enableConstantPropagationPass: z.boolean().default(true),
   /** Whether to enable the expression inlining pass */

@@ -9,6 +9,7 @@ import { CapturePruningPass } from "../passes/CapturePruningPass";
 import { ConstantPropagationPass } from "../passes/ConstantPropagationPass";
 import { DeadCodeEliminationPass } from "../passes/DeadCodeEliminationPass";
 import { ExpressionInliningPass } from "../passes/ExpressionInliningPass";
+import { ReassociationPass } from "../passes/ReassociationPass";
 import { ScalarReplacementOfAggregatesPass } from "../late-optimizer/passes/ScalarReplacementOfAggregatesPass";
 
 interface OptimizerResult {
@@ -55,6 +56,7 @@ export class Optimizer {
       "constant-propagation",
       (f) => new ConstantPropagationPass(f, f.moduleIR, this.projectUnit, this.options),
     );
+    const reassociation = funcPass("reassociation", (f) => new ReassociationPass(f));
     const expressionInlining = funcPass(
       "expression-inlining",
       (f, am) => new ExpressionInliningPass(f, f.moduleIR.environment, am),
@@ -79,11 +81,13 @@ export class Optimizer {
     // cleanup catches cascades the first exposed.
     const script: FunctionPass[] = [];
     if (o.enableAlgebraicSimplificationPass) script.push(algebraicSimp);
+    if (o.enableReassociationPass) script.push(reassociation);
     if (o.enableConstantPropagationPass) script.push(constantPropagation);
     if (o.enableExpressionInliningPass) script.push(expressionInlining);
     if (o.enableDeadCodeEliminationPass) script.push(dce);
     if (o.enableScalarReplacementOfAggregatesPass) script.push(sroa);
     if (o.enableAlgebraicSimplificationPass) script.push(algebraicSimp);
+    if (o.enableReassociationPass) script.push(reassociation);
     if (o.enableConstantPropagationPass) script.push(constantPropagation);
     if (o.enableExpressionInliningPass) script.push(expressionInlining);
     if (o.enableDeadCodeEliminationPass) script.push(dce);
