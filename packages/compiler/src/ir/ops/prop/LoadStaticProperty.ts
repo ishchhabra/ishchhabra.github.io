@@ -44,6 +44,19 @@ export class LoadStaticPropertyOp extends Operation {
     return [this.object];
   }
 
+  /**
+   * Reading `obj.prop` can technically invoke a getter or a Proxy
+   * trap — that would be a real side effect. Production JS
+   * optimizers (V8, Closure, SpiderMonkey) treat property reads as
+   * pure anyway, on the grounds that user code depending on
+   * getter-as-side-effect is non-optimizable by design. Matching
+   * that convention here lets DCE remove orphan property-access
+   * chains left behind by constant folding.
+   */
+  public override hasSideEffects(): boolean {
+    return false;
+  }
+
   public override print(): string {
     return `${this.place.print()} = ${this.object.print()}.${this.property}`;
   }

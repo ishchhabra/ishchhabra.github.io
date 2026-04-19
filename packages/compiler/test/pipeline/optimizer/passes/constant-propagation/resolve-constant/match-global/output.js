@@ -1,1 +1,3 @@
-const $2 = __DEV__ + process.env.NODE_ENV;
+const $0 = false;
+const $1 = "production";
+const $2 = "falseproduction";

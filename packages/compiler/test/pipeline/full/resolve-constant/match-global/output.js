@@ -1,1 +1,1 @@
-console.log(process.env.NODE_ENV, __DEV__);
+console.log("production", false);

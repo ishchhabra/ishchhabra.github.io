@@ -1,1 +1,1 @@
-console.log((5 + 3) * 2 - 1);
+console.log(15);

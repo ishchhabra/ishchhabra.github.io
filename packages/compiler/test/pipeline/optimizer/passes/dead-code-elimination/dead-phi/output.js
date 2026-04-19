@@ -1,7 +1,6 @@
-const $0 = true;
 let $1 = undefined;
 let $16 = undefined;
-if ($0) {
+if (true) {
   $1 = 1;
   $16 = $1;
 } else {

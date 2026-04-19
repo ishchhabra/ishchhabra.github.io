@@ -2,15 +2,17 @@ import { z } from "zod";
 import { CodeGenerator } from "./backend/CodeGenerator";
 import { ProjectBuilder } from "./frontend/ProjectBuilder";
 import { printModuleIR } from "./ir/printer";
-import { Pipeline } from "./pipeline/Pipeline";
 import type { PipelineObserver, PipelineStage } from "./pipeline/Observer";
 import type { ResolveConstantHook } from "./pipeline/passes/resolveConstant";
+import { Pipeline } from "./pipeline/Pipeline";
 
 export const CompilerOptionsSchema = z.object({
   /** Whether to enable the optimizer */
   enableOptimizer: z.boolean().default(true),
   /** Whether to enable the algebraic simplification pass */
   enableAlgebraicSimplificationPass: z.boolean().default(true),
+  /** Whether to enable constant propagation pass */
+  enableConstantPropagationPass: z.boolean().default(true),
   /** Whether to enable the expression inlining pass */
   enableExpressionInliningPass: z.boolean().default(true),
   /** Whether to enable the unused export elimination pass */
@@ -22,8 +24,6 @@ export const CompilerOptionsSchema = z.object({
 
   /** Whether to enable the late optimizer */
   enableLateOptimizer: z.boolean().default(true),
-  /** Whether to enable the late constant propagation pass */
-  enableLateConstantPropagationPass: z.boolean().default(true),
   /** Whether to enable the late copy propagation pass */
   enableLateCopyPropagationPass: z.boolean().default(true),
   /** Whether to enable the late dead store elimination pass */

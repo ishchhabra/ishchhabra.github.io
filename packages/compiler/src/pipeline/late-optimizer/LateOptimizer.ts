@@ -3,7 +3,6 @@ import { FuncOp } from "../../ir/core/FuncOp";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import type { PipelineObserver } from "../Observer";
 import { FunctionPassManager, funcPass, type FunctionPass } from "../PassManager";
-import { LateConstantPropagationPass } from "./passes/LateConstantPropagationPass";
 import { LateCopyPropagationPass } from "./passes/LateCopyPropagationPass";
 import { LateDeadCodeEliminationPass } from "./passes/LateDeadCodeEliminationPass";
 
@@ -37,20 +36,16 @@ export class LateOptimizer {
   public run(): LateOptimizerResult {
     const o = this.options;
 
-    const lateConstProp = funcPass(
-      "late-constant-propagation",
-      (f) => new LateConstantPropagationPass(f),
-    );
     const lateCopyProp = funcPass("late-copy-propagation", (f) => new LateCopyPropagationPass(f));
     const lateDce = funcPass(
       "late-dead-code-elimination",
       (f) => new LateDeadCodeEliminationPass(f, f.moduleIR.environment),
     );
 
-    // Two cycles of const-prop → copy-prop → DCE.
+    // Two cycles of copy-prop → DCE. Constant propagation now runs
+    // pre-SSA-elim in Optimizer; the late stage is purely cleanup.
     const script: FunctionPass[] = [];
     for (let i = 0; i < 2; i++) {
-      if (o.enableLateConstantPropagationPass) script.push(lateConstProp);
       if (o.enableLateCopyPropagationPass) script.push(lateCopyProp);
       if (o.enableLateDeadCodeEliminationPass) script.push(lateDce);
     }

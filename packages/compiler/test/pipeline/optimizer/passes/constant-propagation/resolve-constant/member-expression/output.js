@@ -1,1 +1,2 @@
-const $1 = process.env.NODE_ENV === "production";
+const $0 = "production";
+const $1 = true;

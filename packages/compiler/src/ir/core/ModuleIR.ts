@@ -1,6 +1,7 @@
 import { Environment } from "../../environment";
 import { FuncOp, FuncOpId } from "./FuncOp";
 import { Operation } from "./Operation";
+import type { TPrimitiveValue } from "../ops/prim/Literal";
 
 export type ModuleGlobal =
   | {
@@ -49,6 +50,18 @@ export class ModuleIR {
    * for all functions (entry + nested) without caring which is which.
    */
   public entryFuncOp: FuncOp | undefined = undefined;
+
+  /**
+   * Exported names whose value has been proven to be a compile-time
+   * constant. Populated by {@link ConstantPropagationPass} on this
+   * module's entry function; consumed by the same pass on downstream
+   * modules when evaluating a `LoadGlobal` of an imported binding.
+   *
+   * Empty for modules that haven't run constant propagation yet, or
+   * whose exports aren't constants. A missing entry means "not known
+   * to be constant" — not "known to be non-constant."
+   */
+  public readonly exportedConstants: Map<string, TPrimitiveValue> = new Map();
 
   constructor(
     public readonly path: string,

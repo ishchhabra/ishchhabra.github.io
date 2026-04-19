@@ -1,2 +1,3 @@
+const $0 = false;
 let $7 = undefined;
-const $1 = __DEV__ ? "debug" : "release";
+const $1 = false ? "debug" : "release";

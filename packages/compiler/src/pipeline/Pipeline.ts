@@ -53,7 +53,7 @@ export class Pipeline {
         this.observer?.onStage?.("ssa-built", moduleIR, funcOp);
 
         if (this.options.enableOptimizer) {
-          new Optimizer(funcOp, this.options, AM, this.observer).run();
+          new Optimizer(funcOp, this.projectUnit, this.options, AM, this.observer).run();
         }
         this.observer?.onStage?.("optimized", moduleIR, funcOp);
 

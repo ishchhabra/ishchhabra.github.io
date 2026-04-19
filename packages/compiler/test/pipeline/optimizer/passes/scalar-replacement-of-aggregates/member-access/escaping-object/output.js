@@ -1,6 +1,4 @@
-const $0 = {
+console.log({
   a: 1,
   b: 2,
-};
-console.log($0);
-$0.a;
+});

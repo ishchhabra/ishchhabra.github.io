@@ -1,4 +1,4 @@
-if (process.env.NODE_ENV === "production") {
+if (true) {
   console.log("prod");
 } else {
   console.log("dev");

@@ -3,8 +3,10 @@ import { FuncOp } from "../../ir/core/FuncOp";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import type { PipelineObserver } from "../Observer";
 import { FunctionPassManager, funcPass, type FunctionPass } from "../PassManager";
+import { ProjectUnit } from "../../frontend/ProjectBuilder";
 import { AlgebraicSimplificationPass } from "../passes/AlgebraicSimplificationPass";
 import { CapturePruningPass } from "../passes/CapturePruningPass";
+import { ConstantPropagationPass } from "../passes/ConstantPropagationPass";
 import { DeadCodeEliminationPass } from "../passes/DeadCodeEliminationPass";
 import { ExpressionInliningPass } from "../passes/ExpressionInliningPass";
 import { ScalarReplacementOfAggregatesPass } from "../late-optimizer/passes/ScalarReplacementOfAggregatesPass";
@@ -35,6 +37,7 @@ interface OptimizerResult {
 export class Optimizer {
   constructor(
     private readonly funcOp: FuncOp,
+    private readonly projectUnit: ProjectUnit,
     private readonly options: CompilerOptions,
     private readonly AM: AnalysisManager,
     private readonly observer?: PipelineObserver,
@@ -47,6 +50,10 @@ export class Optimizer {
     const algebraicSimp = funcPass(
       "algebraic-simplification",
       (f, am) => new AlgebraicSimplificationPass(f, am),
+    );
+    const constantPropagation = funcPass(
+      "constant-propagation",
+      (f) => new ConstantPropagationPass(f, f.moduleIR, this.projectUnit, this.options),
     );
     const expressionInlining = funcPass(
       "expression-inlining",
@@ -72,10 +79,12 @@ export class Optimizer {
     // cleanup catches cascades the first exposed.
     const script: FunctionPass[] = [];
     if (o.enableAlgebraicSimplificationPass) script.push(algebraicSimp);
+    if (o.enableConstantPropagationPass) script.push(constantPropagation);
     if (o.enableExpressionInliningPass) script.push(expressionInlining);
     if (o.enableDeadCodeEliminationPass) script.push(dce);
     if (o.enableScalarReplacementOfAggregatesPass) script.push(sroa);
     if (o.enableAlgebraicSimplificationPass) script.push(algebraicSimp);
+    if (o.enableConstantPropagationPass) script.push(constantPropagation);
     if (o.enableExpressionInliningPass) script.push(expressionInlining);
     if (o.enableDeadCodeEliminationPass) script.push(dce);
     if (o.enableAlgebraicSimplificationPass) script.push(algebraicSimp);
