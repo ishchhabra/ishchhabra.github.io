@@ -2,7 +2,6 @@ import type { Function } from "oxc-parser";
 import { Environment } from "../../../environment";
 import { FunctionExpressionOp } from "../../../ir/ops/func/FunctionExpression";
 import { type Scope } from "../../scope/Scope";
-import { buildIdentifier } from "../buildIdentifier";
 import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
@@ -13,8 +12,7 @@ export function buildFunctionExpression(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  const identifierPlace =
-    node.id != null ? buildIdentifier(node.id, scope, functionBuilder, environment) : null;
+  const name = node.id != null ? node.id.name : null;
   if (node.body == null) {
     throw new Error("Function expressions must have a body");
   }
@@ -40,7 +38,7 @@ export function buildFunctionExpression(
   const instruction = environment.createOperation(
     FunctionExpressionOp,
     place,
-    identifierPlace,
+    name,
     funcOp,
     node.generator ?? false,
     node.async ?? false,

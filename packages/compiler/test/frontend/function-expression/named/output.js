@@ -1,3 +1,3 @@
-const $0 = function func($2, $3) {
-  return $2 + $3;
+const $0 = function func($1, $2) {
+  return $1 + $2;
 };

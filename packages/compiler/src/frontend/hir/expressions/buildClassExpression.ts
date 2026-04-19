@@ -20,14 +20,7 @@ export function buildClassExpression(
 
   const classScope = functionBuilder.scopeFor(node);
 
-  let identifierPlace: Value | null = null;
-  if (node.id != null) {
-    const built = buildNode(node.id, classScope, functionBuilder, moduleBuilder, environment);
-    if (built === undefined || Array.isArray(built)) {
-      throw new Error("Class expression identifier must be a single place");
-    }
-    identifierPlace = built;
-  }
+  const name = node.id != null ? node.id.name : null;
 
   let superClassPlace: Value | null = null;
   if (node.superClass != null) {
@@ -50,7 +43,7 @@ export function buildClassExpression(
   const instruction = environment.createOperation(
     ClassExpressionOp,
     place,
-    identifierPlace,
+    name,
     superClassPlace,
     elements,
   );

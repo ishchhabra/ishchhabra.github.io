@@ -7,10 +7,7 @@ export function generateFunctionExpressionOp(
   instruction: FunctionExpressionOp,
   generator: CodeGenerator,
 ): t.FunctionExpression {
-  const idNode = instruction.binding ? generator.values.get(instruction.binding.id) : null;
-  if (idNode !== null && !t.isIdentifier(idNode)) {
-    throw new Error("Function expression identifier is not an identifier");
-  }
+  const idNode = instruction.name !== null ? t.identifier(instruction.name) : null;
 
   const { params, statements } = generateFunction(
     instruction.funcOp,

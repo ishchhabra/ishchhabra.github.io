@@ -48,7 +48,7 @@ function rebuildWithCaptures(instr: FunctionBearingInstruction, newCaptures: Val
     return new FunctionExpressionOp(
       instr.id,
       instr.place,
-      instr.binding,
+      instr.name,
       instr.funcOp,
       instr.generator,
       instr.async,

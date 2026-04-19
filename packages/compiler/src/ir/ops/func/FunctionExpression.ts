@@ -7,8 +7,7 @@ export class FunctionExpressionOp extends Operation {
   constructor(
     id: OperationId,
     public override readonly place: Value,
-    /** Optional bound name for `function foo() {}`. `null` for anonymous expressions. */
-    public readonly binding: Value | null,
+    public readonly name: string | null,
     public readonly funcOp: FuncOp,
     public readonly generator: boolean,
     public readonly async: boolean,
@@ -26,7 +25,7 @@ export class FunctionExpressionOp extends Operation {
     return env.createOperation(
       FunctionExpressionOp,
       place,
-      this.binding,
+      this.name,
       this.funcOp.clone(makeCloneContext(moduleIR)),
       this.generator,
       this.async,
@@ -35,19 +34,14 @@ export class FunctionExpressionOp extends Operation {
   }
 
   public rewrite(values: Map<Value, Value>): Operation {
-    const newBinding = this.binding ? this.binding.rewrite(values) : null;
     const newCaptures = this.captures.map((c) => c.rewrite(values));
-
     const capturesChanged = newCaptures.some((c, i) => c !== this.captures[i]);
-    const bindingChanged = newBinding !== this.binding;
-    if (!capturesChanged && !bindingChanged) {
-      return this;
-    }
+    if (!capturesChanged) return this;
 
     return new FunctionExpressionOp(
       this.id,
       this.place,
-      newBinding,
+      this.name,
       this.funcOp,
       this.generator,
       this.async,
@@ -56,9 +50,6 @@ export class FunctionExpressionOp extends Operation {
   }
 
   public getOperands(): Value[] {
-    if (this.binding !== null) {
-      return [this.binding, ...this.captures];
-    }
     return this.captures;
   }
 

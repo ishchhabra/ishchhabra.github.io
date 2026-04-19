@@ -6,17 +6,7 @@ export function generateClassExpressionOp(
   instruction: ClassExpressionOp,
   generator: CodeGenerator,
 ): t.ClassExpression {
-  let idNode: t.Identifier | null = null;
-  if (instruction.binding) {
-    const node = generator.values.get(instruction.binding.id);
-    if (node === undefined) {
-      throw new Error(`Value ${instruction.binding.id} not found`);
-    }
-    if (!t.isIdentifier(node)) {
-      throw new Error("Class expression identifier is not an identifier");
-    }
-    idNode = node;
-  }
+  const idNode = instruction.name !== null ? t.identifier(instruction.name) : null;
 
   let superClass: t.Expression | null = null;
   if (instruction.superClass) {
