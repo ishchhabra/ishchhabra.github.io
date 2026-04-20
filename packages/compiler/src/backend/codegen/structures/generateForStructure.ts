@@ -156,10 +156,18 @@ function lowerInitRegion(
 
   if (hoistedDeclarators.length > 0) {
     if (expressions.length > 0) {
-      throw new Error(
-        `generateForStructure: cannot combine an expression-init with ` +
-          `hoisted declarators from the update region. Update handling if this fires.`,
-      );
+      // Mixed: SSA-eliminator iter-arg copy stores (expressions) +
+      // hoisted declarators from the update region. JS grammar
+      // forbids mixing expressions with `let` in a single for-init;
+      // hoist both above the for-statement so the caller wraps in
+      // a block.
+      const hoistedInitStatements: t.Statement[] = [
+        t.variableDeclaration("let", [...hoistedDeclarators]),
+      ];
+      for (const expr of expressions) {
+        hoistedInitStatements.push(t.expressionStatement(expr));
+      }
+      return { initNode: null, hoistedInitStatements };
     }
     return {
       initNode: t.variableDeclaration("let", [...hoistedDeclarators]),

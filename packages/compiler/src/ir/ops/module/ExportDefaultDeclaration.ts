@@ -24,8 +24,10 @@ export class ExportDefaultDeclarationOp extends Operation {
     return env.createOperation(ExportDefaultDeclarationOp, place, this.declaration);
   }
 
-  rewrite(): Operation {
-    return this;
+  rewrite(values: Map<Value, Value>): Operation {
+    const next = values.get(this.declaration) ?? this.declaration;
+    if (next === this.declaration) return this;
+    return new ExportDefaultDeclarationOp(this.id, this.place, next);
   }
 
   getOperands(): Value[] {
