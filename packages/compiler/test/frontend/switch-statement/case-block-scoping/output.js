@@ -25,14 +25,14 @@ function $0($2) {
       break;
     case "text":
       {
-        const $18 = $2;
+        $18 = $2;
         return {
           type: "text",
           value: $18.value,
         };
       }
       {
-        const $29 = $2;
+        $29 = $2;
         return {
           type: "element",
           tag: $29.tagName,
@@ -41,7 +41,7 @@ function $0($2) {
       break;
     default:
       {
-        const $29 = $2;
+        $29 = $2;
         return {
           type: "element",
           tag: $29.tagName,

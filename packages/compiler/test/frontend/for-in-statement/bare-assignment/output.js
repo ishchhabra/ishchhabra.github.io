@@ -1,6 +1,6 @@
 let $0 = undefined;
-let $0 = undefined;
-let $0 = undefined;
+$0 = undefined;
+$0 = undefined;
 let blockparam_10 = undefined;
 blockparam_10 = $0;
 for (let $0 in obj) {

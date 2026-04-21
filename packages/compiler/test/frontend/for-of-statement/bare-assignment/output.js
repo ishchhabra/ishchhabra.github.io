@@ -1,6 +1,6 @@
 let $0 = undefined;
-let $0 = undefined;
-let $0 = undefined;
+$0 = undefined;
+$0 = undefined;
 let blockparam_14 = undefined;
 blockparam_14 = $0;
 let blockparam_15 = undefined;

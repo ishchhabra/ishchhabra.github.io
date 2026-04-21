@@ -29,15 +29,23 @@ export function generateStoreLocalOp(
   const kind = metadata ? getCodegenDeclarationKind(metadata.kind) : undefined;
 
   let node: t.Statement;
-  if (instruction.kind === "declaration" && kind !== undefined) {
+  // Emit `let X = value` at most once per declarationId in a given
+  // function. SSA lowering can insert multiple declaration-kind
+  // stores for the same binding (e.g. when multiple SSA merge sinks
+  // share a decl after synthetic metadata registration); subsequent
+  // stores must emit as plain assignments to avoid duplicate `let`
+  // declarations that JS parsers reject.
+  const alreadyDeclared = generator.declaredDeclarations.has(declId);
+  if (instruction.kind === "declaration" && kind !== undefined && !alreadyDeclared) {
     node = t.variableDeclaration(kind, [t.variableDeclarator(lval, value)]);
     generator.declaredDeclarations.add(declId);
   } else if (kind !== undefined) {
     const assignment = t.assignmentExpression("=", lval as t.LVal, value);
     node = t.expressionStatement(assignment);
   } else {
-    if (instruction.kind === "declaration") {
+    if (instruction.kind === "declaration" && !alreadyDeclared) {
       node = t.variableDeclaration(instruction.type, [t.variableDeclarator(lval, value)]);
+      generator.declaredDeclarations.add(declId);
     } else {
       const assignment = t.assignmentExpression("=", lval as t.LVal, value);
       node = t.expressionStatement(assignment);
