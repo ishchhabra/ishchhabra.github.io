@@ -12,7 +12,16 @@ export function generateStoreLocalOp(
   }
   t.assertLVal(lval);
 
-  const value = generator.values.get(instruction.value.id);
+  // `value` may be unregistered in `generator.values` when mem2reg
+  // aliased a LoadLocal to an op-introduced entry binding
+  // (ForOfOp.iterationValue, ForInOp iter-target defs, try handler
+  // params). Those live on `BasicBlock.entryBindings` and on rename
+  // stacks but aren't populated in the codegen value map. Fall back
+  // to a place-derived identifier — the same pattern `lval` uses.
+  let value = generator.values.get(instruction.value.id);
+  if (value === undefined || value === null) {
+    value = generator.getPlaceIdentifier(instruction.value);
+  }
   t.assertExpression(value);
 
   const declId = instruction.lval.declarationId;

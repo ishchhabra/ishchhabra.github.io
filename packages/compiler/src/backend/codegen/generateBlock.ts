@@ -42,6 +42,19 @@ export function generateBasicBlock(
     throw new Error(`Block ${blockId} not found`);
   }
 
+  // Pre-register identifiers for block-entry bindings introduced by
+  // the enclosing op (ForOfOp.iterationValue, ForInOp iter-target
+  // defs, TryOp handler params). These Values live at region entry
+  // but aren't produced by any op in the block, so no op codegen
+  // populates `values` for them. Without this, any op that reads
+  // them as an operand (including mem2reg-aliased loads) would crash
+  // when looking up `values[binding.id]`.
+  for (const binding of block.entryBindings) {
+    if (!generator.values.has(binding.id)) {
+      generator.getPlaceIdentifier(binding);
+    }
+  }
+
   const statements: Array<t.Statement> = [];
   for (const op of block.getAllOps()) {
     statements.push(...generateOp(op, funcOp, generator));
