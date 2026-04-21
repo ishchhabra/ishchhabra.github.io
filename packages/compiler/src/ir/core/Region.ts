@@ -80,6 +80,9 @@ export class Region {
     if (block.parent !== null && block.parent !== this) {
       throw new Error(`Region.appendBlock: bb${block.id} already belongs to another region`);
     }
+    if (this.blocks.includes(block)) {
+      throw new Error(`Region.appendBlock: bb${block.id} is already in this region`);
+    }
     block.parent = this;
     this.blocks.push(block);
   }

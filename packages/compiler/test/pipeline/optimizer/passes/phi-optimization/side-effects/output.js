@@ -1,11 +1,9 @@
-const $0 = globalThis.project;
-let $1 = undefined;
-let $21 = undefined;
-if (!$0.external) {
-  $1 = `lab-${$0.slug}-title`;
-  $21 = $1;
+const $26 = globalThis.project;
+let blockparam_21 = undefined;
+if (!$26.external) {
+  const $28 = `lab-${$26.slug}-title`;
+  blockparam_21 = $28;
 } else {
-  $1 = undefined;
-  $21 = $1;
+  blockparam_21 = undefined;
 }
-console.log($21);
+console.log(blockparam_21);

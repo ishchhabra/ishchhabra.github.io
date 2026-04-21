@@ -1,6 +1,5 @@
-const $0 = "greet";
 let $1 = undefined;
-switch ($0) {
+switch ("greet") {
   case "greet":
     $1 = "hello";
     break;

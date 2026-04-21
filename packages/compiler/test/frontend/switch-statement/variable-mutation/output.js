@@ -1,6 +1,5 @@
 let $0 = "unknown";
-const $1 = 2;
-switch ($1) {
+switch (2) {
   case 1:
     $0 = "one";
     break;

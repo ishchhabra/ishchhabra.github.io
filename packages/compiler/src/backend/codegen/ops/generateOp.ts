@@ -121,7 +121,7 @@ export function generateOp(
 
     if (
       instruction.place.uses.size === 0 &&
-      instruction.hasSideEffects(generator.moduleIR.environment) &&
+      hasTransitiveSideEffects(instruction, generator.moduleIR.environment) &&
       statement &&
       t.isExpression(statement)
     ) {
@@ -146,7 +146,7 @@ export function generateOp(
     const node = generateValueOp(instruction, funcOp, generator);
     if (
       instruction.place.uses.size === 0 &&
-      instruction.hasSideEffects(generator.moduleIR.environment) &&
+      hasTransitiveSideEffects(instruction, generator.moduleIR.environment) &&
       node !== null &&
       t.isExpression(node)
     ) {
@@ -156,4 +156,32 @@ export function generateOp(
   }
 
   throw new Error(`Unsupported instruction type: ${instruction.constructor.name}`);
+}
+
+/**
+ * True iff the expression tree rooted at `op` contains at least one
+ * op with observable side effects. Used to decide whether an orphan
+ * value op (no users) must still be emitted as a standalone
+ * expression statement — pure container ops like BinaryExpression
+ * don't propagate operand side effects via `hasSideEffects`, so
+ * without this check we'd drop `foo() + bar()` entirely when the
+ * parent binding was swept.
+ */
+function hasTransitiveSideEffects(
+  op: Operation,
+  env: Parameters<Operation["hasSideEffects"]>[0],
+): boolean {
+  const seen = new Set<Operation>();
+  const stack: Operation[] = [op];
+  while (stack.length > 0) {
+    const cur = stack.pop()!;
+    if (seen.has(cur)) continue;
+    seen.add(cur);
+    if (cur.hasSideEffects(env)) return true;
+    for (const operand of cur.getOperands()) {
+      const def = operand.definer;
+      if (def instanceof Operation) stack.push(def);
+    }
+  }
+  return false;
 }

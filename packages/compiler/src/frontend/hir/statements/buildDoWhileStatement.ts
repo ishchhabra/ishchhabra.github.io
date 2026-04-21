@@ -89,7 +89,17 @@ export function buildDoWhileStatement(
       consBlock.terminal = new BreakOp(createOperationId(environment), label);
     });
 
-    const ifOp = new IfOp(createOperationId(environment), notTestPlace, [], consRegion, undefined);
+    // MLIR-style: always emit both arms so region-branch analyses
+    // see a complete CFG. The synthetic alternate here just yields
+    // nothing and falls through to the next iteration.
+    const altRegion = new Region([]);
+    const altBlock = environment.createBlock();
+    functionBuilder.withStructureRegion(altRegion, () => {
+      functionBuilder.addBlock(altBlock);
+      altBlock.terminal = new YieldOp(createOperationId(environment), []);
+    });
+
+    const ifOp = new IfOp(createOperationId(environment), notTestPlace, [], consRegion, altRegion);
     functionBuilder.currentBlock.appendOp(ifOp);
     functionBuilder.controlStack.pop();
 

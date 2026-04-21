@@ -1,10 +1,2 @@
-let $0 = 10;
-let $16 = undefined;
-if (false) {
-  $0 = 10;
-  $16 = $0;
-} else {
-  $0 = 20;
-  $16 = $0;
-}
-const $1 = $16 * 2;
+let blockparam_16 = undefined;
+(false ? 10 : 20) * 2;

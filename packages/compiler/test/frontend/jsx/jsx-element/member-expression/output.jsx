@@ -1,4 +1,3 @@
-const $0 = {
+const $19 = {
   Bar: () => <div />,
 };
-const $1 = <$0.Bar />;

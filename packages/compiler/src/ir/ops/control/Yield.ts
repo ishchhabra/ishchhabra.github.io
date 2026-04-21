@@ -1,7 +1,9 @@
 import type { OperationId } from "../../core";
 import type { BasicBlock } from "../../core/Block";
+import { registerUses, unregisterUses } from "../../core/Use";
 import type { Value } from "../../core/Value";
 import { type CloneContext, nextId, Operation, remapPlace, Trait } from "../../core/Operation";
+import type { RegionBranchTerminator } from "../../core/RegionBranchOp";
 
 /**
  * Structured-op yield. The MLIR `scf.yield` analog: terminates a
@@ -14,14 +16,16 @@ import { type CloneContext, nextId, Operation, remapPlace, Trait } from "../../c
  * (i.e., the next op in the parent block). It is the textbook,
  * one-and-only way to complete a region normally.
  */
-export class YieldOp extends Operation {
+export class YieldOp extends Operation implements RegionBranchTerminator {
   static override readonly traits = new Set<Trait>([Trait.Terminator]);
 
-  constructor(
-    id: OperationId,
-    public readonly values: readonly Value[],
-  ) {
+  /** Mutable — MLIR-style. Use {@link setForwardedOperands} to
+   *  rewrite while maintaining use-def registrations. */
+  public values: Value[];
+
+  constructor(id: OperationId, values: readonly Value[]) {
     super(id);
+    this.values = [...values];
   }
 
   getOperands(): Value[] {
@@ -58,5 +62,16 @@ export class YieldOp extends Operation {
   public override print(): string {
     if (this.values.length === 0) return "yield";
     return `yield ${this.values.map((p) => p.print()).join(", ")}`;
+  }
+
+  // RegionBranchTerminator — all operands are forwarded.
+  getForwardedOperands(): readonly Value[] {
+    return this.values;
+  }
+
+  setForwardedOperands(operands: readonly Value[]): void {
+    if (this.parentBlock !== null) unregisterUses(this);
+    this.values = [...operands];
+    if (this.parentBlock !== null) registerUses(this);
   }
 }

@@ -1,1 +1,1 @@
-const $0 = "prefix";
+`${"prefix"}-${getDynamic()}-end`;

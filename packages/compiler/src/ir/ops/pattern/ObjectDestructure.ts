@@ -5,12 +5,20 @@ import {
   getDestructureTargetOperands,
   rewriteDestructureTarget,
   type DestructureObjectProperty,
+  type DestructureTarget,
 } from "../../core";
 import { OperationId } from "../../core";
 import type { StoreLocalKind } from "../mem/StoreLocal";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
+import {
+  contextLocation,
+  effects,
+  localLocation,
+  type MemoryEffects,
+  type MemoryLocation,
+} from "../../memory/MemoryLocation";
 export class ObjectDestructureOp extends Operation {
   constructor(
     id: OperationId,
@@ -73,5 +81,42 @@ export class ObjectDestructureOp extends Operation {
 
   public override hasSideEffects(): boolean {
     return destructureTargetHasObservableWrites({ kind: "object", properties: this.properties });
+  }
+
+  public override getMemoryEffects(_env?: unknown): MemoryEffects {
+    const writes: MemoryLocation[] = [];
+    collectDestructureBindingLocations({ kind: "object", properties: this.properties }, writes);
+    return effects([], writes);
+  }
+}
+
+function collectDestructureBindingLocations(
+  target: DestructureTarget,
+  out: MemoryLocation[],
+): void {
+  switch (target.kind) {
+    case "binding":
+      if (target.storage === "local") out.push(localLocation(target.place.declarationId));
+      else out.push(contextLocation(target.place.declarationId));
+      return;
+    case "static-member":
+    case "dynamic-member":
+      return;
+    case "assignment":
+      collectDestructureBindingLocations(target.left, out);
+      return;
+    case "rest":
+      collectDestructureBindingLocations(target.argument, out);
+      return;
+    case "array":
+      for (const element of target.elements) {
+        if (element !== null) collectDestructureBindingLocations(element, out);
+      }
+      return;
+    case "object":
+      for (const property of target.properties) {
+        collectDestructureBindingLocations(property.value, out);
+      }
+      return;
   }
 }

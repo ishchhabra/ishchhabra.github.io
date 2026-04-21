@@ -11,12 +11,7 @@ export function generateLoadContextOp(
     node = generator.getPlaceIdentifier(instruction.value);
   }
 
-  const expression = t.isFunctionDeclaration(node)
-    ? node.id
-    : t.isClassDeclaration(node) && node.id
-      ? node.id
-      : node;
-  t.assertExpression(expression);
-  generator.values.set(instruction.place.id, expression);
-  return expression;
+  t.assertExpression(node);
+  generator.values.set(instruction.place.id, node);
+  return node;
 }

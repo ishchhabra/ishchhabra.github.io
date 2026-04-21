@@ -48,20 +48,22 @@ export function buildIfStatement(
     }
   });
 
-  // Build the alternate region (two-arm only).
-  let alternateRegion: Region | undefined;
-  if (node.alternate != null) {
-    alternateRegion = new Region([]);
-    const alternateBlock = environment.createBlock();
-    functionBuilder.withStructureRegion(alternateRegion, () => {
-      functionBuilder.addBlock(alternateBlock);
-      functionBuilder.currentBlock = alternateBlock;
-      buildOwnedBody(node.alternate!, scope, functionBuilder, moduleBuilder, environment);
-      if (functionBuilder.currentBlock.terminal === undefined) {
-        functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), []);
-      }
-    });
-  }
+  // Build the alternate region. MLIR `scf.if` requires both arms
+  // so region-branch analyses (SSA lift, dataflow, inlining) see a
+  // complete CFG. For source-level `if` with no `else`, emit an
+  // empty alternate whose body is just a `YieldOp`.
+  const alternateRegion = new Region([]);
+  const alternateBlock = environment.createBlock();
+  functionBuilder.withStructureRegion(alternateRegion, () => {
+    functionBuilder.addBlock(alternateBlock);
+    functionBuilder.currentBlock = alternateBlock;
+    if (node.alternate != null) {
+      buildOwnedBody(node.alternate, scope, functionBuilder, moduleBuilder, environment);
+    }
+    if (functionBuilder.currentBlock.terminal === undefined) {
+      functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), []);
+    }
+  });
 
   const ifOp = new IfOp(
     createOperationId(environment),

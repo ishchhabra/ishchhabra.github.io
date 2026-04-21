@@ -37,8 +37,12 @@ export function generateIfStructure(
   const altEntry = structure.alternateRegion?.entry;
 
   // Ternary path: 1 result + both arms pure single-block expressions.
+  // If the sole result place is dead (DCE removed its only reader),
+  // the ternary is being emitted for its side effects only — fall
+  // through to the statement path, which doesn't deref yield values.
   if (
     structure.resultPlaces.length === 1 &&
+    structure.resultPlaces[0].uses.size > 0 &&
     altEntry !== undefined &&
     isPureExpressionArm(consEntry, structure) &&
     isPureExpressionArm(altEntry, structure)
@@ -76,11 +80,17 @@ export function generateIfStructure(
   const alternateStatements =
     altEntry !== undefined ? generateBasicBlock(altEntry.id, funcOp, generator) : undefined;
 
-  const ifNode = t.ifStatement(
-    testNode,
-    t.blockStatement(consequentStatements),
-    alternateStatements !== undefined ? t.blockStatement(alternateStatements) : null,
-  );
+  // Emit `else { ... }` only when the alternate has visible
+  // effects. The frontend always emits a synthetic alternate region
+  // for MLIR CFG-completeness (so `getSuccessorRegions` can return a
+  // symmetric graph), but a no-op alternate should codegen as no
+  // `else` clause at all.
+  const alternateNode =
+    alternateStatements !== undefined && alternateStatements.length > 0
+      ? t.blockStatement(alternateStatements)
+      : null;
+
+  const ifNode = t.ifStatement(testNode, t.blockStatement(consequentStatements), alternateNode);
 
   return [ifNode];
 }

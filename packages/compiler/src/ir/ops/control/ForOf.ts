@@ -16,6 +16,13 @@ import {
   VerifyError,
 } from "../../core/Operation";
 import { Region } from "../../core/Region";
+import { registerUses, unregisterUses } from "../../core/Use";
+import {
+  parentExit,
+  type RegionBranchOp,
+  type RegionBranchPoint,
+  type RegionSuccessor,
+} from "../../core/RegionBranchOp";
 
 /**
  * `for (target of iterable) { body }` / `for await (target of ...)`.
@@ -28,11 +35,13 @@ import { Region } from "../../core/Region";
  * exhaustion) and from any `BreakOp` targeting this loop. Empty for
  * loops with no loop-carried SSA values.
  */
-export class ForOfOp extends Operation {
+export class ForOfOp extends Operation implements RegionBranchOp {
   static override readonly traits = new Set<Trait>([Trait.HasRegions]);
 
-  public readonly resultPlaces: readonly Value[];
-  public readonly inits: readonly Value[];
+  /** Mutable — MLIR-style. */
+  public resultPlaces: Value[];
+  /** Mutable — MLIR-style. Use {@link setInits}. */
+  public inits: Value[];
 
   constructor(
     id: OperationId,
@@ -47,8 +56,18 @@ export class ForOfOp extends Operation {
   ) {
     bodyRegion.scopeKind = "for";
     super(id, [bodyRegion]);
-    this.resultPlaces = resultPlaces;
-    this.inits = inits;
+    this.resultPlaces = [...resultPlaces];
+    this.inits = [...inits];
+  }
+
+  setInits(inits: readonly Value[]): void {
+    if (this.parentBlock !== null) unregisterUses(this);
+    this.inits = [...inits];
+    if (this.parentBlock !== null) registerUses(this);
+  }
+
+  setResultPlaces(places: readonly Value[]): void {
+    this.resultPlaces = [...places];
   }
 
   get bodyRegion(): Region {
@@ -115,5 +134,23 @@ export class ForOfOp extends Operation {
     if (this.regions.length !== 1) {
       throw new VerifyError(this, `expected 1 region, got ${this.regions.length}`);
     }
+  }
+
+  // ------------------------------------------------------------------
+  // RegionBranchOp — single-region iterator-driven loop
+  // ------------------------------------------------------------------
+
+  getSuccessorRegions(point: RegionBranchPoint): readonly RegionSuccessor[] {
+    if (point.kind === "parent") {
+      return [{ target: this.bodyRegion }];
+    }
+    if (point.region === this.bodyRegion) {
+      return [{ target: this.bodyRegion }, { target: parentExit }];
+    }
+    return [];
+  }
+
+  getEntrySuccessorOperands(_successor: RegionSuccessor): readonly Value[] {
+    return this.inits;
   }
 }

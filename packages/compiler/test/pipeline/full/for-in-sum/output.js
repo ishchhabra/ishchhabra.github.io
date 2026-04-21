@@ -1,12 +1,10 @@
 function $0($1) {
-  let $2 = 0;
   let blockparam_20 = undefined;
-  blockparam_20 = $2;
+  blockparam_20 = 0;
   let blockparam_21 = undefined;
   for (const $6 in $1) {
-    $2 = blockparam_20 + 1;
-    blockparam_20 = $2;
-    blockparam_21 = $2;
+    const $28 = blockparam_20 + 1;
+    blockparam_20 = $28;
   }
   return blockparam_21;
 }

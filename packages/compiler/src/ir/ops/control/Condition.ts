@@ -1,7 +1,9 @@
 import type { OperationId } from "../../core";
 import type { BasicBlock } from "../../core/Block";
+import { registerUses, unregisterUses } from "../../core/Use";
 import type { Value } from "../../core/Value";
 import { type CloneContext, nextId, Operation, remapPlace, Trait } from "../../core/Operation";
+import type { RegionBranchTerminator } from "../../core/RegionBranchOp";
 
 /**
  * Loop-condition terminator. Lives at the end of a loop op's
@@ -29,10 +31,11 @@ import { type CloneContext, nextId, Operation, remapPlace, Trait } from "../../c
  * control returns to the enclosing loop op's continuation logic. It
  * is a structural region terminator.
  */
-export class ConditionOp extends Operation {
+export class ConditionOp extends Operation implements RegionBranchTerminator {
   static override readonly traits = new Set<Trait>([Trait.Terminator]);
 
-  public readonly args: readonly Value[];
+  /** Mutable — MLIR-style. Use {@link setForwardedOperands}. */
+  public args: Value[];
 
   constructor(
     id: OperationId,
@@ -40,7 +43,7 @@ export class ConditionOp extends Operation {
     args: readonly Value[] = [],
   ) {
     super(id);
-    this.args = args;
+    this.args = [...args];
   }
 
   getOperands(): Value[] {
@@ -79,5 +82,18 @@ export class ConditionOp extends Operation {
   public override print(): string {
     if (this.args.length === 0) return `condition ${this.value.print()}`;
     return `condition ${this.value.print()} [${this.args.map((p) => p.print()).join(", ")}]`;
+  }
+
+  // RegionBranchTerminator — the boolean `value` is a decision
+  // input (not forwarded); `args` are the carried values routed to
+  // both true and false successors.
+  getForwardedOperands(): readonly Value[] {
+    return this.args;
+  }
+
+  setForwardedOperands(operands: readonly Value[]): void {
+    if (this.parentBlock !== null) unregisterUses(this);
+    this.args = [...operands];
+    if (this.parentBlock !== null) registerUses(this);
   }
 }

@@ -1,40 +1,28 @@
 function $0($1, $2, $3) {
-  var $4 = undefined;
-  var $7 = undefined;
-  $4 = undefined;
-  $7 = undefined;
   let $30 = undefined;
-  let $45 = undefined;
-  let $46 = undefined;
   if ($1) {
     let $20 = undefined;
-    let $43 = undefined;
-    let $44 = undefined;
+    let blockparam_45 = undefined;
+    let blockparam_46 = undefined;
     if ($2) {
-      $4 = $2;
       $20 = $2;
-      $43 = $4;
-      $44 = $7;
+      blockparam_45 = $2;
+      blockparam_46 = undefined;
     } else {
-      $7 = $3;
       $20 = $3;
-      $43 = $4;
-      $44 = $7;
+      blockparam_45 = undefined;
+      blockparam_46 = $3;
     }
-    const $71 =
+    const $63 =
       ($20,
       {
-        x: $43,
-        y: $44,
+        x: blockparam_45,
+        y: blockparam_46,
       });
-    $30 = $71;
-    $45 = $43;
-    $46 = $44;
+    $30 = $63;
   } else {
-    const $73 = {};
-    $30 = $73;
-    $45 = $4;
-    $46 = $7;
+    const $65 = {};
+    $30 = $65;
   }
   return $30;
 }

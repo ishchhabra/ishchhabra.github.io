@@ -85,6 +85,12 @@ export class SSAEliminator {
     sites.sort((a, b) => a.param.id - b.param.id);
 
     for (const { sink, param, index } of sites) {
+      // Skip dead merges: if nothing reads the phi result, neither
+      // the backing `let` nor the per-edge copies serve a purpose.
+      // Emitting them would force DCE-removed arg Values back into
+      // the IR as phantom operands.
+      if (param.uses.size === 0) continue;
+
       this.#insertParamDeclaration(sink, param);
 
       forEachIncomingEdge(this.funcOp, sink, (edge: Edge) => {

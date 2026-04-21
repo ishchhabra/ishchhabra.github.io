@@ -1,7 +1,9 @@
 import type { OperationId } from "../../core";
 import type { BasicBlock } from "../../core/Block";
+import { registerUses, unregisterUses } from "../../core/Use";
 import type { Value } from "../../core/Value";
 import { type CloneContext, nextId, Operation, Trait } from "../../core/Operation";
+import type { RegionBranchTerminator } from "../../core/RegionBranchOp";
 
 /**
  * Structured `break` — MLIR-style structural exit.
@@ -18,10 +20,11 @@ import { type CloneContext, nextId, Operation, Trait } from "../../core/Operatio
  * consumed by `SSAEliminator` to emit `param = arg` copy stores
  * immediately before the `break` keyword.
  */
-export class BreakOp extends Operation {
+export class BreakOp extends Operation implements RegionBranchTerminator {
   static override readonly traits = new Set<Trait>([Trait.Terminator]);
 
-  public readonly args: readonly Value[];
+  /** Mutable — MLIR-style. Use {@link setForwardedOperands}. */
+  public args: Value[];
 
   constructor(
     id: OperationId,
@@ -29,7 +32,7 @@ export class BreakOp extends Operation {
     args: readonly Value[] = [],
   ) {
     super(id);
-    this.args = args;
+    this.args = [...args];
   }
 
   getOperands(): Value[] {
@@ -65,5 +68,17 @@ export class BreakOp extends Operation {
     if (this.args.length === 0) return `break${label}`;
     const argStr = this.args.map((a) => a.print()).join(", ");
     return `break${label}(${argStr})`;
+  }
+
+  // RegionBranchTerminator — all operands are forwarded to the
+  // enclosing labeled/loop op's parent-exit successor.
+  getForwardedOperands(): readonly Value[] {
+    return this.args;
+  }
+
+  setForwardedOperands(operands: readonly Value[]): void {
+    if (this.parentBlock !== null) unregisterUses(this);
+    this.args = [...operands];
+    if (this.parentBlock !== null) registerUses(this);
   }
 }

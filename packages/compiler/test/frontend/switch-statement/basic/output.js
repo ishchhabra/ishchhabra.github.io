@@ -1,5 +1,4 @@
-const $0 = 1;
-switch ($0) {
+switch (1) {
   case 1:
     console.log("one");
     break;

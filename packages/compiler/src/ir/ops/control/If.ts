@@ -10,6 +10,12 @@ import {
   VerifyError,
 } from "../../core/Operation";
 import { Region } from "../../core/Region";
+import {
+  parentExit,
+  type RegionBranchOp,
+  type RegionBranchPoint,
+  type RegionSuccessor,
+} from "../../core/RegionBranchOp";
 
 /**
  * `if (test) { consequent } else { alternate }`. The textbook MLIR
@@ -41,10 +47,11 @@ import { Region } from "../../core/Region";
  * arms, SSA lifts those mutations into result places so the updated
  * values flow out of the op naturally.
  */
-export class IfOp extends Operation {
+export class IfOp extends Operation implements RegionBranchOp {
   static override readonly traits = new Set<Trait>([Trait.HasRegions]);
 
-  public readonly resultPlaces: readonly Value[];
+  /** Mutable — MLIR-style. */
+  public resultPlaces: Value[];
 
   constructor(
     id: OperationId,
@@ -57,7 +64,11 @@ export class IfOp extends Operation {
       id,
       alternateRegion !== undefined ? [consequentRegion, alternateRegion] : [consequentRegion],
     );
-    this.resultPlaces = resultPlaces;
+    this.resultPlaces = [...resultPlaces];
+  }
+
+  setResultPlaces(places: readonly Value[]): void {
+    this.resultPlaces = [...places];
   }
 
   get consequentRegion(): Region {
@@ -101,5 +112,33 @@ export class IfOp extends Operation {
     if (this.regions.length < 1 || this.regions.length > 2) {
       throw new VerifyError(this, `expected 1 or 2 regions, got ${this.regions.length}`);
     }
+  }
+
+  // ------------------------------------------------------------------
+  // RegionBranchOp — MLIR scf.if shape
+  // ------------------------------------------------------------------
+
+  getSuccessorRegions(point: RegionBranchPoint): readonly RegionSuccessor[] {
+    if (point.kind === "parent") {
+      // Both arms are enter-from-parent successors. The alternate
+      // may not exist yet in the pre-lift IR; if so, `replaceOpPorts`
+      // synthesizes it during lift. Post-lift, both arms are in
+      // `this.regions`.
+      if (this.regions.length === 1) {
+        return [{ target: this.regions[0] }];
+      }
+      return [{ target: this.regions[0] }, { target: this.regions[1] }];
+    }
+    // Arm terminators (YieldOp) route to parent-exit.
+    if (point.region === this.regions[0] || point.region === this.regions[1]) {
+      return [{ target: parentExit }];
+    }
+    return [];
+  }
+
+  getEntrySuccessorOperands(_successor: RegionSuccessor): readonly Value[] {
+    // IfOp has no op-level inits — arms observe parent stacks
+    // directly, no block-param forwarding on entry.
+    return [];
   }
 }

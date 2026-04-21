@@ -10,6 +10,12 @@ import {
   VerifyError,
 } from "../../core/Operation";
 import { Region } from "../../core/Region";
+import {
+  parentExit,
+  type RegionBranchOp,
+  type RegionBranchPoint,
+  type RegionSuccessor,
+} from "../../core/RegionBranchOp";
 
 /**
  * JS `for (init; test; update) { body }`. Distinct from
@@ -45,10 +51,11 @@ import { Region } from "../../core/Region";
  * Inline structured op — lives in its parent block, control
  * continues with the next op when the loop exits.
  */
-export class ForOp extends Operation {
+export class ForOp extends Operation implements RegionBranchOp {
   static override readonly traits = new Set<Trait>([Trait.HasRegions]);
 
-  public readonly resultPlaces: readonly Value[];
+  /** Mutable — MLIR-style. */
+  public resultPlaces: Value[];
 
   constructor(
     id: OperationId,
@@ -60,7 +67,11 @@ export class ForOp extends Operation {
     resultPlaces: readonly Value[] = [],
   ) {
     super(id, [initRegion, beforeRegion, bodyRegion, updateRegion]);
-    this.resultPlaces = resultPlaces;
+    this.resultPlaces = [...resultPlaces];
+  }
+
+  setResultPlaces(places: readonly Value[]): void {
+    this.resultPlaces = [...places];
   }
 
   get initRegion(): Region {
@@ -111,5 +122,38 @@ export class ForOp extends Operation {
         `expected 4 regions (init, before, body, update), got ${this.regions.length}`,
       );
     }
+  }
+
+  // ------------------------------------------------------------------
+  // RegionBranchOp — four-region JS for-statement, MLIR scf.for shape
+  // ------------------------------------------------------------------
+
+  getSuccessorRegions(point: RegionBranchPoint): readonly RegionSuccessor[] {
+    if (point.kind === "parent") {
+      // Parent enters initRegion (runs the `let i = ...` prelude).
+      // No op-level operands — initial iter values come from
+      // initRegion's YieldOp.
+      return [{ target: this.initRegion }];
+    }
+    if (point.region === this.initRegion) {
+      return [{ target: this.beforeRegion }];
+    }
+    if (point.region === this.beforeRegion) {
+      // ConditionOp: true → body, false → parent-exit.
+      return [{ target: this.bodyRegion }, { target: parentExit }];
+    }
+    if (point.region === this.bodyRegion) {
+      // Body's natural YieldOp flows to updateRegion.entry.
+      return [{ target: this.updateRegion }];
+    }
+    if (point.region === this.updateRegion) {
+      // Update's YieldOp is the back-edge to beforeRegion.
+      return [{ target: this.beforeRegion }];
+    }
+    return [];
+  }
+
+  getEntrySuccessorOperands(_successor: RegionSuccessor): readonly Value[] {
+    return [];
   }
 }

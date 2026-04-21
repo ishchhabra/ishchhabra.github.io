@@ -1,4 +1,4 @@
-const $0 = class {
+(class {
   x = 1;
   constructor($5) {
     this.y = $5;
@@ -6,4 +6,4 @@ const $0 = class {
   getX() {
     return this.x;
   }
-};
+});

@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ProjectBuilder } from "../../frontend/ProjectBuilder";
-import {
-  LoadLocalOp,
-  LoadStaticPropertyOp,
-  StoreLocalOp,
-  StoreStaticPropertyOp,
-} from "../../ir";
+import { LoadLocalOp, LoadStaticPropertyOp, StoreLocalOp, StoreStaticPropertyOp } from "../../ir";
 import { Operation } from "../../ir/core/Operation";
 import { Pipeline } from "../Pipeline";
 import { MemoryStateWalker } from "./MemoryStateWalker";
@@ -47,25 +42,28 @@ function findAllOps<T extends Operation>(
 }
 
 describe("MemoryStateWalker", () => {
-  it("reachingStore: single-block load sees the last prior store", () => {
+  it("reachingStore: captured-local load sees the last prior store", () => {
+    // SSABuilder mem2reg elides LoadLocals for simple scalars, so
+    // the walker's scalar-read reasoning is covered by pure SSA
+    // def-use. The walker still earns its keep on bindings that
+    // stay memory-form: captures, context bindings, properties.
     const { funcOp } = compile(`
-      var x = 1;
-      x = 2;
-      var y = x;
+      const x = 1;
+      const leak = () => x;
+      console.log(x);
+      leak();
     `);
     const walker = new MemoryStateWalker(funcOp);
     const loads = findAllOps(funcOp, LoadLocalOp);
     const stores = findAllOps(funcOp, StoreLocalOp);
     expect(loads.length).toBeGreaterThanOrEqual(1);
-    expect(stores.length).toBeGreaterThanOrEqual(2);
+    expect(stores.length).toBeGreaterThanOrEqual(1);
 
     const load = loads[0];
     const fx = load.getMemoryEffects(funcOp.moduleIR.environment);
     const loadLoc = fx.reads[0];
     const reaching = walker.reachingStore(load, loadLoc);
     expect(reaching).toBeDefined();
-    // The reaching store is one of the StoreLocals — specifically the
-    // most recent one before the load in program order.
     expect(stores.some((s) => s === reaching)).toBe(true);
   });
 
@@ -88,12 +86,14 @@ describe("MemoryStateWalker", () => {
     }
   });
 
-  it("property category: a store to o.x does not hide a store to a local var", () => {
+  it("property category: a store to o.x does not hide a captured-local read of x", () => {
     const { funcOp } = compile(`
-      var x = 1;
-      var o = {};
+      const x = 1;
+      const o = {};
       o.x = 99;
-      var y = x;
+      const leak = () => x;
+      console.log(x);
+      leak();
     `);
     const walker = new MemoryStateWalker(funcOp);
     const localLoads = findAllOps(funcOp, LoadLocalOp);

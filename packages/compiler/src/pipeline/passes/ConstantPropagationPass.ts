@@ -498,10 +498,11 @@ export class ConstantPropagationPass {
   private evaluateLoadLocal(op: LoadLocalOp): void {
     const reaching = this.walker.reachingStore(op, localLocation(op.value.declarationId));
     if (reaching instanceof StoreLocalOp) {
-      // Walker identified a unique reaching store. Register the
-      // walker dependency so a later change to the stored value's
-      // lattice re-enqueues this load (SSA worklist walks `value.uses`
-      // directly — it would miss this walker-mediated edge).
+      // Walker identified a unique reaching StoreLocal. Register
+      // the walker dependency so a later change to the stored
+      // value's lattice re-enqueues this load (SSA worklist walks
+      // `value.uses` directly — it would miss this walker-mediated
+      // edge).
       let deps = this.walkerDeps.get(reaching.value);
       if (deps === undefined) {
         deps = new Set();
@@ -511,9 +512,17 @@ export class ConstantPropagationPass {
       this.forward(op.place, reaching.value);
       return;
     }
-    // No unique reaching store (join ambiguity / Unknown wipe / …)
-    // — fall back to the binding cell's meet-combined lattice, which
-    // is sound-but-coarse.
+    if (reaching !== undefined) {
+      // The reaching writer is a complex multi-def op —
+      // destructure, for-of iteration, catch-param. We don't have
+      // a single concrete stored value to forward: the read is
+      // runtime-determined. Set BOTTOM (not a compile-time
+      // constant).
+      this.setLattice(op.place, BOTTOM);
+      return;
+    }
+    // No reaching store at all. Fall back to the binding cell's
+    // meet-combined lattice (sound-but-coarse).
     this.forward(op.place, op.value);
   }
 

@@ -9,6 +9,12 @@ import {
   Trait,
 } from "../../core/Operation";
 import { Region } from "../../core/Region";
+import {
+  parentExit,
+  type RegionBranchOp,
+  type RegionBranchPoint,
+  type RegionSuccessor,
+} from "../../core/RegionBranchOp";
 
 /**
  * Labeled block statement: `foo: { ... }`. A `break foo` inside the
@@ -21,10 +27,11 @@ import { Region } from "../../core/Region";
  * terminal YieldOp) and from any `break foo` that targets this op.
  * Empty for labeled blocks with no loop-carried SSA values.
  */
-export class LabeledBlockOp extends Operation {
+export class LabeledBlockOp extends Operation implements RegionBranchOp {
   static override readonly traits = new Set<Trait>([Trait.HasRegions]);
 
-  public readonly resultPlaces: readonly Value[];
+  /** Mutable — MLIR-style. */
+  public resultPlaces: Value[];
 
   constructor(
     id: OperationId,
@@ -33,7 +40,11 @@ export class LabeledBlockOp extends Operation {
     resultPlaces: readonly Value[] = [],
   ) {
     super(id, [bodyRegion]);
-    this.resultPlaces = resultPlaces;
+    this.resultPlaces = [...resultPlaces];
+  }
+
+  setResultPlaces(places: readonly Value[]): void {
+    this.resultPlaces = [...places];
   }
 
   get bodyRegion(): Region {
@@ -59,5 +70,27 @@ export class LabeledBlockOp extends Operation {
       remapRegion(ctx, this.regions[0]),
       this.resultPlaces.map((p) => remapPlace(ctx, p)),
     );
+  }
+
+  // ------------------------------------------------------------------
+  // RegionBranchOp — one-shot body; only parent-exit successor
+  // ------------------------------------------------------------------
+
+  getSuccessorRegions(point: RegionBranchPoint): readonly RegionSuccessor[] {
+    if (point.kind === "parent") {
+      // Body runs once, with no entry block params (no iter-arg
+      // re-entry). The parent-entry edge has no block-arg forwarding.
+      return [{ target: this.bodyRegion }];
+    }
+    if (point.region === this.bodyRegion) {
+      return [{ target: parentExit }];
+    }
+    return [];
+  }
+
+  getEntrySuccessorOperands(_successor: RegionSuccessor): readonly Value[] {
+    // One-shot op with no op-level inits; body entry has no block
+    // params, so no operands flow from the Parent-point edge.
+    return [];
   }
 }

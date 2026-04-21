@@ -1,17 +1,8 @@
-let $0 = undefined;
-let $19 = undefined;
+let blockparam_18 = undefined;
 if (globalThis.a) {
-  let $18 = undefined;
-  if (globalThis.b) {
-    $0 = 1;
-    $18 = $0;
-  } else {
-    $0 = 2;
-    $18 = $0;
-  }
-  $19 = $18;
+  let blockparam_19 = undefined;
+  blockparam_18 = globalThis.b ? 1 : 2;
 } else {
-  $0 = 3;
-  $19 = $0;
+  blockparam_18 = 3;
 }
-console.log($19);
+console.log(blockparam_18);

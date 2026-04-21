@@ -10,25 +10,71 @@ import {
   StoreLocalOp,
   ThisExpressionOp,
 } from "../../ir";
-import { isMemoryOp, isValueOp } from "../../ir/categories";
+import { JSXMemberExpressionOp } from "../../ir/ops/jsx/JSXMemberExpression";
+import { JSXOpeningElementOp } from "../../ir/ops/jsx/JSXOpeningElement";
+import { JSXClosingElementOp } from "../../ir/ops/jsx/JSXClosingElement";
+import { JSXIdentifierOp } from "../../ir/ops/jsx/JSXIdentifier";
+import { JSXNamespacedNameOp } from "../../ir/ops/jsx/JSXNamespacedName";
+import { FunctionDeclarationOp } from "../../ir/ops/func/FunctionDeclaration";
+import { ClassDeclarationOp } from "../../ir/ops/class/ClassDeclaration";
+import { ObjectPropertyOp } from "../../ir/ops/object/ObjectProperty";
+import { ObjectMethodOp } from "../../ir/ops/object/ObjectMethod";
+import { ClassMethodOp } from "../../ir/ops/class/ClassMethod";
+import { ClassPropertyOp } from "../../ir/ops/class/ClassProperty";
+import { SpreadElementOp } from "../../ir/ops/prim/SpreadElement";
+import { HoleOp } from "../../ir/ops/prim/Hole";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { Value } from "../../ir/core/Value";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 
 /**
- * Lowering pass: materializes multi-use SSA values into StoreLocal
- * declarations so codegen can reference them by name.
+ * Value Materialization: decide which SSA Values need a named
+ * `const $tmp = expr;` binding for codegen. Everything else stays
+ * inline at its use site.
  *
- * In the optimizer, every value is defined once and used N times
- * without concern for how codegen emits it. This pass bridges that
- * gap: any value used more than once that isn't already stored in a
- * variable gets a `const` declaration inserted.
+ * Pipeline position: runs once after the late optimizer, before
+ * codegen. The optimizer produces a pure SSA Value graph; codegen
+ * needs variable names. This pass is the bridge.
  *
- * Analogous to register allocation in a hardware compiler — values
- * with one use stay "in register" (inlined by codegen), values with
- * multiple uses get "spilled" to a named variable.
+ * ## Decision rules (in order)
  *
- * Runs once after the late optimizer, before codegen. No fixpoint.
+ * For each op producing a Value `v` used by one or more operations:
+ *
+ *   A. **Already named** — `v`'s definer is a `StoreLocalOp` or a
+ *      non-Expression-producing op (ObjectProperty, SpreadElement,
+ *      JSX tag nodes, etc.). Skip.
+ *
+ *   B. **Trivially duplicable** — `v`'s definer emits a single token
+ *      (literal, identifier, `this`, `import.meta`). Safe to share
+ *      the AST node across uses. Skip.
+ *
+ *   C. **Multi-use** — `v` has 2+ users. Duplicating the expression
+ *      at each would re-evaluate side effects and inflate code.
+ *      Spill.
+ *
+ *   D. **Identifier-required operand** — the sole user requires an
+ *      identifier in this operand slot (JSX tag position). If the
+ *      definer would emit a non-identifier expression
+ *      (ObjectExpression, Call, etc.), spill.
+ *
+ *   E. **Order-sensitive with intervening effect** — the definer has
+ *      observable side effects AND moving its evaluation to the use
+ *      site would cross a call / store / update / delete. Spill to
+ *      pin evaluation at the definer's position.
+ *
+ * No other cases spill. Pure-expression single-use (BinaryExpression
+ * + args, ArrowFunction captures, etc.) inline naturally at codegen
+ * and are the cheapest representation.
+ *
+ * ## Why this belongs here, not in `SSABuilder` or `EIP`
+ *
+ * SSABuilder promotes memory-form bindings to pure SSA unconditionally.
+ * After that, every SSA Value is a candidate for inlining at codegen;
+ * "when to name" is purely a syntactic/ordering decision, not an
+ * analysis of what can be promoted. ExpressionInliningPass does the
+ * symmetric rewrite (forward-substitute a single-use StoreLocal into
+ * its user) without ordering analysis — it relies on VMP to spill
+ * anything that later becomes unsafe to inline.
  */
 export class ValueMaterializationPass {
   constructor(
@@ -37,153 +83,274 @@ export class ValueMaterializationPass {
   ) {}
 
   public run(): void {
-    const environment = this.moduleIR.environment;
-
+    const env = this.moduleIR.environment;
     for (const block of this.funcOp.allBlocks()) {
-      for (let i = 0; i < block.operations.length; i++) {
-        const instruction = block.operations[i];
+      const ops = block.operations;
+      for (let i = 0; i < ops.length; i++) {
+        const op = ops[i];
+        if (!this.needsSpill(op)) continue;
 
-        if (!this.needsMaterialization(instruction)) {
-          continue;
-        }
-
-        // Create: const $tmp = <value>
-        const lval = environment.createValue();
-        const store = environment.createOperation(
+        const lval = env.createValue();
+        const store = env.createOperation(
           StoreLocalOp,
-          environment.createValue(),
+          env.createValue(),
           lval,
-          instruction.place!,
+          op.place!,
           "const",
           "declaration",
         );
-
-        // Insert the StoreLocal immediately after the defining instruction.
         block.insertOpAt(i + 1, store);
-
-        // Rewrite all users to reference the StoreLocal's lval.
-        this.rewriteUses(instruction, store.lval, store);
-
-        // Skip past the inserted StoreLocal.
-        i++;
+        this.rewriteUses(op, lval, store);
+        i++; // skip the inserted store
       }
     }
   }
 
-  /**
-   * Returns true if the instruction's output Value has multiple uses
-   * and codegen would duplicate the expression without a variable.
-   */
-  private needsMaterialization(instruction: Operation): boolean {
-    if (instruction.place === undefined) {
-      return false;
-    }
-    if (instruction.place.uses.size <= 1) {
-      return false;
-    }
+  // ---------------------------------------------------------------
+  // Decision
+  // ---------------------------------------------------------------
 
-    // StoreLocal/destructure instructions already emit declarations.
-    if (instruction instanceof StoreLocalOp) {
-      return false;
-    }
+  private needsSpill(op: Operation): boolean {
+    if (op.place === undefined) return false;
 
-    // Trivially duplicable: codegen emits a single token (literal,
-    // variable name, `this`, `import.meta`). Safe to share the AST
-    // node — duplicating these is both correct and cheap.
-    if (this.isTriviallyDuplicable(instruction)) {
-      return false;
-    }
+    // A. Already named or emits non-Expression AST.
+    if (op instanceof StoreLocalOp) return false;
+    if (emitsNonExpression(op)) return false;
 
-    // Value ops (calls, binary ops, await, etc.) produce expressions
-    // that must not be duplicated.
-    if (isValueOp(instruction)) {
+    // B. Trivially duplicable.
+    if (this.isTriviallyDuplicable(op)) return false;
+
+    const useCount = op.place.uses.size;
+    if (useCount === 0) return false; // DCE leftover or standalone-emitted
+
+    // C. Multi-use.
+    if (useCount > 1) return true;
+
+    // Single-use from here.
+    const user = op.place.uses.values().next().value as Operation;
+
+    // D. Identifier-required operand.
+    if (requiresIdentifierOperand(user, op.place)) return true;
+
+    // E. Order-sensitive + intervening effect.
+    if (this.isOrderSensitive(op) && this.inliningWouldReorder(op, user)) {
       return true;
-    }
-
-    // Load-type memory ops (LoadStaticProperty, etc.) that aren't
-    // trivially duplicable and don't already have a StoreLocal.
-    if (isMemoryOp(instruction)) {
-      return !this.hasStoreLocal(instruction);
     }
 
     return false;
   }
 
-  /**
-   * Returns true if the instruction produces a trivially duplicable
-   * value — one that codegen can safely emit multiple times because
-   * it's a single token with no side effects.
-   */
-  private isTriviallyDuplicable(instruction: Operation): boolean {
+  // ---------------------------------------------------------------
+  // Predicates
+  // ---------------------------------------------------------------
+
+  /** Emits a single token; safe to duplicate at every use site. */
+  private isTriviallyDuplicable(op: Operation): boolean {
     if (
-      instruction instanceof LiteralOp ||
-      instruction instanceof LoadGlobalOp ||
-      instruction instanceof LoadContextOp ||
-      instruction instanceof ThisExpressionOp ||
-      instruction instanceof MetaPropertyOp ||
-      instruction instanceof RegExpLiteralOp
+      op instanceof LiteralOp ||
+      op instanceof LoadGlobalOp ||
+      op instanceof LoadContextOp ||
+      op instanceof ThisExpressionOp ||
+      op instanceof MetaPropertyOp ||
+      op instanceof RegExpLiteralOp
     ) {
       return true;
     }
-
-    // LoadLocal is trivially duplicable when the loaded value is a
-    // declared variable (StoreLocal, DeclareLocal, parameter, or
-    // capture — all of which codegen emits as a named identifier).
-    // If the source is a bare SSA temp from a ValueInstruction, codegen
-    // would chase the def chain and emit the full expression inline.
-    if (instruction instanceof LoadLocalOp) {
-      const source = instruction.value.definer;
-      // No definer → parameter or capture (always named).
-      // StoreLocal/DeclareLocal → declared variable (always named).
-      // Anything else (ValueInstruction output) → SSA temp, not safe.
-      return (
-        source === undefined || source instanceof StoreLocalOp || source instanceof DeclareLocalOp
-      );
-    }
-
-    return false;
-  }
-
-  /**
-   * Checks whether a StoreLocal already exists that stores this
-   * instruction's output, making materialization unnecessary.
-   */
-  private hasStoreLocal(instruction: Operation): boolean {
-    for (const user of instruction.place!.uses) {
-      if (user instanceof StoreLocalOp && user.value === instruction.place) {
-        return true;
-      }
+    if (op instanceof LoadLocalOp) {
+      // Every LoadLocal that survived mem2reg reads a memory-form
+      // binding (captured, exported, destructure target, iter var,
+      // catch param) — all of which codegen emits as a named
+      // identifier. Safe to duplicate at every use site.
+      return true;
     }
     return false;
   }
 
   /**
-   * Rewrite every use of `instruction.place` to use `newPlace`
-   * instead, except for `materializedStore` itself — that store's
-   * RHS must keep referencing the original value as its source of
-   * truth. Skip by identity, not by value-match, because other
-   * stores (e.g. SSA copy stores) may also have `instruction.place`
-   * as their value and those DO need to be rewritten.
+   * An op is order-sensitive if its evaluation has observable side
+   * effects or reads state that another op may mutate. Conservative
+   * approximation via `hasSideEffects` — CallExpression, property
+   * reads (getters per CLAUDE.md), Await, etc.
    */
-  private rewriteUses(
-    instruction: Operation,
-    newPlace: Value,
-    materializedStore: StoreLocalOp,
-  ): void {
-    const oldIdentifier = instruction.place!;
-    const map = new Map<Value, Value>([[oldIdentifier, newPlace]]);
+  private isOrderSensitive(op: Operation): boolean {
+    return op.hasSideEffects(this.moduleIR.environment);
+  }
 
+  /**
+   * True iff inlining `definer` into `user` would move `definer`'s
+   * evaluation past an **observable standalone** effect.
+   *
+   * An intervening op is a hazard only if it will be emitted as its
+   * own statement — e.g. a store, or a discarded call. Ops that are
+   * operands of `user` (directly or transitively) will inline into
+   * `user`'s expression at codegen, so they evaluate in operand
+   * order alongside `definer`; no reorder.
+   *
+   * Cross-block is conservatively treated as "no reorder" — codegen
+   * doesn't hoist an expression across a block boundary.
+   */
+  private inliningWouldReorder(definer: Operation, user: Operation): boolean {
+    const block = definer.parentBlock;
+    if (block === null || user.parentBlock !== block) return false;
+    const defIndex = block.operations.indexOf(definer);
+    const userIndex = block.operations.indexOf(user);
+    if (defIndex < 0 || userIndex < 0) return false;
+    for (let i = defIndex + 1; i < userIndex; i++) {
+      const op = block.operations[i];
+      if (!isReorderingHazard(op)) continue;
+      // Will this hazard inline into `user`? If yes, it's an operand
+      // evaluated during `user`'s expression eval — no reorder
+      // relative to `definer`. If no, it's a standalone statement
+      // that runs before `user` — reorder risk.
+      if (!flowsTo(op, user)) return true;
+    }
+    return false;
+  }
+
+  // ---------------------------------------------------------------
+  // Rewriting
+  // ---------------------------------------------------------------
+
+  private rewriteUses(op: Operation, newPlace: Value, spillStore: StoreLocalOp): void {
+    const oldPlace = op.place!;
+    const map = new Map<Value, Value>([[oldPlace, newPlace]]);
     for (const block of this.funcOp.allBlocks()) {
-      for (const op of block.getAllOps()) {
-        if (op === materializedStore) continue;
-
-        const rewritten = op.rewrite(map);
-        if (rewritten !== op) {
-          block.replaceOp(op, rewritten);
-          if (rewritten.place !== undefined) {
-          }
-        }
+      for (const inner of block.getAllOps()) {
+        if (inner === spillStore) continue;
+        const rewritten = inner.rewrite(map);
+        if (rewritten !== inner) block.replaceOp(inner, rewritten);
       }
     }
   }
+}
+
+// -----------------------------------------------------------------
+// Free helpers
+// -----------------------------------------------------------------
+
+/**
+ * Ops whose codegen output is not a JavaScript Expression — they
+ * appear only in syntactically-specific positions (object property
+ * lists, class bodies, JSX children, spread args). Spilling them
+ * into `const X = expr;` would emit a non-Expression into the
+ * VariableDeclarator init slot.
+ */
+function emitsNonExpression(op: Operation): boolean {
+  return (
+    op instanceof DeclareLocalOp ||
+    op instanceof ObjectPropertyOp ||
+    op instanceof ObjectMethodOp ||
+    op instanceof ClassMethodOp ||
+    op instanceof ClassPropertyOp ||
+    op instanceof SpreadElementOp ||
+    op instanceof HoleOp ||
+    emitsJSXNamedNode(op)
+  );
+}
+
+/**
+ * JSX tag-name nodes + named declarations. Their output isn't an
+ * Expression in AST terms; codegen has dedicated paths for them.
+ */
+function emitsJSXNamedNode(op: Operation): boolean {
+  return (
+    op instanceof JSXIdentifierOp ||
+    op instanceof JSXMemberExpressionOp ||
+    op instanceof JSXNamespacedNameOp ||
+    op instanceof FunctionDeclarationOp ||
+    op instanceof ClassDeclarationOp
+  );
+}
+
+/**
+ * Positions whose codegen requires an identifier-shaped operand
+ * rather than an arbitrary Expression (JSX tag names).
+ */
+function requiresIdentifierOperand(user: Operation, operand: Value): boolean {
+  if (user instanceof JSXIdentifierOp) return user.value === operand;
+  if (user instanceof JSXMemberExpressionOp) return user.object === operand;
+  if (user instanceof JSXOpeningElementOp) return user.tagPlace === operand;
+  if (user instanceof JSXClosingElementOp) return user.tagPlace === operand;
+  return false;
+}
+
+/**
+ * Ops whose execution at a given position affects observable state
+ * that other ops may depend on. If such an op sits between a
+ * definer and its single user, inlining would reorder the definer
+ * past it.
+ *
+ * We don't count pure construction (ObjectExpression, ArrowFunction,
+ * BinaryExpression) — those don't affect observable state.
+ */
+/**
+ * True iff `op`'s output flows into `target` — i.e. `op.place` is
+ * used (directly or transitively) as an operand of `target`. If so,
+ * `op` will codegen-inline into `target`'s expression rather than as
+ * a standalone statement.
+ */
+function flowsTo(op: Operation, target: Operation): boolean {
+  const place = op.place;
+  if (place === undefined) return false;
+  // BFS over `target`'s operand tree.
+  const seen = new Set<Operation>();
+  const stack: Operation[] = [target];
+  while (stack.length > 0) {
+    const cur = stack.pop()!;
+    if (seen.has(cur)) continue;
+    seen.add(cur);
+    for (const operand of cur.getOperands()) {
+      if (operand === place) return true;
+      const def = operand.definer;
+      if (def instanceof Operation) stack.push(def);
+    }
+  }
+  return false;
+}
+
+/**
+ * True iff any op in `root`'s operand subtree (excluding `root`
+ * itself) has direct side effects.
+ */
+function operandSubtreeHasSideEffects(
+  root: Operation,
+  env: Parameters<Operation["hasSideEffects"]>[0],
+): boolean {
+  const seen = new Set<Operation>();
+  const stack: Operation[] = [];
+  for (const operand of root.getOperands()) {
+    const def = operand.definer;
+    if (def instanceof Operation) stack.push(def);
+  }
+  while (stack.length > 0) {
+    const cur = stack.pop()!;
+    if (seen.has(cur)) continue;
+    seen.add(cur);
+    if (cur.hasSideEffects(env)) return true;
+    for (const operand of cur.getOperands()) {
+      const def = operand.definer;
+      if (def instanceof Operation) stack.push(def);
+    }
+  }
+  return false;
+}
+
+function isReorderingHazard(op: Operation): boolean {
+  const name = op.constructor.name;
+  return (
+    name === "StoreLocalOp" ||
+    name === "StoreContextOp" ||
+    name === "StoreStaticPropertyOp" ||
+    name === "StoreDynamicPropertyOp" ||
+    name === "DeleteStaticPropertyOp" ||
+    name === "DeleteDynamicPropertyOp" ||
+    name === "UpdateExpressionOp" ||
+    name === "CallExpressionOp" ||
+    name === "NewExpressionOp" ||
+    name === "SuperCallOp" ||
+    name === "TaggedTemplateExpressionOp" ||
+    name === "AwaitExpressionOp" ||
+    name === "YieldExpressionOp" ||
+    name === "ImportExpressionOp"
+  );
 }

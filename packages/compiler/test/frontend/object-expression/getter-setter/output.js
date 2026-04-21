@@ -1,4 +1,4 @@
-const $0 = {
+({
   _value: 0,
   get value() {
     return this._value;
@@ -6,4 +6,4 @@ const $0 = {
   set value($9) {
     this._value = $9;
   },
-};
+});

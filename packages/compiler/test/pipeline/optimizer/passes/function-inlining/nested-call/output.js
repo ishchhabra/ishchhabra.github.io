@@ -4,4 +4,4 @@ function $0() {
 function $1() {
   return $0();
 }
-const $2 = $1();
+$1();

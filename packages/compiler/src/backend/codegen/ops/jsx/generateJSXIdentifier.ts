@@ -2,7 +2,7 @@ import * as t from "@babel/types";
 import { JSXIdentifierOp } from "../../../../ir/ops/jsx/JSXIdentifier";
 import { CodeGenerator } from "../../../CodeGenerator";
 
-/** Tag value places lower to `StringLiteral`, `Value`, or already-`JSXIdentifier`. */
+/** Tag value places lower to `StringLiteral`, `Identifier`, or already-`JSXIdentifier`. */
 function valueNodeToJSXIdentifier(inner: t.Node): t.JSXIdentifier {
   if (t.isJSXIdentifier(inner)) {
     return inner;

@@ -191,10 +191,7 @@ export class MemoryStateWalker {
    * `try` boundaries as long as the body touches a disjoint set of
    * locations from the surrounding code.
    */
-  private applyOpToState(
-    op: Operation,
-    state: Map<string, Operation>,
-  ): Map<string, Operation> {
+  private applyOpToState(op: Operation, state: Map<string, Operation>): Map<string, Operation> {
     const writes = op.hasTrait(Trait.HasRegions)
       ? this.collectNestedWrites(op)
       : op.getMemoryEffects(this.env).writes;
@@ -236,7 +233,9 @@ export class MemoryStateWalker {
    * `unknown` propagates: any nested call that escapes the alias
    * model taints the whole structured op.
    */
-  private collectNestedWrites(op: Operation): import("../../ir/memory/MemoryLocation").MemoryLocation[] {
+  private collectNestedWrites(
+    op: Operation,
+  ): import("../../ir/memory/MemoryLocation").MemoryLocation[] {
     const out: import("../../ir/memory/MemoryLocation").MemoryLocation[] = [];
     for (const region of op.regions) {
       for (const block of region.blocks) {
@@ -331,10 +330,7 @@ export class MemoryStateWalker {
   }
 }
 
-function sameState(
-  a: Map<string, Operation> | undefined,
-  b: Map<string, Operation>,
-): boolean {
+function sameState(a: Map<string, Operation> | undefined, b: Map<string, Operation>): boolean {
   if (a === undefined) return false;
   if (a.size !== b.size) return false;
   for (const [k, v] of b) if (a.get(k) !== v) return false;

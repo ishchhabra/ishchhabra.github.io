@@ -5,6 +5,7 @@ import {
   DeclarationId,
   Value,
   LiteralOp,
+  LoadLocalOp,
   makeOperationId,
   StoreLocalOp,
 } from "../../ir";
@@ -12,28 +13,28 @@ import { FuncOp } from "../../ir/core/FuncOp";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { Trait } from "../../ir/core/Operation";
 import { Region } from "../../ir/core/Region";
-import {
-  collectDestructureTargetBindingPlaces,
-  getDestructureTargetDefs,
-} from "../../ir/core/Destructure";
+import { collectDestructureTargetBindingPlaces } from "../../ir/core/Destructure";
 import {
   BreakOp,
-  ConditionOp,
   ContinueOp,
   ForInOp,
   ForOfOp,
   ForOp,
-  IfOp,
   isStructure,
   JumpOp,
   LabeledBlockOp,
-  TryOp,
   WhileOp,
-  YieldOp,
 } from "../../ir/ops/control";
 import { AnalysisManager } from "../analysis/AnalysisManager";
+import { PromotabilityAnalysis } from "./PromotabilityAnalysis";
 import { DominatorTreeAnalysis, type DominatorTree } from "../analysis/DominatorTreeAnalysis";
 import { createParamValue } from "./utils";
+import {
+  isRegionBranchOp,
+  isRegionBranchTerminator,
+  parentExit,
+  type RegionBranchOp,
+} from "../../ir/core/RegionBranchOp";
 
 type Stacks = Map<DeclarationId, Value[]>;
 
@@ -49,22 +50,57 @@ type Stacks = Map<DeclarationId, Value[]>;
  *      with push-at-entry / pop-at-exit discipline.
  *
  *   2. **Structured-op port SSA**, for values that need to cross a
- *      structured op's region boundary:
+ *      structured op's region boundary. Any op that implements
+ *      MLIR's {@link RegionBranchOp} interface (see
+ *      {@link RegionBranchOp}) participates in a generic iter-args
+ *      lowering driven by {@link renameRegionBranchOp}. The builder
+ *      consumes only two interfaces:
  *
- *        - {@link IfOp}: each arm's last {@link YieldOp} carries
- *          arm-final values; the op's {@link IfOp.resultPlaces} bind
- *          those values positionally for the continuation.
+ *        - {@link RegionBranchOp} on the structured op: declares
+ *          the region-branch CFG via `getSuccessorRegions(point)`
+ *          and the Parent-point operand source via
+ *          `getEntrySuccessorOperands(succ)`. The builder derives
+ *          prelude regions, cycle regions, and carried-decl sets
+ *          from this CFG alone — no per-op class in the builder.
  *
- *        - Other structured ops (while/for/for-of/for-in/try/switch/
- *          block/labeled-block): loop- and handler-carried variables
- *          stay in memory form — the rename snapshots stacks on
- *          entry to each region and restores on exit. This is a
- *          deliberate design choice for the JS-targeted codegen
- *          where `let` is already a mutable slot; extending
- *          {@link WhileOp} and the rest with iter-args + result
- *          places is a separate commit that also has to teach
- *          SSAEliminator about back-edges and update the codegen to
- *          emit the init / yield / result stores.
+ *        - {@link RegionBranchTerminator} on terminators (`YieldOp`,
+ *          `ConditionOp`, `BreakOp`, `ContinueOp`): exposes the
+ *          forwarded-operand slice and a rebuild-with-new-operands
+ *          hook. The builder appends carried tops at each terminator
+ *          in a region via `setForwardedOperands(...)`.
+ *
+ *      Shipped today: {@link IfOp}, {@link WhileOp}, {@link ForOp},
+ *      {@link ForInOp}, {@link ForOfOp}, {@link LabeledBlockOp}.
+ *
+ *      Ops that don't implement the interface (try/switch/block)
+ *      carry state through memory form. The rename snapshots
+ *      stacks on region entry and restores on exit; mutations
+ *      survive as StoreLocals and are materialized as `let`
+ *      assignments by codegen.
+ *
+ * ## Mem2Reg
+ *
+ * Fused into rename. For every source-level binding that
+ * {@link PromotabilityAnalysis} classifies as promotable:
+ *
+ *   - Each {@link StoreLocalOp} on the binding pushes its *rhs value*
+ *     (not its lval) onto the rename stack and is deleted in place.
+ *     Subsequent reads of the binding resolve to that rhs value via
+ *     the stack.
+ *
+ *   - Each {@link LoadLocalOp} on the binding is elided: the load's
+ *     place is recorded in {@link rewrites} as an alias for the
+ *     reaching value (the current stack top), and the op is deleted.
+ *
+ *   - Every later op whose operand references an elided load's place
+ *     is rewritten through {@link rewrites} the first time rename
+ *     visits it (inside {@link buildRewriteMap}).
+ *
+ * **Invariant:** values stored in the {@link rewrites} map and on
+ * rename stacks are always *terminal* — they are not themselves
+ * aliased. This holds because we resolve through the stack (which
+ * holds terminals) at elision time, and never push a load's place
+ * onto a stack. Consequently, no transitive chasing is required.
  *
  * Top-level regions use a proper dom-tree rename walk. Structured-
  * op regions use a linear walk (program order) with region-scoped
@@ -74,6 +110,11 @@ type Stacks = Map<DeclarationId, Value[]>;
  * arm contains `break` / `continue` / `return` that diverts control;
  * those arms don't participate in the value-merge anyway because
  * their last block is not a YieldOp.
+ *
+ * References:
+ *   - Cytron et al. 1991, "Efficiently Computing Static Single
+ *     Assignment Form and the Control Dependence Graph".
+ *   - LLVM `PromoteMemoryToRegister.cpp` (mem2reg).
  */
 export class SSABuilder {
   private readonly funcOp: FuncOp;
@@ -84,6 +125,22 @@ export class SSABuilder {
   private domTree!: DominatorTree;
   private readonly blockRegion = new Map<BlockId, Region>();
   private readonly domTreeChildren = new Map<BlockId, BlockId[]>();
+
+  /**
+   * Mem2reg alias map: for every elided {@link LoadLocalOp}, records
+   * `load.place → reaching value`. Consulted by
+   * {@link buildRewriteMap} when rewriting operands of subsequent
+   * ops. Values in this map are always terminal (see class docs'
+   * invariant), so no transitive resolution is required at lookup.
+   */
+  private readonly rewrites = new Map<Value, Value>();
+
+  /**
+   * Which declarations may be promoted out of memory form. Set in
+   * {@link build} before rename; consulted inside {@link renameFlatOp}
+   * to decide whether to elide a StoreLocal/LoadLocal.
+   */
+  private promotability!: PromotabilityAnalysis;
 
   /**
    * Stack of enclosing loop contexts, pushed/popped around body
@@ -106,6 +163,7 @@ export class SSABuilder {
   public build(): void {
     const stacks: Stacks = new Map();
     this.undefSeed = this.materializeUndefSeed();
+    this.promotability = new PromotabilityAnalysis(this.funcOp, this.moduleIR);
     this.seedHeaderDefinitions(stacks);
 
     // Value block params at iterated dominance frontiers for the
@@ -120,7 +178,11 @@ export class SSABuilder {
     this.computeDomTreeChildren();
 
     // Textbook rename: dom-tree pre-order walk, starting at the
-    // function entry block within the body region.
+    // function entry block within the body region. Mem2reg is fused
+    // into this walk — promoted StoreLocal/LoadLocal ops are deleted
+    // as they are visited; later uses resolve through the stack and
+    // the {@link rewrites} alias map. When this returns, the IR is
+    // well-formed SSA.
     this.renameBlockDomTree(this.funcOp.entryBlock, stacks);
   }
 
@@ -271,6 +333,9 @@ export class SSABuilder {
   private renameBlockDomTree(block: BasicBlock, stacks: Stacks): void {
     const pushed: DeclarationId[] = [];
 
+    for (const binding of block.entryBindings) {
+      this.pushStack(stacks, binding, pushed);
+    }
     for (const param of block.params) {
       if (param.originalDeclarationId !== undefined) {
         this.pushStack(stacks, param, pushed);
@@ -281,12 +346,10 @@ export class SSABuilder {
       const op = block.operations[i];
       if (op.hasTrait(Trait.HasRegions)) {
         this.renameStructuredOp(block, i, op, stacks, pushed);
-      } else {
-        this.renameOpOperands(op, stacks);
-        if (op instanceof StoreLocalOp) {
-          this.pushStack(stacks, op.lval, pushed);
-        }
+        continue;
       }
+      const advance = this.renameFlatOp(op, block, i, stacks, pushed);
+      if (advance === "rewind") i--;
     }
 
     if (block.terminal !== undefined) {
@@ -320,8 +383,6 @@ export class SSABuilder {
     const parent = op.parentBlock;
     if (parent === null) return;
     parent.replaceOp(op, rewritten);
-    if (rewritten.place !== undefined) {
-    }
   }
 
   // ---------------------------------------------------------------------------
@@ -345,28 +406,11 @@ export class SSABuilder {
     this.renameOpOperands(op, stacks);
     const currentOp = parentBlock.operations[opIndex];
 
-    if (currentOp instanceof IfOp) {
-      this.renameIfOp(parentBlock, opIndex, currentOp, stacks, parentPushed);
-      return;
-    }
-
-    if (currentOp instanceof WhileOp) {
-      this.renameWhileOp(parentBlock, opIndex, currentOp, stacks, parentPushed);
-      return;
-    }
-
-    if (currentOp instanceof ForOp) {
-      this.renameForOp(parentBlock, opIndex, currentOp, stacks, parentPushed);
-      return;
-    }
-
-    if (currentOp instanceof ForInOp || currentOp instanceof ForOfOp) {
-      this.renameForInOrForOfOp(parentBlock, opIndex, currentOp, stacks, parentPushed);
-      return;
-    }
-
-    if (currentOp instanceof LabeledBlockOp) {
-      this.renameLabeledBlockOp(parentBlock, opIndex, currentOp, stacks, parentPushed);
+    // Generic RegionBranchOp path. Any op that implements the
+    // interface is lifted by {@link renameRegionBranchOp} — no
+    // per-class code in the builder.
+    if (isRegionBranchOp(currentOp)) {
+      this.renameRegionBranchOp(parentBlock, opIndex, currentOp, stacks, parentPushed);
       return;
     }
 
@@ -379,6 +423,277 @@ export class SSABuilder {
     for (const def of currentOp.getDefs()) {
       this.pushStack(stacks, def, parentPushed);
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Generic RegionBranchOp rename
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Op-agnostic SSA lifting for any op that implements
+   * {@link RegionBranchOp}. The algorithm is the textbook iter-args
+   * lowering from MLIR's `scf` dialect:
+   *
+   *   1. Snapshot the rename stacks at the op's entry point.
+   *   2. Compute the carried-decl set from writes across
+   *      `carriedWriteRegions()`, intersected with
+   *      (pre-op visibility ∪ init-region writes).
+   *   3. If empty, fall back to memory-form — no lifting needed.
+   *   4. Allocate entry-region block params and op-level result
+   *      places, one per carried decl each.
+   *   5. Hand the plan to `op.withCarriedPorts(plan)` so the op
+   *      rebuilds itself with the new ports. Replace in the parent
+   *      block.
+   *   6. For each region in walk order: restore the snapshot, seed
+   *      region-entry bindings, push entry block params if any,
+   *      rename linearly, capture final tops, call the op's
+   *      `forwardCarriedAtRegion` to update terminators.
+   *   7. Restore the snapshot one last time, then push each result
+   *      place onto the parent stack as the post-op reaching def
+   *      for its carried decl.
+   *
+   * The builder does not special-case any op kind; every structural
+   * decision (which regions to scan, which receive block params,
+   * which terminator forwards which edge, how to rebuild the op)
+   * lives in the op's interface implementation.
+   */
+  private renameRegionBranchOp(
+    parentBlock: BasicBlock,
+    opIndex: number,
+    op: Operation & RegionBranchOp,
+    stacks: Stacks,
+    parentPushed: DeclarationId[],
+  ): void {
+    const snapshot = this.snapshotTops(stacks);
+
+    // --- 1. Analyze the region-branch CFG ---
+    //
+    // Classify each region:
+    //
+    //   - **Prelude**: entered from Parent, reaches another region
+    //     via a successor, and is not a back-edge target. Its writes
+    //     extend pre-op visibility but don't themselves receive
+    //     iter-arg block params. Only ForOp's `initRegion` qualifies.
+    //
+    //   - **In cycle**: reachable from itself through region→region
+    //     edges. Receives carried block params on entry.
+    //
+    //   - **One-shot**: entered once (from Parent or another region),
+    //     exits to parent-exit. No block params. Writes count as
+    //     carried (they flow out via the terminator).
+    //
+    // These classifications are derived from `getSuccessorRegions`
+    // alone — no per-op method needed.
+    const cfg = this.analyzeRegionCfg(op);
+
+    // --- 2. Compute carried decls ---
+    //
+    // Carried = writes in non-prelude regions ∩ (snapshot-visible
+    // ∪ declared in a prelude region). The prelude-extension is
+    // what lets `for (let i = 0; ...)` carry `i` even though the
+    // parent scope doesn't declare it.
+    const initWrites = new Set<DeclarationId>();
+    for (const region of cfg.preludeRegions) {
+      this.collectWritesInRegion(region, initWrites);
+    }
+    const carryableWrites = new Set<DeclarationId>();
+    for (const region of op.regions) {
+      if (cfg.preludeRegions.has(region)) continue;
+      this.collectWritesInRegion(region, carryableWrites);
+    }
+    const carriedDecls: DeclarationId[] = [];
+    for (const decl of carryableWrites) {
+      if (snapshot.has(decl) || initWrites.has(decl)) carriedDecls.push(decl);
+    }
+
+    if (carriedDecls.length === 0) {
+      this.renameStructuredOpMemoryForm(parentBlock, opIndex, op, stacks, parentPushed);
+      return;
+    }
+
+    // --- 3. Allocate ports ---
+    //
+    // Entry block params and result places are all allocated via
+    // the same `makeCarriedPlace` helper — uniform `blockparam_N`
+    // naming for every SSA merge sink, loop or if. Interleaved
+    // per-decl to match legacy Value ID order (stable golden
+    // outputs).
+    const entryParamRegions = [...cfg.cycleRegions];
+    const entryParamsByRegion = new Map<Region, Value[]>();
+    for (const region of entryParamRegions) entryParamsByRegion.set(region, []);
+    const carriedResultPlaces: Value[] = [];
+    const newInits: Value[] = [];
+    for (const decl of carriedDecls) {
+      for (const region of entryParamRegions) {
+        entryParamsByRegion.get(region)!.push(this.makeCarriedPlace(decl));
+      }
+      carriedResultPlaces.push(this.makeCarriedPlace(decl));
+      newInits.push(snapshot.get(decl) ?? this.undefSeed);
+    }
+    for (const region of entryParamRegions) {
+      const entry = region.blocks[0];
+      entry.params = [...entry.params, ...entryParamsByRegion.get(region)!];
+    }
+
+    // Full result-place list = existing (e.g. expression-level
+    // ternary) + newly-allocated carried places. Preserves any
+    // IfOp expression result places the frontend already emitted.
+    const newResultPlaces: Value[] = [...op.results, ...carriedResultPlaces];
+
+    // --- 4. Install lifted ports via MLIR-style in-place mutation.
+    //   Mutable setters (`setInits` / `setResultPlaces`) update the
+    //   op in place, preserving op identity and parent-block
+    //   attachment. This is MLIR's canonical pattern — no
+    //   `replaceOp` round-trip needed.
+    const mutableOp = op as Operation &
+      RegionBranchOp & {
+        setInits?: (v: readonly Value[]) => void;
+        setResultPlaces: (v: readonly Value[]) => void;
+      };
+    if (newInits.length > 0 && mutableOp.setInits !== undefined) {
+      mutableOp.setInits(newInits);
+    }
+    mutableOp.setResultPlaces(newResultPlaces);
+
+    // Extract a label for the loop-context stack if the op has one
+    // (loop ops do; LabeledBlockOp does; IfOp does not). Break/
+    // Continue terminators inside any region look up this stack.
+    const label = (op as { label?: string }).label;
+    this.loopContexts.push({
+      op: op as (typeof this.loopContexts)[number]["op"],
+      label,
+      carriedDecls,
+    });
+    try {
+      // --- 5. Walk regions in program order ---
+      //
+      // Op-introduced region-entry bindings live on
+      // `region.blocks[0].entryBindings` — picked up automatically by
+      // `renameBlockLinear`, no builder-side dispatch needed.
+      for (const region of op.regions) {
+        this.restoreTops(stacks, snapshot);
+        const regionPushed: DeclarationId[] = [];
+        this.renameRegionLinear(region, stacks, regionPushed);
+
+        // Capture reaching defs for each carried decl at region exit.
+        const regionTops: Value[] = carriedDecls.map((decl) => {
+          const stack = stacks.get(decl);
+          return stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : this.undefSeed;
+        });
+
+        // Update forwarding terminators inside this region.
+        // Successors of this region (per getSuccessorRegions) tell us
+        // which terminators matter; we append/replace their forwarded
+        // operands with the carried tops.
+        this.forwardCarriedAtRegionTerminators(op, region, regionTops);
+
+        this.popPushed(stacks, regionPushed);
+      }
+    } finally {
+      this.loopContexts.pop();
+    }
+
+    // --- 6. Push result places onto parent stack ---
+    this.restoreTops(stacks, snapshot);
+    for (let i = 0; i < carriedDecls.length; i++) {
+      this.pushValueForDecl(stacks, carriedDecls[i], carriedResultPlaces[i], parentPushed);
+    }
+  }
+
+  /**
+   * Classify each region of a {@link RegionBranchOp} based purely on
+   * its position in the region-branch CFG:
+   *
+   *   - **cycleRegions**: regions reachable from themselves via
+   *     region→region edges. These receive carried block params on
+   *     entry (iter-arg re-entry).
+   *   - **preludeRegions**: regions entered from Parent that have
+   *     exactly one incoming edge (no back-edges, not re-entered),
+   *     and whose successor flows into another region. Their writes
+   *     extend pre-op visibility without themselves being carried.
+   */
+  private analyzeRegionCfg(op: Operation & RegionBranchOp): {
+    preludeRegions: Set<Region>;
+    cycleRegions: Set<Region>;
+  } {
+    // Build the region-to-region edge map.
+    const outEdges = new Map<Region, Region[]>();
+    const inEdgeCount = new Map<Region, number>();
+    const parentTargets = new Set<Region>();
+    for (const region of op.regions) {
+      outEdges.set(region, []);
+      inEdgeCount.set(region, 0);
+    }
+    for (const succ of op.getSuccessorRegions({ kind: "parent" })) {
+      if (succ.target !== parentExit) {
+        parentTargets.add(succ.target);
+        inEdgeCount.set(succ.target, (inEdgeCount.get(succ.target) ?? 0) + 1);
+      }
+    }
+    for (const region of op.regions) {
+      for (const succ of op.getSuccessorRegions({ kind: "region", region })) {
+        if (succ.target === parentExit) continue;
+        outEdges.get(region)!.push(succ.target);
+        inEdgeCount.set(succ.target, (inEdgeCount.get(succ.target) ?? 0) + 1);
+      }
+    }
+
+    // Cycle membership: DFS from each region, check if we can return
+    // to it through region→region edges.
+    const cycleRegions = new Set<Region>();
+    for (const start of op.regions) {
+      const seen = new Set<Region>();
+      const inCycle = (from: Region): boolean => {
+        for (const next of outEdges.get(from)!) {
+          if (next === start) return true;
+          if (seen.has(next)) continue;
+          seen.add(next);
+          if (inCycle(next)) return true;
+        }
+        return false;
+      };
+      if (inCycle(start)) cycleRegions.add(start);
+    }
+
+    // Prelude: Parent-entered, exactly one incoming edge, has a
+    // region-successor (not just parent-exit).
+    const preludeRegions = new Set<Region>();
+    for (const region of parentTargets) {
+      if ((inEdgeCount.get(region) ?? 0) !== 1) continue;
+      const outs = outEdges.get(region)!;
+      if (outs.length > 0) preludeRegions.add(region);
+    }
+
+    return { preludeRegions, cycleRegions };
+  }
+
+  /**
+   * Append carried tops to every terminator inside `region` that
+   * implements {@link RegionBranchTerminator} and whose routing is
+   * described by `op.getSuccessorRegions({ region })`. For natural
+   * exits (the last block's terminator) we append; this matches
+   * MLIR's `scf.yield` / `scf.condition` iter-arg flow.
+   *
+   * Break/Continue terminators are handled via the loop-context
+   * stack in {@link fillLoopExitArgs} — they don't participate in
+   * this pass.
+   */
+  private forwardCarriedAtRegionTerminators(
+    op: Operation & RegionBranchOp,
+    region: Region,
+    carriedTops: readonly Value[],
+  ): void {
+    const successors = op.getSuccessorRegions({ kind: "region", region });
+    if (successors.length === 0) return;
+    const lastBlock = region.blocks[region.blocks.length - 1];
+    const terminal = lastBlock.terminal;
+    if (terminal === undefined) return;
+    if (!isRegionBranchTerminator(terminal)) return;
+    // Break/Continue terminators are filled by fillLoopExitArgs —
+    // they route to an enclosing op, not this one.
+    if (terminal instanceof BreakOp || terminal instanceof ContinueOp) return;
+    const existing = terminal.getForwardedOperands();
+    terminal.setForwardedOperands([...existing, ...carriedTops]);
   }
 
   /**
@@ -400,6 +715,12 @@ export class SSABuilder {
     stacks: Stacks,
     regionPushed: DeclarationId[],
   ): void {
+    // Op-introduced entry bindings (e.g. ForOfOp's iterationValue /
+    // target defs on the body region's entry) are pushed before SSA
+    // merge params so body-local reads resolve to them.
+    for (const binding of block.entryBindings) {
+      this.pushStack(stacks, binding, regionPushed);
+    }
     for (const param of block.params) {
       if (param.originalDeclarationId !== undefined) {
         this.pushStack(stacks, param, regionPushed);
@@ -410,12 +731,10 @@ export class SSABuilder {
       const op = block.operations[i];
       if (op.hasTrait(Trait.HasRegions)) {
         this.renameStructuredOp(block, i, op, stacks, regionPushed);
-      } else {
-        this.renameOpOperands(op, stacks);
-        if (op instanceof StoreLocalOp) {
-          this.pushStack(stacks, op.lval, regionPushed);
-        }
+        continue;
       }
+      const advance = this.renameFlatOp(op, block, i, stacks, regionPushed);
+      if (advance === "rewind") i--;
     }
 
     if (block.terminal !== undefined) {
@@ -434,24 +753,24 @@ export class SSABuilder {
    * stack by label (innermost unlabeled if absent). A break/continue
    * that doesn't resolve to a lifted loop is left with empty args —
    * memory-form loops don't use iter-args.
+   *
+   * Uses {@link RegionBranchTerminator.setForwardedOperands} — MLIR
+   * in-place mutation, preserves op identity and use-def edges.
    */
   private fillLoopExitArgs(
-    block: BasicBlock,
+    _block: BasicBlock,
     terminal: BreakOp | ContinueOp,
     stacks: Stacks,
   ): void {
     const ctx = this.resolveLoopContext(terminal.label);
     if (ctx === undefined || ctx.carriedDecls.length === 0) return;
 
-    const args: Value[] = [];
-    for (const decl of ctx.carriedDecls) {
+    const args: Value[] = ctx.carriedDecls.map((decl) => {
       const stack = stacks.get(decl);
-      const top = stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
-      args.push(top ?? this.undefSeed);
-    }
+      return stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : this.undefSeed;
+    });
 
-    const TerminalCtor = terminal instanceof BreakOp ? BreakOp : ContinueOp;
-    block.replaceOp(terminal, new TerminalCtor(terminal.id, terminal.label, args));
+    terminal.setForwardedOperands(args);
   }
 
   private resolveLoopContext(
@@ -464,652 +783,17 @@ export class SSABuilder {
     return undefined;
   }
 
-  // ---------------------------------------------------------------------------
-  // IfOp — arm-merge via resultPlaces + YieldOp
-  // ---------------------------------------------------------------------------
-
-  private renameIfOp(
-    parentBlock: BasicBlock,
-    opIndex: number,
-    op: IfOp,
-    stacks: Stacks,
-    parentPushed: DeclarationId[],
-  ): void {
-    const snapshot = this.snapshotTops(stacks);
-    const perArmTops: Map<DeclarationId, Value>[] = [];
-    const perArmWrites: Set<DeclarationId>[] = [];
-
-    for (const region of op.regions) {
-      this.restoreTops(stacks, snapshot);
-      const writes = new Set<DeclarationId>();
-      this.collectWritesInRegion(region, writes);
-      const armPushed: DeclarationId[] = [];
-      this.renameRegionLinear(region, stacks, armPushed);
-      perArmTops.push(this.snapshotTops(stacks));
-      perArmWrites.push(writes);
-      this.popPushed(stacks, armPushed);
-    }
-
-    const mutatedDecls = new Set<DeclarationId>();
-    for (const writes of perArmWrites) {
-      for (const decl of writes) {
-        if (snapshot.has(decl)) mutatedDecls.add(decl);
-      }
-    }
-
-    this.restoreTops(stacks, snapshot);
-
-    if (mutatedDecls.size === 0) {
-      for (const def of op.getDefs()) {
-        this.pushStack(stacks, def, parentPushed);
-      }
-      return;
-    }
-
-    const newResultPlaces: Value[] = [...op.resultPlaces];
-    const newResultDecls: DeclarationId[] = [];
-    for (const decl of mutatedDecls) {
-      const id = this.moduleIR.environment.createValue();
-      id.originalDeclarationId = decl;
-      const place = id;
-      newResultPlaces.push(place);
-      newResultDecls.push(decl);
-    }
-
-    for (let armIdx = 0; armIdx < op.regions.length; armIdx++) {
-      const region = op.regions[armIdx];
-      const armTops = perArmTops[armIdx];
-      const lastBlock = region.blocks[region.blocks.length - 1];
-      const terminal = lastBlock.terminal;
-      if (!(terminal instanceof YieldOp)) continue;
-      const newValues: Value[] = [...terminal.values];
-      for (const decl of newResultDecls) {
-        const armTop = armTops.get(decl) ?? snapshot.get(decl) ?? this.undefSeed;
-        newValues.push(armTop);
-      }
-      lastBlock.replaceOp(terminal, new YieldOp(terminal.id, newValues));
-    }
-
-    if (!op.hasAlternate) {
-      const altRegion = new Region([]);
-      const altBlock = this.moduleIR.environment.createBlock();
-      altRegion.appendBlock(altBlock);
-      this.funcOp.addBlock(altBlock, altRegion);
-      const yieldValues: Value[] = [];
-      for (const decl of newResultDecls) {
-        yieldValues.push(snapshot.get(decl) ?? this.undefSeed);
-      }
-      altBlock.terminal = new YieldOp(
-        makeOperationId(this.moduleIR.environment.nextOperationId++),
-        yieldValues,
-      );
-
-      const newIfOp = new IfOp(op.id, op.test, newResultPlaces, op.regions[0], altRegion);
-      parentBlock.replaceOp(op, newIfOp);
-    } else {
-      const newIfOp = new IfOp(op.id, op.test, newResultPlaces, op.regions[0], op.regions[1]);
-      parentBlock.replaceOp(op, newIfOp);
-    }
-
-    for (let i = 0; i < newResultDecls.length; i++) {
-      const decl = newResultDecls[i];
-      const place = newResultPlaces[op.resultPlaces.length + i];
-      let stack = stacks.get(decl);
-      if (stack === undefined) {
-        stack = [];
-        stacks.set(decl, stack);
-      }
-      stack.push(place);
-      parentPushed.push(decl);
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // WhileOp — MLIR scf.while iter-args: inits + ConditionOp.args + YieldOp + resultPlaces
-  // ---------------------------------------------------------------------------
-
   /**
-   * Lower a {@link WhileOp} into textbook iter-args form.
-   *
-   * For each declaration that is written somewhere inside the loop
-   * AND is visible on the rename stack before the loop starts,
-   * allocate a loop-carried port:
-   *
-   *   - a block parameter on {@link WhileOp.beforeRegion}'s entry,
-   *   - a block parameter on {@link WhileOp.bodyRegion}'s entry,
-   *   - a result place on the {@link WhileOp}.
-   *
-   * Populate:
-   *
-   *   - {@link WhileOp.inits} with each carried decl's pre-loop
-   *     reaching def;
-   *   - {@link ConditionOp.args} at the end of beforeRegion with the
-   *     carried decls' reaching defs at that point;
-   *   - {@link YieldOp.values} (appended) at the natural end of
-   *     bodyRegion with the body's final reaching defs;
-   *   - {@link WhileOp.resultPlaces} bound by the false-path of the
-   *     condition to the current iteration's condition args.
-   *
-   * After the op, push each new result place onto the parent rename
-   * stack so post-loop reads see it. Reads inside the regions
-   * resolve to the before/body block params naturally, because the
-   * region walk pushes block params on entry.
+   * Allocate a fresh block-parameter-style Value for a carried
+   * port (block param or result place). The value has a
+   * `blockparam_N` name used by codegen; its
+   * `originalDeclarationId` records which source-level binding the
+   * port merges.
    */
-  private renameWhileOp(
-    parentBlock: BasicBlock,
-    opIndex: number,
-    op: WhileOp,
-    stacks: Stacks,
-    parentPushed: DeclarationId[],
-  ): void {
-    const snapshot = this.snapshotTops(stacks);
-
-    const writes = new Set<DeclarationId>();
-    this.collectWritesInRegion(op.beforeRegion, writes);
-    this.collectWritesInRegion(op.bodyRegion, writes);
-    const carriedDecls: DeclarationId[] = [];
-    for (const decl of writes) {
-      if (snapshot.has(decl)) carriedDecls.push(decl);
-    }
-
-    // No loop-carried SSA values: walk the regions to rename their
-    // ops, then restore the pre-loop snapshot. The loop's mutations
-    // stay in memory form (let-var assignments); post-loop reads
-    // resolve to the pre-loop def.
-    if (carriedDecls.length === 0) {
-      this.renameStructuredOpMemoryForm(parentBlock, opIndex, op, stacks, parentPushed);
-      return;
-    }
-
-    const env = this.moduleIR.environment;
-
-    // Allocate block params on the before and body region entries,
-    // plus result places on the WhileOp. One per loop-carried decl.
-    const beforeParams: Value[] = [];
-    const bodyParams: Value[] = [];
-    const newResultPlaces: Value[] = [];
-    for (const decl of carriedDecls) {
-      beforeParams.push(this.makeCarriedPlace(decl));
-      bodyParams.push(this.makeCarriedPlace(decl));
-      newResultPlaces.push(this.makeCarriedPlace(decl));
-    }
-
-    const beforeEntry = op.beforeRegion.blocks[0];
-    beforeEntry.params = [...beforeEntry.params, ...beforeParams];
-    const bodyEntry = op.bodyRegion.blocks[0];
-    bodyEntry.params = [...bodyEntry.params, ...bodyParams];
-
-    // inits: the reaching def of each carried decl at the WhileOp's
-    // position — the pre-loop snapshot top.
-    const inits: Value[] = [];
-    for (const decl of carriedDecls) {
-      inits.push(snapshot.get(decl) ?? this.undefSeed);
-    }
-
-    // Push the loop context so Break/Continue in body (and
-    // transitively in nested structured ops) can resolve to this
-    // loop and snapshot the rename stack for their args. The
-    // context stays pushed across both region walks because a
-    // `break` in the test expression still targets this loop.
-    this.loopContexts.push({ op, label: op.label, carriedDecls });
-    try {
-      // Rename beforeRegion. Block params are pushed by the linear
-      // walk as it processes the entry block. After the walk, each
-      // carried decl's stack top is the reaching def at the end of
-      // beforeRegion — these become ConditionOp.args.
-      this.restoreTops(stacks, snapshot);
-      const beforePushed: DeclarationId[] = [];
-      this.renameRegionLinear(op.beforeRegion, stacks, beforePushed);
-      const condArgs: Value[] = [];
-      for (const decl of carriedDecls) {
-        const stack = stacks.get(decl);
-        const top = stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
-        condArgs.push(top ?? this.undefSeed);
-      }
-      this.popPushed(stacks, beforePushed);
-
-      // Rename bodyRegion. After the walk, stack tops for carried
-      // decls are the values to feed back via YieldOp (the back-edge
-      // values for the next iteration's before-region params).
-      this.restoreTops(stacks, snapshot);
-      const bodyPushed: DeclarationId[] = [];
-      this.renameRegionLinear(op.bodyRegion, stacks, bodyPushed);
-      const yieldVals: Value[] = [];
-      for (const decl of carriedDecls) {
-        const stack = stacks.get(decl);
-        const top = stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
-        yieldVals.push(top ?? this.undefSeed);
-      }
-      this.popPushed(stacks, bodyPushed);
-
-      this.attachConditionArgs(op.beforeRegion, condArgs);
-      this.appendYieldValues(op.bodyRegion, yieldVals);
-    } finally {
-      this.loopContexts.pop();
-    }
-
-    // Replace the WhileOp with one that carries the new ports.
-    const newWhileOp = new WhileOp(
-      op.id,
-      op.beforeRegion,
-      op.bodyRegion,
-      op.label,
-      inits,
-      newResultPlaces,
-    );
-    parentBlock.replaceOp(op, newWhileOp);
-    for (const place of newResultPlaces) {
-    }
-
-    // Restore to pre-loop snapshot, then push each result place as
-    // the new reaching def for its carried decl.
-    this.restoreTops(stacks, snapshot);
-    for (let i = 0; i < carriedDecls.length; i++) {
-      const decl = carriedDecls[i];
-      let stack = stacks.get(decl);
-      if (stack === undefined) {
-        stack = [];
-        stacks.set(decl, stack);
-      }
-      stack.push(newResultPlaces[i]);
-      parentPushed.push(decl);
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // ForOp — four-region iter-args: init/before/body/update
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Lower a {@link ForOp} into textbook iter-args form with four
-   * regions. The SSA edges are:
-   *
-   *   - initRegion.yield    → beforeRegion.entry (initial values)
-   *   - beforeRegion.cond+  → bodyRegion.entry   (current iter values)
-   *   - beforeRegion.cond-  → ForOp.resultPlaces (exit values)
-   *   - bodyRegion.yield    → updateRegion.entry (post-body values)
-   *   - bodyRegion.break    → ForOp.resultPlaces (exit values)
-   *   - bodyRegion.continue → updateRegion.entry (continue-point values)
-   *   - updateRegion.yield  → beforeRegion.entry (back-edge)
-   *
-   * Block params are allocated on beforeRegion.entry,
-   * bodyRegion.entry, and updateRegion.entry — one per loop-carried
-   * decl. Init region has no params (it's the "first run"); its
-   * YieldOp carries the initial iter values out.
-   */
-  private renameForOp(
-    parentBlock: BasicBlock,
-    opIndex: number,
-    op: ForOp,
-    stacks: Stacks,
-    parentPushed: DeclarationId[],
-  ): void {
-    const snapshot = this.snapshotTops(stacks);
-
-    // Collect writes across all four regions. Init may introduce new
-    // decls (e.g. `for (let i = ...)`); those decls aren't visible in
-    // `snapshot` but are still carried through before/body/update.
-    const initWrites = new Set<DeclarationId>();
-    const beforeWrites = new Set<DeclarationId>();
-    const bodyWrites = new Set<DeclarationId>();
-    const updateWrites = new Set<DeclarationId>();
-    this.collectWritesInRegion(op.initRegion, initWrites);
-    this.collectWritesInRegion(op.beforeRegion, beforeWrites);
-    this.collectWritesInRegion(op.bodyRegion, bodyWrites);
-    this.collectWritesInRegion(op.updateRegion, updateWrites);
-
-    // Carried decls: anything visible pre-loop that's written in any
-    // region, plus anything introduced by init that's written or read
-    // in any later region.
-    const carriedSet = new Set<DeclarationId>();
-    for (const decl of beforeWrites)
-      if (snapshot.has(decl) || initWrites.has(decl)) carriedSet.add(decl);
-    for (const decl of bodyWrites)
-      if (snapshot.has(decl) || initWrites.has(decl)) carriedSet.add(decl);
-    for (const decl of updateWrites)
-      if (snapshot.has(decl) || initWrites.has(decl)) carriedSet.add(decl);
-    // Init-introduced decls that subsequent regions read become
-    // carried too — even if they're not re-written. The simplest
-    // safe heuristic: init-written decls that appear anywhere later.
-    for (const decl of initWrites) {
-      if (beforeWrites.has(decl) || bodyWrites.has(decl) || updateWrites.has(decl)) {
-        carriedSet.add(decl);
-      }
-    }
-    const carriedDecls = Array.from(carriedSet);
-
-    if (carriedDecls.length === 0) {
-      this.renameStructuredOpMemoryForm(parentBlock, opIndex, op, stacks, parentPushed);
-      return;
-    }
-
-    const env = this.moduleIR.environment;
-
-    const beforeParams: Value[] = [];
-    const bodyParams: Value[] = [];
-    const updateParams: Value[] = [];
-    const newResultPlaces: Value[] = [];
-    for (const decl of carriedDecls) {
-      beforeParams.push(this.makeCarriedPlace(decl));
-      bodyParams.push(this.makeCarriedPlace(decl));
-      updateParams.push(this.makeCarriedPlace(decl));
-      newResultPlaces.push(this.makeCarriedPlace(decl));
-    }
-
-    const beforeEntry = op.beforeRegion.blocks[0];
-    const bodyEntry = op.bodyRegion.blocks[0];
-    const updateEntry = op.updateRegion.blocks[0];
-    beforeEntry.params = [...beforeEntry.params, ...beforeParams];
-    bodyEntry.params = [...bodyEntry.params, ...bodyParams];
-    updateEntry.params = [...updateEntry.params, ...updateParams];
-
-    // Replace the ForOp so the new result places are attached before
-    // we walk (region edges resolve the enclosing loop via the IR,
-    // so the new op needs to be the one the walk sees).
-    const newForOp = new ForOp(
-      op.id,
-      op.initRegion,
-      op.beforeRegion,
-      op.bodyRegion,
-      op.updateRegion,
-      op.label,
-      newResultPlaces,
-    );
-    parentBlock.replaceOp(op, newForOp);
-    for (const place of newResultPlaces) {
-    }
-
-    this.loopContexts.push({ op: newForOp, label: op.label, carriedDecls });
-    try {
-      // Rename initRegion with pre-loop snapshot. Its final stack
-      // tops become init-yield args that flow to beforeRegion.entry
-      // block params.
-      this.restoreTops(stacks, snapshot);
-      const initPushed: DeclarationId[] = [];
-      this.renameRegionLinear(op.initRegion, stacks, initPushed);
-      const initYieldVals: Value[] = [];
-      for (const decl of carriedDecls) {
-        const stack = stacks.get(decl);
-        const top = stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
-        initYieldVals.push(top ?? this.undefSeed);
-      }
-      this.popPushed(stacks, initPushed);
-
-      // Rename beforeRegion. Block params are pushed by the linear
-      // walk; region-final stack tops become ConditionOp args
-      // flowing to bodyEntry (true path) and resultPlaces (false).
-      this.restoreTops(stacks, snapshot);
-      const beforePushed: DeclarationId[] = [];
-      this.renameRegionLinear(op.beforeRegion, stacks, beforePushed);
-      const condArgs: Value[] = [];
-      for (const decl of carriedDecls) {
-        const stack = stacks.get(decl);
-        const top = stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
-        condArgs.push(top ?? this.undefSeed);
-      }
-      this.popPushed(stacks, beforePushed);
-
-      // Rename bodyRegion. End-of-body tops become the natural
-      // body-yield args flowing to updateEntry.
-      this.restoreTops(stacks, snapshot);
-      const bodyPushed: DeclarationId[] = [];
-      this.renameRegionLinear(op.bodyRegion, stacks, bodyPushed);
-      const bodyYieldVals: Value[] = [];
-      for (const decl of carriedDecls) {
-        const stack = stacks.get(decl);
-        const top = stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
-        bodyYieldVals.push(top ?? this.undefSeed);
-      }
-      this.popPushed(stacks, bodyPushed);
-
-      // Rename updateRegion. End-of-update tops become the back-edge
-      // args flowing to beforeEntry.
-      this.restoreTops(stacks, snapshot);
-      const updatePushed: DeclarationId[] = [];
-      this.renameRegionLinear(op.updateRegion, stacks, updatePushed);
-      const updateYieldVals: Value[] = [];
-      for (const decl of carriedDecls) {
-        const stack = stacks.get(decl);
-        const top = stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
-        updateYieldVals.push(top ?? this.undefSeed);
-      }
-      this.popPushed(stacks, updatePushed);
-
-      // Attach args to each region's terminator.
-      this.appendYieldValues(op.initRegion, initYieldVals);
-      this.attachConditionArgs(op.beforeRegion, condArgs);
-      this.appendYieldValues(op.bodyRegion, bodyYieldVals);
-      this.appendYieldValues(op.updateRegion, updateYieldVals);
-    } finally {
-      this.loopContexts.pop();
-    }
-
-    // Restore pre-loop snapshot, then push result places as reaching
-    // defs for post-loop reads of each carried decl.
-    this.restoreTops(stacks, snapshot);
-    for (let i = 0; i < carriedDecls.length; i++) {
-      const decl = carriedDecls[i];
-      let stack = stacks.get(decl);
-      if (stack === undefined) {
-        stack = [];
-        stacks.set(decl, stack);
-      }
-      stack.push(newResultPlaces[i]);
-      parentPushed.push(decl);
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // ForInOp / ForOfOp — single-region iter-args with iterator-driven back-edge
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Lower a {@link ForInOp} / {@link ForOfOp} into iter-args form.
-   * Both ops share the same SSA shape: a single body region whose
-   * natural YieldOp is both the back-edge (next iteration) and the
-   * normal-exit path (iterator exhaustion → resultPlaces). `break`
-   * routes to resultPlaces; `continue` routes to the body entry for
-   * the next iteration.
-   *
-   * The iteration binding (`iterationValue` + `iterationTarget`) is
-   * pushed into the rename stacks by `seedRegionBindings` at region
-   * entry; it's defined anew each iteration by the op itself, not
-   * by an iter-arg.
-   */
-  private renameForInOrForOfOp(
-    parentBlock: BasicBlock,
-    opIndex: number,
-    op: ForInOp | ForOfOp,
-    stacks: Stacks,
-    parentPushed: DeclarationId[],
-  ): void {
-    const snapshot = this.snapshotTops(stacks);
-
-    const writes = new Set<DeclarationId>();
-    this.collectWritesInRegion(op.bodyRegion, writes);
-    const carriedDecls: DeclarationId[] = [];
-    for (const decl of writes) {
-      if (snapshot.has(decl)) carriedDecls.push(decl);
-    }
-
-    if (carriedDecls.length === 0) {
-      this.renameStructuredOpMemoryForm(parentBlock, opIndex, op, stacks, parentPushed);
-      return;
-    }
-
-    const env = this.moduleIR.environment;
-
-    const bodyParams: Value[] = [];
-    const newResultPlaces: Value[] = [];
-    for (const decl of carriedDecls) {
-      bodyParams.push(this.makeCarriedPlace(decl));
-      newResultPlaces.push(this.makeCarriedPlace(decl));
-    }
-
-    const bodyEntry = op.bodyRegion.blocks[0];
-    bodyEntry.params = [...bodyEntry.params, ...bodyParams];
-
-    // inits: pre-loop reaching defs for each carried decl — flow
-    // into body entry on the first iteration via an op-entry edge
-    // handled by SSAEliminator.
-    const inits: Value[] = [];
-    for (const decl of carriedDecls) {
-      inits.push(snapshot.get(decl) ?? this.undefSeed);
-    }
-
-    const newOp =
-      op instanceof ForInOp
-        ? new ForInOp(
-            op.id,
-            op.iterationValue,
-            op.iterationTarget,
-            op.object,
-            op.bodyRegion,
-            op.label,
-            newResultPlaces,
-            inits,
-          )
-        : new ForOfOp(
-            op.id,
-            op.iterationValue,
-            op.iterationTarget,
-            (op as ForOfOp).iterable,
-            (op as ForOfOp).isAwait,
-            op.bodyRegion,
-            op.label,
-            newResultPlaces,
-            inits,
-          );
-    parentBlock.replaceOp(op, newOp);
-    for (const place of newResultPlaces) {
-    }
-
-    this.loopContexts.push({ op: newOp, label: op.label, carriedDecls });
-    try {
-      this.restoreTops(stacks, snapshot);
-      const bodyPushed: DeclarationId[] = [];
-      this.seedRegionBindings(newOp, op.bodyRegion, stacks, bodyPushed);
-      this.renameRegionLinear(op.bodyRegion, stacks, bodyPushed);
-      const yieldVals: Value[] = [];
-      for (const decl of carriedDecls) {
-        const stack = stacks.get(decl);
-        const top = stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
-        yieldVals.push(top ?? this.undefSeed);
-      }
-      this.popPushed(stacks, bodyPushed);
-      this.appendYieldValues(op.bodyRegion, yieldVals);
-    } finally {
-      this.loopContexts.pop();
-    }
-
-    this.restoreTops(stacks, snapshot);
-    for (let i = 0; i < carriedDecls.length; i++) {
-      const decl = carriedDecls[i];
-      let stack = stacks.get(decl);
-      if (stack === undefined) {
-        stack = [];
-        stacks.set(decl, stack);
-      }
-      stack.push(newResultPlaces[i]);
-      parentPushed.push(decl);
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // LabeledBlockOp — single-shot region with `break label` as exit
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Lower a {@link LabeledBlockOp} into iter-args form. Unlike
-   * loops the body runs at most once, so there's no iter-arg
-   * flow-back — only the exit path matters. Break-to-label and
-   * natural-completion (the terminal YieldOp) both contribute to
-   * `resultPlaces`.
-   */
-  private renameLabeledBlockOp(
-    parentBlock: BasicBlock,
-    opIndex: number,
-    op: LabeledBlockOp,
-    stacks: Stacks,
-    parentPushed: DeclarationId[],
-  ): void {
-    const snapshot = this.snapshotTops(stacks);
-
-    const writes = new Set<DeclarationId>();
-    this.collectWritesInRegion(op.bodyRegion, writes);
-    const carriedDecls: DeclarationId[] = [];
-    for (const decl of writes) {
-      if (snapshot.has(decl)) carriedDecls.push(decl);
-    }
-
-    if (carriedDecls.length === 0) {
-      this.renameStructuredOpMemoryForm(parentBlock, opIndex, op, stacks, parentPushed);
-      return;
-    }
-
-    const env = this.moduleIR.environment;
-    const newResultPlaces: Value[] = [];
-    for (const _ of carriedDecls) newResultPlaces.push(this.makeCarriedPlace(carriedDecls[0]));
-    for (let i = 0; i < carriedDecls.length; i++) {
-      newResultPlaces[i] = this.makeCarriedPlace(carriedDecls[i]);
-    }
-
-    const newOp = new LabeledBlockOp(op.id, op.label, op.bodyRegion, newResultPlaces);
-    parentBlock.replaceOp(op, newOp);
-    for (const place of newResultPlaces) {
-    }
-
-    this.loopContexts.push({ op: newOp, label: op.label, carriedDecls });
-    try {
-      this.restoreTops(stacks, snapshot);
-      const bodyPushed: DeclarationId[] = [];
-      this.renameRegionLinear(op.bodyRegion, stacks, bodyPushed);
-      const yieldVals: Value[] = [];
-      for (const decl of carriedDecls) {
-        const stack = stacks.get(decl);
-        const top = stack !== undefined && stack.length > 0 ? stack[stack.length - 1] : undefined;
-        yieldVals.push(top ?? this.undefSeed);
-      }
-      this.popPushed(stacks, bodyPushed);
-      this.appendYieldValues(op.bodyRegion, yieldVals);
-    } finally {
-      this.loopContexts.pop();
-    }
-
-    this.restoreTops(stacks, snapshot);
-    for (let i = 0; i < carriedDecls.length; i++) {
-      const decl = carriedDecls[i];
-      let stack = stacks.get(decl);
-      if (stack === undefined) {
-        stack = [];
-        stacks.set(decl, stack);
-      }
-      stack.push(newResultPlaces[i]);
-      parentPushed.push(decl);
-    }
-  }
-
   private makeCarriedPlace(decl: DeclarationId): Value {
     const id = createParamValue(this.moduleIR.environment);
     id.originalDeclarationId = decl;
     return id;
-  }
-
-  private attachConditionArgs(beforeRegion: Region, args: Value[]): void {
-    for (const block of beforeRegion.blocks) {
-      const terminal = block.terminal;
-      if (terminal instanceof ConditionOp) {
-        block.replaceOp(terminal, new ConditionOp(terminal.id, terminal.value, args));
-      }
-    }
-  }
-
-  private appendYieldValues(bodyRegion: Region, extras: Value[]): void {
-    if (extras.length === 0) return;
-    const lastBlock = bodyRegion.blocks[bodyRegion.blocks.length - 1];
-    const terminal = lastBlock.terminal;
-    if (!(terminal instanceof YieldOp)) return;
-    lastBlock.replaceOp(terminal, new YieldOp(terminal.id, [...terminal.values, ...extras]));
   }
 
   // ---------------------------------------------------------------------------
@@ -1117,21 +801,17 @@ export class SSABuilder {
   // ---------------------------------------------------------------------------
 
   /**
-   * For structured ops without port-based SSA (WhileOp, ForOp,
-   * ForOfOp, ForInOp, TryOp, SwitchOp, BlockOp, LabeledBlockOp),
-   * snapshot the rename stacks, walk each region with stacks
+   * Memory-form fallback for structured ops whose carried values
+   * we don't currently lift into SSA ports (TryOp, SwitchOp, BlockOp)
+   * — and for loops / labeled-blocks in the degenerate case where no
+   * declaration is loop-carried.
+   *
+   * Snapshot the rename stacks, walk each region with stacks
    * restored to the snapshot, then restore once more after the op.
    * Reads inside the regions resolve to pre-op reaching defs; reads
    * after the op resolve to pre-op defs as well — mutations made in
-   * the regions stay in memory form, to be materialized as let
-   * stores by codegen.
-   *
-   * A follow-up commit can replace this with proper iter-args
-   * handling (MLIR `scf.while` style: inits → beforeRegion entry
-   * block-params → ConditionOp trailing args → bodyRegion entry
-   * block-params → YieldOp values → beforeRegion entry block-params
-   * on the back-edge) for loops. That change also has to teach
-   * SSAEliminator about the back-edge and update the codegen.
+   * the regions survive as StoreLocal ops and are materialized as
+   * `let` assignments by codegen.
    */
   private renameStructuredOpMemoryForm(
     parentBlock: BasicBlock,
@@ -1145,7 +825,6 @@ export class SSABuilder {
     for (const region of op.regions) {
       this.restoreTops(stacks, snapshot);
       const armPushed: DeclarationId[] = [];
-      this.seedRegionBindings(op, region, stacks, armPushed);
       this.renameRegionLinear(region, stacks, armPushed);
       this.popPushed(stacks, armPushed);
     }
@@ -1154,32 +833,6 @@ export class SSABuilder {
 
     for (const def of op.getDefs()) {
       this.pushStack(stacks, def, parentPushed);
-    }
-  }
-
-  /**
-   * Seed region-introduced bindings so region-local reads see them
-   * as reaching defs: for-of / for-in iteration values and try-catch
-   * handler params are bound by the enclosing op, not by an op
-   * inside the region.
-   */
-  private seedRegionBindings(
-    op: Operation,
-    region: Region,
-    stacks: Stacks,
-    pushed: DeclarationId[],
-  ): void {
-    if ((op instanceof ForOfOp || op instanceof ForInOp) && op.regions[0] === region) {
-      this.pushStack(stacks, op.iterationValue, pushed);
-      for (const place of getDestructureTargetDefs(op.iterationTarget)) {
-        this.pushStack(stacks, place, pushed);
-      }
-    }
-    if (op instanceof TryOp) {
-      const handlerRegion = op.handlerRegion;
-      if (handlerRegion !== null && handlerRegion === region && op.handlerParam !== null) {
-        this.pushStack(stacks, op.handlerParam, pushed);
-      }
     }
   }
 
@@ -1210,6 +863,102 @@ export class SSABuilder {
   // ---------------------------------------------------------------------------
   // Helpers: stacks, writes, snapshots
   // ---------------------------------------------------------------------------
+
+  /**
+   * Rename a single flat (non-structured) op in program order,
+   * applying mem2reg transformations for promotable bindings.
+   *
+   * Three outcomes:
+   *
+   *   1. **Load elision** — op is a `LoadLocalOp` on a promotable
+   *      decl with a reaching def on the stack. Record
+   *      `load.place → reaching` in {@link rewrites}, delete the op.
+   *      Caller must rewind its loop index (`"rewind"`).
+   *
+   *   2. **Store elision** — op is a `StoreLocalOp` on a promotable
+   *      decl. Rewrite operands, push the rhs value onto the decl's
+   *      rename stack, delete the op. Caller must rewind
+   *      (`"rewind"`).
+   *
+   *   3. **Normal rename** — rewrite operands through stacks +
+   *      {@link rewrites}; push all defs (or the lval, for a
+   *      non-promotable StoreLocal) onto their rename stacks.
+   *      Caller advances (`"advance"`).
+   */
+  private renameFlatOp(
+    op: Operation,
+    block: BasicBlock,
+    index: number,
+    stacks: Stacks,
+    pushed: DeclarationId[],
+  ): "advance" | "rewind" {
+    if (op instanceof LoadLocalOp && this.tryElideLoad(op, block, index, stacks)) {
+      return "rewind";
+    }
+
+    this.renameOpOperands(op, stacks);
+    const renamed = block.operations[index];
+
+    if (renamed instanceof StoreLocalOp) {
+      const decl = renamed.lval.declarationId;
+      if (this.promotability.isPromotable(decl)) {
+        // Promote: push the rhs value onto the stack and delete the
+        // store. Subsequent reads resolve to this value via the stack.
+        this.pushValueForDecl(stacks, decl, renamed.value, pushed);
+        block.removeOpAt(index);
+        return "rewind";
+      }
+      // Memory-form binding: push the lval so future reads of this
+      // decl resolve to the (still-present) StoreLocal's lval place.
+      this.pushStack(stacks, renamed.lval, pushed);
+      return "advance";
+    }
+
+    for (const def of renamed.getDefs()) {
+      if (def === renamed.place) continue;
+      if (def.declarationId === undefined) continue;
+      this.pushStack(stacks, def, pushed);
+    }
+    return "advance";
+  }
+
+  /**
+   * Elide a `LoadLocalOp` on a promotable binding by recording an
+   * alias from the load's place to the reaching value. Returns
+   * `false` (no-op) if the binding is not promotable, if no reaching
+   * def exists on the stack, or if the reaching def is the load's
+   * own value (a self-load — nothing to elide).
+   */
+  private tryElideLoad(op: LoadLocalOp, block: BasicBlock, index: number, stacks: Stacks): boolean {
+    const decl = op.value.declarationId;
+    if (!this.promotability.isPromotable(decl)) return false;
+    const stack = stacks.get(decl);
+    if (stack === undefined || stack.length === 0) return false;
+    const reaching = stack[stack.length - 1];
+    if (reaching === op.value) return false;
+    this.rewrites.set(op.place, reaching);
+    block.removeOpAt(index);
+    return true;
+  }
+
+  /**
+   * Push `value` onto the rename stack for `decl`, recording the
+   * push in `pushed` so it can be unwound at region exit.
+   */
+  private pushValueForDecl(
+    stacks: Stacks,
+    decl: DeclarationId,
+    value: Value,
+    pushed: DeclarationId[],
+  ): void {
+    let stack = stacks.get(decl);
+    if (stack === undefined) {
+      stack = [];
+      stacks.set(decl, stack);
+    }
+    stack.push(value);
+    pushed.push(decl);
+  }
 
   /**
    * Push `place` onto the rename stack of the declaration it
@@ -1269,9 +1018,27 @@ export class SSABuilder {
     }
   }
 
+  /**
+   * Build a value-substitution map for `op.rewrite(...)`. An
+   * operand is rewritten if it is either:
+   *
+   *   - the place of a mem2reg-elided `LoadLocalOp` (looked up in
+   *     {@link rewrites}), or
+   *   - a non-top place of a decl whose rename stack has a newer
+   *     top.
+   *
+   * The alias map takes precedence: a rewritten load's place has no
+   * meaningful declaration-level stack, so the direct alias is the
+   * only source of truth.
+   */
   private buildRewriteMap(reads: Value[], stacks: Stacks): Map<Value, Value> {
     const map = new Map<Value, Value>();
     for (const place of reads) {
+      const alias = this.rewrites.get(place);
+      if (alias !== undefined) {
+        map.set(place, alias);
+        continue;
+      }
       const decl = place.declarationId;
       const stack = stacks.get(decl);
       if (stack === undefined || stack.length === 0) continue;

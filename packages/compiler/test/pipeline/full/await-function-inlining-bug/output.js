@@ -16,11 +16,11 @@ const $3 = function ($54) {
     options: $54,
     async fn($62) {
       const { rects: $63, platform: $64 } = $62;
-      const $66 = $0(await $64.detectOverflow($62), $63.reference);
+      const $107 = $0(await $64.detectOverflow($62), $63.reference);
       return {
         data: {
-          referenceHiddenOffsets: $66,
-          referenceHidden: $1($66),
+          referenceHiddenOffsets: $107,
+          referenceHidden: $1($107),
         },
       };
     },

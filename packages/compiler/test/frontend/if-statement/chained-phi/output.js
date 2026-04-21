@@ -1,20 +1,16 @@
-let $0 = 10;
-let $1 = 20;
-let $2 = undefined;
-let $38 = undefined;
-if ($0 > 5) {
-  let $37 = undefined;
-  if ($1 < 15) {
-    $2 = $0 + $1;
-    $37 = $2;
+let blockparam_37 = undefined;
+if (10 > 5) {
+  let blockparam_38 = undefined;
+  if (20 < 15) {
+    const $47 = 10 + 20;
+    blockparam_38 = $47;
   } else {
-    $2 = $0 - $1;
-    $37 = $2;
+    const $49 = 10 - 20;
+    blockparam_38 = $49;
   }
-  $38 = $37;
+  blockparam_37 = blockparam_38;
 } else {
-  $2 = $0 * $1;
-  $38 = $2;
+  const $51 = 10 * 20;
+  blockparam_37 = $51;
 }
-let $3 = $38 * 2;
-console.log($3);
+console.log(blockparam_37 * 2);

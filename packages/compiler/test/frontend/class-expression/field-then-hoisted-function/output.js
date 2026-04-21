@@ -1,9 +1,8 @@
-var $1 = undefined;
 function $0() {
   return $4;
 }
 const $4 = 1;
-$1 = class {
+(class {
   x = $4;
-};
+});
 export { $0 as afterClass };

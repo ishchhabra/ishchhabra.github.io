@@ -1,18 +1,9 @@
-const $0 = globalThis.x;
-let $1 = undefined;
-let $25 = undefined;
-if ($0 > 0) {
-  $1 = "positive";
-  $25 = $1;
+const $34 = globalThis.x;
+let blockparam_24 = undefined;
+if ($34 > 0) {
+  blockparam_24 = "positive";
 } else {
-  let $24 = undefined;
-  if ($0 < 0) {
-    $1 = "negative";
-    $24 = $1;
-  } else {
-    $1 = "zero";
-    $24 = $1;
-  }
-  $25 = $24;
+  let blockparam_25 = undefined;
+  blockparam_24 = $34 < 0 ? "negative" : "zero";
 }
-console.log($25);
+console.log(blockparam_24);

@@ -7,4 +7,4 @@ function $1() {
 function $2() {
   return $1();
 }
-const $3 = $2();
+$2();

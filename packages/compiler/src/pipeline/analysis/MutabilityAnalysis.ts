@@ -1,10 +1,21 @@
 import { StoreContextOp, StoreLocalOp } from "../../ir";
 import type { FuncOp } from "../../ir/core/FuncOp";
-import type { DeclarationId } from "../../ir/core/Value";
+import type { DeclarationId, Value } from "../../ir/core/Value";
+import { ArrayDestructureOp } from "../../ir/ops/pattern/ArrayDestructure";
+import { ObjectDestructureOp } from "../../ir/ops/pattern/ObjectDestructure";
+import { ForOfOp } from "../../ir/ops/control/ForOf";
+import { ForInOp } from "../../ir/ops/control/ForIn";
+import { TryOp } from "../../ir/ops/control/Try";
+import { Operation } from "../../ir/core/Operation";
 import { AnalysisManager, FunctionAnalysis } from "./AnalysisManager";
 
-/** A store op that writes to a source-level declaration. */
-export type StoreOp = StoreLocalOp | StoreContextOp;
+/**
+ * Any op that writes to a source-level declaration. Includes the
+ * explicit store ops and every multi-def op that targets a binding
+ * cell — destructures, for-of / for-in iteration vars, try/catch
+ * handler params.
+ */
+export type StoreOp = Operation;
 
 const NO_DEF_SITES: readonly StoreOp[] = Object.freeze([]);
 
@@ -73,20 +84,65 @@ export class MutabilityInfo {
 
   static compute(funcOp: FuncOp): MutabilityInfo {
     const defSites = new Map<DeclarationId, StoreOp[]>();
+    const record = (decl: DeclarationId, op: StoreOp): void => {
+      let sites = defSites.get(decl);
+      if (sites === undefined) {
+        sites = [];
+        defSites.set(decl, sites);
+      }
+      sites.push(op);
+    };
     for (const block of funcOp.allBlocks()) {
-      for (const op of block.operations) {
-        if (op instanceof StoreLocalOp || op instanceof StoreContextOp) {
-          const decl = op.lval.declarationId;
-          let sites = defSites.get(decl);
-          if (sites === undefined) {
-            sites = [];
-            defSites.set(decl, sites);
-          }
-          sites.push(op);
-        }
+      for (const op of block.getAllOps()) {
+        collectOpWriters(op, record);
       }
     }
     return new MutabilityInfo(defSites);
+  }
+}
+
+/**
+ * Call `record(declId, op)` for every source-level binding this op
+ * writes to. Covers StoreLocal / StoreContext plus every multi-def
+ * op that targets a binding: destructure patterns, for-of / for-in
+ * iteration vars, try/catch handler params. Without destructure /
+ * iter / catch here, mutability-driven passes (ExpressionInlining,
+ * etc.) would miscount destructure-target bindings as
+ * single-assignment and incorrectly inline their pre-destructure
+ * value.
+ */
+function collectOpWriters(op: Operation, record: (decl: DeclarationId, op: StoreOp) => void): void {
+  if (op instanceof StoreLocalOp || op instanceof StoreContextOp) {
+    record(op.lval.declarationId, op);
+    return;
+  }
+  if (op instanceof ArrayDestructureOp) {
+    for (const def of op.getDefs()) {
+      if (def === op.place) continue;
+      record(def.declarationId, op);
+    }
+    return;
+  }
+  if (op instanceof ObjectDestructureOp) {
+    for (const def of op.getDefs()) {
+      if (def === op.place) continue;
+      record(def.declarationId, op);
+    }
+    return;
+  }
+  if (op instanceof ForOfOp || op instanceof ForInOp) {
+    // The iteration variable (if a binding) is written on each
+    // iteration. Count it as a write.
+    const iterValue = (op as ForOfOp | ForInOp).iterationValue as Value | undefined;
+    if (iterValue !== undefined) record(iterValue.declarationId, op);
+    return;
+  }
+  if (op instanceof TryOp) {
+    const handler = (op as TryOp).handlerParam as Value | null | undefined;
+    if (handler !== undefined && handler !== null) {
+      record(handler.declarationId, op);
+    }
+    return;
   }
 }
 

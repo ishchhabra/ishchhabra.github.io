@@ -54,6 +54,35 @@ export class BasicBlock {
   public params: Value[] = [];
 
   /**
+   * Op-introduced entry bindings — values bound at this block's
+   * entry by the enclosing structured op, distinct from SSA merge
+   * params.
+   *
+   * Contains values like:
+   *   - `ForOfOp.iterationValue` / destructured iter-target defs on
+   *     the body region's entry block.
+   *   - `TryOp.handlerParam` on the handler region's entry block.
+   *
+   * Treated differently from {@link params}:
+   *   - Pushed onto the rename stack at block entry (like params).
+   *   - **Not** counted as SSA-merge sinks by `SSAEliminator`.
+   *   - **Not** wired through the edge infrastructure
+   *     (`blockArgs.ts`) — their value is supplied by the runtime
+   *     (iterator protocol / exception-throw mechanism), not via
+   *     explicit operand forwarding from predecessor terminators.
+   *   - Codegen doesn't emit a prelude `let = undefined` for them;
+   *     the enclosing statement syntax (`for (let x of arr)`,
+   *     `catch (e)`) declares them.
+   *
+   * This corresponds to MLIR's notion of block arguments that are
+   * bound by the parent op itself. MLIR blurs the line between these
+   * and SSA-merge block args because MLIR emits SSA-level code (LLVM
+   * IR) where no prelude decls exist. Our JS target requires the
+   * split.
+   */
+  public entryBindings: Value[] = [];
+
+  /**
    * Intrusive use-list of ops whose `getBlockRefs()` includes this
    * block. Maintained automatically by `registerUses`/`unregisterUses`
    * on every mutation. Reading this set is equivalent to "which

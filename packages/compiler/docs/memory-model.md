@@ -33,12 +33,12 @@ Every memory cell the compiler reasons about is named by a `MemoryLocation`. It'
 
 ```ts
 type MemoryLocation =
-  | { kind: "local";           declarationId }        // a var/let/const cell
-  | { kind: "context";         declarationId }        // a closure-captured cell
-  | { kind: "exported";        modulePath, name }     // an ES module export binding
-  | { kind: "staticProperty";  object, name }         // obj.foo
-  | { kind: "computedProperty"; object }              // obj[x]
-  | { kind: "unknown" }                                // "anywhere"
+  | { kind: "local"; declarationId } // a var/let/const cell
+  | { kind: "context"; declarationId } // a closure-captured cell
+  | { kind: "exported"; modulePath; name } // an ES module export binding
+  | { kind: "staticProperty"; object; name } // obj.foo
+  | { kind: "computedProperty"; object } // obj[x]
+  | { kind: "unknown" }; // "anywhere"
 ```
 
 Think of each `MemoryLocation` as a label on a box. Two ops touching the same label are touching the same box. Two ops touching different labels might still be touching the same box (aliasing) — that's what the oracle answers.
@@ -68,9 +68,7 @@ class CallExpressionOp {
   getMemoryEffects(env) {
     // Pure builtin (Math.sqrt, JSON.stringify with const arg…)? No effects.
     // Otherwise: assume the call could touch anything.
-    return isPure(this, env)
-      ? { reads: [], writes: [] }
-      : { reads: [Unknown], writes: [Unknown] };
+    return isPure(this, env) ? { reads: [], writes: [] } : { reads: [Unknown], writes: [Unknown] };
   }
 }
 ```
@@ -94,28 +92,28 @@ No graph. No phi nodes. No invalidation API.
 Source code:
 
 ```js
-var x = 1;        // Op A
-var o = {};       // Op B
-x = 2;            // Op C
-o.x = 99;         // Op D
-var y = x;        // Op E
-var z = o.x;      // Op F
+var x = 1; // Op A
+var o = {}; // Op B
+x = 2; // Op C
+o.x = 99; // Op D
+var y = x; // Op E
+var z = o.x; // Op F
 ```
 
 Let's trace what each layer sees.
 
 ### Layer B output: effects per op
 
-| Op | reads | writes |
-|---|---|---|
-| A `var x = 1` | — | `local(x)` |
-| B `var o = {}` | — | `local(o)` |
-| C `x = 2` | — | `local(x)` |
-| D `o.x = 99` | — | `staticProperty(o, "x")` |
-| E `var y = x` ← this generates a LoadLocal | `local(x)` | — |
-| E `var y = x` ← and a StoreLocal | — | `local(y)` |
-| F `var z = o.x` ← LoadStaticProperty | `staticProperty(o, "x")` | — |
-| F `var z = o.x` ← StoreLocal | — | `local(z)` |
+| Op                                         | reads                    | writes                   |
+| ------------------------------------------ | ------------------------ | ------------------------ |
+| A `var x = 1`                              | —                        | `local(x)`               |
+| B `var o = {}`                             | —                        | `local(o)`               |
+| C `x = 2`                                  | —                        | `local(x)`               |
+| D `o.x = 99`                               | —                        | `staticProperty(o, "x")` |
+| E `var y = x` ← this generates a LoadLocal | `local(x)`               | —                        |
+| E `var y = x` ← and a StoreLocal           | —                        | `local(y)`               |
+| F `var z = o.x` ← LoadStaticProperty       | `staticProperty(o, "x")` | —                        |
+| F `var z = o.x` ← StoreLocal               | —                        | `local(z)`               |
 
 ### Layer D walker trace
 
@@ -138,14 +136,14 @@ F-write z: local(z) = ...   (irrelevant to below)
 ### Queries the walker can now answer
 
 ```ts
-walker.reachingStore(E, localLocation(x_declId))
+walker.reachingStore(E, localLocation(x_declId));
 //  →  Op C   (the `x = 2` assignment)
 ```
 
 When CP evaluates the `LoadLocal x` inside `var y = x`, it asks the walker: "what store reaches this load on location `local(x)`?" Answer: Op C. CP then looks at Op C's stored value (the literal `2`), and folds the load to `2`.
 
 ```ts
-walker.reachingStore(F, staticPropertyLocation(o_place, "x"))
+walker.reachingStore(F, staticPropertyLocation(o_place, "x"));
 //  →  Op D   (the `o.x = 99` assignment)
 ```
 
@@ -164,8 +162,8 @@ It's needed because sometimes different labels point to the same memory:
 ```js
 var o = someObject;
 o.x = 1;
-o["x"] = 2;      // reads via computedProperty(o), but writes to SAME cell
-var y = o.x;     // do we see 1 or 2?
+o["x"] = 2; // reads via computedProperty(o), but writes to SAME cell
+var y = o.x; // do we see 1 or 2?
 ```
 
 Here `staticProperty(o, "x")` and `computedProperty(o)` are different `MemoryLocation` labels. The oracle says "yes, those may alias" because the computed `o[x]` could resolve to `"x"`. The walker then conservatively treats the computed write as clobbering the static property.
@@ -174,13 +172,13 @@ Here `staticProperty(o, "x")` and `computedProperty(o)` are different `MemoryLoc
 
 **Step 1: Category check (Cranelift-style).** Every location belongs to a category:
 
-| MemoryLocation kind | Category |
-|---|---|
-| `local` | `local` |
-| `context` | `context` |
-| `exported` | `exported` |
+| MemoryLocation kind                  | Category   |
+| ------------------------------------ | ---------- |
+| `local`                              | `local`    |
+| `context`                            | `context`  |
+| `exported`                           | `exported` |
 | `staticProperty`, `computedProperty` | `property` |
-| `unknown` | `unknown` |
+| `unknown`                            | `unknown`  |
 
 - `unknown` category aliases everything (wildcard).
 - Otherwise, **different categories never alias.** A local-variable write cannot affect a property read. Same-category → fall through to finer rules.
@@ -189,14 +187,14 @@ This category check is the big precision win — it's a tag compare, very cheap,
 
 **Step 2: Same-category rules.**
 
-| Kind | Aliases another of the same kind iff… |
-|---|---|
-| `local(d1)` vs `local(d2)` | `d1 === d2` (same declaration) |
-| `context(d1)` vs `context(d2)` | `d1 === d2` |
-| `exported(m1, n1)` vs `exported(m2, n2)` | `m1===m2 && n1===n2` |
-| `staticProperty(o1, k1)` vs `staticProperty(o2, k2)` | `o1===o2 && k1===k2` |
-| `computedProperty(o1)` vs `computedProperty(o2)` | `o1===o2` |
-| `staticProperty(o, *)` vs `computedProperty(o)` | **yes** — can't tell which key `o[x]` hits |
+| Kind                                                 | Aliases another of the same kind iff…      |
+| ---------------------------------------------------- | ------------------------------------------ |
+| `local(d1)` vs `local(d2)`                           | `d1 === d2` (same declaration)             |
+| `context(d1)` vs `context(d2)`                       | `d1 === d2`                                |
+| `exported(m1, n1)` vs `exported(m2, n2)`             | `m1===m2 && n1===n2`                       |
+| `staticProperty(o1, k1)` vs `staticProperty(o2, k2)` | `o1===o2 && k1===k2`                       |
+| `computedProperty(o1)` vs `computedProperty(o2)`     | `o1===o2`                                  |
+| `staticProperty(o, *)` vs `computedProperty(o)`      | **yes** — can't tell which key `o[x]` hits |
 
 Object identity is via `Value` reference equality. Two different SSA Values that happen to alias the same runtime object (e.g. `var a = o; var b = o; a.x = 1; b.x = 2`) are conservatively NOT recognized as aliased — our v1 oracle is value-identity-based, not flow-sensitive. This is sound (it just means we optimize less in that case); tighter precision is future work.
 
@@ -216,13 +214,13 @@ Short answer: **it's the right shape, but some pieces are still scaffolding.** H
 
 ### ✅ Done right
 
-| Aspect | Status |
-|---|---|
-| Effect signatures on ops | ✅ MLIR/TurboShaft consensus design |
-| Category-partitioned alias oracle | ✅ Cranelift pattern, cheap + precise enough |
-| No persistent memory graph | ✅ avoids LLVM MemorySSA's invalidation problem |
-| Stateless queries | ✅ transforms never need to update the walker |
-| Foundation for CP / DSE / GVN / LICM | ✅ each can consume this with one helper |
+| Aspect                               | Status                                          |
+| ------------------------------------ | ----------------------------------------------- |
+| Effect signatures on ops             | ✅ MLIR/TurboShaft consensus design             |
+| Category-partitioned alias oracle    | ✅ Cranelift pattern, cheap + precise enough    |
+| No persistent memory graph           | ✅ avoids LLVM MemorySSA's invalidation problem |
+| Stateless queries                    | ✅ transforms never need to update the walker   |
+| Foundation for CP / DSE / GVN / LICM | ✅ each can consume this with one helper        |
 
 ### ⚠️ Scaffolding — known limitations
 

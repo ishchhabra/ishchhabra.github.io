@@ -67,6 +67,9 @@ export function buildTryStatement(
         environment.setDeclarationBinding(identifier.declarationId, bindingPlace);
 
         paramPlace = bindingPlace;
+        // MLIR-style: the catch handler parameter is a block-entry
+        // binding on the handler region's entry block.
+        handlerBlock.entryBindings.push(bindingPlace);
       }
 
       buildOwnedBody(catchClause.body, scope, functionBuilder, moduleBuilder, environment);

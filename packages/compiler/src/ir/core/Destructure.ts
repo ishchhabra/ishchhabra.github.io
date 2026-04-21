@@ -140,7 +140,12 @@ export function collectDestructureTargetBindingPlaces(target: DestructureTarget)
 export function destructureTargetHasObservableWrites(target: DestructureTarget): boolean {
   switch (target.kind) {
     case "binding":
-      return target.storage === "context";
+      // Both storage kinds are observable — the write binds a
+      // source-level variable readable by subsequent code. The
+      // pre-mem2reg convention relied on DCE keeping destructures
+      // alive via LoadLocal use-chains; post-mem2reg those chains
+      // get elided, so destructures must self-declare their effect.
+      return true;
     case "static-member":
     case "dynamic-member":
       return true;

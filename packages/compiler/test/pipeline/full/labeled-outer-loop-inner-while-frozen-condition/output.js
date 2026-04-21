@@ -1,136 +1,103 @@
 function $0($1) {
-  let $2 = $1.nextSub;
-  let $3 = undefined;
+  const $175 = $1.nextSub;
   let blockparam_64 = undefined;
   blockparam_64 = $1;
   let blockparam_65 = undefined;
-  let blockparam_66 = undefined;
   let blockparam_67 = undefined;
-  blockparam_67 = $3;
+  blockparam_67 = undefined;
   let blockparam_68 = undefined;
-  let blockparam_69 = undefined;
   let blockparam_70 = undefined;
-  blockparam_70 = $2;
+  blockparam_70 = $175;
   let blockparam_71 = undefined;
-  let blockparam_72 = undefined;
   top: while (
     ((blockparam_65 = blockparam_64),
-    (blockparam_66 = blockparam_64),
     (blockparam_68 = blockparam_67),
-    (blockparam_69 = blockparam_67),
     (blockparam_71 = blockparam_70),
-    (blockparam_72 = blockparam_70),
     true)
   ) {
-    let $78 = undefined;
-    let $79 = undefined;
-    let $80 = undefined;
+    let blockparam_74 = undefined;
+    let blockparam_75 = undefined;
     if (blockparam_65.flags & 1) {
-      const $14 = blockparam_65.sub;
-      let $75 = undefined;
-      let $76 = undefined;
-      let $77 = undefined;
-      if ($14 !== undefined) {
-        $1 = $14;
-        const $21 = $14.nextSub;
-        let $73 = undefined;
-        let $74 = undefined;
-        if ($21 !== undefined) {
-          $3 = {
+      const $177 = blockparam_65.sub;
+      let blockparam_76 = undefined;
+      let blockparam_77 = undefined;
+      let blockparam_78 = undefined;
+      if ($177 !== undefined) {
+        const $179 = $177.nextSub;
+        let blockparam_79 = undefined;
+        let blockparam_80 = undefined;
+        if ($179 !== undefined) {
+          const $181 = {
             value: blockparam_71,
             prev: blockparam_68,
           };
-          $2 = $21;
-          $73 = $3;
-          $74 = $2;
+          blockparam_79 = $181;
+          blockparam_80 = $179;
         } else {
-          $73 = blockparam_68;
-          $73 = blockparam_68;
-          $74 = blockparam_71;
-          $74 = blockparam_71;
+          blockparam_79 = blockparam_68;
+          blockparam_80 = blockparam_71;
         }
-        blockparam_64 = $1;
-        blockparam_67 = $73;
-        blockparam_70 = $74;
+        blockparam_64 = $177;
+        blockparam_67 = blockparam_79;
+        blockparam_70 = blockparam_80;
         continue;
       } else {
-        $75 = blockparam_65;
-        $75 = blockparam_65;
-        $76 = blockparam_68;
-        $76 = blockparam_68;
-        $77 = blockparam_71;
-        $77 = blockparam_71;
+        blockparam_76 = blockparam_65;
+        blockparam_77 = blockparam_68;
+        blockparam_78 = blockparam_71;
       }
-      $78 = $75;
-      $79 = $76;
-      $80 = $77;
+      blockparam_74 = blockparam_77;
+      blockparam_75 = blockparam_78;
     } else {
-      $78 = blockparam_65;
-      $78 = blockparam_65;
-      $79 = blockparam_68;
-      $79 = blockparam_68;
-      $80 = blockparam_71;
-      $80 = blockparam_71;
+      blockparam_74 = blockparam_68;
+      blockparam_75 = blockparam_71;
     }
-    $1 = $80;
-    let $81 = undefined;
-    if ($80 !== undefined) {
-      $2 = $1.nextSub;
-      blockparam_64 = $1;
-      blockparam_67 = $79;
-      blockparam_70 = $2;
+    let blockparam_81 = undefined;
+    if (blockparam_75 !== undefined) {
+      const $183 = blockparam_75.nextSub;
+      blockparam_64 = $183;
       continue;
     } else {
-      $81 = $80;
-      $81 = $80;
+      blockparam_81 = blockparam_75;
     }
     let blockparam_82 = undefined;
-    blockparam_82 = $1;
-    let blockparam_83 = undefined;
+    blockparam_82 = blockparam_75;
     let blockparam_84 = undefined;
     let blockparam_85 = undefined;
-    blockparam_85 = $79;
+    blockparam_85 = blockparam_74;
     let blockparam_86 = undefined;
     let blockparam_87 = undefined;
     let blockparam_88 = undefined;
-    blockparam_88 = $81;
+    blockparam_88 = blockparam_81;
     let blockparam_89 = undefined;
     let blockparam_90 = undefined;
     while (
-      ((blockparam_83 = blockparam_82),
-      (blockparam_84 = blockparam_82),
+      ((blockparam_84 = blockparam_82),
       (blockparam_86 = blockparam_85),
       (blockparam_87 = blockparam_85),
       (blockparam_89 = blockparam_88),
       (blockparam_90 = blockparam_88),
       blockparam_85 !== undefined)
     ) {
-      $1 = blockparam_86.value;
-      $3 = blockparam_86.prev;
-      let $91 = undefined;
-      if ($1 !== undefined) {
-        $2 = $1.nextSub;
-        blockparam_64 = $1;
-        blockparam_67 = $3;
-        blockparam_70 = $2;
+      const $185 = blockparam_86.value;
+      const $187 = blockparam_86.prev;
+      let blockparam_91 = undefined;
+      if ($185 !== undefined) {
+        const $189 = $185.nextSub;
+        blockparam_64 = $185;
+        blockparam_67 = $187;
+        blockparam_70 = $189;
         continue top;
       } else {
-        $91 = blockparam_89;
-        $91 = blockparam_89;
+        blockparam_91 = blockparam_89;
       }
-      blockparam_82 = $1;
-      blockparam_85 = $3;
-      blockparam_88 = $91;
+      blockparam_82 = $185;
+      blockparam_85 = $187;
+      blockparam_88 = blockparam_91;
     }
     if (false) {
-      blockparam_66 = blockparam_84;
-      blockparam_69 = blockparam_87;
-      blockparam_72 = blockparam_90;
       break top;
     }
-    blockparam_66 = blockparam_84;
-    blockparam_69 = blockparam_87;
-    blockparam_72 = blockparam_90;
     break;
   }
 }

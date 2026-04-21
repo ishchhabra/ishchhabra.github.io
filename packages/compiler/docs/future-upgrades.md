@@ -33,6 +33,7 @@ runtime with feedback).
 that's shape-stable hot code. Pointless until then.
 
 **Refs**:
+
 - V8 hidden classes blog posts
 - WebKit structures design doc
 - Graal.js shape inference research papers
@@ -58,6 +59,7 @@ reduction, not sequentially best-effort.
 **Cost**: ~months. Non-trivial framework change.
 
 **Refs**:
+
 - Chris Fallin, "The acyclic e-graph: Cranelift's mid-end optimizer"
   https://cfallin.org/blog/2026/04/09/aegraph/
 - egg: Fast and Extensible Equality Saturation (POPL 2021)
@@ -120,7 +122,7 @@ added) competing for walker queries.
 ## 6. Walker descends into nested regions for per-op queries
 
 Current scope-5 walker summarizes nested structured-op effects at the
-outer region, but doesn't snapshot ops *inside* nested regions. A pass
+outer region, but doesn't snapshot ops _inside_ nested regions. A pass
 that queries `walker.reachingStore(opInsideIf, ...)` gets undefined.
 
 Fix: recursively walk nested regions, building per-op snapshots there
@@ -163,6 +165,7 @@ before being overwritten. Pure walker consumer — uses
 **Cost**: ~400 LOC new pass.
 
 **Refs**:
+
 - LLVM `DeadStoreElimination.cpp`
 - TurboShaft `LateStoreStoreEliminationReducer`
 
@@ -176,6 +179,7 @@ between them. Walker consumer.
 **Cost**: ~500 LOC new pass.
 
 **Refs**:
+
 - LLVM `GVN.cpp` (note: their design is overkill for JS)
 - Click 1995, "Global Code Motion / Global Value Numbering"
 
@@ -190,6 +194,7 @@ aliases its read location.
 **Cost**: ~500 LOC new pass.
 
 **Refs**:
+
 - LLVM `LICM.cpp`
 - LLVM `LoopInfoAnalysis` (we already have the equivalent)
 

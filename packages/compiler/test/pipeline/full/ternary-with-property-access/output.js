@@ -1,8 +1,8 @@
-const $0 = globalThis.project;
+const $23 = globalThis.project;
 let $12 = undefined;
-if (!$0.external) {
-  const $23 = `lab-${$0.slug}-title`;
-  $12 = $23;
+if (!$23.external) {
+  const $25 = `lab-${$23.slug}-title`;
+  $12 = $25;
 } else {
   $12 = undefined;
 }

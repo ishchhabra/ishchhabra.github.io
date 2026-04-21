@@ -35,3 +35,13 @@ export {
   type OperationId,
 } from "./Operation";
 export { Region } from "./Region";
+export {
+  isRegionBranchOp,
+  isRegionBranchTerminator,
+  parentExit,
+  type ParentExit,
+  type RegionBranchOp,
+  type RegionBranchPoint,
+  type RegionBranchTerminator,
+  type RegionSuccessor,
+} from "./RegionBranchOp";

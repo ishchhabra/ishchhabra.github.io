@@ -4,6 +4,4 @@ function $0() {
   };
 }
 let $1 = undefined;
-const $11 = $0();
-({ x: $1 } = $11);
-const $2 = $11;
+({ x: $1 } = $0());

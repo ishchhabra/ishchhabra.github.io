@@ -1,4 +1,5 @@
 import type { OperationId } from "../../core";
+import { registerUses, unregisterUses } from "../../core/Use";
 import type { Value } from "../../core/Value";
 import {
   type CloneContext,
@@ -10,6 +11,12 @@ import {
   VerifyError,
 } from "../../core/Operation";
 import { Region } from "../../core/Region";
+import {
+  parentExit,
+  type RegionBranchOp,
+  type RegionBranchPoint,
+  type RegionSuccessor,
+} from "../../core/RegionBranchOp";
 
 /**
  * Top-tested loop with loop-carried SSA values. Mirrors MLIR's `scf.while`.
@@ -70,11 +77,13 @@ import { Region } from "../../core/Region";
  * { body }` lowers to a separate {@link ForOp}, not WhileOp, because
  * the `continue` semantics differ.
  */
-export class WhileOp extends Operation {
+export class WhileOp extends Operation implements RegionBranchOp {
   static override readonly traits = new Set<Trait>([Trait.HasRegions]);
 
-  public readonly inits: readonly Value[];
-  public readonly resultPlaces: readonly Value[];
+  /** Mutable — MLIR-style. Use {@link setInits}. */
+  public inits: Value[];
+  /** Mutable — MLIR-style. Use {@link setResultPlaces}. */
+  public resultPlaces: Value[];
 
   constructor(
     id: OperationId,
@@ -85,8 +94,18 @@ export class WhileOp extends Operation {
     resultPlaces: readonly Value[] = [],
   ) {
     super(id, [beforeRegion, bodyRegion]);
-    this.inits = inits;
-    this.resultPlaces = resultPlaces;
+    this.inits = [...inits];
+    this.resultPlaces = [...resultPlaces];
+  }
+
+  setInits(inits: readonly Value[]): void {
+    if (this.parentBlock !== null) unregisterUses(this);
+    this.inits = [...inits];
+    if (this.parentBlock !== null) registerUses(this);
+  }
+
+  setResultPlaces(places: readonly Value[]): void {
+    this.resultPlaces = [...places];
   }
 
   get beforeRegion(): Region {
@@ -146,5 +165,29 @@ export class WhileOp extends Operation {
         `inits (${this.inits.length}) and resultPlaces (${this.resultPlaces.length}) must have equal length`,
       );
     }
+  }
+
+  // ------------------------------------------------------------------
+  // RegionBranchOp — MLIR scf.while shape
+  // ------------------------------------------------------------------
+
+  getSuccessorRegions(point: RegionBranchPoint): readonly RegionSuccessor[] {
+    if (point.kind === "parent") {
+      // Enter the loop → before-region entry receives `inits`.
+      return [{ target: this.beforeRegion }];
+    }
+    if (point.region === this.beforeRegion) {
+      // ConditionOp decides: true → body, false → parent-exit.
+      return [{ target: this.bodyRegion }, { target: parentExit }];
+    }
+    if (point.region === this.bodyRegion) {
+      // YieldOp back-edge to before-region entry.
+      return [{ target: this.beforeRegion }];
+    }
+    return [];
+  }
+
+  getEntrySuccessorOperands(_successor: RegionSuccessor): readonly Value[] {
+    return this.inits;
   }
 }

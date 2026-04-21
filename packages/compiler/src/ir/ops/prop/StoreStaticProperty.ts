@@ -3,11 +3,7 @@ import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
-import {
-  effects,
-  staticPropertyLocation,
-  type MemoryEffects,
-} from "../../memory/MemoryLocation";
+import { effects, staticPropertyLocation, type MemoryEffects } from "../../memory/MemoryLocation";
 /**
  * An instruction that stores a value into a **static** property for an object:
  * `object[0]` or `object.foo`.

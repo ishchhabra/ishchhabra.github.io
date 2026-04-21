@@ -1,10 +1,9 @@
 function $0() {
-  var $1 = undefined;
-  for ($1 = 0; true; ) {
+  for (; true; ) {
     break;
   }
-  for ($1 = 0; true; ) {
+  for (; true; ) {
     break;
   }
-  return $1;
+  return undefined;
 }

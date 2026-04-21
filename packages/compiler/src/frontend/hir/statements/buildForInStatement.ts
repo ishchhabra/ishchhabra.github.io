@@ -4,6 +4,7 @@ import { Environment } from "../../../environment";
 import {
   ArrayDestructureOp,
   createOperationId,
+  getDestructureTargetDefs,
   type DestructureTarget,
   ForInOp,
   ObjectDestructureOp,
@@ -70,6 +71,9 @@ export function buildForInStatement(
 
   const bodyRegion = new Region([]);
   const bodyBlock = environment.createBlock();
+  for (const p of [iterationValuePlace, ...getDestructureTargetDefs(iterationTarget)]) {
+    if (!bodyBlock.entryBindings.includes(p)) bodyBlock.entryBindings.push(p);
+  }
   functionBuilder.withStructureRegion(bodyRegion, () => {
     functionBuilder.addBlock(bodyBlock);
     functionBuilder.currentBlock = bodyBlock;

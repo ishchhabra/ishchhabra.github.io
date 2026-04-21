@@ -79,14 +79,16 @@ export class StoreLocalOp extends Operation {
   }
 
   public override hasSideEffects(): boolean {
-    // An assignment writes to an existing binding — the effect is
-    // observable to any later load. DCE alone (which reasons about
-    // SSA defs) cannot prove such a write is dead; that's the job
-    // of a memory-aware Dead Store Elimination pass. Mark
-    // assignments as side-effectful so DCE leaves them alone until
-    // DSE lands; a declaration introduces a fresh binding and
-    // stays removable when nothing reads or writes it.
-    return this.kind === "assignment";
+    // Both declarations and assignments write the binding cell.
+    // Post-mem2reg, a declaration's LoadLocal readers get elided,
+    // so SSA liveness can't keep the declaration alive. But the
+    // binding is still observed by destructures / property-writes /
+    // other multi-def ops that target the same cell; dropping the
+    // declaration would leave them writing to an undeclared name.
+    // DCE therefore preserves all StoreLocals unconditionally —
+    // memory-aware DSE is the right pass to remove truly-dead
+    // stores.
+    return true;
   }
 
   public override getMemoryEffects(_env?: unknown): MemoryEffects {

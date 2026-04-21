@@ -1,5 +1,4 @@
-const $0 = {
+delete {
   x: 1,
   y: 2,
-};
-delete $0.x;
+}.x;

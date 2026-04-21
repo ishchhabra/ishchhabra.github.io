@@ -61,11 +61,17 @@ when the full optimizer pipeline ran:
 ```js
 // input
 let a, b, c, d;
-[[a, b], [c, d]] = [[1, 2], [3, 4]];
+[[a, b], [c, d]] = [
+  [1, 2],
+  [3, 4],
+];
 console.log(a, b, c, d);
 
 // output (with full pipeline, broken)
-[[$0, $1], [$2, $3]] = [[1, 2], [3, 4]];
+[[$0, $1], [$2, $3]] = [
+  [1, 2],
+  [3, 4],
+];
 console.log(undefined, undefined, undefined, undefined);
 ```
 
@@ -93,7 +99,7 @@ A correct full-SSA-for-scalars migration touches:
    longer the canonical write op for promoted bindings. What about
    destructure, for-of, catch? Their writes need SSA representation
    (multi-result ops, per-write fresh Values, or exclusion).
-2. **Mutability analysis**: needs to count *all* writers to a
+2. **Mutability analysis**: needs to count _all_ writers to a
    binding, not just `StoreLocalOp`/`StoreContextOp`. Destructure,
    for-of, catch all write bindings and affect mutability.
 3. **Dead-code elimination**: SSA liveness ≠ source-level binding
@@ -238,15 +244,15 @@ during this work and are staged:
 
 ### Production comparison
 
-| Compiler | Mem2reg for scalars? | Handles destructure via |
-|---|---|---|
-| LLVM | Yes, aggressively | Source lowering removes before LLVM sees |
-| V8 TurboShaft | No | Composite op, memory-form |
-| Cranelift | No | Composite op, memory-form |
-| React Compiler | No | Composite op, memory-form |
-| Babel / SWC / Oxc | No | Composite op (or ES5 lowering) |
-| GCC | Yes, aggressively | Source lowering |
-| Our compiler | No (final choice) | Composite op, walker handles reads |
+| Compiler          | Mem2reg for scalars? | Handles destructure via                  |
+| ----------------- | -------------------- | ---------------------------------------- |
+| LLVM              | Yes, aggressively    | Source lowering removes before LLVM sees |
+| V8 TurboShaft     | No                   | Composite op, memory-form                |
+| Cranelift         | No                   | Composite op, memory-form                |
+| React Compiler    | No                   | Composite op, memory-form                |
+| Babel / SWC / Oxc | No                   | Composite op (or ES5 lowering)           |
+| GCC               | Yes, aggressively    | Source lowering                          |
+| Our compiler      | No (final choice)    | Composite op, walker handles reads       |
 
 ## The architectural principle
 
@@ -266,7 +272,7 @@ answer.
 ## Open questions if we revisit
 
 1. Is there any JS benchmark where mem2reg's O(1) definer walks
-   provide a *measurable* performance advantage over the walker's
+   provide a _measurable_ performance advantage over the walker's
    per-query cost?
 2. Would a narrower mem2reg (single-assignment `const` bindings
    only) be feasible without the cascading issues?

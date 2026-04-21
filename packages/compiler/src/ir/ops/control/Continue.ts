@@ -2,6 +2,8 @@ import type { OperationId } from "../../core";
 import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
 import { type CloneContext, nextId, Operation, Trait } from "../../core/Operation";
+import { registerUses, unregisterUses } from "../../core/Use";
+import type { RegionBranchTerminator } from "../../core/RegionBranchOp";
 
 /**
  * Structured `continue` exit — MLIR-style structural successor.
@@ -18,10 +20,11 @@ import { type CloneContext, nextId, Operation, Trait } from "../../core/Operatio
  * the enclosing loop has loop-carried decls, and consumed by
  * `SSAEliminator` to emit `param = arg` copy stores before `continue`.
  */
-export class ContinueOp extends Operation {
+export class ContinueOp extends Operation implements RegionBranchTerminator {
   static override readonly traits = new Set<Trait>([Trait.Terminator]);
 
-  public readonly args: readonly Value[];
+  /** Mutable — MLIR-style. Use {@link setForwardedOperands}. */
+  public args: Value[];
 
   constructor(
     id: OperationId,
@@ -29,7 +32,7 @@ export class ContinueOp extends Operation {
     args: readonly Value[] = [],
   ) {
     super(id);
-    this.args = args;
+    this.args = [...args];
   }
 
   getOperands(): Value[] {
@@ -65,5 +68,18 @@ export class ContinueOp extends Operation {
     if (this.args.length === 0) return `continue${label}`;
     const argStr = this.args.map((a) => a.print()).join(", ");
     return `continue${label}(${argStr})`;
+  }
+
+  // RegionBranchTerminator — all operands are forwarded to the
+  // enclosing loop's back-edge successor (before-entry for
+  // WhileOp/ForInOp/ForOfOp; update-entry for ForOp).
+  getForwardedOperands(): readonly Value[] {
+    return this.args;
+  }
+
+  setForwardedOperands(operands: readonly Value[]): void {
+    if (this.parentBlock !== null) unregisterUses(this);
+    this.args = [...operands];
+    if (this.parentBlock !== null) registerUses(this);
   }
 }

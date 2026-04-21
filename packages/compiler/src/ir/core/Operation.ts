@@ -240,13 +240,23 @@ export abstract class Operation {
 
   /**
    * Places this op writes. Default: `[place]` if the op has a place,
-   * empty otherwise. Multi-def ops (StoreLocal, destructure) override.
+   * empty otherwise. Multi-def ops (StoreLocal, destructure,
+   * structured ops with `resultPlaces`) override.
    */
   getDefs(): Value[] {
     return this.place !== undefined ? [this.place] : [];
   }
 
-  /** MLIR-style alias for {@link getDefs}. */
+  /**
+   * MLIR-style: the SSA values this op produces. Canonical spelling
+   * matching `mlir::Operation::getResults()`. Aliases {@link getDefs}.
+   */
+  getResults(): readonly Value[] {
+    return this.getDefs();
+  }
+
+  /** Getter form for the same value, for call sites that read it
+   *  as a property. */
   get results(): readonly Value[] {
     return this.getDefs();
   }

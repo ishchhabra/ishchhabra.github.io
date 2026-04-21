@@ -2,10 +2,17 @@ import * as t from "@babel/types";
 import { ClassDeclarationOp } from "../../../../ir/ops/class/ClassDeclaration";
 import { CodeGenerator } from "../../../CodeGenerator";
 
+/**
+ * Idempotent. Repeated calls on the same op return the same AST
+ * node, so consumers can safely call via def-use traversal.
+ */
 export function generateClassDeclarationOp(
   instruction: ClassDeclarationOp,
   generator: CodeGenerator,
 ): t.ClassDeclaration {
+  const cached = generator.declarationAstCache.get(instruction);
+  if (cached !== undefined) return cached as t.ClassDeclaration;
+
   const name = instruction.place.name ?? `$${instruction.place.id}`;
   const idNode = t.identifier(name);
 
@@ -42,8 +49,12 @@ export function generateClassDeclarationOp(
     return node;
   });
 
-  const node = t.classDeclaration(idNode, superClass, t.classBody(body));
+  const decl = t.classDeclaration(idNode, superClass, t.classBody(body));
+  generator.declarationAstCache.set(instruction, decl);
   generator.declaredDeclarations.add(instruction.place.declarationId);
-  generator.values.set(instruction.place.id, node);
-  return node;
+  // `values` holds an expression-compatible reference (Identifier).
+  // Consumers needing the declaration AST walk def-use edges to
+  // this op and call its codegen.
+  generator.values.set(instruction.place.id, t.identifier(name));
+  return decl;
 }

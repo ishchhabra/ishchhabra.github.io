@@ -1,6 +1,6 @@
-let $0 = {};
-({ a: $0.a, b: $0.b } = {
+const $21 = {};
+({ a: $21.a, b: $21.b } = {
   a: 1,
   b: 2,
 });
-console.log($0.a, $0.b);
+console.log($21.a, $21.b);

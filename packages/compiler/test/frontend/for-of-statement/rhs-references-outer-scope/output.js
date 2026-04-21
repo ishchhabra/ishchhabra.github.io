@@ -1,4 +1,3 @@
-const $0 = [1, 2, 3];
-for (const $7 of $0) {
+for (const $7 of [1, 2, 3]) {
   console.log($7);
 }

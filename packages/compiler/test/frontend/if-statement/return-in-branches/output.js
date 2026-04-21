@@ -5,5 +5,4 @@ function $0($2) {
     return -1;
   }
 }
-const $1 = $0(5);
-console.log($1);
+console.log($0(5));

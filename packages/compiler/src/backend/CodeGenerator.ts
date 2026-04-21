@@ -44,6 +44,22 @@ export class CodeGenerator {
   public declaredDeclarations: Set<DeclarationId> = new Set();
 
   /**
+   * Memoized declaration AST per `FunctionDeclarationOp` /
+   * `ClassDeclarationOp`. Implementation detail of those ops'
+   * codegen functions — they are idempotent, calling them twice on
+   * the same op returns the same AST node.
+   *
+   * Not a side-channel lookup map: consumers don't read this
+   * directly. They walk the def-use edge (`Value.definer`) to find
+   * the producing op and call its codegen function, which returns
+   * the cached AST. Matches MLIR's `value->getDefiningOp()` pattern.
+   */
+  public readonly declarationAstCache = new Map<
+    unknown,
+    t.FunctionDeclaration | t.ClassDeclaration
+  >();
+
+  /**
    * Returns the label to use for a `break` statement targeting the given block.
    * - `undefined` if the block is not a break target at all
    * - `null` if it's the innermost break target (plain `break`)

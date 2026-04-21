@@ -4,6 +4,7 @@ import { Environment } from "../../../environment";
 import {
   ArrayDestructureOp,
   createOperationId,
+  getDestructureTargetDefs,
   type DestructureTarget,
   ForOfOp,
   ObjectDestructureOp,
@@ -75,6 +76,12 @@ export function buildForOfStatement(
 
   const bodyRegion = new Region([]);
   const bodyBlock = environment.createBlock();
+  // MLIR-style: the op-introduced iter binding is a block-entry
+  // binding on the body region's entry, alongside (but distinct
+  // from) SSA iter-arg params. See `BasicBlock.entryBindings`.
+  for (const p of [iterationValuePlace, ...getDestructureTargetDefs(iterationTarget)]) {
+    if (!bodyBlock.entryBindings.includes(p)) bodyBlock.entryBindings.push(p);
+  }
   functionBuilder.withStructureRegion(bodyRegion, () => {
     functionBuilder.addBlock(bodyBlock);
     functionBuilder.currentBlock = bodyBlock;

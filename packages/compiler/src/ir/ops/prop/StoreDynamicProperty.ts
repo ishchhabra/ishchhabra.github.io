@@ -3,11 +3,7 @@ import { Value } from "../../core";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
-import {
-  computedPropertyLocation,
-  effects,
-  type MemoryEffects,
-} from "../../memory/MemoryLocation";
+import { computedPropertyLocation, effects, type MemoryEffects } from "../../memory/MemoryLocation";
 /**
  * An instruction that stores a value into a **dynamic** property for an object:
  * `object[property]`.
