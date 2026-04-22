@@ -1,15 +1,24 @@
 import type { BlockStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { createOperationId, JumpOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildOwnedBody } from "./buildOwnedBody";
 
 /**
- * Lower `{ ... }` to flat CFG: the block body inlines into a
- * successor block with a jump to a fallthrough block. No structured
- * op.
+ * `{ ... }` — plain block statement. Lexical scope is a source-level
+ * concept (let/const shadowing) already modeled by Scope metadata;
+ * it does NOT require a new CFG block. Body statements inline
+ * directly into the current block. Codegen re-emits braces based on
+ * scope boundaries it detects in the IR, not on separate CFG nodes.
+ *
+ * Note: this is a behavioral fix — wrapping plain `{}` in its own
+ * CFG block broke classical dataflow analyses that assume a
+ * declaration's uses are reachable via dominance on the flat CFG.
+ * Specifically, `const length = ...` inside a `{}` would land in a
+ * different basic block than `while (cursor < length)` even when
+ * both are in the same lexical scope, breaking mem2reg for
+ * `length`.
  */
 export function buildBlockStatement(
   node: BlockStatement,
@@ -18,21 +27,6 @@ export function buildBlockStatement(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  const parentBlock = functionBuilder.currentBlock;
-
-  const bodyBlock = environment.createBlock();
-  const fallthroughBlock = environment.createBlock();
-  functionBuilder.addBlock(bodyBlock);
-  functionBuilder.addBlock(fallthroughBlock);
-
-  parentBlock.terminal = new JumpOp(createOperationId(environment), bodyBlock, []);
-
-  functionBuilder.currentBlock = bodyBlock;
   buildOwnedBody(node, scope, functionBuilder, moduleBuilder, environment);
-  if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), fallthroughBlock, []);
-  }
-
-  functionBuilder.currentBlock = fallthroughBlock;
   return undefined;
 }

@@ -6,16 +6,14 @@ function $0($2) {
         value: $2.data,
       };
     case "text":
-      const $18 = $2;
       return {
         type: "text",
-        value: $18.value,
+        value: $2.value,
       };
     default:
-      const $29 = $2;
       return {
         type: "element",
-        tag: $29.tagName,
+        tag: $2.tagName,
       };
   }
 }
