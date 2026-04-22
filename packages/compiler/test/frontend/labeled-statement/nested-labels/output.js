@@ -2,9 +2,9 @@ let blockparam_37 = undefined;
 blockparam_37 = 0;
 let blockparam_38 = undefined;
 let blockparam_39 = undefined;
-for (; blockparam_37 < 5; ) {
+outer: for (; blockparam_37 < 5; ) {
   blockparam_38 = 0;
-  for (; blockparam_38 < 5; ) {
+  inner: for (; blockparam_38 < 5; ) {
     if (blockparam_38 === 2) {
       continue inner;
     }

@@ -138,6 +138,9 @@ export function generateWhileTerm(
       term.kind === "do-while"
         ? t.doWhileStatement(testNode, t.blockStatement(bodyStatements))
         : t.whileStatement(testNode, t.blockStatement(bodyStatements));
+    if (term.label !== undefined) {
+      return [t.labeledStatement(t.identifier(term.label), loopStatement)];
+    }
     return [loopStatement];
   });
 }
@@ -175,7 +178,11 @@ export function generateForTerm(
     // Mark update block generated so it doesn't leak at top level.
     generator.generatedBlocks.add(term.updateBlock.id);
 
-    return [t.forStatement(null, testNode, null, t.blockStatement(bodyStatements))];
+    const forStmt = t.forStatement(null, testNode, null, t.blockStatement(bodyStatements));
+    if (term.label !== undefined) {
+      return [t.labeledStatement(t.identifier(term.label), forStmt)];
+    }
+    return [forStmt];
   });
 }
 
@@ -210,14 +217,16 @@ export function generateForOfTerm(
     const bodyStatements = emitArm(term.bodyBlock, funcOp, generator);
     generator.controlStack.length = savedControl;
 
-    return [
-      t.forOfStatement(
-        t.variableDeclaration("const", [t.variableDeclarator(iterValId)]),
-        iterNode,
-        t.blockStatement(bodyStatements),
-        term.isAwait,
-      ),
-    ];
+    const fos = t.forOfStatement(
+      t.variableDeclaration("const", [t.variableDeclarator(iterValId)]),
+      iterNode,
+      t.blockStatement(bodyStatements),
+      term.isAwait,
+    );
+    if (term.label !== undefined) {
+      return [t.labeledStatement(t.identifier(term.label), fos)];
+    }
+    return [fos];
   });
 }
 
@@ -248,13 +257,15 @@ export function generateForInTerm(
     const bodyStatements = emitArm(term.bodyBlock, funcOp, generator);
     generator.controlStack.length = savedControl;
 
-    return [
-      t.forInStatement(
-        t.variableDeclaration("const", [t.variableDeclarator(iterValId)]),
-        objNode,
-        t.blockStatement(bodyStatements),
-      ),
-    ];
+    const fis = t.forInStatement(
+      t.variableDeclaration("const", [t.variableDeclarator(iterValId)]),
+      objNode,
+      t.blockStatement(bodyStatements),
+    );
+    if (term.label !== undefined) {
+      return [t.labeledStatement(t.identifier(term.label), fis)];
+    }
+    return [fis];
   });
 }
 
@@ -328,7 +339,11 @@ export function generateSwitchTerm(
     }
 
     generator.controlStack.length = savedControl;
-    return [t.switchStatement(discNode, cases)];
+    const sw = t.switchStatement(discNode, cases);
+    if (term.label !== undefined) {
+      return [t.labeledStatement(t.identifier(term.label), sw)];
+    }
+    return [sw];
   });
 }
 
