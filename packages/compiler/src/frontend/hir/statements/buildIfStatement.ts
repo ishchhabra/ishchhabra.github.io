@@ -1,6 +1,6 @@
 import type { IfStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { createOperationId, IfOp, Region, YieldOp } from "../../../ir";
+import { createOperationId, IfTerm, JumpOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FuncOpBuilder } from "../FuncOpBuilder";
@@ -8,19 +8,17 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildOwnedBody } from "./buildOwnedBody";
 
 /**
- * Lower a JS `if (test) { … } [else { … }]` to a textbook MLIR
- * `IfOp`. The IfOp is inlined into its parent block; after it,
- * control continues with the next op in the parent block.
+ * Lower `if (test) { … } [else { … }]` to a flat CFG with an
+ * {@link IfTerm} terminator:
  *
- *   parentBlock: [...ops before..., IfOp, ...ops after...]
- *     consRegion: [consBlock] ending in YieldOp
- *     altRegion:  [altBlock]  ending in YieldOp (two-arm only)
+ *   parentBlock --IfTerm--> consBlock / altBlock
+ *   consBlock   --Jump-->  fallthroughBlock
+ *   altBlock    --Jump-->  fallthroughBlock
  *
- * No fallthrough / join block. No header JumpOp. The SSABuilder
- * lifts any let-variable mutations inside the arms into
- * `IfOp.resultPlaces` and threads the new values through each arm's
- * `YieldOp.values`, so reads in the parent block's subsequent ops
- * pick up the merged values.
+ * Both arms always exist — the frontend synthesizes an empty
+ * alternate that jumps straight to fallthrough when there's no
+ * source `else`. Loop-carried / merged let values flow via block
+ * parameters on the fallthrough block (standard CFG SSA).
  */
 export function buildIfStatement(
   node: IfStatement,
@@ -36,43 +34,44 @@ export function buildIfStatement(
     throw new Error("If statement test must be a single place");
   }
 
-  // Build the consequent region.
-  const consequentRegion = new Region([]);
   const consequentBlock = environment.createBlock();
-  functionBuilder.withStructureRegion(consequentRegion, () => {
-    functionBuilder.addBlock(consequentBlock);
-    functionBuilder.currentBlock = consequentBlock;
-    buildOwnedBody(node.consequent, scope, functionBuilder, moduleBuilder, environment);
-    if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), []);
-    }
-  });
-
-  // Build the alternate region. MLIR `scf.if` requires both arms
-  // so region-branch analyses (SSA lift, dataflow, inlining) see a
-  // complete CFG. For source-level `if` with no `else`, emit an
-  // empty alternate whose body is just a `YieldOp`.
-  const alternateRegion = new Region([]);
   const alternateBlock = environment.createBlock();
-  functionBuilder.withStructureRegion(alternateRegion, () => {
-    functionBuilder.addBlock(alternateBlock);
-    functionBuilder.currentBlock = alternateBlock;
-    if (node.alternate != null) {
-      buildOwnedBody(node.alternate, scope, functionBuilder, moduleBuilder, environment);
-    }
-    if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), []);
-    }
-  });
+  const fallthroughBlock = environment.createBlock();
+  functionBuilder.addBlock(consequentBlock);
+  functionBuilder.addBlock(alternateBlock);
+  functionBuilder.addBlock(fallthroughBlock);
 
-  const ifOp = new IfOp(
+  parentBlock.terminal = new IfTerm(
     createOperationId(environment),
     testPlace,
-    [],
-    consequentRegion,
-    alternateRegion,
+    consequentBlock,
+    alternateBlock,
   );
-  parentBlock.appendOp(ifOp);
-  functionBuilder.currentBlock = parentBlock;
+
+  // Consequent arm
+  functionBuilder.currentBlock = consequentBlock;
+  buildOwnedBody(node.consequent, scope, functionBuilder, moduleBuilder, environment);
+  if (functionBuilder.currentBlock.terminal === undefined) {
+    functionBuilder.currentBlock.terminal = new JumpOp(
+      createOperationId(environment),
+      fallthroughBlock.id,
+      [],
+    );
+  }
+
+  // Alternate arm
+  functionBuilder.currentBlock = alternateBlock;
+  if (node.alternate != null) {
+    buildOwnedBody(node.alternate, scope, functionBuilder, moduleBuilder, environment);
+  }
+  if (functionBuilder.currentBlock.terminal === undefined) {
+    functionBuilder.currentBlock.terminal = new JumpOp(
+      createOperationId(environment),
+      fallthroughBlock.id,
+      [],
+    );
+  }
+
+  functionBuilder.currentBlock = fallthroughBlock;
   return undefined;
 }

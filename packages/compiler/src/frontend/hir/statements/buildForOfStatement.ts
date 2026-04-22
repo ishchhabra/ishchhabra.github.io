@@ -6,13 +6,12 @@ import {
   createOperationId,
   getDestructureTargetDefs,
   type DestructureTarget,
-  ForOfOp,
+  ForOfTerm,
+  JumpOp,
   ObjectDestructureOp,
   Value,
-  Region,
   StoreContextOp,
   StoreLocalOp,
-  YieldOp,
 } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FuncOpBuilder } from "../FuncOpBuilder";
@@ -23,9 +22,7 @@ import { buildNode } from "../buildNode";
 import { buildOwnedBody } from "./buildOwnedBody";
 
 /**
- * Lower a JS `for (x of iterable) { body }` to a textbook MLIR
- * `ForOfOp`. The op is inlined into its parent block; after it,
- * control continues with the next op in the parent block.
+ * Lower `for (target of iterable) body` to flat CFG with ForOfTerm.
  */
 export function buildForOfStatement(
   node: ForOfStatement,
@@ -74,53 +71,47 @@ export function buildForOfStatement(
       iterationTarget.kind === "binding" ? iterationTarget.place : environment.createValue();
   }
 
-  const bodyRegion = new Region([]);
   const bodyBlock = environment.createBlock();
-  // MLIR-style: the op-introduced iter binding is a block-entry
-  // binding on the body region's entry, alongside (but distinct
-  // from) SSA iter-arg params. See `BasicBlock.entryBindings`.
+  const exitBlock = environment.createBlock();
+  functionBuilder.addBlock(bodyBlock);
+  functionBuilder.addBlock(exitBlock);
+
   for (const p of [iterationValuePlace, ...getDestructureTargetDefs(iterationTarget)]) {
     if (!bodyBlock.entryBindings.includes(p)) bodyBlock.entryBindings.push(p);
   }
-  functionBuilder.withStructureRegion(bodyRegion, () => {
-    functionBuilder.addBlock(bodyBlock);
-    functionBuilder.currentBlock = bodyBlock;
 
-    if (bareLVal !== undefined) {
-      emitLoopIterationAssignment(
-        iterationTarget,
-        iterationValuePlace,
-        functionBuilder,
-        environment,
-      );
-    }
-
-    functionBuilder.controlStack.push({
-      kind: "loop",
-      label,
-      breakTarget: undefined,
-      continueTarget: undefined,
-      structured: true,
-    });
-    buildOwnedBody(node.body, forScope, functionBuilder, moduleBuilder, environment);
-    functionBuilder.controlStack.pop();
-
-    if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), []);
-    }
-  });
-
-  const forOfOp = new ForOfOp(
+  parentBlock.terminal = new ForOfTerm(
     createOperationId(environment),
-    iterationValuePlace,
-    iterationTarget,
     iterablePlace,
+    iterationValuePlace,
+    bodyBlock,
+    exitBlock,
     node.await,
-    bodyRegion,
     label,
   );
-  parentBlock.appendOp(forOfOp);
-  functionBuilder.currentBlock = parentBlock;
+
+  functionBuilder.currentBlock = bodyBlock;
+  if (bareLVal !== undefined) {
+    emitLoopIterationAssignment(iterationTarget, iterationValuePlace, functionBuilder, environment);
+  }
+  functionBuilder.controlStack.push({
+    kind: "loop",
+    label,
+    breakTarget: exitBlock.id,
+    continueTarget: parentBlock.id,
+    structured: false,
+  });
+  buildOwnedBody(node.body, forScope, functionBuilder, moduleBuilder, environment);
+  functionBuilder.controlStack.pop();
+  if (functionBuilder.currentBlock.terminal === undefined) {
+    functionBuilder.currentBlock.terminal = new JumpOp(
+      createOperationId(environment),
+      parentBlock.id,
+      [],
+    );
+  }
+
+  functionBuilder.currentBlock = exitBlock;
   return undefined;
 }
 

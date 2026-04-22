@@ -6,13 +6,12 @@ import {
   createOperationId,
   getDestructureTargetDefs,
   type DestructureTarget,
-  ForInOp,
+  ForInTerm,
+  JumpOp,
   ObjectDestructureOp,
   Value,
-  Region,
   StoreContextOp,
   StoreLocalOp,
-  YieldOp,
 } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FuncOpBuilder } from "../FuncOpBuilder";
@@ -69,49 +68,46 @@ export function buildForInStatement(
       iterationTarget.kind === "binding" ? iterationTarget.place : environment.createValue();
   }
 
-  const bodyRegion = new Region([]);
   const bodyBlock = environment.createBlock();
+  const exitBlock = environment.createBlock();
+  functionBuilder.addBlock(bodyBlock);
+  functionBuilder.addBlock(exitBlock);
+
   for (const p of [iterationValuePlace, ...getDestructureTargetDefs(iterationTarget)]) {
     if (!bodyBlock.entryBindings.includes(p)) bodyBlock.entryBindings.push(p);
   }
-  functionBuilder.withStructureRegion(bodyRegion, () => {
-    functionBuilder.addBlock(bodyBlock);
-    functionBuilder.currentBlock = bodyBlock;
 
-    if (bareLVal !== undefined) {
-      emitLoopIterationAssignment(
-        iterationTarget,
-        iterationValuePlace,
-        functionBuilder,
-        environment,
-      );
-    }
-
-    functionBuilder.controlStack.push({
-      kind: "loop",
-      label,
-      breakTarget: undefined,
-      continueTarget: undefined,
-      structured: true,
-    });
-    buildOwnedBody(node.body, forScope, functionBuilder, moduleBuilder, environment);
-    functionBuilder.controlStack.pop();
-
-    if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), []);
-    }
-  });
-
-  const forInOp = new ForInOp(
+  parentBlock.terminal = new ForInTerm(
     createOperationId(environment),
-    iterationValuePlace,
-    iterationTarget,
     objectPlace,
-    bodyRegion,
+    iterationValuePlace,
+    bodyBlock,
+    exitBlock,
     label,
   );
-  parentBlock.appendOp(forInOp);
-  functionBuilder.currentBlock = parentBlock;
+
+  functionBuilder.currentBlock = bodyBlock;
+  if (bareLVal !== undefined) {
+    emitLoopIterationAssignment(iterationTarget, iterationValuePlace, functionBuilder, environment);
+  }
+  functionBuilder.controlStack.push({
+    kind: "loop",
+    label,
+    breakTarget: exitBlock.id,
+    continueTarget: parentBlock.id,
+    structured: false,
+  });
+  buildOwnedBody(node.body, forScope, functionBuilder, moduleBuilder, environment);
+  functionBuilder.controlStack.pop();
+  if (functionBuilder.currentBlock.terminal === undefined) {
+    functionBuilder.currentBlock.terminal = new JumpOp(
+      createOperationId(environment),
+      parentBlock.id,
+      [],
+    );
+  }
+
+  functionBuilder.currentBlock = exitBlock;
   return undefined;
 }
 

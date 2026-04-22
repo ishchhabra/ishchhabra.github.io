@@ -1,6 +1,6 @@
 import type { LabeledStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { createOperationId, LabeledBlockOp, Region, YieldOp } from "../../../ir";
+import { createOperationId, JumpOp, LabeledTerm } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -22,7 +22,6 @@ export function buildLabeledStatement(
   const label = node.label.name;
   const body = node.body;
 
-  // For loops and switches, pass the label directly to the builder.
   if (body.type === "ForStatement") {
     return buildForStatement(body, scope, functionBuilder, moduleBuilder, environment, label);
   }
@@ -42,29 +41,38 @@ export function buildLabeledStatement(
     return buildSwitchStatement(body, scope, functionBuilder, moduleBuilder, environment, label);
   }
 
-  // Non-loop/non-switch: emit an inline LabeledBlockOp.
+  // Non-loop/non-switch labeled: emit flat CFG + LabeledTerm.
   const parentBlock = functionBuilder.currentBlock;
-
-  const bodyRegion = new Region([]);
   const bodyBlock = environment.createBlock();
-  functionBuilder.withStructureRegion(bodyRegion, () => {
-    functionBuilder.addBlock(bodyBlock);
-    functionBuilder.currentBlock = bodyBlock;
-    functionBuilder.controlStack.push({
-      kind: "label",
-      label,
-      breakTarget: undefined,
-      structured: true,
-    });
-    buildOwnedBody(body, scope, functionBuilder, moduleBuilder, environment);
-    functionBuilder.controlStack.pop();
-    if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), []);
-    }
-  });
+  const fallthroughBlock = environment.createBlock();
+  functionBuilder.addBlock(bodyBlock);
+  functionBuilder.addBlock(fallthroughBlock);
 
-  const labeledBlockOp = new LabeledBlockOp(createOperationId(environment), label, bodyRegion);
-  parentBlock.appendOp(labeledBlockOp);
-  functionBuilder.currentBlock = parentBlock;
+  parentBlock.terminal = new LabeledTerm(
+    createOperationId(environment),
+    bodyBlock,
+    fallthroughBlock,
+    label,
+  );
+
+  functionBuilder.currentBlock = bodyBlock;
+  functionBuilder.controlStack.push({
+    kind: "label",
+    label,
+    breakTarget: fallthroughBlock.id,
+    structured: false,
+  });
+  buildOwnedBody(body, scope, functionBuilder, moduleBuilder, environment);
+  functionBuilder.controlStack.pop();
+
+  if (functionBuilder.currentBlock.terminal === undefined) {
+    functionBuilder.currentBlock.terminal = new JumpOp(
+      createOperationId(environment),
+      fallthroughBlock.id,
+      [],
+    );
+  }
+
+  functionBuilder.currentBlock = fallthroughBlock;
   return undefined;
 }

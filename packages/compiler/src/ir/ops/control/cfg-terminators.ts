@@ -241,6 +241,7 @@ export class ForOfTerm extends Operation {
   constructor(
     id: OperationId,
     public readonly iterable: Value,
+    public readonly iterationValue: Value,
     public bodyBlock: BasicBlock,
     public exitBlock: BasicBlock,
     public readonly isAwait: boolean,
@@ -253,6 +254,10 @@ export class ForOfTerm extends Operation {
     return [this.iterable];
   }
 
+  override getDefs(): Value[] {
+    return [this.iterationValue];
+  }
+
   getBlockRefs(): BasicBlock[] {
     return [this.bodyBlock, this.exitBlock];
   }
@@ -263,6 +268,7 @@ export class ForOfTerm extends Operation {
     return new ForOfTerm(
       this.id,
       newIter,
+      this.iterationValue,
       this.bodyBlock,
       this.exitBlock,
       this.isAwait,
@@ -274,6 +280,7 @@ export class ForOfTerm extends Operation {
     return new ForOfTerm(
       nextId(ctx),
       remapPlace(ctx, this.iterable),
+      remapPlace(ctx, this.iterationValue),
       ctx.blockMap.get(this.bodyBlock) ?? this.bodyBlock,
       ctx.blockMap.get(this.exitBlock) ?? this.exitBlock,
       this.isAwait,
@@ -294,6 +301,7 @@ export class ForInTerm extends Operation {
   constructor(
     id: OperationId,
     public readonly object: Value,
+    public readonly iterationValue: Value,
     public bodyBlock: BasicBlock,
     public exitBlock: BasicBlock,
     public readonly label?: string,
@@ -305,6 +313,10 @@ export class ForInTerm extends Operation {
     return [this.object];
   }
 
+  override getDefs(): Value[] {
+    return [this.iterationValue];
+  }
+
   getBlockRefs(): BasicBlock[] {
     return [this.bodyBlock, this.exitBlock];
   }
@@ -312,13 +324,21 @@ export class ForInTerm extends Operation {
   rewrite(values: Map<Value, Value>): ForInTerm {
     const newObj = values.get(this.object) ?? this.object;
     if (newObj === this.object) return this;
-    return new ForInTerm(this.id, newObj, this.bodyBlock, this.exitBlock, this.label);
+    return new ForInTerm(
+      this.id,
+      newObj,
+      this.iterationValue,
+      this.bodyBlock,
+      this.exitBlock,
+      this.label,
+    );
   }
 
   clone(ctx: CloneContext): ForInTerm {
     return new ForInTerm(
       nextId(ctx),
       remapPlace(ctx, this.object),
+      remapPlace(ctx, this.iterationValue),
       ctx.blockMap.get(this.bodyBlock) ?? this.bodyBlock,
       ctx.blockMap.get(this.exitBlock) ?? this.exitBlock,
       this.label,

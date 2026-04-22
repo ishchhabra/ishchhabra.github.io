@@ -1,16 +1,6 @@
 import type { DoWhileStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import {
-  BreakOp,
-  ConditionOp,
-  createOperationId,
-  IfOp,
-  LiteralOp,
-  Region,
-  UnaryExpressionOp,
-  WhileOp,
-  YieldOp,
-} from "../../../ir";
+import { createOperationId, JumpOp, WhileTerm } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FuncOpBuilder } from "../FuncOpBuilder";
@@ -18,21 +8,13 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildOwnedBody } from "./buildOwnedBody";
 
 /**
- * Lower `do { body } while (test)` to `while (true) { body; if (!test) break; }`.
+ * Lower `do { body } while (test)` to flat CFG with a WhileTerm
+ * header and `kind = "do-while"`. The body runs first; the header
+ * re-enters on truthy test, exits on falsey.
  *
- *   parentBlock: [..., WhileOp, ...]
- *     WhileOp.beforeRegion: [beforeBlock]
- *       beforeBlock: [LiteralOp true, ConditionOp(true)]
- *     WhileOp.bodyRegion: [bodyBlock]
- *       bodyBlock: [...body ops..., !test, IfOp, YieldOp]
- *         IfOp.consequentRegion: [consBlock]
- *           consBlock: [BreakOp]
- *
- * The before region's `condition true` is structurally a no-op test
- * — codegen can recognize the pattern and emit `do { body } while
- * (test)` instead of `while (true) { body; if (!test) break; }`. For
- * now we keep the desugared shape because it round-trips correctly
- * even without that recognition.
+ *   parentBlock  --Jump-->   bodyBlock    (first iteration skips test)
+ *   bodyBlock    --Jump-->   headerBlock
+ *   headerBlock (test ops) --WhileTerm(do-while)--> bodyBlock / exitBlock
  */
 export function buildDoWhileStatement(
   node: DoWhileStatement,
@@ -44,72 +26,49 @@ export function buildDoWhileStatement(
 ) {
   const parentBlock = functionBuilder.currentBlock;
 
-  // Before region: `condition true` (loop never exits via the test).
-  const beforeRegion = new Region([]);
-  const beforeBlock = environment.createBlock();
-  functionBuilder.withStructureRegion(beforeRegion, () => {
-    functionBuilder.addBlock(beforeBlock);
-    functionBuilder.currentBlock = beforeBlock;
-    const truePlace = environment.createValue();
-    functionBuilder.addOp(environment.createOperation(LiteralOp, truePlace, true));
-    functionBuilder.currentBlock.terminal = new ConditionOp(
-      createOperationId(environment),
-      truePlace,
-    );
-  });
-
-  const bodyRegion = new Region([]);
   const bodyBlock = environment.createBlock();
-  functionBuilder.withStructureRegion(bodyRegion, () => {
-    functionBuilder.addBlock(bodyBlock);
-    functionBuilder.currentBlock = bodyBlock;
-    functionBuilder.controlStack.push({
-      kind: "loop",
-      label,
-      breakTarget: undefined,
-      continueTarget: undefined,
-      structured: true,
-    });
-    buildOwnedBody(node.body, scope, functionBuilder, moduleBuilder, environment);
+  const headerBlock = environment.createBlock();
+  const exitBlock = environment.createBlock();
+  functionBuilder.addBlock(bodyBlock);
+  functionBuilder.addBlock(headerBlock);
+  functionBuilder.addBlock(exitBlock);
 
-    // if (!test) break;
-    const testPlace = buildNode(node.test, scope, functionBuilder, moduleBuilder, environment);
-    if (testPlace === undefined || Array.isArray(testPlace)) {
-      throw new Error("Do-while statement test must be a single place");
-    }
-    const notTestPlace = environment.createValue();
-    functionBuilder.addOp(
-      environment.createOperation(UnaryExpressionOp, notTestPlace, "!", testPlace),
-    );
+  parentBlock.terminal = new JumpOp(createOperationId(environment), bodyBlock.id, []);
 
-    const consRegion = new Region([]);
-    const consBlock = environment.createBlock();
-    functionBuilder.withStructureRegion(consRegion, () => {
-      functionBuilder.addBlock(consBlock);
-      consBlock.terminal = new BreakOp(createOperationId(environment), label);
-    });
-
-    // MLIR-style: always emit both arms so region-branch analyses
-    // see a complete CFG. The synthetic alternate here just yields
-    // nothing and falls through to the next iteration.
-    const altRegion = new Region([]);
-    const altBlock = environment.createBlock();
-    functionBuilder.withStructureRegion(altRegion, () => {
-      functionBuilder.addBlock(altBlock);
-      altBlock.terminal = new YieldOp(createOperationId(environment), []);
-    });
-
-    const ifOp = new IfOp(createOperationId(environment), notTestPlace, [], consRegion, altRegion);
-    functionBuilder.currentBlock.appendOp(ifOp);
-    functionBuilder.controlStack.pop();
-
-    if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), []);
-    }
+  // Body
+  functionBuilder.currentBlock = bodyBlock;
+  functionBuilder.controlStack.push({
+    kind: "loop",
+    label,
+    breakTarget: exitBlock.id,
+    continueTarget: headerBlock.id,
+    structured: false,
   });
+  buildOwnedBody(node.body, scope, functionBuilder, moduleBuilder, environment);
+  functionBuilder.controlStack.pop();
+  if (functionBuilder.currentBlock.terminal === undefined) {
+    functionBuilder.currentBlock.terminal = new JumpOp(
+      createOperationId(environment),
+      headerBlock.id,
+      [],
+    );
+  }
 
-  const whileOp = new WhileOp(createOperationId(environment), beforeRegion, bodyRegion, label);
-  parentBlock.appendOp(whileOp);
-  functionBuilder.currentBlock = parentBlock;
+  // Header: test + branch
+  functionBuilder.currentBlock = headerBlock;
+  const testPlace = buildNode(node.test, scope, functionBuilder, moduleBuilder, environment);
+  if (testPlace === undefined || Array.isArray(testPlace)) {
+    throw new Error("Do-while statement test must be a single place");
+  }
+  headerBlock.terminal = new WhileTerm(
+    createOperationId(environment),
+    testPlace,
+    bodyBlock,
+    exitBlock,
+    "do-while",
+    label,
+  );
+
+  functionBuilder.currentBlock = exitBlock;
   return undefined;
 }

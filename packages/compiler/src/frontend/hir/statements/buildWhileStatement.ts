@@ -1,6 +1,6 @@
 import type { WhileStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { ConditionOp, createOperationId, Region, WhileOp, YieldOp } from "../../../ir";
+import { createOperationId, JumpOp, WhileTerm } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FuncOpBuilder } from "../FuncOpBuilder";
@@ -8,18 +8,12 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildOwnedBody } from "./buildOwnedBody";
 
 /**
- * Lower a JS `while (test) { body }` to a textbook MLIR `WhileOp`.
+ * Lower `while (test) { body }` to a flat CFG with a
+ * {@link WhileTerm} header:
  *
- *   parentBlock: [..., WhileOp, ...]
- *     WhileOp.beforeRegion: [beforeBlock]
- *       beforeBlock: [...test ops..., ConditionOp(test_result)]
- *     WhileOp.bodyRegion: [bodyBlock]
- *       bodyBlock: [...body ops..., YieldOp]
- *
- * The test lives inside `beforeRegion` instead of as a flat operand
- * to the WhileOp. The before region is re-entered on every iteration,
- * which is what gives the test "evaluates per iteration" semantics at
- * the IR level — matching MLIR's `scf.while`.
+ *   parentBlock --Jump--> headerBlock
+ *   headerBlock (test ops) --WhileTerm--> bodyBlock / exitBlock
+ *   bodyBlock ... --Jump--> headerBlock   (back-edge)
  */
 export function buildWhileStatement(
   node: WhileStatement,
@@ -31,46 +25,49 @@ export function buildWhileStatement(
 ) {
   const parentBlock = functionBuilder.currentBlock;
 
-  // Before region: test ops + ConditionOp terminator.
-  const beforeRegion = new Region([]);
-  const beforeBlock = environment.createBlock();
-  let testPlace;
-  functionBuilder.withStructureRegion(beforeRegion, () => {
-    functionBuilder.addBlock(beforeBlock);
-    functionBuilder.currentBlock = beforeBlock;
-    testPlace = buildNode(node.test, scope, functionBuilder, moduleBuilder, environment);
-    if (testPlace === undefined || Array.isArray(testPlace)) {
-      throw new Error("While statement test must be a single place");
-    }
-    functionBuilder.currentBlock.terminal = new ConditionOp(
-      createOperationId(environment),
-      testPlace,
-    );
-  });
-
-  // Body region: the loop body, terminated in YieldOp on natural
-  // fall-through (or in BreakOp / ContinueOp / ReturnOp).
-  const bodyRegion = new Region([]);
+  const headerBlock = environment.createBlock();
   const bodyBlock = environment.createBlock();
-  functionBuilder.withStructureRegion(bodyRegion, () => {
-    functionBuilder.addBlock(bodyBlock);
-    functionBuilder.currentBlock = bodyBlock;
-    functionBuilder.controlStack.push({
-      kind: "loop",
-      label,
-      breakTarget: undefined,
-      continueTarget: undefined,
-      structured: true,
-    });
-    buildOwnedBody(node.body, scope, functionBuilder, moduleBuilder, environment);
-    functionBuilder.controlStack.pop();
-    if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), []);
-    }
-  });
+  const exitBlock = environment.createBlock();
+  functionBuilder.addBlock(headerBlock);
+  functionBuilder.addBlock(bodyBlock);
+  functionBuilder.addBlock(exitBlock);
 
-  const whileOp = new WhileOp(createOperationId(environment), beforeRegion, bodyRegion, label);
-  parentBlock.appendOp(whileOp);
-  functionBuilder.currentBlock = parentBlock;
+  parentBlock.terminal = new JumpOp(createOperationId(environment), headerBlock.id, []);
+
+  // Header: evaluate test, terminate with WhileTerm
+  functionBuilder.currentBlock = headerBlock;
+  const testPlace = buildNode(node.test, scope, functionBuilder, moduleBuilder, environment);
+  if (testPlace === undefined || Array.isArray(testPlace)) {
+    throw new Error("While statement test must be a single place");
+  }
+  headerBlock.terminal = new WhileTerm(
+    createOperationId(environment),
+    testPlace,
+    bodyBlock,
+    exitBlock,
+    "while",
+    label,
+  );
+
+  // Body
+  functionBuilder.currentBlock = bodyBlock;
+  functionBuilder.controlStack.push({
+    kind: "loop",
+    label,
+    breakTarget: exitBlock.id,
+    continueTarget: headerBlock.id,
+    structured: false,
+  });
+  buildOwnedBody(node.body, scope, functionBuilder, moduleBuilder, environment);
+  functionBuilder.controlStack.pop();
+  if (functionBuilder.currentBlock.terminal === undefined) {
+    functionBuilder.currentBlock.terminal = new JumpOp(
+      createOperationId(environment),
+      headerBlock.id,
+      [],
+    );
+  }
+
+  functionBuilder.currentBlock = exitBlock;
   return undefined;
 }

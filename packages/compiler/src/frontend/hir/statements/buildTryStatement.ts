@@ -1,5 +1,5 @@
 import { Environment } from "../../../environment";
-import { createOperationId, Region, TryOp, YieldOp } from "../../../ir";
+import { createOperationId, JumpOp, TryTerm, Value } from "../../../ir";
 import type { TryStatement } from "oxc-parser";
 import { type Scope } from "../../scope/Scope";
 import { FuncOpBuilder } from "../FuncOpBuilder";
@@ -14,90 +14,93 @@ export function buildTryStatement(
   environment: Environment,
 ) {
   const parentBlock = functionBuilder.currentBlock;
-
   const hasHandler = node.handler !== null;
   const hasFinalizer = node.finalizer !== null;
 
-  const tryRegion = new Region([]);
   const tryBlock = environment.createBlock();
-  functionBuilder.withStructureRegion(tryRegion, () => {
-    functionBuilder.addBlock(tryBlock);
-    functionBuilder.currentBlock = tryBlock;
-    buildOwnedBody(node.block, scope, functionBuilder, moduleBuilder, environment);
-    if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), []);
-    }
-  });
+  const handlerBlock = hasHandler ? environment.createBlock() : null;
+  const finallyBlock = hasFinalizer ? environment.createBlock() : null;
+  const fallthroughBlock = environment.createBlock();
 
-  let handler: {
-    param: import("../../../ir").Value | null;
-    region: Region;
-  } | null = null;
-  if (hasHandler) {
-    const catchClause = node.handler!;
+  functionBuilder.addBlock(tryBlock);
+  if (handlerBlock) functionBuilder.addBlock(handlerBlock);
+  if (finallyBlock) functionBuilder.addBlock(finallyBlock);
+  functionBuilder.addBlock(fallthroughBlock);
+
+  // Build try body
+  functionBuilder.currentBlock = tryBlock;
+  buildOwnedBody(node.block, scope, functionBuilder, moduleBuilder, environment);
+  if (functionBuilder.currentBlock.terminal === undefined) {
+    functionBuilder.currentBlock.terminal = new JumpOp(
+      createOperationId(environment),
+      (finallyBlock ?? fallthroughBlock).id,
+      [],
+    );
+  }
+
+  // Build catch handler
+  let handlerParam: Value | null = null;
+  if (handlerBlock && node.handler !== null) {
+    const catchClause = node.handler;
     const catchScope = functionBuilder.scopeFor(catchClause);
-    const catchRegion = new Region([]);
-    const handlerBlock = environment.createBlock();
+    functionBuilder.currentBlock = handlerBlock;
 
-    let paramPlace: import("../../../ir").Value | null = null;
-    functionBuilder.withStructureRegion(catchRegion, () => {
-      functionBuilder.addBlock(handlerBlock);
-      functionBuilder.currentBlock = handlerBlock;
+    if (catchClause.param != null && catchClause.param.type === "Identifier") {
+      const identifier = environment.createValue();
+      functionBuilder.registerDeclarationName(
+        catchClause.param.name,
+        identifier.declarationId,
+        catchScope,
+      );
+      functionBuilder.instantiateDeclaration(
+        identifier.declarationId,
+        "catch",
+        catchClause.param.name,
+        catchScope,
+      );
+      environment.registerDeclaration(
+        identifier.declarationId,
+        functionBuilder.currentBlock.id,
+        identifier,
+      );
+      environment.setDeclarationBinding(identifier.declarationId, identifier);
+      handlerParam = identifier;
+      handlerBlock.entryBindings.push(identifier);
+    }
 
-      if (catchClause.param != null && catchClause.param.type === "Identifier") {
-        const identifier = environment.createValue();
-        functionBuilder.registerDeclarationName(
-          catchClause.param.name,
-          identifier.declarationId,
-          catchScope,
-        );
-        functionBuilder.instantiateDeclaration(
-          identifier.declarationId,
-          "catch",
-          catchClause.param.name,
-          catchScope,
-        );
-        const bindingPlace = identifier;
-
-        environment.registerDeclaration(
-          identifier.declarationId,
-          functionBuilder.currentBlock.id,
-          bindingPlace,
-        );
-        environment.setDeclarationBinding(identifier.declarationId, bindingPlace);
-
-        paramPlace = bindingPlace;
-        // MLIR-style: the catch handler parameter is a block-entry
-        // binding on the handler region's entry block.
-        handlerBlock.entryBindings.push(bindingPlace);
-      }
-
-      buildOwnedBody(catchClause.body, scope, functionBuilder, moduleBuilder, environment);
-
-      if (functionBuilder.currentBlock.terminal === undefined) {
-        functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), []);
-      }
-    });
-
-    handler = { param: paramPlace, region: catchRegion };
+    buildOwnedBody(catchClause.body, scope, functionBuilder, moduleBuilder, environment);
+    if (functionBuilder.currentBlock.terminal === undefined) {
+      functionBuilder.currentBlock.terminal = new JumpOp(
+        createOperationId(environment),
+        (finallyBlock ?? fallthroughBlock).id,
+        [],
+      );
+    }
   }
 
-  let finallyRegion: Region | null = null;
-  if (hasFinalizer) {
-    finallyRegion = new Region([]);
-    const finallyBlock = environment.createBlock();
-    functionBuilder.withStructureRegion(finallyRegion, () => {
-      functionBuilder.addBlock(finallyBlock);
-      functionBuilder.currentBlock = finallyBlock;
-      buildOwnedBody(node.finalizer!, scope, functionBuilder, moduleBuilder, environment);
-      if (functionBuilder.currentBlock.terminal === undefined) {
-        functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), []);
-      }
-    });
+  // Build finally body
+  if (finallyBlock && node.finalizer !== null) {
+    functionBuilder.currentBlock = finallyBlock;
+    buildOwnedBody(node.finalizer, scope, functionBuilder, moduleBuilder, environment);
+    if (functionBuilder.currentBlock.terminal === undefined) {
+      functionBuilder.currentBlock.terminal = new JumpOp(
+        createOperationId(environment),
+        fallthroughBlock.id,
+        [],
+      );
+    }
   }
 
-  const tryOp = new TryOp(createOperationId(environment), tryRegion, handler, finallyRegion);
-  parentBlock.appendOp(tryOp);
-  functionBuilder.currentBlock = parentBlock;
+  // Terminate parent with TryTerm routing to try-body
+  parentBlock.terminal = new TryTerm(
+    createOperationId(environment),
+    tryBlock,
+    handlerBlock,
+    handlerParam,
+    finallyBlock,
+    fallthroughBlock,
+  );
+
+  functionBuilder.currentBlock = fallthroughBlock;
   return undefined;
 }
