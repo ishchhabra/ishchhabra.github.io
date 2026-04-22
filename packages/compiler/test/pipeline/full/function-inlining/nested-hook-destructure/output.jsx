@@ -9,11 +9,10 @@ function $0() {
     let $24 = undefined;
     if ($2) {
       $24 = undefined;
-      return $24;
     } else {
       $24 = undefined;
-      return $24;
     }
+    return $24;
   }, [$2, $3]);
 }
 function $1() {

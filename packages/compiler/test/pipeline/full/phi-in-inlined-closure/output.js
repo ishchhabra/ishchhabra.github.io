@@ -8,12 +8,9 @@ function $1() {
     let $23 = undefined;
     if ($8) {
       if ($9 != null) {
-        $23 = undefined;
-        return $23;
-      } else {
-        $23 = undefined;
-        return $23;
       }
+      $23 = undefined;
+      return $23;
     } else {
       $23 = undefined;
       return $23;

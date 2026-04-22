@@ -9,8 +9,6 @@ for (; blockparam_24 < 10; ) {
   } else {
     const $38 = blockparam_23 + blockparam_24;
     blockparam_22 = $38;
-    const $36 = blockparam_24 + 1;
-    blockparam_23 = blockparam_22;
-    blockparam_24 = $36;
+    continue;
   }
 }

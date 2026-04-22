@@ -3,5 +3,6 @@ for (const $2 of items) {
     continue;
   } else {
     console.log($1);
+    continue;
   }
 }

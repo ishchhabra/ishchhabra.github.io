@@ -3,5 +3,6 @@ while (true) {
     break;
   } else {
     console.log("loop");
+    continue;
   }
 }

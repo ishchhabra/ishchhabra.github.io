@@ -11,10 +11,8 @@ function $0($1) {
           prev: $3,
         };
         $2 = $20;
-        continue;
-      } else {
-        continue;
       }
+      continue;
     } else {
       $1 = $2;
       if ($2 !== undefined) {
@@ -27,8 +25,11 @@ function $0($1) {
           if ($1 !== undefined) {
             $2 = $1.nextSub;
             continue top;
+          } else {
+            continue;
           }
         }
+        break;
       }
     }
   } else {
@@ -43,8 +44,11 @@ function $0($1) {
         if ($1 !== undefined) {
           $2 = $1.nextSub;
           continue top;
+        } else {
+          continue;
         }
       }
+      break;
     }
   }
 }

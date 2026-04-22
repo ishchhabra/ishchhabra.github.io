@@ -3,5 +3,6 @@ while (i < 10) {
     continue;
   } else {
     process(i);
+    continue;
   }
 }

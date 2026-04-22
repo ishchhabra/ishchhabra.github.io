@@ -4,10 +4,9 @@ function $0($1) {
   if (!$15.x) {
     $15.x = 10;
     $5 = undefined;
-    return $5;
   } else {
     $5 = undefined;
-    return $5;
   }
+  return $5;
 }
 export { $0 as f };

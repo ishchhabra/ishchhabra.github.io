@@ -9,8 +9,9 @@ for (; blockparam_31 < 3; ) {
       break outer;
     } else {
       console.log(blockparam_31, blockparam_32);
-      const $48 = blockparam_32 + 1;
-      blockparam_32 = $48;
+      continue;
     }
   }
+  blockparam_33 = blockparam_32;
+  continue;
 }

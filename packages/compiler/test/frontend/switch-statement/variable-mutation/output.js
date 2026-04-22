@@ -6,3 +6,4 @@ switch (2) {
   default:
     break;
 }
+console.log("unknown");

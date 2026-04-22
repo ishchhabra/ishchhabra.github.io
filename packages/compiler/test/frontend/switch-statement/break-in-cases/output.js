@@ -6,5 +6,5 @@ switch ("greet") {
     break;
   default:
     blockparam_20 = "unknown action";
-    console.log(blockparam_20);
 }
+console.log(blockparam_20);

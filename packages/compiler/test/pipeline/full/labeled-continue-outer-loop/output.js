@@ -8,8 +8,8 @@ for (; blockparam_31 < 3; ) {
       continue outer;
     } else {
       console.log(blockparam_31, blockparam_32);
-      const $45 = blockparam_32 + 1;
-      blockparam_32 = $45;
+      continue;
     }
   }
+  continue;
 }

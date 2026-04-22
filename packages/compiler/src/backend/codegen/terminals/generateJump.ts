@@ -9,6 +9,13 @@ export function generateJumpTerminal(
   funcOp: FuncOp,
   generator: CodeGenerator,
 ): Array<t.Statement> {
+  // Structured fallthrough: the enclosing terminator emitter will
+  // place the target's statements after the structured JS syntax.
+  // A jump to it from inside an arm / body is a no-op.
+  if (generator.structuredFallthroughStack.includes(terminal.target.id)) {
+    return [];
+  }
+
   const breakLabel = generator.getBreakLabel(terminal.target.id);
   if (breakLabel !== undefined) {
     return [t.breakStatement(breakLabel ? t.identifier(breakLabel) : null)];

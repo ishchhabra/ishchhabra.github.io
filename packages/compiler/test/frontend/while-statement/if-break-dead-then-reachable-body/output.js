@@ -3,5 +3,6 @@ while (someCond) {
     break;
   } else {
     console.log("reachable-after-if");
+    continue;
   }
 }

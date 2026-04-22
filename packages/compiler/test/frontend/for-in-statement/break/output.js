@@ -3,5 +3,6 @@ for (const $2 in obj) {
     break;
   } else {
     console.log($1);
+    continue;
   }
 }

@@ -5,4 +5,5 @@ const $35 = blockparam_28 + 1;
 while ($35 < $33.length) {
   [].push($33[$35]);
   blockparam_28 = $35;
+  continue;
 }

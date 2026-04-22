@@ -3,4 +3,5 @@ for (const $11 in {
   b: 2,
 }) {
   console.log($10);
+  continue;
 }

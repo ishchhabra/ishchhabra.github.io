@@ -10,10 +10,9 @@ function $0($1) {
     } else {
       const $50 = blockparam_35 + "/Y";
       blockparam_34 = $50;
-      const $48 = blockparam_36 + 1;
-      blockparam_35 = blockparam_34;
-      blockparam_36 = $48;
+      continue;
     }
   }
+  return blockparam_35;
 }
 export { $0 as resolve };

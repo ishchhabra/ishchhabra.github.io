@@ -40,6 +40,16 @@ export class CodeGenerator {
   public generatedBlocks: Set<BlockId> = new Set();
   public readonly controlStack: ControlContext[] = [];
 
+  /**
+   * Stack of block ids that are the "fallthrough" target of an
+   * enclosing structured terminator (IfTerm/WhileTerm/ForTerm/
+   * ForOfTerm/ForInTerm/TryTerm/SwitchTerm/LabeledTerm). A `JumpOp`
+   * whose target is in this set emits no statements — the
+   * terminator's emitter is responsible for placing the fallthrough
+   * block's statements after the structured JS statement.
+   */
+  public readonly structuredFallthroughStack: BlockId[] = [];
+
   /** Tracks which declarations have already emitted their first variable statement. */
   public declaredDeclarations: Set<DeclarationId> = new Set();
 

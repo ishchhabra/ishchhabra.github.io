@@ -3,6 +3,6 @@ foo: {
     break foo;
   } else {
     console.log("inside");
-    console.log("after");
   }
 }
+console.log("after");

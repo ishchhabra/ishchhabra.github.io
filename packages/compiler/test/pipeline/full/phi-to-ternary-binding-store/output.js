@@ -4,6 +4,8 @@ function $0($1) {
     if ($8) {
       const { x: $11, ...$12 } = $24;
     }
+    continue;
   }
+  return $24;
 }
 export { $0 as f };

@@ -6,11 +6,10 @@ function $0($3) {
     if ($7) {
       $5.position[$3];
       $10 = undefined;
-      return $10;
     } else {
       $10 = undefined;
-      return $10;
     }
+    return $10;
   }
   return $4;
 }

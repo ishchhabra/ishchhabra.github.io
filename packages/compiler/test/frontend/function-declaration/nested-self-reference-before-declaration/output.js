@@ -11,48 +11,23 @@ function $0($1) {
     let $59 = undefined;
     if ($9) {
       $15 = undefined;
-      const $105 = typeof $15.line === "number";
-      if ($34) {
-        const $113 = typeof $15.offset === "number";
-        if ($53) {
-          $15.offset;
-          $59 = undefined;
-          return {
-            line: $15.line,
-            column: $15.column,
-            offset: $59,
-          };
-        } else {
-          $59 = undefined;
-          return {
-            line: $15.line,
-            column: $15.column,
-            offset: $59,
-          };
-        }
-      }
     } else {
       $15 = undefined;
-      const $105 = typeof $15.line === "number";
-      if ($34) {
-        const $113 = typeof $15.offset === "number";
-        if ($53) {
-          $15.offset;
-          $59 = undefined;
-          return {
-            line: $15.line,
-            column: $15.column,
-            offset: $59,
-          };
-        } else {
-          $59 = undefined;
-          return {
-            line: $15.line,
-            column: $15.column,
-            offset: $59,
-          };
-        }
+    }
+    const $105 = typeof $15.line === "number";
+    if ($34) {
+      const $113 = typeof $15.offset === "number";
+      if ($53) {
+        $15.offset;
+        $59 = undefined;
+      } else {
+        $59 = undefined;
       }
+      return {
+        line: $15.line,
+        column: $15.column,
+        offset: $59,
+      };
     }
   }
   return $2;

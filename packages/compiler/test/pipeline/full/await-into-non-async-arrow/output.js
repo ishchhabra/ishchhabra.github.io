@@ -8,6 +8,7 @@ async function $0($1) {
         ...$14,
       }));
     }
+    continue;
   }
 }
 export { $0 as loadMatches };

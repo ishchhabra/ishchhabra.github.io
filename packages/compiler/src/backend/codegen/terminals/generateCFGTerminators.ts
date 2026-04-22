@@ -2,9 +2,13 @@
  * Codegen for CFG-style structured terminators.
  *
  * Each emitter reconstructs JS syntax from a terminator's named
- * successor blocks. Successor blocks are marked as generated (via
- * `generateBlock`'s existing memoization on `generator.generatedBlocks`)
- * so the outer function-level walker doesn't re-emit them.
+ * successor blocks. The arm / body / handler sub-blocks are
+ * reconstructed by walking them with their natural in-block ops;
+ * `JumpOp` terminators inside those walks whose target is the
+ * enclosing structured terminator's fallthrough (tracked on
+ * `generator.structuredFallthroughStack`) emit nothing. After the
+ * structured JS statement, the fallthrough block's own ops are
+ * appended.
  */
 
 import * as t from "@babel/types";
@@ -40,73 +44,61 @@ export function generateIfTerm(
   }
   t.assertExpression(testNode);
 
-  const thenBlock = term.thenBlock;
-  const elseBlock = term.elseBlock;
+  const fallthrough = inferFallthrough(term.thenBlock, term.elseBlock);
+  const ternary = tryEmitTernary(term, testNode, fallthrough, generator);
+  if (ternary !== null) {
+    return withFallthrough(fallthrough, funcOp, generator, () => ternary);
+  }
 
-  // Look for a ternary-emission opportunity: both arms are simple
-  // single-terminator blocks that jump to a common fallthrough with
-  // one block-arg, and that fallthrough's block-arg has uses.
-  const ternary = tryEmitTernary(term, testNode, funcOp, generator);
-  if (ternary !== null) return ternary;
+  return withFallthrough(fallthrough, funcOp, generator, () => {
+    const thenStatements = emitArm(term.thenBlock, funcOp, generator);
+    const elseStatements = emitArm(term.elseBlock, funcOp, generator);
 
-  const thenStatements = generateBasicBlockWithoutReemit(thenBlock, funcOp, generator);
-  const elseStatements = generateBasicBlockWithoutReemit(elseBlock, funcOp, generator);
-
-  const elseNode = elseStatements.length > 0 ? t.blockStatement(elseStatements) : null;
-  const ifNode = t.ifStatement(testNode, t.blockStatement(thenStatements), elseNode);
-
-  return [ifNode];
+    const elseNode = elseStatements.length > 0 ? t.blockStatement(elseStatements) : null;
+    return [t.ifStatement(testNode, t.blockStatement(thenStatements), elseNode)];
+  });
 }
 
 /**
- * If both arms are `jump join(X)` with join's single block param
- * used as a value downstream, emit `testNode ? thenVal : elseVal` and
- * bind the ternary to the join block's param.
+ * If both arms are `jump fallthrough(X)` with fallthrough's single
+ * block param used as a value downstream, emit a ternary and bind
+ * to that param.
  */
 function tryEmitTernary(
   term: IfTerm,
   testNode: t.Expression,
-  funcOp: FuncOp,
+  fallthrough: BasicBlock | null,
   generator: CodeGenerator,
 ): Array<t.Statement> | null {
-  const thenArm = tryExtractArmYield(term.thenBlock);
-  const elseArm = tryExtractArmYield(term.elseBlock);
+  if (fallthrough === null) return null;
+  if (fallthrough.params.length !== 1) return null;
+  const thenArm = tryExtractArmYield(term.thenBlock, fallthrough);
+  const elseArm = tryExtractArmYield(term.elseBlock, fallthrough);
   if (thenArm === null || elseArm === null) return null;
-  if (thenArm.target !== elseArm.target) return null;
-  const joinBlock = thenArm.target;
-  if (joinBlock.params.length !== 1) return null;
-  const resultPlace = joinBlock.params[0];
+  const resultPlace = fallthrough.params[0];
   if (resultPlace.uses.size === 0) return null;
 
-  // Emit sub-expressions that produce the ternary arms.
-  const thenValueNode = generator.values.get(thenArm.value.id);
-  const elseValueNode = generator.values.get(elseArm.value.id);
+  const thenValueNode = generator.values.get(thenArm.id);
+  const elseValueNode = generator.values.get(elseArm.id);
   if (thenValueNode === undefined || elseValueNode === undefined) return null;
   t.assertExpression(thenValueNode);
   t.assertExpression(elseValueNode);
 
-  // Mark both arm blocks as generated (no-op content).
   generator.generatedBlocks.add(term.thenBlock.id);
   generator.generatedBlocks.add(term.elseBlock.id);
 
   const ternary = t.conditionalExpression(testNode, thenValueNode, elseValueNode);
   generator.values.set(resultPlace.id, ternary);
-
-  // Don't emit a statement for the ternary — the result is bound to
-  // the join block's param; callers of that param will see the
-  // expression.
   return [];
 }
 
-function tryExtractArmYield(
-  block: BasicBlock,
-): { target: BasicBlock; value: Value } | null {
-  // Arm must consist only of a single JumpOp terminator with one arg.
+function tryExtractArmYield(block: BasicBlock, fallthrough: BasicBlock): Value | null {
   if (block.operations.length > 0) return null;
   const terminal = block.terminal;
   if (!(terminal instanceof JumpOp)) return null;
+  if (terminal.target !== fallthrough) return null;
   if (terminal.args.length !== 1) return null;
-  return { target: terminal.target, value: terminal.args[0] };
+  return terminal.args[0];
 }
 
 // ---------------------------------------------------------------------
@@ -124,12 +116,30 @@ export function generateWhileTerm(
   }
   t.assertExpression(testNode);
 
-  const bodyStatements = generateBasicBlockWithoutReemit(term.bodyBlock, funcOp, generator);
+  // The header block (this terminator's own block) is the back-edge
+  // target; inside the body, `jump header` is `continue`. The exit
+  // block is the fallthrough.
+  const headerBlock = term.parentBlock;
+  return withFallthrough(term.exitBlock, funcOp, generator, () => {
+    const savedControl = generator.controlStack.length;
+    if (headerBlock !== null) {
+      generator.controlStack.push({
+        kind: "loop",
+        label: term.label,
+        breakTarget: term.exitBlock.id,
+        continueTarget: headerBlock.id,
+        structured: false,
+      });
+    }
+    const bodyStatements = emitArm(term.bodyBlock, funcOp, generator);
+    generator.controlStack.length = savedControl;
 
-  if (term.kind === "do-while") {
-    return [t.doWhileStatement(testNode, t.blockStatement(bodyStatements))];
-  }
-  return [t.whileStatement(testNode, t.blockStatement(bodyStatements))];
+    const loopStatement =
+      term.kind === "do-while"
+        ? t.doWhileStatement(testNode, t.blockStatement(bodyStatements))
+        : t.whileStatement(testNode, t.blockStatement(bodyStatements));
+    return [loopStatement];
+  });
 }
 
 // ---------------------------------------------------------------------
@@ -147,12 +157,26 @@ export function generateForTerm(
   }
   t.assertExpression(testNode);
 
-  const bodyStatements = generateBasicBlockWithoutReemit(term.bodyBlock, funcOp, generator);
-  // Mark update block as consumed; its ops become the update expr
-  // via its own emission in a real rewrite. For now just the body.
-  generator.generatedBlocks.add(term.updateBlock.id);
+  const headerBlock = term.parentBlock;
+  return withFallthrough(term.exitBlock, funcOp, generator, () => {
+    const savedControl = generator.controlStack.length;
+    if (headerBlock !== null) {
+      generator.controlStack.push({
+        kind: "loop",
+        label: term.label,
+        breakTarget: term.exitBlock.id,
+        continueTarget: term.updateBlock.id,
+        structured: false,
+      });
+    }
+    const bodyStatements = emitArm(term.bodyBlock, funcOp, generator);
+    generator.controlStack.length = savedControl;
 
-  return [t.forStatement(null, testNode, null, t.blockStatement(bodyStatements))];
+    // Mark update block generated so it doesn't leak at top level.
+    generator.generatedBlocks.add(term.updateBlock.id);
+
+    return [t.forStatement(null, testNode, null, t.blockStatement(bodyStatements))];
+  });
 }
 
 // ---------------------------------------------------------------------
@@ -170,16 +194,31 @@ export function generateForOfTerm(
   }
   t.assertExpression(iterNode);
   const iterValId = generator.getPlaceIdentifier(term.iterationValue);
-  const bodyStatements = generateBasicBlockWithoutReemit(term.bodyBlock, funcOp, generator);
 
-  return [
-    t.forOfStatement(
-      t.variableDeclaration("const", [t.variableDeclarator(iterValId)]),
-      iterNode,
-      t.blockStatement(bodyStatements),
-      term.isAwait,
-    ),
-  ];
+  return withFallthrough(term.exitBlock, funcOp, generator, () => {
+    const savedControl = generator.controlStack.length;
+    const parentBlock = term.parentBlock;
+    if (parentBlock !== null) {
+      generator.controlStack.push({
+        kind: "loop",
+        label: term.label,
+        breakTarget: term.exitBlock.id,
+        continueTarget: parentBlock.id,
+        structured: false,
+      });
+    }
+    const bodyStatements = emitArm(term.bodyBlock, funcOp, generator);
+    generator.controlStack.length = savedControl;
+
+    return [
+      t.forOfStatement(
+        t.variableDeclaration("const", [t.variableDeclarator(iterValId)]),
+        iterNode,
+        t.blockStatement(bodyStatements),
+        term.isAwait,
+      ),
+    ];
+  });
 }
 
 export function generateForInTerm(
@@ -193,15 +232,30 @@ export function generateForInTerm(
   }
   t.assertExpression(objNode);
   const iterValId = generator.getPlaceIdentifier(term.iterationValue);
-  const bodyStatements = generateBasicBlockWithoutReemit(term.bodyBlock, funcOp, generator);
 
-  return [
-    t.forInStatement(
-      t.variableDeclaration("const", [t.variableDeclarator(iterValId)]),
-      objNode,
-      t.blockStatement(bodyStatements),
-    ),
-  ];
+  return withFallthrough(term.exitBlock, funcOp, generator, () => {
+    const savedControl = generator.controlStack.length;
+    const parentBlock = term.parentBlock;
+    if (parentBlock !== null) {
+      generator.controlStack.push({
+        kind: "loop",
+        label: term.label,
+        breakTarget: term.exitBlock.id,
+        continueTarget: parentBlock.id,
+        structured: false,
+      });
+    }
+    const bodyStatements = emitArm(term.bodyBlock, funcOp, generator);
+    generator.controlStack.length = savedControl;
+
+    return [
+      t.forInStatement(
+        t.variableDeclaration("const", [t.variableDeclarator(iterValId)]),
+        objNode,
+        t.blockStatement(bodyStatements),
+      ),
+    ];
+  });
 }
 
 // ---------------------------------------------------------------------
@@ -213,31 +267,25 @@ export function generateTryTerm(
   funcOp: FuncOp,
   generator: CodeGenerator,
 ): Array<t.Statement> {
-  const bodyStatements = generateBasicBlockWithoutReemit(term.bodyBlock, funcOp, generator);
+  return withFallthrough(term.fallthroughBlock, funcOp, generator, () => {
+    const bodyStatements = emitArm(term.bodyBlock, funcOp, generator);
 
-  let handler: t.CatchClause | null = null;
-  if (term.handlerBlock !== null) {
-    const handlerStatements = generateBasicBlockWithoutReemit(
-      term.handlerBlock,
-      funcOp,
-      generator,
-    );
-    const param =
-      term.handlerParam !== null ? generator.getPlaceIdentifier(term.handlerParam) : null;
-    handler = t.catchClause(param, t.blockStatement(handlerStatements));
-  }
+    let handler: t.CatchClause | null = null;
+    if (term.handlerBlock !== null) {
+      const handlerStatements = emitArm(term.handlerBlock, funcOp, generator);
+      const param =
+        term.handlerParam !== null ? generator.getPlaceIdentifier(term.handlerParam) : null;
+      handler = t.catchClause(param, t.blockStatement(handlerStatements));
+    }
 
-  let finalizer: t.BlockStatement | null = null;
-  if (term.finallyBlock !== null) {
-    const finallyStatements = generateBasicBlockWithoutReemit(
-      term.finallyBlock,
-      funcOp,
-      generator,
-    );
-    finalizer = t.blockStatement(finallyStatements);
-  }
+    let finalizer: t.BlockStatement | null = null;
+    if (term.finallyBlock !== null) {
+      const finallyStatements = emitArm(term.finallyBlock, funcOp, generator);
+      finalizer = t.blockStatement(finallyStatements);
+    }
 
-  return [t.tryStatement(t.blockStatement(bodyStatements), handler, finalizer)];
+    return [t.tryStatement(t.blockStatement(bodyStatements), handler, finalizer)];
+  });
 }
 
 // ---------------------------------------------------------------------
@@ -255,22 +303,33 @@ export function generateSwitchTerm(
   }
   t.assertExpression(discNode);
 
-  const cases: t.SwitchCase[] = [];
-  for (const c of term.cases) {
-    const testNode = generator.values.get(c.test.id);
-    if (testNode === undefined) {
-      throw new Error(`Value ${c.test.id} not found for SwitchTerm case`);
-    }
-    t.assertExpression(testNode);
-    const stmts = generateBasicBlockWithoutReemit(c.block, funcOp, generator);
-    cases.push(t.switchCase(testNode, stmts));
-  }
-  if (term.defaultBlock !== term.fallthroughBlock) {
-    const stmts = generateBasicBlockWithoutReemit(term.defaultBlock, funcOp, generator);
-    cases.push(t.switchCase(null, stmts));
-  }
+  return withFallthrough(term.fallthroughBlock, funcOp, generator, () => {
+    const savedControl = generator.controlStack.length;
+    generator.controlStack.push({
+      kind: "switch",
+      label: term.label,
+      breakTarget: term.fallthroughBlock.id,
+      structured: false,
+    });
 
-  return [t.switchStatement(discNode, cases)];
+    const cases: t.SwitchCase[] = [];
+    for (const c of term.cases) {
+      const testNode = generator.values.get(c.test.id);
+      if (testNode === undefined) {
+        throw new Error(`Value ${c.test.id} not found for SwitchTerm case`);
+      }
+      t.assertExpression(testNode);
+      const stmts = emitArm(c.block, funcOp, generator);
+      cases.push(t.switchCase(testNode, stmts));
+    }
+    if (term.defaultBlock !== term.fallthroughBlock) {
+      const stmts = emitArm(term.defaultBlock, funcOp, generator);
+      cases.push(t.switchCase(null, stmts));
+    }
+
+    generator.controlStack.length = savedControl;
+    return [t.switchStatement(discNode, cases)];
+  });
 }
 
 // ---------------------------------------------------------------------
@@ -282,10 +341,18 @@ export function generateLabeledTerm(
   funcOp: FuncOp,
   generator: CodeGenerator,
 ): Array<t.Statement> {
-  const bodyStatements = generateBasicBlockWithoutReemit(term.bodyBlock, funcOp, generator);
-  return [
-    t.labeledStatement(t.identifier(term.label), t.blockStatement(bodyStatements)),
-  ];
+  return withFallthrough(term.fallthroughBlock, funcOp, generator, () => {
+    const savedControl = generator.controlStack.length;
+    generator.controlStack.push({
+      kind: "label",
+      label: term.label,
+      breakTarget: term.fallthroughBlock.id,
+      structured: false,
+    });
+    const bodyStatements = emitArm(term.bodyBlock, funcOp, generator);
+    generator.controlStack.length = savedControl;
+    return [t.labeledStatement(t.identifier(term.label), t.blockStatement(bodyStatements))];
+  });
 }
 
 // ---------------------------------------------------------------------
@@ -293,19 +360,66 @@ export function generateLabeledTerm(
 // ---------------------------------------------------------------------
 
 /**
- * Emit the given block's statements, marking it as generated so the
- * outer function walker won't re-emit it at top level.
+ * Run `emit` with `fallthroughBlock.id` pushed onto the
+ * `structuredFallthroughStack`. JumpOp inside the arm/body emission
+ * whose target is this block will emit nothing. After `emit`
+ * returns, we append the fallthrough block's own statements (if it
+ * hasn't already been emitted elsewhere) so post-structure control
+ * flow lands at top level.
  */
-function generateBasicBlockWithoutReemit(
-  block: BasicBlock,
+function withFallthrough(
+  fallthroughBlock: BasicBlock | null,
   funcOp: FuncOp,
   generator: CodeGenerator,
+  emit: () => Array<t.Statement>,
 ): Array<t.Statement> {
+  const fallthroughId = fallthroughBlock?.id;
+  if (fallthroughId !== undefined) {
+    generator.structuredFallthroughStack.push(fallthroughId);
+  }
+  let statements: Array<t.Statement>;
+  try {
+    statements = emit();
+  } finally {
+    if (fallthroughId !== undefined) {
+      const popped = generator.structuredFallthroughStack.pop();
+      if (popped !== fallthroughId) {
+        throw new Error("structuredFallthroughStack corrupted");
+      }
+    }
+  }
+  if (fallthroughBlock !== undefined && fallthroughBlock !== null) {
+    // Emit fallthrough content once (memoized via generatedBlocks).
+    if (!generator.generatedBlocks.has(fallthroughBlock.id)) {
+      const post = generateBlock(fallthroughBlock.id, funcOp, generator);
+      statements.push(...post);
+    }
+  }
+  return statements;
+}
+
+function emitArm(block: BasicBlock, funcOp: FuncOp, generator: CodeGenerator): Array<t.Statement> {
   if (generator.generatedBlocks.has(block.id)) return [];
   generator.generatedBlocks.add(block.id);
   return generateBasicBlock(block.id, funcOp, generator);
 }
 
-// Re-export `generateBlock` so callers of this module can keep going
-// through the memoized path when needed.
+/**
+ * Common fallthrough of two arms. Walks each arm looking for a
+ * terminating `JumpOp` to a shared target. Returns the shared
+ * target block if found; null otherwise.
+ */
+function inferFallthrough(a: BasicBlock, b: BasicBlock): BasicBlock | null {
+  const aTarget = trailingJumpTarget(a);
+  const bTarget = trailingJumpTarget(b);
+  if (aTarget !== null && aTarget === bTarget) return aTarget;
+  return null;
+}
+
+function trailingJumpTarget(block: BasicBlock): BasicBlock | null {
+  const term = block.terminal;
+  if (term instanceof JumpOp) return term.target;
+  return null;
+}
+
 export { generateBlock };

@@ -7,6 +7,8 @@ function $1($8) {
     if ($15) {
       $0($31);
     }
+    continue;
   }
+  return $31;
 }
 export { $1 as f };

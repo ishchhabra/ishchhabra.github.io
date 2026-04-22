@@ -15,10 +15,11 @@ for (; blockparam_37 < 5; ) {
           break outer;
         } else {
           console.log(blockparam_37, blockparam_38);
-          const $54 = blockparam_38 + 1;
-          blockparam_38 = $54;
+          continue;
         }
       }
     }
   }
+  blockparam_39 = blockparam_38;
+  continue;
 }

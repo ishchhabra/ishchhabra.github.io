@@ -6,5 +6,9 @@ while (blockparam_24 > 0) {
   while (blockparam_25 > 0) {
     const $35 = blockparam_25 - 1;
     blockparam_25 = $35;
+    continue;
   }
+  const $37 = blockparam_24 - 1;
+  blockparam_24 = $37;
+  continue;
 }
