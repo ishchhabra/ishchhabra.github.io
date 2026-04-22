@@ -8,9 +8,9 @@ function $0() {
   return useMemo(() => {
     let $24 = undefined;
     if ($2) {
-      $24 = undefined;
+      $24 = $3;
     } else {
-      $24 = undefined;
+      $24 = null;
     }
     return $24;
   }, [$2, $3]);

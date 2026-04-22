@@ -3,9 +3,10 @@ function $0($1) {
   for (const $8 of Object.entries($1)) {
     if ($6 !== "x") {
       if ($7) {
-        $14 = undefined;
+        $14 = "";
       } else {
-        $14 = undefined;
+        const $25 = String($7);
+        $14 = $25;
       }
       g($14);
     }

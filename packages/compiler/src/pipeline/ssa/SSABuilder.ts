@@ -864,9 +864,28 @@ export class SSABuilder {
   private fillJumpArgs(block: BasicBlock, terminal: JumpOp, stacks: Stacks): void {
     const succ = terminal.target;
     if (succ.params.length === 0) return;
+
+    // Params on a successor block fall into two kinds:
+    //   - SSA-rename params (`originalDeclarationId` set): appended
+    //     by `placeParamsForDeclaration`. Their value comes from the
+    //     current naming stack for that declaration.
+    //   - Frontend-semantic params (no `originalDeclarationId`):
+    //     placed by HIR builders (IfTerm/conditional/logical
+    //     fallthrough joins, loop headers, etc.) to thread the
+    //     expression's value across arms. Their value is already
+    //     supplied by the terminal's existing args, positionally
+    //     among the no-decl params.
+    //
+    // Preserve existing args for frontend-semantic params; fill only
+    // the SSA-rename params from stacks.
+    const existing = terminal.args;
+    let frontendArgIdx = 0;
     const args: Value[] = succ.params.map((param) => {
       const decl = param.originalDeclarationId;
-      if (decl === undefined) return this.undefSeed;
+      if (decl === undefined) {
+        const arg = existing[frontendArgIdx++];
+        return arg ?? this.undefSeed;
+      }
       const stack = stacks.get(decl);
       if (stack !== undefined && stack.length > 0) {
         return stack[stack.length - 1];

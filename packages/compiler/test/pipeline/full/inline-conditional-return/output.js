@@ -1,9 +1,9 @@
 function $0() {
   let $2 = undefined;
   if (true) {
-    $2 = undefined;
+    $2 = 1;
   } else {
-    $2 = undefined;
+    $2 = 2;
   }
   return $2;
 }

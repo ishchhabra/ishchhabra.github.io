@@ -4,9 +4,9 @@ function $0($2) {
 function $1($6, $7) {
   let $13 = undefined;
   if ($7) {
-    $13 = undefined;
+    $13 = "\n";
   } else {
-    $13 = undefined;
+    $13 = "";
   }
   return $0($6) + $13;
 }

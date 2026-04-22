@@ -1,11 +1,12 @@
 function $0($1) {
   const $16 = $1;
+  const $18 = $16.x;
   let $6 = undefined;
-  if ($16.x == null) {
+  if ($18 == null) {
     $16.x = 30;
-    $6 = undefined;
+    $6 = 30;
   } else {
-    $6 = undefined;
+    $6 = $18;
   }
   return $6;
 }

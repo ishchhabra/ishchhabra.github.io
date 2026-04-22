@@ -4,10 +4,10 @@ function $0($3) {
     let $7 = undefined;
     let $10 = undefined;
     if ($7) {
-      $5.position[$3];
-      $10 = undefined;
+      const $42 = $5.position[$3];
+      $10 = $42;
     } else {
-      $10 = undefined;
+      $10 = $7;
     }
     return $10;
   }

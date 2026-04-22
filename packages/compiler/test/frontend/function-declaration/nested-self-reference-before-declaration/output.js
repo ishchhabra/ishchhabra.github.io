@@ -10,16 +10,17 @@ function $0($1) {
     let $53 = undefined;
     let $59 = undefined;
     if ($9) {
-      $15 = undefined;
+      $15 = $9;
     } else {
-      $15 = undefined;
+      const $105 = {};
+      $15 = $105;
     }
-    const $105 = typeof $15.line === "number";
+    const $107 = typeof $15.line === "number";
     if ($34) {
-      const $113 = typeof $15.offset === "number";
+      const $115 = typeof $15.offset === "number";
       if ($53) {
-        $15.offset;
-        $59 = undefined;
+        const $119 = $15.offset;
+        $59 = $119;
       } else {
         $59 = undefined;
       }

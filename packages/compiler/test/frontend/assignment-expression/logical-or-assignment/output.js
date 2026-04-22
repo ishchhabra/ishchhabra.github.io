@@ -1,9 +1,9 @@
 function $0($1) {
   let $3 = undefined;
   if (!$1) {
-    $3 = undefined;
+    $3 = 10;
   } else {
-    $3 = undefined;
+    $3 = $1;
   }
   return $3;
 }
