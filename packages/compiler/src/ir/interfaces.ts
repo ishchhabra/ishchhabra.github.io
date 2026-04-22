@@ -16,10 +16,6 @@ import { FunctionExpressionOp } from "./ops/func/FunctionExpression";
 import { ClassMethodOp } from "./ops/class/ClassMethod";
 import { ClassPropertyOp } from "./ops/class/ClassProperty";
 import { ObjectMethodOp } from "./ops/object/ObjectMethod";
-import { ForInOp } from "./ops/control/ForIn";
-import { ForOfOp } from "./ops/control/ForOf";
-import { ForOp } from "./ops/control/For";
-import { WhileOp } from "./ops/control/While";
 import { ReturnOp } from "./ops/control/Return";
 import { ThrowOp } from "./ops/control/Throw";
 import { YieldOp } from "./ops/control/Yield";
@@ -28,24 +24,9 @@ import { NewExpressionOp } from "./ops/call/NewExpression";
 import { SuperCallOp } from "./ops/call/SuperCall";
 import { TaggedTemplateExpressionOp } from "./ops/call/TaggedTemplateExpression";
 
-// ---------------------------------------------------------------------
-// LoopLike — any op that represents a loop construct
-// ---------------------------------------------------------------------
-
-/**
- * Loop-shaped op. All structured loop ops in the IR expose this
- * shape uniformly.
- */
-export interface LoopLike {
-  readonly label?: string;
-}
-
-/** Runtime predicate matching the {@link LoopLike} interface. */
-export function isLoopLike(op: unknown): op is Operation & LoopLike {
-  return (
-    op instanceof ForInOp || op instanceof ForOfOp || op instanceof ForOp || op instanceof WhileOp
-  );
-}
+// LoopLike lives in `./core/LoopLikeOpInterface.ts` — an MLIR-style
+// interface with `getLoopRegions()` / `getInitsMutable()` methods.
+// Re-exported via `./core/index.ts`.
 
 // ---------------------------------------------------------------------
 // CallLike — any op that invokes a callable with an argument list

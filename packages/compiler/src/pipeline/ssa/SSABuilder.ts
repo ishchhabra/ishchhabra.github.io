@@ -536,11 +536,6 @@ export class SSABuilder {
       entry.params = [...entry.params, ...entryParamsByRegion.get(region)!];
     }
 
-    // Full result-place list = existing (e.g. expression-level
-    // ternary) + newly-allocated carried places. Preserves any
-    // IfOp expression result places the frontend already emitted.
-    const newResultPlaces: Value[] = [...op.results, ...carriedResultPlaces];
-
     // --- 4. Install lifted ports via MLIR-style in-place mutation.
     //   Mutable setters (`setInits` / `setResultPlaces`) update the
     //   op in place, preserving op identity and parent-block
@@ -550,7 +545,16 @@ export class SSABuilder {
       RegionBranchOp & {
         setInits?: (v: readonly Value[]) => void;
         setResultPlaces: (v: readonly Value[]) => void;
+        resultPlaces: readonly Value[];
       };
+    // Full result-place list = existing resultPlaces (e.g. an IfOp's
+    // ternary result) + newly-allocated carried places. Read through
+    // `resultPlaces` directly rather than `op.results` (= getDefs):
+    // ops like ForOfOp/ForInOp report iterationValue + destructure
+    // target defs in their defs but those are region-entry bindings,
+    // NOT result places — mixing them in inflates the resultPlaces
+    // list and misaligns the yield-to-results edge's arg indices.
+    const newResultPlaces: Value[] = [...mutableOp.resultPlaces, ...carriedResultPlaces];
     if (newInits.length > 0 && mutableOp.setInits !== undefined) {
       mutableOp.setInits(newInits);
     }

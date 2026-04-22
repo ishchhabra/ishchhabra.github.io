@@ -493,9 +493,15 @@ export class ConstantPropagationPass {
       this.setLattice(op.place, BOTTOM);
       return;
     }
-    // No reaching store at all. Fall back to the binding cell's
-    // meet-combined lattice (sound-but-coarse).
-    this.forward(op.place, op.value);
+    // No reaching store: the walker either lost the cell's state
+    // (e.g. an intervening structured op with Unknown writes wiped
+    // it) or the load is before any store. The binding cell's
+    // lattice (`op.value`) reflects only the meet of direct
+    // StoreLocal evaluations — it does NOT account for writes made
+    // through non-promotable memory-form ops (TryOp's body,
+    // SwitchOp cases, etc.). Forwarding it produces spurious
+    // constants for mutable bindings. Conservatively set BOTTOM.
+    this.setLattice(op.place, BOTTOM);
   }
 
   private evaluateLoadGlobal(op: LoadGlobalOp): void {

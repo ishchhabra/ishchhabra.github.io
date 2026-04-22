@@ -1,5 +1,4 @@
 function $0($1) {
-  const $8 = undefined;
   let blockparam_23 = undefined;
   blockparam_23 = $1;
   let blockparam_24 = undefined;
@@ -12,6 +11,7 @@ function $0($1) {
       blockparam_25 = $1;
     }
     blockparam_23 = blockparam_25;
+    blockparam_24 = blockparam_25;
   }
   return blockparam_24;
 }

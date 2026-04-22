@@ -1,10 +1,14 @@
 import {
+  CallExpressionOp,
   DeclareLocalOp,
   LiteralOp,
   LoadContextOp,
+  LoadDynamicPropertyOp,
   LoadGlobalOp,
   LoadLocalOp,
+  LoadStaticPropertyOp,
   MetaPropertyOp,
+  NewExpressionOp,
   Operation,
   RegExpLiteralOp,
   StoreLocalOp,
@@ -131,6 +135,16 @@ export class ValueMaterializationPass {
 
     // D. Identifier-required operand.
     if (requiresIdentifierOperand(user, op.place)) return true;
+
+    // D2. Method-call callee preservation. Spilling `obj.m` into
+    //     `const t = obj.m; t(args)` detaches the `this` binding —
+    //     JS only binds the receiver when the callee is a
+    //     MemberExpression in the call expression itself. Keep the
+    //     property-read inlined at the call site so codegen emits
+    //     `obj.m(args)`. Applies regardless of order-sensitivity.
+    if (isMethodCalleeOf(user, op.place) && isPropertyRead(op)) {
+      return false;
+    }
 
     // E. Order-sensitive + intervening effect.
     if (this.isOrderSensitive(op) && this.inliningWouldReorder(op, user)) {
@@ -332,6 +346,27 @@ function operandSubtreeHasSideEffects(
       if (def instanceof Operation) stack.push(def);
     }
   }
+  return false;
+}
+
+/**
+ * `op` is a property read — `obj.prop` or `obj[prop]`. Used by the
+ * method-callee preservation rule: spilling one of these when it
+ * flows as the callee of a call expression breaks JS's `this`
+ * binding semantics.
+ */
+function isPropertyRead(op: Operation): boolean {
+  return op instanceof LoadStaticPropertyOp || op instanceof LoadDynamicPropertyOp;
+}
+
+/**
+ * `operand` is the callee of `user` (a CallExpression or
+ * NewExpression). Matches MLIR-style operand-role inspection:
+ * behavior depends on *where* the value flows, not just what it is.
+ */
+function isMethodCalleeOf(user: Operation, operand: Value): boolean {
+  if (user instanceof CallExpressionOp) return user.callee === operand;
+  if (user instanceof NewExpressionOp) return user.callee === operand;
   return false;
 }
 

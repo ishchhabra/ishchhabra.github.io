@@ -76,7 +76,13 @@ export class ForOfOp extends Operation implements RegionBranchOp, LoopLikeOpInte
   }
 
   getOperands(): Value[] {
-    return [...getDestructureTargetOperands(this.iterationTarget), this.iterable];
+    // `inits` carry the SSA iter-arg seeds into the body region's
+    // entry block params. They MUST be declared as operands so
+    // `registerUses` records the def-use edges — otherwise DCE
+    // treats the init values as dead and removes their definers,
+    // leaving SSAEliminator with dangling references when it lowers
+    // the op's iter-args into copy stores.
+    return [...this.inits, ...getDestructureTargetOperands(this.iterationTarget), this.iterable];
   }
 
   override getDefs(): Value[] {

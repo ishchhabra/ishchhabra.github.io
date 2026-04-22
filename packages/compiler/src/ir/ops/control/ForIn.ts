@@ -70,7 +70,11 @@ export class ForInOp extends Operation implements RegionBranchOp, LoopLikeOpInte
   }
 
   getOperands(): Value[] {
-    return [...getDestructureTargetOperands(this.iterationTarget), this.object];
+    // `inits` carry the SSA iter-arg seeds into the body region's
+    // entry block params; must be declared as operands so
+    // `registerUses` records the def-use edges. See the matching
+    // note in `ForOfOp`.
+    return [...this.inits, ...getDestructureTargetOperands(this.iterationTarget), this.object];
   }
 
   override getDefs(): Value[] {
