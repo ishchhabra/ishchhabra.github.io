@@ -1,17 +1,26 @@
 function $0($1) {
   let $29 = undefined;
   if ($1 !== undefined) {
-    const $57 = $1.startsWith("/");
+    const $61 = $1.startsWith("/");
     let $23 = undefined;
-    const $59 = [
+    const $63 = [
       {
         rel: "canonical",
-        href: `/${$57 ? $1 : $1}`,
+        href: `/${$61 ? $1 : $1}`,
       },
     ];
-    $29 = $59;
+    $29 = $63;
   } else {
     $29 = undefined;
+  }
+  let $39 = undefined;
+  if ($29) {
+    const $65 = {
+      links: $29,
+    };
+    $39 = $65;
+  } else {
+    $39 = $29;
   }
   return {
     meta: [
@@ -19,9 +28,7 @@ function $0($1) {
         name: "title",
       },
     ],
-    ...($29 && {
-      links: $29,
-    }),
+    ...$39,
   };
 }
 console.log($0("/about"));

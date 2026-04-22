@@ -5,7 +5,6 @@ import {
   ValueId,
   LiteralOp,
   LoadLocalOp,
-  LogicalExpressionOp,
   StoreLocalOp,
   TPrimitiveValue,
 } from "../../ir";
@@ -113,8 +112,6 @@ export class AlgebraicSimplificationPass extends BaseOptimizationPass {
 
       if (instruction instanceof BinaryExpressionOp) {
         replacement = this.simplifyBinaryExpression(instruction);
-      } else if (instruction instanceof LogicalExpressionOp) {
-        replacement = this.simplifyLogicalExpression(instruction);
       }
 
       if (replacement !== undefined) {
@@ -253,46 +250,4 @@ export class AlgebraicSimplificationPass extends BaseOptimizationPass {
     return undefined;
   }
 
-  private simplifyLogicalExpression(instruction: LogicalExpressionOp): Operation | undefined {
-    const leftLit = this.getLiteral(instruction.left);
-    const leftIsLit = this.isLiteral(instruction.left);
-    const rightIsLit = this.isLiteral(instruction.right);
-
-    // Only simplify when left is known and right is not.
-    // If both are known, ConstantPropagationPass handles it.
-    if (!leftIsLit || rightIsLit) {
-      return undefined;
-    }
-
-    const op = instruction.operator;
-
-    // Short-circuit: true && x = x, false && x = false
-    if (op === "&&") {
-      if (leftLit) {
-        return this.forwardPlace(instruction, instruction.right);
-      } else {
-        return this.makeLiteral(instruction, leftLit);
-      }
-    }
-
-    // Short-circuit: true || x = true, false || x = x
-    if (op === "||") {
-      if (leftLit) {
-        return this.makeLiteral(instruction, leftLit);
-      } else {
-        return this.forwardPlace(instruction, instruction.right);
-      }
-    }
-
-    // Nullish: null ?? x = x, undefined ?? x = x
-    if (op === "??") {
-      if (leftLit === null || leftLit === undefined) {
-        return this.forwardPlace(instruction, instruction.right);
-      } else {
-        return this.makeLiteral(instruction, leftLit);
-      }
-    }
-
-    return undefined;
-  }
 }

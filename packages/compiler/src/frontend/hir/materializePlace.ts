@@ -13,7 +13,6 @@ import {
   LoadGlobalOp,
   LoadLocalOp,
   LoadStaticPropertyOp,
-  LogicalExpressionOp,
   MetaPropertyOp,
   NewExpressionOp,
   ObjectExpressionOp,
@@ -89,13 +88,6 @@ export function isStablePlace(
   }
 
   if (instruction instanceof BinaryExpressionOp) {
-    return (
-      isStablePlace(instruction.left, environment, seen) &&
-      isStablePlace(instruction.right, environment, seen)
-    );
-  }
-
-  if (instruction instanceof LogicalExpressionOp) {
     return (
       isStablePlace(instruction.left, environment, seen) &&
       isStablePlace(instruction.right, environment, seen)

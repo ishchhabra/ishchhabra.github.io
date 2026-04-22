@@ -1,1 +1,2 @@
-foo();
+if (false) {
+}

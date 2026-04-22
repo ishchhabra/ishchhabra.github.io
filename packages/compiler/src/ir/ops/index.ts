@@ -63,7 +63,6 @@ export {
 // arith
 export { BinaryExpressionOp, type BinaryOperator } from "./arith/BinaryExpression";
 export { UnaryExpressionOp, type UnaryOperator } from "./arith/UnaryExpression";
-export { LogicalExpressionOp, type LogicalOperator } from "./arith/LogicalExpression";
 export { SequenceExpressionOp } from "./arith/SequenceExpression";
 
 // call

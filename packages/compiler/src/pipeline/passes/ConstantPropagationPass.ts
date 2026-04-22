@@ -7,7 +7,6 @@ import {
   LoadGlobalOp,
   LoadLocalOp,
   LoadStaticPropertyOp,
-  LogicalExpressionOp,
   Operation,
   StoreLocalOp,
   TPrimitiveValue,
@@ -290,7 +289,6 @@ export class ConstantPropagationPass {
     }
     if (op instanceof BinaryExpressionOp) return this.evaluateBinary(op);
     if (op instanceof UnaryExpressionOp) return this.evaluateUnary(op);
-    if (op instanceof LogicalExpressionOp) return this.evaluateLogical(op);
     if (op instanceof TemplateLiteralOp) return this.evaluateTemplate(op);
     if (op instanceof LoadLocalOp) return this.evaluateLoadLocal(op);
     if (op instanceof StoreLocalOp) {
@@ -419,32 +417,6 @@ export class ConstantPropagationPass {
         break;
       case "typeof":
         v = typeof x;
-        break;
-      default:
-        this.setLattice(op.place, BOTTOM);
-        return;
-    }
-    this.setLattice(op.place, this.makeConst(v));
-  }
-
-  private evaluateLogical(op: LogicalExpressionOp): void {
-    const l = this.getLattice(op.left);
-    const r = this.getLattice(op.right);
-    if (l === TOP || r === TOP) return;
-    if (l === BOTTOM || r === BOTTOM) {
-      this.setLattice(op.place, BOTTOM);
-      return;
-    }
-    let v: TPrimitiveValue;
-    switch (op.operator) {
-      case "&&":
-        v = l.value && r.value;
-        break;
-      case "||":
-        v = l.value || r.value;
-        break;
-      case "??":
-        v = l.value ?? r.value;
         break;
       default:
         this.setLattice(op.place, BOTTOM);
@@ -664,7 +636,6 @@ export class ConstantPropagationPass {
       return true;
     }
     if (op instanceof BinaryExpressionOp) return true;
-    if (op instanceof LogicalExpressionOp) return true;
     if (op instanceof UnaryExpressionOp) {
       return !op.hasSideEffects(this.moduleIR.environment);
     }

@@ -61,7 +61,6 @@ import { FunctionExpressionOp } from "./ops/func/FunctionExpression";
 import { HoleOp } from "./ops/prim/Hole";
 import { ImportExpressionOp } from "./ops/call/ImportExpression";
 import { LiteralOp } from "./ops/prim/Literal";
-import { LogicalExpressionOp } from "./ops/arith/LogicalExpression";
 import { MetaPropertyOp } from "./ops/prop/MetaProperty";
 import { NewExpressionOp } from "./ops/call/NewExpression";
 import { ObjectExpressionOp } from "./ops/object/ObjectExpression";
@@ -96,7 +95,6 @@ export type ValueOp =
   | HoleOp
   | ImportExpressionOp
   | LiteralOp
-  | LogicalExpressionOp
   | MetaPropertyOp
   | NewExpressionOp
   | ObjectExpressionOp
@@ -178,7 +176,6 @@ const VALUE_CTORS = new Set<Function>([
   HoleOp,
   ImportExpressionOp,
   LiteralOp,
-  LogicalExpressionOp,
   MetaPropertyOp,
   NewExpressionOp,
   ObjectExpressionOp,
