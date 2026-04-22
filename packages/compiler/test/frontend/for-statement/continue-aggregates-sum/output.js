@@ -4,12 +4,14 @@ blockparam_23 = 0;
 let blockparam_24 = undefined;
 blockparam_24 = 0;
 for (; blockparam_24 < 10; ) {
-  if (blockparam_24 === 5) {
-    blockparam_22 = blockparam_23;
-    continue;
+  forBody$9: {
+    if (blockparam_24 === 5) {
+      blockparam_22 = blockparam_23;
+      break forBody$9;
+    }
+    const $39 = blockparam_23 + blockparam_24;
+    blockparam_22 = $39;
   }
-  const $39 = blockparam_23 + blockparam_24;
-  blockparam_22 = $39;
   const $37 = blockparam_24 + 1;
   blockparam_23 = blockparam_22;
   blockparam_24 = $37;

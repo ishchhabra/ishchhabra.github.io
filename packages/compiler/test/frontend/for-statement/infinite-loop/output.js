@@ -1,3 +1,5 @@
 for (; true; ) {
-  console.log("infinite");
+  forBody$3: {
+    console.log("infinite");
+  }
 }

@@ -161,14 +161,31 @@ export function generateForTerm(
   t.assertExpression(testNode);
 
   const headerBlock = term.parentBlock;
+  // Synthetic label for the body block so source-level `continue`
+  // (→ JumpOp(updateBlock)) can emit as `break bodyLabel;` — this
+  // escapes the body, falls through to appended update ops, then
+  // the for loop's natural re-test. Without this, `continue;` would
+  // skip the update (appended after body) → infinite loop.
+  const bodyLabel = `forBody$${term.id}`;
   return withFallthrough(term.exitBlock, funcOp, generator, () => {
     const savedControl = generator.controlStack.length;
     if (headerBlock !== null) {
+      // Two entries: outer "label" maps continue-to-updateBlock to
+      // `break bodyLabel`, inner "loop" handles source-level break
+      // (exitBlock) and continue targets the (for-stmt's) header.
+      // Outer must be the label one so its breakTarget=updateBlock
+      // is found by the scan when inner doesn't match.
+      generator.controlStack.push({
+        kind: "label",
+        label: bodyLabel,
+        breakTarget: term.updateBlock.id,
+        structured: false,
+      });
       generator.controlStack.push({
         kind: "loop",
         label: term.label,
         breakTarget: term.exitBlock.id,
-        continueTarget: term.updateBlock.id,
+        continueTarget: headerBlock.id,
         structured: false,
       });
     }
@@ -187,6 +204,7 @@ export function generateForTerm(
     // covered by emitting a labeled do-while around the body when
     // continues need to jump through updates. Most for-loops don't
     // use continue so this works in practice.
+    let updateStmts: Array<t.Statement> = [];
     if (!generator.generatedBlocks.has(term.updateBlock.id)) {
       generator.generatedBlocks.add(term.updateBlock.id);
       const updateCtrl = headerBlock
@@ -199,31 +217,44 @@ export function generateForTerm(
           }
         : null;
       if (updateCtrl) generator.controlStack.push(updateCtrl);
-      const updateStmts = generateBasicBlock(term.updateBlock.id, funcOp, generator);
+      updateStmts = generateBasicBlock(term.updateBlock.id, funcOp, generator);
       if (updateCtrl) generator.controlStack.pop();
-      // Strip trailing `continue;` from body (natural Jump(updateBlock))
-      // and from update (natural Jump(header)). Both are loop back-edges,
-      // not source continues — body flows naturally into update, and
-      // update naturally falls through to re-testing cond.
-      const stripTrailingContinue = (stmts: Array<t.Statement>) => {
-        while (
-          stmts.length > 0 &&
-          t.isContinueStatement(stmts[stmts.length - 1])
-        ) {
-          stmts.pop();
-        }
-      };
-      stripTrailingContinue(bodyStatements);
-      stripTrailingContinue(updateStmts);
-      bodyStatements.push(...updateStmts);
     }
 
-    const forStmt = t.forStatement(
-      null,
-      testNode,
-      null,
+    // Strip trailing loop-back-edge statements from body + update.
+    // Body's natural end is Jump(updateBlock) → `break bodyLabel`.
+    // Update's natural end is Jump(header) → `continue`.
+    const stripTrailingLoopJump = (stmts: Array<t.Statement>) => {
+      while (stmts.length > 0) {
+        const last = stmts[stmts.length - 1];
+        if (t.isContinueStatement(last) && !last.label) {
+          stmts.pop();
+          continue;
+        }
+        if (
+          t.isBreakStatement(last) &&
+          last.label !== null &&
+          last.label !== undefined &&
+          last.label.name === bodyLabel
+        ) {
+          stmts.pop();
+          continue;
+        }
+        break;
+      }
+    };
+    stripTrailingLoopJump(bodyStatements);
+    stripTrailingLoopJump(updateStmts);
+
+    // Wrap body in labeled block. Source `continue` inside body was
+    // emitted as `break bodyLabel;` — breaks out to here, then
+    // update runs, then for re-tests.
+    const labeledBody = t.labeledStatement(
+      t.identifier(bodyLabel),
       t.blockStatement(bodyStatements),
     );
+    const forBody: t.Statement[] = [labeledBody, ...updateStmts];
+    const forStmt = t.forStatement(null, testNode, null, t.blockStatement(forBody));
     if (term.label !== undefined) {
       return [t.labeledStatement(t.identifier(term.label), forStmt)];
     }

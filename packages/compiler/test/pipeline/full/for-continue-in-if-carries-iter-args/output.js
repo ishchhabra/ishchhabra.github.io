@@ -5,13 +5,15 @@ function $0($1) {
   let blockparam_36 = undefined;
   blockparam_36 = 0;
   for (; blockparam_36 < $1.length; ) {
-    if ($1[blockparam_36] === "x") {
-      const $51 = blockparam_35 + "/X";
-      blockparam_34 = $51;
-      continue;
+    forBody$11: {
+      if ($1[blockparam_36] === "x") {
+        const $51 = blockparam_35 + "/X";
+        blockparam_34 = $51;
+        break forBody$11;
+      }
+      const $53 = blockparam_35 + "/Y";
+      blockparam_34 = $53;
     }
-    const $53 = blockparam_35 + "/Y";
-    blockparam_34 = $53;
     const $49 = blockparam_36 + 1;
     blockparam_35 = blockparam_34;
     blockparam_36 = $49;

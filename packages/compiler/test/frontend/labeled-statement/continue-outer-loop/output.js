@@ -3,17 +3,21 @@ blockparam_31 = 0;
 let blockparam_32 = undefined;
 let blockparam_33 = undefined;
 outer: for (; blockparam_31 < 3; ) {
-  blockparam_32 = 0;
-  for (; blockparam_32 < 3; ) {
-    if (blockparam_32 === 1) {
-      blockparam_33 = blockparam_32;
-      continue outer;
+  forBody$7: {
+    blockparam_32 = 0;
+    for (; blockparam_32 < 3; ) {
+      forBody$14: {
+        if (blockparam_32 === 1) {
+          blockparam_33 = blockparam_32;
+          break forBody$7;
+        }
+        console.log(blockparam_31, blockparam_32);
+      }
+      const $49 = blockparam_32 + 1;
+      blockparam_32 = $49;
     }
-    console.log(blockparam_31, blockparam_32);
-    const $49 = blockparam_32 + 1;
-    blockparam_32 = $49;
+    blockparam_33 = blockparam_32;
   }
-  blockparam_33 = blockparam_32;
   const $47 = blockparam_31 + 1;
   blockparam_31 = $47;
 }

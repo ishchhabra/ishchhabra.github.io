@@ -1,4 +1,6 @@
 console.log("start");
 for (; false; ) {
-  console.log("body");
+  forBody$7: {
+    console.log("body");
+  }
 }
