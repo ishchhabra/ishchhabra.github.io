@@ -104,11 +104,7 @@ export function buildForOfStatement(
   buildOwnedBody(node.body, forScope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.terminal = new JumpOp(
-      createOperationId(environment),
-      parentBlock.id,
-      [],
-    );
+    functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), parentBlock, []);
   }
 
   functionBuilder.currentBlock = exitBlock;

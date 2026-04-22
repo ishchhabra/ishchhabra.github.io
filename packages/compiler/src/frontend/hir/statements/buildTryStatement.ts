@@ -33,7 +33,7 @@ export function buildTryStatement(
   if (functionBuilder.currentBlock.terminal === undefined) {
     functionBuilder.currentBlock.terminal = new JumpOp(
       createOperationId(environment),
-      (finallyBlock ?? fallthroughBlock).id,
+      (finallyBlock ?? fallthroughBlock),
       [],
     );
   }
@@ -72,7 +72,7 @@ export function buildTryStatement(
     if (functionBuilder.currentBlock.terminal === undefined) {
       functionBuilder.currentBlock.terminal = new JumpOp(
         createOperationId(environment),
-        (finallyBlock ?? fallthroughBlock).id,
+        (finallyBlock ?? fallthroughBlock),
         [],
       );
     }
@@ -83,11 +83,7 @@ export function buildTryStatement(
     functionBuilder.currentBlock = finallyBlock;
     buildOwnedBody(node.finalizer, scope, functionBuilder, moduleBuilder, environment);
     if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.terminal = new JumpOp(
-        createOperationId(environment),
-        fallthroughBlock.id,
-        [],
-      );
+      functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), fallthroughBlock, []);
     }
   }
 

@@ -52,11 +52,7 @@ export function buildIfStatement(
   functionBuilder.currentBlock = consequentBlock;
   buildOwnedBody(node.consequent, scope, functionBuilder, moduleBuilder, environment);
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.terminal = new JumpOp(
-      createOperationId(environment),
-      fallthroughBlock.id,
-      [],
-    );
+    functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), fallthroughBlock, []);
   }
 
   // Alternate arm
@@ -65,11 +61,7 @@ export function buildIfStatement(
     buildOwnedBody(node.alternate, scope, functionBuilder, moduleBuilder, environment);
   }
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.terminal = new JumpOp(
-      createOperationId(environment),
-      fallthroughBlock.id,
-      [],
-    );
+    functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), fallthroughBlock, []);
   }
 
   functionBuilder.currentBlock = fallthroughBlock;

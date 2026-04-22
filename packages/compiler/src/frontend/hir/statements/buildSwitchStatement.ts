@@ -84,11 +84,7 @@ export function buildSwitchStatement(
     if (functionBuilder.currentBlock.terminal === undefined) {
       // Fall-through to next case or fallthroughBlock if last
       const nextTarget = i + 1 < caseBlocks.length ? caseBlocks[i + 1] : fallthroughBlock;
-      functionBuilder.currentBlock.terminal = new JumpOp(
-        createOperationId(environment),
-        nextTarget.id,
-        [],
-      );
+      functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), nextTarget, []);
     }
   }
 

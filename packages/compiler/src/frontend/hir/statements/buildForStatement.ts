@@ -55,7 +55,7 @@ export function buildForStatement(
     }
   }
   if (parentBlock.terminal === undefined) {
-    parentBlock.terminal = new JumpOp(createOperationId(environment), headerBlock.id, []);
+    parentBlock.terminal = new JumpOp(createOperationId(environment), headerBlock, []);
   }
 
   // Header: test + branch
@@ -92,11 +92,7 @@ export function buildForStatement(
   buildOwnedBody(node.body, forScope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.terminal = new JumpOp(
-      createOperationId(environment),
-      updateBlock.id,
-      [],
-    );
+    functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), updateBlock, []);
   }
 
   // Update
@@ -105,11 +101,7 @@ export function buildForStatement(
     buildExpressionAsStatement(node.update, forScope, functionBuilder, moduleBuilder, environment);
   }
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.terminal = new JumpOp(
-      createOperationId(environment),
-      headerBlock.id,
-      [],
-    );
+    functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), headerBlock, []);
   }
 
   functionBuilder.currentBlock = exitBlock;

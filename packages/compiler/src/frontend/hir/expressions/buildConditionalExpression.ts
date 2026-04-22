@@ -1,25 +1,19 @@
 import type { ConditionalExpression, Expression } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { createOperationId, IfOp, Value, Region, YieldOp } from "../../../ir";
+import { BasicBlock, createOperationId, IfTerm, JumpOp, Value } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildNode } from "../buildNode";
 
 /**
- * Lower `test ? consequent : alternate` to a textbook MLIR `IfOp`
- * with one result place — the merged expression value.
+ * Lower `test ? consequent : alternate` to flat CFG with IfTerm.
+ * The merged result flows via a block parameter on the join block.
  *
- *   [test compute ops]
- *   %result = IfOp(test) {
- *     [cons compute ops]
- *     YieldOp(%consValue)
- *   } else {
- *     [alt compute ops]
- *     YieldOp(%altValue)
- *   }
- *
- * The caller receives `%result` and may use it as any other value.
+ *   parentBlock  --IfTerm-->  consBlock / altBlock
+ *   consBlock  --(cons ops; Jump(join(consVal)))
+ *   altBlock   --(alt ops;  Jump(join(altVal)))
+ *   joinBlock(%result):  caller reads %result
  */
 export function buildConditionalExpression(
   node: ConditionalExpression,
@@ -35,44 +29,45 @@ export function buildConditionalExpression(
     throw new Error("Conditional expression test must be a single place");
   }
 
-  const consResult = buildArm(node.consequent, scope, functionBuilder, moduleBuilder, environment);
-  const altResult = buildArm(node.alternate, scope, functionBuilder, moduleBuilder, environment);
-
+  const consBlock = environment.createBlock();
+  const altBlock = environment.createBlock();
+  const joinBlock = environment.createBlock();
   const resultPlace = environment.createValue();
+  joinBlock.params = [resultPlace];
+  functionBuilder.addBlock(consBlock);
+  functionBuilder.addBlock(altBlock);
+  functionBuilder.addBlock(joinBlock);
 
-  const ifOp = new IfOp(
+  parentBlock.terminal = new IfTerm(
     createOperationId(environment),
     testPlace,
-    [resultPlace],
-    consResult.region,
-    altResult.region,
+    consBlock,
+    altBlock,
   );
-  parentBlock.appendOp(ifOp);
-  functionBuilder.currentBlock = parentBlock;
+
+  functionBuilder.currentBlock = consBlock;
+  buildArm(node.consequent, joinBlock, scope, functionBuilder, moduleBuilder, environment);
+
+  functionBuilder.currentBlock = altBlock;
+  buildArm(node.alternate, joinBlock, scope, functionBuilder, moduleBuilder, environment);
+
+  functionBuilder.currentBlock = joinBlock;
   return resultPlace;
 }
 
 function buildArm(
   node: Expression,
+  joinBlock: BasicBlock,
   scope: Scope,
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): { region: Region } {
-  const region = new Region([]);
-  const block = environment.createBlock();
-  functionBuilder.withStructureRegion(region, () => {
-    functionBuilder.addBlock(block);
-    functionBuilder.currentBlock = block;
-
-    const place = buildNode(node, scope, functionBuilder, moduleBuilder, environment);
-    if (place === undefined || Array.isArray(place)) {
-      throw new Error("Conditional expression arm must be a single place");
-    }
-
-    if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), [place]);
-    }
-  });
-  return { region };
+): void {
+  const place = buildNode(node, scope, functionBuilder, moduleBuilder, environment);
+  if (place === undefined || Array.isArray(place)) {
+    throw new Error("Conditional expression arm must be a single place");
+  }
+  if (functionBuilder.currentBlock.terminal === undefined) {
+    functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), joinBlock, [place]);
+  }
 }

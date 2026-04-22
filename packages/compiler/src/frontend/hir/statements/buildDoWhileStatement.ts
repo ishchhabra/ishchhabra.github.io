@@ -33,7 +33,7 @@ export function buildDoWhileStatement(
   functionBuilder.addBlock(headerBlock);
   functionBuilder.addBlock(exitBlock);
 
-  parentBlock.terminal = new JumpOp(createOperationId(environment), bodyBlock.id, []);
+  parentBlock.terminal = new JumpOp(createOperationId(environment), bodyBlock, []);
 
   // Body
   functionBuilder.currentBlock = bodyBlock;
@@ -47,11 +47,7 @@ export function buildDoWhileStatement(
   buildOwnedBody(node.body, scope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.terminal = new JumpOp(
-      createOperationId(environment),
-      headerBlock.id,
-      [],
-    );
+    functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), headerBlock, []);
   }
 
   // Header: test + branch

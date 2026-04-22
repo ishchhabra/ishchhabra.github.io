@@ -5,15 +5,14 @@ import {
   ArrayDestructureOp,
   BinaryExpressionOp,
   createOperationId,
-  IfOp,
+  IfTerm,
+  JumpOp,
   LiteralOp,
   ObjectDestructureOp,
   Value,
-  Region,
   StoreContextOp,
   StoreLocalOp,
   UnaryExpressionOp,
-  YieldOp,
 } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildLVal } from "../buildLVal";
@@ -254,79 +253,59 @@ function buildLogicalIdentifierAssignment(
     environment,
   );
 
-  // Consequent region: evaluate rhs, store into x, yield new value.
-  const consRegion = new Region([]);
   const consBlock = environment.createBlock();
-  let consYielded: Value | null = null;
-  functionBuilder.withStructureRegion(consRegion, () => {
-    functionBuilder.addBlock(consBlock);
-    functionBuilder.currentBlock = consBlock;
-
-    const rightPlace = buildNode(node.right, scope, functionBuilder, moduleBuilder, environment);
-    if (rightPlace === undefined || Array.isArray(rightPlace)) {
-      throw new Error("Logical assignment right must be a single place");
-    }
-    const stabilizedRightPlace = stabilizePlace(rightPlace, functionBuilder, environment);
-
-    const target = buildLVal(
-      left as AST.Pattern,
-      scope,
-      functionBuilder,
-      moduleBuilder,
-      environment,
-      { kind: "assignment" },
-    );
-    if (target.kind !== "binding") {
-      throw new Error(`Expected binding assignment target, got: ${target.kind}`);
-    }
-    const isContext = environment.contextDeclarationIds.has(declarationId);
-    functionBuilder.addOp(
-      isContext
-        ? environment.createOperation(
-            StoreContextOp,
-            environment.createValue(),
-            target.place,
-            stabilizedRightPlace,
-            "let",
-            "assignment",
-          )
-        : environment.createOperation(
-            StoreLocalOp,
-            environment.createValue(),
-            target.place,
-            stabilizedRightPlace,
-            "const",
-            "assignment",
-          ),
-    );
-    consYielded = stabilizedRightPlace;
-    functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), [
-      stabilizedRightPlace,
-    ]);
-  });
-
-  // Alternate region: yield old value unchanged.
-  const altRegion = new Region([]);
   const altBlock = environment.createBlock();
-  functionBuilder.withStructureRegion(altRegion, () => {
-    functionBuilder.addBlock(altBlock);
-    altBlock.terminal = new YieldOp(createOperationId(environment), [oldValuePlace]);
-  });
-
-  if (consYielded === null) {
-    throw new Error("Logical assignment cons arm did not yield a value");
-  }
-
+  const joinBlock = environment.createBlock();
   const resultPlace = environment.createValue();
-  const ifOp = new IfOp(
+  joinBlock.params = [resultPlace];
+  functionBuilder.addBlock(consBlock);
+  functionBuilder.addBlock(altBlock);
+  functionBuilder.addBlock(joinBlock);
+
+  parentBlock.terminal = new IfTerm(
     createOperationId(environment),
     conditionPlace,
-    [resultPlace],
-    consRegion,
-    altRegion,
+    consBlock,
+    altBlock,
   );
-  parentBlock.appendOp(ifOp);
-  functionBuilder.currentBlock = parentBlock;
+
+  functionBuilder.currentBlock = consBlock;
+  const rightPlace = buildNode(node.right, scope, functionBuilder, moduleBuilder, environment);
+  if (rightPlace === undefined || Array.isArray(rightPlace)) {
+    throw new Error("Logical assignment right must be a single place");
+  }
+  const stabilizedRightPlace = stabilizePlace(rightPlace, functionBuilder, environment);
+  const target = buildLVal(left as AST.Pattern, scope, functionBuilder, moduleBuilder, environment, {
+    kind: "assignment",
+  });
+  if (target.kind !== "binding") {
+    throw new Error(`Expected binding assignment target, got: ${target.kind}`);
+  }
+  const isContext = environment.contextDeclarationIds.has(declarationId);
+  functionBuilder.addOp(
+    isContext
+      ? environment.createOperation(
+          StoreContextOp,
+          environment.createValue(),
+          target.place,
+          stabilizedRightPlace,
+          "let",
+          "assignment",
+        )
+      : environment.createOperation(
+          StoreLocalOp,
+          environment.createValue(),
+          target.place,
+          stabilizedRightPlace,
+          "const",
+          "assignment",
+        ),
+  );
+  functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), joinBlock, [stabilizedRightPlace]);
+
+  altBlock.terminal = new JumpOp(createOperationId(environment), joinBlock, [oldValuePlace]);
+
+  functionBuilder.currentBlock = joinBlock;
   return resultPlace;
 }
 
@@ -412,54 +391,41 @@ function buildLogicalMemberAssignment(
   const cachedPlace = loadMemberReference(reference, functionBuilder, environment);
   const conditionPlace = buildLogicalCondition(operator, cachedPlace, functionBuilder, environment);
 
-  const consRegion = new Region([]);
   const consBlock = environment.createBlock();
-  let consYielded: Value | null = null;
-  functionBuilder.withStructureRegion(consRegion, () => {
-    functionBuilder.addBlock(consBlock);
-    functionBuilder.currentBlock = consBlock;
-
-    const rightPlace = buildNode(node.right, scope, functionBuilder, moduleBuilder, environment);
-    if (rightPlace === undefined || Array.isArray(rightPlace)) {
-      throw new Error("Logical member assignment right must be a single place");
-    }
-    const stabilizedRightPlace = stabilizePlace(rightPlace, functionBuilder, environment);
-
-    functionBuilder.addOp(
-      createStoreMemberReferenceInstruction(
-        reference,
-        environment.createValue(),
-        stabilizedRightPlace,
-        environment,
-      ),
-    );
-    consYielded = stabilizedRightPlace;
-    functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), [
-      stabilizedRightPlace,
-    ]);
-  });
-
-  const altRegion = new Region([]);
   const altBlock = environment.createBlock();
-  functionBuilder.withStructureRegion(altRegion, () => {
-    functionBuilder.addBlock(altBlock);
-    altBlock.terminal = new YieldOp(createOperationId(environment), [cachedPlace]);
-  });
-
-  if (consYielded === null) {
-    throw new Error("Logical member assignment cons arm did not yield a value");
-  }
-
+  const joinBlock = environment.createBlock();
   const resultPlace = environment.createValue();
-  const ifOp = new IfOp(
+  joinBlock.params = [resultPlace];
+  functionBuilder.addBlock(consBlock);
+  functionBuilder.addBlock(altBlock);
+  functionBuilder.addBlock(joinBlock);
+
+  parentBlock.terminal = new IfTerm(
     createOperationId(environment),
     conditionPlace,
-    [resultPlace],
-    consRegion,
-    altRegion,
+    consBlock,
+    altBlock,
   );
-  parentBlock.appendOp(ifOp);
-  functionBuilder.currentBlock = parentBlock;
+
+  functionBuilder.currentBlock = consBlock;
+  const rightPlace = buildNode(node.right, scope, functionBuilder, moduleBuilder, environment);
+  if (rightPlace === undefined || Array.isArray(rightPlace)) {
+    throw new Error("Logical member assignment right must be a single place");
+  }
+  const stabilizedRightPlace = stabilizePlace(rightPlace, functionBuilder, environment);
+  functionBuilder.addOp(
+    createStoreMemberReferenceInstruction(
+      reference,
+      environment.createValue(),
+      stabilizedRightPlace,
+      environment,
+    ),
+  );
+  functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), joinBlock, [stabilizedRightPlace]);
+
+  altBlock.terminal = new JumpOp(createOperationId(environment), joinBlock, [cachedPlace]);
+
+  functionBuilder.currentBlock = joinBlock;
   return resultPlace;
 }
 

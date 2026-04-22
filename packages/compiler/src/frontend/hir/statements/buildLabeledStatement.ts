@@ -66,11 +66,7 @@ export function buildLabeledStatement(
   functionBuilder.controlStack.pop();
 
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.terminal = new JumpOp(
-      createOperationId(environment),
-      fallthroughBlock.id,
-      [],
-    );
+    functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), fallthroughBlock, []);
   }
 
   functionBuilder.currentBlock = fallthroughBlock;

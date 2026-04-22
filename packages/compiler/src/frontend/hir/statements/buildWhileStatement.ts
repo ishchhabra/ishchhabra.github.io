@@ -32,7 +32,7 @@ export function buildWhileStatement(
   functionBuilder.addBlock(bodyBlock);
   functionBuilder.addBlock(exitBlock);
 
-  parentBlock.terminal = new JumpOp(createOperationId(environment), headerBlock.id, []);
+  parentBlock.terminal = new JumpOp(createOperationId(environment), headerBlock, []);
 
   // Header: evaluate test, terminate with WhileTerm
   functionBuilder.currentBlock = headerBlock;
@@ -61,11 +61,7 @@ export function buildWhileStatement(
   buildOwnedBody(node.body, scope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.terminal = new JumpOp(
-      createOperationId(environment),
-      headerBlock.id,
-      [],
-    );
+    functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), headerBlock, []);
   }
 
   functionBuilder.currentBlock = exitBlock;
