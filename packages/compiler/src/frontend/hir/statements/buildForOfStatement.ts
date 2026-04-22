@@ -97,7 +97,11 @@ export function buildForOfStatement(
   );
 
   functionBuilder.currentBlock = bodyBlock;
-  if (bareLVal !== undefined) {
+  // Emit the per-iteration assignment for any non-binding target —
+  // either a bare LHS (assignment form) or a destructuring pattern
+  // (VariableDeclaration with array/object target). Binding targets
+  // are already wired by reusing iterationValuePlace = target.place.
+  if (bareLVal !== undefined || iterationTarget.kind !== "binding") {
     emitLoopIterationAssignment(iterationTarget, iterationValuePlace, functionBuilder, environment);
   }
   functionBuilder.controlStack.push({

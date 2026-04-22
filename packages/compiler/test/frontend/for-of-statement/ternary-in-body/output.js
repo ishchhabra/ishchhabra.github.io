@@ -1,14 +1,15 @@
 function $0($1) {
-  let $14 = undefined;
+  let $15 = undefined;
   for (const $8 of Object.entries($1)) {
+    [$6, $7] = $8;
     if ($6 !== "x") {
       if ($7) {
-        $14 = "";
+        $15 = "";
       } else {
-        const $25 = String($7);
-        $14 = $25;
+        const $26 = String($7);
+        $15 = $26;
       }
-      g($14);
+      g($15);
     }
     continue;
   }

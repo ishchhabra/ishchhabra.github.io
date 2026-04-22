@@ -89,7 +89,7 @@ export function buildForInStatement(
   );
 
   functionBuilder.currentBlock = bodyBlock;
-  if (bareLVal !== undefined) {
+  if (bareLVal !== undefined || iterationTarget.kind !== "binding") {
     emitLoopIterationAssignment(iterationTarget, iterationValuePlace, functionBuilder, environment);
   }
   functionBuilder.controlStack.push({
