@@ -48,18 +48,62 @@ import { LabeledBlockOp } from "./LabeledBlock";
 import { SwitchOp } from "./Switch";
 import { TryOp } from "./Try";
 import { WhileOp } from "./While";
+export {
+  ForInTerm,
+  ForOfTerm,
+  ForTerm,
+  IfTerm,
+  LabeledTerm,
+  type SwitchCase,
+  SwitchTerm,
+  TryTerm,
+  WhileTerm,
+} from "./cfg-terminators";
+import {
+  ForInTerm,
+  ForOfTerm,
+  ForTerm,
+  IfTerm,
+  LabeledTerm,
+  SwitchTerm,
+  TryTerm,
+  WhileTerm,
+} from "./cfg-terminators";
 
 /** Union of all terminator ops. */
-export type Terminal = BreakOp | ConditionOp | ContinueOp | JumpOp | ReturnOp | ThrowOp | YieldOp;
+export type Terminal =
+  | BreakOp
+  | ConditionOp
+  | ContinueOp
+  | ForInTerm
+  | ForOfTerm
+  | ForTerm
+  | IfTerm
+  | JumpOp
+  | LabeledTerm
+  | ReturnOp
+  | SwitchTerm
+  | ThrowOp
+  | TryTerm
+  | WhileTerm
+  | YieldOp;
 
 export function isTerminal(op: unknown): op is Terminal {
   return (
     op instanceof BreakOp ||
     op instanceof ConditionOp ||
     op instanceof ContinueOp ||
+    op instanceof ForInTerm ||
+    op instanceof ForOfTerm ||
+    op instanceof ForTerm ||
+    op instanceof IfTerm ||
     op instanceof JumpOp ||
+    op instanceof LabeledTerm ||
     op instanceof ReturnOp ||
+    op instanceof SwitchTerm ||
     op instanceof ThrowOp ||
+    op instanceof TryTerm ||
+    op instanceof WhileTerm ||
     op instanceof YieldOp
   );
 }
