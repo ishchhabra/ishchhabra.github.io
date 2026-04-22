@@ -1,9 +1,10 @@
 const $23 = globalThis.project;
-let $12 = undefined;
+let $8 = undefined;
 if (!$23.external) {
-  const $25 = `lab-${$23.slug}-title`;
-  $12 = $25;
+  $23.slug;
+  $8 = undefined;
+  console.log($8);
 } else {
-  $12 = undefined;
+  $8 = undefined;
+  console.log($8);
 }
-console.log($12);

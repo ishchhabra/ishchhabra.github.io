@@ -1,4 +1,7 @@
 function $0($1) {
-  let blockparam_10 = undefined;
-  return $1 ? 1 : undefined;
+  if ($1) {
+    return undefined;
+  } else {
+    return undefined;
+  }
 }

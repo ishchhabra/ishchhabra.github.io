@@ -1,10 +1,11 @@
 function $0($1) {
-  let $4 = undefined;
+  let $2 = undefined;
   if ($1) {
-    $4 = 20;
+    $2 = undefined;
+    return $2;
   } else {
-    $4 = $1;
+    $2 = undefined;
+    return $2;
   }
-  return $4;
 }
 export { $0 as f };

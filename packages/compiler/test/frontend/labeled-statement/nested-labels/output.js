@@ -1,40 +1,24 @@
 let blockparam_37 = undefined;
+blockparam_37 = 0;
 let blockparam_38 = undefined;
 let blockparam_39 = undefined;
-{
-  let $69;
-  blockparam_37 = 0;
-  outer: for (
-    ;
-    (blockparam_38 = blockparam_37), blockparam_37 < 5;
-    $69 = blockparam_39 + 1, blockparam_37 = $69
-  ) {
-    let blockparam_41 = undefined;
-    let blockparam_42 = undefined;
-    let blockparam_43 = undefined;
-    {
-      let $67;
-      blockparam_41 = 0;
-      inner: for (
-        ;
-        (blockparam_42 = blockparam_41), blockparam_41 < 5;
-        $67 = blockparam_43 + 1, blockparam_41 = $67
-      ) {
-        if (blockparam_42 === 2) {
-          blockparam_43 = blockparam_42;
-          continue inner;
-        }
-        if (blockparam_42 === 3) {
-          blockparam_39 = blockparam_38;
-          continue outer;
-        }
-        if (blockparam_38 === 4) {
+for (; blockparam_37 < 5; ) {
+  blockparam_38 = 0;
+  for (; blockparam_38 < 5; ) {
+    if (blockparam_38 === 2) {
+      continue inner;
+    } else {
+      if (blockparam_38 === 3) {
+        continue outer;
+      } else {
+        if (blockparam_37 === 4) {
           break outer;
+        } else {
+          console.log(blockparam_37, blockparam_38);
+          const $54 = blockparam_38 + 1;
+          blockparam_38 = $54;
         }
-        console.log(blockparam_38, blockparam_42);
-        blockparam_43 = blockparam_42;
       }
     }
-    blockparam_39 = blockparam_38;
   }
 }

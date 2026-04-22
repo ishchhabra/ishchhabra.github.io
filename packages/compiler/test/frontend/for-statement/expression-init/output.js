@@ -1,3 +1,4 @@
-for (console.log("start"); false; ) {
+console.log("start");
+for (; false; ) {
   console.log("body");
 }

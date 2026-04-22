@@ -5,6 +5,4 @@ switch (1) {
   case 2:
     console.log("two");
     break;
-  default:
-    break;
 }

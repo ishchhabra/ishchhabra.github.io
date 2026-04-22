@@ -1,5 +1,3 @@
 while (true) {
-  {
-    break;
-  }
+  break;
 }

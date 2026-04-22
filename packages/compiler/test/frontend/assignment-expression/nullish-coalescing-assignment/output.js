@@ -1,10 +1,11 @@
 function $0($1) {
-  let $6 = undefined;
+  let $4 = undefined;
   if ($1 == null) {
-    $6 = 30;
+    $4 = undefined;
+    return $4;
   } else {
-    $6 = $1;
+    $4 = undefined;
+    return $4;
   }
-  return $6;
 }
 export { $0 as f };

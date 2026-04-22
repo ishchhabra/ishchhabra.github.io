@@ -1,9 +1,11 @@
 function $0($1) {
-  let $2 = "default";
+  let blockparam_15 = undefined;
   try {
-    $2 = JSON.parse($1);
+    const $20 = JSON.parse($1);
+    blockparam_15 = $20;
+    return blockparam_15;
   } catch ($10) {
-    $2 = "error";
+    blockparam_15 = "error";
+    return blockparam_15;
   }
-  return $2;
 }

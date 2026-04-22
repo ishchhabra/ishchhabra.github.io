@@ -1,6 +1,7 @@
-for (const $1 in obj) {
+for (const $2 in obj) {
   if ($1 === "skip") {
     continue;
+  } else {
+    console.log($1);
   }
-  console.log($1);
 }

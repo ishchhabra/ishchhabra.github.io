@@ -1,18 +1,9 @@
 function $0($1) {
-  let blockparam_23 = undefined;
-  blockparam_23 = $1;
-  let blockparam_24 = undefined;
-  for (const $8 of [1, 2]) {
-    let blockparam_25 = undefined;
+  const $24 = $1;
+  for (const $9 of [1, 2]) {
     if ($8) {
-      const { x: $11, ...$12 } = blockparam_23;
-      blockparam_25 = $12;
-    } else {
-      blockparam_25 = $1;
+      const { x: $11, ...$12 } = $24;
     }
-    blockparam_23 = blockparam_25;
-    blockparam_24 = blockparam_25;
   }
-  return blockparam_24;
 }
 export { $0 as f };

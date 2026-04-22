@@ -1,7 +1,6 @@
 async function $0($1) {
   try {
-    const $49 = await $1.json();
-    await getDb().insert($49);
+    await getDb().insert(await $1.json());
     return new Response("ok");
   } catch {
     return new Response("error");

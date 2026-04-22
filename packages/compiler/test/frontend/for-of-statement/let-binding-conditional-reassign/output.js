@@ -1,10 +1,11 @@
-for (let $1 of items) {
-  let blockparam_13 = undefined;
+let blockparam_13 = undefined;
+for (const $2 of items) {
   if (condition) {
-    $1 = $1 + 1;
-    blockparam_13 = $1;
+    const $18 = $1 + 1;
+    blockparam_13 = $18;
+    console.log(blockparam_13);
   } else {
     blockparam_13 = $1;
+    console.log(blockparam_13);
   }
-  console.log(blockparam_13);
 }

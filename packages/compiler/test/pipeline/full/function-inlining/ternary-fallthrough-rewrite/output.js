@@ -2,8 +2,13 @@ function $0($2) {
   return $2.trim();
 }
 function $1($6, $7) {
-  const $25 = $0($6);
-  let $15 = undefined;
-  return $25 + ($7 ? "\n" : "");
+  let $13 = undefined;
+  if ($7) {
+    $13 = undefined;
+    return $0($6) + $13;
+  } else {
+    $13 = undefined;
+    return $0($6) + $13;
+  }
 }
 export default $1;

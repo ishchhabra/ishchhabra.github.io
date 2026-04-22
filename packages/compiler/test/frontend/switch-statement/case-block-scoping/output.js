@@ -1,53 +1,22 @@
 function $0($2) {
   switch ($2.type) {
     case "comment":
-      {
-        const $7 = $2;
-        return {
-          type: "comment",
-          value: $7.data,
-        };
-      }
-      {
-        const $18 = $2;
-        return {
-          type: "text",
-          value: $18.value,
-        };
-      }
-      {
-        const $29 = $2;
-        return {
-          type: "element",
-          tag: $29.tagName,
-        };
-      }
-      break;
+      return {
+        type: "comment",
+        value: $2.data,
+      };
     case "text":
-      {
-        $18 = $2;
-        return {
-          type: "text",
-          value: $18.value,
-        };
-      }
-      {
-        $29 = $2;
-        return {
-          type: "element",
-          tag: $29.tagName,
-        };
-      }
-      break;
+      const $18 = $2;
+      return {
+        type: "text",
+        value: $18.value,
+      };
     default:
-      {
-        $29 = $2;
-        return {
-          type: "element",
-          tag: $29.tagName,
-        };
-      }
-      break;
+      const $29 = $2;
+      return {
+        type: "element",
+        tag: $29.tagName,
+      };
   }
 }
 const $1 = $0({

@@ -1,34 +1,77 @@
 function $0($1) {
-  let $29 = undefined;
+  let $13 = undefined;
+  let $35 = undefined;
   if ($1 !== undefined) {
-    const $61 = $1.startsWith("/");
-    let $23 = undefined;
-    const $63 = [
-      {
-        rel: "canonical",
-        href: `/${$61 ? $1 : $1}`,
-      },
-    ];
-    $29 = $63;
+    if ($1.startsWith("/")) {
+      $13 = undefined;
+      if ($13) {
+        $35 = undefined;
+        return {
+          meta: [
+            {
+              name: "title",
+            },
+          ],
+          ...$35,
+        };
+      } else {
+        $35 = undefined;
+        return {
+          meta: [
+            {
+              name: "title",
+            },
+          ],
+          ...$35,
+        };
+      }
+    } else {
+      $13 = undefined;
+      if ($13) {
+        $35 = undefined;
+        return {
+          meta: [
+            {
+              name: "title",
+            },
+          ],
+          ...$35,
+        };
+      } else {
+        $35 = undefined;
+        return {
+          meta: [
+            {
+              name: "title",
+            },
+          ],
+          ...$35,
+        };
+      }
+    }
   } else {
-    $29 = undefined;
+    $13 = undefined;
+    if ($13) {
+      $35 = undefined;
+      return {
+        meta: [
+          {
+            name: "title",
+          },
+        ],
+        ...$35,
+      };
+    } else {
+      $35 = undefined;
+      return {
+        meta: [
+          {
+            name: "title",
+          },
+        ],
+        ...$35,
+      };
+    }
   }
-  let $39 = undefined;
-  if ($29) {
-    const $65 = {
-      links: $29,
-    };
-    $39 = $65;
-  } else {
-    $39 = $29;
-  }
-  return {
-    meta: [
-      {
-        name: "title",
-      },
-    ],
-    ...$39,
-  };
 }
 console.log($0("/about"));

@@ -1,6 +1,7 @@
 while (someCond) {
   if (cond) {
     break;
+  } else {
+    console.log("reachable-after-if");
   }
-  console.log("reachable-after-if");
 }

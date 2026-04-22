@@ -1,10 +1,11 @@
 function $0($1) {
-  let $5 = undefined;
+  let $3 = undefined;
   if (!$1) {
-    $5 = 10;
+    $3 = undefined;
+    return $3;
   } else {
-    $5 = $1;
+    $3 = undefined;
+    return $3;
   }
-  return $5;
 }
 export { $0 as f };

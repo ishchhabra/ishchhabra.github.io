@@ -1,7 +1,13 @@
 function $0($1) {
   const $15 = $1;
-  const $17 = $15.x;
-  let $7 = undefined;
-  return !$17 ? 10 : $17;
+  let $5 = undefined;
+  if (!$15.x) {
+    $15.x = 10;
+    $5 = undefined;
+    return $5;
+  } else {
+    $5 = undefined;
+    return $5;
+  }
 }
 export { $0 as f };

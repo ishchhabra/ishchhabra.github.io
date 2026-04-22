@@ -4,8 +4,9 @@ let blockparam_27 = undefined;
 if ($32 > $34) {
   const $36 = $32 + $34;
   blockparam_27 = $36;
+  console.log(blockparam_27);
 } else {
   const $38 = $32 - $34;
   blockparam_27 = $38;
+  console.log(blockparam_27);
 }
-console.log(blockparam_27);

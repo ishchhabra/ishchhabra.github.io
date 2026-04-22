@@ -1,10 +1,10 @@
 function $0($1) {
-  while (true) {
-    const $30 = $1.flags;
-    let blockparam_24 = undefined;
-    if (false) {
-      break;
-    }
-    return !($30 & 36) ? $30 : 0;
+  let $2 = $1.flags;
+  if (!($2 & 36)) {
+    $1.flags = $2 | 32;
+    return $2;
+  } else {
+    $2 = 0;
+    return $2;
   }
 }

@@ -1,14 +1,14 @@
 function $0($1) {
-  for (const [$6, $7] of Object.entries($1)) {
+  let $14 = undefined;
+  for (const $8 of Object.entries($1)) {
     if ($6 !== "x") {
-      let $18 = undefined;
       if ($7) {
-        $18 = "";
+        $14 = undefined;
+        g($14);
       } else {
-        const $25 = String($7);
-        $18 = $25;
+        $14 = undefined;
+        g($14);
       }
-      g($18);
     }
   }
 }

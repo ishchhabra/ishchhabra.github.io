@@ -1,3 +1,8 @@
-const $25 = globalThis.flag;
 let blockparam_20 = undefined;
-console.log($25 ? 1 : 2);
+if (globalThis.flag) {
+  blockparam_20 = 1;
+  console.log(blockparam_20);
+} else {
+  blockparam_20 = 2;
+  console.log(blockparam_20);
+}

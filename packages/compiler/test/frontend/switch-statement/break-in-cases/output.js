@@ -1,13 +1,10 @@
-let $1 = undefined;
+let blockparam_20 = undefined;
 switch ("greet") {
   case "greet":
-    $1 = "hello";
     break;
   case "farewell":
-    $1 = "goodbye";
     break;
   default:
-    $1 = "unknown action";
-    break;
+    blockparam_20 = "unknown action";
+    console.log(blockparam_20);
 }
-console.log($1);
