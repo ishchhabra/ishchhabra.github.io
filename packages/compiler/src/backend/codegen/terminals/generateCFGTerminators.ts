@@ -175,10 +175,46 @@ export function generateForTerm(
     const bodyStatements = emitArm(term.bodyBlock, funcOp, generator);
     generator.controlStack.length = savedControl;
 
-    // Mark update block generated so it doesn't leak at top level.
-    generator.generatedBlocks.add(term.updateBlock.id);
+    // Emit the update block's statements in the for-statement's
+    // update slot so JS semantics of `continue` (which runs the
+    // update before re-testing) are preserved. Walk the update block
+    // with the header as continue target so its tail Jump(header)
+    // elides (it's the natural back-edge, not a source `continue`).
+    let updateExpr: t.Expression | null = null;
+    if (!generator.generatedBlocks.has(term.updateBlock.id)) {
+      generator.generatedBlocks.add(term.updateBlock.id);
+      const updateCtrl = headerBlock
+        ? {
+            kind: "loop" as const,
+            label: term.label,
+            breakTarget: term.exitBlock.id,
+            continueTarget: headerBlock.id,
+            structured: false,
+          }
+        : null;
+      if (updateCtrl) generator.controlStack.push(updateCtrl);
+      const updateStmts = generateBasicBlock(term.updateBlock.id, funcOp, generator);
+      if (updateCtrl) generator.controlStack.pop();
+      // Flatten ExpressionStatements into a comma expression.
+      const exprs: t.Expression[] = [];
+      for (const s of updateStmts) {
+        if (t.isExpressionStatement(s)) exprs.push(s.expression);
+        else {
+          // Non-expression statement in update: can't fit in the
+          // for-stmt update slot. Fall back to appending to body.
+          bodyStatements.push(s);
+        }
+      }
+      if (exprs.length === 1) updateExpr = exprs[0];
+      else if (exprs.length > 1) updateExpr = t.sequenceExpression(exprs);
+    }
 
-    const forStmt = t.forStatement(null, testNode, null, t.blockStatement(bodyStatements));
+    const forStmt = t.forStatement(
+      null,
+      testNode,
+      updateExpr,
+      t.blockStatement(bodyStatements),
+    );
     if (term.label !== undefined) {
       return [t.labeledStatement(t.identifier(term.label), forStmt)];
     }
