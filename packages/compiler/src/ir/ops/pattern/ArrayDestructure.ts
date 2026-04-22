@@ -2,15 +2,15 @@ import {
   destructureTargetHasObservableWrites,
   getDestructureTargetDefs,
   getDestructureTargetOperands,
+  OperationId,
   rewriteDestructureTarget,
   type DestructureTarget,
   type Value,
 } from "../../core";
-import { OperationId } from "../../core";
 import type { StoreLocalKind } from "../mem/StoreLocal";
 
-import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
+import { Operation } from "../../core/Operation";
 import {
   contextLocation,
   effects,
@@ -78,6 +78,10 @@ export class ArrayDestructureOp extends Operation {
     const writes: MemoryLocation[] = [];
     collectDestructureBindingLocations({ kind: "array", elements: this.elements }, writes);
     return effects([], writes);
+  }
+
+  public override print(): string {
+    return `${this.place.print()} = array_destructure ${this.value.print()} {kind = ${this.kind}}`;
   }
 }
 

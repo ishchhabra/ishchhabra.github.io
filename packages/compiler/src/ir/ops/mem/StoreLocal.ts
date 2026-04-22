@@ -100,6 +100,6 @@ export class StoreLocalOp extends Operation {
   }
 
   public override print(): string {
-    return `${this.place.print()} = StoreLocal(${this.kind}) ${this.lval.print()} = ${this.value.print()}`;
+    return `${this.place.print()} = store_local ${this.lval.print()}, ${this.value.print()} {kind = ${this.kind}}`;
   }
 }

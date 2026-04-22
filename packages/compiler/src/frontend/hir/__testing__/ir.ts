@@ -6,6 +6,7 @@ import { ProjectBuilder } from "../../ProjectBuilder";
 import type { FuncOp } from "../../../ir/core/FuncOp";
 import type { Operation } from "../../../ir/core/Operation";
 import { analyzeScopes, type Scope, type ScopeMap } from "../../scope/Scope";
+import { instantiateScopeBindings } from "../bindings";
 import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 
@@ -72,16 +73,19 @@ export interface IsolatedHarness {
 }
 
 /**
- * Parse `source`, run scope analysis, and return a primed
- * {@link FuncOpBuilder} whose entry block is empty. Callers locate
- * the AST node of interest (see {@link findAstNode}) and invoke a
- * specific `buildX` function against it; the ops produced land in
+ * Parse `source`, run scope analysis + scope-binding instantiation,
+ * and return a primed {@link FuncOpBuilder}. Callers locate the AST
+ * node of interest (see {@link findAstNode}) and invoke a specific
+ * `buildX` function against it; the ops produced land in
  * `fnBuilder.currentBlock`.
  *
- * Note: this does *not* run `instantiateScopeBindings`, so identifiers
- * referencing module-level declarations resolve as `LoadGlobal`. For
- * tests of builders that depend on locally-declared bindings, prefer
- * the end-to-end {@link buildFn}.
+ * Binding instantiation registers `let` / `const` / `var` / function
+ * / class declarations from the program into the builder's scope
+ * state so that LHS builders (`buildVariableDeclaration`,
+ * `buildAssignmentExpression` against known locals, destructure LHS)
+ * can resolve their targets. The ops emitted by instantiation
+ * (hoisted `var` declarations, context-cell setup) end up on
+ * `fnBuilder.currentBlock` *before* the test's own build call.
  */
 export function makeIsolatedHarness(source: string): IsolatedHarness {
   const env = new Environment(new ProjectEnvironment());
@@ -106,6 +110,7 @@ export function makeIsolatedHarness(source: string): IsolatedHarness {
     false,
     false,
   );
+  instantiateScopeBindings(program, programScope, fnBuilder, env, moduleBuilder);
   return { env, moduleBuilder, fnBuilder, scope: programScope, program, scopeMap };
 }
 
