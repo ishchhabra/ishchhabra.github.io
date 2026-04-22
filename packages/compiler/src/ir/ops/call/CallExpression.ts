@@ -81,6 +81,8 @@ export class CallExpressionOp extends Operation {
   }
 
   public override print(): string {
-    return `${this.place.print()} = Call ${this.callee.print()}(${this.args.map((a) => a.print()).join(", ")})`;
+    const args = this.args.map((a) => a.print()).join(", ");
+    const attrs = this.optional ? " {optional}" : "";
+    return `${this.place.print()} = call ${this.callee.print()}(${args})${attrs}`;
   }
 }

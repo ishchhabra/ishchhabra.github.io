@@ -38,4 +38,9 @@ export class SuperCallOp extends Operation {
   getOperands(): Value[] {
     return this.args;
   }
+
+  public override print(): string {
+    const args = this.args.map((a) => a.print()).join(", ");
+    return `${this.place.print()} = super_call(${args})`;
+  }
 }
