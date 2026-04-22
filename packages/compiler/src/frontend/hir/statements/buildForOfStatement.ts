@@ -101,8 +101,19 @@ export function buildForOfStatement(
   // either a bare LHS (assignment form) or a destructuring pattern
   // (VariableDeclaration with array/object target). Binding targets
   // are already wired by reusing iterationValuePlace = target.place.
+  // `declaration` when for-of has `const/let/var [x, y] of ...` —
+  // emits `const [x, y] = iter` in the body. `assignment` for bare
+  // LHS like `for ([x, y] of ...)`.
+  const destructureKind =
+    left.type === "VariableDeclaration" ? "declaration" : "assignment";
   if (bareLVal !== undefined || iterationTarget.kind !== "binding") {
-    emitLoopIterationAssignment(iterationTarget, iterationValuePlace, functionBuilder, environment);
+    emitLoopIterationAssignment(
+      iterationTarget,
+      iterationValuePlace,
+      functionBuilder,
+      environment,
+      destructureKind,
+    );
   }
   functionBuilder.controlStack.push({
     kind: "loop",
@@ -126,6 +137,7 @@ function emitLoopIterationAssignment(
   valuePlace: Value,
   functionBuilder: FuncOpBuilder,
   environment: Environment,
+  destructureKind: "declaration" | "assignment" = "assignment",
 ): void {
   if (target.kind === "binding") {
     const StoreInstruction = target.storage === "context" ? StoreContextOp : StoreLocalOp;
@@ -136,7 +148,7 @@ function emitLoopIterationAssignment(
         target.place,
         valuePlace,
         "const",
-        "assignment",
+        destructureKind === "declaration" ? "declaration" : "assignment",
       ),
     );
     return;
@@ -149,8 +161,8 @@ function emitLoopIterationAssignment(
         environment.createValue(),
         target.elements,
         valuePlace,
-        "assignment",
-        null,
+        destructureKind,
+        destructureKind === "declaration" ? "const" : null,
       ),
     );
     return;
@@ -163,8 +175,8 @@ function emitLoopIterationAssignment(
         environment.createValue(),
         target.properties,
         valuePlace,
-        "assignment",
-        null,
+        destructureKind,
+        destructureKind === "declaration" ? "const" : null,
       ),
     );
     return;

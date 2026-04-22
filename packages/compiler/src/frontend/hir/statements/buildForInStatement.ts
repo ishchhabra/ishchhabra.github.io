@@ -89,8 +89,16 @@ export function buildForInStatement(
   );
 
   functionBuilder.currentBlock = bodyBlock;
+  const destructureKind =
+    left.type === "VariableDeclaration" ? "declaration" : "assignment";
   if (bareLVal !== undefined || iterationTarget.kind !== "binding") {
-    emitLoopIterationAssignment(iterationTarget, iterationValuePlace, functionBuilder, environment);
+    emitLoopIterationAssignment(
+      iterationTarget,
+      iterationValuePlace,
+      functionBuilder,
+      environment,
+      destructureKind,
+    );
   }
   functionBuilder.controlStack.push({
     kind: "loop",
@@ -114,6 +122,7 @@ function emitLoopIterationAssignment(
   valuePlace: Value,
   functionBuilder: FuncOpBuilder,
   environment: Environment,
+  destructureKind: "declaration" | "assignment" = "assignment",
 ): void {
   if (target.kind === "binding") {
     const StoreInstruction = target.storage === "context" ? StoreContextOp : StoreLocalOp;
@@ -124,7 +133,7 @@ function emitLoopIterationAssignment(
         target.place,
         valuePlace,
         "const",
-        "assignment",
+        destructureKind === "declaration" ? "declaration" : "assignment",
       ),
     );
     return;
@@ -137,8 +146,8 @@ function emitLoopIterationAssignment(
         environment.createValue(),
         target.elements,
         valuePlace,
-        "assignment",
-        null,
+        destructureKind,
+        destructureKind === "declaration" ? "const" : null,
       ),
     );
     return;
@@ -151,8 +160,8 @@ function emitLoopIterationAssignment(
         environment.createValue(),
         target.properties,
         valuePlace,
-        "assignment",
-        null,
+        destructureKind,
+        destructureKind === "declaration" ? "const" : null,
       ),
     );
     return;
