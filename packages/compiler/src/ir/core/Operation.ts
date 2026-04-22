@@ -343,12 +343,12 @@ export abstract class Operation {
 
   verify(): void {
     for (const operand of this.getOperands()) {
-      if (operand == null || operand == null) {
+      if (operand == null) {
         throw new VerifyError(this, "has null operand");
       }
     }
     for (const def of this.getDefs()) {
-      if (def == null || def == null) {
+      if (def == null) {
         throw new VerifyError(this, "has null def");
       }
     }
@@ -362,6 +362,16 @@ export abstract class Operation {
         // if it's declared at all.
         if (!defs.includes(this.place)) {
           throw new VerifyError(this, `place ${this.place.print()} is not in getDefs()`);
+        }
+      }
+    }
+
+    // Use-chain consistency: every operand lists `this` as a user.
+    // Skipped for unattached ops — `registerUses` runs on append.
+    if (this.parentBlock !== null) {
+      for (const operand of this.getOperands()) {
+        if (!operand.uses.has(this)) {
+          throw new VerifyError(this, `operand ${operand.print()} does not list this as a user`);
         }
       }
     }

@@ -62,21 +62,11 @@ describe("buildUnaryExpression — isolated", () => {
     );
   });
 
-  describe("IR invariants", () => {
+  describe("semantics", () => {
     it("wires argument to the sub-build result place", () => {
       const { harness, op } = buildUnaryFromSource("!a;");
       const [load] = harness.fnBuilder.currentBlock.operations;
       expect(op.argument).toBe(load.place);
-    });
-
-    it("sets the result place's definer back-pointer", () => {
-      const { op } = buildUnaryFromSource("!a;");
-      expect(op.place.definer).toBe(op);
-    });
-
-    it("registers the op as a user on the operand Value", () => {
-      const { op } = buildUnaryFromSource("!a;");
-      expect(op.argument.uses.has(op)).toBe(true);
     });
 
     it("getOperands returns [argument]", () => {

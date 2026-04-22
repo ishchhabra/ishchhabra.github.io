@@ -15,6 +15,7 @@ import {
   ReturnOp,
 } from "../../ir";
 import { FuncOp, type FuncOpId, makeFuncOpId } from "../../ir/core/FuncOp";
+import { VERIFY_IR } from "../../ir/verify";
 import type * as AST from "../estree";
 import { isExpression, unwrapTSTypeWrappers } from "../estree";
 import { type Scope, type ScopeMap } from "../scope/Scope";
@@ -279,6 +280,7 @@ export class FuncOpBuilder {
 
   public addOp<T extends Operation>(instruction: T) {
     this.currentBlock.appendOp(instruction);
+    if (VERIFY_IR) instruction.verify();
   }
 
   public addHeaderOp(instruction: Operation) {

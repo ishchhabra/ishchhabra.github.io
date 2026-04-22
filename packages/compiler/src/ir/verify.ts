@@ -8,44 +8,41 @@
  * unconditionally at the end of the pipeline. Throws on the first
  * violation with a descriptive error.
  */
+
 import type { BasicBlock } from "./core/Block";
 import type { FuncOp } from "./core/FuncOp";
-import { Operation, VerifyError } from "./core/Operation";
+import { VerifyError } from "./core/Operation";
+
+/**
+ * Enable `Operation.verify()` at IR construction paths and pass
+ * boundaries. Mirrors MLIR/LLVM's `-DLLVM_ENABLE_ASSERTIONS=ON`: on
+ * in debug/test builds, off in production.
+ */
+export const VERIFY_IR: boolean =
+  typeof process !== "undefined" &&
+  (process.env.VITEST === "true" || process.env.NODE_ENV === "test");
 
 export function verifyFunction(funcOp: FuncOp): void {
   const knownBlocks = new Set<BasicBlock>(funcOp.allBlocks());
 
-  // 1. Every op verifies itself. Block params live on each block
-  //    directly (not as ops), so they have no `verify()` to call —
-  //    use-chain registration happens at construction. Any
-  //    verification of param liveness is covered by LivenessAnalysis.
-  const verifyOp = (op: Operation) => {
-    op.verify();
-  };
-  for (const op of funcOp.prologue) verifyOp(op);
+  for (const op of funcOp.prologue) op.verify();
   for (const block of funcOp.allBlocks()) {
-    // `getAllOps` yields every op in the block — all ordinary
-    // instructions plus the terminator. Structured ops are
-    // ordinary ops under the textbook MLIR model.
-    for (const op of block.getAllOps()) verifyOp(op);
+    for (const op of block.getAllOps()) op.verify();
   }
 
-  // 2. Every block has a terminal.
   for (const block of funcOp.allBlocks()) {
     if (block.terminal === undefined) {
       throw new Error(`IR verify: block bb${block.id} has no terminal`);
     }
   }
 
-  // 3. Every block ref points at a block that exists in this function.
-  const checkBlockRef = (op: Operation, ref: BasicBlock) => {
-    if (!knownBlocks.has(ref)) {
-      throw new VerifyError(op, `references non-existent block bb${ref.id}`);
-    }
-  };
   for (const block of funcOp.allBlocks()) {
     for (const op of block.getAllOps()) {
-      for (const ref of op.getBlockRefs()) checkBlockRef(op, ref);
+      for (const ref of op.getBlockRefs()) {
+        if (!knownBlocks.has(ref)) {
+          throw new VerifyError(op, `references non-existent block bb${ref.id}`);
+        }
+      }
     }
   }
 }

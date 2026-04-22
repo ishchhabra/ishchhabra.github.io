@@ -71,23 +71,12 @@ describe("buildBinaryExpression — isolated", () => {
     );
   });
 
-  describe("IR invariants", () => {
+  describe("semantics", () => {
     it("wires left and right to the sub-build result places", () => {
       const { harness, op } = buildBinaryFromSource("a + b;");
       const [loadA, loadB] = harness.fnBuilder.currentBlock.operations;
       expect(op.left).toBe(loadA.place);
       expect(op.right).toBe(loadB.place);
-    });
-
-    it("sets the result place's definer back-pointer", () => {
-      const { op } = buildBinaryFromSource("a + b;");
-      expect(op.place.definer).toBe(op);
-    });
-
-    it("registers the op as a user on both operand Values", () => {
-      const { op } = buildBinaryFromSource("a + b;");
-      expect(op.left.uses.has(op)).toBe(true);
-      expect(op.right.uses.has(op)).toBe(true);
     });
 
     it("getOperands returns [left, right] in source order", () => {

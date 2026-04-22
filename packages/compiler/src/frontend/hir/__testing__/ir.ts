@@ -109,11 +109,7 @@ export function makeIsolatedHarness(source: string): IsolatedHarness {
   return { env, moduleBuilder, fnBuilder, scope: programScope, program, scopeMap };
 }
 
-/**
- * DFS the AST and return the first node matching `predicate`. Throws
- * if not found so tests fail loudly instead of proceeding with
- * undefined.
- */
+/** DFS the AST for the first node matching `predicate`. Throws if not found. */
 export function findAstNode<T extends Node>(
   root: Node,
   predicate: (node: Node) => node is T,
@@ -148,3 +144,4 @@ function isNode(value: unknown): value is Node {
 export function printOps(ops: readonly Operation[]): string {
   return ops.map((op) => op.print()).join("\n");
 }
+
