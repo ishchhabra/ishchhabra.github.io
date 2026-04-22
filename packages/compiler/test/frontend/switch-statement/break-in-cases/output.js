@@ -1,9 +1,9 @@
 let blockparam_20 = undefined;
 switch ("greet") {
   case "greet":
-    break;
+    blockparam_20 = "hello";
   case "farewell":
-    break;
+    blockparam_20 = "goodbye";
   default:
     blockparam_20 = "unknown action";
 }

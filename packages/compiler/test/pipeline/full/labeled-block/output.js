@@ -1,6 +1,5 @@
 foo: {
   if (x) {
-    break foo;
   }
   console.log("inside");
 }

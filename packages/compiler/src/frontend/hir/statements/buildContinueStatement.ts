@@ -1,6 +1,6 @@
 import type { ContinueStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { ContinueOp, createOperationId } from "../../../ir";
+import { createOperationId, JumpOp } from "../../../ir";
 import { FuncOpBuilder } from "../FuncOpBuilder";
 
 export function buildContinueStatement(
@@ -16,6 +16,18 @@ export function buildContinueStatement(
     );
   }
 
-  functionBuilder.currentBlock.terminal = new ContinueOp(createOperationId(environment), label);
+  const targetBlockId = ctx.continueTarget;
+  if (targetBlockId === undefined) {
+    throw new Error("Continue control context missing continueTarget");
+  }
+  const targetBlock = functionBuilder.maybeBlock(targetBlockId);
+  if (targetBlock === undefined) {
+    throw new Error(`Continue target block ${targetBlockId} not found`);
+  }
+  functionBuilder.currentBlock.terminal = new JumpOp(
+    createOperationId(environment),
+    targetBlock,
+    [],
+  );
   return undefined;
 }

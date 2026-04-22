@@ -6,13 +6,13 @@ outer: for (; blockparam_37 < 5; ) {
   blockparam_38 = 0;
   inner: for (; blockparam_38 < 5; ) {
     if (blockparam_38 === 2) {
-      continue inner;
+      continue;
     }
     if (blockparam_38 === 3) {
+      blockparam_39 = blockparam_38;
       continue outer;
     }
     if (blockparam_37 === 4) {
-      break outer;
     }
     console.log(blockparam_37, blockparam_38);
     continue;

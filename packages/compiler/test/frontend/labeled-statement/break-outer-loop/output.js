@@ -6,7 +6,6 @@ outer: for (; blockparam_31 < 3; ) {
   blockparam_32 = 0;
   for (; blockparam_32 < 3; ) {
     if (blockparam_32 === 1) {
-      break outer;
     }
     console.log(blockparam_31, blockparam_32);
     continue;

@@ -147,6 +147,14 @@ export class FuncOpBuilder {
    * tell "this block is mine" before the whole region hierarchy is
    * attached.
    */
+  /** Look up a block by id among those owned by this builder. */
+  public maybeBlock(id: BlockId): BasicBlock | undefined {
+    for (const b of this.bodyRegion.allBlocks()) {
+      if (b.id === id) return b;
+    }
+    return undefined;
+  }
+
   public addBlock(block: BasicBlock): void {
     this.regionStack[this.regionStack.length - 1].appendBlock(block);
     this.ownedBlockIds.add(block.id);

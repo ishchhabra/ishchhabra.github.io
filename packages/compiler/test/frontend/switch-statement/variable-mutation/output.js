@@ -1,9 +1,10 @@
+let blockparam_20 = undefined;
 switch (2) {
   case 1:
-    break;
+    blockparam_20 = "one";
   case 2:
-    break;
+    blockparam_20 = "two";
   default:
-    break;
+    blockparam_20 = "other";
 }
-console.log("unknown");
+console.log(blockparam_20);
