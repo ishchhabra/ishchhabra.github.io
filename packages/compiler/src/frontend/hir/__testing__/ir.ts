@@ -114,6 +114,22 @@ export function makeIsolatedHarness(source: string): IsolatedHarness {
   return { env, moduleBuilder, fnBuilder, scope: programScope, program, scopeMap };
 }
 
+/**
+ * Mark every declared binding in the harness as initialized, exiting
+ * the TDZ state. Used by builder tests that want to exercise
+ * assignment-to-let/const or read-from-let/const without running the
+ * preceding initializer statements (which would otherwise emit their
+ * own ops and obscure the test's output).
+ *
+ * Skip for tests that specifically exercise TDZ-aware behavior —
+ * e.g., `buildIdentifier`'s temporal-dead-zone throw.
+ */
+export function primeAllBindingsInitialized(h: IsolatedHarness): void {
+  for (const declId of h.env.declarationMetadata.keys()) {
+    h.fnBuilder.markDeclarationInitialized(declId);
+  }
+}
+
 /** DFS the AST for the first node matching `predicate`. Throws if not found. */
 export function findAstNode<T extends Node>(
   root: Node,
