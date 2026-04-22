@@ -7,8 +7,7 @@ if (globalThis.a) {
     blockparam_19 = 2;
   }
   blockparam_18 = blockparam_19;
-  console.log(blockparam_18);
 } else {
   blockparam_18 = 3;
-  console.log(blockparam_18);
 }
+console.log(blockparam_18);

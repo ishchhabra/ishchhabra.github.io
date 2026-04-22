@@ -6,9 +6,8 @@ blockparam_24 = 0;
 for (; blockparam_24 < 10; ) {
   if (blockparam_24 === 5) {
     continue;
-  } else {
-    const $38 = blockparam_23 + blockparam_24;
-    blockparam_22 = $38;
-    continue;
   }
+  const $38 = blockparam_23 + blockparam_24;
+  blockparam_22 = $38;
+  continue;
 }

@@ -262,12 +262,7 @@ function buildLogicalIdentifierAssignment(
   functionBuilder.addBlock(altBlock);
   functionBuilder.addBlock(joinBlock);
 
-  parentBlock.terminal = new IfTerm(
-    createOperationId(environment),
-    conditionPlace,
-    consBlock,
-    altBlock,
-  );
+  parentBlock.terminal = new IfTerm(createOperationId(environment), conditionPlace, consBlock, altBlock, joinBlock);
 
   functionBuilder.currentBlock = consBlock;
   const rightPlace = buildNode(node.right, scope, functionBuilder, moduleBuilder, environment);
@@ -400,12 +395,7 @@ function buildLogicalMemberAssignment(
   functionBuilder.addBlock(altBlock);
   functionBuilder.addBlock(joinBlock);
 
-  parentBlock.terminal = new IfTerm(
-    createOperationId(environment),
-    conditionPlace,
-    consBlock,
-    altBlock,
-  );
+  parentBlock.terminal = new IfTerm(createOperationId(environment), conditionPlace, consBlock, altBlock, joinBlock);
 
   functionBuilder.currentBlock = consBlock;
   const rightPlace = buildNode(node.right, scope, functionBuilder, moduleBuilder, environment);

@@ -62,6 +62,7 @@ export class IfTerm extends Operation {
     public readonly cond: Value,
     public thenBlock: BasicBlock,
     public elseBlock: BasicBlock,
+    public fallthroughBlock: BasicBlock,
   ) {
     super(id, []);
   }
@@ -71,13 +72,13 @@ export class IfTerm extends Operation {
   }
 
   getBlockRefs(): BasicBlock[] {
-    return [this.thenBlock, this.elseBlock];
+    return [this.thenBlock, this.elseBlock, this.fallthroughBlock];
   }
 
   rewrite(values: Map<Value, Value>): IfTerm {
     const newCond = values.get(this.cond) ?? this.cond;
     if (newCond === this.cond) return this;
-    return new IfTerm(this.id, newCond, this.thenBlock, this.elseBlock);
+    return new IfTerm(this.id, newCond, this.thenBlock, this.elseBlock, this.fallthroughBlock);
   }
 
   clone(ctx: CloneContext): IfTerm {
@@ -86,6 +87,7 @@ export class IfTerm extends Operation {
       remapPlace(ctx, this.cond),
       ctx.blockMap.get(this.thenBlock) ?? this.thenBlock,
       ctx.blockMap.get(this.elseBlock) ?? this.elseBlock,
+      ctx.blockMap.get(this.fallthroughBlock) ?? this.fallthroughBlock,
     );
   }
 }

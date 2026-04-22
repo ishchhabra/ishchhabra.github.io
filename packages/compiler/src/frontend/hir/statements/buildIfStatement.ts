@@ -41,12 +41,7 @@ export function buildIfStatement(
   functionBuilder.addBlock(alternateBlock);
   functionBuilder.addBlock(fallthroughBlock);
 
-  parentBlock.terminal = new IfTerm(
-    createOperationId(environment),
-    testPlace,
-    consequentBlock,
-    alternateBlock,
-  );
+  parentBlock.terminal = new IfTerm(createOperationId(environment), testPlace, consequentBlock, alternateBlock, fallthroughBlock);
 
   // Consequent arm
   functionBuilder.currentBlock = consequentBlock;

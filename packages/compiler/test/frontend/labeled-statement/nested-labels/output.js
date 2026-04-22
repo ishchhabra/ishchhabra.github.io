@@ -7,18 +7,15 @@ for (; blockparam_37 < 5; ) {
   for (; blockparam_38 < 5; ) {
     if (blockparam_38 === 2) {
       continue inner;
-    } else {
-      if (blockparam_38 === 3) {
-        continue outer;
-      } else {
-        if (blockparam_37 === 4) {
-          break outer;
-        } else {
-          console.log(blockparam_37, blockparam_38);
-          continue;
-        }
-      }
     }
+    if (blockparam_38 === 3) {
+      continue outer;
+    }
+    if (blockparam_37 === 4) {
+      break outer;
+    }
+    console.log(blockparam_37, blockparam_38);
+    continue;
   }
   blockparam_39 = blockparam_38;
   continue;

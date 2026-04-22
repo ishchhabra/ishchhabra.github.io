@@ -3,8 +3,7 @@ blockparam_19 = 0;
 for (; blockparam_19 < 10; ) {
   if (blockparam_19 === 5) {
     continue;
-  } else {
-    console.log(blockparam_19);
-    continue;
   }
+  console.log(blockparam_19);
+  continue;
 }

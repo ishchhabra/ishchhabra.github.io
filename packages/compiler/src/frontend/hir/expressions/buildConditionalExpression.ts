@@ -38,12 +38,7 @@ export function buildConditionalExpression(
   functionBuilder.addBlock(altBlock);
   functionBuilder.addBlock(joinBlock);
 
-  parentBlock.terminal = new IfTerm(
-    createOperationId(environment),
-    testPlace,
-    consBlock,
-    altBlock,
-  );
+  parentBlock.terminal = new IfTerm(createOperationId(environment), testPlace, consBlock, altBlock, joinBlock);
 
   functionBuilder.currentBlock = consBlock;
   buildArm(node.consequent, joinBlock, scope, functionBuilder, moduleBuilder, environment);

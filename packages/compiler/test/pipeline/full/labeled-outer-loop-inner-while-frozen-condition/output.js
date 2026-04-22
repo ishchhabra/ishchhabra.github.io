@@ -13,42 +13,21 @@ function $0($1) {
         $2 = $20;
       }
       continue;
-    } else {
-      $1 = $2;
-      if ($2 !== undefined) {
-        $2 = $2.nextSub;
-        continue;
-      } else {
-        while ($3 !== undefined) {
-          $1 = $3.value;
-          $3 = $3.prev;
-          if ($1 !== undefined) {
-            $2 = $1.nextSub;
-            continue top;
-          } else {
-            continue;
-          }
-        }
-        break;
-      }
-    }
-  } else {
-    $1 = $2;
-    if ($2 !== undefined) {
-      $2 = $2.nextSub;
-      continue;
-    } else {
-      while ($3 !== undefined) {
-        $1 = $3.value;
-        $3 = $3.prev;
-        if ($1 !== undefined) {
-          $2 = $1.nextSub;
-          continue top;
-        } else {
-          continue;
-        }
-      }
-      break;
     }
   }
+  $1 = $2;
+  if ($2 !== undefined) {
+    $2 = $2.nextSub;
+    continue;
+  }
+  while ($3 !== undefined) {
+    $1 = $3.value;
+    $3 = $3.prev;
+    if ($1 !== undefined) {
+      $2 = $1.nextSub;
+      continue top;
+    }
+    continue;
+  }
+  break;
 }

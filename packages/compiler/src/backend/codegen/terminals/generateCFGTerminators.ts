@@ -44,7 +44,7 @@ export function generateIfTerm(
   }
   t.assertExpression(testNode);
 
-  const fallthrough = inferFallthrough(term.thenBlock, term.elseBlock);
+  const fallthrough = term.fallthroughBlock;
   const ternary = tryEmitTernary(term, testNode, fallthrough, generator);
   if (ternary !== null) {
     return withFallthrough(fallthrough, funcOp, generator, () => ternary);

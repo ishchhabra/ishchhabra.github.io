@@ -9,9 +9,8 @@ if (10 > 5) {
     blockparam_38 = $51;
   }
   blockparam_37 = blockparam_38;
-  console.log(blockparam_37 * 2);
 } else {
   const $47 = 10 * 20;
   blockparam_37 = $47;
-  console.log(blockparam_37 * 2);
 }
+console.log(blockparam_37 * 2);

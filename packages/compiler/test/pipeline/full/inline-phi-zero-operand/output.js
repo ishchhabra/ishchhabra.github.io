@@ -11,10 +11,9 @@ function $0($1, $2, $3) {
       blockparam_45 = $3;
     }
     $15 = undefined;
-    return $15;
   } else {
     $15 = undefined;
-    return $15;
   }
+  return $15;
 }
 console.log($0(globalThis.c, globalThis.a, globalThis.b));

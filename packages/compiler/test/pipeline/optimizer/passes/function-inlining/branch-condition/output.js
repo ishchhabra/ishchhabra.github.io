@@ -4,7 +4,6 @@ function $0() {
 function $1() {
   if (!$0()) {
     return;
-  } else {
-    console.log("injected");
   }
+  console.log("injected");
 }

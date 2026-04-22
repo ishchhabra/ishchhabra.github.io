@@ -1,8 +1,7 @@
 while (true) {
   if (done) {
     break;
-  } else {
-    console.log("loop");
-    continue;
   }
+  console.log("loop");
+  continue;
 }

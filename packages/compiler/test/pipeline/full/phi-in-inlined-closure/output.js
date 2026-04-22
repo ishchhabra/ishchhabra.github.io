@@ -10,11 +10,10 @@ function $1() {
       if ($9 != null) {
       }
       $23 = undefined;
-      return $23;
     } else {
       $23 = undefined;
-      return $23;
     }
+    return $23;
   }, [$8, $9]);
 }
 export { $0 as Component };

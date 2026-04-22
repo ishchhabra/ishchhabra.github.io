@@ -8,9 +8,7 @@ function $0($1) {
         $14 = undefined;
       }
       g($14);
-      continue;
-    } else {
-      continue;
     }
+    continue;
   }
 }

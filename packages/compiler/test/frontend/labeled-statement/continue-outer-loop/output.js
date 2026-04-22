@@ -7,10 +7,9 @@ for (; blockparam_31 < 3; ) {
   for (; blockparam_32 < 3; ) {
     if (blockparam_32 === 1) {
       continue outer;
-    } else {
-      console.log(blockparam_31, blockparam_32);
-      continue;
     }
+    console.log(blockparam_31, blockparam_32);
+    continue;
   }
   blockparam_33 = blockparam_32;
   continue;

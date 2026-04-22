@@ -49,12 +49,7 @@ export function buildLogicalExpression(
   functionBuilder.addBlock(falsyBlock);
   functionBuilder.addBlock(joinBlock);
 
-  parentBlock.terminal = new IfTerm(
-    createOperationId(environment),
-    testPlace,
-    truthyBlock,
-    falsyBlock,
-  );
+  parentBlock.terminal = new IfTerm(createOperationId(environment), testPlace, truthyBlock, falsyBlock, joinBlock);
 
   // Arm semantics per operator
   switch (node.operator) {
