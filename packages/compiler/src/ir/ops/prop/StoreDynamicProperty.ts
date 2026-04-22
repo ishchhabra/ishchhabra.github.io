@@ -1,22 +1,23 @@
 import { OperationId } from "../../core";
 import { Value } from "../../core";
-
-import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
 import { computedPropertyLocation, effects, type MemoryEffects } from "../../memory/MemoryLocation";
+import { StorePropertyOp } from "./StoreProperty";
+
 /**
- * An instruction that stores a value into a **dynamic** property for an object:
- * `object[property]`.
+ * An instruction that stores a value into a **dynamic** property of
+ * an object: `object[property] = v` where `property` is a computed
+ * expression.
  */
-export class StoreDynamicPropertyOp extends Operation {
+export class StoreDynamicPropertyOp extends StorePropertyOp {
   constructor(
     id: OperationId,
-    public override readonly place: Value,
-    public readonly object: Value,
+    place: Value,
+    object: Value,
     public readonly property: Value,
-    public readonly value: Value,
+    value: Value,
   ) {
-    super(id);
+    super(id, place, object, value);
   }
 
   public clone(ctx: CloneContext): StoreDynamicPropertyOp {
@@ -47,5 +48,9 @@ export class StoreDynamicPropertyOp extends Operation {
 
   public override getMemoryEffects(_env?: unknown): MemoryEffects {
     return effects([], [computedPropertyLocation(this.object)]);
+  }
+
+  public override print(): string {
+    return `${this.place.print()} = store_dynamic_property ${this.object.print()}, ${this.property.print()}, ${this.value.print()}`;
   }
 }

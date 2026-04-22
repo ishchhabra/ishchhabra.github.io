@@ -1,22 +1,24 @@
 import { OperationId } from "../../core";
 import { Value } from "../../core";
-
-import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
 import { effects, staticPropertyLocation, type MemoryEffects } from "../../memory/MemoryLocation";
+import { StorePropertyOp } from "./StoreProperty";
+
 /**
- * An instruction that stores a value into a **static** property for an object:
- * `object[0]` or `object.foo`.
+ * An instruction that stores a value into a **static** property of an
+ * object: `object.foo = v`, `object["literal"] = v`, or
+ * `object[0] = v` (numeric-literal keys are folded to strings at HIR
+ * time).
  */
-export class StoreStaticPropertyOp extends Operation {
+export class StoreStaticPropertyOp extends StorePropertyOp {
   constructor(
     id: OperationId,
-    public override readonly place: Value,
-    public readonly object: Value,
+    place: Value,
+    object: Value,
     public readonly property: string,
-    public readonly value: Value,
+    value: Value,
   ) {
-    super(id);
+    super(id, place, object, value);
   }
 
   public clone(ctx: CloneContext): StoreStaticPropertyOp {
@@ -47,5 +49,9 @@ export class StoreStaticPropertyOp extends Operation {
 
   public override getMemoryEffects(_env?: unknown): MemoryEffects {
     return effects([], [staticPropertyLocation(this.object, this.property)]);
+  }
+
+  public override print(): string {
+    return `${this.place.print()} = store_static_property ${this.object.print()}, "${this.property}", ${this.value.print()}`;
   }
 }

@@ -52,6 +52,6 @@ export class LoadStaticPropertyOp extends LoadPropertyOp {
 
   public override print(): string {
     const attrs = this.optional ? ` {optional}` : "";
-    return `${this.place.print()} = load_static_property ${this.object.print()}, ${JSON.stringify(this.property)}${attrs}`;
+    return `${this.place.print()} = load_static_property ${this.object.print()}, "${this.property}"${attrs}`;
   }
 }
