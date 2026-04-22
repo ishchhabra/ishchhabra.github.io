@@ -45,3 +45,4 @@ export {
   type RegionBranchTerminator,
   type RegionSuccessor,
 } from "./RegionBranchOp";
+export { isLoopLike, type LoopLikeOpInterface } from "./LoopLikeOpInterface";

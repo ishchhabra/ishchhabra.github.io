@@ -17,6 +17,7 @@ import {
   type RegionBranchPoint,
   type RegionSuccessor,
 } from "../../core/RegionBranchOp";
+import type { LoopLikeOpInterface } from "../../core/LoopLikeOpInterface";
 
 /**
  * Top-tested loop with loop-carried SSA values. Mirrors MLIR's `scf.while`.
@@ -77,7 +78,7 @@ import {
  * { body }` lowers to a separate {@link ForOp}, not WhileOp, because
  * the `continue` semantics differ.
  */
-export class WhileOp extends Operation implements RegionBranchOp {
+export class WhileOp extends Operation implements RegionBranchOp, LoopLikeOpInterface {
   static override readonly traits = new Set<Trait>([Trait.HasRegions]);
 
   /** Mutable — MLIR-style. Use {@link setInits}. */
@@ -189,5 +190,24 @@ export class WhileOp extends Operation implements RegionBranchOp {
 
   getEntrySuccessorOperands(_successor: RegionSuccessor): readonly Value[] {
     return this.inits;
+  }
+
+  // LoopLikeOpInterface ------------------------------------------------
+
+  getLoopRegions(): readonly Region[] {
+    // Both regions iterate: before re-runs the test on every loop-back
+    // edge, body re-runs on every truthy evaluation.
+    return [this.beforeRegion, this.bodyRegion];
+  }
+
+  getInitsMutable(): readonly Value[] {
+    return this.inits;
+  }
+
+  getYieldedValuesMutable(): readonly Value[] | undefined {
+    // Multi-terminator: `scf.condition` in before-region forwards the
+    // body-entry args; body-region's `scf.yield` forwards the next
+    // before-iteration's args. Callers must walk terminators.
+    return undefined;
   }
 }

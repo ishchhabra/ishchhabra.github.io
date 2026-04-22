@@ -23,6 +23,7 @@ import {
   type RegionBranchPoint,
   type RegionSuccessor,
 } from "../../core/RegionBranchOp";
+import type { LoopLikeOpInterface } from "../../core/LoopLikeOpInterface";
 
 /**
  * `for (key in object) { body }`.
@@ -30,7 +31,7 @@ import {
  * Inline structured op — lives directly in its parent block, owns
  * a single body region, no fallthrough field.
  */
-export class ForInOp extends Operation implements RegionBranchOp {
+export class ForInOp extends Operation implements RegionBranchOp, LoopLikeOpInterface {
   static override readonly traits = new Set<Trait>([Trait.HasRegions]);
 
   /** Mutable — MLIR-style. */
@@ -150,5 +151,27 @@ export class ForInOp extends Operation implements RegionBranchOp {
 
   getEntrySuccessorOperands(_successor: RegionSuccessor): readonly Value[] {
     return this.inits;
+  }
+
+  // LoopLikeOpInterface ------------------------------------------------
+
+  getLoopRegions(): readonly Region[] {
+    return [this.bodyRegion];
+  }
+
+  getInitsMutable(): readonly Value[] {
+    return this.inits;
+  }
+
+  getYieldedValuesMutable(): readonly Value[] | undefined {
+    // Body region terminates in `YieldOp` routing to either
+    // bodyRegion (next iteration) or parent-exit. Single yield slot.
+    const lastBlock = this.bodyRegion.blocks[this.bodyRegion.blocks.length - 1];
+    const terminal = lastBlock?.terminal;
+    if (terminal === undefined) return undefined;
+    // Can't type-narrow here without importing YieldOp; the SSA
+    // builder accesses terminators directly. This accessor is for
+    // future LICM-style passes — return undefined for now.
+    return undefined;
   }
 }

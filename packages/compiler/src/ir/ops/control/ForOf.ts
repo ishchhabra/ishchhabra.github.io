@@ -23,6 +23,7 @@ import {
   type RegionBranchPoint,
   type RegionSuccessor,
 } from "../../core/RegionBranchOp";
+import type { LoopLikeOpInterface } from "../../core/LoopLikeOpInterface";
 
 /**
  * `for (target of iterable) { body }` / `for await (target of ...)`.
@@ -35,7 +36,7 @@ import {
  * exhaustion) and from any `BreakOp` targeting this loop. Empty for
  * loops with no loop-carried SSA values.
  */
-export class ForOfOp extends Operation implements RegionBranchOp {
+export class ForOfOp extends Operation implements RegionBranchOp, LoopLikeOpInterface {
   static override readonly traits = new Set<Trait>([Trait.HasRegions]);
 
   /** Mutable — MLIR-style. */
@@ -152,5 +153,19 @@ export class ForOfOp extends Operation implements RegionBranchOp {
 
   getEntrySuccessorOperands(_successor: RegionSuccessor): readonly Value[] {
     return this.inits;
+  }
+
+  // LoopLikeOpInterface ------------------------------------------------
+
+  getLoopRegions(): readonly Region[] {
+    return [this.bodyRegion];
+  }
+
+  getInitsMutable(): readonly Value[] {
+    return this.inits;
+  }
+
+  getYieldedValuesMutable(): readonly Value[] | undefined {
+    return undefined;
   }
 }

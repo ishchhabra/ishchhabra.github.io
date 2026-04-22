@@ -35,6 +35,7 @@ import {
   parentExit,
   type RegionBranchOp,
 } from "../../ir/core/RegionBranchOp";
+import { isLoopLike } from "../../ir/core/LoopLikeOpInterface";
 
 type Stacks = Map<DeclarationId, Value[]>;
 
@@ -555,15 +556,26 @@ export class SSABuilder {
     }
     mutableOp.setResultPlaces(newResultPlaces);
 
-    // Extract a label for the loop-context stack if the op has one
-    // (loop ops do; LabeledBlockOp does; IfOp does not). Break/
-    // Continue terminators inside any region look up this stack.
+    // Break/Continue terminators look up the enclosing loop to
+    // determine which carried-decl tuple they forward. Only ops
+    // implementing {@link LoopLikeOpInterface} (WhileOp, ForOp,
+    // ForInOp, ForOfOp) plus {@link LabeledBlockOp} (a valid
+    // `break label` target even though not a loop) belong on this
+    // stack. IfOp / SwitchOp / TryOp do not — they are region-
+    // branch ops but not loop targets.
+    //
+    // MLIR analog: `LoopLikeOpInterface::getLoopRegions()` identifies
+    // loops; `break` targets also include `scf.execute_region`-like
+    // labeled scopes. This union is what we push.
+    const pushLoopContext = isLoopLike(op) || op instanceof LabeledBlockOp;
     const label = (op as { label?: string }).label;
-    this.loopContexts.push({
-      op: op as (typeof this.loopContexts)[number]["op"],
-      label,
-      carriedDecls,
-    });
+    if (pushLoopContext) {
+      this.loopContexts.push({
+        op: op as (typeof this.loopContexts)[number]["op"],
+        label,
+        carriedDecls,
+      });
+    }
     try {
       // --- 5. Walk regions in program order ---
       //
@@ -590,7 +602,7 @@ export class SSABuilder {
         this.popPushed(stacks, regionPushed);
       }
     } finally {
-      this.loopContexts.pop();
+      if (pushLoopContext) this.loopContexts.pop();
     }
 
     // --- 6. Push result places onto parent stack ---

@@ -16,6 +16,7 @@ import {
   type RegionBranchPoint,
   type RegionSuccessor,
 } from "../../core/RegionBranchOp";
+import type { LoopLikeOpInterface } from "../../core/LoopLikeOpInterface";
 
 /**
  * JS `for (init; test; update) { body }`. Distinct from
@@ -51,7 +52,7 @@ import {
  * Inline structured op — lives in its parent block, control
  * continues with the next op when the loop exits.
  */
-export class ForOp extends Operation implements RegionBranchOp {
+export class ForOp extends Operation implements RegionBranchOp, LoopLikeOpInterface {
   static override readonly traits = new Set<Trait>([Trait.HasRegions]);
 
   /** Mutable — MLIR-style. */
@@ -155,5 +156,27 @@ export class ForOp extends Operation implements RegionBranchOp {
 
   getEntrySuccessorOperands(_successor: RegionSuccessor): readonly Value[] {
     return [];
+  }
+
+  // LoopLikeOpInterface ------------------------------------------------
+
+  getLoopRegions(): readonly Region[] {
+    // init is a one-shot prelude — not part of the iterated body.
+    // The iterated regions are cond, body, and step (update).
+    return [this.beforeRegion, this.bodyRegion, this.updateRegion];
+  }
+
+  getInitsMutable(): readonly Value[] {
+    // ForOp carries iter-arg values through its region-entry block
+    // params, not via op-level inits. See `ForOp`'s constructor — no
+    // `inits` field. `scf.for`-like init operands don't apply because
+    // JS `for` init is an arbitrary statement that lives in initRegion.
+    return [];
+  }
+
+  getYieldedValuesMutable(): readonly Value[] | undefined {
+    // ForOp has multiple yield paths (body-to-update YieldOp,
+    // continue-to-update, update-to-before YieldOp). No single slot.
+    return undefined;
   }
 }
