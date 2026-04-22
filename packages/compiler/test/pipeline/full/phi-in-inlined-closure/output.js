@@ -9,7 +9,7 @@ function $1() {
     if ($8) {
       const $49 = $9;
       let $28 = undefined;
-      $30 = $49 != null ? "default" : $49;
+      $30 = $49 != null ? $49 : "default";
     } else {
       $30 = "fallback";
     }

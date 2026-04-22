@@ -63,10 +63,11 @@ export function buildLogicalExpression(
           rightArmRegion: buildRhsArm(node.right, scope, functionBuilder, moduleBuilder, environment),
         };
       case "??":
-        // Nullish (test is `lhs == null`) → yield RHS; otherwise yield LHS.
+        // Test is `lhs != null`. Truthy (lhs is defined) → yield lhs;
+        // falsy (lhs is nullish) → yield rhs.
         return {
-          leftArmRegion: buildRhsArm(node.right, scope, functionBuilder, moduleBuilder, environment),
-          rightArmRegion: buildLhsPassthroughArm(leftPlace, functionBuilder, environment),
+          leftArmRegion: buildLhsPassthroughArm(leftPlace, functionBuilder, environment),
+          rightArmRegion: buildRhsArm(node.right, scope, functionBuilder, moduleBuilder, environment),
         };
       default: {
         const exhaustive: never = node.operator;
