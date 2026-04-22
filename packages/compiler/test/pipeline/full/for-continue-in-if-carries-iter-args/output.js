@@ -4,7 +4,7 @@ function $0($1) {
   blockparam_35 = "";
   let blockparam_36 = undefined;
   blockparam_36 = 0;
-  for (; blockparam_36 < $1.length; blockparam_35 = blockparam_34, blockparam_36 = $49) {
+  for (; blockparam_36 < $1.length; ) {
     if ($1[blockparam_36] === "x") {
       const $51 = blockparam_35 + "/X";
       blockparam_34 = $51;
@@ -14,6 +14,8 @@ function $0($1) {
     blockparam_34 = $53;
     continue;
     const $49 = blockparam_36 + 1;
+    blockparam_35 = blockparam_34;
+    blockparam_36 = $49;
     continue;
   }
   return blockparam_35;

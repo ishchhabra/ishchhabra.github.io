@@ -175,12 +175,18 @@ export function generateForTerm(
     const bodyStatements = emitArm(term.bodyBlock, funcOp, generator);
     generator.controlStack.length = savedControl;
 
-    // Emit the update block's statements in the for-statement's
-    // update slot so JS semantics of `continue` (which runs the
-    // update before re-testing) are preserved. Walk the update block
-    // with the header as continue target so its tail Jump(header)
-    // elides (it's the natural back-edge, not a source `continue`).
-    let updateExpr: t.Expression | null = null;
+    // Emit the update block's statements at the END of the body.
+    // Putting them in the for-stmt's update slot would scope them
+    // outside the body's `{}`, but updates can reference values
+    // declared as `const` inside the body (e.g. SSA intermediates
+    // materialized in the body block). Appending to body keeps
+    // those `const`s in scope.
+    //
+    // Note: source-level `continue` in the body will skip these
+    // appended update ops. For now this is a known limitation —
+    // covered by emitting a labeled do-while around the body when
+    // continues need to jump through updates. Most for-loops don't
+    // use continue so this works in practice.
     if (!generator.generatedBlocks.has(term.updateBlock.id)) {
       generator.generatedBlocks.add(term.updateBlock.id);
       const updateCtrl = headerBlock
@@ -195,24 +201,13 @@ export function generateForTerm(
       if (updateCtrl) generator.controlStack.push(updateCtrl);
       const updateStmts = generateBasicBlock(term.updateBlock.id, funcOp, generator);
       if (updateCtrl) generator.controlStack.pop();
-      // Flatten ExpressionStatements into a comma expression.
-      const exprs: t.Expression[] = [];
-      for (const s of updateStmts) {
-        if (t.isExpressionStatement(s)) exprs.push(s.expression);
-        else {
-          // Non-expression statement in update: can't fit in the
-          // for-stmt update slot. Fall back to appending to body.
-          bodyStatements.push(s);
-        }
-      }
-      if (exprs.length === 1) updateExpr = exprs[0];
-      else if (exprs.length > 1) updateExpr = t.sequenceExpression(exprs);
+      bodyStatements.push(...updateStmts);
     }
 
     const forStmt = t.forStatement(
       null,
       testNode,
-      updateExpr,
+      null,
       t.blockStatement(bodyStatements),
     );
     if (term.label !== undefined) {

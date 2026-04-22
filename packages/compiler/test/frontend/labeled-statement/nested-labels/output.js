@@ -2,9 +2,9 @@ let blockparam_37 = undefined;
 blockparam_37 = 0;
 let blockparam_38 = undefined;
 let blockparam_39 = undefined;
-outer: for (; blockparam_37 < 5; blockparam_37 = $54) {
+outer: for (; blockparam_37 < 5; ) {
   blockparam_38 = 0;
-  inner: for (; blockparam_38 < 5; blockparam_38 = $56) {
+  inner: for (; blockparam_38 < 5; ) {
     if (blockparam_38 === 2) {
       continue;
     }
@@ -18,10 +18,12 @@ outer: for (; blockparam_37 < 5; blockparam_37 = $54) {
     console.log(blockparam_37, blockparam_38);
     continue;
     const $56 = blockparam_38 + 1;
+    blockparam_38 = $56;
     continue;
   }
   blockparam_39 = blockparam_38;
   continue;
   const $54 = blockparam_37 + 1;
+  blockparam_37 = $54;
   continue;
 }

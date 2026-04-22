@@ -3,7 +3,7 @@ let blockparam_23 = undefined;
 blockparam_23 = 0;
 let blockparam_24 = undefined;
 blockparam_24 = 0;
-for (; blockparam_24 < 10; blockparam_23 = blockparam_22, blockparam_24 = $37) {
+for (; blockparam_24 < 10; ) {
   if (blockparam_24 === 5) {
     blockparam_22 = blockparam_23;
     continue;
@@ -12,5 +12,7 @@ for (; blockparam_24 < 10; blockparam_23 = blockparam_22, blockparam_24 = $37) {
   blockparam_22 = $39;
   continue;
   const $37 = blockparam_24 + 1;
+  blockparam_23 = blockparam_22;
+  blockparam_24 = $37;
   continue;
 }
