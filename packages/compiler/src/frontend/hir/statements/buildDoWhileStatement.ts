@@ -33,7 +33,13 @@ export function buildDoWhileStatement(
   functionBuilder.addBlock(headerBlock);
   functionBuilder.addBlock(exitBlock);
 
-  parentBlock.terminal = new JumpOp(createOperationId(environment), bodyBlock, []);
+  // For do-while, CFG enters at header (same as while). The
+  // WhileTerm's `kind: "do-while"` tells codegen to emit
+  // `do { body } while (cond)`, whose JS runtime runs body first
+  // even though the CFG header's cond check happens first at the
+  // IR level. Dataflow is identical; codegen preserves source
+  // semantics.
+  parentBlock.terminal = new JumpOp(createOperationId(environment), headerBlock, []);
 
   // Body
   functionBuilder.currentBlock = bodyBlock;

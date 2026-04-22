@@ -1,33 +1,30 @@
 function $0($1) {
-  $1.nextSub;
-  if ($1.flags & 1) {
-    const $13 = $1.sub;
-    if ($13 !== undefined) {
-      $1 = $13;
-      const $20 = $13.nextSub;
-      if ($20 !== undefined) {
-        $3 = {
-          value: $2,
-          prev: $3,
-        };
-        $2 = $20;
+  const $70 = $1.nextSub;
+  let blockparam_64 = undefined;
+  top: do {
+    if ($1.flags & 1) {
+      const $72 = $1.sub;
+      if ($72 !== undefined) {
+        if ($72.nextSub !== undefined) {
+        }
+        continue;
       }
+    }
+    if ($70 !== undefined) {
+      $70.nextSub;
       continue;
     }
-  }
-  $1 = $2;
-  if ($2 !== undefined) {
-    $2 = $2.nextSub;
-    continue;
-  }
-  while ($3 !== undefined) {
-    $1 = $3.value;
-    $3 = $3.prev;
-    if ($1 !== undefined) {
-      $2 = $1.nextSub;
-      continue top;
+    blockparam_64 = undefined;
+    while (blockparam_64 !== undefined) {
+      const $74 = blockparam_64.value;
+      const $76 = blockparam_64.prev;
+      if ($74 !== undefined) {
+        $74.nextSub;
+        continue top;
+      }
+      blockparam_64 = $76;
+      continue;
     }
-    continue;
-  }
-  break;
+    break;
+  } while (true);
 }
