@@ -14,12 +14,10 @@ outer: for (; blockparam_37 < 5; ) {
       break outer;
     }
     console.log(blockparam_37, blockparam_38);
-    continue;
     const $52 = blockparam_38 + 1;
     blockparam_38 = $52;
     continue;
   }
-  continue;
   const $50 = blockparam_37 + 1;
   blockparam_37 = $50;
   continue;

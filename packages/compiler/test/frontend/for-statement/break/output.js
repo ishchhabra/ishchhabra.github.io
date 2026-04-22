@@ -5,7 +5,6 @@ for (; blockparam_19 < 10; ) {
     break;
   }
   console.log(blockparam_19);
-  continue;
   const $24 = blockparam_19 + 1;
   blockparam_19 = $24;
   continue;

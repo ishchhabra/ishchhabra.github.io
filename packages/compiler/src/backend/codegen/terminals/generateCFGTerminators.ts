@@ -201,6 +201,16 @@ export function generateForTerm(
       if (updateCtrl) generator.controlStack.push(updateCtrl);
       const updateStmts = generateBasicBlock(term.updateBlock.id, funcOp, generator);
       if (updateCtrl) generator.controlStack.pop();
+      // Strip any trailing `continue;` the body may have acquired
+      // from its natural Jump(updateBlock) terminator. That jump is
+      // the loop's natural back-edge, not a source `continue` — we
+      // want the appended update ops to run at fall-through.
+      while (
+        bodyStatements.length > 0 &&
+        t.isContinueStatement(bodyStatements[bodyStatements.length - 1])
+      ) {
+        bodyStatements.pop();
+      }
       bodyStatements.push(...updateStmts);
     }
 

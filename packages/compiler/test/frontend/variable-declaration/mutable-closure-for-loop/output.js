@@ -4,7 +4,6 @@ function $0() {
   blockparam_27 = 0;
   for (; blockparam_27 < 3; ) {
     $1 = $1 + blockparam_27;
-    continue;
     const $32 = blockparam_27 + 1;
     blockparam_27 = $32;
     continue;

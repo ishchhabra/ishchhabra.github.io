@@ -6,13 +6,11 @@ for (; blockparam_28 < 10; ) {
   blockparam_29 = 0;
   for (; blockparam_29 < 10; ) {
     console.log(blockparam_28, blockparam_29);
-    continue;
     const $45 = blockparam_29 + 1;
     blockparam_29 = $45;
     continue;
   }
   blockparam_30 = blockparam_29;
-  continue;
   const $43 = blockparam_28 + 1;
   blockparam_28 = $43;
   continue;

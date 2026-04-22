@@ -10,7 +10,6 @@ for (; blockparam_24 < 10; ) {
   }
   const $39 = blockparam_23 + blockparam_24;
   blockparam_22 = $39;
-  continue;
   const $37 = blockparam_24 + 1;
   blockparam_23 = blockparam_22;
   blockparam_24 = $37;
