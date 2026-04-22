@@ -59,6 +59,6 @@ export class UnaryExpressionOp extends Operation {
   }
 
   public override print(): string {
-    return `${this.place.print()} = ${this.operator}${this.argument.print()}`;
+    return `${this.place.print()} = unary "${this.operator}" ${this.argument.print()}`;
   }
 }
