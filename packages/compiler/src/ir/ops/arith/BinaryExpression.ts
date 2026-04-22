@@ -69,6 +69,6 @@ export class BinaryExpressionOp extends Operation {
   }
 
   public override print(): string {
-    return `${this.place.print()} = ${this.left.print()} ${this.operator} ${this.right.print()}`;
+    return `${this.place.print()} = binary "${this.operator}" ${this.left.print()}, ${this.right.print()}`;
   }
 }
