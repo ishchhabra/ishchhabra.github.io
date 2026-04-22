@@ -40,7 +40,6 @@ import { Trait } from "../../../ir/core/Operation";
 import { ClassDeclarationOp } from "../../../ir/ops/class/ClassDeclaration";
 import { FunctionDeclarationOp } from "../../../ir/ops/func/FunctionDeclaration";
 import { CodeGenerator } from "../../CodeGenerator";
-import { generateStructure } from "../structures/generateStructure";
 import { generateBreakTerminal } from "../terminals/generateBreak";
 import {
   generateForInTerm,
@@ -122,12 +121,6 @@ export function generateOp(
       return generateLabeledTerm(instruction, funcOp, generator);
     }
     throw new Error(`Unsupported terminator op: ${instruction.constructor.name}`);
-  }
-  // Structured control-flow ops (IfOp, WhileOp, BlockOp, ForInOp,
-  // ForOfOp, LabeledBlockOp, SwitchOp, TryOp) live inline in the
-  // block's op stream.
-  if (instruction.hasTrait(Trait.HasRegions)) {
-    return generateStructure(instruction, funcOp, generator);
   }
   if (instruction instanceof DebuggerStatementOp) {
     return [generateDebuggerStatementOp(instruction, generator)];
