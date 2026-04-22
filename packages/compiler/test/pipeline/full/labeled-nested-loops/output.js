@@ -11,6 +11,7 @@ outer: for (; blockparam_37 < 5; ) {
       continue outer;
     }
     if (blockparam_37 === 4) {
+      break outer;
     }
     console.log(blockparam_37, blockparam_38);
     continue;

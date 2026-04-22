@@ -51,5 +51,6 @@ function $0($1) {
       blockparam_68 = $112;
       continue;
     }
+    break;
   } while (true);
 }

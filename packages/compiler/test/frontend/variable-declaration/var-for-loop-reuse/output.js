@@ -1,5 +1,9 @@
 function $0() {
-  for (; true; ) {}
-  for (; true; ) {}
+  for (; true; ) {
+    break;
+  }
+  for (; true; ) {
+    break;
+  }
   return 0;
 }
