@@ -51,10 +51,7 @@ export function printFn(fn: FuncOp): string {
   return lines.join("\n");
 }
 
-export function findOp<T extends Operation>(
-  fn: FuncOp,
-  Ctor: new (...args: never[]) => T,
-): T {
+export function findOp<T extends Operation>(fn: FuncOp, Ctor: new (...args: never[]) => T): T {
   for (const block of fn.allBlocks()) {
     for (const op of block.operations) if (op instanceof Ctor) return op as T;
   }
@@ -131,10 +128,7 @@ export function primeAllBindingsInitialized(h: IsolatedHarness): void {
 }
 
 /** DFS the AST for the first node matching `predicate`. Throws if not found. */
-export function findAstNode<T extends Node>(
-  root: Node,
-  predicate: (node: Node) => node is T,
-): T {
+export function findAstNode<T extends Node>(root: Node, predicate: (node: Node) => node is T): T {
   const stack: Node[] = [root];
   while (stack.length > 0) {
     const node = stack.pop()!;
@@ -165,4 +159,3 @@ function isNode(value: unknown): value is Node {
 export function printOps(ops: readonly Operation[]): string {
   return ops.map((op) => op.print()).join("\n");
 }
-

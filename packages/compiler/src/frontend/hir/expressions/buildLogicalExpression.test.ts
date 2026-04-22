@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LogicalExpression, Node } from "oxc-parser";
-import {
-  BinaryExpressionOp,
-  IfOp,
-  LiteralOp,
-  LoadGlobalOp,
-  YieldOp,
-} from "../../../ir";
+import { BinaryExpressionOp, IfOp, LiteralOp, LoadGlobalOp, YieldOp } from "../../../ir";
 import { compileFromSource } from "../../../compile";
 import { buildFn, findAstNode, makeIsolatedHarness, printFn } from "../__testing__/ir";
 import { buildLogicalExpression } from "./buildLogicalExpression";
@@ -18,7 +12,13 @@ function buildLogicalFromSource(source: string) {
     (n: Node): n is LogicalExpression => n.type === "LogicalExpression",
   );
   const opsBefore = harness.fnBuilder.currentBlock.operations.length;
-  buildLogicalExpression(node, harness.scope, harness.fnBuilder, harness.moduleBuilder, harness.env);
+  buildLogicalExpression(
+    node,
+    harness.scope,
+    harness.fnBuilder,
+    harness.moduleBuilder,
+    harness.env,
+  );
   const opsAdded = harness.fnBuilder.currentBlock.operations.slice(opsBefore);
   return { harness, opsAdded };
 }
@@ -52,7 +52,10 @@ describe("buildLogicalExpression — correctness", () => {
     const output = compileFromSource("let x; x ?? side();");
     // The `side()` invocation must appear inside a conditional block,
     // not as a bare top-level statement.
-    const lines = output.split("\n").map((l) => l.trim()).filter(Boolean);
+    const lines = output
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
     const bareSideLine = lines.find((l) => l === "side();");
     expect(bareSideLine).toBeUndefined();
   });
@@ -106,9 +109,7 @@ describe("buildLogicalExpression — isolated", () => {
 
     it("RHS is NOT built in the parent block (short-circuit)", () => {
       const { opsAdded } = buildLogicalFromSource("a && b;");
-      const parentLoads = opsAdded.filter(
-        (o): o is LoadGlobalOp => o instanceof LoadGlobalOp,
-      );
+      const parentLoads = opsAdded.filter((o): o is LoadGlobalOp => o instanceof LoadGlobalOp);
       // Only the LHS load should be in the parent block; RHS is inside
       // the consequent region.
       expect(parentLoads.length).toBe(1);
@@ -151,9 +152,7 @@ describe("buildLogicalExpression — isolated", () => {
       const nullLit = opsAdded.find(
         (o): o is LiteralOp => o instanceof LiteralOp && o.value === null,
       )!;
-      const cmp = opsAdded.find(
-        (o): o is BinaryExpressionOp => o instanceof BinaryExpressionOp,
-      )!;
+      const cmp = opsAdded.find((o): o is BinaryExpressionOp => o instanceof BinaryExpressionOp)!;
       expect(cmp.operator).toBe("!=");
       expect(cmp.left).toBe(loadA.place);
       expect(cmp.right).toBe(nullLit.place);

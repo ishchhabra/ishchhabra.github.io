@@ -92,12 +92,28 @@ describe("buildBinaryExpression — isolated", () => {
 
   describe("operator forwarding", () => {
     const operators = [
-      "==", "!=", "===", "!==",
-      "<", "<=", ">", ">=",
-      "<<", ">>", ">>>",
-      "+", "-", "*", "/", "%", "**",
-      "|", "^", "&",
-      "in", "instanceof",
+      "==",
+      "!=",
+      "===",
+      "!==",
+      "<",
+      "<=",
+      ">",
+      ">=",
+      "<<",
+      ">>",
+      ">>>",
+      "+",
+      "-",
+      "*",
+      "/",
+      "%",
+      "**",
+      "|",
+      "^",
+      "&",
+      "in",
+      "instanceof",
     ] as const;
 
     it.each(operators)("forwards `%s` verbatim", (operator) => {

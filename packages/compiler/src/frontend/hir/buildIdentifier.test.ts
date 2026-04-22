@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { Node } from "oxc-parser";
 import { LoadGlobalOp, LoadLocalOp } from "../../ir";
-import { buildFn, makeIsolatedHarness, primeAllBindingsInitialized, printFn } from "./__testing__/ir";
+import {
+  buildFn,
+  makeIsolatedHarness,
+  primeAllBindingsInitialized,
+  printFn,
+} from "./__testing__/ir";
 import { buildIdentifier } from "./buildIdentifier";
 
 type IdentifierNode = Node & { type: "Identifier"; name: string };
@@ -80,9 +85,7 @@ describe("buildIdentifier — isolated", () => {
       const { opsAdded } = buildIdentFromSource("import { x } from 'mod'; x;");
       // Imports produce some module-level ops ahead of the reference;
       // the last op added by `buildIdentifier` is the LoadGlobal itself.
-      const loadGlobal = opsAdded.findLast(
-        (o): o is LoadGlobalOp => o instanceof LoadGlobalOp,
-      );
+      const loadGlobal = opsAdded.findLast((o): o is LoadGlobalOp => o instanceof LoadGlobalOp);
       expect(loadGlobal).toBeDefined();
       expect(loadGlobal!.name).toBe("x");
     });
@@ -91,26 +94,20 @@ describe("buildIdentifier — isolated", () => {
   describe("LoadLocal path", () => {
     it("declared local (var) resolves to LoadLocal", () => {
       const { place, opsAdded } = buildIdentFromSource("var x; x;");
-      const load = opsAdded.findLast(
-        (o): o is LoadLocalOp => o instanceof LoadLocalOp,
-      );
+      const load = opsAdded.findLast((o): o is LoadLocalOp => o instanceof LoadLocalOp);
       expect(load).toBeDefined();
       expect(place).toBe(load!.place);
     });
 
     it("declared local (let) resolves to LoadLocal after priming", () => {
       const { opsAdded } = buildIdentFromSource("let x = 1; x;");
-      const load = opsAdded.findLast(
-        (o): o is LoadLocalOp => o instanceof LoadLocalOp,
-      );
+      const load = opsAdded.findLast((o): o is LoadLocalOp => o instanceof LoadLocalOp);
       expect(load).toBeDefined();
     });
 
     it("declared local (const) resolves to LoadLocal after priming", () => {
       const { opsAdded } = buildIdentFromSource("const x = 1; x;");
-      const load = opsAdded.findLast(
-        (o): o is LoadLocalOp => o instanceof LoadLocalOp,
-      );
+      const load = opsAdded.findLast((o): o is LoadLocalOp => o instanceof LoadLocalOp);
       expect(load).toBeDefined();
     });
   });
@@ -130,9 +127,11 @@ describe("buildIdentifier — isolated", () => {
       // `const` must have an initializer syntactically. To land on the
       // TDZ-throw path, we use a pattern where the reference precedes
       // the declarator — function-hoisting context.
-      expect(() => buildIdentFromSource("function f() { return x; const x = 1; } f();", {
-        prime: false,
-      })).toThrow(/Cannot access 'x' before initialization/);
+      expect(() =>
+        buildIdentFromSource("function f() { return x; const x = 1; } f();", {
+          prime: false,
+        }),
+      ).toThrow(/Cannot access 'x' before initialization/);
     });
 
     it("`var` has no TDZ — reading before init is fine", () => {

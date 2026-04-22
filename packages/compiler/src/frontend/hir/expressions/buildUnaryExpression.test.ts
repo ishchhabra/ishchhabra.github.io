@@ -58,11 +58,9 @@ describe("buildUnaryExpression — isolated", () => {
   it("handles member-expression argument for `delete`", () => {
     const { harness } = buildUnaryFromSource("delete o.x;");
     expect(printOps(harness.fnBuilder.currentBlock.operations)).toBe(
-      [
-        "$0 = LoadGlobal o",
-        '$1 = load_static_property $0, "x"',
-        '$2 = unary "delete" $1',
-      ].join("\n"),
+      ["$0 = LoadGlobal o", '$1 = load_static_property $0, "x"', '$2 = unary "delete" $1'].join(
+        "\n",
+      ),
     );
   });
 

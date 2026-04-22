@@ -41,33 +41,46 @@ export function buildLogicalExpression(
     throw new Error("Logical expression left must be a single place");
   }
 
-  const testPlace = buildTestPlace(
-    node.operator,
-    leftPlace,
-    functionBuilder,
-    environment,
-  );
+  const testPlace = buildTestPlace(node.operator, leftPlace, functionBuilder, environment);
 
   const { leftArmRegion, rightArmRegion } = (() => {
     switch (node.operator) {
       case "&&":
         // Truthy → yield RHS; falsy → yield LHS.
         return {
-          leftArmRegion: buildRhsArm(node.right, scope, functionBuilder, moduleBuilder, environment),
+          leftArmRegion: buildRhsArm(
+            node.right,
+            scope,
+            functionBuilder,
+            moduleBuilder,
+            environment,
+          ),
           rightArmRegion: buildLhsPassthroughArm(leftPlace, functionBuilder, environment),
         };
       case "||":
         // Truthy → yield LHS; falsy → yield RHS.
         return {
           leftArmRegion: buildLhsPassthroughArm(leftPlace, functionBuilder, environment),
-          rightArmRegion: buildRhsArm(node.right, scope, functionBuilder, moduleBuilder, environment),
+          rightArmRegion: buildRhsArm(
+            node.right,
+            scope,
+            functionBuilder,
+            moduleBuilder,
+            environment,
+          ),
         };
       case "??":
         // Test is `lhs != null`. Truthy (lhs is defined) → yield lhs;
         // falsy (lhs is nullish) → yield rhs.
         return {
           leftArmRegion: buildLhsPassthroughArm(leftPlace, functionBuilder, environment),
-          rightArmRegion: buildRhsArm(node.right, scope, functionBuilder, moduleBuilder, environment),
+          rightArmRegion: buildRhsArm(
+            node.right,
+            scope,
+            functionBuilder,
+            moduleBuilder,
+            environment,
+          ),
         };
       default: {
         const exhaustive: never = node.operator;
@@ -154,7 +167,9 @@ function buildLhsPassthroughArm(
   functionBuilder.withStructureRegion(region, () => {
     functionBuilder.addBlock(block);
     functionBuilder.currentBlock = block;
-    functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), [leftPlace]);
+    functionBuilder.currentBlock.terminal = new YieldOp(createOperationId(environment), [
+      leftPlace,
+    ]);
   });
   return region;
 }

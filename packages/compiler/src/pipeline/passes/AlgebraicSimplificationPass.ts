@@ -249,5 +249,4 @@ export class AlgebraicSimplificationPass extends BaseOptimizationPass {
 
     return undefined;
   }
-
 }

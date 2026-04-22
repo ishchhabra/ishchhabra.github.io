@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MemberExpression, Node } from "oxc-parser";
-import {
-  LoadDynamicPropertyOp,
-  LoadStaticPropertyOp,
-  SuperPropertyOp,
-} from "../../../ir";
+import { LoadDynamicPropertyOp, LoadStaticPropertyOp, SuperPropertyOp } from "../../../ir";
 import { ProjectBuilder } from "../../ProjectBuilder";
 import { buildFn, findAstNode, makeIsolatedHarness, printFn, printOps } from "../__testing__/ir";
 import { buildMemberExpression } from "./buildMemberExpression";
@@ -78,11 +74,7 @@ describe("buildMemberExpression — isolated", () => {
     it("lowers `o[k]` to load_dynamic_property", () => {
       const { harness } = buildMemberFromSource("o[k];");
       expect(printOps(harness.fnBuilder.currentBlock.operations)).toBe(
-        [
-          "$0 = LoadGlobal o",
-          "$1 = LoadGlobal k",
-          "$2 = load_dynamic_property $0, $1",
-        ].join("\n"),
+        ["$0 = LoadGlobal o", "$1 = LoadGlobal k", "$2 = load_dynamic_property $0, $1"].join("\n"),
       );
     });
 
@@ -134,7 +126,6 @@ describe("buildMemberExpression — isolated", () => {
       expect(staticOp.hasSideEffects()).toBe(true);
       expect(dynOp.hasSideEffects()).toBe(true);
     });
-
   });
 });
 
@@ -165,12 +156,9 @@ describe("buildMemberExpression — super", () => {
 
   it("`super[k]` emits super_property with {computed}", () => {
     expect(methodIR("class C extends B { m() { return super[k]; } }")).toBe(
-      [
-        "bb1:",
-        "  $3 = LoadGlobal k",
-        "  $4 = super_property $3 {computed}",
-        "  return $4",
-      ].join("\n"),
+      ["bb1:", "  $3 = LoadGlobal k", "  $4 = super_property $3 {computed}", "  return $4"].join(
+        "\n",
+      ),
     );
   });
 });

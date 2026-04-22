@@ -27,7 +27,7 @@ function buildVarDeclFromSource(source: string) {
 describe("buildVariableDeclaration — end-to-end smoke", () => {
   it("renders through the full HIR pipeline", () => {
     expect(printFn(buildFn("let x = 1;"))).toBe(
-      ["bb0:", "  $1 = 1", '  $2 = store_local $0, $1 {kind = declaration}'].join("\n"),
+      ["bb0:", "  $1 = 1", "  $2 = store_local $0, $1 {kind = declaration}"].join("\n"),
     );
   });
 });
@@ -41,14 +41,14 @@ describe("buildVariableDeclaration — isolated", () => {
     it("`let x = 1` emits a declaration-kind store_local", () => {
       const h = buildVarDeclFromSource("let x = 1;");
       expect(printOps(h.fnBuilder.currentBlock.operations)).toBe(
-        ["$1 = 1", '$2 = store_local $0, $1 {kind = declaration}'].join("\n"),
+        ["$1 = 1", "$2 = store_local $0, $1 {kind = declaration}"].join("\n"),
       );
     });
 
     it("`const y = 2` emits a declaration-kind store_local", () => {
       const h = buildVarDeclFromSource("const y = 2;");
       expect(printOps(h.fnBuilder.currentBlock.operations)).toBe(
-        ["$1 = 2", '$2 = store_local $0, $1 {kind = declaration}'].join("\n"),
+        ["$1 = 2", "$2 = store_local $0, $1 {kind = declaration}"].join("\n"),
       );
     });
 
@@ -112,7 +112,7 @@ describe("buildVariableDeclaration — isolated", () => {
     it("`let [a, b] = arr` emits one array_destructure op", () => {
       const h = buildVarDeclFromSource("let [a, b] = arr;");
       expect(printOps(h.fnBuilder.currentBlock.operations)).toBe(
-        ["$2 = LoadGlobal arr", '$3 = array_destructure $2 {kind = declaration}'].join("\n"),
+        ["$2 = LoadGlobal arr", "$3 = array_destructure $2 {kind = declaration}"].join("\n"),
       );
     });
 
@@ -131,7 +131,7 @@ describe("buildVariableDeclaration — isolated", () => {
     it("`let {x, y} = obj` emits one object_destructure op", () => {
       const h = buildVarDeclFromSource("let {x, y} = obj;");
       expect(printOps(h.fnBuilder.currentBlock.operations)).toBe(
-        ["$2 = LoadGlobal obj", '$3 = object_destructure $2 {kind = declaration}'].join("\n"),
+        ["$2 = LoadGlobal obj", "$3 = object_destructure $2 {kind = declaration}"].join("\n"),
       );
     });
 

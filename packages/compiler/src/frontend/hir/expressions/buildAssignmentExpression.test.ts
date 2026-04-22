@@ -75,14 +75,10 @@ describe("buildAssignmentExpression — isolated", () => {
 
     it("compound `x += 2` emits Binary + StoreLocal(assignment)", () => {
       const { opsAdded } = buildAssignFromSource("let x = 1; x += 2;");
-      const binary = opsAdded.find(
-        (o): o is BinaryExpressionOp => o instanceof BinaryExpressionOp,
-      );
+      const binary = opsAdded.find((o): o is BinaryExpressionOp => o instanceof BinaryExpressionOp);
       // The hoisted `let x = 1;` initializer emits its own StoreLocal
       // before the compound assignment's store; take the last one.
-      const store = opsAdded.findLast(
-        (o): o is StoreLocalOp => o instanceof StoreLocalOp,
-      );
+      const store = opsAdded.findLast((o): o is StoreLocalOp => o instanceof StoreLocalOp);
       expect(binary).toBeDefined();
       expect(binary!.operator).toBe("+");
       expect(store).toBeDefined();
@@ -104,9 +100,7 @@ describe("buildAssignmentExpression — isolated", () => {
       [">>>=", ">>>"],
     ] as const)("compound `%s` lowers to binary `%s` + store", (op, binop) => {
       const { opsAdded } = buildAssignFromSource(`let x = 1; x ${op} 2;`);
-      const binary = opsAdded.find(
-        (o): o is BinaryExpressionOp => o instanceof BinaryExpressionOp,
-      );
+      const binary = opsAdded.find((o): o is BinaryExpressionOp => o instanceof BinaryExpressionOp);
       expect(binary).toBeDefined();
       expect(binary!.operator).toBe(binop);
     });
@@ -142,9 +136,7 @@ describe("buildAssignmentExpression — isolated", () => {
     it("compound `obj.x += 1` lowers to Load + Binary + StoreStaticProperty", () => {
       const { opsAdded } = buildAssignFromSource("obj.x += 1;");
       const loads = opsAdded.filter((o) => o.constructor.name === "LoadStaticPropertyOp");
-      const binary = opsAdded.find(
-        (o): o is BinaryExpressionOp => o instanceof BinaryExpressionOp,
-      );
+      const binary = opsAdded.find((o): o is BinaryExpressionOp => o instanceof BinaryExpressionOp);
       const store = opsAdded.find(
         (o): o is StoreStaticPropertyOp => o instanceof StoreStaticPropertyOp,
       );
@@ -178,9 +170,7 @@ describe("buildAssignmentExpression — isolated", () => {
   describe("semantics", () => {
     it("StoreLocal for assignment reports side effects", () => {
       const { opsAdded } = buildAssignFromSource("let x; x = 1;");
-      const store = opsAdded.find(
-        (o): o is StoreLocalOp => o instanceof StoreLocalOp,
-      )!;
+      const store = opsAdded.find((o): o is StoreLocalOp => o instanceof StoreLocalOp)!;
       expect(store.hasSideEffects()).toBe(true);
     });
 
