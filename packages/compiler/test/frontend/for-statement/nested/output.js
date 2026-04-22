@@ -8,10 +8,8 @@ for (; blockparam_28 < 10; ) {
     console.log(blockparam_28, blockparam_29);
     const $45 = blockparam_29 + 1;
     blockparam_29 = $45;
-    continue;
   }
   blockparam_30 = blockparam_29;
   const $43 = blockparam_28 + 1;
   blockparam_28 = $43;
-  continue;
 }

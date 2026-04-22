@@ -6,7 +6,6 @@ function $0() {
     $1 = $1 + blockparam_27;
     const $32 = blockparam_27 + 1;
     blockparam_27 = $32;
-    continue;
   }
   return (() => $1)();
 }

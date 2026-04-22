@@ -10,9 +10,7 @@ outer: for (; blockparam_31 < 3; ) {
     console.log(blockparam_31, blockparam_32);
     const $45 = blockparam_32 + 1;
     blockparam_32 = $45;
-    continue;
   }
   const $43 = blockparam_31 + 1;
   blockparam_31 = $43;
-  continue;
 }

@@ -15,7 +15,6 @@ function $0($1) {
     const $49 = blockparam_36 + 1;
     blockparam_35 = blockparam_34;
     blockparam_36 = $49;
-    continue;
   }
   return blockparam_35;
 }

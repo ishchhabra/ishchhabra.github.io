@@ -12,10 +12,8 @@ outer: for (; blockparam_31 < 3; ) {
     console.log(blockparam_31, blockparam_32);
     const $49 = blockparam_32 + 1;
     blockparam_32 = $49;
-    continue;
   }
   blockparam_33 = blockparam_32;
   const $47 = blockparam_31 + 1;
   blockparam_31 = $47;
-  continue;
 }

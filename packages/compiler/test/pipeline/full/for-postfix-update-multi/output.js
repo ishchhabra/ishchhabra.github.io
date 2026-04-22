@@ -8,5 +8,4 @@ for (; blockparam_26 < 5; ) {
   const $38 = blockparam_27 + 1;
   blockparam_26 = $36;
   blockparam_27 = $38;
-  continue;
 }
