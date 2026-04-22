@@ -24,7 +24,7 @@
  */
 
 import type { OperationId } from "../../core";
-import type { BasicBlock, BlockId } from "../../core/Block";
+import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
 import {
   type CloneContext,
