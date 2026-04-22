@@ -7,15 +7,23 @@ import {
   DebuggerStatementOp,
   DeclareLocalOp,
   ExportSpecifierOp,
+  ForInTerm,
+  ForOfTerm,
+  ForTerm,
+  IfTerm,
   ImportSpecifierOp,
   JumpOp,
+  LabeledTerm,
   ObjectDestructureOp,
   Operation,
   ReturnOp,
   SpreadElementOp,
   StoreContextOp,
   StoreLocalOp,
+  SwitchTerm,
   ThrowOp,
+  TryTerm,
+  WhileTerm,
   YieldOp,
 } from "../../../ir";
 import { isClaimedByExportDeclaration } from "../../../ir/exportClaim";
@@ -34,6 +42,16 @@ import { FunctionDeclarationOp } from "../../../ir/ops/func/FunctionDeclaration"
 import { CodeGenerator } from "../../CodeGenerator";
 import { generateStructure } from "../structures/generateStructure";
 import { generateBreakTerminal } from "../terminals/generateBreak";
+import {
+  generateForInTerm,
+  generateForOfTerm,
+  generateForTerm,
+  generateIfTerm,
+  generateLabeledTerm,
+  generateSwitchTerm,
+  generateTryTerm,
+  generateWhileTerm,
+} from "../terminals/generateCFGTerminators";
 import { generateContinueTerminal } from "../terminals/generateContinue";
 import { generateJumpTerminal } from "../terminals/generateJump";
 import { generateReturnTerminal } from "../terminals/generateReturn";
@@ -78,6 +96,30 @@ export function generateOp(
     }
     if (instruction instanceof ThrowOp) {
       return generateThrowTerminal(instruction, generator);
+    }
+    if (instruction instanceof IfTerm) {
+      return generateIfTerm(instruction, funcOp, generator);
+    }
+    if (instruction instanceof WhileTerm) {
+      return generateWhileTerm(instruction, funcOp, generator);
+    }
+    if (instruction instanceof ForTerm) {
+      return generateForTerm(instruction, funcOp, generator);
+    }
+    if (instruction instanceof ForOfTerm) {
+      return generateForOfTerm(instruction, funcOp, generator);
+    }
+    if (instruction instanceof ForInTerm) {
+      return generateForInTerm(instruction, funcOp, generator);
+    }
+    if (instruction instanceof TryTerm) {
+      return generateTryTerm(instruction, funcOp, generator);
+    }
+    if (instruction instanceof SwitchTerm) {
+      return generateSwitchTerm(instruction, funcOp, generator);
+    }
+    if (instruction instanceof LabeledTerm) {
+      return generateLabeledTerm(instruction, funcOp, generator);
     }
     throw new Error(`Unsupported terminator op: ${instruction.constructor.name}`);
   }

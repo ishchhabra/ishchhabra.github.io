@@ -1,8 +1,7 @@
-import { OperationId } from "../../core";
-import { Value } from "../../core";
-
-import { Operation } from "../../core/Operation";
+import { OperationId, Value } from "../../core";
 import type { CloneContext } from "../../core/Operation";
+import { Operation } from "../../core/Operation";
+
 export type BinaryOperator =
   | "=="
   | "!="
