@@ -1,4 +1,4 @@
-for (const $2 in obj) {
+for (const $1 in obj) {
   console.log($1);
   continue;
 }

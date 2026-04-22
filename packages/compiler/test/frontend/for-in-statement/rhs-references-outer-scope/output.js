@@ -1,4 +1,4 @@
-for (const $11 in {
+for (const $10 in {
   a: 1,
   b: 2,
 }) {

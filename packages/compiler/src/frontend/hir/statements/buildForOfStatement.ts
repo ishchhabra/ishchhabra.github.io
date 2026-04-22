@@ -32,12 +32,13 @@ export function buildForOfStatement(
   environment: Environment,
   label?: string,
 ) {
-  const parentBlock = functionBuilder.currentBlock;
-
   const iterablePlace = buildNode(node.right, scope, functionBuilder, moduleBuilder, environment);
   if (iterablePlace === undefined || Array.isArray(iterablePlace)) {
     throw new Error("For-of iterable must be a single place");
   }
+  // parentBlock captured AFTER iterable — compound iterables may
+  // have moved currentBlock.
+  const parentBlock = functionBuilder.currentBlock;
 
   const forScope = functionBuilder.scopeFor(node);
   instantiateScopeBindings(node, forScope, functionBuilder, environment, moduleBuilder);
@@ -61,7 +62,12 @@ export function buildForOfStatement(
       environment,
       { kind: "declaration", declarationKind: kind },
     );
-    iterationValuePlace = environment.createValue();
+    // For a simple binding target (`for (const x of iter)`), reuse
+    // the binding place as the iteration value — codegen emits
+    // `for (const x of iter)` directly, no intermediate store needed.
+    // For destructuring targets, allocate a fresh temporary.
+    iterationValuePlace =
+      iterationTarget.kind === "binding" ? iterationTarget.place : environment.createValue();
   } else {
     bareLVal = left as AST.Pattern | MemberExpression;
     iterationTarget = buildLVal(bareLVal, scope, functionBuilder, moduleBuilder, environment, {

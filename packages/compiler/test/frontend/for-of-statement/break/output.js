@@ -1,4 +1,4 @@
-for (const $2 of items) {
+for (const $1 of items) {
   if ($1 === target) {
     break;
   }

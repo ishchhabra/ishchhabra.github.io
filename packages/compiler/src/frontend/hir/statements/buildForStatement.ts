@@ -28,8 +28,6 @@ export function buildForStatement(
   environment: Environment,
   label?: string,
 ) {
-  const parentBlock = functionBuilder.currentBlock;
-
   const init = node.init;
   const forScope =
     init?.type === "VariableDeclaration" && (init.kind === "let" || init.kind === "const")
@@ -45,7 +43,8 @@ export function buildForStatement(
   functionBuilder.addBlock(updateBlock);
   functionBuilder.addBlock(exitBlock);
 
-  // Init: runs in parentBlock
+  // Init: runs in the current block (which may change if init is
+  // a compound expression).
   if (init != null) {
     if (init.type === "VariableDeclaration") {
       instantiateScopeBindings(node, forScope, functionBuilder, environment, moduleBuilder);
@@ -54,6 +53,9 @@ export function buildForStatement(
       buildExpressionAsStatement(init, scope, functionBuilder, moduleBuilder, environment);
     }
   }
+  // parentBlock captured AFTER init — compound init may have moved
+  // currentBlock to a logical-expression join block.
+  const parentBlock = functionBuilder.currentBlock;
   if (parentBlock.terminal === undefined) {
     parentBlock.terminal = new JumpOp(createOperationId(environment), headerBlock, []);
   }

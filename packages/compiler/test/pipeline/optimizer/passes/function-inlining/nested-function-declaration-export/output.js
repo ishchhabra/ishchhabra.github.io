@@ -3,6 +3,12 @@ function $0($3) {
     const $38 = $5;
     let $7 = undefined;
     let $10 = undefined;
+    if ($38) {
+      const $40 = $5.position;
+      $7 = $40;
+    } else {
+      $7 = $38;
+    }
     if ($7) {
       const $42 = $5.position[$3];
       $10 = $42;

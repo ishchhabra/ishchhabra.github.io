@@ -1,11 +1,11 @@
 function $0($1) {
-  const $24 = $1;
-  for (const $9 of [1, 2]) {
+  const $23 = $1;
+  for (const $8 of [1, 2]) {
     if ($8) {
-      const { x: $11, ...$12 } = $24;
+      const { x: $10, ...$11 } = $23;
     }
     continue;
   }
-  return $24;
+  return $23;
 }
 export { $0 as f };

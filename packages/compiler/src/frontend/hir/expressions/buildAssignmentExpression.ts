@@ -244,7 +244,6 @@ function buildLogicalIdentifierAssignment(
     throwTDZAccessError(functionBuilder.getDeclarationSourceName(declarationId) ?? left.name);
   }
 
-  const parentBlock = functionBuilder.currentBlock;
   const oldValuePlace = buildBindingIdentifier(left, scope, functionBuilder, environment);
   const conditionPlace = buildLogicalCondition(
     operator,
@@ -252,6 +251,7 @@ function buildLogicalIdentifierAssignment(
     functionBuilder,
     environment,
   );
+  const parentBlock = functionBuilder.currentBlock;
 
   const consBlock = environment.createBlock();
   const altBlock = environment.createBlock();
@@ -382,9 +382,9 @@ function buildLogicalMemberAssignment(
     reusable: true,
   });
 
-  const parentBlock = functionBuilder.currentBlock;
   const cachedPlace = loadMemberReference(reference, functionBuilder, environment);
   const conditionPlace = buildLogicalCondition(operator, cachedPlace, functionBuilder, environment);
+  const parentBlock = functionBuilder.currentBlock;
 
   const consBlock = environment.createBlock();
   const altBlock = environment.createBlock();

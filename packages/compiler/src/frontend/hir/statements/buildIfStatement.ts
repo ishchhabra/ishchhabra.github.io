@@ -27,12 +27,16 @@ export function buildIfStatement(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ) {
-  const parentBlock = functionBuilder.currentBlock;
-
+  // Build the test FIRST — compound conditions (`a && b`, `a || b`,
+  // `a ?? b`, ternaries) internally create blocks and leave
+  // `currentBlock` on the logical-expression's join block. The IfTerm
+  // must be placed on wherever the test finished computing, not on
+  // the block we started in.
   const testPlace = buildNode(node.test, scope, functionBuilder, moduleBuilder, environment);
   if (testPlace === undefined || Array.isArray(testPlace)) {
     throw new Error("If statement test must be a single place");
   }
+  const parentBlock = functionBuilder.currentBlock;
 
   const consequentBlock = environment.createBlock();
   const alternateBlock = environment.createBlock();

@@ -27,8 +27,6 @@ export function buildSwitchStatement(
   environment: Environment,
   label?: string,
 ) {
-  const parentBlock = functionBuilder.currentBlock;
-
   const switchScope = functionBuilder.scopeFor(node);
   instantiateScopeBindings(node, switchScope, functionBuilder, environment, moduleBuilder);
 
@@ -62,6 +60,9 @@ export function buildSwitchStatement(
       caseTests.push(null);
     }
   }
+  // parentBlock captured AFTER expression evaluation — compound
+  // discriminants / case tests may have moved currentBlock.
+  const parentBlock = functionBuilder.currentBlock;
 
   const caseBlocks = node.cases.map(() => environment.createBlock());
   const fallthroughBlock = environment.createBlock();

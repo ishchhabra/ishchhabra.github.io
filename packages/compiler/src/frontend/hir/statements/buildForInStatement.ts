@@ -29,12 +29,13 @@ export function buildForInStatement(
   environment: Environment,
   label?: string,
 ) {
-  const parentBlock = functionBuilder.currentBlock;
-
   const objectPlace = buildNode(node.right, scope, functionBuilder, moduleBuilder, environment);
   if (objectPlace === undefined || Array.isArray(objectPlace)) {
     throw new Error("For-in object must be a single place");
   }
+  // parentBlock captured AFTER object expr — compound objects may
+  // have moved currentBlock.
+  const parentBlock = functionBuilder.currentBlock;
 
   const forScope = functionBuilder.scopeFor(node);
   instantiateScopeBindings(node, forScope, functionBuilder, environment, moduleBuilder);
@@ -58,7 +59,8 @@ export function buildForInStatement(
       environment,
       { kind: "declaration", declarationKind: kind },
     );
-    iterationValuePlace = environment.createValue();
+    iterationValuePlace =
+      iterationTarget.kind === "binding" ? iterationTarget.place : environment.createValue();
   } else {
     bareLVal = left as AST.Pattern | MemberExpression;
     iterationTarget = buildLVal(bareLVal, scope, functionBuilder, moduleBuilder, environment, {

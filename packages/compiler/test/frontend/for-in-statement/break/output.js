@@ -1,4 +1,4 @@
-for (const $2 in obj) {
+for (const $1 in obj) {
   if ($1 === "stop") {
     break;
   }

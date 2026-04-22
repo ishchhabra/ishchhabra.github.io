@@ -22,12 +22,11 @@ export function buildConditionalExpression(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Value {
-  const parentBlock = functionBuilder.currentBlock;
-
   const testPlace = buildNode(node.test, scope, functionBuilder, moduleBuilder, environment);
   if (testPlace === undefined || Array.isArray(testPlace)) {
     throw new Error("Conditional expression test must be a single place");
   }
+  const parentBlock = functionBuilder.currentBlock;
 
   const consBlock = environment.createBlock();
   const altBlock = environment.createBlock();

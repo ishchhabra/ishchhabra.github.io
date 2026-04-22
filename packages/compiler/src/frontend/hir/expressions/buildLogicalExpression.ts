@@ -31,14 +31,15 @@ export function buildLogicalExpression(
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
 ): Value {
-  const parentBlock = functionBuilder.currentBlock;
-
   const leftPlace = buildNode(node.left, scope, functionBuilder, moduleBuilder, environment);
   if (leftPlace === undefined || Array.isArray(leftPlace)) {
     throw new Error("Logical expression left must be a single place");
   }
 
   const testPlace = buildTestPlace(node.operator, leftPlace, functionBuilder, environment);
+  // parentBlock must be captured AFTER the LHS evaluates — compound
+  // LHS may have moved currentBlock to a join block.
+  const parentBlock = functionBuilder.currentBlock;
 
   const truthyBlock = environment.createBlock();
   const falsyBlock = environment.createBlock();
