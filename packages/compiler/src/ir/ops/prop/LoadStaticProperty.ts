@@ -1,22 +1,23 @@
 import { OperationId } from "../../core";
 import { Value } from "../../core";
-
-import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
 import { effects, staticPropertyLocation, type MemoryEffects } from "../../memory/MemoryLocation";
+import { LoadPropertyOp } from "./LoadProperty";
+
 /**
- * An instruction that loads a **static** property for an object:
- * `object[0]` or `object.foo`.
+ * An instruction that loads a **static** property of an object:
+ * `object.foo`, `object["literal"]`, or `object[0]` (numeric-literal
+ * keys are folded to strings at HIR time).
  */
-export class LoadStaticPropertyOp extends Operation {
+export class LoadStaticPropertyOp extends LoadPropertyOp {
   constructor(
     id: OperationId,
-    public override readonly place: Value,
-    public readonly object: Value,
+    place: Value,
+    object: Value,
     public readonly property: string,
-    public readonly optional: boolean = false,
+    optional: boolean = false,
   ) {
-    super(id);
+    super(id, place, object, optional);
   }
 
   public clone(ctx: CloneContext): LoadStaticPropertyOp {
@@ -45,24 +46,12 @@ export class LoadStaticPropertyOp extends Operation {
     return [this.object];
   }
 
-  /**
-   * Reading `obj.prop` can technically invoke a getter or a Proxy
-   * trap — that would be a real side effect. Production JS
-   * optimizers (V8, Closure, SpiderMonkey) treat property reads as
-   * pure anyway, on the grounds that user code depending on
-   * getter-as-side-effect is non-optimizable by design. Matching
-   * that convention here lets DCE remove orphan property-access
-   * chains left behind by constant folding.
-   */
-  public override hasSideEffects(): boolean {
-    return false;
-  }
-
   public override getMemoryEffects(_env?: unknown): MemoryEffects {
     return effects([staticPropertyLocation(this.object, this.property)], []);
   }
 
   public override print(): string {
-    return `${this.place.print()} = ${this.object.print()}.${this.property}`;
+    const attrs = this.optional ? ` {optional}` : "";
+    return `${this.place.print()} = load_static_property ${this.object.print()}, ${JSON.stringify(this.property)}${attrs}`;
   }
 }

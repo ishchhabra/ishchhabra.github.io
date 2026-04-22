@@ -1,22 +1,22 @@
 import { OperationId } from "../../core";
 import { Value } from "../../core";
-
-import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
 import { computedPropertyLocation, effects, type MemoryEffects } from "../../memory/MemoryLocation";
+import { LoadPropertyOp } from "./LoadProperty";
+
 /**
- * An instruction that loads a **dynamic** property for an object:
- * `object[property]`.
+ * An instruction that loads a **dynamic** property of an object:
+ * `object[property]` where `property` is a computed expression.
  */
-export class LoadDynamicPropertyOp extends Operation {
+export class LoadDynamicPropertyOp extends LoadPropertyOp {
   constructor(
     id: OperationId,
-    public override readonly place: Value,
-    public readonly object: Value,
+    place: Value,
+    object: Value,
     public readonly property: Value,
-    public readonly optional: boolean = false,
+    optional: boolean = false,
   ) {
-    super(id);
+    super(id, place, object, optional);
   }
 
   public clone(ctx: CloneContext): LoadDynamicPropertyOp {
@@ -50,6 +50,7 @@ export class LoadDynamicPropertyOp extends Operation {
   }
 
   public override print(): string {
-    return `${this.place.print()} = ${this.object.print()}[${this.property.print()}]`;
+    const attrs = this.optional ? ` {optional}` : "";
+    return `${this.place.print()} = load_dynamic_property ${this.object.print()}, ${this.property.print()}${attrs}`;
   }
 }

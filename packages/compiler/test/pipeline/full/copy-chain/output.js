@@ -1,2 +1,3 @@
+const $25 = globalThis.flag;
 let blockparam_20 = undefined;
-console.log(globalThis.flag ? 1 : 2);
+console.log($25 ? 1 : 2);

@@ -40,4 +40,9 @@ export class SuperPropertyOp extends Operation {
   getOperands(): Value[] {
     return [this.property];
   }
+
+  public override print(): string {
+    const attrs = this.computed ? ` {computed}` : "";
+    return `${this.place.print()} = super_property ${this.property.print()}${attrs}`;
+  }
 }
