@@ -24,10 +24,8 @@ import {
 import { BasicBlock } from "../../ir/core/Block";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { ModuleIR } from "../../ir/core/ModuleIR";
-import { localLocation } from "../../ir/memory/MemoryLocation";
 import { JumpTermOp } from "../../ir/ops/control";
 import { TemplateLiteralOp } from "../../ir/ops/prim/TemplateLiteral";
-import { MemoryStateWalker } from "../analysis/MemoryStateWalker";
 import { getQualifiedName, type ResolveConstantContext } from "./resolveConstant";
 
 // ---------------------------------------------------------------------------
@@ -117,22 +115,6 @@ export class ConstantPropagationPass {
   private readonly builtinResolved = new Set<Value>();
   private readonly ssaWorklist: Value[] = [];
   private readonly resolveCtx: ResolveConstantContext;
-  /**
-   * Memory-state walker for this function. Rebuilt lazily on first
-   * query; used by {@link evaluate} to resolve `LoadLocalOp` reads to
-   * their reaching {@link StoreLocalOp} (replacing the prior
-   * `forward(op.place, op.value)` heuristic, which was unsound under
-   * mutable bindings — see Stage 2 pivot notes).
-   */
-  private readonly walker: MemoryStateWalker;
-  /**
-   * Reverse index: Value → LoadLocalOps that consulted the walker
-   * and learned the Value was their reaching-store's stored value.
-   * When the Value's lattice changes, these loads must be
-   * re-evaluated — the standard SSA `value.uses` chain misses them
-   * because the dependency is walker-mediated, not a direct operand.
-   */
-  private readonly walkerDeps = new Map<Value, Set<LoadLocalOp>>();
 
   constructor(
     private readonly funcOp: FuncOp,
@@ -151,7 +133,6 @@ export class ConstantPropagationPass {
       has: (place) => isConst(this.getLattice(place)),
       environment: this.moduleIR.environment,
     };
-    this.walker = new MemoryStateWalker(funcOp);
   }
 
   public run(): { changed: boolean } {
@@ -201,14 +182,6 @@ export class ConstantPropagationPass {
           continue;
         }
         this.evaluate(op);
-      }
-      // Walker-mediated users: LoadLocals whose reaching-store's
-      // stored value is `value`. The SSA use chain doesn't include
-      // them (they read the binding cell, not the stored value),
-      // so re-enqueue here.
-      const deps = this.walkerDeps.get(value);
-      if (deps !== undefined) {
-        for (const load of deps) this.evaluate(load);
       }
     }
   }
@@ -449,59 +422,15 @@ export class ConstantPropagationPass {
   }
 
   /**
-   * Resolve a local-binding load's lattice using both the SSA
-   * binding-cell meet *and* the memory-state walker.
-   *
-   *   - Binding-cell forward (`op.value` is the lval): safe,
-   *     meet-combined over every writer. Conservatively BOTTOM on
-   *     any reassignment. SSA worklist naturally re-triggers this
-   *     via `op.value.uses`.
-   *   - Walker refinement: path-sensitive. When exactly one
-   *     `StoreLocalOp` reaches the load, use that store's stored
-   *     value's lattice instead — typically more precise than the
-   *     cell meet.
-   *
-   * The walker dependency (`reaching.value → this load`) is
-   * registered in {@link walkerDeps} so {@link drain} re-queues
-   * the load when the reaching value's lattice changes; without
-   * it, the load would observe a stale TOP and propagate it as
-   * a spurious constant.
+   * A `LoadLocalOp` reads the binding cell. Post-SSA its `.value`
+   * operand is the unique Value corresponding to the reaching
+   * store's lval (for non-promotable bindings, this is a fresh
+   * SSA name allocated at rename time) or a phi block-param at a
+   * merge point. Either way, `op.value.lattice` is correct by
+   * construction — forward it.
    */
   private evaluateLoadLocal(op: LoadLocalOp): void {
-    const reaching = this.walker.reachingStore(op, localLocation(op.value.declarationId));
-    if (reaching instanceof StoreLocalOp) {
-      // Walker identified a unique reaching StoreLocal. Register
-      // the walker dependency so a later change to the stored
-      // value's lattice re-enqueues this load (SSA worklist walks
-      // `value.uses` directly — it would miss this walker-mediated
-      // edge).
-      let deps = this.walkerDeps.get(reaching.value);
-      if (deps === undefined) {
-        deps = new Set();
-        this.walkerDeps.set(reaching.value, deps);
-      }
-      deps.add(op);
-      this.forward(op.place, reaching.value);
-      return;
-    }
-    if (reaching !== undefined) {
-      // The reaching writer is a complex multi-def op —
-      // destructure, for-of iteration, catch-param. We don't have
-      // a single concrete stored value to forward: the read is
-      // runtime-determined. Set BOTTOM (not a compile-time
-      // constant).
-      this.setLattice(op.place, BOTTOM);
-      return;
-    }
-    // No reaching store: the walker either lost the cell's state
-    // (e.g. an intervening structured op with Unknown writes wiped
-    // it) or the load is before any store. The binding cell's
-    // lattice (`op.value`) reflects only the meet of direct
-    // StoreLocal evaluations — it does NOT account for writes made
-    // through non-promotable memory-form ops (TryOp's body,
-    // SwitchOp cases, etc.). Forwarding it produces spurious
-    // constants for mutable bindings. Conservatively set BOTTOM.
-    this.setLattice(op.place, BOTTOM);
+    this.forward(op.place, op.value);
   }
 
   private evaluateLoadGlobal(op: LoadGlobalOp): void {

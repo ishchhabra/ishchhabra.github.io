@@ -114,14 +114,13 @@ function analyzePromotability(
  * materializes as `StoreLocalOp` / `LoadLocalOp` (or `StoreContextOp`
  * / `LoadContextOp` for captured bindings). This pass promotes
  * memory-form bindings to SSA form using Cytron's iterated-dominance-
- * frontier algorithm, fused with mem2reg — the shape of LLVM's
- * `PromoteMemoryToRegister.cpp`.
+ * frontier algorithm, fused with mem2reg.
  *
  * ## What this pass does
  *
  * 1. **Place block parameters** at iterated dominance frontiers
  *    ({@link placeBlockParams}). Standard Cytron IDF worklist, run
- *    per promotable declaration.
+ *    per declaration that has multiple writers.
  *
  * 2. **Dom-tree pre-order rename** ({@link renameBlock}), with a
  *    per-declaration stack of reaching definitions. At block entry
@@ -129,21 +128,29 @@ function analyzePromotability(
  *    Reads rewrite their operand to the stack top; defs push onto
  *    the stack.
  *
- * 3. **Mem2reg, fused into rename.** For every declaration
+ * 3. **Mem2reg, fused into rename.** For declarations
  *    {@link analyzePromotability} classifies as promotable:
+ *    - A `StoreLocalOp` pushes its *rhs value* onto the rename
+ *      stack and is deleted in place.
+ *    - A `LoadLocalOp` records `load.place → reaching value` in
+ *      {@link rewrites} and is deleted. Later uses of the load's
+ *      place are rewritten through this alias map.
  *
- *    - A `StoreLocalOp` on the binding pushes its *rhs value* (not
- *      the lval) onto the rename stack and is deleted in place.
- *    - A `LoadLocalOp` on the binding records `load.place → reaching
- *      value` in {@link rewrites} and is deleted. Subsequent uses
- *      of the load's place are rewritten through this alias map.
+ * 4. **Fresh SSA names for non-promotable defs.** Declarations
+ *    classified as non-promotable (captured, exported, complex
+ *    writer, destructure-assignment target) keep their memory ops,
+ *    but every def still gets a **fresh Value** allocated at rename
+ *    time. This matches React Compiler's `EnterSSA` pattern: every
+ *    store / destructure target mints a new SSA identifier, so the
+ *    single-assignment-per-Value invariant holds uniformly. Loads
+ *    read the stack top via normal rename, which is the current
+ *    store's fresh lval. Without this step, multiple writes to the
+ *    same binding would redefine the same Value, collapsing lattice
+ *    analyses like constant propagation to an imprecise `meet` —
+ *    and forcing a post-hoc reaching-def walker to recover the
+ *    precision strict SSA already guarantees.
  *
- *    Non-promotable declarations (captured, exported, complex
- *    writer, destructure-assignment target) keep their StoreLocal /
- *    LoadLocal ops; the rename still pushes their lvals onto the
- *    stack so later reads rewrite to the most recent store's lval.
- *
- * 4. **Fill jump-edge args** at each `JumpTermOp`
+ * 5. **Fill jump-edge args** at each `JumpTermOp`
  *    ({@link fillJumpArgs}): for each successor block param, look
  *    up the current stack top and bind it as the edge's positional
  *    argument.
@@ -184,8 +191,10 @@ function analyzePromotability(
  *
  *   - Cytron et al. 1991, "Efficiently Computing Static Single
  *     Assignment Form and the Control Dependence Graph".
- *   - LLVM `PromoteMemoryToRegister.cpp` — the canonical mem2reg
- *     implementation this pass is modeled on.
+ *   - LLVM `PromoteMemoryToRegister.cpp` — the mem2reg pattern for
+ *     promotable bindings.
+ *   - React Compiler `EnterSSA.ts` — the fresh-name-per-store
+ *     pattern for non-promotable bindings.
  */
 export class SSABuilder {
   private readonly funcOp: FuncOp;
@@ -417,15 +426,72 @@ export class SSABuilder {
     if (current instanceof StoreLocalOp) {
       const decl = current.lval.declarationId;
       if (this.isPromotable(decl)) {
+        // mem2reg: push the rhs, delete the store. Loads rewrite to
+        // the rhs via `tryPromoteLoad`.
         this.pushScopedForDecl(stacks, decl, current.value, pushed);
         toDelete.add(current);
         return;
       }
-      // Non-promotable: push the lval so later reads rewrite to the
-      // most recent store's target place (the still-present StoreLocal).
-      this.pushScoped(stacks, current.lval, pushed);
+      this.renameNonPromotableStore(current, stacks, pushed);
       return;
     }
+
+    this.renameNonPromotableDefs(current, stacks, pushed);
+  }
+
+  /**
+   * Non-promotable `StoreLocalOp`: allocate a fresh SSA Value for the
+   * store's `lval` and rewrite the op in place. Applies to both
+   * declaration- and assignment-kind stores — in strict SSA every
+   * write defines a new name. Push the fresh lval onto the decl's
+   * rename stack so later reads rewrite to it.
+   */
+  private renameNonPromotableStore(
+    op: StoreLocalOp,
+    stacks: Stacks,
+    pushed: DeclarationId[],
+  ): void {
+    const env = this.moduleIR.environment;
+    const freshLval = env.createValue(op.lval.declarationId);
+    freshLval.originalDeclarationId = op.lval.originalDeclarationId ?? op.lval.declarationId;
+    const renamed = new StoreLocalOp(
+      op.id,
+      op.place,
+      freshLval,
+      op.value,
+      op.type,
+      op.kind,
+      op.bindings,
+    );
+    op.parentBlock?.replaceOp(op, renamed);
+    this.pushScoped(stacks, freshLval, pushed);
+  }
+
+  /**
+   * For each def on a non-`StoreLocalOp` op that names a
+   * non-promotable declaration, allocate a fresh SSA Value and rewrite
+   * the op in place so it defines that fresh Value. Push the fresh
+   * Value onto the decl's rename stack. Covers `ArrayDestructureOp` /
+   * `ObjectDestructureOp` binding targets, and any other multi-def op.
+   */
+  private renameNonPromotableDefs(
+    op: Operation,
+    stacks: Stacks,
+    pushed: DeclarationId[],
+  ): void {
+    const env = this.moduleIR.environment;
+    const freshMap = new Map<Value, Value>();
+    for (const def of op.getDefs()) {
+      if (def === op.place) continue;
+      if (def.declarationId === undefined) continue;
+      const fresh = env.createValue(def.declarationId);
+      fresh.originalDeclarationId = def.originalDeclarationId ?? def.declarationId;
+      freshMap.set(def, fresh);
+    }
+    if (freshMap.size === 0) return;
+
+    const rewritten = op.rewrite(freshMap, { rewriteDefinitions: true });
+    const current = rewritten === op ? op : (op.parentBlock?.replaceOp(op, rewritten), rewritten);
 
     for (const def of current.getDefs()) {
       if (def === current.place) continue;
