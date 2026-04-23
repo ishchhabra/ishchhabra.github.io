@@ -31,11 +31,11 @@ export function buildTryStatement(
   functionBuilder.currentBlock = tryBlock;
   buildOwnedBody(node.block, scope, functionBuilder, moduleBuilder, environment);
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.terminal = new JumpOp(
+    functionBuilder.currentBlock.setTerminal(new JumpOp(
       createOperationId(environment),
       (finallyBlock ?? fallthroughBlock),
       [],
-    );
+    ));
   }
 
   // Build catch handler
@@ -70,11 +70,11 @@ export function buildTryStatement(
 
     buildOwnedBody(catchClause.body, scope, functionBuilder, moduleBuilder, environment);
     if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.terminal = new JumpOp(
+      functionBuilder.currentBlock.setTerminal(new JumpOp(
         createOperationId(environment),
         (finallyBlock ?? fallthroughBlock),
         [],
-      );
+      ));
     }
   }
 
@@ -83,19 +83,19 @@ export function buildTryStatement(
     functionBuilder.currentBlock = finallyBlock;
     buildOwnedBody(node.finalizer, scope, functionBuilder, moduleBuilder, environment);
     if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), fallthroughBlock, []);
+      functionBuilder.currentBlock.setTerminal(new JumpOp(createOperationId(environment), fallthroughBlock, []));
     }
   }
 
   // Terminate parent with TryTerm routing to try-body
-  parentBlock.terminal = new TryTerm(
+  parentBlock.setTerminal(new TryTerm(
     createOperationId(environment),
     tryBlock,
     handlerBlock,
     handlerParam,
     finallyBlock,
     fallthroughBlock,
-  );
+  ));
 
   functionBuilder.currentBlock = fallthroughBlock;
   return undefined;

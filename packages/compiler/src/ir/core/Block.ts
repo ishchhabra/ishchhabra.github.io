@@ -126,26 +126,45 @@ export class BasicBlock {
     return this._terminal ?? undefined;
   }
 
-  set terminal(newTerminal: Terminal | undefined) {
-    if (newTerminal !== undefined && !newTerminal.hasTrait(Trait.Terminator)) {
-      throw new Error(
-        `BasicBlock.terminal setter: op ${newTerminal.constructor.name} lacks Trait.Terminator`,
-      );
-    }
-    if (this._terminal !== null) {
-      detach(this._terminal);
-      unregisterUses(this._terminal);
-    }
-    this._terminal = newTerminal ?? null;
-    if (this._terminal !== null) {
-      registerUses(this._terminal);
-      attach(this._terminal, this);
-    }
-  }
-
   /** The last op in the block — terminator if present, else last non-terminator. */
   get lastOp(): Operation | undefined {
     return this._terminal ?? this._ops[this._ops.length - 1];
+  }
+
+  /** Attach a terminator to this block. Throws if one is already set. */
+  setTerminal(terminal: Terminal): void {
+    if (this._terminal !== null) {
+      throw new Error(
+        `Block ${this.id} already has terminal ${this._terminal.constructor.name}; refusing to overwrite with ${terminal.constructor.name}`,
+      );
+    }
+    if (!terminal.hasTrait(Trait.Terminator)) {
+      throw new Error(
+        `BasicBlock.setTerminal: op ${terminal.constructor.name} lacks Trait.Terminator`,
+      );
+    }
+    this._terminal = terminal;
+    registerUses(terminal);
+    attach(terminal, this);
+  }
+
+  /** Swap this block's terminator for a new one. Throws if there is nothing to replace. */
+  replaceTerminal(terminal: Terminal): void {
+    if (this._terminal === null) {
+      throw new Error(
+        `Block ${this.id} has no terminal to replace; use setTerminal for the first assignment`,
+      );
+    }
+    if (!terminal.hasTrait(Trait.Terminator)) {
+      throw new Error(
+        `BasicBlock.replaceTerminal: op ${terminal.constructor.name} lacks Trait.Terminator`,
+      );
+    }
+    detach(this._terminal);
+    unregisterUses(this._terminal);
+    this._terminal = terminal;
+    registerUses(terminal);
+    attach(terminal, this);
   }
 
   // -----------------------------------------------------------------------

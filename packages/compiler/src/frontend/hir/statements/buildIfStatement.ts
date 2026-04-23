@@ -45,13 +45,13 @@ export function buildIfStatement(
   functionBuilder.addBlock(alternateBlock);
   functionBuilder.addBlock(fallthroughBlock);
 
-  parentBlock.terminal = new IfTerm(createOperationId(environment), testPlace, consequentBlock, alternateBlock, fallthroughBlock);
+  parentBlock.setTerminal(new IfTerm(createOperationId(environment), testPlace, consequentBlock, alternateBlock, fallthroughBlock));
 
   // Consequent arm
   functionBuilder.currentBlock = consequentBlock;
   buildOwnedBody(node.consequent, scope, functionBuilder, moduleBuilder, environment);
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), fallthroughBlock, []);
+    functionBuilder.currentBlock.setTerminal(new JumpOp(createOperationId(environment), fallthroughBlock, []));
   }
 
   // Alternate arm
@@ -60,7 +60,7 @@ export function buildIfStatement(
     buildOwnedBody(node.alternate, scope, functionBuilder, moduleBuilder, environment);
   }
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), fallthroughBlock, []);
+    functionBuilder.currentBlock.setTerminal(new JumpOp(createOperationId(environment), fallthroughBlock, []));
   }
 
   functionBuilder.currentBlock = fallthroughBlock;

@@ -32,7 +32,7 @@ export function buildWhileStatement(
   functionBuilder.addBlock(bodyBlock);
   functionBuilder.addBlock(exitBlock);
 
-  parentBlock.terminal = new JumpOp(createOperationId(environment), headerBlock, []);
+  parentBlock.setTerminal(new JumpOp(createOperationId(environment), headerBlock, []));
 
   // Header: evaluate test, terminate with WhileTerm
   functionBuilder.currentBlock = headerBlock;
@@ -40,14 +40,14 @@ export function buildWhileStatement(
   if (testPlace === undefined || Array.isArray(testPlace)) {
     throw new Error("While statement test must be a single place");
   }
-  headerBlock.terminal = new WhileTerm(
+  headerBlock.setTerminal(new WhileTerm(
     createOperationId(environment),
     testPlace,
     bodyBlock,
     exitBlock,
     "while",
     label,
-  );
+  ));
 
   // Body
   functionBuilder.currentBlock = bodyBlock;
@@ -61,7 +61,7 @@ export function buildWhileStatement(
   buildOwnedBody(node.body, scope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), headerBlock, []);
+    functionBuilder.currentBlock.setTerminal(new JumpOp(createOperationId(environment), headerBlock, []));
   }
 
   functionBuilder.currentBlock = exitBlock;

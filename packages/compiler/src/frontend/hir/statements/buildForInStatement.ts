@@ -79,14 +79,14 @@ export function buildForInStatement(
     if (!bodyBlock.entryBindings.includes(p)) bodyBlock.entryBindings.push(p);
   }
 
-  parentBlock.terminal = new ForInTerm(
+  parentBlock.setTerminal(new ForInTerm(
     createOperationId(environment),
     objectPlace,
     iterationValuePlace,
     bodyBlock,
     exitBlock,
     label,
-  );
+  ));
 
   functionBuilder.currentBlock = bodyBlock;
   const destructureKind =
@@ -110,7 +110,7 @@ export function buildForInStatement(
   buildOwnedBody(node.body, forScope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), parentBlock, []);
+    functionBuilder.currentBlock.setTerminal(new JumpOp(createOperationId(environment), parentBlock, []));
   }
 
   functionBuilder.currentBlock = exitBlock;

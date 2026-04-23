@@ -24,10 +24,10 @@ export function buildThrowStatement(
     throw new Error("Throw statement argument must be a single expression");
   }
 
-  functionBuilder.currentBlock.terminal = new ThrowOp(
+  functionBuilder.currentBlock.setTerminal(new ThrowOp(
     createOperationId(environment),
     argumentPlace,
-  );
+  ));
 
   return undefined;
 }

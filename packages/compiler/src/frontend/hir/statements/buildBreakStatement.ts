@@ -31,10 +31,10 @@ export function buildBreakStatement(
   if (targetBlock === undefined) {
     throw new Error(`Break target block ${targetBlockId} not found`);
   }
-  functionBuilder.currentBlock.terminal = new JumpOp(
+  functionBuilder.currentBlock.setTerminal(new JumpOp(
     createOperationId(environment),
     targetBlock,
     [],
-  );
+  ));
   return undefined;
 }

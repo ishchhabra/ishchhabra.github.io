@@ -235,7 +235,7 @@ export class FuncOpBuilder {
         this.environment,
       );
       if (resultPlace !== undefined && !Array.isArray(resultPlace)) {
-        this.currentBlock.terminal = new ReturnOp(createOperationId(this.environment), resultPlace);
+        this.currentBlock.setTerminal(new ReturnOp(createOperationId(this.environment), resultPlace));
       }
     } else {
       const bodyScope = this.scopeFor(effectiveBody);

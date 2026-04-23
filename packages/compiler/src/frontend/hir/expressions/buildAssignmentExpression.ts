@@ -262,7 +262,7 @@ function buildLogicalIdentifierAssignment(
   functionBuilder.addBlock(altBlock);
   functionBuilder.addBlock(joinBlock);
 
-  parentBlock.terminal = new IfTerm(createOperationId(environment), conditionPlace, consBlock, altBlock, joinBlock);
+  parentBlock.setTerminal(new IfTerm(createOperationId(environment), conditionPlace, consBlock, altBlock, joinBlock));
 
   functionBuilder.currentBlock = consBlock;
   const rightPlace = buildNode(node.right, scope, functionBuilder, moduleBuilder, environment);
@@ -296,9 +296,9 @@ function buildLogicalIdentifierAssignment(
           "assignment",
         ),
   );
-  functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), joinBlock, [stabilizedRightPlace]);
+  functionBuilder.currentBlock.setTerminal(new JumpOp(createOperationId(environment), joinBlock, [stabilizedRightPlace]));
 
-  altBlock.terminal = new JumpOp(createOperationId(environment), joinBlock, [oldValuePlace]);
+  altBlock.setTerminal(new JumpOp(createOperationId(environment), joinBlock, [oldValuePlace]));
 
   functionBuilder.currentBlock = joinBlock;
   return resultPlace;
@@ -395,7 +395,7 @@ function buildLogicalMemberAssignment(
   functionBuilder.addBlock(altBlock);
   functionBuilder.addBlock(joinBlock);
 
-  parentBlock.terminal = new IfTerm(createOperationId(environment), conditionPlace, consBlock, altBlock, joinBlock);
+  parentBlock.setTerminal(new IfTerm(createOperationId(environment), conditionPlace, consBlock, altBlock, joinBlock));
 
   functionBuilder.currentBlock = consBlock;
   const rightPlace = buildNode(node.right, scope, functionBuilder, moduleBuilder, environment);
@@ -411,9 +411,9 @@ function buildLogicalMemberAssignment(
       environment,
     ),
   );
-  functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), joinBlock, [stabilizedRightPlace]);
+  functionBuilder.currentBlock.setTerminal(new JumpOp(createOperationId(environment), joinBlock, [stabilizedRightPlace]));
 
-  altBlock.terminal = new JumpOp(createOperationId(environment), joinBlock, [cachedPlace]);
+  altBlock.setTerminal(new JumpOp(createOperationId(environment), joinBlock, [cachedPlace]));
 
   functionBuilder.currentBlock = joinBlock;
   return resultPlace;

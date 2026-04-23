@@ -39,7 +39,7 @@ export function buildDoWhileStatement(
   // even though the CFG header's cond check happens first at the
   // IR level. Dataflow is identical; codegen preserves source
   // semantics.
-  parentBlock.terminal = new JumpOp(createOperationId(environment), headerBlock, []);
+  parentBlock.setTerminal(new JumpOp(createOperationId(environment), headerBlock, []));
 
   // Body
   functionBuilder.currentBlock = bodyBlock;
@@ -53,7 +53,7 @@ export function buildDoWhileStatement(
   buildOwnedBody(node.body, scope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), headerBlock, []);
+    functionBuilder.currentBlock.setTerminal(new JumpOp(createOperationId(environment), headerBlock, []));
   }
 
   // Header: test + branch
@@ -62,14 +62,14 @@ export function buildDoWhileStatement(
   if (testPlace === undefined || Array.isArray(testPlace)) {
     throw new Error("Do-while statement test must be a single place");
   }
-  headerBlock.terminal = new WhileTerm(
+  headerBlock.setTerminal(new WhileTerm(
     createOperationId(environment),
     testPlace,
     bodyBlock,
     exitBlock,
     "do-while",
     label,
-  );
+  ));
 
   functionBuilder.currentBlock = exitBlock;
   return undefined;

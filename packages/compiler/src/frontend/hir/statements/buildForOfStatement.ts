@@ -86,7 +86,7 @@ export function buildForOfStatement(
     if (!bodyBlock.entryBindings.includes(p)) bodyBlock.entryBindings.push(p);
   }
 
-  parentBlock.terminal = new ForOfTerm(
+  parentBlock.setTerminal(new ForOfTerm(
     createOperationId(environment),
     iterablePlace,
     iterationValuePlace,
@@ -94,7 +94,7 @@ export function buildForOfStatement(
     exitBlock,
     node.await,
     label,
-  );
+  ));
 
   functionBuilder.currentBlock = bodyBlock;
   // Emit the per-iteration assignment for any non-binding target —
@@ -125,7 +125,7 @@ export function buildForOfStatement(
   buildOwnedBody(node.body, forScope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), parentBlock, []);
+    functionBuilder.currentBlock.setTerminal(new JumpOp(createOperationId(environment), parentBlock, []));
   }
 
   functionBuilder.currentBlock = exitBlock;

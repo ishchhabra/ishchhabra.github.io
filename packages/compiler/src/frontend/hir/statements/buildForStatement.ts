@@ -57,7 +57,7 @@ export function buildForStatement(
   // currentBlock to a logical-expression join block.
   const parentBlock = functionBuilder.currentBlock;
   if (parentBlock.terminal === undefined) {
-    parentBlock.terminal = new JumpOp(createOperationId(environment), headerBlock, []);
+    parentBlock.setTerminal(new JumpOp(createOperationId(environment), headerBlock, []));
   }
 
   // Header: test + branch
@@ -73,14 +73,14 @@ export function buildForStatement(
   if (testPlace === undefined || Array.isArray(testPlace)) {
     throw new Error("For statement test place must be a single place");
   }
-  headerBlock.terminal = new ForTerm(
+  headerBlock.setTerminal(new ForTerm(
     createOperationId(environment),
     testPlace,
     bodyBlock,
     updateBlock,
     exitBlock,
     label,
-  );
+  ));
 
   // Body
   functionBuilder.currentBlock = bodyBlock;
@@ -94,7 +94,7 @@ export function buildForStatement(
   buildOwnedBody(node.body, forScope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), updateBlock, []);
+    functionBuilder.currentBlock.setTerminal(new JumpOp(createOperationId(environment), updateBlock, []));
   }
 
   // Update
@@ -103,7 +103,7 @@ export function buildForStatement(
     buildExpressionAsStatement(node.update, forScope, functionBuilder, moduleBuilder, environment);
   }
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), headerBlock, []);
+    functionBuilder.currentBlock.setTerminal(new JumpOp(createOperationId(environment), headerBlock, []));
   }
 
   functionBuilder.currentBlock = exitBlock;

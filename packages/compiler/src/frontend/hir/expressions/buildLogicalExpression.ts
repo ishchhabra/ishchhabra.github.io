@@ -21,8 +21,13 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
  *   a || b  →  if a { jump join(a) } else { jump join(b) }
  *   a ?? b  →  if a != null { jump join(a) } else { jump join(b) }
  *
+ * `??` uses loose `!= null` (matches both null and undefined via
+ * JS's `null == undefined` rule). Strict `!==` would leave undefined
+ * broken: `undefined ?? 5` must return 5, not undefined.
+ *
  * The short-circuit result flows through a block param on the join
- * block.
+ * block. The returned {@link Value} is that block param — the
+ * caller reads it as the expression's value.
  */
 export function buildLogicalExpression(
   node: LogicalExpression,
@@ -50,7 +55,9 @@ export function buildLogicalExpression(
   functionBuilder.addBlock(falsyBlock);
   functionBuilder.addBlock(joinBlock);
 
-  parentBlock.terminal = new IfTerm(createOperationId(environment), testPlace, truthyBlock, falsyBlock, joinBlock);
+  parentBlock.setTerminal(
+    new IfTerm(createOperationId(environment), testPlace, truthyBlock, falsyBlock, joinBlock),
+  );
 
   // Arm semantics per operator
   switch (node.operator) {
@@ -111,8 +118,13 @@ function buildRhsArm(
   if (place === undefined || Array.isArray(place)) {
     throw new Error("Logical expression right must be a single place");
   }
+  // The RHS may have self-terminated (a `return` / `throw` / nested
+  // structured construct that set the current block's terminal).
+  // Only emit our join-jump when the RHS didn't already end the arm.
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.terminal = new JumpOp(createOperationId(environment), joinBlock, [place]);
+    functionBuilder.currentBlock.setTerminal(
+      new JumpOp(createOperationId(environment), joinBlock, [place]),
+    );
   }
 }
 
@@ -124,5 +136,9 @@ function buildPassthroughArm(
   environment: Environment,
 ): void {
   functionBuilder.currentBlock = armBlock;
-  armBlock.terminal = new JumpOp(createOperationId(environment), joinBlock, [leftPlace]);
+  // Passthrough arm: the block is freshly allocated and no code was
+  // emitted into it — terminator must not already be set. The
+  // `setTerminal` helper asserts this, catching any future refactor
+  // that changes the construction order.
+  armBlock.setTerminal(new JumpOp(createOperationId(environment), joinBlock, [leftPlace]));
 }
