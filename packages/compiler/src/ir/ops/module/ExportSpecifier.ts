@@ -25,8 +25,10 @@ export class ExportSpecifierOp extends Operation {
     return env.createOperation(ExportSpecifierOp, place, this.localPlace, this.exported);
   }
 
-  rewrite(): Operation {
-    return this;
+  rewrite(values: Map<Value, Value>): Operation {
+    const next = values.get(this.localPlace) ?? this.localPlace;
+    if (next === this.localPlace) return this;
+    return new ExportSpecifierOp(this.id, this.place, next, this.exported);
   }
 
   getOperands(): Value[] {

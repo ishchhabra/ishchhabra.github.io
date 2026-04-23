@@ -489,11 +489,23 @@ export function generateTryTerm(
   generator: CodeGenerator,
 ): Array<t.Statement> {
   return withFallthrough(term.fallthroughBlock, funcOp, generator, () => {
-    const bodyStatements = emitArm(term.bodyBlock, funcOp, generator);
+    // Body and handler each end in a JumpTermOp to the finally block
+    // (when present) or directly to the fallthrough. Push the inner
+    // fallthrough onto the structured stack so those Jumps emit
+    // nothing — `withFallthroughOnly` is used rather than
+    // `withFallthrough` because the block's content will land in a
+    // different structural slot (the finalizer clause), not trailing
+    // the arm.
+    const innerFallthrough = term.finallyBlock ?? term.fallthroughBlock;
+    const bodyStatements = withFallthroughOnly(innerFallthrough, generator, () =>
+      emitArm(term.bodyBlock, funcOp, generator),
+    );
 
     let handler: t.CatchClause | null = null;
     if (term.handlerBlock !== null) {
-      const handlerStatements = emitArm(term.handlerBlock, funcOp, generator);
+      const handlerStatements = withFallthroughOnly(innerFallthrough, generator, () =>
+        emitArm(term.handlerBlock!, funcOp, generator),
+      );
       const param =
         term.handlerParam !== null ? generator.getPlaceIdentifier(term.handlerParam) : null;
       handler = t.catchClause(param, t.blockStatement(handlerStatements));
@@ -507,6 +519,32 @@ export function generateTryTerm(
 
     return [t.tryStatement(t.blockStatement(bodyStatements), handler, finalizer)];
   });
+}
+
+/**
+ * Like {@link withFallthrough} but *doesn't* append the fallthrough
+ * block's content after the emitted statements — only manages the
+ * stack so jumps to the block become no-ops. Used when the block's
+ * content will be emitted elsewhere (e.g. the try's finally clause,
+ * a for-update slot).
+ */
+function withFallthroughOnly(
+  block: BasicBlock | null,
+  generator: CodeGenerator,
+  emit: () => Array<t.Statement>,
+): Array<t.Statement> {
+  const id = block?.id;
+  if (id !== undefined) generator.structuredFallthroughStack.push(id);
+  try {
+    return emit();
+  } finally {
+    if (id !== undefined) {
+      const popped = generator.structuredFallthroughStack.pop();
+      if (popped !== id) {
+        throw new Error("structuredFallthroughStack corrupted");
+      }
+    }
+  }
 }
 
 // ---------------------------------------------------------------------

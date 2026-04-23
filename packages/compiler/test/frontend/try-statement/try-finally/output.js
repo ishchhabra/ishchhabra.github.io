@@ -1,5 +1,5 @@
 try {
   JSON.parse("{}");
-  console.log("done");
 } finally {
+  console.log("done");
 }
