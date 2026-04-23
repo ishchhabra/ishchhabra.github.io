@@ -12,7 +12,7 @@ import {
   type DeclarationKind,
   Value,
   Region,
-  ReturnOp,
+  ReturnTermOp,
 } from "../../ir";
 import { FuncOp, type FuncOpId, makeFuncOpId } from "../../ir/core/FuncOp";
 import { VERIFY_IR } from "../../ir/verify";
@@ -235,7 +235,7 @@ export class FuncOpBuilder {
         this.environment,
       );
       if (resultPlace !== undefined && !Array.isArray(resultPlace)) {
-        this.currentBlock.setTerminal(new ReturnOp(createOperationId(this.environment), resultPlace));
+        this.currentBlock.setTerminal(new ReturnTermOp(createOperationId(this.environment), resultPlace));
       }
     } else {
       const bodyScope = this.scopeFor(effectiveBody);
@@ -386,7 +386,7 @@ export class FuncOpBuilder {
   /**
    * Returns the control-stack entry that an unlabeled-or-labeled `break`
    * targets, including its `structured` flag so callers can decide
-   * between emitting a `BreakOp` (structured) and a raw `JumpOp(target)`
+   * between emitting a `BreakTermOp` (structured) and a raw `JumpTermOp(target)`
    * (flat). Returns `undefined` when no matching enclosing construct
    * exists.
    */

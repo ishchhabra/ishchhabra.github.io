@@ -1,7 +1,7 @@
 import { Operation, BlockId, LoadGlobalOp } from "../../ir";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { ModuleIR } from "../../ir/core/ModuleIR";
-import { ReturnOp, ThrowOp } from "../../ir/ops/control";
+import { ReturnTermOp, ThrowTermOp } from "../../ir/ops/control";
 import { StoreStaticPropertyOp } from "../../ir/ops/prop/StoreStaticProperty";
 import { AnalysisManager } from "../../pipeline/analysis/AnalysisManager";
 import { DominatorTreeAnalysis } from "../../pipeline/analysis/DominatorTreeAnalysis";
@@ -72,7 +72,7 @@ export class CommonJSExportCollectorPass {
    * A block is "always executed" iff every path from the function
    * entry to any exit passes through it — equivalently, it dominates
    * every exit block. MLIR-style: walk for return-like terminators
-   * (ReturnOp, ThrowOp) instead of asking the function for a single
+   * (ReturnTermOp, ThrowTermOp) instead of asking the function for a single
    * canonical exit (functions can have multiple).
    *
    * If the function has no exit blocks (infinite loop, all paths
@@ -84,7 +84,7 @@ export class CommonJSExportCollectorPass {
     const domTree = this.AM.get(DominatorTreeAnalysis, this.funcOp);
     for (const block of this.funcOp.allBlocks()) {
       const term = block.terminal;
-      if (!(term instanceof ReturnOp || term instanceof ThrowOp)) continue;
+      if (!(term instanceof ReturnTermOp || term instanceof ThrowTermOp)) continue;
       if (!domTree.dominates(blockId, block.id)) return false;
     }
     return true;

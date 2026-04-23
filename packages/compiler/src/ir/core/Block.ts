@@ -1,7 +1,6 @@
 import { Value } from "./Value";
-import { Operation, Trait } from "./Operation";
+import { Operation, TermOp } from "./Operation";
 import type { Region } from "./Region";
-import { Terminal } from "../ops/control";
 import { registerUses, unregisterUses, type User } from "./Use";
 
 /**
@@ -39,7 +38,7 @@ function detach(op: Operation): void {
  */
 export class BasicBlock {
   private _ops: Operation[] = [];
-  private _terminal: Terminal | null = null;
+  private _terminal: TermOp | null = null;
 
   /**
    * MLIR-style region ownership back-pointer: the {@link Region}
@@ -94,10 +93,10 @@ export class BasicBlock {
   constructor(
     public readonly id: BlockId,
     initialOps: Operation[] = [],
-    terminal: Terminal | undefined = undefined,
+    terminal: TermOp | undefined = undefined,
   ) {
     for (const op of initialOps) {
-      if (op.hasTrait(Trait.Terminator)) {
+      if (op instanceof TermOp) {
         throw new Error(
           `BasicBlock constructor: initialOps must not contain a terminator — pass it via the terminal parameter`,
         );
@@ -122,7 +121,7 @@ export class BasicBlock {
     return this._ops;
   }
 
-  get terminal(): Terminal | undefined {
+  get terminal(): TermOp | undefined {
     return this._terminal ?? undefined;
   }
 
@@ -132,15 +131,10 @@ export class BasicBlock {
   }
 
   /** Attach a terminator to this block. Throws if one is already set. */
-  setTerminal(terminal: Terminal): void {
+  setTerminal(terminal: TermOp): void {
     if (this._terminal !== null) {
       throw new Error(
         `Block ${this.id} already has terminal ${this._terminal.constructor.name}; refusing to overwrite with ${terminal.constructor.name}`,
-      );
-    }
-    if (!terminal.hasTrait(Trait.Terminator)) {
-      throw new Error(
-        `BasicBlock.setTerminal: op ${terminal.constructor.name} lacks Trait.Terminator`,
       );
     }
     this._terminal = terminal;
@@ -149,15 +143,10 @@ export class BasicBlock {
   }
 
   /** Swap this block's terminator for a new one. Throws if there is nothing to replace. */
-  replaceTerminal(terminal: Terminal): void {
+  replaceTerminal(terminal: TermOp): void {
     if (this._terminal === null) {
       throw new Error(
         `Block ${this.id} has no terminal to replace; use setTerminal for the first assignment`,
-      );
-    }
-    if (!terminal.hasTrait(Trait.Terminator)) {
-      throw new Error(
-        `BasicBlock.replaceTerminal: op ${terminal.constructor.name} lacks Trait.Terminator`,
       );
     }
     detach(this._terminal);
@@ -173,7 +162,7 @@ export class BasicBlock {
 
   /** Append a non-terminator op. The terminator (if any) stays in place. */
   appendOp(op: Operation): void {
-    if (op.hasTrait(Trait.Terminator)) {
+    if (op instanceof TermOp) {
       throw new Error(
         `BasicBlock.appendOp: use the terminal setter for terminators (got ${op.constructor.name})`,
       );
@@ -190,7 +179,7 @@ export class BasicBlock {
         `BasicBlock.insertOpAt: index ${index} is out of range [0, ${this._ops.length}]`,
       );
     }
-    if (op.hasTrait(Trait.Terminator)) {
+    if (op instanceof TermOp) {
       throw new Error(
         `BasicBlock.insertOpAt: cannot insert a terminator — use the terminal setter`,
       );
@@ -219,8 +208,8 @@ export class BasicBlock {
    */
   replaceOp(oldOp: Operation, newOp: Operation): void {
     if (oldOp === newOp) return;
-    const oldIsTerm = oldOp.hasTrait(Trait.Terminator);
-    const newIsTerm = newOp.hasTrait(Trait.Terminator);
+    const oldIsTerm = oldOp instanceof TermOp;
+    const newIsTerm = newOp instanceof TermOp;
     if (oldIsTerm !== newIsTerm) {
       throw new Error(
         `BasicBlock.replaceOp: terminator-ness mismatch (old=${oldOp.constructor.name} term=${oldIsTerm}, new=${newOp.constructor.name} term=${newIsTerm})`,
@@ -236,7 +225,7 @@ export class BasicBlock {
       unregisterUses(oldOp);
       registerUses(newOp);
       attach(newOp, this);
-      this._terminal = newOp as Terminal;
+      this._terminal = newOp as TermOp;
       return;
     }
     const index = this._ops.indexOf(oldOp);
@@ -299,7 +288,7 @@ export class BasicBlock {
 
   /**
    * The set of blocks that can transfer control to this block via a
-   * terminator with a direct block reference (currently: `JumpOp`).
+   * terminator with a direct block reference (currently: `JumpTermOp`).
    *
    * Computed from the use-list, so always reflects the current IR —
    * there is no separate analysis to invalidate. Structured control

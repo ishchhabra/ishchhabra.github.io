@@ -1,6 +1,6 @@
 import type { Expression, ForStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { createOperationId, ForTerm, JumpOp, LiteralOp } from "../../../ir";
+import { createOperationId, ForTermOp, JumpTermOp, LiteralOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { instantiateScopeBindings } from "../bindings";
 import { buildNode } from "../buildNode";
@@ -14,7 +14,7 @@ import { buildStatement } from "./buildStatement";
  * Lower `for (init; test; update) { body }` to flat CFG:
  *
  *   parentBlock  --(init ops then Jump)-->  headerBlock
- *   headerBlock  --(test ops then ForTerm)-->  bodyBlock / updateBlock / exitBlock
+ *   headerBlock  --(test ops then ForTermOp)-->  bodyBlock / updateBlock / exitBlock
  *   bodyBlock    --(body then Jump)-->  updateBlock
  *   updateBlock  --(update ops then Jump)-->  headerBlock
  *
@@ -57,7 +57,7 @@ export function buildForStatement(
   // currentBlock to a logical-expression join block.
   const parentBlock = functionBuilder.currentBlock;
   if (parentBlock.terminal === undefined) {
-    parentBlock.setTerminal(new JumpOp(createOperationId(environment), headerBlock, []));
+    parentBlock.setTerminal(new JumpTermOp(createOperationId(environment), headerBlock, []));
   }
 
   // Header: test + branch
@@ -73,7 +73,7 @@ export function buildForStatement(
   if (testPlace === undefined || Array.isArray(testPlace)) {
     throw new Error("For statement test place must be a single place");
   }
-  headerBlock.setTerminal(new ForTerm(
+  headerBlock.setTerminal(new ForTermOp(
     createOperationId(environment),
     testPlace,
     bodyBlock,
@@ -94,7 +94,7 @@ export function buildForStatement(
   buildOwnedBody(node.body, forScope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.setTerminal(new JumpOp(createOperationId(environment), updateBlock, []));
+    functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), updateBlock, []));
   }
 
   // Update
@@ -103,7 +103,7 @@ export function buildForStatement(
     buildExpressionAsStatement(node.update, forScope, functionBuilder, moduleBuilder, environment);
   }
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.setTerminal(new JumpOp(createOperationId(environment), headerBlock, []));
+    functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), headerBlock, []));
   }
 
   functionBuilder.currentBlock = exitBlock;

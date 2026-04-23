@@ -1,6 +1,6 @@
 import type { ContinueStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { createOperationId, JumpOp } from "../../../ir";
+import { createOperationId, JumpTermOp } from "../../../ir";
 import { FuncOpBuilder } from "../FuncOpBuilder";
 
 export function buildContinueStatement(
@@ -24,7 +24,7 @@ export function buildContinueStatement(
   if (targetBlock === undefined) {
     throw new Error(`Continue target block ${targetBlockId} not found`);
   }
-  functionBuilder.currentBlock.setTerminal(new JumpOp(
+  functionBuilder.currentBlock.setTerminal(new JumpTermOp(
     createOperationId(environment),
     targetBlock,
     [],

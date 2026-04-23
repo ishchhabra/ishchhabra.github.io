@@ -1,11 +1,11 @@
 import * as t from "@babel/types";
-import { JumpOp } from "../../../ir";
+import { JumpTermOp } from "../../../ir";
 import { FuncOp } from "../../../ir/core/FuncOp";
 import { CodeGenerator } from "../../CodeGenerator";
 import { generateBlock } from "../generateBlock";
 
 export function generateJumpTerminal(
-  terminal: JumpOp,
+  terminal: JumpTermOp,
   funcOp: FuncOp,
   generator: CodeGenerator,
 ): Array<t.Statement> {

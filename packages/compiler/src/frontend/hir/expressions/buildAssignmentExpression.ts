@@ -5,8 +5,8 @@ import {
   ArrayDestructureOp,
   BinaryExpressionOp,
   createOperationId,
-  IfTerm,
-  JumpOp,
+  IfTermOp,
+  JumpTermOp,
   LiteralOp,
   ObjectDestructureOp,
   Value,
@@ -220,9 +220,9 @@ function buildLogicalCondition(
  *
  *   %result = IfOp(condition) {
  *     %stored = ... store y into x ...
- *     YieldOp(%stored)    // the new value of x
+ *     YieldTermOp(%stored)    // the new value of x
  *   } else {
- *     YieldOp(%oldValue)  // the original value of x
+ *     YieldTermOp(%oldValue)  // the original value of x
  *   }
  */
 function buildLogicalIdentifierAssignment(
@@ -262,7 +262,7 @@ function buildLogicalIdentifierAssignment(
   functionBuilder.addBlock(altBlock);
   functionBuilder.addBlock(joinBlock);
 
-  parentBlock.setTerminal(new IfTerm(createOperationId(environment), conditionPlace, consBlock, altBlock, joinBlock));
+  parentBlock.setTerminal(new IfTermOp(createOperationId(environment), conditionPlace, consBlock, altBlock, joinBlock));
 
   functionBuilder.currentBlock = consBlock;
   const rightPlace = buildNode(node.right, scope, functionBuilder, moduleBuilder, environment);
@@ -296,9 +296,9 @@ function buildLogicalIdentifierAssignment(
           "assignment",
         ),
   );
-  functionBuilder.currentBlock.setTerminal(new JumpOp(createOperationId(environment), joinBlock, [stabilizedRightPlace]));
+  functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), joinBlock, [stabilizedRightPlace]));
 
-  altBlock.setTerminal(new JumpOp(createOperationId(environment), joinBlock, [oldValuePlace]));
+  altBlock.setTerminal(new JumpTermOp(createOperationId(environment), joinBlock, [oldValuePlace]));
 
   functionBuilder.currentBlock = joinBlock;
   return resultPlace;
@@ -361,9 +361,9 @@ function buildMemberExpressionAssignment(
  *   %cached = <load obj.x>
  *   %result = IfOp(cond(%cached)) {
  *     obj.x = y
- *     YieldOp(y)
+ *     YieldTermOp(y)
  *   } else {
- *     YieldOp(%cached)
+ *     YieldTermOp(%cached)
  *   }
  *
  * The property read is cached once before the IfOp so the getter
@@ -395,7 +395,7 @@ function buildLogicalMemberAssignment(
   functionBuilder.addBlock(altBlock);
   functionBuilder.addBlock(joinBlock);
 
-  parentBlock.setTerminal(new IfTerm(createOperationId(environment), conditionPlace, consBlock, altBlock, joinBlock));
+  parentBlock.setTerminal(new IfTermOp(createOperationId(environment), conditionPlace, consBlock, altBlock, joinBlock));
 
   functionBuilder.currentBlock = consBlock;
   const rightPlace = buildNode(node.right, scope, functionBuilder, moduleBuilder, environment);
@@ -411,9 +411,9 @@ function buildLogicalMemberAssignment(
       environment,
     ),
   );
-  functionBuilder.currentBlock.setTerminal(new JumpOp(createOperationId(environment), joinBlock, [stabilizedRightPlace]));
+  functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), joinBlock, [stabilizedRightPlace]));
 
-  altBlock.setTerminal(new JumpOp(createOperationId(environment), joinBlock, [cachedPlace]));
+  altBlock.setTerminal(new JumpTermOp(createOperationId(environment), joinBlock, [cachedPlace]));
 
   functionBuilder.currentBlock = joinBlock;
   return resultPlace;

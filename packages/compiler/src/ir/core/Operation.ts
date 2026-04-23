@@ -4,7 +4,6 @@ import type { MemoryEffects } from "../memory/MemoryLocation";
 import { NoEffects } from "../memory/MemoryLocation";
 import type { ModuleIR } from "./ModuleIR";
 import type { Value } from "./Value";
-import { Region } from "./Region";
 
 // ---------------------------------------------------------------------
 // OperationId — opaque numeric id every op carries
@@ -36,8 +35,6 @@ export function makeOperationId(id: number): OperationId {
  * on each class, queried at runtime with {@link Operation.hasTrait}.
  */
 export const enum Trait {
-  /** Must appear as the last op in its block (branches, returns, throws). */
-  Terminator = "Terminator",
   /** No observable side effects. */
   Pure = "Pure",
   /** Introduces a new lexical scope. */
@@ -140,24 +137,6 @@ export function requireModuleIR(ctx: CloneContext): ModuleIR {
   return ctx.moduleIR;
 }
 
-/**
- * Remap a {@link Region} through a {@link CloneContext}: each block in
- * the region is resolved through `ctx.blockMap` and the corresponding
- * new {@link BasicBlock} instance is fetched from the target module's
- * environment. Returns a fresh Region; the original is untouched.
- *
- * Used by structured-CF op clones (ForOfOp, ForInOp, BlockOp,
- * LabeledBlockOp, IfOp, WhileOp) to preserve region ownership when
- * their owning function is deep-cloned.
- */
-export function remapRegion(ctx: CloneContext, region: Region): Region {
-  const newBlocks: BasicBlock[] = [];
-  for (const oldBlock of region.blocks) {
-    newBlocks.push(ctx.blockMap.get(oldBlock) ?? oldBlock);
-  }
-  return new Region(newBlocks);
-}
-
 // ---------------------------------------------------------------------
 // Operation — the one base class for every IR node
 // ---------------------------------------------------------------------
@@ -195,37 +174,17 @@ export abstract class Operation {
   public readonly place: Value | undefined = undefined;
 
   /**
-   * Regions owned by this op. Most ops have none. Structured
-   * control-flow ops carry their nested CFGs here. Set once at
-   * construction and (after the transition) never mutated in-place;
-   * passes that need to rewrite a region build a new op with the
-   * replacement regions.
-   */
-  public readonly regions: readonly Region[];
-
-  /**
-   * Back-pointer to the {@link BasicBlock} that contains this op.
-   * Set by `BasicBlock` when the op is attached, cleared when
-   * detached. `null` for ops that are unattached (transient
-   * construction state) or for `FuncOp` itself (owned by a module,
-   * not a block).
-   *
-   * Enables upward walks from any op — e.g. scope resolution,
-   * which walks `op → owningBlock → parent region → parent op → …`
-   * up to the function body region.
+   * Back-pointer to the {@link BasicBlock} that contains this op. Set
+   * by `BasicBlock` when the op is attached, cleared when detached.
+   * `null` for unattached ops (transient construction state) and for
+   * `FuncOp` (owned by a module, not a block).
    */
   public parentBlock: BasicBlock | null = null;
 
   static readonly traits: ReadonlySet<Trait> = new Set();
 
-  constructor(id: OperationId, regions: readonly Region[] = []) {
+  constructor(id: OperationId) {
     this.id = id;
-    this.regions = regions;
-    for (const region of regions) {
-      // Back-pointer so a walker starting from any block can reach
-      // its enclosing op without a side map.
-      (region as { parent: Operation | null }).parent = this;
-    }
   }
 
   hasTrait(t: Trait): boolean {
@@ -389,6 +348,24 @@ export abstract class Operation {
   toString(): string {
     return this.print();
   }
+}
+
+/**
+ * Base class for ops that terminate a basic block — branches, jumps,
+ * returns, throws, structured-loop headers, and the like.
+ *
+ * A `TermOp` is the single source of truth for "is this op a
+ * terminator?": use `op instanceof TermOp` at call sites rather than
+ * a separate trait. Concrete terminators override {@link getBlockRefs}
+ * to expose their CFG successors; passes that walk the CFG
+ * (dominance, reachability, SSA construction, codegen) read it
+ * generically.
+ *
+ * Every `TermOp` must also be the last op in its block — {@link
+ * BasicBlock.setTerminal} enforces this.
+ */
+export abstract class TermOp extends Operation {
+  abstract override getBlockRefs(): BasicBlock[];
 }
 
 /**

@@ -1,16 +1,16 @@
 import type { ConditionalExpression, Expression } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { BasicBlock, createOperationId, IfTerm, JumpOp, Value } from "../../../ir";
+import { BasicBlock, createOperationId, IfTermOp, JumpTermOp, Value } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildNode } from "../buildNode";
 
 /**
- * Lower `test ? consequent : alternate` to flat CFG with IfTerm.
+ * Lower `test ? consequent : alternate` to flat CFG with IfTermOp.
  * The merged result flows via a block parameter on the join block.
  *
- *   parentBlock  --IfTerm-->  consBlock / altBlock
+ *   parentBlock  --IfTermOp-->  consBlock / altBlock
  *   consBlock  --(cons ops; Jump(join(consVal)))
  *   altBlock   --(alt ops;  Jump(join(altVal)))
  *   joinBlock(%result):  caller reads %result
@@ -37,7 +37,7 @@ export function buildConditionalExpression(
   functionBuilder.addBlock(altBlock);
   functionBuilder.addBlock(joinBlock);
 
-  parentBlock.setTerminal(new IfTerm(createOperationId(environment), testPlace, consBlock, altBlock, joinBlock));
+  parentBlock.setTerminal(new IfTermOp(createOperationId(environment), testPlace, consBlock, altBlock, joinBlock));
 
   functionBuilder.currentBlock = consBlock;
   buildArm(node.consequent, joinBlock, scope, functionBuilder, moduleBuilder, environment);
@@ -62,6 +62,6 @@ function buildArm(
     throw new Error("Conditional expression arm must be a single place");
   }
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.setTerminal(new JumpOp(createOperationId(environment), joinBlock, [place]));
+    functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), joinBlock, [place]));
   }
 }

@@ -31,10 +31,6 @@ export function contextLocation(declarationId: DeclarationId): MemoryLocation {
   return { kind: "context", declarationId };
 }
 
-export function exportedLocation(modulePath: string, name: string): MemoryLocation {
-  return { kind: "exported", modulePath, name };
-}
-
 export function staticPropertyLocation(object: Value, name: string): MemoryLocation {
   return { kind: "staticProperty", object, name };
 }

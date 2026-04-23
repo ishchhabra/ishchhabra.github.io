@@ -16,7 +16,7 @@ import { FunctionAnalysis, AnalysisManager } from "./AnalysisManager";
  * live in the function.
  *
  * Seeds from directly-read places and propagates through edge args
- * (both flat-CFG JumpOp edges and structured-op virtual edges,
+ * (both flat-CFG JumpTermOp edges and structured-op virtual edges,
  * uniformly via {@link forEachIncomingEdge}).
  */
 export class LivenessResult {
@@ -32,8 +32,8 @@ export class LivenessAnalysis extends FunctionAnalysis<LivenessResult> {
     const liveIds = new Set<ValueId>();
 
     // Seed: every directly-read place anywhere in the function's IR,
-    // walked uniformly through region tree. Edge-arg operands (JumpOp
-    // args, ConditionOp trailing args, YieldOp values flowing to a
+    // walked uniformly through region tree. Edge-arg operands (JumpTermOp
+    // args, ConditionTermOp trailing args, YieldTermOp values flowing to a
     // sink) are deferred to the edge-arg propagation phase — they're
     // only live when their sink param is live.
     for (const block of funcOp.allBlocks()) {
@@ -48,7 +48,7 @@ export class LivenessAnalysis extends FunctionAnalysis<LivenessResult> {
 
       // Edge-args propagation: if a sink param is live, every
       // matching arg on each incoming edge is live too. Uniform over
-      // block.params (target of JumpOp / op-entry / condition-true /
+      // block.params (target of JumpTermOp / op-entry / condition-true /
       // yield-back) and op.resultPlaces (target of condition-false /
       // yield-to-results).
       for (const sink of sinks) {
@@ -67,27 +67,6 @@ export class LivenessAnalysis extends FunctionAnalysis<LivenessResult> {
         });
       }
 
-      // Structured-op propagation: if a structure is live (side
-      // effects, live def, or live nested def) its operands are
-      // live. This covers any flat-operand ports not already reached
-      // through edges.
-      for (const block of funcOp.allBlocks()) {
-        for (const op of block.operations) {
-          if (!op.hasTrait(Trait.HasRegions)) continue;
-          const isLive =
-            op.hasSideEffects(funcOp.moduleIR.environment) ||
-            op.getDefs().some((p: Value) => liveIds.has(p.id)) ||
-            structureHasLiveInternalDef(op, liveIds);
-          if (isLive) {
-            for (const place of op.getOperands()) {
-              if (!liveIds.has(place.id)) {
-                liveIds.add(place.id);
-                changed = true;
-              }
-            }
-          }
-        }
-      }
     }
 
     return new LivenessResult(liveIds);
@@ -103,38 +82,12 @@ function seedLiveReads(funcOp: FuncOp, block: BasicBlock, liveIds: Set<ValueId>)
     for (const place of op.getOperands()) {
       liveIds.add(place.id);
     }
-    if (op.hasTrait(Trait.HasRegions)) {
-      for (const region of op.regions) {
-        for (const innerBlock of region.blocks) {
-          seedLiveReads(funcOp, innerBlock, liveIds);
-        }
-      }
-    }
   }
   if (block.terminal !== undefined) {
     for (const place of nonEdgeTerminalOperands(funcOp, block)) {
       liveIds.add(place.id);
     }
   }
-}
-
-function structureHasLiveInternalDef(structure: Operation, liveIds: ReadonlySet<ValueId>): boolean {
-  for (const region of structure.regions) {
-    for (const block of region.blocks) {
-      for (const param of block.params) {
-        if (liveIds.has(param.id)) return true;
-      }
-      for (const op of block.operations) {
-        for (const p of op.getDefs()) {
-          if (liveIds.has(p.id)) return true;
-        }
-        if (op.hasTrait(Trait.HasRegions)) {
-          if (structureHasLiveInternalDef(op, liveIds)) return true;
-        }
-      }
-    }
-  }
-  return false;
 }
 
 /**

@@ -29,7 +29,7 @@ import { collectAllSinks, Edge, EdgeSink, forEachIncomingEdge, sinkParams } from
  *    splitting critical edges because along any path the *last*
  *    store wins.
  *
- *    Works identically for flat-CFG `JumpOp` edges, `WhileOp` iter-
+ *    Works identically for flat-CFG `JumpTermOp` edges, `WhileOp` iter-
  *    arg ports (op-entry / condition-true / yield-back /
  *    condition-false), and `IfOp` arm yields. No op-specific
  *    handling — the edge walker abstracts the structured-op port
@@ -189,53 +189,13 @@ export class SSAEliminator {
    *     declarations in a single prologue-style band.
    */
   #resolveDeclarationInsertion(
-    sink: EdgeSink,
+    _sink: EdgeSink,
   ):
     | { kind: "append"; block: BasicBlock }
     | { kind: "insertAt"; block: BasicBlock; index: number } {
-    if (sink.kind === "op-results") {
-      const op = sink.op;
-      const parentBlock = op.parentBlock;
-      if (parentBlock === null) {
-        throw new Error("Op-results sink has no parent block — op is detached");
-      }
-      const opIndex = parentBlock.operations.indexOf(op);
-      if (opIndex < 0) {
-        throw new Error("Op-results sink's op not found in its parent block");
-      }
-      return { kind: "insertAt", block: parentBlock, index: opIndex };
-    }
-
-    // Block sink. If the block is a structured-op region entry,
-    // declare inline before the structured op; otherwise, append at
-    // the function entry block.
-    const enclosing = this.#enclosingStructuredOpOfRegionEntry(sink.block);
-    if (enclosing !== undefined) {
-      const parentBlock = enclosing.parentBlock;
-      if (parentBlock === null) {
-        throw new Error("Structured op has no parent block — op is detached");
-      }
-      const opIndex = parentBlock.operations.indexOf(enclosing);
-      if (opIndex < 0) {
-        throw new Error("Structured op not found in its parent block");
-      }
-      return { kind: "insertAt", block: parentBlock, index: opIndex };
-    }
+    // All sinks are blocks in the flat CFG. Declarations land at the
+    // function entry block — any merge point is dominated by it.
     return { kind: "append", block: this.funcOp.getBlock(this.funcOp.entryBlockId) };
-  }
-
-  /**
-   * If `block` is the entry block of some structured op's region,
-   * return that op; otherwise undefined.
-   */
-  #enclosingStructuredOpOfRegionEntry(block: BasicBlock): Operation | undefined {
-    const region = block.parent;
-    if (region === null) return undefined;
-    if (region.blocks[0] !== block) return undefined;
-    const op = region.parent;
-    if (op === null) return undefined;
-    if (op.parentBlock === null) return undefined; // top-level FuncOp body
-    return op;
   }
 
   #insertCopyStore(edge: Edge, param: Value, arg: Value): void {

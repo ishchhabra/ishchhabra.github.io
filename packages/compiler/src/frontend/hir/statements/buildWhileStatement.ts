@@ -1,6 +1,6 @@
 import type { WhileStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { createOperationId, JumpOp, WhileTerm } from "../../../ir";
+import { createOperationId, JumpTermOp, WhileTermOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FuncOpBuilder } from "../FuncOpBuilder";
@@ -9,10 +9,10 @@ import { buildOwnedBody } from "./buildOwnedBody";
 
 /**
  * Lower `while (test) { body }` to a flat CFG with a
- * {@link WhileTerm} header:
+ * {@link WhileTermOp} header:
  *
  *   parentBlock --Jump--> headerBlock
- *   headerBlock (test ops) --WhileTerm--> bodyBlock / exitBlock
+ *   headerBlock (test ops) --WhileTermOp--> bodyBlock / exitBlock
  *   bodyBlock ... --Jump--> headerBlock   (back-edge)
  */
 export function buildWhileStatement(
@@ -32,15 +32,15 @@ export function buildWhileStatement(
   functionBuilder.addBlock(bodyBlock);
   functionBuilder.addBlock(exitBlock);
 
-  parentBlock.setTerminal(new JumpOp(createOperationId(environment), headerBlock, []));
+  parentBlock.setTerminal(new JumpTermOp(createOperationId(environment), headerBlock, []));
 
-  // Header: evaluate test, terminate with WhileTerm
+  // Header: evaluate test, terminate with WhileTermOp
   functionBuilder.currentBlock = headerBlock;
   const testPlace = buildNode(node.test, scope, functionBuilder, moduleBuilder, environment);
   if (testPlace === undefined || Array.isArray(testPlace)) {
     throw new Error("While statement test must be a single place");
   }
-  headerBlock.setTerminal(new WhileTerm(
+  headerBlock.setTerminal(new WhileTermOp(
     createOperationId(environment),
     testPlace,
     bodyBlock,
@@ -61,7 +61,7 @@ export function buildWhileStatement(
   buildOwnedBody(node.body, scope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.setTerminal(new JumpOp(createOperationId(environment), headerBlock, []));
+    functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), headerBlock, []));
   }
 
   functionBuilder.currentBlock = exitBlock;

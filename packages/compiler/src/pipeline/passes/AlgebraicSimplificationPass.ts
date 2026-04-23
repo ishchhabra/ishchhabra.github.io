@@ -82,11 +82,6 @@ export class AlgebraicSimplificationPass extends BaseOptimizationPass {
             }
           }
         }
-        for (const region of op.regions) {
-          for (const block of region.blocks) {
-            walkOps(block.operations);
-          }
-        }
       }
     };
     for (const block of funcOp.allBlocks()) {

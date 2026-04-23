@@ -25,7 +25,7 @@ import { BasicBlock } from "../../ir/core/Block";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { localLocation } from "../../ir/memory/MemoryLocation";
-import { JumpOp } from "../../ir/ops/control";
+import { JumpTermOp } from "../../ir/ops/control";
 import { TemplateLiteralOp } from "../../ir/ops/prim/TemplateLiteral";
 import { MemoryStateWalker } from "../analysis/MemoryStateWalker";
 import { getQualifiedName, type ResolveConstantContext } from "./resolveConstant";
@@ -79,7 +79,7 @@ function meet(a: Lattice, b: Lattice): Lattice {
  *     re-evaluate every op that reads the value via the embedded
  *     {@link Value.uses} chain — sparse, never a full block sweep.
  *   - Block params are evaluated like phi nodes: meet of the
- *     corresponding `JumpOp.args[i]` across each predecessor edge.
+ *     corresponding `JumpTermOp.args[i]` across each predecessor edge.
  *
  * Folding decisions:
  *
@@ -104,7 +104,7 @@ function meet(a: Lattice, b: Lattice): Lattice {
  *     (the "C" in SCCP). Without a structural branch folder, the
  *     extra lattice precision can't be exploited — both LLVM's SCCP
  *     and MLIR's sparse CP skip it in region-heavy IRs. When a
- *     canonicalizer pass for `IfOp` / `WhileOp` / `ConditionOp`
+ *     canonicalizer pass for `IfOp` / `WhileOp` / `ConditionTermOp`
  *     exists, we can revisit adding it.
  *   - Partial template-literal folding (e.g. `` `a${k}b${x}` `` →
  *     `` `aCONSTb${x}` ``). {@link AlgebraicSimplificationPass}'s job.
@@ -195,7 +195,7 @@ export class ConstantPropagationPass {
       const value = this.ssaWorklist.pop()!;
       for (const user of value.uses) {
         const op = user as Operation;
-        if (op instanceof JumpOp) {
+        if (op instanceof JumpTermOp) {
           // Block-arg flow: a changed arg may update a target block param.
           this.evaluateBlockParams(op.target);
           continue;
@@ -246,7 +246,7 @@ export class ConstantPropagationPass {
   /**
    * Merge-sink evaluation. For each param index `i`, meet the value
    * arriving on that index from every flat-CFG predecessor (each
-   * predecessor's terminator is a {@link JumpOp} whose `args[i]`
+   * predecessor's terminator is a {@link JumpTermOp} whose `args[i]`
    * flows into `block.params[i]`).
    */
   private evaluateBlockParams(block: BasicBlock): void {
@@ -255,7 +255,7 @@ export class ConstantPropagationPass {
       let m: Lattice = TOP;
       for (const pred of block.predecessors()) {
         const terminal = pred.terminal;
-        if (!(terminal instanceof JumpOp) || terminal.target !== block) continue;
+        if (!(terminal instanceof JumpTermOp) || terminal.target !== block) continue;
         const arg = terminal.args[i];
         if (arg === undefined) continue;
         m = meet(m, this.getLattice(arg));
@@ -270,7 +270,7 @@ export class ConstantPropagationPass {
   // -------------------------------------------------------------------------
 
   private evaluate(op: Operation): void {
-    if (op instanceof JumpOp) {
+    if (op instanceof JumpTermOp) {
       this.evaluateBlockParams(op.target);
       return;
     }

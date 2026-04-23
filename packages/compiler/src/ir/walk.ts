@@ -25,11 +25,7 @@ export const enum WalkResult {
 export type WalkVisitor = (op: Operation) => WalkResult | void;
 
 export function walkOp(op: Operation, visit: WalkVisitor): void {
-  const result = visit(op);
-  if (result === WalkResult.Skip) return;
-  for (const region of op.regions) {
-    walkRegion(region, visit);
-  }
+  visit(op);
 }
 
 export function walkRegion(region: Region, visit: WalkVisitor): void {

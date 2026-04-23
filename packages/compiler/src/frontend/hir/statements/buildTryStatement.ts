@@ -1,5 +1,5 @@
 import { Environment } from "../../../environment";
-import { createOperationId, JumpOp, TryTerm, Value } from "../../../ir";
+import { createOperationId, JumpTermOp, TryTermOp, Value } from "../../../ir";
 import type { TryStatement } from "oxc-parser";
 import { type Scope } from "../../scope/Scope";
 import { FuncOpBuilder } from "../FuncOpBuilder";
@@ -31,7 +31,7 @@ export function buildTryStatement(
   functionBuilder.currentBlock = tryBlock;
   buildOwnedBody(node.block, scope, functionBuilder, moduleBuilder, environment);
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.setTerminal(new JumpOp(
+    functionBuilder.currentBlock.setTerminal(new JumpTermOp(
       createOperationId(environment),
       (finallyBlock ?? fallthroughBlock),
       [],
@@ -70,7 +70,7 @@ export function buildTryStatement(
 
     buildOwnedBody(catchClause.body, scope, functionBuilder, moduleBuilder, environment);
     if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.setTerminal(new JumpOp(
+      functionBuilder.currentBlock.setTerminal(new JumpTermOp(
         createOperationId(environment),
         (finallyBlock ?? fallthroughBlock),
         [],
@@ -83,12 +83,12 @@ export function buildTryStatement(
     functionBuilder.currentBlock = finallyBlock;
     buildOwnedBody(node.finalizer, scope, functionBuilder, moduleBuilder, environment);
     if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.setTerminal(new JumpOp(createOperationId(environment), fallthroughBlock, []));
+      functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), fallthroughBlock, []));
     }
   }
 
-  // Terminate parent with TryTerm routing to try-body
-  parentBlock.setTerminal(new TryTerm(
+  // Terminate parent with TryTermOp routing to try-body
+  parentBlock.setTerminal(new TryTermOp(
     createOperationId(environment),
     tryBlock,
     handlerBlock,

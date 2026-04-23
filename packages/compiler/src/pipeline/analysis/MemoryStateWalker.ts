@@ -183,18 +183,10 @@ export class MemoryStateWalker {
   }
 
   /**
-   * Apply an op's write effects to the running state. For a structured
-   * op (any op with `HasRegions`) we summarize its nested regions'
-   * writes — this is LLVM's FunctionModRefInfo at the block level.
-   * Clearing *only* the cells those nested writes may alias, rather
-   * than wiping the whole state, lets CP/DSE see through `if`/loop/
-   * `try` boundaries as long as the body touches a disjoint set of
-   * locations from the surrounding code.
+   * Apply an op's write effects to the running state.
    */
   private applyOpToState(op: Operation, state: Map<string, Operation>): Map<string, Operation> {
-    const writes = op.hasTrait(Trait.HasRegions)
-      ? this.collectNestedWrites(op)
-      : op.getMemoryEffects(this.env).writes;
+    const writes = op.getMemoryEffects(this.env).writes;
     if (writes.length === 0) return state;
     const hasUnknown = writes.some((w) => w.kind === "unknown");
     if (hasUnknown) {
@@ -222,40 +214,6 @@ export class MemoryStateWalker {
     return next;
   }
 
-  /**
-   * Collect every memory write reachable from a structured op's
-   * regions — recursively, across nested structured ops. Used to
-   * summarize the effect of the whole structured op at its position
-   * in the outer region.
-   *
-   * Soundness: the returned list is a superset of actual writes
-   * (pessimistic on control flow — both arms of an if contribute).
-   * `unknown` propagates: any nested call that escapes the alias
-   * model taints the whole structured op.
-   */
-  private collectNestedWrites(
-    op: Operation,
-  ): import("../../ir/memory/MemoryLocation").MemoryLocation[] {
-    const out: import("../../ir/memory/MemoryLocation").MemoryLocation[] = [];
-    for (const region of op.regions) {
-      for (const block of region.blocks) {
-        for (const innerOp of block.operations) {
-          if (innerOp.hasTrait(Trait.HasRegions)) {
-            out.push(...this.collectNestedWrites(innerOp));
-            continue;
-          }
-          const fx = innerOp.getMemoryEffects(this.env);
-          out.push(...fx.writes);
-        }
-        const term = block.terminal;
-        if (term !== undefined) {
-          const fx = term.getMemoryEffects(this.env);
-          out.push(...fx.writes);
-        }
-      }
-    }
-    return out;
-  }
 
   /**
    * Merge predecessor exit states. Per-key rule: if every

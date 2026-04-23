@@ -24,8 +24,9 @@
  *   control/ — Terminators (Jump, Branch, Return, Throw, Break,
  *              Continue, Yield, Switch, Try) and structured control
  *              flow (If, While, Block, ForIn, ForOf, LabeledBlock).
- *              See `./control/index.ts` for Terminal / Structure
- *              unions and isTerminal / isStructure predicates.
+ *              See `./control/index.ts` for the Structure union and
+ *              isStructure predicate. Terminators are recognised via
+ *              `instanceof TermOp` (see `../core/Operation.ts`).
  */
 
 // prim
@@ -36,37 +37,20 @@ export { HoleOp } from "./prim/Hole";
 export { DebuggerStatementOp } from "./prim/Debugger";
 export { SpreadElementOp } from "./prim/SpreadElement";
 
-// control (terminators + structured control flow)
+// control — CFG terminators
 export {
-  BlockOp,
-  BreakOp,
-  ConditionOp,
-  ContinueOp,
-  ForInOp,
-  ForInTerm,
-  ForOfOp,
-  ForOfTerm,
-  ForOp,
-  ForTerm,
-  IfOp,
-  IfTerm,
-  isStructure,
-  isTerminal,
-  JumpOp,
-  LabeledBlockOp,
-  LabeledTerm,
-  ReturnOp,
+  ForInTermOp,
+  ForOfTermOp,
+  ForTermOp,
+  IfTermOp,
+  JumpTermOp,
+  LabeledTermOp,
+  ReturnTermOp,
   type SwitchCase,
-  SwitchOp,
-  SwitchTerm,
-  type Structure,
-  type Terminal,
-  ThrowOp,
-  TryOp,
-  TryTerm,
-  WhileOp,
-  WhileTerm,
-  YieldOp,
+  SwitchTermOp,
+  ThrowTermOp,
+  TryTermOp,
+  WhileTermOp,
 } from "./control";
 
 // arith

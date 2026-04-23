@@ -171,19 +171,9 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
 
   private collectStoredDecls(op: Operation): Set<DeclarationId> {
     const decls = new Set<DeclarationId>();
-    const walk = (inner: Operation) => {
-      if (inner instanceof StoreLocalOp) {
-        decls.add(inner.lval.declarationId);
-      }
-      if (inner.hasTrait(Trait.HasRegions)) {
-        for (const region of inner.regions) {
-          for (const block of region.blocks) {
-            for (const op2 of block.operations) walk(op2);
-          }
-        }
-      }
-    };
-    walk(op);
+    if (op instanceof StoreLocalOp) {
+      decls.add(op.lval.declarationId);
+    }
     return decls;
   }
 

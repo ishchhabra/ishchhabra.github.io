@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Environment } from "../../environment";
 import { ProjectEnvironment } from "../../ProjectEnvironment";
 import { createOperationId } from "../utils";
-import { JumpOp } from "../ops/control";
+import { JumpTermOp } from "../ops/control";
 
 describe("BasicBlock.setTerminal", () => {
   function makeEnv(): Environment {
@@ -13,7 +13,7 @@ describe("BasicBlock.setTerminal", () => {
     const env = makeEnv();
     const block = env.createBlock();
     const target = env.createBlock();
-    const jump = new JumpOp(createOperationId(env), target, []);
+    const jump = new JumpTermOp(createOperationId(env), target, []);
     block.setTerminal(jump);
     expect(block.terminal).toBe(jump);
   });
@@ -22,9 +22,9 @@ describe("BasicBlock.setTerminal", () => {
     const env = makeEnv();
     const block = env.createBlock();
     const target = env.createBlock();
-    block.setTerminal(new JumpOp(createOperationId(env), target, []));
+    block.setTerminal(new JumpTermOp(createOperationId(env), target, []));
     expect(() =>
-      block.setTerminal(new JumpOp(createOperationId(env), target, [])),
+      block.setTerminal(new JumpTermOp(createOperationId(env), target, [])),
     ).toThrow(/already has terminal/);
   });
 
@@ -32,10 +32,10 @@ describe("BasicBlock.setTerminal", () => {
     const env = makeEnv();
     const block = env.createBlock();
     const target = env.createBlock();
-    block.setTerminal(new JumpOp(createOperationId(env), target, []));
+    block.setTerminal(new JumpTermOp(createOperationId(env), target, []));
     expect(() =>
-      block.setTerminal(new JumpOp(createOperationId(env), target, [])),
-    ).toThrow(new RegExp(`Block ${block.id}.*JumpOp.*JumpOp`));
+      block.setTerminal(new JumpTermOp(createOperationId(env), target, [])),
+    ).toThrow(new RegExp(`Block ${block.id}.*JumpTermOp.*JumpTermOp`));
   });
 
 });
@@ -49,8 +49,8 @@ describe("BasicBlock.replaceTerminal", () => {
     const env = makeEnv();
     const block = env.createBlock();
     const target = env.createBlock();
-    const first = new JumpOp(createOperationId(env), target, []);
-    const second = new JumpOp(createOperationId(env), target, []);
+    const first = new JumpTermOp(createOperationId(env), target, []);
+    const second = new JumpTermOp(createOperationId(env), target, []);
     block.setTerminal(first);
     block.replaceTerminal(second);
     expect(block.terminal).toBe(second);
@@ -61,7 +61,7 @@ describe("BasicBlock.replaceTerminal", () => {
     const block = env.createBlock();
     const target = env.createBlock();
     expect(() =>
-      block.replaceTerminal(new JumpOp(createOperationId(env), target, [])),
+      block.replaceTerminal(new JumpTermOp(createOperationId(env), target, [])),
     ).toThrow(/no terminal to replace/);
   });
 
@@ -70,8 +70,8 @@ describe("BasicBlock.replaceTerminal", () => {
     const block = env.createBlock();
     const targetA = env.createBlock();
     const targetB = env.createBlock();
-    const first = new JumpOp(createOperationId(env), targetA, []);
-    const second = new JumpOp(createOperationId(env), targetB, []);
+    const first = new JumpTermOp(createOperationId(env), targetA, []);
+    const second = new JumpTermOp(createOperationId(env), targetB, []);
     block.setTerminal(first);
     expect(targetA.predecessors().has(block)).toBe(true);
     block.replaceTerminal(second);

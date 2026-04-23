@@ -6,8 +6,8 @@ import { BlockId } from "./Block";
  * Frontend: tracks the closest enclosing loop / switch / labeled
  * block that a source-level `break` / `continue` can target. A
  * `structured` flag indicates whether break/continue should be
- * emitted as a structural `BreakOp` / `ContinueOp` (resolved via
- * region walk at analysis time) or as a raw `JumpOp` to an explicit
+ * emitted as a structural `BreakTermOp` / `ContinueTermOp` (resolved via
+ * region walk at analysis time) or as a raw `JumpTermOp` to an explicit
  * block id (for constructs with internal back-edges that need
  * targeted jumps).
  *

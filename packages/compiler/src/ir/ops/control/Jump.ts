@@ -1,7 +1,7 @@
 import type { OperationId } from "../../core";
 import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
-import { type CloneContext, nextId, Operation, remapBlock, Trait } from "../../core/Operation";
+import { type CloneContext, nextId, Operation, remapBlock, TermOp } from "../../core/Operation";
 
 /**
  * Unconditional jump to a successor block. Terminator. Replaces
@@ -14,9 +14,7 @@ import { type CloneContext, nextId, Operation, remapBlock, Trait } from "../../c
  * The lowering pass (out-of-block-args) emits the corresponding edge
  * copies before the jump.
  */
-export class JumpOp extends Operation {
-  static override readonly traits = new Set<Trait>([Trait.Terminator]);
-
+export class JumpTermOp extends TermOp {
   public readonly args: readonly Value[];
 
   constructor(
@@ -32,7 +30,7 @@ export class JumpOp extends Operation {
     return [...this.args];
   }
 
-  rewrite(values: Map<Value, Value>): JumpOp {
+  rewrite(values: Map<Value, Value>): JumpTermOp {
     if (this.args.length === 0) return this;
     let changed = false;
     const newArgs: Value[] = [];
@@ -42,12 +40,12 @@ export class JumpOp extends Operation {
       newArgs.push(rewritten);
     }
     if (!changed) return this;
-    return new JumpOp(this.id, this.target, newArgs);
+    return new JumpTermOp(this.id, this.target, newArgs);
   }
 
-  clone(ctx: CloneContext): JumpOp {
+  clone(ctx: CloneContext): JumpTermOp {
     const newArgs = this.args.map((a) => ctx.valueMap.get(a) ?? a);
-    return new JumpOp(nextId(ctx), remapBlock(ctx, this.target), newArgs);
+    return new JumpTermOp(nextId(ctx), remapBlock(ctx, this.target), newArgs);
   }
 
   override remap(from: BasicBlock, to: BasicBlock): void {

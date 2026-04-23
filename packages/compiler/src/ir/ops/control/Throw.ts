@@ -1,15 +1,13 @@
 import type { OperationId } from "../../core";
 import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
-import { type CloneContext, nextId, Operation, remapPlace, Trait } from "../../core/Operation";
+import { type CloneContext, nextId, Operation, remapPlace, TermOp } from "../../core/Operation";
 
 /**
  * `throw value;`. Terminator. Control unwinds to the nearest catch
  * handler or out of the function. Replaces `ThrowTerminal`.
  */
-export class ThrowOp extends Operation {
-  static override readonly traits = new Set<Trait>([Trait.Terminator]);
-
+export class ThrowTermOp extends TermOp {
   constructor(
     id: OperationId,
     public readonly value: Value,
@@ -21,14 +19,14 @@ export class ThrowOp extends Operation {
     return [this.value];
   }
 
-  rewrite(values: Map<Value, Value>): ThrowOp {
+  rewrite(values: Map<Value, Value>): ThrowTermOp {
     const value = values.get(this.value) ?? this.value;
     if (value === this.value) return this;
-    return new ThrowOp(this.id, value);
+    return new ThrowTermOp(this.id, value);
   }
 
-  clone(ctx: CloneContext): ThrowOp {
-    return new ThrowOp(nextId(ctx), remapPlace(ctx, this.value));
+  clone(ctx: CloneContext): ThrowTermOp {
+    return new ThrowTermOp(nextId(ctx), remapPlace(ctx, this.value));
   }
 
   override remap(): void {}

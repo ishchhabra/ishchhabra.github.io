@@ -6,8 +6,8 @@ import {
   createOperationId,
   getDestructureTargetDefs,
   type DestructureTarget,
-  ForInTerm,
-  JumpOp,
+  ForInTermOp,
+  JumpTermOp,
   ObjectDestructureOp,
   Value,
   StoreContextOp,
@@ -79,7 +79,7 @@ export function buildForInStatement(
     if (!bodyBlock.entryBindings.includes(p)) bodyBlock.entryBindings.push(p);
   }
 
-  parentBlock.setTerminal(new ForInTerm(
+  parentBlock.setTerminal(new ForInTermOp(
     createOperationId(environment),
     objectPlace,
     iterationValuePlace,
@@ -110,7 +110,7 @@ export function buildForInStatement(
   buildOwnedBody(node.body, forScope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.setTerminal(new JumpOp(createOperationId(environment), parentBlock, []));
+    functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), parentBlock, []));
   }
 
   functionBuilder.currentBlock = exitBlock;

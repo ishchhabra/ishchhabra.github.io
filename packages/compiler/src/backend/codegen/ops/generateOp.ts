@@ -1,30 +1,26 @@
 import * as t from "@babel/types";
 import {
   ArrayDestructureOp,
-  BreakOp,
-  ConditionOp,
-  ContinueOp,
   DebuggerStatementOp,
   DeclareLocalOp,
   ExportSpecifierOp,
-  ForInTerm,
-  ForOfTerm,
-  ForTerm,
-  IfTerm,
+  ForInTermOp,
+  ForOfTermOp,
+  ForTermOp,
+  IfTermOp,
   ImportSpecifierOp,
-  JumpOp,
-  LabeledTerm,
+  JumpTermOp,
+  LabeledTermOp,
   ObjectDestructureOp,
   Operation,
-  ReturnOp,
+  ReturnTermOp,
   SpreadElementOp,
   StoreContextOp,
   StoreLocalOp,
-  SwitchTerm,
-  ThrowOp,
-  TryTerm,
-  WhileTerm,
-  YieldOp,
+  SwitchTermOp,
+  ThrowTermOp,
+  TryTermOp,
+  WhileTermOp,
 } from "../../../ir";
 import { isClaimedByExportDeclaration } from "../../../ir/exportClaim";
 import {
@@ -36,11 +32,10 @@ import {
   isValueOp,
 } from "../../../ir/categories";
 import { FuncOp } from "../../../ir/core/FuncOp";
-import { Trait } from "../../../ir/core/Operation";
+import { TermOp } from "../../../ir/core/Operation";
 import { ClassDeclarationOp } from "../../../ir/ops/class/ClassDeclaration";
 import { FunctionDeclarationOp } from "../../../ir/ops/func/FunctionDeclaration";
 import { CodeGenerator } from "../../CodeGenerator";
-import { generateBreakTerminal } from "../terminals/generateBreak";
 import {
   generateForInTerm,
   generateForOfTerm,
@@ -51,7 +46,6 @@ import {
   generateTryTerm,
   generateWhileTerm,
 } from "../terminals/generateCFGTerminators";
-import { generateContinueTerminal } from "../terminals/generateContinue";
 import { generateJumpTerminal } from "../terminals/generateJump";
 import { generateReturnTerminal } from "../terminals/generateReturn";
 import { generateThrowTerminal } from "../terminals/generateThrow";
@@ -70,54 +64,39 @@ export function generateOp(
   funcOp: FuncOp,
   generator: CodeGenerator,
 ): Array<t.Statement> {
-  // Terminators are just ops with `Trait.Terminator`. Uniform
-  // dispatch through this single entrypoint.
-  if (instruction.hasTrait(Trait.Terminator)) {
-    if (instruction instanceof YieldOp || instruction instanceof ConditionOp) {
-      // YieldOp / ConditionOp end a structured op's region — they
-      // produce no statements on their own. The enclosing structured
-      // op's emitter reads the yielded / condition values and binds
-      // them appropriately (result places for YieldOp, JS while/for
-      // test for ConditionOp).
-      return [];
-    }
-    if (instruction instanceof BreakOp) {
-      return generateBreakTerminal(instruction);
-    }
-    if (instruction instanceof ContinueOp) {
-      return generateContinueTerminal(instruction);
-    }
-    if (instruction instanceof JumpOp) {
+  // Terminators extend TermOp. Uniform dispatch through this entrypoint.
+  if (instruction instanceof TermOp) {
+    if (instruction instanceof JumpTermOp) {
       return generateJumpTerminal(instruction, funcOp, generator);
     }
-    if (instruction instanceof ReturnOp) {
+    if (instruction instanceof ReturnTermOp) {
       return generateReturnTerminal(instruction, generator);
     }
-    if (instruction instanceof ThrowOp) {
+    if (instruction instanceof ThrowTermOp) {
       return generateThrowTerminal(instruction, generator);
     }
-    if (instruction instanceof IfTerm) {
+    if (instruction instanceof IfTermOp) {
       return generateIfTerm(instruction, funcOp, generator);
     }
-    if (instruction instanceof WhileTerm) {
+    if (instruction instanceof WhileTermOp) {
       return generateWhileTerm(instruction, funcOp, generator);
     }
-    if (instruction instanceof ForTerm) {
+    if (instruction instanceof ForTermOp) {
       return generateForTerm(instruction, funcOp, generator);
     }
-    if (instruction instanceof ForOfTerm) {
+    if (instruction instanceof ForOfTermOp) {
       return generateForOfTerm(instruction, funcOp, generator);
     }
-    if (instruction instanceof ForInTerm) {
+    if (instruction instanceof ForInTermOp) {
       return generateForInTerm(instruction, funcOp, generator);
     }
-    if (instruction instanceof TryTerm) {
+    if (instruction instanceof TryTermOp) {
       return generateTryTerm(instruction, funcOp, generator);
     }
-    if (instruction instanceof SwitchTerm) {
+    if (instruction instanceof SwitchTermOp) {
       return generateSwitchTerm(instruction, funcOp, generator);
     }
-    if (instruction instanceof LabeledTerm) {
+    if (instruction instanceof LabeledTermOp) {
       return generateLabeledTerm(instruction, funcOp, generator);
     }
     throw new Error(`Unsupported terminator op: ${instruction.constructor.name}`);

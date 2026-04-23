@@ -113,25 +113,8 @@ export class Region {
     this.appendBlock(block);
   }
 
-  /**
-   * Walk every block in this region and every block reachable through
-   * nested regions owned by any op in the region, in program order.
-   *
-   * This is the MLIR-style region walker: it yields the region's own
-   * blocks, and for each block recurses into regions owned by every
-   * op in that block (not just the structure slot). That makes the
-   * walker correct for dual-traited ops like `SwitchOp` and `TryOp`,
-   * whose case / handler / finally regions sit on the terminator
-   * slot rather than the structure slot.
-   */
+  /** Walk every block in this region in program order. */
   *allBlocks(): IterableIterator<BasicBlock> {
-    for (const block of this.blocks) {
-      yield block;
-      for (const op of block.getAllOps()) {
-        for (const region of op.regions) {
-          yield* region.allBlocks();
-        }
-      }
-    }
+    for (const block of this.blocks) yield block;
   }
 }

@@ -1,6 +1,6 @@
 import type { LabeledStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { createOperationId, JumpOp, LabeledTerm } from "../../../ir";
+import { createOperationId, JumpTermOp, LabeledTermOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -41,14 +41,14 @@ export function buildLabeledStatement(
     return buildSwitchStatement(body, scope, functionBuilder, moduleBuilder, environment, label);
   }
 
-  // Non-loop/non-switch labeled: emit flat CFG + LabeledTerm.
+  // Non-loop/non-switch labeled: emit flat CFG + LabeledTermOp.
   const parentBlock = functionBuilder.currentBlock;
   const bodyBlock = environment.createBlock();
   const fallthroughBlock = environment.createBlock();
   functionBuilder.addBlock(bodyBlock);
   functionBuilder.addBlock(fallthroughBlock);
 
-  parentBlock.setTerminal(new LabeledTerm(
+  parentBlock.setTerminal(new LabeledTermOp(
     createOperationId(environment),
     bodyBlock,
     fallthroughBlock,
@@ -66,7 +66,7 @@ export function buildLabeledStatement(
   functionBuilder.controlStack.pop();
 
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.setTerminal(new JumpOp(createOperationId(environment), fallthroughBlock, []));
+    functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), fallthroughBlock, []));
   }
 
   functionBuilder.currentBlock = fallthroughBlock;

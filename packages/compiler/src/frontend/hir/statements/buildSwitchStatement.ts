@@ -2,9 +2,9 @@ import type { Statement, SwitchStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
 import {
   createOperationId,
-  JumpOp,
+  JumpTermOp,
   type SwitchCase as SwitchTermCase,
-  SwitchTerm,
+  SwitchTermOp,
   Value,
 } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
@@ -15,7 +15,7 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildStatementList } from "./buildStatementList";
 
 /**
- * Lower `switch (discriminant) { ... }` to flat CFG with SwitchTerm.
+ * Lower `switch (discriminant) { ... }` to flat CFG with SwitchTermOp.
  * Each case becomes a block; fall-through is CFG jumps between case
  * blocks; break jumps to fallthrough.
  */
@@ -85,11 +85,11 @@ export function buildSwitchStatement(
     if (functionBuilder.currentBlock.terminal === undefined) {
       // Fall-through to next case or fallthroughBlock if last
       const nextTarget = i + 1 < caseBlocks.length ? caseBlocks[i + 1] : fallthroughBlock;
-      functionBuilder.currentBlock.setTerminal(new JumpOp(createOperationId(environment), nextTarget, []));
+      functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), nextTarget, []));
     }
   }
 
-  // Build SwitchTerm
+  // Build SwitchTermOp
   const termCases: SwitchTermCase[] = [];
   let defaultBlock: ReturnType<typeof environment.createBlock> | null = null;
   for (let i = 0; i < caseTests.length; i++) {
@@ -105,7 +105,7 @@ export function buildSwitchStatement(
     defaultBlock = fallthroughBlock;
   }
 
-  parentBlock.setTerminal(new SwitchTerm(
+  parentBlock.setTerminal(new SwitchTermOp(
     createOperationId(environment),
     discriminantPlace,
     termCases,

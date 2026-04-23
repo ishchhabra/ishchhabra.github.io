@@ -42,8 +42,8 @@ export class CodeGenerator {
 
   /**
    * Stack of block ids that are the "fallthrough" target of an
-   * enclosing structured terminator (IfTerm/WhileTerm/ForTerm/
-   * ForOfTerm/ForInTerm/TryTerm/SwitchTerm/LabeledTerm). A `JumpOp`
+   * enclosing structured terminator (IfTermOp/WhileTermOp/ForTermOp/
+   * ForOfTermOp/ForInTermOp/TryTermOp/SwitchTermOp/LabeledTermOp). A `JumpTermOp`
    * whose target is in this set emits no statements — the
    * terminator's emitter is responsible for placing the fallthrough
    * block's statements after the structured JS statement.

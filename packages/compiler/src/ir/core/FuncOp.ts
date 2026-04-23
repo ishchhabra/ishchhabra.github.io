@@ -17,10 +17,10 @@ import {
   makeOperationId,
   Operation,
   type OperationId,
+  TermOp,
   Trait,
 } from "./Operation";
 import { Region } from "./Region";
-import { IfOp, type Terminal } from "../ops/control";
 
 // ---------------------------------------------------------------------
 // Block clone helpers (used by FuncOp.clone only)
@@ -70,7 +70,7 @@ function phase2RewriteBlock(
     if (rewritten !== op) block.replaceOp(op, rewritten);
   }
   if (block.terminal !== undefined) {
-    const rewrittenTerminal = block.terminal.clone(ctx) as Terminal;
+    const rewrittenTerminal = block.terminal.clone(ctx) as TermOp;
     block.replaceOp(block.terminal, rewrittenTerminal);
   }
   if (block.params.length > 0) {
@@ -114,15 +114,11 @@ type NestedFunctionInstruction =
  */
 export class FuncOp extends Operation {
   /**
-   * MLIR-style top-level body region — alias for `regions[0]`.
-   * Every {@link BasicBlock} in this function is reachable from
-   * `body.allBlocks()` (or from a nested structured op's region).
-   * The `blocks` Map below is a synchronized O(1) id index; the
-   * region tree is the source of truth for ownership.
+   * Function body — an ordered list of blocks in the flat CFG.
+   * The `blocks` Map below is a synchronized O(1) id index; this
+   * region is the source of truth for ownership.
    */
-  public get body(): Region {
-    return this.regions[0];
-  }
+  public readonly body: Region;
 
   get entryBlockId(): BlockId {
     return this.body.entry.id;
@@ -299,7 +295,8 @@ export class FuncOp extends Operation {
     bodyScopeKind: LexicalScopeKind = "function",
   ) {
     bodyRegion.scopeKind = bodyScopeKind === "program" ? "program" : "function";
-    super(id, [bodyRegion]);
+    super(id);
+    this.body = bodyRegion;
     moduleIR.functions.set(id, this);
   }
 
@@ -430,18 +427,6 @@ export class FuncOp extends Operation {
     }
 
     return false;
-  }
-
-  public findOwningIf(blockId: BlockId): { headerBlockId: BlockId; structure: IfOp } | null {
-    for (const block of this.allBlocks()) {
-      for (const op of block.getAllOps()) {
-        if (!(op instanceof IfOp)) continue;
-        if (op.consequentRegion.entry.id === blockId || op.alternateRegion?.entry.id === blockId) {
-          return { headerBlockId: block.id, structure: op };
-        }
-      }
-    }
-    return null;
   }
 
   /**
@@ -579,7 +564,7 @@ export class FuncOp extends Operation {
     for (const [oldBlock, newBlock] of oldToNewBlock) {
       let nonRegionIndex = 0;
       for (const oldOp of oldBlock.getAllOps()) {
-        if (oldOp.hasTrait(Trait.Terminator)) continue;
+        if (oldOp instanceof TermOp) continue;
         if (!oldOp.hasTrait(Trait.HasRegions)) {
           nonRegionIndex++;
           continue;

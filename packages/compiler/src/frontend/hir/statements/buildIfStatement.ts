@@ -1,6 +1,6 @@
 import type { IfStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { createOperationId, IfTerm, JumpOp } from "../../../ir";
+import { createOperationId, IfTermOp, JumpTermOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FuncOpBuilder } from "../FuncOpBuilder";
@@ -9,9 +9,9 @@ import { buildOwnedBody } from "./buildOwnedBody";
 
 /**
  * Lower `if (test) { … } [else { … }]` to a flat CFG with an
- * {@link IfTerm} terminator:
+ * {@link IfTermOp} terminator:
  *
- *   parentBlock --IfTerm--> consBlock / altBlock
+ *   parentBlock --IfTermOp--> consBlock / altBlock
  *   consBlock   --Jump-->  fallthroughBlock
  *   altBlock    --Jump-->  fallthroughBlock
  *
@@ -29,7 +29,7 @@ export function buildIfStatement(
 ) {
   // Build the test FIRST — compound conditions (`a && b`, `a || b`,
   // `a ?? b`, ternaries) internally create blocks and leave
-  // `currentBlock` on the logical-expression's join block. The IfTerm
+  // `currentBlock` on the logical-expression's join block. The IfTermOp
   // must be placed on wherever the test finished computing, not on
   // the block we started in.
   const testPlace = buildNode(node.test, scope, functionBuilder, moduleBuilder, environment);
@@ -45,13 +45,13 @@ export function buildIfStatement(
   functionBuilder.addBlock(alternateBlock);
   functionBuilder.addBlock(fallthroughBlock);
 
-  parentBlock.setTerminal(new IfTerm(createOperationId(environment), testPlace, consequentBlock, alternateBlock, fallthroughBlock));
+  parentBlock.setTerminal(new IfTermOp(createOperationId(environment), testPlace, consequentBlock, alternateBlock, fallthroughBlock));
 
   // Consequent arm
   functionBuilder.currentBlock = consequentBlock;
   buildOwnedBody(node.consequent, scope, functionBuilder, moduleBuilder, environment);
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.setTerminal(new JumpOp(createOperationId(environment), fallthroughBlock, []));
+    functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), fallthroughBlock, []));
   }
 
   // Alternate arm
@@ -60,7 +60,7 @@ export function buildIfStatement(
     buildOwnedBody(node.alternate, scope, functionBuilder, moduleBuilder, environment);
   }
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.setTerminal(new JumpOp(createOperationId(environment), fallthroughBlock, []));
+    functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), fallthroughBlock, []));
   }
 
   functionBuilder.currentBlock = fallthroughBlock;

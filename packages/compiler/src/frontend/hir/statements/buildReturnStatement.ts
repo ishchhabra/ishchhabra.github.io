@@ -1,6 +1,6 @@
 import type { ReturnStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { createOperationId, ReturnOp } from "../../../ir";
+import { createOperationId, ReturnTermOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -14,7 +14,7 @@ export function buildReturnStatement(
   environment: Environment,
 ) {
   if (node.argument == null) {
-    functionBuilder.currentBlock.setTerminal(new ReturnOp(
+    functionBuilder.currentBlock.setTerminal(new ReturnTermOp(
       createOperationId(functionBuilder.environment),
       null,
     ));
@@ -26,7 +26,7 @@ export function buildReturnStatement(
     throw new Error("Return statement argument must be a single place");
   }
 
-  functionBuilder.currentBlock.setTerminal(new ReturnOp(
+  functionBuilder.currentBlock.setTerminal(new ReturnTermOp(
     createOperationId(functionBuilder.environment),
     valuePlace,
   ));

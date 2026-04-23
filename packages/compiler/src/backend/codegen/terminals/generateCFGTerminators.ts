@@ -4,7 +4,7 @@
  * Each emitter reconstructs JS syntax from a terminator's named
  * successor blocks. The arm / body / handler sub-blocks are
  * reconstructed by walking them with their natural in-block ops;
- * `JumpOp` terminators inside those walks whose target is the
+ * `JumpTermOp` terminators inside those walks whose target is the
  * enclosing structured terminator's fallthrough (tracked on
  * `generator.structuredFallthroughStack`) emit nothing. After the
  * structured JS statement, the fallthrough block's own ops are
@@ -13,16 +13,16 @@
 
 import * as t from "@babel/types";
 import {
-  ForInTerm,
-  ForOfTerm,
-  ForTerm,
-  IfTerm,
-  JumpOp,
-  LabeledTerm,
-  SwitchTerm,
-  TryTerm,
+  ForInTermOp,
+  ForOfTermOp,
+  ForTermOp,
+  IfTermOp,
+  JumpTermOp,
+  LabeledTermOp,
+  SwitchTermOp,
+  TryTermOp,
   Value,
-  WhileTerm,
+  WhileTermOp,
 } from "../../../ir";
 import type { BasicBlock } from "../../../ir/core/Block";
 import { FuncOp } from "../../../ir/core/FuncOp";
@@ -30,17 +30,17 @@ import { CodeGenerator } from "../../CodeGenerator";
 import { generateBasicBlock, generateBlock } from "../generateBlock";
 
 // ---------------------------------------------------------------------
-// IfTerm
+// IfTermOp
 // ---------------------------------------------------------------------
 
 export function generateIfTerm(
-  term: IfTerm,
+  term: IfTermOp,
   funcOp: FuncOp,
   generator: CodeGenerator,
 ): Array<t.Statement> {
   const testNode = generator.values.get(term.cond.id);
   if (testNode === undefined) {
-    throw new Error(`Value ${term.cond.id} not found for IfTerm cond`);
+    throw new Error(`Value ${term.cond.id} not found for IfTermOp cond`);
   }
   t.assertExpression(testNode);
 
@@ -65,7 +65,7 @@ export function generateIfTerm(
  * to that param.
  */
 function tryEmitTernary(
-  term: IfTerm,
+  term: IfTermOp,
   testNode: t.Expression,
   fallthrough: BasicBlock | null,
   generator: CodeGenerator,
@@ -95,24 +95,24 @@ function tryEmitTernary(
 function tryExtractArmYield(block: BasicBlock, fallthrough: BasicBlock): Value | null {
   if (block.operations.length > 0) return null;
   const terminal = block.terminal;
-  if (!(terminal instanceof JumpOp)) return null;
+  if (!(terminal instanceof JumpTermOp)) return null;
   if (terminal.target !== fallthrough) return null;
   if (terminal.args.length !== 1) return null;
   return terminal.args[0];
 }
 
 // ---------------------------------------------------------------------
-// WhileTerm
+// WhileTermOp
 // ---------------------------------------------------------------------
 
 export function generateWhileTerm(
-  term: WhileTerm,
+  term: WhileTermOp,
   funcOp: FuncOp,
   generator: CodeGenerator,
 ): Array<t.Statement> {
   const testNode = generator.values.get(term.cond.id);
   if (testNode === undefined) {
-    throw new Error(`Value ${term.cond.id} not found for WhileTerm cond`);
+    throw new Error(`Value ${term.cond.id} not found for WhileTermOp cond`);
   }
   t.assertExpression(testNode);
 
@@ -146,23 +146,23 @@ export function generateWhileTerm(
 }
 
 // ---------------------------------------------------------------------
-// ForTerm
+// ForTermOp
 // ---------------------------------------------------------------------
 
 export function generateForTerm(
-  term: ForTerm,
+  term: ForTermOp,
   funcOp: FuncOp,
   generator: CodeGenerator,
 ): Array<t.Statement> {
   const testNode = generator.values.get(term.cond.id);
   if (testNode === undefined) {
-    throw new Error(`Value ${term.cond.id} not found for ForTerm cond`);
+    throw new Error(`Value ${term.cond.id} not found for ForTermOp cond`);
   }
   t.assertExpression(testNode);
 
   const headerBlock = term.parentBlock;
   // Synthetic label for the body block so source-level `continue`
-  // (→ JumpOp(updateBlock)) can emit as `break bodyLabel;` — this
+  // (→ JumpTermOp(updateBlock)) can emit as `break bodyLabel;` — this
   // escapes the body, falls through to appended update ops, then
   // the for loop's natural re-test. Without this, `continue;` would
   // skip the update (appended after body) → infinite loop.
@@ -263,17 +263,17 @@ export function generateForTerm(
 }
 
 // ---------------------------------------------------------------------
-// ForOfTerm / ForInTerm
+// ForOfTermOp / ForInTermOp
 // ---------------------------------------------------------------------
 
 export function generateForOfTerm(
-  term: ForOfTerm,
+  term: ForOfTermOp,
   funcOp: FuncOp,
   generator: CodeGenerator,
 ): Array<t.Statement> {
   const iterNode = generator.values.get(term.iterable.id);
   if (iterNode === undefined) {
-    throw new Error(`Value ${term.iterable.id} not found for ForOfTerm iterable`);
+    throw new Error(`Value ${term.iterable.id} not found for ForOfTermOp iterable`);
   }
   t.assertExpression(iterNode);
   const iterValId = generator.getPlaceIdentifier(term.iterationValue);
@@ -307,13 +307,13 @@ export function generateForOfTerm(
 }
 
 export function generateForInTerm(
-  term: ForInTerm,
+  term: ForInTermOp,
   funcOp: FuncOp,
   generator: CodeGenerator,
 ): Array<t.Statement> {
   const objNode = generator.values.get(term.object.id);
   if (objNode === undefined) {
-    throw new Error(`Value ${term.object.id} not found for ForInTerm object`);
+    throw new Error(`Value ${term.object.id} not found for ForInTermOp object`);
   }
   t.assertExpression(objNode);
   const iterValId = generator.getPlaceIdentifier(term.iterationValue);
@@ -346,11 +346,11 @@ export function generateForInTerm(
 }
 
 // ---------------------------------------------------------------------
-// TryTerm
+// TryTermOp
 // ---------------------------------------------------------------------
 
 export function generateTryTerm(
-  term: TryTerm,
+  term: TryTermOp,
   funcOp: FuncOp,
   generator: CodeGenerator,
 ): Array<t.Statement> {
@@ -376,17 +376,17 @@ export function generateTryTerm(
 }
 
 // ---------------------------------------------------------------------
-// SwitchTerm
+// SwitchTermOp
 // ---------------------------------------------------------------------
 
 export function generateSwitchTerm(
-  term: SwitchTerm,
+  term: SwitchTermOp,
   funcOp: FuncOp,
   generator: CodeGenerator,
 ): Array<t.Statement> {
   const discNode = generator.values.get(term.discriminant.id);
   if (discNode === undefined) {
-    throw new Error(`Value ${term.discriminant.id} not found for SwitchTerm disc`);
+    throw new Error(`Value ${term.discriminant.id} not found for SwitchTermOp disc`);
   }
   t.assertExpression(discNode);
 
@@ -403,7 +403,7 @@ export function generateSwitchTerm(
     for (const c of term.cases) {
       const testNode = generator.values.get(c.test.id);
       if (testNode === undefined) {
-        throw new Error(`Value ${c.test.id} not found for SwitchTerm case`);
+        throw new Error(`Value ${c.test.id} not found for SwitchTermOp case`);
       }
       t.assertExpression(testNode);
       const stmts = emitArm(c.block, funcOp, generator);
@@ -424,11 +424,11 @@ export function generateSwitchTerm(
 }
 
 // ---------------------------------------------------------------------
-// LabeledTerm
+// LabeledTermOp
 // ---------------------------------------------------------------------
 
 export function generateLabeledTerm(
-  term: LabeledTerm,
+  term: LabeledTermOp,
   funcOp: FuncOp,
   generator: CodeGenerator,
 ): Array<t.Statement> {
@@ -452,7 +452,7 @@ export function generateLabeledTerm(
 
 /**
  * Run `emit` with `fallthroughBlock.id` pushed onto the
- * `structuredFallthroughStack`. JumpOp inside the arm/body emission
+ * `structuredFallthroughStack`. JumpTermOp inside the arm/body emission
  * whose target is this block will emit nothing. After `emit`
  * returns, we append the fallthrough block's own statements (if it
  * hasn't already been emitted elsewhere) so post-structure control
@@ -497,7 +497,7 @@ function emitArm(block: BasicBlock, funcOp: FuncOp, generator: CodeGenerator): A
 
 /**
  * Common fallthrough of two arms. Walks each arm looking for a
- * terminating `JumpOp` to a shared target. Returns the shared
+ * terminating `JumpTermOp` to a shared target. Returns the shared
  * target block if found; null otherwise.
  */
 function inferFallthrough(a: BasicBlock, b: BasicBlock): BasicBlock | null {
@@ -509,7 +509,7 @@ function inferFallthrough(a: BasicBlock, b: BasicBlock): BasicBlock | null {
 
 function trailingJumpTarget(block: BasicBlock): BasicBlock | null {
   const term = block.terminal;
-  if (term instanceof JumpOp) return term.target;
+  if (term instanceof JumpTermOp) return term.target;
   return null;
 }
 

@@ -2,9 +2,6 @@ import { StoreLocalOp } from "../../ir";
 import type { DeclarationId, Value } from "../../ir/core/Value";
 import type { FuncOp } from "../../ir/core/FuncOp";
 import type { ModuleIR } from "../../ir/core/ModuleIR";
-import type { BasicBlock } from "../../ir/core/Block";
-import { Trait } from "../../ir/core/Operation";
-import { ForInOp, ForOfOp, ForOp, IfOp, LabeledBlockOp, WhileOp } from "../../ir/ops/control";
 import { ArrayDestructureOp } from "../../ir/ops/pattern/ArrayDestructure";
 import { ObjectDestructureOp } from "../../ir/ops/pattern/ObjectDestructure";
 import { ExportSpecifierOp } from "../../ir/ops/module/ExportSpecifier";
@@ -21,7 +18,6 @@ export enum NonPromotableReason {
   Exported = "exported",
   ComplexWriter = "complex-writer",
   DestructureAssignmentTarget = "destructure-assignment-target",
-  NestedInMemoryFormOp = "nested-in-memory-form-op",
 }
 
 /**
@@ -108,57 +104,32 @@ export class PromotabilityAnalysis {
       }
     }
 
-    // Rules 4 + 5: walk the op tree tracking "inside memory-form
-    // structured op?" state. StoreLocals inside memory-form get
-    // marked; non-StoreLocal multi-def ops always mark their defs.
-    const walk = (block: BasicBlock, insideMemoryFormOp: boolean): void => {
+    // Rule 4: non-StoreLocal multi-def ops — destructure targets and
+    // any other multi-result op — always mark their defs as
+    // non-promotable.
+    for (const block of this.funcOp.allBlocks()) {
       for (const op of block.operations) {
         if (op instanceof StoreLocalOp) {
-          if (insideMemoryFormOp) {
-            this.mark(op.lval.declarationId, NonPromotableReason.NestedInMemoryFormOp);
-          }
-        } else if (op instanceof ArrayDestructureOp || op instanceof ObjectDestructureOp) {
-          // Declaration-kind destructure carries its own `let`/`const`;
-          // codegen emits the declaration inline, so targets are
-          // effectively single-assignment and promotable unless the
-          // op lives inside a memory-form structure.
+          continue;
+        }
+        if (op instanceof ArrayDestructureOp || op instanceof ObjectDestructureOp) {
           // Assignment-kind destructure requires pre-existing named
-          // bindings — targets must stay declared.
-          const needsMark = insideMemoryFormOp || op.kind === "assignment";
-          if (needsMark) {
-            const reason =
-              op.kind === "assignment"
-                ? NonPromotableReason.DestructureAssignmentTarget
-                : NonPromotableReason.NestedInMemoryFormOp;
-            for (const def of op.getDefs()) {
-              if (def === op.place || def.declarationId === undefined) continue;
-              this.mark(def.declarationId, reason);
-            }
-          }
-        } else {
+          // bindings — targets must stay declared. Declaration-kind
+          // carries its own `let` / `const`; codegen emits the
+          // declaration inline, so targets are effectively
+          // single-assignment and promotable.
+          if (op.kind !== "assignment") continue;
           for (const def of op.getDefs()) {
             if (def === op.place || def.declarationId === undefined) continue;
-            this.mark(def.declarationId, NonPromotableReason.ComplexWriter);
+            this.mark(def.declarationId, NonPromotableReason.DestructureAssignmentTarget);
           }
+          continue;
         }
-
-        if (op.hasTrait(Trait.HasRegions)) {
-          const iterArgLowered =
-            op instanceof IfOp ||
-            op instanceof WhileOp ||
-            op instanceof ForOp ||
-            op instanceof ForInOp ||
-            op instanceof ForOfOp ||
-            op instanceof LabeledBlockOp;
-          const nested = insideMemoryFormOp || !iterArgLowered;
-          for (const region of op.regions) {
-            for (const b of region.blocks) walk(b, nested);
-          }
+        for (const def of op.getDefs()) {
+          if (def === op.place || def.declarationId === undefined) continue;
+          this.mark(def.declarationId, NonPromotableReason.ComplexWriter);
         }
       }
-    };
-    for (const region of this.funcOp.regions) {
-      for (const b of region.blocks) walk(b, false);
     }
   }
 }

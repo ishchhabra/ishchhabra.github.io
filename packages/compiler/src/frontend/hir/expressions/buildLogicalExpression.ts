@@ -4,8 +4,8 @@ import {
   BasicBlock,
   BinaryExpressionOp,
   createOperationId,
-  IfTerm,
-  JumpOp,
+  IfTermOp,
+  JumpTermOp,
   LiteralOp,
   Value,
 } from "../../../ir";
@@ -56,7 +56,7 @@ export function buildLogicalExpression(
   functionBuilder.addBlock(joinBlock);
 
   parentBlock.setTerminal(
-    new IfTerm(createOperationId(environment), testPlace, truthyBlock, falsyBlock, joinBlock),
+    new IfTermOp(createOperationId(environment), testPlace, truthyBlock, falsyBlock, joinBlock),
   );
 
   // Arm semantics per operator
@@ -123,7 +123,7 @@ function buildRhsArm(
   // Only emit our join-jump when the RHS didn't already end the arm.
   if (functionBuilder.currentBlock.terminal === undefined) {
     functionBuilder.currentBlock.setTerminal(
-      new JumpOp(createOperationId(environment), joinBlock, [place]),
+      new JumpTermOp(createOperationId(environment), joinBlock, [place]),
     );
   }
 }
@@ -140,5 +140,5 @@ function buildPassthroughArm(
   // emitted into it — terminator must not already be set. The
   // `setTerminal` helper asserts this, catching any future refactor
   // that changes the construction order.
-  armBlock.setTerminal(new JumpOp(createOperationId(environment), joinBlock, [leftPlace]));
+  armBlock.setTerminal(new JumpTermOp(createOperationId(environment), joinBlock, [leftPlace]));
 }

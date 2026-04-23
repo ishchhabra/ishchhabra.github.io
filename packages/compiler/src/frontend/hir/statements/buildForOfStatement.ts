@@ -6,8 +6,8 @@ import {
   createOperationId,
   getDestructureTargetDefs,
   type DestructureTarget,
-  ForOfTerm,
-  JumpOp,
+  ForOfTermOp,
+  JumpTermOp,
   ObjectDestructureOp,
   Value,
   StoreContextOp,
@@ -22,7 +22,7 @@ import { buildNode } from "../buildNode";
 import { buildOwnedBody } from "./buildOwnedBody";
 
 /**
- * Lower `for (target of iterable) body` to flat CFG with ForOfTerm.
+ * Lower `for (target of iterable) body` to flat CFG with ForOfTermOp.
  */
 export function buildForOfStatement(
   node: ForOfStatement,
@@ -86,7 +86,7 @@ export function buildForOfStatement(
     if (!bodyBlock.entryBindings.includes(p)) bodyBlock.entryBindings.push(p);
   }
 
-  parentBlock.setTerminal(new ForOfTerm(
+  parentBlock.setTerminal(new ForOfTermOp(
     createOperationId(environment),
     iterablePlace,
     iterationValuePlace,
@@ -125,7 +125,7 @@ export function buildForOfStatement(
   buildOwnedBody(node.body, forScope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.setTerminal(new JumpOp(createOperationId(environment), parentBlock, []));
+    functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), parentBlock, []));
   }
 
   functionBuilder.currentBlock = exitBlock;

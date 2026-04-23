@@ -15,12 +15,12 @@ import { Edge, forEachIncomingEdge, forEachOutgoingEdge } from "../ssa/blockArgs
  *
  * Block-param shrinking works through the uniform edge API
  * ({@link forEachIncomingEdge} / {@link Edge.apply}) so it's
- * agnostic to whether the edges come from `JumpOp`s or structured-op
+ * agnostic to whether the edges come from `JumpTermOp`s or structured-op
  * ports. Blocks whose params receive values from structured-op
  * virtual edges (iter-arg region entries, if-arm yields) are left
  * alone here — their params are positionally bound to multi-slot
  * port bundles (`WhileOp.inits` ↔ before-region params ↔
- * `ConditionOp.args` ↔ body-region params ↔ yield values ↔
+ * `ConditionTermOp.args` ↔ body-region params ↔ yield values ↔
  * `resultPlaces`) that must shrink together. That synchronized
  * shrink is an op-canonicalization concern, not a generic-DCE one —
  * MLIR draws the same line.
@@ -58,21 +58,6 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
     for (const p of op.getDefs()) {
       if (liveness.isLive(p.id)) return true;
     }
-    for (const region of op.regions) {
-      for (const block of region.blocks) {
-        for (const param of block.params) {
-          if (liveness.isLive(param.id)) return true;
-        }
-        for (const innerOp of block.operations) {
-          for (const p of innerOp.getDefs()) {
-            if (liveness.isLive(p.id)) return true;
-          }
-          if (innerOp.hasTrait(Trait.HasRegions)) {
-            if (this.structureHasLiveDef(innerOp, liveness)) return true;
-          }
-        }
-      }
-    }
     return false;
   }
 
@@ -101,7 +86,7 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
 
   /**
    * True if any incoming edge to `block` originates from a
-   * structured-op virtual terminator (ConditionOp / YieldOp) or an
+   * structured-op virtual terminator (ConditionTermOp / YieldTermOp) or an
    * op-entry port (WhileOp.inits). Such blocks belong to an iter-arg
    * bundle and shouldn't be shrunk by generic DCE.
    */
@@ -112,7 +97,7 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
         if (flagged) return;
         if (edge.sink.kind !== "block" || edge.sink.block !== block) return;
         const term = predBlock.terminal;
-        const isJump = term !== undefined && term.constructor.name === "JumpOp";
+        const isJump = term !== undefined && term.constructor.name === "JumpTermOp";
         if (!isJump) flagged = true;
       });
       if (flagged) break;

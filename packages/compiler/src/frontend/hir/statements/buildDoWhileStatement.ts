@@ -1,6 +1,6 @@
 import type { DoWhileStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { createOperationId, JumpOp, WhileTerm } from "../../../ir";
+import { createOperationId, JumpTermOp, WhileTermOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FuncOpBuilder } from "../FuncOpBuilder";
@@ -8,13 +8,13 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildOwnedBody } from "./buildOwnedBody";
 
 /**
- * Lower `do { body } while (test)` to flat CFG with a WhileTerm
+ * Lower `do { body } while (test)` to flat CFG with a WhileTermOp
  * header and `kind = "do-while"`. The body runs first; the header
  * re-enters on truthy test, exits on falsey.
  *
  *   parentBlock  --Jump-->   bodyBlock    (first iteration skips test)
  *   bodyBlock    --Jump-->   headerBlock
- *   headerBlock (test ops) --WhileTerm(do-while)--> bodyBlock / exitBlock
+ *   headerBlock (test ops) --WhileTermOp(do-while)--> bodyBlock / exitBlock
  */
 export function buildDoWhileStatement(
   node: DoWhileStatement,
@@ -34,12 +34,12 @@ export function buildDoWhileStatement(
   functionBuilder.addBlock(exitBlock);
 
   // For do-while, CFG enters at header (same as while). The
-  // WhileTerm's `kind: "do-while"` tells codegen to emit
+  // WhileTermOp's `kind: "do-while"` tells codegen to emit
   // `do { body } while (cond)`, whose JS runtime runs body first
   // even though the CFG header's cond check happens first at the
   // IR level. Dataflow is identical; codegen preserves source
   // semantics.
-  parentBlock.setTerminal(new JumpOp(createOperationId(environment), headerBlock, []));
+  parentBlock.setTerminal(new JumpTermOp(createOperationId(environment), headerBlock, []));
 
   // Body
   functionBuilder.currentBlock = bodyBlock;
@@ -53,7 +53,7 @@ export function buildDoWhileStatement(
   buildOwnedBody(node.body, scope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.setTerminal(new JumpOp(createOperationId(environment), headerBlock, []));
+    functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), headerBlock, []));
   }
 
   // Header: test + branch
@@ -62,7 +62,7 @@ export function buildDoWhileStatement(
   if (testPlace === undefined || Array.isArray(testPlace)) {
     throw new Error("Do-while statement test must be a single place");
   }
-  headerBlock.setTerminal(new WhileTerm(
+  headerBlock.setTerminal(new WhileTermOp(
     createOperationId(environment),
     testPlace,
     bodyBlock,

@@ -1,6 +1,6 @@
 import type { ThrowStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { createOperationId, ThrowOp } from "../../../ir";
+import { createOperationId, ThrowTermOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FuncOpBuilder } from "../FuncOpBuilder";
@@ -24,7 +24,7 @@ export function buildThrowStatement(
     throw new Error("Throw statement argument must be a single expression");
   }
 
-  functionBuilder.currentBlock.setTerminal(new ThrowOp(
+  functionBuilder.currentBlock.setTerminal(new ThrowTermOp(
     createOperationId(environment),
     argumentPlace,
   ));

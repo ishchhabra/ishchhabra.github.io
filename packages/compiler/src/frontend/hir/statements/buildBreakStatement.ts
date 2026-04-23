@@ -1,6 +1,6 @@
 import type { BreakStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { createOperationId, JumpOp } from "../../../ir";
+import { createOperationId, JumpTermOp } from "../../../ir";
 import { FuncOpBuilder } from "../FuncOpBuilder";
 
 export function buildBreakStatement(
@@ -18,7 +18,7 @@ export function buildBreakStatement(
     );
   }
 
-  // Emit as a plain JumpOp to the controlStack-tracked breakTarget.
+  // Emit as a plain JumpTermOp to the controlStack-tracked breakTarget.
   // Codegen recognizes the jump as a break (via getBreakLabel which
   // consults the generator's control stack) and emits the right JS
   // keyword. SSABuilder's fillJumpArgs handles the target's block
@@ -31,7 +31,7 @@ export function buildBreakStatement(
   if (targetBlock === undefined) {
     throw new Error(`Break target block ${targetBlockId} not found`);
   }
-  functionBuilder.currentBlock.setTerminal(new JumpOp(
+  functionBuilder.currentBlock.setTerminal(new JumpTermOp(
     createOperationId(environment),
     targetBlock,
     [],

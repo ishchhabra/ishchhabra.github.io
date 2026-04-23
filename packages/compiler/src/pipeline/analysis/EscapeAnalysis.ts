@@ -13,8 +13,8 @@ import {
   type Value,
   StoreContextOp,
   StoreLocalOp,
-  ReturnOp,
-  ThrowOp,
+  ReturnTermOp,
+  ThrowTermOp,
 } from "../../ir";
 import { forEachOutgoingEdge } from "../ssa/blockArgs";
 import { StoreStaticPropertyOp } from "../../ir/ops/prop/StoreStaticProperty";
@@ -216,10 +216,10 @@ export class EscapeAnalysis extends FunctionAnalysis<EscapeAnalysisResult> {
 
       // Classify terminal uses.
       if (block.terminal) {
-        if (block.terminal instanceof ReturnOp && block.terminal.value) {
+        if (block.terminal instanceof ReturnTermOp && block.terminal.value) {
           raise(block.terminal.value.id, EscapeState.GlobalEscape);
         }
-        if (block.terminal instanceof ThrowOp) {
+        if (block.terminal instanceof ThrowTermOp) {
           for (const place of block.terminal.getOperands()) {
             raise(place.id, EscapeState.GlobalEscape);
           }

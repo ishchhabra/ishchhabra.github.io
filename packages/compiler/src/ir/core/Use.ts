@@ -12,9 +12,9 @@ import type { Value } from "./Value";
  *   - `getOperands()` — values this op reads. Always present.
  *   - `getDefs()` — values this op defines. Present on every op that
  *     produces results (instructions); absent on pure terminators
- *     like `BreakOp` or `ReturnOp`.
+ *     like `BreakTermOp` or `ReturnTermOp`.
  *   - `getBlockRefs()` — blocks this op references as CFG successors.
- *     Present on `JumpOp` and anything else that encodes a block
+ *     Present on `JumpTermOp` and anything else that encodes a block
  *     target; absent on ordinary instructions.
  */
 export type User = {

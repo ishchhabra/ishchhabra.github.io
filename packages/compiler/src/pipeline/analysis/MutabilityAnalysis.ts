@@ -1,11 +1,8 @@
 import { StoreContextOp, StoreLocalOp } from "../../ir";
 import type { FuncOp } from "../../ir/core/FuncOp";
-import type { DeclarationId, Value } from "../../ir/core/Value";
+import type { DeclarationId } from "../../ir/core/Value";
 import { ArrayDestructureOp } from "../../ir/ops/pattern/ArrayDestructure";
 import { ObjectDestructureOp } from "../../ir/ops/pattern/ObjectDestructure";
-import { ForOfOp } from "../../ir/ops/control/ForOf";
-import { ForInOp } from "../../ir/ops/control/ForIn";
-import { TryOp } from "../../ir/ops/control/Try";
 import { Operation } from "../../ir/core/Operation";
 import { AnalysisManager, FunctionAnalysis } from "./AnalysisManager";
 
@@ -127,20 +124,6 @@ function collectOpWriters(op: Operation, record: (decl: DeclarationId, op: Store
     for (const def of op.getDefs()) {
       if (def === op.place) continue;
       record(def.declarationId, op);
-    }
-    return;
-  }
-  if (op instanceof ForOfOp || op instanceof ForInOp) {
-    // The iteration variable (if a binding) is written on each
-    // iteration. Count it as a write.
-    const iterValue = (op as ForOfOp | ForInOp).iterationValue as Value | undefined;
-    if (iterValue !== undefined) record(iterValue.declarationId, op);
-    return;
-  }
-  if (op instanceof TryOp) {
-    const handler = (op as TryOp).handlerParam as Value | null | undefined;
-    if (handler !== undefined && handler !== null) {
-      record(handler.declarationId, op);
     }
     return;
   }

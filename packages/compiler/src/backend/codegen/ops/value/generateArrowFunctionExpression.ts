@@ -18,7 +18,7 @@ export function generateArrowFunctionExpressionOp(
     // For expression-bodied arrows, try to recover a single expression.
     // After SSA, a simple `(a) => expr` may produce multiple blocks
     // (e.g. from ternary/logical expressions). The frontend adds a
-    // ReturnOp, so the last statement should be a ReturnStatement.
+    // ReturnTermOp, so the last statement should be a ReturnStatement.
     const expr = extractExpressionBody(statements);
     if (expr) {
       body = expr;

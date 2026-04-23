@@ -14,7 +14,7 @@ import { isValueOp } from "../../ir/categories";
 import { BasicBlock } from "../../ir/core/Block";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { Value } from "../../ir/core/Value";
-import { Trait } from "../../ir/core/Operation";
+import { TermOp } from "../../ir/core/Operation";
 import { isClaimedByExportDeclaration } from "../../ir/exportClaim";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { MutabilityAnalysis, MutabilityInfo } from "../analysis/MutabilityAnalysis";
@@ -89,7 +89,7 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
 
     // Terminator user: only safe when the store is the last
     // non-terminator op — no gap ⇒ no intervening side effects.
-    if (user.hasTrait(Trait.Terminator)) {
+    if (user instanceof TermOp) {
       return user.parentBlock === block && storeIndex === block.operations.length - 1
         ? user
         : undefined;
