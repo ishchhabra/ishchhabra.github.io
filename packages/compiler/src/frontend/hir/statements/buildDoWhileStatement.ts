@@ -1,6 +1,6 @@
 import type { DoWhileStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { createOperationId, JumpTermOp, WhileTermOp } from "../../../ir";
+import { BranchTermOp, createOperationId, JumpTermOp, WhileTermOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FuncOpBuilder } from "../FuncOpBuilder";
@@ -8,13 +8,17 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildOwnedBody } from "./buildOwnedBody";
 
 /**
- * Lower `do { body } while (test)` to flat CFG with a WhileTermOp
- * header and `kind = "do-while"`. The body runs first; the header
- * re-enters on truthy test, exits on falsey.
+ * Lower `do { body } while (test)` to flat CFG with a
+ * {@link WhileTermOp} host block and `kind = "do-while"`.
  *
- *   parentBlock  --Jump-->   bodyBlock    (first iteration skips test)
- *   bodyBlock    --Jump-->   headerBlock
- *   headerBlock (test ops) --WhileTermOp(do-while)--> bodyBlock / exitBlock
+ *   parentBlock --Jump-->      hostBlock
+ *   hostBlock   --WhileTermOp(do-while)--> testBlock / bodyBlock / exitBlock
+ *   testBlock   (test ops) --BranchTermOp--> bodyBlock / exitBlock
+ *   bodyBlock   --Jump-->      hostBlock    (back-edge)
+ *
+ * The first-iteration-runs-body-unconditionally semantics are
+ * restored by codegen emitting `do { body } while (cond)` when it
+ * sees `kind = "do-while"`. Dataflow is identical to a regular while.
  */
 export function buildDoWhileStatement(
   node: DoWhileStatement,
@@ -26,20 +30,27 @@ export function buildDoWhileStatement(
 ) {
   const parentBlock = functionBuilder.currentBlock;
 
+  const hostBlock = environment.createBlock();
+  const testBlock = environment.createBlock();
   const bodyBlock = environment.createBlock();
-  const headerBlock = environment.createBlock();
   const exitBlock = environment.createBlock();
+  functionBuilder.addBlock(hostBlock);
+  functionBuilder.addBlock(testBlock);
   functionBuilder.addBlock(bodyBlock);
-  functionBuilder.addBlock(headerBlock);
   functionBuilder.addBlock(exitBlock);
 
-  // For do-while, CFG enters at header (same as while). The
-  // WhileTermOp's `kind: "do-while"` tells codegen to emit
-  // `do { body } while (cond)`, whose JS runtime runs body first
-  // even though the CFG header's cond check happens first at the
-  // IR level. Dataflow is identical; codegen preserves source
-  // semantics.
-  parentBlock.setTerminal(new JumpTermOp(createOperationId(environment), headerBlock, []));
+  parentBlock.setTerminal(new JumpTermOp(createOperationId(environment), hostBlock, []));
+
+  hostBlock.setTerminal(
+    new WhileTermOp(
+      createOperationId(environment),
+      testBlock,
+      bodyBlock,
+      exitBlock,
+      "do-while",
+      label,
+    ),
+  );
 
   // Body
   functionBuilder.currentBlock = bodyBlock;
@@ -47,29 +58,24 @@ export function buildDoWhileStatement(
     kind: "loop",
     label,
     breakTarget: exitBlock.id,
-    continueTarget: headerBlock.id,
+    continueTarget: hostBlock.id,
     structured: false,
   });
   buildOwnedBody(node.body, scope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), headerBlock, []));
+    functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), hostBlock, []));
   }
 
-  // Header: test + branch
-  functionBuilder.currentBlock = headerBlock;
+  // Test block
+  functionBuilder.currentBlock = testBlock;
   const testPlace = buildNode(node.test, scope, functionBuilder, moduleBuilder, environment);
   if (testPlace === undefined || Array.isArray(testPlace)) {
     throw new Error("Do-while statement test must be a single place");
   }
-  headerBlock.setTerminal(new WhileTermOp(
-    createOperationId(environment),
-    testPlace,
-    bodyBlock,
-    exitBlock,
-    "do-while",
-    label,
-  ));
+  functionBuilder.currentBlock.setTerminal(
+    new BranchTermOp(createOperationId(environment), testPlace, bodyBlock, exitBlock),
+  );
 
   functionBuilder.currentBlock = exitBlock;
   return undefined;

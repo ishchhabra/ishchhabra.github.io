@@ -1,25 +1,25 @@
 import type { OperationId } from "../../core";
 import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
-import { type CloneContext, nextId, remapPlace, TermOp } from "../../core/Operation";
+import { type CloneContext, nextId, TermOp } from "../../core/Operation";
 
 /**
  * C-style for-loop header terminator.
  *
- * The init section runs before control reaches the header (it's
- * lowered as ordinary ops in the predecessor block). The header
- * evaluates `cond`: truthy → `bodyBlock`, falsey → `exitBlock`. The
- * body's natural terminator branches to `updateBlock` (where the
- * `update` clause's ops live), which then branches back to this
- * header.
+ * The init section is lowered in the predecessor block. The block
+ * hosting this terminator is an empty landing pad; the test lives in
+ * `testBlock`, terminated by a {@link BranchTermOp} whose
+ * `trueTarget = bodyBlock` and `falseTarget = exitBlock`. The body
+ * ends with a jump to `updateBlock`, which evaluates the update clause
+ * and then jumps back to the host block.
  *
- * Break / continue are handled by the frontend emitting jumps
- * directly to `exitBlock` / `updateBlock` respectively.
+ * Break / continue: break → `exitBlock`, continue → `updateBlock`
+ * (which runs the update then re-tests).
  */
 export class ForTermOp extends TermOp {
   constructor(
     id: OperationId,
-    public readonly cond: Value,
+    public testBlock: BasicBlock,
     public bodyBlock: BasicBlock,
     public updateBlock: BasicBlock,
     public exitBlock: BasicBlock,
@@ -29,30 +29,24 @@ export class ForTermOp extends TermOp {
   }
 
   getOperands(): Value[] {
-    return [this.cond];
+    return [];
   }
 
   getBlockRefs(): BasicBlock[] {
-    return [this.bodyBlock, this.updateBlock, this.exitBlock];
+    // Only the real CFG successor. `bodyBlock` / `updateBlock` /
+    // `exitBlock` are reached via the testBlock's BranchTermOp or
+    // back-edge jumps, not directly by this terminator.
+    return [this.testBlock];
   }
 
-  rewrite(values: Map<Value, Value>): ForTermOp {
-    const newCond = values.get(this.cond) ?? this.cond;
-    if (newCond === this.cond) return this;
-    return new ForTermOp(
-      this.id,
-      newCond,
-      this.bodyBlock,
-      this.updateBlock,
-      this.exitBlock,
-      this.label,
-    );
+  rewrite(_values: Map<Value, Value>): ForTermOp {
+    return this;
   }
 
   clone(ctx: CloneContext): ForTermOp {
     return new ForTermOp(
       nextId(ctx),
-      remapPlace(ctx, this.cond),
+      ctx.blockMap.get(this.testBlock) ?? this.testBlock,
       ctx.blockMap.get(this.bodyBlock) ?? this.bodyBlock,
       ctx.blockMap.get(this.updateBlock) ?? this.updateBlock,
       ctx.blockMap.get(this.exitBlock) ?? this.exitBlock,

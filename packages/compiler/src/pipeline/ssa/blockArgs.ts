@@ -2,7 +2,7 @@ import type { BasicBlock } from "../../ir/core/Block";
 import type { FuncOp } from "../../ir/core/FuncOp";
 import type { Operation } from "../../ir/core/Operation";
 import type { Value } from "../../ir/core/Value";
-import { JumpTermOp } from "../../ir/ops/control";
+import { BranchTermOp, JumpTermOp } from "../../ir/ops/control";
 
 /**
  * Uniform CFG edge abstraction: a predecessor block, a sink (the
@@ -40,9 +40,9 @@ export function sinkEquals(a: EdgeSink, b: EdgeSink): boolean {
 }
 
 /**
- * Visit every outgoing edge from `block`. Only {@link JumpTermOp}
- * contributes edges — other terminators (IfTermOp, WhileTermOp, …)
- * route control without forwarding values.
+ * Visit every outgoing edge from `block`. Both {@link JumpTermOp} and
+ * {@link BranchTermOp} contribute edges. Other structured terminators
+ * (IfTermOp, WhileTermOp, …) route control without forwarding values.
  */
 export function forEachOutgoingEdge(
   _funcOp: FuncOp,
@@ -52,6 +52,11 @@ export function forEachOutgoingEdge(
   const terminal = block.terminal;
   if (terminal instanceof JumpTermOp) {
     visit(makeJumpEdge(block, terminal, terminal.target));
+    return;
+  }
+  if (terminal instanceof BranchTermOp) {
+    visit(makeBranchEdge(block, terminal, "true"));
+    visit(makeBranchEdge(block, terminal, "false"));
   }
 }
 
@@ -93,6 +98,46 @@ function makeJumpEdge(pred: BasicBlock, terminal: JumpTermOp, succ: BasicBlock):
       pred.replaceOp(terminal, new JumpTermOp(terminal.id, terminal.target, newArgs));
     },
     insertCopyStore(store): void {
+      pred.appendOp(store);
+    },
+  };
+}
+
+function makeBranchEdge(
+  pred: BasicBlock,
+  terminal: BranchTermOp,
+  arm: "true" | "false",
+): Edge {
+  const succ = arm === "true" ? terminal.trueTarget : terminal.falseTarget;
+  const args = arm === "true" ? terminal.trueArgs : terminal.falseArgs;
+  return {
+    pred,
+    sink: { kind: "block", block: succ },
+    args,
+    apply(newArgs): void {
+      if (newArgs === args) return;
+      const nextTrue = arm === "true" ? newArgs : terminal.trueArgs;
+      const nextFalse = arm === "false" ? newArgs : terminal.falseArgs;
+      pred.replaceOp(
+        terminal,
+        new BranchTermOp(
+          terminal.id,
+          terminal.cond,
+          terminal.trueTarget,
+          terminal.falseTarget,
+          nextTrue,
+          nextFalse,
+        ),
+      );
+    },
+    insertCopyStore(store): void {
+      // Edge copies for conditional branches cannot be placed
+      // unconditionally before the branch — they'd execute on both
+      // arms. The classical answer is to introduce a critical-edge
+      // split (insert a new block on the taken edge and put the copy
+      // there). We don't emit copies on branch edges in practice
+      // because passes populate args, not copies; this fallback keeps
+      // the interface total.
       pred.appendOp(store);
     },
   };

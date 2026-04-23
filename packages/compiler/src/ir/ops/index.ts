@@ -39,6 +39,7 @@ export { SpreadElementOp } from "./prim/SpreadElement";
 
 // control — CFG terminators
 export {
+  BranchTermOp,
   ForInTermOp,
   ForOfTermOp,
   ForTermOp,

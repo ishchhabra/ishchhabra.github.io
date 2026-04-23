@@ -13,6 +13,7 @@
 
 import * as t from "@babel/types";
 import {
+  BranchTermOp,
   ForInTermOp,
   ForOfTermOp,
   ForTermOp,
@@ -28,6 +29,8 @@ import type { BasicBlock } from "../../../ir/core/Block";
 import { FuncOp } from "../../../ir/core/FuncOp";
 import { CodeGenerator } from "../../CodeGenerator";
 import { generateBasicBlock, generateBlock } from "../generateBlock";
+import { splitForUpdate, statementsAsExpression, toSequence } from "../normalize";
+import { generateOp } from "../ops/generateOp";
 
 // ---------------------------------------------------------------------
 // IfTermOp
@@ -110,39 +113,105 @@ export function generateWhileTerm(
   funcOp: FuncOp,
   generator: CodeGenerator,
 ): Array<t.Statement> {
-  const testNode = generator.values.get(term.cond.id);
-  if (testNode === undefined) {
-    throw new Error(`Value ${term.cond.id} not found for WhileTermOp cond`);
-  }
-  t.assertExpression(testNode);
-
-  // The header block (this terminator's own block) is the back-edge
-  // target; inside the body, `jump header` is `continue`. The exit
-  // block is the fallthrough.
-  const headerBlock = term.parentBlock;
+  // Host block (this terminator's own block) is the `continue` target.
+  // Exit is the structured fallthrough.
+  const hostBlock = term.parentBlock;
   return withFallthrough(term.exitBlock, funcOp, generator, () => {
     const savedControl = generator.controlStack.length;
-    if (headerBlock !== null) {
+    if (hostBlock !== null) {
       generator.controlStack.push({
         kind: "loop",
         label: term.label,
         breakTarget: term.exitBlock.id,
-        continueTarget: headerBlock.id,
+        continueTarget: hostBlock.id,
         structured: false,
       });
     }
+
+    // Emit testBlock's non-terminator ops for their codegen side
+    // effects (populating generator.values with the cond expression),
+    // and collect the emitted statements so we can lower them into
+    // a sequence expression fed into `while (...)`. The BranchTermOp
+    // is NOT emitted here — we read cond from it directly.
+    const testBlock = term.testBlock;
+    if (!generator.generatedBlocks.has(testBlock.id)) {
+      generator.generatedBlocks.add(testBlock.id);
+    }
+    for (const binding of testBlock.entryBindings) {
+      if (!generator.values.has(binding.id)) generator.getPlaceIdentifier(binding);
+    }
+    const testStmts: Array<t.Statement> = [];
+    for (const op of testBlock.operations) {
+      testStmts.push(...generateOp(op, funcOp, generator));
+    }
+    const branch = testBlock.terminal;
+    if (!(branch instanceof BranchTermOp)) {
+      throw new Error(
+        `WhileTermOp expected testBlock to end in BranchTermOp, got ${branch?.constructor.name}`,
+      );
+    }
+    const condNode = generator.values.get(branch.cond.id);
+    if (condNode === undefined) {
+      throw new Error(`Value ${branch.cond.id} not found for WhileTermOp cond`);
+    }
+    t.assertExpression(condNode);
+
     const bodyStatements = emitArm(term.bodyBlock, funcOp, generator);
     generator.controlStack.length = savedControl;
 
-    const loopStatement =
-      term.kind === "do-while"
-        ? t.doWhileStatement(testNode, t.blockStatement(bodyStatements))
-        : t.whileStatement(testNode, t.blockStatement(bodyStatements));
-    if (term.label !== undefined) {
-      return [t.labeledStatement(t.identifier(term.label), loopStatement)];
+    const { testExpression, hoistedDeclarations } = lowerTestStatements(testStmts, condNode);
+
+    let loopStmt: t.Statement;
+    if (term.kind === "do-while") {
+      loopStmt = t.doWhileStatement(testExpression, t.blockStatement(bodyStatements));
+    } else {
+      loopStmt = t.whileStatement(testExpression, t.blockStatement(bodyStatements));
     }
-    return [loopStatement];
+    if (term.label !== undefined) {
+      loopStmt = t.labeledStatement(t.identifier(term.label), loopStmt);
+    }
+    return [...hoistedDeclarations, loopStmt];
   });
+}
+
+/**
+ * Lower a loop's test-block statements into a (testExpression,
+ * hoistedDeclarations) pair. Each `let $x = expr;` in the test block
+ * becomes a `let $x;` hoisted above the loop plus a `$x = expr`
+ * comma-prepended into the test. Plain ExpressionStatements unwrap
+ * and comma-prepend. Other shapes throw — ECMA §14.7.3 makes them
+ * impossible in valid source; their presence indicates a pass-level
+ * invariant violation.
+ */
+function lowerTestStatements(
+  testStmts: Array<t.Statement>,
+  condNode: t.Expression,
+): { testExpression: t.Expression; hoistedDeclarations: t.Statement[] } {
+  if (testStmts.length === 0) {
+    return { testExpression: condNode, hoistedDeclarations: [] };
+  }
+  const asSeq = statementsAsExpression(testStmts);
+  if (asSeq !== null) {
+    return {
+      testExpression: t.sequenceExpression([asSeq, condNode]),
+      hoistedDeclarations: [],
+    };
+  }
+  const { declarators, expressions, rejected } = splitForUpdate(testStmts);
+  if (rejected.length > 0) {
+    throw new Error(
+      `Loop test block contains unsupported statement type(s): ${rejected
+        .map((s) => s.type)
+        .join(", ")}`,
+    );
+  }
+  const hoistedDeclarations: t.Statement[] =
+    declarators.length > 0 ? [t.variableDeclaration("let", declarators)] : [];
+  const testExpression =
+    expressions.length > 0
+      ? t.sequenceExpression([...expressions, condNode])
+      : condNode;
+  return { testExpression, hoistedDeclarations };
 }
 
 // ---------------------------------------------------------------------
@@ -154,112 +223,177 @@ export function generateForTerm(
   funcOp: FuncOp,
   generator: CodeGenerator,
 ): Array<t.Statement> {
-  const testNode = generator.values.get(term.cond.id);
-  if (testNode === undefined) {
-    throw new Error(`Value ${term.cond.id} not found for ForTermOp cond`);
-  }
-  t.assertExpression(testNode);
-
-  const headerBlock = term.parentBlock;
-  // Synthetic label for the body block so source-level `continue`
-  // (→ JumpTermOp(updateBlock)) can emit as `break bodyLabel;` — this
-  // escapes the body, falls through to appended update ops, then
-  // the for loop's natural re-test. Without this, `continue;` would
-  // skip the update (appended after body) → infinite loop.
-  const bodyLabel = `forBody$${term.id}`;
+  const hostBlock = term.parentBlock;
   return withFallthrough(term.exitBlock, funcOp, generator, () => {
     const savedControl = generator.controlStack.length;
-    if (headerBlock !== null) {
-      // Two entries: outer "label" maps continue-to-updateBlock to
-      // `break bodyLabel`, inner "loop" handles source-level break
-      // (exitBlock) and continue targets the (for-stmt's) header.
-      // Outer must be the label one so its breakTarget=updateBlock
-      // is found by the scan when inner doesn't match.
-      generator.controlStack.push({
-        kind: "label",
-        label: bodyLabel,
-        breakTarget: term.updateBlock.id,
-        structured: false,
-      });
+    if (hostBlock !== null) {
+      // Source break/continue: break → exit, continue → updateBlock
+      // (native JS `for` semantics — `continue` runs the update clause
+      // before re-testing).
       generator.controlStack.push({
         kind: "loop",
         label: term.label,
         breakTarget: term.exitBlock.id,
-        continueTarget: headerBlock.id,
+        continueTarget: term.updateBlock.id,
         structured: false,
       });
     }
+
+    // Test block: emit non-terminator ops (populating generator.values
+    // with the cond expression). BranchTermOp is read directly — not
+    // emitted — so we can thread cond into the for-header's test slot.
+    const testBlock = term.testBlock;
+    if (!generator.generatedBlocks.has(testBlock.id)) {
+      generator.generatedBlocks.add(testBlock.id);
+    }
+    for (const binding of testBlock.entryBindings) {
+      if (!generator.values.has(binding.id)) generator.getPlaceIdentifier(binding);
+    }
+    const testStmts: Array<t.Statement> = [];
+    for (const op of testBlock.operations) {
+      testStmts.push(...generateOp(op, funcOp, generator));
+    }
+    const branch = testBlock.terminal;
+    if (!(branch instanceof BranchTermOp)) {
+      throw new Error(
+        `ForTermOp expected testBlock to end in BranchTermOp, got ${branch?.constructor.name}`,
+      );
+    }
+    const condNode = generator.values.get(branch.cond.id);
+    if (condNode === undefined) {
+      throw new Error(`Value ${branch.cond.id} not found for ForTermOp cond`);
+    }
+    t.assertExpression(condNode);
+
+    // Body: Jump(updateBlock) becomes `continue;` via controlStack;
+    // we strip the trailing one (natural end of body).
     const bodyStatements = emitArm(term.bodyBlock, funcOp, generator);
     generator.controlStack.length = savedControl;
 
-    // Emit the update block's statements at the END of the body.
-    // Putting them in the for-stmt's update slot would scope them
-    // outside the body's `{}`, but updates can reference values
-    // declared as `const` inside the body (e.g. SSA intermediates
-    // materialized in the body block). Appending to body keeps
-    // those `const`s in scope.
-    //
-    // Note: source-level `continue` in the body will skip these
-    // appended update ops. For now this is a known limitation —
-    // covered by emitting a labeled do-while around the body when
-    // continues need to jump through updates. Most for-loops don't
-    // use continue so this works in practice.
+    // Update block: emitted raw, then normalized into the for-header's
+    // update slot via splitForUpdate. Declarations get hoisted into
+    // the for-init's declarator list as bare declarators; their
+    // initializers become assignment expressions threaded into the
+    // update slot, comma-joined in emission order.
     let updateStmts: Array<t.Statement> = [];
     if (!generator.generatedBlocks.has(term.updateBlock.id)) {
       generator.generatedBlocks.add(term.updateBlock.id);
-      const updateCtrl = headerBlock
-        ? {
-            kind: "loop" as const,
-            label: term.label,
-            breakTarget: term.exitBlock.id,
-            continueTarget: headerBlock.id,
-            structured: false,
-          }
-        : null;
-      if (updateCtrl) generator.controlStack.push(updateCtrl);
+      generator.structuredFallthroughStack.push(term.testBlock.id);
       updateStmts = generateBasicBlock(term.updateBlock.id, funcOp, generator);
-      if (updateCtrl) generator.controlStack.pop();
+      const poppedUpdate = generator.structuredFallthroughStack.pop();
+      if (poppedUpdate !== term.testBlock.id) {
+        throw new Error("structuredFallthroughStack corrupted (for update)");
+      }
     }
 
-    // Strip trailing loop-back-edge statements from body + update.
-    // Body's natural end is Jump(updateBlock) → `break bodyLabel`.
-    // Update's natural end is Jump(header) → `continue`.
-    const stripTrailingLoopJump = (stmts: Array<t.Statement>) => {
-      while (stmts.length > 0) {
-        const last = stmts[stmts.length - 1];
-        if (t.isContinueStatement(last) && !last.label) {
-          stmts.pop();
-          continue;
-        }
-        if (
-          t.isBreakStatement(last) &&
-          last.label !== null &&
-          last.label !== undefined &&
-          last.label.name === bodyLabel
-        ) {
-          stmts.pop();
-          continue;
-        }
-        break;
-      }
-    };
-    stripTrailingLoopJump(bodyStatements);
-    stripTrailingLoopJump(updateStmts);
+    stripTrailingUnlabelledContinue(bodyStatements);
+    stripTrailingUnlabelledContinue(updateStmts);
 
-    // Wrap body in labeled block. Source `continue` inside body was
-    // emitted as `break bodyLabel;` — breaks out to here, then
-    // update runs, then for re-tests.
-    const labeledBody = t.labeledStatement(
-      t.identifier(bodyLabel),
+    const updateSplit = splitForUpdate(updateStmts);
+    if (updateSplit.rejected.length > 0) {
+      throw new Error(
+        `for-update block contains unsupported statement type(s): ${updateSplit.rejected
+          .map((s) => s.type)
+          .join(", ")}`,
+      );
+    }
+    const { testExpression, hoistedDeclarations } = lowerTestStatements(testStmts, condNode);
+
+    const initNode =
+      updateSplit.declarators.length > 0
+        ? t.variableDeclaration("let", updateSplit.declarators)
+        : null;
+    let loopStmt: t.Statement = t.forStatement(
+      initNode,
+      testExpression,
+      toSequence(updateSplit.expressions),
       t.blockStatement(bodyStatements),
     );
-    const forBody: t.Statement[] = [labeledBody, ...updateStmts];
-    const forStmt = t.forStatement(null, testNode, null, t.blockStatement(forBody));
     if (term.label !== undefined) {
-      return [t.labeledStatement(t.identifier(term.label), forStmt)];
+      loopStmt = t.labeledStatement(t.identifier(term.label), loopStmt);
     }
-    return [forStmt];
+    return [...hoistedDeclarations, loopStmt];
   });
+}
+
+function stripTrailingUnlabelledContinue(stmts: Array<t.Statement>): void {
+  while (stmts.length > 0) {
+    const last = stmts[stmts.length - 1];
+    if (t.isContinueStatement(last) && !last.label) {
+      stmts.pop();
+      continue;
+    }
+    break;
+  }
+}
+
+// ---------------------------------------------------------------------
+// BranchTermOp
+// ---------------------------------------------------------------------
+
+/**
+ * Generic two-way branch. Each arm's emission is delegated to a
+ * synthetic `JumpTermOp` so break/continue/fallthrough semantics
+ * handled by {@link generateJumpTerminal} apply uniformly.
+ *
+ * Shapes produced, depending on which arm resolves to an empty
+ * statement list (fallthrough/no-op):
+ *   - true empty, false non-empty → `if (!cond) falseStmts`
+ *   - false empty, true non-empty → `if (cond) trueStmts`
+ *   - both empty                  → no-op (both arms are fallthrough)
+ *   - both non-empty              → `if (cond) {true} else {false}`
+ */
+export function generateBranchTerm(
+  term: BranchTermOp,
+  funcOp: FuncOp,
+  generator: CodeGenerator,
+): Array<t.Statement> {
+  const condNode = generator.values.get(term.cond.id);
+  if (condNode === undefined) {
+    throw new Error(`Value ${term.cond.id} not found for BranchTermOp cond`);
+  }
+  t.assertExpression(condNode);
+
+  const trueStmts = emitTransfer(term.trueTarget, funcOp, generator);
+  const falseStmts = emitTransfer(term.falseTarget, funcOp, generator);
+
+  if (trueStmts.length === 0 && falseStmts.length === 0) {
+    return [];
+  }
+  if (trueStmts.length === 0) {
+    return [t.ifStatement(t.unaryExpression("!", condNode), unwrap(falseStmts))];
+  }
+  if (falseStmts.length === 0) {
+    return [t.ifStatement(condNode, unwrap(trueStmts))];
+  }
+  return [
+    t.ifStatement(condNode, t.blockStatement(trueStmts), t.blockStatement(falseStmts)),
+  ];
+}
+
+function unwrap(stmts: Array<t.Statement>): t.Statement {
+  if (stmts.length === 1) return stmts[0];
+  return t.blockStatement(stmts);
+}
+
+function emitTransfer(
+  target: BasicBlock,
+  funcOp: FuncOp,
+  generator: CodeGenerator,
+): Array<t.Statement> {
+  // Check break → continue → structured fallthrough, in that order.
+  const breakLabel = generator.getBreakLabel(target.id);
+  if (breakLabel !== undefined) {
+    return [t.breakStatement(breakLabel ? t.identifier(breakLabel) : null)];
+  }
+  const continueLabel = generator.getContinueLabel(target.id);
+  if (continueLabel !== undefined) {
+    return [t.continueStatement(continueLabel ? t.identifier(continueLabel) : null)];
+  }
+  if (generator.structuredFallthroughStack.includes(target.id)) {
+    return [];
+  }
+  return generateBlock(target.id, funcOp, generator);
 }
 
 // ---------------------------------------------------------------------

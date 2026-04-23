@@ -16,7 +16,7 @@ import { ArrayDestructureOp } from "../../ir/ops/pattern/ArrayDestructure";
 import { ObjectDestructureOp } from "../../ir/ops/pattern/ObjectDestructure";
 import { ExportSpecifierOp } from "../../ir/ops/module/ExportSpecifier";
 import { ExportDefaultDeclarationOp } from "../../ir/ops/module/ExportDefaultDeclaration";
-import { JumpTermOp } from "../../ir/ops/control";
+import { BranchTermOp, JumpTermOp } from "../../ir/ops/control";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { DominatorTreeAnalysis, type DominatorTree } from "../analysis/DominatorTreeAnalysis";
 import { createParamValue } from "./utils";
@@ -385,6 +385,8 @@ export class SSABuilder {
       this.renameOpOperands(block.terminal, stacks);
       if (block.terminal instanceof JumpTermOp) {
         this.fillJumpArgs(block, block.terminal, stacks);
+      } else if (block.terminal instanceof BranchTermOp) {
+        this.fillBranchArgs(block, block.terminal, stacks);
       }
     }
 
@@ -559,6 +561,55 @@ export class SSABuilder {
 
     if (argsEqual(existing, args)) return;
     block.replaceOp(terminal, new JumpTermOp(terminal.id, terminal.target, args));
+  }
+
+  /**
+   * Fill both arms of a `BranchTermOp` from the current rename stacks,
+   * binding each arm's target block params positionally to their
+   * reaching definitions. Same logic as {@link fillJumpArgs} but applied
+   * to both successors.
+   */
+  private fillBranchArgs(
+    block: BasicBlock,
+    terminal: BranchTermOp,
+    stacks: Stacks,
+  ): void {
+    const fill = (params: readonly Value[], existing: readonly Value[]): Value[] => {
+      let frontendArgIdx = 0;
+      return params.map((param) => {
+        const decl = param.originalDeclarationId;
+        if (decl === undefined) {
+          return existing[frontendArgIdx++] ?? this.undefSeed;
+        }
+        const stack = stacks.get(decl);
+        if (stack !== undefined && stack.length > 0) return stack[stack.length - 1];
+        return this.undefSeed;
+      });
+    };
+
+    const nextTrue =
+      terminal.trueTarget.params.length === 0
+        ? terminal.trueArgs
+        : fill(terminal.trueTarget.params, terminal.trueArgs);
+    const nextFalse =
+      terminal.falseTarget.params.length === 0
+        ? terminal.falseArgs
+        : fill(terminal.falseTarget.params, terminal.falseArgs);
+
+    if (argsEqual(terminal.trueArgs, nextTrue) && argsEqual(terminal.falseArgs, nextFalse)) {
+      return;
+    }
+    block.replaceOp(
+      terminal,
+      new BranchTermOp(
+        terminal.id,
+        terminal.cond,
+        terminal.trueTarget,
+        terminal.falseTarget,
+        nextTrue,
+        nextFalse,
+      ),
+    );
   }
 
   // ===========================================================================

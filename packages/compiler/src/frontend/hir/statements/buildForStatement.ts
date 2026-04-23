@@ -1,6 +1,6 @@
 import type { Expression, ForStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { createOperationId, ForTermOp, JumpTermOp, LiteralOp } from "../../../ir";
+import { BranchTermOp, createOperationId, ForTermOp, JumpTermOp, LiteralOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { instantiateScopeBindings } from "../bindings";
 import { buildNode } from "../buildNode";
@@ -13,12 +13,13 @@ import { buildStatement } from "./buildStatement";
 /**
  * Lower `for (init; test; update) { body }` to flat CFG:
  *
- *   parentBlock  --(init ops then Jump)-->  headerBlock
- *   headerBlock  --(test ops then ForTermOp)-->  bodyBlock / updateBlock / exitBlock
- *   bodyBlock    --(body then Jump)-->  updateBlock
- *   updateBlock  --(update ops then Jump)-->  headerBlock
+ *   parentBlock (init ops) --Jump-->  hostBlock (empty landing pad)
+ *   hostBlock    --ForTermOp-->       testBlock / bodyBlock / updateBlock / exitBlock
+ *   testBlock    (test ops) --BranchTermOp--> bodyBlock / exitBlock
+ *   bodyBlock    --Jump-->            updateBlock
+ *   updateBlock  (update ops) --Jump--> hostBlock (back-edge; `continue`)
  *
- * `continue` inside body jumps to updateBlock; `break` to exitBlock.
+ * `continue` targets updateBlock; `break` targets exitBlock.
  */
 export function buildForStatement(
   node: ForStatement,
@@ -34,11 +35,13 @@ export function buildForStatement(
       ? functionBuilder.scopeFor(node)
       : scope;
 
-  const headerBlock = environment.createBlock();
+  const hostBlock = environment.createBlock();
+  const testBlock = environment.createBlock();
   const bodyBlock = environment.createBlock();
   const updateBlock = environment.createBlock();
   const exitBlock = environment.createBlock();
-  functionBuilder.addBlock(headerBlock);
+  functionBuilder.addBlock(hostBlock);
+  functionBuilder.addBlock(testBlock);
   functionBuilder.addBlock(bodyBlock);
   functionBuilder.addBlock(updateBlock);
   functionBuilder.addBlock(exitBlock);
@@ -57,11 +60,22 @@ export function buildForStatement(
   // currentBlock to a logical-expression join block.
   const parentBlock = functionBuilder.currentBlock;
   if (parentBlock.terminal === undefined) {
-    parentBlock.setTerminal(new JumpTermOp(createOperationId(environment), headerBlock, []));
+    parentBlock.setTerminal(new JumpTermOp(createOperationId(environment), hostBlock, []));
   }
 
-  // Header: test + branch
-  functionBuilder.currentBlock = headerBlock;
+  hostBlock.setTerminal(
+    new ForTermOp(
+      createOperationId(environment),
+      testBlock,
+      bodyBlock,
+      updateBlock,
+      exitBlock,
+      label,
+    ),
+  );
+
+  // Test block: evaluate cond (or synthesize `true`), branch.
+  functionBuilder.currentBlock = testBlock;
   let testPlace;
   if (node.test != null) {
     testPlace = buildNode(node.test, forScope, functionBuilder, moduleBuilder, environment);
@@ -73,14 +87,9 @@ export function buildForStatement(
   if (testPlace === undefined || Array.isArray(testPlace)) {
     throw new Error("For statement test place must be a single place");
   }
-  headerBlock.setTerminal(new ForTermOp(
-    createOperationId(environment),
-    testPlace,
-    bodyBlock,
-    updateBlock,
-    exitBlock,
-    label,
-  ));
+  functionBuilder.currentBlock.setTerminal(
+    new BranchTermOp(createOperationId(environment), testPlace, bodyBlock, exitBlock),
+  );
 
   // Body
   functionBuilder.currentBlock = bodyBlock;
@@ -103,7 +112,7 @@ export function buildForStatement(
     buildExpressionAsStatement(node.update, forScope, functionBuilder, moduleBuilder, environment);
   }
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), headerBlock, []));
+    functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), hostBlock, []));
   }
 
   functionBuilder.currentBlock = exitBlock;

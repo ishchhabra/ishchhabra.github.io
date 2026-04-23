@@ -1,6 +1,6 @@
 import type { WhileStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { createOperationId, JumpTermOp, WhileTermOp } from "../../../ir";
+import { BranchTermOp, createOperationId, JumpTermOp, WhileTermOp } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FuncOpBuilder } from "../FuncOpBuilder";
@@ -8,12 +8,15 @@ import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { buildOwnedBody } from "./buildOwnedBody";
 
 /**
- * Lower `while (test) { body }` to a flat CFG with a
- * {@link WhileTermOp} header:
+ * Lower `while (test) { body }` to a flat CFG:
  *
- *   parentBlock --Jump--> headerBlock
- *   headerBlock (test ops) --WhileTermOp--> bodyBlock / exitBlock
- *   bodyBlock ... --Jump--> headerBlock   (back-edge)
+ *   parentBlock --Jump-->      hostBlock (empty landing pad)
+ *   hostBlock   --WhileTermOp--> testBlock / bodyBlock / exitBlock
+ *   testBlock   (test ops) --BranchTermOp--> bodyBlock / exitBlock
+ *   bodyBlock   --Jump-->      hostBlock    (back-edge; `continue`)
+ *
+ * `continue` targets the hostBlock (control then passes to testBlock
+ * via WhileTermOp); `break` targets the exitBlock.
  */
 export function buildWhileStatement(
   node: WhileStatement,
@@ -25,29 +28,30 @@ export function buildWhileStatement(
 ) {
   const parentBlock = functionBuilder.currentBlock;
 
-  const headerBlock = environment.createBlock();
+  const hostBlock = environment.createBlock();
+  const testBlock = environment.createBlock();
   const bodyBlock = environment.createBlock();
   const exitBlock = environment.createBlock();
-  functionBuilder.addBlock(headerBlock);
+  functionBuilder.addBlock(hostBlock);
+  functionBuilder.addBlock(testBlock);
   functionBuilder.addBlock(bodyBlock);
   functionBuilder.addBlock(exitBlock);
 
-  parentBlock.setTerminal(new JumpTermOp(createOperationId(environment), headerBlock, []));
+  parentBlock.setTerminal(new JumpTermOp(createOperationId(environment), hostBlock, []));
 
-  // Header: evaluate test, terminate with WhileTermOp
-  functionBuilder.currentBlock = headerBlock;
+  hostBlock.setTerminal(
+    new WhileTermOp(createOperationId(environment), testBlock, bodyBlock, exitBlock, "while", label),
+  );
+
+  // Test block: evaluate cond, branch.
+  functionBuilder.currentBlock = testBlock;
   const testPlace = buildNode(node.test, scope, functionBuilder, moduleBuilder, environment);
   if (testPlace === undefined || Array.isArray(testPlace)) {
     throw new Error("While statement test must be a single place");
   }
-  headerBlock.setTerminal(new WhileTermOp(
-    createOperationId(environment),
-    testPlace,
-    bodyBlock,
-    exitBlock,
-    "while",
-    label,
-  ));
+  functionBuilder.currentBlock.setTerminal(
+    new BranchTermOp(createOperationId(environment), testPlace, bodyBlock, exitBlock),
+  );
 
   // Body
   functionBuilder.currentBlock = bodyBlock;
@@ -55,13 +59,13 @@ export function buildWhileStatement(
     kind: "loop",
     label,
     breakTarget: exitBlock.id,
-    continueTarget: headerBlock.id,
+    continueTarget: hostBlock.id,
     structured: false,
   });
   buildOwnedBody(node.body, scope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), headerBlock, []));
+    functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), hostBlock, []));
   }
 
   functionBuilder.currentBlock = exitBlock;

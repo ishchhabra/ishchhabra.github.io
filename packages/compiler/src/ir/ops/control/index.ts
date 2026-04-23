@@ -8,6 +8,7 @@ export { JumpTermOp } from "./Jump";
 export { ReturnTermOp } from "./Return";
 export { ThrowTermOp } from "./Throw";
 
+export { BranchTermOp } from "./BranchTerm";
 export { IfTermOp } from "./IfTerm";
 export { WhileTermOp } from "./WhileTerm";
 export { ForTermOp } from "./ForTerm";

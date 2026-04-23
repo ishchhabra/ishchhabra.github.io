@@ -1,12 +1,8 @@
 let blockparam_19 = undefined;
 blockparam_19 = 0;
-for (; blockparam_19 < 10; ) {
-  forBody$7: {
-    if (blockparam_19 === 5) {
-      break forBody$7;
-    }
-    console.log(blockparam_19);
+for (let $24; blockparam_19 < 10; $24 = blockparam_19 + 1, blockparam_19 = $24) {
+  if (blockparam_19 === 5) {
+    continue;
   }
-  const $24 = blockparam_19 + 1;
-  blockparam_19 = $24;
+  console.log(blockparam_19);
 }

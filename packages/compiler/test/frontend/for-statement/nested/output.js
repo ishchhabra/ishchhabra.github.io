@@ -1,19 +1,9 @@
 let blockparam_28 = undefined;
 blockparam_28 = 0;
 let blockparam_29 = undefined;
-let blockparam_30 = undefined;
-for (; blockparam_28 < 10; ) {
-  forBody$7: {
-    blockparam_29 = 0;
-    for (; blockparam_29 < 10; ) {
-      forBody$14: {
-        console.log(blockparam_28, blockparam_29);
-      }
-      const $45 = blockparam_29 + 1;
-      blockparam_29 = $45;
-    }
-    blockparam_30 = blockparam_29;
+for (let $39; blockparam_28 < 10; $39 = blockparam_28 + 1, blockparam_28 = $39) {
+  blockparam_29 = 0;
+  for (let $41; blockparam_29 < 10; $41 = blockparam_29 + 1, blockparam_29 = $41) {
+    console.log(blockparam_28, blockparam_29);
   }
-  const $43 = blockparam_28 + 1;
-  blockparam_28 = $43;
 }

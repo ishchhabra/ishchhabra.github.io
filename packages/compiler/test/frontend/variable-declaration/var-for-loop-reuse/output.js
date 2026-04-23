@@ -1,13 +1,10 @@
 function $0() {
   for (; true; ) {
-    forBody$8: {
-      break;
-    }
+    break;
   }
+  $1 = 0;
   for (; true; ) {
-    forBody$15: {
-      break;
-    }
+    break;
   }
-  return 0;
+  return $1;
 }

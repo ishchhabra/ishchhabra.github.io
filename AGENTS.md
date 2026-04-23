@@ -34,18 +34,6 @@ Guidelines for AI agents (Claude Code, Cursor, Copilot, etc.) working on this re
 - If a fix feels hacky: "Knowing everything I know now, implement the elegant solution."
 - Skip this for simple, obvious fixes — don't over-engineer.
 
-## Iterative Verification
-
-Work like gradient descent: each step is the smallest provably-correct move toward the goal.
-
-**The Rule:** Never go more than a few edits without running something to verify. "Should work" is not verification — run it.
-
-| Phase | Do | Don't |
-|-------|-----|-------|
-| Before building | Verify starting point — tests pass, server starts | Assume everything works |
-| While building | One change, verify, next change | Five changes then verify |
-| After fixing | Run full pipeline end-to-end | Claim it works without testing |
-
 ## Subagent Strategy
 
 - Use subagents liberally to keep main context window clean.

@@ -1,6 +1,7 @@
 import * as t from "@babel/types";
 import {
   ArrayDestructureOp,
+  BranchTermOp,
   DebuggerStatementOp,
   DeclareLocalOp,
   ExportSpecifierOp,
@@ -37,6 +38,7 @@ import { ClassDeclarationOp } from "../../../ir/ops/class/ClassDeclaration";
 import { FunctionDeclarationOp } from "../../../ir/ops/func/FunctionDeclaration";
 import { CodeGenerator } from "../../CodeGenerator";
 import {
+  generateBranchTerm,
   generateForInTerm,
   generateForOfTerm,
   generateForTerm,
@@ -77,6 +79,9 @@ export function generateOp(
     }
     if (instruction instanceof IfTermOp) {
       return generateIfTerm(instruction, funcOp, generator);
+    }
+    if (instruction instanceof BranchTermOp) {
+      return generateBranchTerm(instruction, funcOp, generator);
     }
     if (instruction instanceof WhileTermOp) {
       return generateWhileTerm(instruction, funcOp, generator);
