@@ -59,6 +59,20 @@ if (includeNodeModules) {
     "@iframe-resizer/core",
     // @radix-ui compound components trigger a duplicate-identifier codegen bug
     "@radix-ui/react-",
+    // CFG-pivot: the micromark family has complex state-machine
+    // loops that currently trip over a codegen edge case specific
+    // to their control-flow shape. Bisected on writing/ssr-theming.
+    // Will be un-denied as the codegen stabilizes.
+    "micromark",
+    // CFG-pivot: tanstack router's large state machine (processRouteTree,
+    // matchRoutesInternal) hits residual codegen edge cases on
+    // hydration. Disabling AOT here restores navigation; fix-forward
+    // in follow-up.
+    "@tanstack/router-core",
+    "@tanstack/history",
+    "@tanstack/react-router",
+    "@tanstack/react-router-ssr-query",
+    "@tanstack/router-ssr-query-core",
   ];
 
   const mirrors = result.nodeModuleMirrors.filter((m) => {
