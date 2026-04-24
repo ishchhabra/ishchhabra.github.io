@@ -2,7 +2,7 @@ import { Value } from "./Value";
 import { Operation } from "./Operation";
 import { TermOp } from "./TermOp";
 import type { Region } from "./Region";
-import { registerUses, unregisterUses } from "./Use";
+
 
 /**
  * Simulated opaque type for BlockId to prevent using normal numbers
@@ -13,14 +13,6 @@ export type BlockId = number & { [opaqueBlockId]: "BlockId" };
 
 export function makeBlockId(id: number): BlockId {
   return id as BlockId;
-}
-
-function attach(op: Operation, block: BasicBlock): void {
-  op.parentBlock = block;
-}
-
-function detach(op: Operation): void {
-  op.parentBlock = null;
 }
 
 // ---------------------------------------------------------------------------
@@ -84,8 +76,8 @@ export class BasicBlock {
 
   /**
    * Intrusive use-list of terminators whose successor list includes
-   * this block. Maintained automatically by `registerUses` /
-   * `unregisterUses` on every mutation.
+   * this block. Maintained automatically by `op.attach()` /
+   * `op.detach()` on every mutation.
    */
   readonly #uses: Set<Operation> = new Set();
 
@@ -101,13 +93,11 @@ export class BasicBlock {
         );
       }
       this._ops.push(op);
-      registerUses(op);
-      attach(op, this);
+      op.attach(this);
     }
     if (terminal !== undefined) {
       this._terminal = terminal;
-      registerUses(terminal);
-      attach(terminal, this);
+      terminal.attach(this);
     }
   }
 
@@ -137,8 +127,7 @@ export class BasicBlock {
       );
     }
     this._terminal = terminal;
-    registerUses(terminal);
-    attach(terminal, this);
+    terminal.attach(this);
   }
 
   /** Swap this block's terminator for a new one. Throws if there is nothing to replace. */
@@ -148,11 +137,9 @@ export class BasicBlock {
         `Block ${this.id} has no terminal to replace; use setTerminal for the first assignment`,
       );
     }
-    detach(this._terminal);
-    unregisterUses(this._terminal);
+    this._terminal.detach();
     this._terminal = terminal;
-    registerUses(terminal);
-    attach(terminal, this);
+    terminal.attach(this);
   }
 
   // -----------------------------------------------------------------------
@@ -166,8 +153,7 @@ export class BasicBlock {
         `BasicBlock.appendOp: use the terminal setter for terminators (got ${op.constructor.name})`,
       );
     }
-    registerUses(op);
-    attach(op, this);
+    op.attach(this);
     this._ops.push(op);
   }
 
@@ -183,8 +169,7 @@ export class BasicBlock {
         `BasicBlock.insertOpAt: cannot insert a terminator — use the terminal setter`,
       );
     }
-    registerUses(op);
-    attach(op, this);
+    op.attach(this);
     this._ops.splice(index, 0, op);
   }
 
@@ -196,8 +181,7 @@ export class BasicBlock {
       );
     }
     const [removed] = this._ops.splice(index, 1);
-    detach(removed);
-    unregisterUses(removed);
+    removed.detach();
   }
 
   /**
@@ -220,10 +204,8 @@ export class BasicBlock {
           `BasicBlock.replaceOp: terminator ${oldOp.constructor.name} is not this block's terminal`,
         );
       }
-      detach(oldOp);
-      unregisterUses(oldOp);
-      registerUses(newOp);
-      attach(newOp, this);
+      oldOp.detach();
+      newOp.attach(this);
       this._terminal = newOp as TermOp;
       return;
     }
@@ -233,22 +215,27 @@ export class BasicBlock {
         `BasicBlock.replaceOp: op ${oldOp.constructor.name} not found in bb${this.id}`,
       );
     }
-    detach(oldOp);
-    unregisterUses(oldOp);
-    registerUses(newOp);
-    attach(newOp, this);
+    oldOp.detach();
+    newOp.attach(this);
     this._ops[index] = newOp;
   }
 
   /**
    * Remove and return non-terminator ops from `start` to the end of
-   * the list. Ops are moved; caller inherits use-chain registrations
-   * (nothing is unregistered).
+   * the list. This is a **move**, not a deletion: the ops keep their
+   * operand/result use-list registrations intact because the caller
+   * (currently `FuncOpBuilder.addHeaderOps`) re-homes them into a
+   * different IR owner (`FuncOp.header`/`prologue`). Only the
+   * `parentBlock` back-pointer is cleared, since they're no longer
+   * inside this block.
+   *
+   * Do not use this for true removal — use `removeOpAt` so use-lists
+   * unregister.
    */
   spliceInstructions(start: number): Operation[] {
     if (start >= this._ops.length) return [];
     const removed = this._ops.splice(start);
-    for (const op of removed) detach(op);
+    for (const op of removed) op.parentBlock = null;
     return removed;
   }
 

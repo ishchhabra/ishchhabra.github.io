@@ -270,6 +270,56 @@ export abstract class Operation {
   }
 
   // -----------------------------------------------------------------
+  // Lifecycle: attach / detach
+  //
+  // The single sanctioned mutation path for the def-use lists. Called
+  // by `BasicBlock` whenever an op enters or leaves the IR (constructor,
+  // appendOp, insertOpAt, replaceOp, terminal setter, removeOpAt) and
+  // by `Environment.createOperation` for ops not yet placed in a block
+  // (which only attaches results, since operands/successors aren't
+  // yet meaningful — see the override pattern below).
+  //
+  // `Value._addUse` / `_removeUse` / `_setDefiner` / `_clearDefinerIf`
+  // and `BasicBlock._addUse` / `_removeUse` are documented `@internal`
+  // and must not be called from anywhere else.
+  // -----------------------------------------------------------------
+
+  /**
+   * Attach this op to `block`. Single sanctioned path that toggles
+   * `parentBlock` and links into every use-list (operands' uses,
+   * results' definer, terminator successor blocks via TermOp's override).
+   *
+   * Pass `block === null` for the rare ops that are owned outside the
+   * block graph — `FuncOp` (owned by a module) and the transient
+   * `Environment.createOperation` path that pre-links results before
+   * the op is placed.
+   */
+  attach(block: BasicBlock | null): void {
+    if (this.parentBlock !== null) {
+      throw new Error(
+        `${this.constructor.name}#${this.id}.attach: already attached to bb${this.parentBlock.id}`,
+      );
+    }
+    this.parentBlock = block;
+    for (const value of this.operands()) {
+      value._addUse(this);
+    }
+    for (const value of this.results()) {
+      value._setDefiner(this);
+    }
+  }
+
+  detach(): void {
+    for (const value of this.operands()) {
+      value._removeUse(this);
+    }
+    for (const value of this.results()) {
+      value._clearDefinerIf(this);
+    }
+    this.parentBlock = null;
+  }
+
+  // -----------------------------------------------------------------
   // Verification — each op can assert its structural invariants.
   // Called by pass infrastructure at pass boundaries (in debug
   // builds) and unconditionally at the end of the pipeline. Throws
@@ -309,7 +359,7 @@ export abstract class Operation {
     }
 
     // Use-chain consistency: every operand lists `this` as a user.
-    // Skipped for unattached ops — `registerUses` runs on append.
+    // Skipped for unattached ops — `attach()` runs on append.
     if (this.parentBlock !== null) {
       for (const operand of this.operands()) {
         if (!operand.users.has(this)) {

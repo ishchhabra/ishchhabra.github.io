@@ -5,7 +5,6 @@ import {
   type DeclarationMetadata,
   makeBlockId,
   makeOperationId,
-  Operation,
 } from "./ir";
 import { DeclarationId, makeDeclarationId, makeValueId, Value } from "./ir/core/Value";
 import { ProjectEnvironment } from "./ProjectEnvironment";
@@ -69,25 +68,21 @@ export class Environment {
     return new Value(valueId, declarationId);
   }
 
+  /**
+   * Allocate a fresh op id and instantiate `Class` with it. This is a
+   * thin convenience over `new Class(env.nextOperationId++, ...args)`;
+   * use-list bookkeeping (operand uses, result definers, successor
+   * block uses) happens in `op.attach(block)`, not here. Callers must
+   * place the op in a block (or another IR owner) before its
+   * def-use metadata is observable.
+   */
   // oxlint-disable-next-line typescript/no-explicit-any
   public createOperation<C extends new (...args: any[]) => any>(
     Class: C,
     ...args: OmitFirst<ConstructorParameters<C>>
   ): InstanceType<C> {
     const opId = makeOperationId(this.projectEnvironment.nextOperationId++);
-    const op = new Class(opId, ...args);
-    // Register every def of the newly-created op as defined by it.
-    // A Value's definer is set exactly once, at the op's creation site,
-    // by the same code path that allocates the op. Callers must use
-    // `createOperation` (not `new`) if they want `value.def` to be
-    // populated before the op is attached to a block.
-    const results = (op as Operation).results?.bind(op);
-    if (results !== undefined) {
-      for (const def of results()) {
-        def._setDefiner(op as Operation);
-      }
-    }
-    return op;
+    return new Class(opId, ...args);
   }
 
   public createBlock(): BasicBlock {

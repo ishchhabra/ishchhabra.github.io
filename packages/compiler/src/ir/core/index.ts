@@ -19,7 +19,6 @@ export {
 } from "./Destructure";
 export type { ControlContext } from "./ControlContext";
 export { Value, makeValueId, makeDeclarationId, type DeclarationId, type ValueId } from "./Value";
-export { registerUses, unregisterUses } from "./Use";
 export { type LexicalScopeKind } from "./LexicalScope";
 export {
   makeCloneContext,

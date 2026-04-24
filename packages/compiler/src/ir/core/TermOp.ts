@@ -20,6 +20,20 @@ export abstract class TermOp extends Operation {
     return successors;
   }
 
+  override attach(block: BasicBlock | null): void {
+    super.attach(block);
+    for (const successor of this.successors()) {
+      successor.block._addUse(this);
+    }
+  }
+
+  override detach(): void {
+    for (const successor of this.successors()) {
+      successor.block._removeUse(this);
+    }
+    super.detach();
+  }
+
   override remap(from: BasicBlock, to: BasicBlock): void {
     let replacement: TermOp | undefined;
     for (let i = 0; i < (replacement ?? this).successorCount(); i++) {

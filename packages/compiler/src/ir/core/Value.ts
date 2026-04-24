@@ -122,7 +122,7 @@ export class Value {
   // Internal mutation API — IR infrastructure only.
   //
   // Callers:
-  //   - BasicBlock use-chain helpers (registerUses / unregisterUses)
+  //   - Operation.attach / Operation.detach (driven by BasicBlock)
   //   - Environment.createOperation (sets definer once at op creation)
   //
   // Not for use from passes. Passes mutate the IR through
