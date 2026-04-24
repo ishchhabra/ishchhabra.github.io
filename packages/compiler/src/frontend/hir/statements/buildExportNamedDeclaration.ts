@@ -138,7 +138,7 @@ function buildExportDeclarationAsSpecifiers(
     functionBuilder.addOp(specInstruction);
     specifierPlaces.push(specPlace);
 
-    const declarationInstruction = localPlace.definer;
+    const declarationInstruction = localPlace.def;
     if (declarationInstruction !== undefined) {
       moduleBuilder.moduleIR.exports.set(name, {
         instruction: specInstruction,

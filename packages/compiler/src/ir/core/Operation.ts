@@ -320,7 +320,7 @@ export abstract class Operation {
     // Skipped for unattached ops — `registerUses` runs on append.
     if (this.parentBlock !== null) {
       for (const operand of this.operands()) {
-        if (!operand.uses.has(this)) {
+        if (!operand.users.has(this)) {
           throw new VerifyError(this, `operand ${operand.print()} does not list this as a user`);
         }
       }

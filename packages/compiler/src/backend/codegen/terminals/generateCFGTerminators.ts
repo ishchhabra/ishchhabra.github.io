@@ -79,7 +79,7 @@ function tryEmitTernary(
   const elseArm = tryExtractArmYield(term.elseBlock, fallthrough);
   if (thenArm === null || elseArm === null) return null;
   const resultPlace = fallthrough.params[0];
-  if (resultPlace.uses.size === 0) return null;
+  if (resultPlace.users.size === 0) return null;
 
   const thenValueNode = generator.values.get(thenArm.id);
   const elseValueNode = generator.values.get(elseArm.id);

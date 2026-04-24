@@ -83,11 +83,11 @@ export class ReassociationPass {
   private flatten(root: BinaryExpressionOp): Value[] {
     const out: Value[] = [];
     const visit = (v: Value): void => {
-      const def = v.definer;
+      const def = v.def;
       if (
         def instanceof BinaryExpressionOp &&
         def.operator === root.operator &&
-        v.uses.size === 1
+        v.users.size === 1
       ) {
         visit(def.left);
         visit(def.right);
@@ -126,9 +126,9 @@ export class ReassociationPass {
     const literals = operands.slice(suffixStart);
     const rest = operands.slice(0, suffixStart);
 
-    let acc = (literals[0].definer as LiteralOp).value;
+    let acc = (literals[0].def as LiteralOp).value;
     for (let i = 1; i < literals.length; i++) {
-      acc = applyBinary(operator, acc, (literals[i].definer as LiteralOp).value);
+      acc = applyBinary(operator, acc, (literals[i].def as LiteralOp).value);
     }
 
     const env = this.funcOp.moduleIR.environment;
@@ -158,7 +158,7 @@ export class ReassociationPass {
       const only = operands[0];
       if (isLiteralValue(only)) {
         // Reuse the root's place so users keep pointing at it.
-        return new LiteralOp(root.id, root.place, (only.definer as LiteralOp).value);
+        return new LiteralOp(root.id, root.place, (only.def as LiteralOp).value);
       }
       // Single non-literal — can't replace a binary op with a bare
       // Value here; leave the chain alone. (Happens only if the
@@ -212,7 +212,7 @@ function isReassociatable(op: BinaryOperator): boolean {
 }
 
 function isLiteralValue(v: Value): boolean {
-  return v.definer instanceof LiteralOp;
+  return v.def instanceof LiteralOp;
 }
 
 /**
@@ -223,7 +223,7 @@ function isLiteralValue(v: Value): boolean {
  * earlier in the function." Earliest-defined sort leftmost.
  */
 function rank(v: Value): number {
-  if (v.definer instanceof LiteralOp) return Number.POSITIVE_INFINITY;
+  if (v.def instanceof LiteralOp) return Number.POSITIVE_INFINITY;
   return v.id;
 }
 

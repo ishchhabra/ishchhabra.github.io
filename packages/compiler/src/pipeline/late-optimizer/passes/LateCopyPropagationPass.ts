@@ -136,7 +136,7 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
       // AwaitExpression, CallExpression) would cause codegen to re-emit
       // the defining expression at every use site, duplicating side
       // effects and computation.
-      const definer = instr.value.definer;
+      const definer = instr.value.def;
       if (!(definer instanceof LoadLocalOp)) {
         return;
       }

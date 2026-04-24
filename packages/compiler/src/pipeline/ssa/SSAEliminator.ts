@@ -89,7 +89,7 @@ export class SSAEliminator {
       // the backing `let` nor the per-edge copies serve a purpose.
       // Emitting them would force DCE-removed arg Values back into
       // the IR as phantom operands.
-      if (param.uses.size === 0) continue;
+      if (param.users.size === 0) continue;
 
       this.#insertParamDeclaration(sink, param);
 
@@ -250,13 +250,13 @@ export class SSAEliminator {
    */
   #interferes(block: BasicBlock, load: LoadLocalOp | LoadContextOp, defIdx: number): boolean {
     const resultId = load.place;
-    if (resultId.uses.size === 0) return false;
+    if (resultId.users.size === 0) return false;
 
     const srcDecl = load.value.declarationId;
     const ops = block.operations;
 
     let lastUseIdx = -1;
-    for (const user of resultId.uses) {
+    for (const user of resultId.users) {
       if (!(user instanceof Operation)) continue;
       if (user.parentBlock !== block) return true;
       const userIdx = ops.indexOf(user);

@@ -63,7 +63,7 @@ export class CallGraphResult {
     moduleIR: ModuleIR,
     callExpression: CallExpressionOp,
   ): CallTarget | undefined {
-    const loadInstr = callExpression.callee.definer;
+    const loadInstr = callExpression.callee.def;
 
     if (loadInstr instanceof LoadGlobalOp) {
       const global = moduleIR.globals.get(loadInstr.name);
@@ -127,7 +127,7 @@ export class CallGraphResult {
         continue;
       }
 
-      const funcDeclInstr = exportPlace.declaration.place!.definer;
+      const funcDeclInstr = exportPlace.declaration.place!.def;
 
       if (funcDeclInstr instanceof FunctionDeclarationOp) {
         return { modulePath: source, funcOpId: funcDeclInstr.funcOp.id };
@@ -222,7 +222,7 @@ function gatherDeclarations(moduleIR: ModuleIR, moduleDecls: Map<DeclarationId, 
         if (!(instr instanceof StoreLocalOp)) {
           continue;
         }
-        const definer = instr.value.definer;
+        const definer = instr.value.def;
         if (
           definer instanceof FunctionExpressionOp ||
           definer instanceof ArrowFunctionExpressionOp
@@ -266,7 +266,7 @@ function gatherCalls(
         }
 
         // Guard: the callee instruction must exist (filters out phantom refs).
-        if (instr.callee.definer === undefined) {
+        if (instr.callee.def === undefined) {
           continue;
         }
 

@@ -13,7 +13,7 @@ export function generateExportNamedDeclarationOp(
   if (instruction.declaration !== undefined) {
     // Def-use traversal: the declaration operand's definer op
     // produces the embedded declaration AST directly.
-    const definer = instruction.declaration.definer;
+    const definer = instruction.declaration.def;
     let decl: t.Declaration;
     if (definer instanceof FunctionDeclarationOp) {
       decl = generateFunctionDeclarationOp(definer, generator);

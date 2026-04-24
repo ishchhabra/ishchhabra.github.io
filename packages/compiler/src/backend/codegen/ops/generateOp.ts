@@ -139,7 +139,7 @@ export function generateOp(
     }
 
     if (
-      instruction.place.uses.size === 0 &&
+      instruction.place.users.size === 0 &&
       hasTransitiveSideEffects(instruction, generator.moduleIR.environment) &&
       statement &&
       t.isExpression(statement)
@@ -164,7 +164,7 @@ export function generateOp(
   } else if (isValueOp(instruction)) {
     const node = generateValueOp(instruction, funcOp, generator);
     if (
-      instruction.place.uses.size === 0 &&
+      instruction.place.users.size === 0 &&
       hasTransitiveSideEffects(instruction, generator.moduleIR.environment) &&
       node !== null &&
       t.isExpression(node)
@@ -198,7 +198,7 @@ function hasTransitiveSideEffects(
     seen.add(cur);
     if (cur.hasSideEffects(env)) return true;
     for (const operand of cur.operands()) {
-      const def = operand.definer;
+      const def = operand.def;
       if (def instanceof Operation) stack.push(def);
     }
   }

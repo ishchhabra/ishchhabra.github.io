@@ -15,7 +15,7 @@ export function generateExportDefaultDeclarationOp(
   // directly — `export default function Foo() {}` is a single
   // grammatical production (§15.2.3.1), not `export default <Foo>`
   // wrapping an expression.
-  const definer = instruction.declaration.definer;
+  const definer = instruction.declaration.def;
   if (definer instanceof FunctionDeclarationOp) {
     return t.exportDefaultDeclaration(generateFunctionDeclarationOp(definer, generator));
   }

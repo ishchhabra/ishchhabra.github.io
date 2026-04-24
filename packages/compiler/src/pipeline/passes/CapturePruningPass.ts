@@ -67,7 +67,7 @@ function rebuildWithCaptures(instr: FunctionBearingInstruction, newCaptures: Val
  *
  * This pass reconciles the two: for each function-bearing instruction, it
  * checks which captureParams are actually read inside the inner function
- * body (via the embedded {@link Value.uses} chain), and removes capture/captureParam
+ * body (via the embedded {@link Value.users} chain), and removes capture/captureParam
  * pairs that are dead.
  */
 export class CapturePruningPass extends BaseOptimizationPass {
@@ -103,7 +103,7 @@ export class CapturePruningPass extends BaseOptimizationPass {
         const liveIndices: number[] = [];
         for (let j = 0; j < captureParams.length; j++) {
           const param = captureParams[j];
-          if (param.uses.size > 0 || isRead(param.id)) {
+          if (param.users.size > 0 || isRead(param.id)) {
             liveIndices.push(j);
           }
         }

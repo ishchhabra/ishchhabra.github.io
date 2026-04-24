@@ -75,7 +75,7 @@ function meet(a: Lattice, b: Lattice): Lattice {
  *     (not a compile-time constant), or a specific primitive.
  *   - SSA worklist: when a value's cell changes, enqueue. Dequeue,
  *     re-evaluate every op that reads the value via the embedded
- *     {@link Value.uses} chain — sparse, never a full block sweep.
+ *     {@link Value.users} chain — sparse, never a full block sweep.
  *   - Block params are evaluated like phi nodes: meet of the
  *     corresponding `JumpTermOp.args[i]` across each predecessor edge.
  *
@@ -174,7 +174,7 @@ export class ConstantPropagationPass {
   private drain(): void {
     while (this.ssaWorklist.length > 0) {
       const value = this.ssaWorklist.pop()!;
-      for (const user of value.uses) {
+      for (const user of value.users) {
         const op = user as Operation;
         if (op instanceof JumpTermOp) {
           // Block-arg flow: a changed arg may update a target block param.
@@ -464,7 +464,7 @@ export class ConstantPropagationPass {
   }
 
   private evaluateCall(op: CallExpressionOp): void {
-    const calleeOp = op.callee.definer as Operation | undefined;
+    const calleeOp = op.callee.def as Operation | undefined;
     if (calleeOp === undefined) {
       this.setLattice(op.place, BOTTOM);
       return;

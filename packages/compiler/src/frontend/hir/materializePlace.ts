@@ -64,7 +64,7 @@ export function isStablePlace(
   if (seen.has(place.id)) return true;
   seen.add(place.id);
 
-  const instruction = place.definer;
+  const instruction = place.def;
   if (!instruction) {
     return true;
   }

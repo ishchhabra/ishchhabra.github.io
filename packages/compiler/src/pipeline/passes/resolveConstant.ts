@@ -56,7 +56,7 @@ export function getQualifiedName(
 
     if (current instanceof LoadStaticPropertyOp) {
       segments.push(current.property);
-      const objectInstruction = current.object.definer as Operation | undefined;
+      const objectInstruction = current.object.def as Operation | undefined;
       if (objectInstruction === undefined) {
         return undefined;
       }

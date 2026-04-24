@@ -51,7 +51,7 @@ export class UnaryExpressionOp extends Operation {
     // The void itself is pure, but if the operand is side-effectful
     // (e.g. `void fetch(url)`) the overall expression is too.
     if (this.operator === "void") {
-      const argInstr = this.argument.definer as Operation | undefined;
+      const argInstr = this.argument.def as Operation | undefined;
       return argInstr ? argInstr.hasSideEffects(environment) : false;
     }
 

@@ -79,7 +79,7 @@ export class Environment {
     // Register every def of the newly-created op as defined by it.
     // A Value's definer is set exactly once, at the op's creation site,
     // by the same code path that allocates the op. Callers must use
-    // `createOperation` (not `new`) if they want `value.definer` to be
+    // `createOperation` (not `new`) if they want `value.def` to be
     // populated before the op is attached to a block.
     const results = (op as Operation).results?.bind(op);
     if (results !== undefined) {

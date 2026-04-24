@@ -62,7 +62,7 @@ export class CallExpressionOp extends Operation {
    * side-effect-free, even if its args were.
    */
   public override hasSideEffects(environment: Environment): boolean {
-    const calleeOp = this.callee.definer as Operation | undefined;
+    const calleeOp = this.callee.def as Operation | undefined;
     if (calleeOp === undefined) return true;
     const qualified = getQualifiedName(calleeOp, environment);
     if (qualified === undefined) return true;

@@ -129,10 +129,10 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
 
   private getSingleUser(store: StoreLocalOp): Operation | undefined {
     const uses = new Set<Operation>();
-    for (const u of store.place.uses) {
+    for (const u of store.place.users) {
       if (u instanceof Operation) uses.add(u);
     }
-    for (const u of store.lval.uses) {
+    for (const u of store.lval.users) {
       if (u instanceof Operation) uses.add(u);
     }
     if (uses.size !== 1) return undefined;
@@ -154,7 +154,7 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
 
   private readsMutableState(place: Value): boolean {
     const declarationId = place.declarationId;
-    if (place.definer instanceof LoadContextOp) return true;
+    if (place.def instanceof LoadContextOp) return true;
     if (this.environment.contextDeclarationIds.has(declarationId)) return true;
     return this.mutability.getStoreCount(declarationId) > 1;
   }
@@ -175,7 +175,7 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
       if (op instanceof StoreContextOp) return true;
 
       // Zero-use value ops with side effects flush as expression statements.
-      if (isValueOp(op) && op.place.uses.size === 0 && op.hasSideEffects(this.environment)) {
+      if (isValueOp(op) && op.place.users.size === 0 && op.hasSideEffects(this.environment)) {
         return true;
       }
     }

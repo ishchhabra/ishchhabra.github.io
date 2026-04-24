@@ -33,7 +33,7 @@ export function buildExportSpecifier(
   if (localPlace === undefined) {
     throw new Error(`Export specifier local '${localName}': binding place not found`);
   }
-  const declarationInstruction = localPlace.definer as Operation | undefined;
+  const declarationInstruction = localPlace.def as Operation | undefined;
   if (declarationInstruction === undefined) {
     throw new Error(`Export specifier local '${localName}': binding place has no definer`);
   }

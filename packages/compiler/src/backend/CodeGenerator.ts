@@ -60,7 +60,7 @@ export class CodeGenerator {
    * the same op returns the same AST node.
    *
    * Not a side-channel lookup map: consumers don't read this
-   * directly. They walk the def-use edge (`Value.definer`) to find
+   * directly. They walk the def-use edge (`Value.def`) to find
    * the producing op and call its codegen function, which returns
    * the cached AST. Matches MLIR's `value->getDefiningOp()` pattern.
    */

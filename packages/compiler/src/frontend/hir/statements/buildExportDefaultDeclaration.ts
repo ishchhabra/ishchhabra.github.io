@@ -40,7 +40,7 @@ export function buildExportDefaultDeclaration(
       const declarationId = functionBuilder.getDeclarationId(name, scope);
       if (declarationId !== undefined) {
         const binding = environment.getDeclarationBinding(declarationId);
-        const declarationInstruction = binding?.definer;
+        const declarationInstruction = binding?.def;
         if (declarationInstruction instanceof FunctionDeclarationOp) {
           declarationPlace = declarationInstruction.place;
         }
@@ -85,7 +85,7 @@ export function buildExportDefaultDeclaration(
   // or the anonymous expression op otherwise.
   moduleBuilder.moduleIR.exports.set("default", {
     instruction,
-    declaration: declarationPlace.definer as Operation | undefined,
+    declaration: declarationPlace.def as Operation | undefined,
   });
   return place;
 }

@@ -7,7 +7,7 @@ import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
  * Late Dead Code Elimination — cleanup pass after SSA elimination.
  *
  * Removes pure instructions whose defined place has no readers. Uses
- * the embedded {@link Value.uses} chain (maintained incrementally
+ * the embedded {@link Value.users} chain (maintained incrementally
  * by BasicBlock mutation methods) to determine what is used.
  *
  * The base class re-runs `step()` until fixpoint so that chains of dead
@@ -41,11 +41,11 @@ export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
         if (instr.hasSideEffects(this.environment)) continue;
 
         if (instr instanceof StoreLocalOp) {
-          if (instr.results().some((p) => p.uses.size > 0)) continue;
-          const definer = instr.value.definer;
+          if (instr.results().some((p) => p.users.size > 0)) continue;
+          const definer = instr.value.def;
           if (definer instanceof Operation && !definer.isPure(this.environment)) continue;
         } else {
-          if (instr.results().some((p) => p.uses.size > 0)) continue;
+          if (instr.results().some((p) => p.users.size > 0)) continue;
         }
 
         block.removeOpAt(i);

@@ -21,7 +21,7 @@ import type { Operation } from "./core/Operation";
  */
 export function isClaimedByExportDeclaration(op: Operation): boolean {
   if (op.place === undefined) return false;
-  for (const user of op.place.uses) {
+  for (const user of op.place.users) {
     if (user instanceof ExportNamedDeclarationOp && user.declaration === op.place) {
       return true;
     }

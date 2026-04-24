@@ -28,7 +28,7 @@ export function computeProcessingOrder(moduleIR: ModuleIR): FuncOp[] {
         if (instr instanceof FunctionDeclarationOp) {
           declToFunc.set(instr.place.declarationId, instr.funcOp.id);
         } else if (instr instanceof StoreLocalOp) {
-          const definer = instr.value.definer;
+          const definer = instr.value.def;
           if (
             definer instanceof FunctionExpressionOp ||
             definer instanceof ArrowFunctionExpressionOp
@@ -57,7 +57,7 @@ export function computeProcessingOrder(moduleIR: ModuleIR): FuncOp[] {
       for (const instr of block.operations) {
         if (!(instr instanceof CallExpressionOp)) continue;
 
-        const calleeInstr = instr.callee.definer;
+        const calleeInstr = instr.callee.def;
         if (!(calleeInstr instanceof LoadLocalOp)) continue;
         const calleeId = declToFunc.get(calleeInstr.value.declarationId);
         if (calleeId !== undefined && calleeId !== funcIR.id) {

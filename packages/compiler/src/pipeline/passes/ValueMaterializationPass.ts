@@ -124,14 +124,14 @@ export class ValueMaterializationPass {
     // B. Trivially duplicable.
     if (this.isTriviallyDuplicable(op)) return false;
 
-    const useCount = op.place.uses.size;
+    const useCount = op.place.users.size;
     if (useCount === 0) return false; // DCE leftover or standalone-emitted
 
     // C. Multi-use.
     if (useCount > 1) return true;
 
     // Single-use from here.
-    const user = op.place.uses.values().next().value as Operation;
+    const user = op.place.users.values().next().value as Operation;
 
     // D. Identifier-required operand.
     if (requiresIdentifierOperand(user, op.place)) return true;
@@ -315,7 +315,7 @@ function flowsTo(op: Operation, target: Operation): boolean {
     seen.add(cur);
     for (const operand of cur.operands()) {
       if (operand === place) return true;
-      const def = operand.definer;
+      const def = operand.def;
       if (def instanceof Operation) stack.push(def);
     }
   }
@@ -333,7 +333,7 @@ function operandSubtreeHasSideEffects(
   const seen = new Set<Operation>();
   const stack: Operation[] = [];
   for (const operand of root.operands()) {
-    const def = operand.definer;
+    const def = operand.def;
     if (def instanceof Operation) stack.push(def);
   }
   while (stack.length > 0) {
@@ -342,7 +342,7 @@ function operandSubtreeHasSideEffects(
     seen.add(cur);
     if (cur.hasSideEffects(env)) return true;
     for (const operand of cur.operands()) {
-      const def = operand.definer;
+      const def = operand.def;
       if (def instanceof Operation) stack.push(def);
     }
   }

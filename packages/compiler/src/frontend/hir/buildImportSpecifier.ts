@@ -36,8 +36,8 @@ export function buildImportSpecifier(
   // slot because codegen stores different Babel nodes in each:
   // `place` holds the `t.ImportSpecifier` AST node, `bindingPlace`
   // holds the source-visible `t.identifier(localName)` that reads
-  // (and re-exports) reference. We link `bindingPlace.definer` to the
-  // op so downstream export resolution (`localPlace.definer`) can walk
+  // (and re-exports) reference. We link `bindingPlace.def` to the
+  // op so downstream export resolution (`localPlace.def`) can walk
   // from any read of the binding back to the ImportSpecifierOp that
   // materialized it.
   const bindingPlace = environment.createValue();

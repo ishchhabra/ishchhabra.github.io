@@ -144,7 +144,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
 
         if (!pattern) continue;
 
-        const objectExpr = valuePlace.definer;
+        const objectExpr = valuePlace.def;
         if (!(objectExpr instanceof ObjectExpressionOp)) continue;
 
         const objMap = this.buildObjectKeyToValue(objectExpr);
@@ -262,13 +262,13 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
    */
   private resolveToObjectExpression(place: Value): ObjectExpressionOp | null {
     // oxlint-disable-next-line typescript/no-explicit-any
-    let current: any = place.definer;
+    let current: any = place.def;
     for (let depth = 0; depth < 10 && current; depth++) {
       if (current instanceof ObjectExpressionOp) return current;
       if (current instanceof LoadLocalOp) {
-        current = current.value.definer;
+        current = current.value.def;
       } else if (current instanceof StoreLocalOp) {
-        current = current.value.definer;
+        current = current.value.def;
       } else {
         break;
       }
@@ -299,7 +299,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
 
         // `delete obj.prop` — the delete argument is a LoadStaticProperty.
         if (instr instanceof UnaryExpressionOp && instr.operator === "delete") {
-          const argDefiner = instr.argument.definer;
+          const argDefiner = instr.argument.def;
           if (argDefiner instanceof LoadStaticPropertyOp) {
             const objExpr = this.resolveToObjectExpression(argDefiner.object);
             if (objExpr) {
@@ -373,7 +373,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
 
         // `delete obj.prop` → invalidate the specific property.
         if (instr instanceof UnaryExpressionOp && instr.operator === "delete") {
-          const argDefiner = instr.argument.definer;
+          const argDefiner = instr.argument.def;
           if (argDefiner instanceof LoadStaticPropertyOp) {
             const objId = this.resolveToObjectId(argDefiner.object);
             if (objId !== null) {
@@ -462,7 +462,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
         }
 
         // Result must be unused.
-        if (instr.place.uses.size > 0) continue;
+        if (instr.place.users.size > 0) continue;
 
         // Object must be a NoEscape literal.
         const objExpr = this.resolveToObjectExpression(instr.object);
@@ -495,7 +495,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
    * to a `delete` UnaryExpression.
    */
   private feedsDeleteExpression(instr: LoadStaticPropertyOp): boolean {
-    for (const user of instr.place.uses) {
+    for (const user of instr.place.users) {
       if (user instanceof UnaryExpressionOp && user.operator === "delete") {
         return true;
       }
@@ -527,14 +527,14 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
     const map = new Map<string, Value>();
 
     for (const propPlace of objectExpr.properties) {
-      const prop = propPlace.definer;
+      const prop = propPlace.def;
 
       if (prop instanceof SpreadElementOp) return null;
       if (!(prop instanceof ObjectPropertyOp)) return null;
 
       if (prop.computed) return null;
 
-      const keyDefiner = prop.key.definer;
+      const keyDefiner = prop.key.def;
       if (!(keyDefiner instanceof LiteralOp)) return null;
       if (typeof keyDefiner.value !== "string" && typeof keyDefiner.value !== "number") return null;
 

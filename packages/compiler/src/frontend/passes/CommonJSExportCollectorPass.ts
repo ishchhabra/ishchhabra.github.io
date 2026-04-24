@@ -44,7 +44,7 @@ export class CommonJSExportCollectorPass {
 
         this.moduleIR.exports.set("default", {
           instruction,
-          declaration: instruction.value.definer as Operation,
+          declaration: instruction.value.def as Operation,
         });
       }
     }
@@ -59,7 +59,7 @@ export class CommonJSExportCollectorPass {
     }
 
     const objectPlace = instruction.object;
-    const objectInstr = objectPlace.definer!;
+    const objectInstr = objectPlace.def!;
 
     if (!(objectInstr instanceof LoadGlobalOp) || objectInstr.name !== "module") {
       return false;

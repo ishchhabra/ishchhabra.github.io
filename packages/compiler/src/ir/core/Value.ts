@@ -1,4 +1,4 @@
-import type { User } from "./Use";
+import type { Operation } from "./Operation";
 
 /**
  * Simulated opaque type for ValueId to prevent using normal numbers as
@@ -41,8 +41,8 @@ export function makeDeclarationId(id: number): DeclarationId {
  *     declaration the param merges values of. The param has its own
  *     fresh `declarationId`; this back-pointer lets out-of-SSA
  *     lowering reach the source variable.
- *   - `#definer` / `#uses` — encapsulated def-use state. Private JS
- *     fields; external code reads via `definer` / `uses`. Mutation
+ *   - `#def` / `#users` — encapsulated def-use state. Private JS
+ *     fields; external code reads via `def` / `users`. Mutation
  *     is possible only through the `_*` methods, which are reserved
  *     for `BasicBlock`'s use-chain helpers and
  *     `Environment.createOperation`.
@@ -50,8 +50,8 @@ export function makeDeclarationId(id: number): DeclarationId {
 export class Value {
   public name: string;
 
-  #definer: User | undefined = undefined;
-  readonly #uses: Set<User> = new Set();
+  #def: Operation | undefined = undefined;
+  readonly #users: Set<Operation> = new Set();
 
   public originalDeclarationId: DeclarationId | undefined;
 
@@ -66,19 +66,26 @@ export class Value {
   // Def-use accessors — MLIR-style
   // -------------------------------------------------------------------
 
-  /** The unique op that defines this value, or `undefined` for block params / unattached. */
-  get definer(): User | undefined {
-    return this.#definer;
+  /**
+   * The unique producer of this value.
+   *
+   * Operation results are defined by the operation that produced them.
+   * Block parameters and values that have not been attached to an op have
+   * no operation definer, so this returns `undefined`.
+   */
+  get def(): Operation | undefined {
+    return this.#def;
   }
 
   /**
-   * Read-only view of every op that uses this value. Backed by the
-   * internal `Set<User>`, so `.size` / `.has(op)` / iteration are all
-   * O(1) — but the `ReadonlySet` type prevents `.add` / `.delete` at
-   * the type level so external code can't corrupt the use list.
+   * Operations that read this value.
+   *
+   * This is a set of users, not individual operand slots. If one
+   * operation reads the same value twice, it appears here once. The
+   * internal set is updated by block attachment/replacement helpers.
    */
-  get uses(): ReadonlySet<User> {
-    return this.#uses;
+  get users(): ReadonlySet<Operation> {
+    return this.#users;
   }
 
   /**
@@ -89,7 +96,7 @@ export class Value {
    */
   replaceAllUsesWith(other: Value): void {
     if (other === this) return;
-    const users = Array.from(this.#uses);
+    const users = Array.from(this.#users);
     const map = new Map<Value, Value>([[this, other]]);
     for (const user of users) {
       const op = user as unknown as {
@@ -124,24 +131,24 @@ export class Value {
   // -------------------------------------------------------------------
 
   /** @internal */
-  _addUse(user: User): void {
-    this.#uses.add(user);
+  _addUse(user: Operation): void {
+    this.#users.add(user);
   }
 
   /** @internal */
-  _removeUse(user: User): void {
-    this.#uses.delete(user);
+  _removeUse(user: Operation): void {
+    this.#users.delete(user);
   }
 
   /** @internal */
-  _setDefiner(user: User): void {
-    this.#definer = user;
+  _setDefiner(user: Operation): void {
+    this.#def = user;
   }
 
   /** @internal */
-  _clearDefinerIf(user: User): void {
-    if (this.#definer === user) {
-      this.#definer = undefined;
+  _clearDefinerIf(user: Operation): void {
+    if (this.#def === user) {
+      this.#def = undefined;
     }
   }
 }

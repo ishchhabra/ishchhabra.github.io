@@ -1,7 +1,7 @@
 import { Value } from "./Value";
 import { Operation, TermOp } from "./Operation";
 import type { Region } from "./Region";
-import { registerUses, unregisterUses, type User } from "./Use";
+import { registerUses, unregisterUses } from "./Use";
 
 /**
  * Simulated opaque type for BlockId to prevent using normal numbers
@@ -88,7 +88,7 @@ export class BasicBlock {
    * terminators refer to this block?" — i.e. the CFG predecessor
    * edges, always current, never stale.
    */
-  readonly #uses: Set<User> = new Set();
+  readonly #uses: Set<Operation> = new Set();
 
   constructor(
     public readonly id: BlockId,
@@ -268,12 +268,12 @@ export class BasicBlock {
   // -----------------------------------------------------------------------
 
   /** @internal */
-  _addUse(user: User): void {
+  _addUse(user: Operation): void {
     this.#uses.add(user);
   }
 
   /** @internal */
-  _removeUse(user: User): void {
+  _removeUse(user: Operation): void {
     this.#uses.delete(user);
   }
 
@@ -282,7 +282,7 @@ export class BasicBlock {
    * block — i.e. the raw CFG in-edges. Use {@link predecessors} for
    * the set of predecessor blocks.
    */
-  get uses(): ReadonlySet<User> {
+  get uses(): ReadonlySet<Operation> {
     return this.#uses;
   }
 
