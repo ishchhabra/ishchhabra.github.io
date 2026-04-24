@@ -84,9 +84,13 @@ export class ExportDeclarationMergingPass extends BaseOptimizationPass {
     // For each ExportSpecifier, try to merge with its declaration.
     for (const exportSpec of exportSpecifiers) {
       // Find the binding instruction that defines the local place.
+      const localPlace = this.funcOp.moduleIR.environment.getDeclarationBinding(
+        exportSpec.localDeclarationId,
+      );
+      if (localPlace === undefined) continue;
       const bi = instrs.find(
         (instr): instr is DeclareLocalOp =>
-          instr instanceof DeclareLocalOp && instr.place.id === exportSpec.localPlace.id,
+          instr instanceof DeclareLocalOp && instr.place.id === localPlace.id,
       );
       if (bi === undefined) continue;
 

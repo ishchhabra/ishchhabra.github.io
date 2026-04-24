@@ -71,8 +71,7 @@ function analyzePromotability(
         for (const c of captures) mark(c.declarationId, NonPromotableReason.Captured);
       }
       if (op instanceof ExportSpecifierOp) {
-        const d = op.localPlace.declarationId;
-        if (d !== undefined) mark(d, NonPromotableReason.Exported);
+        mark(op.localDeclarationId, NonPromotableReason.Exported);
       } else if (op instanceof ExportDefaultDeclarationOp) {
         const d = op.declaration.declarationId;
         if (d !== undefined) mark(d, NonPromotableReason.Exported);

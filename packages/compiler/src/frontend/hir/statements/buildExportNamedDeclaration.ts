@@ -132,7 +132,7 @@ function buildExportDeclarationAsSpecifiers(
     const specInstruction = environment.createOperation(
       ExportSpecifierOp,
       specPlace,
-      localPlace,
+      declarationId,
       name,
     );
     functionBuilder.addOp(specInstruction);

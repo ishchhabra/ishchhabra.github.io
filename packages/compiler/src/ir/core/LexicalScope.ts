@@ -1,3 +1,10 @@
+const opaqueScopeId = Symbol();
+export type ScopeId = number & { [opaqueScopeId]: "ScopeId" };
+
+export function makeScopeId(id: number): ScopeId {
+  return id as ScopeId;
+}
+
 /**
  * The kind of lexical scope, corresponding to the ECMAScript construct
  * that creates the scope's LexicalEnvironment.

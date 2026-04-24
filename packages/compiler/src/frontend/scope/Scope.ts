@@ -20,6 +20,7 @@ import type {
 } from "oxc-parser";
 import { KEYS } from "eslint-visitor-keys";
 import type * as AST from "../estree";
+import { makeScopeId, type ScopeId } from "../../ir/core/LexicalScope";
 
 // -----------------------------------------------------------------------
 // Public types
@@ -65,7 +66,8 @@ export interface FunctionDeclarationEntry {
 }
 
 export class Scope {
-  public readonly symbols = new Map<string, Binding>();
+  public readonly id: ScopeId = makeScopeId(nextScopeId++);
+  public readonly bindings = new Map<string, Binding>();
   public readonly data = new Map<string, unknown>();
 
   // ---- Pre-computed declaration inventories (populated during scope analysis) ----
@@ -97,7 +99,7 @@ export class Scope {
     // oxlint-disable-next-line typescript/no-this-alias
     let scope: Scope | null = this;
     while (scope !== null) {
-      const binding = scope.symbols.get(name);
+      const binding = scope.bindings.get(name);
       if (binding !== undefined) return binding;
       scope = scope.parent;
     }
@@ -148,6 +150,8 @@ export interface AnalysisResult {
   programScope: Scope;
   scopeMap: ScopeMap;
 }
+
+let nextScopeId = 0;
 
 /**
  * Analyzes an ESTree AST and builds a scope tree with binding information.
@@ -603,8 +607,8 @@ function registerBinding(name: string, kind: BindingKind, scope: Scope): void {
         : (scope.getFunctionParent() ?? scope.getProgramParent())
       : scope;
 
-  if (!target.symbols.has(name)) {
-    target.symbols.set(name, {
+  if (!target.bindings.has(name)) {
+    target.bindings.set(name, {
       kind,
       scope: target,
       mutations: [],

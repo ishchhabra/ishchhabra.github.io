@@ -320,12 +320,14 @@ export class FuncOpBuilder {
     declarationId: DeclarationId,
     kind: DeclarationKind,
     name: string,
-    _scope?: Scope,
+    scope?: Scope,
   ) {
     this.environment.registerDeclarationMetadata(declarationId, {
       kind,
       sourceName: name,
       funcOpId: this.funcOpId,
+      scopeId: scope?.id,
+      storage: kind === "import" ? "module" : "local",
     });
     if (!this.declarationStates.has(declarationId)) {
       this.declarationStates.set(declarationId, getInitialDeclarationState(kind));

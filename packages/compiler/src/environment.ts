@@ -115,6 +115,15 @@ export class Environment {
     if (metadata.bindingValue !== undefined) {
       existing.bindingValue = metadata.bindingValue;
     }
+    if (metadata.scopeId !== undefined) {
+      existing.scopeId = metadata.scopeId;
+    }
+    if (metadata.storage !== undefined) {
+      existing.storage = metadata.storage;
+    }
+    if (metadata.import !== undefined) {
+      existing.import = metadata.import;
+    }
   }
 
   public getDeclarationMetadata(declarationId: DeclarationId): DeclarationMetadata | undefined {

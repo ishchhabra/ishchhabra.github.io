@@ -27,16 +27,21 @@ export interface ModuleExport {
 /**
  * The binding place (SSA Value) this export references, or undefined
  * for anonymous-expression exports (`export default 5`). Normalizes
- * over the two shapes: `ExportSpecifier` carries a `localPlace`; a
- * declaration-form export (`export const X = …`) carries the
+ * over the two shapes: `ExportSpecifier` carries a declaration id; a
+ * declaration-form export (`export const X = ...`) carries the
  * declaration store whose `lval` is the binding.
  *
  * Consumers reasoning about the exported binding (memory analyses,
  * cross-module folding) should use this rather than branching on
  * the export's shape.
  */
-export function getExportBindingPlace(exp: ModuleExport): Value | undefined {
-  if (exp.instruction instanceof ExportSpecifierOp) return exp.instruction.localPlace;
+export function getExportBindingPlace(
+  exp: ModuleExport,
+  environment: Environment,
+): Value | undefined {
+  if (exp.instruction instanceof ExportSpecifierOp) {
+    return environment.getDeclarationBinding(exp.instruction.localDeclarationId);
+  }
   const decl = exp.declaration;
   if (decl instanceof StoreLocalOp) return decl.lval;
   return decl?.place;

@@ -1,8 +1,10 @@
 export { BasicBlock, makeBlockId, type BlockId } from "./Block";
 export {
   getCodegenDeclarationKind,
+  importNameToExportName,
   type DeclarationKind,
   type DeclarationMetadata,
+  type ImportName,
 } from "./Declaration";
 export {
   collectDestructureTargetBindingPlaces,
@@ -20,6 +22,7 @@ export {
 export type { ControlContext } from "./ControlContext";
 export { Value, makeValueId, makeDeclarationId, type DeclarationId, type ValueId } from "./Value";
 export { type LexicalScopeKind } from "./LexicalScope";
+export { makeScopeId, type ScopeId } from "./LexicalScope";
 export {
   makeCloneContext,
   makeOperationId,

@@ -1,5 +1,6 @@
 import { OperationId } from "../../core";
 import { Value } from "../../core";
+import type { DeclarationId } from "../../core/Value";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
@@ -13,7 +14,7 @@ export class ExportSpecifierOp extends Operation {
   constructor(
     id: OperationId,
     public override readonly place: Value,
-    public readonly localPlace: Value,
+    public readonly localDeclarationId: DeclarationId,
     public readonly exported: string,
   ) {
     super(id);
@@ -22,16 +23,14 @@ export class ExportSpecifierOp extends Operation {
   public clone(ctx: CloneContext): ExportSpecifierOp {
     const env = ctx.environment;
     const place = env.createValue();
-    return env.createOperation(ExportSpecifierOp, place, this.localPlace, this.exported);
+    return env.createOperation(ExportSpecifierOp, place, this.localDeclarationId, this.exported);
   }
 
-  rewrite(values: Map<Value, Value>): Operation {
-    const next = values.get(this.localPlace) ?? this.localPlace;
-    if (next === this.localPlace) return this;
-    return new ExportSpecifierOp(this.id, this.place, next, this.exported);
+  rewrite(): Operation {
+    return this;
   }
 
   operands(): Value[] {
-    return [this.localPlace];
+    return [];
   }
 }

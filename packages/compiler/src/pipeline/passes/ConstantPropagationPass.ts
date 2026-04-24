@@ -598,7 +598,7 @@ export class ConstantPropagationPass {
   private publishSummary(): void {
     if (this.funcOp !== this.moduleIR.entryFuncOp) return;
     for (const [exportedName, exp] of this.moduleIR.exports) {
-      const place = getExportBindingPlace(exp);
+      const place = getExportBindingPlace(exp, this.moduleIR.environment);
       if (place === undefined) continue;
       const l = this.getLattice(place);
       if (!isConst(l)) continue;

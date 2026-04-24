@@ -34,7 +34,8 @@ export function buildExportSpecifier(
     throw new Error(`Export specifier local '${localName}': binding place not found`);
   }
   const declarationInstruction = localPlace.def as Operation | undefined;
-  if (declarationInstruction === undefined) {
+  const metadata = environment.getDeclarationMetadata(declarationId);
+  if (declarationInstruction === undefined && metadata?.kind !== "import") {
     throw new Error(`Export specifier local '${localName}': binding place has no definer`);
   }
 
@@ -42,7 +43,7 @@ export function buildExportSpecifier(
   const instruction = environment.createOperation(
     ExportSpecifierOp,
     place,
-    localPlace,
+    declarationId,
     exportedName,
   );
   functionBuilder.addOp(instruction);
