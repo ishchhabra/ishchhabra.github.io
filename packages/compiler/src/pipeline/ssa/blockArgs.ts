@@ -1,6 +1,6 @@
 import type { BasicBlock } from "../../ir/core/Block";
 import type { FuncOp } from "../../ir/core/FuncOp";
-import type { Operation } from "../../ir/core/Operation";
+import { makeOperationId, type Operation } from "../../ir/core/Operation";
 import type { Value } from "../../ir/core/Value";
 import { BranchTermOp, JumpTermOp } from "../../ir/ops/control";
 
@@ -45,7 +45,7 @@ export function sinkEquals(a: EdgeSink, b: EdgeSink): boolean {
  * (IfTermOp, WhileTermOp, …) route control without forwarding values.
  */
 export function forEachOutgoingEdge(
-  _funcOp: FuncOp,
+  funcOp: FuncOp,
   block: BasicBlock,
   visit: (edge: Edge) => void,
 ): void {
@@ -55,8 +55,8 @@ export function forEachOutgoingEdge(
     return;
   }
   if (terminal instanceof BranchTermOp) {
-    visit(makeBranchEdge(block, terminal, "true"));
-    visit(makeBranchEdge(block, terminal, "false"));
+    visit(makeBranchEdge(funcOp, block, terminal, "true"));
+    visit(makeBranchEdge(funcOp, block, terminal, "false"));
   }
 }
 
@@ -66,7 +66,8 @@ export function forEachIncomingEdge(
   sink: EdgeSink,
   visit: (edge: Edge) => void,
 ): void {
-  for (const predBlock of funcOp.allBlocks()) {
+  const blocks = Array.from(funcOp.allBlocks());
+  for (const predBlock of blocks) {
     forEachOutgoingEdge(funcOp, predBlock, (edge) => {
       if (sinkEquals(edge.sink, sink)) visit(edge);
     });
@@ -104,6 +105,7 @@ function makeJumpEdge(pred: BasicBlock, terminal: JumpTermOp, succ: BasicBlock):
 }
 
 function makeBranchEdge(
+  funcOp: FuncOp,
   pred: BasicBlock,
   terminal: BranchTermOp,
   arm: "true" | "false",
@@ -116,29 +118,53 @@ function makeBranchEdge(
     args,
     apply(newArgs): void {
       if (newArgs === args) return;
-      const nextTrue = arm === "true" ? newArgs : terminal.trueArgs;
-      const nextFalse = arm === "false" ? newArgs : terminal.falseArgs;
+      const current = pred.terminal;
+      if (!(current instanceof BranchTermOp)) {
+        throw new Error("Branch edge apply expected predecessor to still end in BranchTermOp");
+      }
+      const nextTrue = arm === "true" ? newArgs : current.trueArgs;
+      const nextFalse = arm === "false" ? newArgs : current.falseArgs;
       pred.replaceOp(
-        terminal,
+        current,
         new BranchTermOp(
-          terminal.id,
-          terminal.cond,
-          terminal.trueTarget,
-          terminal.falseTarget,
+          current.id,
+          current.cond,
+          current.trueTarget,
+          current.falseTarget,
           nextTrue,
           nextFalse,
         ),
       );
     },
     insertCopyStore(store): void {
-      // Edge copies for conditional branches cannot be placed
-      // unconditionally before the branch — they'd execute on both
-      // arms. The classical answer is to introduce a critical-edge
-      // split (insert a new block on the taken edge and put the copy
-      // there). We don't emit copies on branch edges in practice
-      // because passes populate args, not copies; this fallback keeps
-      // the interface total.
-      pred.appendOp(store);
+      const env = funcOp.moduleIR.environment;
+      const current = pred.terminal;
+      if (!(current instanceof BranchTermOp)) {
+        throw new Error("Branch edge split expected predecessor to still end in BranchTermOp");
+      }
+      const currentSucc = arm === "true" ? current.trueTarget : current.falseTarget;
+      const currentArgs = arm === "true" ? current.trueArgs : current.falseArgs;
+      const split = env.createBlock();
+      split.appendOp(store);
+      split.setTerminal(new JumpTermOp(makeOperationId(env.nextOperationId++), currentSucc, currentArgs));
+      funcOp.addBlock(split);
+
+      const nextTrueTarget = arm === "true" ? split : current.trueTarget;
+      const nextFalseTarget = arm === "false" ? split : current.falseTarget;
+      const nextTrueArgs = arm === "true" ? [] : current.trueArgs;
+      const nextFalseArgs = arm === "false" ? [] : current.falseArgs;
+
+      pred.replaceOp(
+        current,
+        new BranchTermOp(
+          current.id,
+          current.cond,
+          nextTrueTarget,
+          nextFalseTarget,
+          nextTrueArgs,
+          nextFalseArgs,
+        ),
+      );
     },
   };
 }
