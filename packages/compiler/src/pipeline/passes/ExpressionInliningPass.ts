@@ -14,7 +14,7 @@ import { isValueOp } from "../../ir/categories";
 import { BasicBlock } from "../../ir/core/Block";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { Value } from "../../ir/core/Value";
-import { TermOp } from "../../ir/core/Operation";
+import { TermOp } from "../../ir/core/TermOp";
 import { isClaimedByExportDeclaration } from "../../ir/exportClaim";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { MutabilityAnalysis, MutabilityInfo } from "../analysis/MutabilityAnalysis";

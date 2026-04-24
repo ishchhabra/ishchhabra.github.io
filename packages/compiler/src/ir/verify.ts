@@ -1,8 +1,8 @@
 /**
  * Whole-function IR verification. Walks every op in a {@link FuncOp}
  * and calls `op.verify()` on each. Also asserts function-level
- * invariants like "every block has a terminal" and "every block id in
- * a terminal's getBlockRefs() is a known block".
+ * invariants like "every block has a terminal" and "every successor
+ * block named by a terminal is a known block".
  *
  * Used by pass infrastructure at pass boundaries in debug builds, and
  * unconditionally at the end of the pipeline. Throws on the first
@@ -12,6 +12,7 @@
 import type { BasicBlock } from "./core/Block";
 import type { FuncOp } from "./core/FuncOp";
 import { VerifyError } from "./core/Operation";
+import { TermOp } from "./core/TermOp";
 
 /**
  * Enable `Operation.verify()` at IR construction paths and pass
@@ -38,9 +39,10 @@ export function verifyFunction(funcOp: FuncOp): void {
 
   for (const block of funcOp.allBlocks()) {
     for (const op of block.getAllOps()) {
-      for (const ref of op.getBlockRefs()) {
-        if (!knownBlocks.has(ref)) {
-          throw new VerifyError(op, `references non-existent block bb${ref.id}`);
+      if (!(op instanceof TermOp)) continue;
+      for (const successor of op.successors()) {
+        if (!knownBlocks.has(successor.block)) {
+          throw new VerifyError(op, `references non-existent block bb${successor.block.id}`);
         }
       }
     }

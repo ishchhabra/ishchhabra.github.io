@@ -1,7 +1,8 @@
 import type { OperationId } from "../../core";
 import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
-import { type CloneContext, nextId, Operation, remapBlock, TermOp } from "../../core/Operation";
+import { type CloneContext, nextId, remapBlock } from "../../core/Operation";
+import { type CFGSuccessor, invalidSuccessorIndex, TermOp } from "../../core/TermOp";
 
 /**
  * Unconditional jump to a successor block. Terminator. Replaces
@@ -30,6 +31,20 @@ export class JumpTermOp extends TermOp {
     return [...this.args];
   }
 
+  successorCount(): number {
+    return 1;
+  }
+
+  successor(index: number): CFGSuccessor {
+    if (index === 0) return { block: this.target, args: this.args };
+    return invalidSuccessorIndex(this.constructor.name, index);
+  }
+
+  withSuccessor(index: number, successor: CFGSuccessor): JumpTermOp {
+    if (index !== 0) return invalidSuccessorIndex(this.constructor.name, index);
+    return new JumpTermOp(this.id, successor.block, successor.args);
+  }
+
   rewrite(values: Map<Value, Value>): JumpTermOp {
     if (this.args.length === 0) return this;
     let changed = false;
@@ -46,20 +61,6 @@ export class JumpTermOp extends TermOp {
   clone(ctx: CloneContext): JumpTermOp {
     const newArgs = this.args.map((a) => ctx.valueMap.get(a) ?? a);
     return new JumpTermOp(nextId(ctx), remapBlock(ctx, this.target), newArgs);
-  }
-
-  override remap(from: BasicBlock, to: BasicBlock): void {
-    if (this.target !== from) return;
-    // In-place edge redirection: the old target loses us as a user,
-    // the new target gains us. Keeps the block use-list consistent
-    // without requiring the caller to go through block.replaceOp.
-    from._removeUse(this);
-    this.target = to;
-    to._addUse(this);
-  }
-
-  override getBlockRefs(): BasicBlock[] {
-    return [this.target];
   }
 
   public override print(): string {

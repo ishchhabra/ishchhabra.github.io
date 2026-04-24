@@ -3,6 +3,7 @@ import { Environment } from "../../environment";
 import { ProjectEnvironment } from "../../ProjectEnvironment";
 import { createOperationId } from "../utils";
 import { JumpTermOp } from "../ops/control";
+import { TermOp } from "./TermOp";
 
 describe("BasicBlock.setTerminal", () => {
   function makeEnv(): Environment {
@@ -38,6 +39,37 @@ describe("BasicBlock.setTerminal", () => {
     ).toThrow(new RegExp(`Block ${block.id}.*JumpTermOp.*JumpTermOp`));
   });
 
+});
+
+describe("TermOp successors", () => {
+  function makeEnv(): Environment {
+    return new Environment(new ProjectEnvironment());
+  }
+
+  it("derives block refs from indexed successors", () => {
+    const env = makeEnv();
+    const target = env.createBlock();
+    const jump = new JumpTermOp(createOperationId(env), target, []);
+    expect(jump.successorCount()).toBe(1);
+    expect(jump.successor(0)).toEqual({ block: target, args: [] });
+    expect(jump.successors().map((successor) => successor.block)).toEqual([target]);
+  });
+
+  it("remaps successor slots through block replacement", () => {
+    const env = makeEnv();
+    const block = env.createBlock();
+    const targetA = env.createBlock();
+    const targetB = env.createBlock();
+    const jump = new JumpTermOp(createOperationId(env), targetA, []);
+    block.setTerminal(jump);
+
+    jump.remap(targetA, targetB);
+
+    expect(block.terminal).toBeInstanceOf(TermOp);
+    expect((block.terminal as JumpTermOp).target).toBe(targetB);
+    expect(targetA.predecessors().has(block)).toBe(false);
+    expect(targetB.predecessors().has(block)).toBe(true);
+  });
 });
 
 describe("BasicBlock.replaceTerminal", () => {

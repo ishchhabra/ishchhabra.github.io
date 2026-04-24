@@ -1,5 +1,6 @@
 import { Value } from "./Value";
-import { Operation, TermOp } from "./Operation";
+import { Operation } from "./Operation";
+import { TermOp } from "./TermOp";
 import type { Region } from "./Region";
 import { registerUses, unregisterUses } from "./Use";
 
@@ -82,11 +83,9 @@ export class BasicBlock {
   public entryBindings: Value[] = [];
 
   /**
-   * Intrusive use-list of ops whose `getBlockRefs()` includes this
-   * block. Maintained automatically by `registerUses`/`unregisterUses`
-   * on every mutation. Reading this set is equivalent to "which
-   * terminators refer to this block?" — i.e. the CFG predecessor
-   * edges, always current, never stale.
+   * Intrusive use-list of terminators whose successor list includes
+   * this block. Maintained automatically by `registerUses` /
+   * `unregisterUses` on every mutation.
    */
   readonly #uses: Set<Operation> = new Set();
 
@@ -278,9 +277,9 @@ export class BasicBlock {
   }
 
   /**
-   * Read-only view of every op whose `getBlockRefs()` includes this
-   * block — i.e. the raw CFG in-edges. Use {@link predecessors} for
-   * the set of predecessor blocks.
+   * Read-only view of every terminator whose successor list includes
+   * this block. Use {@link predecessors} for the set of predecessor
+   * blocks.
    */
   get uses(): ReadonlySet<Operation> {
     return this.#uses;

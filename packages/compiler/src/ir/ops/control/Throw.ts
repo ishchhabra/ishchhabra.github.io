@@ -1,7 +1,7 @@
 import type { OperationId } from "../../core";
-import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
-import { type CloneContext, nextId, Operation, remapPlace, TermOp } from "../../core/Operation";
+import { type CloneContext, nextId, remapPlace } from "../../core/Operation";
+import { type CFGSuccessor, invalidSuccessorIndex, TermOp } from "../../core/TermOp";
 
 /**
  * `throw value;`. Terminator. Control unwinds to the nearest catch
@@ -19,6 +19,18 @@ export class ThrowTermOp extends TermOp {
     return [this.value];
   }
 
+  successorCount(): number {
+    return 0;
+  }
+
+  successor(index: number): CFGSuccessor {
+    return invalidSuccessorIndex(this.constructor.name, index);
+  }
+
+  withSuccessor(index: number, _successor: CFGSuccessor): ThrowTermOp {
+    return invalidSuccessorIndex(this.constructor.name, index);
+  }
+
   rewrite(values: Map<Value, Value>): ThrowTermOp {
     const value = values.get(this.value) ?? this.value;
     if (value === this.value) return this;
@@ -30,10 +42,6 @@ export class ThrowTermOp extends TermOp {
   }
 
   override remap(): void {}
-
-  override getBlockRefs(): BasicBlock[] {
-    return [];
-  }
 
   public override print(): string {
     return `throw ${this.value.print()}`;

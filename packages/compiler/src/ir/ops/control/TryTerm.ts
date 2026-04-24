@@ -1,7 +1,13 @@
 import type { OperationId } from "../../core";
 import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
-import { type CloneContext, nextId, remapPlace, TermOp } from "../../core/Operation";
+import { type CloneContext, nextId, remapPlace } from "../../core/Operation";
+import {
+  assertNoSuccessorArgs,
+  type CFGSuccessor,
+  invalidSuccessorIndex,
+  TermOp,
+} from "../../core/TermOp";
 
 /**
  * `try { ... } catch (e) { ... } finally { ... }`.
@@ -34,12 +40,37 @@ export class TryTermOp extends TermOp {
     return [];
   }
 
-  getBlockRefs(): BasicBlock[] {
-    const refs: BasicBlock[] = [this.bodyBlock];
-    if (this.handlerBlock !== null) refs.push(this.handlerBlock);
-    if (this.finallyBlock !== null) refs.push(this.finallyBlock);
-    refs.push(this.fallthroughBlock);
-    return refs;
+  successorCount(): number {
+    return 2 + (this.handlerBlock === null ? 0 : 1) + (this.finallyBlock === null ? 0 : 1);
+  }
+
+  successor(index: number): CFGSuccessor {
+    const block = this.successorBlock(index);
+    return { block, args: [] };
+  }
+
+  withSuccessor(index: number, successor: CFGSuccessor): TryTermOp {
+    assertNoSuccessorArgs(this.constructor.name, successor);
+    this.successorBlock(index);
+    let bodyBlock = this.bodyBlock;
+    let handlerBlock = this.handlerBlock;
+    let finallyBlock = this.finallyBlock;
+    let fallthroughBlock = this.fallthroughBlock;
+
+    let nextIndex = 0;
+    if (index === nextIndex++) bodyBlock = successor.block;
+    if (handlerBlock !== null && index === nextIndex++) handlerBlock = successor.block;
+    if (finallyBlock !== null && index === nextIndex++) finallyBlock = successor.block;
+    if (index === nextIndex) fallthroughBlock = successor.block;
+
+    return new TryTermOp(
+      this.id,
+      bodyBlock,
+      handlerBlock,
+      this.handlerParam,
+      finallyBlock,
+      fallthroughBlock,
+    );
   }
 
   results(): Value[] {
@@ -63,5 +94,14 @@ export class TryTermOp extends TermOp {
         : (ctx.blockMap.get(this.finallyBlock) ?? this.finallyBlock),
       ctx.blockMap.get(this.fallthroughBlock) ?? this.fallthroughBlock,
     );
+  }
+
+  private successorBlock(index: number): BasicBlock {
+    let nextIndex = 0;
+    if (index === nextIndex++) return this.bodyBlock;
+    if (this.handlerBlock !== null && index === nextIndex++) return this.handlerBlock;
+    if (this.finallyBlock !== null && index === nextIndex++) return this.finallyBlock;
+    if (index === nextIndex) return this.fallthroughBlock;
+    return invalidSuccessorIndex(this.constructor.name, index);
   }
 }

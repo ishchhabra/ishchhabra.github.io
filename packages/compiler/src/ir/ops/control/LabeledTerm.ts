@@ -1,7 +1,13 @@
 import type { OperationId } from "../../core";
 import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
-import { type CloneContext, nextId, TermOp } from "../../core/Operation";
+import { type CloneContext, nextId } from "../../core/Operation";
+import {
+  assertNoSuccessorArgs,
+  type CFGSuccessor,
+  invalidSuccessorIndex,
+  TermOp,
+} from "../../core/TermOp";
 
 /**
  * Labeled block entry. Supports labeled `break` / `continue` across
@@ -28,8 +34,25 @@ export class LabeledTermOp extends TermOp {
     return [];
   }
 
-  getBlockRefs(): BasicBlock[] {
-    return [this.bodyBlock, this.fallthroughBlock];
+  successorCount(): number {
+    return 2;
+  }
+
+  successor(index: number): CFGSuccessor {
+    if (index === 0) return { block: this.bodyBlock, args: [] };
+    if (index === 1) return { block: this.fallthroughBlock, args: [] };
+    return invalidSuccessorIndex(this.constructor.name, index);
+  }
+
+  withSuccessor(index: number, successor: CFGSuccessor): LabeledTermOp {
+    assertNoSuccessorArgs(this.constructor.name, successor);
+    if (index === 0) {
+      return new LabeledTermOp(this.id, successor.block, this.fallthroughBlock, this.label);
+    }
+    if (index === 1) {
+      return new LabeledTermOp(this.id, this.bodyBlock, successor.block, this.label);
+    }
+    return invalidSuccessorIndex(this.constructor.name, index);
   }
 
   rewrite(_values: Map<Value, Value>): LabeledTermOp {

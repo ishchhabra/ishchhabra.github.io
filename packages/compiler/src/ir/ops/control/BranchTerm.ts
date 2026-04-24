@@ -1,7 +1,8 @@
 import type { OperationId } from "../../core";
 import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
-import { type CloneContext, nextId, remapPlace, TermOp } from "../../core/Operation";
+import { type CloneContext, nextId, remapPlace } from "../../core/Operation";
+import { type CFGSuccessor, invalidSuccessorIndex, TermOp } from "../../core/TermOp";
 
 /**
  * Two-way branch used to terminate a loop's test block:
@@ -39,8 +40,38 @@ export class BranchTermOp extends TermOp {
     return [this.cond, ...this.trueArgs, ...this.falseArgs];
   }
 
-  getBlockRefs(): BasicBlock[] {
-    return [this.trueTarget, this.falseTarget];
+  successorCount(): number {
+    return 2;
+  }
+
+  successor(index: number): CFGSuccessor {
+    if (index === 0) return { block: this.trueTarget, args: this.trueArgs };
+    if (index === 1) return { block: this.falseTarget, args: this.falseArgs };
+    return invalidSuccessorIndex(this.constructor.name, index);
+  }
+
+  withSuccessor(index: number, successor: CFGSuccessor): BranchTermOp {
+    if (index === 0) {
+      return new BranchTermOp(
+        this.id,
+        this.cond,
+        successor.block,
+        this.falseTarget,
+        successor.args,
+        this.falseArgs,
+      );
+    }
+    if (index === 1) {
+      return new BranchTermOp(
+        this.id,
+        this.cond,
+        this.trueTarget,
+        successor.block,
+        this.trueArgs,
+        successor.args,
+      );
+    }
+    return invalidSuccessorIndex(this.constructor.name, index);
   }
 
   rewrite(values: Map<Value, Value>): BranchTermOp {

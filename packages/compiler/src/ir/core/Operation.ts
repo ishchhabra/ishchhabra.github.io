@@ -156,8 +156,8 @@ export function requireModuleIR(ctx: CloneContext): ModuleIR {
  *   - Static `traits` + `hasTrait(t)` for compile-time categorization.
  *   - Abstract `operands()`, `rewrite()`, `clone(ctx)`.
  *   - Sensible defaults for `results()`, `hasSideEffects()`,
- *     `isDeterministic`, `isPure()`, `getBlockRefs()`,
- *     `remap()`, `print()`, `toString()`.
+ *     `isDeterministic`, `isPure()`, `remap()`, `print()`,
+ *     `toString()`.
  *
  * Concrete ops override only what they need.
  */
@@ -265,14 +265,6 @@ export abstract class Operation {
     return NoEffects;
   }
 
-  // -----------------------------------------------------------------
-  // Terminator helpers (default empty for non-terminators)
-  // -----------------------------------------------------------------
-
-  getBlockRefs(): BasicBlock[] {
-    return [];
-  }
-
   remap(_from: BasicBlock, _to: BasicBlock): void {
     // no-op
   }
@@ -339,24 +331,6 @@ export abstract class Operation {
   toString(): string {
     return this.print();
   }
-}
-
-/**
- * Base class for ops that terminate a basic block — branches, jumps,
- * returns, throws, structured-loop headers, and the like.
- *
- * A `TermOp` is the single source of truth for "is this op a
- * terminator?": use `op instanceof TermOp` at call sites rather than
- * a separate trait. Concrete terminators override {@link getBlockRefs}
- * to expose their CFG successors; passes that walk the CFG
- * (dominance, reachability, SSA construction, codegen) read it
- * generically.
- *
- * Every `TermOp` must also be the last op in its block — {@link
- * BasicBlock.setTerminal} enforces this.
- */
-export abstract class TermOp extends Operation {
-  abstract override getBlockRefs(): BasicBlock[];
 }
 
 /**

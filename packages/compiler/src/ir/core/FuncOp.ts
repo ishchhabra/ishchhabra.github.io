@@ -17,10 +17,10 @@ import {
   makeOperationId,
   Operation,
   type OperationId,
-  TermOp,
   Trait,
 } from "./Operation";
 import { Region } from "./Region";
+import { TermOp } from "./TermOp";
 
 // ---------------------------------------------------------------------
 // Block clone helpers (used by FuncOp.clone only)

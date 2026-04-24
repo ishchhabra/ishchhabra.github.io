@@ -1,7 +1,13 @@
 import type { OperationId } from "../../core";
 import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
-import { type CloneContext, nextId, TermOp } from "../../core/Operation";
+import { type CloneContext, nextId } from "../../core/Operation";
+import {
+  assertNoSuccessorArgs,
+  type CFGSuccessor,
+  invalidSuccessorIndex,
+  TermOp,
+} from "../../core/TermOp";
 
 /**
  * C-style for-loop header terminator.
@@ -32,11 +38,26 @@ export class ForTermOp extends TermOp {
     return [];
   }
 
-  getBlockRefs(): BasicBlock[] {
-    // Only the real CFG successor. `bodyBlock` / `updateBlock` /
-    // `exitBlock` are reached via the testBlock's BranchTermOp or
-    // back-edge jumps, not directly by this terminator.
-    return [this.testBlock];
+  successorCount(): number {
+    return 1;
+  }
+
+  successor(index: number): CFGSuccessor {
+    if (index === 0) return { block: this.testBlock, args: [] };
+    return invalidSuccessorIndex(this.constructor.name, index);
+  }
+
+  withSuccessor(index: number, successor: CFGSuccessor): ForTermOp {
+    assertNoSuccessorArgs(this.constructor.name, successor);
+    if (index !== 0) return invalidSuccessorIndex(this.constructor.name, index);
+    return new ForTermOp(
+      this.id,
+      successor.block,
+      this.bodyBlock,
+      this.updateBlock,
+      this.exitBlock,
+      this.label,
+    );
   }
 
   rewrite(_values: Map<Value, Value>): ForTermOp {

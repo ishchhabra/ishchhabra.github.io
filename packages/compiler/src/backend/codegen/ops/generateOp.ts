@@ -33,7 +33,7 @@ import {
   isValueOp,
 } from "../../../ir/categories";
 import { FuncOp } from "../../../ir/core/FuncOp";
-import { TermOp } from "../../../ir/core/Operation";
+import { TermOp } from "../../../ir/core/TermOp";
 import { ClassDeclarationOp } from "../../../ir/ops/class/ClassDeclaration";
 import { FunctionDeclarationOp } from "../../../ir/ops/func/FunctionDeclaration";
 import { CodeGenerator } from "../../CodeGenerator";

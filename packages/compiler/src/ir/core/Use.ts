@@ -1,8 +1,9 @@
 import type { Operation } from "./Operation";
+import { TermOp } from "./TermOp";
 
 /**
  * Register `op` in the use-lists of every value it reads, every value
- * it defines, and every block it references. Called by
+ * it defines, and every successor block it references. Called by
  * `BasicBlock` whenever an op is attached (constructor, `appendOp`,
  * `insertOpAt`, `replaceOp`, `terminal` setter) and by
  * `Environment.createOperation` for ops not yet placed in a block.
@@ -18,8 +19,10 @@ export function registerUses(op: Operation): void {
   for (const value of op.results()) {
     value._setDefiner(op);
   }
-  for (const block of op.getBlockRefs()) {
-    block._addUse(op);
+  if (op instanceof TermOp) {
+    for (const successor of op.successors()) {
+      successor.block._addUse(op);
+    }
   }
 }
 
@@ -34,7 +37,9 @@ export function unregisterUses(op: Operation): void {
   for (const value of op.results()) {
     value._clearDefinerIf(op);
   }
-  for (const block of op.getBlockRefs()) {
-    block._removeUse(op);
+  if (op instanceof TermOp) {
+    for (const successor of op.successors()) {
+      successor.block._removeUse(op);
+    }
   }
 }

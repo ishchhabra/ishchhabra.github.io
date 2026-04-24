@@ -1,7 +1,7 @@
 import type { OperationId } from "../../core";
-import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
-import { type CloneContext, nextId, Operation, TermOp } from "../../core/Operation";
+import { type CloneContext, nextId } from "../../core/Operation";
+import { type CFGSuccessor, invalidSuccessorIndex, TermOp } from "../../core/TermOp";
 
 /**
  * `return;` or `return value;`. Terminator with no CFG successors.
@@ -19,6 +19,18 @@ export class ReturnTermOp extends TermOp {
     return this.value ? [this.value] : [];
   }
 
+  successorCount(): number {
+    return 0;
+  }
+
+  successor(index: number): CFGSuccessor {
+    return invalidSuccessorIndex(this.constructor.name, index);
+  }
+
+  withSuccessor(index: number, _successor: CFGSuccessor): ReturnTermOp {
+    return invalidSuccessorIndex(this.constructor.name, index);
+  }
+
   rewrite(values: Map<Value, Value>): ReturnTermOp {
     if (!this.value) return this;
     const value = values.get(this.value) ?? this.value;
@@ -32,10 +44,6 @@ export class ReturnTermOp extends TermOp {
   }
 
   override remap(): void {}
-
-  override getBlockRefs(): BasicBlock[] {
-    return [];
-  }
 
   public override print(): string {
     return `return${this.value ? " " + this.value.print() : ""}`;

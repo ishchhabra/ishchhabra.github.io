@@ -1,7 +1,13 @@
 import type { OperationId } from "../../core";
 import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
-import { type CloneContext, nextId, remapPlace, TermOp } from "../../core/Operation";
+import { type CloneContext, nextId, remapPlace } from "../../core/Operation";
+import {
+  assertNoSuccessorArgs,
+  type CFGSuccessor,
+  invalidSuccessorIndex,
+  TermOp,
+} from "../../core/TermOp";
 
 /**
  * Two-way branch on a boolean-ish value.
@@ -34,8 +40,29 @@ export class IfTermOp extends TermOp {
     return [this.cond];
   }
 
-  getBlockRefs(): BasicBlock[] {
-    return [this.thenBlock, this.elseBlock, this.fallthroughBlock];
+  successorCount(): number {
+    return 3;
+  }
+
+  successor(index: number): CFGSuccessor {
+    if (index === 0) return { block: this.thenBlock, args: [] };
+    if (index === 1) return { block: this.elseBlock, args: [] };
+    if (index === 2) return { block: this.fallthroughBlock, args: [] };
+    return invalidSuccessorIndex(this.constructor.name, index);
+  }
+
+  withSuccessor(index: number, successor: CFGSuccessor): IfTermOp {
+    assertNoSuccessorArgs(this.constructor.name, successor);
+    if (index === 0) {
+      return new IfTermOp(this.id, this.cond, successor.block, this.elseBlock, this.fallthroughBlock);
+    }
+    if (index === 1) {
+      return new IfTermOp(this.id, this.cond, this.thenBlock, successor.block, this.fallthroughBlock);
+    }
+    if (index === 2) {
+      return new IfTermOp(this.id, this.cond, this.thenBlock, this.elseBlock, successor.block);
+    }
+    return invalidSuccessorIndex(this.constructor.name, index);
   }
 
   rewrite(values: Map<Value, Value>): IfTermOp {

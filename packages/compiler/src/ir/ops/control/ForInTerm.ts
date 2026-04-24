@@ -1,7 +1,13 @@
 import type { OperationId } from "../../core";
 import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
-import { type CloneContext, nextId, remapPlace, TermOp } from "../../core/Operation";
+import { type CloneContext, nextId, remapPlace } from "../../core/Operation";
+import {
+  assertNoSuccessorArgs,
+  type CFGSuccessor,
+  invalidSuccessorIndex,
+  TermOp,
+} from "../../core/TermOp";
 
 /**
  * `for (target of iterable) body` / `for await (target of ...)`.
@@ -41,8 +47,41 @@ export class ForOfTermOp extends TermOp {
     return [this.iterationValue];
   }
 
-  getBlockRefs(): BasicBlock[] {
-    return [this.bodyBlock, this.exitBlock];
+  successorCount(): number {
+    return 2;
+  }
+
+  successor(index: number): CFGSuccessor {
+    if (index === 0) return { block: this.bodyBlock, args: [] };
+    if (index === 1) return { block: this.exitBlock, args: [] };
+    return invalidSuccessorIndex(this.constructor.name, index);
+  }
+
+  withSuccessor(index: number, successor: CFGSuccessor): ForOfTermOp {
+    assertNoSuccessorArgs(this.constructor.name, successor);
+    if (index === 0) {
+      return new ForOfTermOp(
+        this.id,
+        this.iterable,
+        this.iterationValue,
+        successor.block,
+        this.exitBlock,
+        this.isAwait,
+        this.label,
+      );
+    }
+    if (index === 1) {
+      return new ForOfTermOp(
+        this.id,
+        this.iterable,
+        this.iterationValue,
+        this.bodyBlock,
+        successor.block,
+        this.isAwait,
+        this.label,
+      );
+    }
+    return invalidSuccessorIndex(this.constructor.name, index);
   }
 
   rewrite(values: Map<Value, Value>): ForOfTermOp {
@@ -98,8 +137,39 @@ export class ForInTermOp extends TermOp {
     return [this.iterationValue];
   }
 
-  getBlockRefs(): BasicBlock[] {
-    return [this.bodyBlock, this.exitBlock];
+  successorCount(): number {
+    return 2;
+  }
+
+  successor(index: number): CFGSuccessor {
+    if (index === 0) return { block: this.bodyBlock, args: [] };
+    if (index === 1) return { block: this.exitBlock, args: [] };
+    return invalidSuccessorIndex(this.constructor.name, index);
+  }
+
+  withSuccessor(index: number, successor: CFGSuccessor): ForInTermOp {
+    assertNoSuccessorArgs(this.constructor.name, successor);
+    if (index === 0) {
+      return new ForInTermOp(
+        this.id,
+        this.object,
+        this.iterationValue,
+        successor.block,
+        this.exitBlock,
+        this.label,
+      );
+    }
+    if (index === 1) {
+      return new ForInTermOp(
+        this.id,
+        this.object,
+        this.iterationValue,
+        this.bodyBlock,
+        successor.block,
+        this.label,
+      );
+    }
+    return invalidSuccessorIndex(this.constructor.name, index);
   }
 
   rewrite(values: Map<Value, Value>): ForInTermOp {
