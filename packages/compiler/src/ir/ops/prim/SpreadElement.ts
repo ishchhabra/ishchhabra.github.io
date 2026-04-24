@@ -28,7 +28,7 @@ export class SpreadElementOp extends Operation {
     return new SpreadElementOp(this.id, this.place, values.get(this.argument) ?? this.argument);
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [this.argument];
   }
 

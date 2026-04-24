@@ -29,7 +29,7 @@ export class ImportSpecifierOp extends Operation {
     return this;
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [];
   }
 }

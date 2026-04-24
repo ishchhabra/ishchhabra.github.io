@@ -28,7 +28,7 @@ export class YieldExpressionOp extends Operation {
     );
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return this.argument ? [this.argument] : [];
   }
 }

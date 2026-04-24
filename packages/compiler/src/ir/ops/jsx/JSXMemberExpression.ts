@@ -35,7 +35,7 @@ export class JSXMemberExpressionOp extends Operation {
     );
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [this.object];
   }
 }

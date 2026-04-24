@@ -1,5 +1,5 @@
 import * as t from "@babel/types";
-import { ArrayDestructureOp, getDestructureTargetDefs } from "../../../../ir";
+import { ArrayDestructureOp, destructureTargetResults } from "../../../../ir";
 import { CodeGenerator } from "../../../CodeGenerator";
 import { generateDestructureTarget } from "./generateDestructureTarget";
 
@@ -23,7 +23,7 @@ export function generateArrayDestructureOp(
     if (instruction.declarationKind === null) {
       throw new Error("Array destructure declarations require a declaration kind");
     }
-    for (const place of getDestructureTargetDefs({
+    for (const place of destructureTargetResults({
       kind: "array",
       elements: instruction.elements,
     })) {

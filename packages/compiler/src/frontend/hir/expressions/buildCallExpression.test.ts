@@ -176,13 +176,13 @@ describe("buildCallExpression — isolated", () => {
     });
   });
 
-  describe("getOperands", () => {
+  describe("operands", () => {
     it("includes callee then args in order", () => {
       const { opsAdded } = buildCallFromSource("f(1, 2);");
       const call = opsAdded.find(
         (o): o is CallExpressionOp => o instanceof CallExpressionOp,
       )!;
-      const operands = call.getOperands();
+      const operands = call.operands();
       expect(operands[0]).toBe(call.callee);
       expect(operands.slice(1)).toEqual(call.args);
     });

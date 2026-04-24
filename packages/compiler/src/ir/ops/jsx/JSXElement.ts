@@ -43,7 +43,7 @@ export class JSXElementOp extends Operation {
     );
   }
 
-  public getOperands(): Value[] {
+  public operands(): Value[] {
     return [
       this.openingElement,
       ...(this.closingElement ? [this.closingElement] : []),

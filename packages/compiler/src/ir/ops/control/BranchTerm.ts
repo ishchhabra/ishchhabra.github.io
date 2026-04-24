@@ -35,7 +35,7 @@ export class BranchTermOp extends TermOp {
     this.falseArgs = falseArgs;
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [this.cond, ...this.trueArgs, ...this.falseArgs];
   }
 

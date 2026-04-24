@@ -114,14 +114,14 @@ function collectOpWriters(op: Operation, record: (decl: DeclarationId, op: Store
     return;
   }
   if (op instanceof ArrayDestructureOp) {
-    for (const def of op.getDefs()) {
+    for (const def of op.results()) {
       if (def === op.place) continue;
       record(def.declarationId, op);
     }
     return;
   }
   if (op instanceof ObjectDestructureOp) {
-    for (const def of op.getDefs()) {
+    for (const def of op.results()) {
       if (def === op.place) continue;
       record(def.declarationId, op);
     }

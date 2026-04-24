@@ -27,7 +27,7 @@ export class JSXOpeningFragmentOp extends Operation {
     return this;
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [];
   }
 

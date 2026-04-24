@@ -33,7 +33,7 @@ export class JSXSpreadAttributeOp extends Operation {
     );
   }
 
-  public getOperands(): Value[] {
+  public operands(): Value[] {
     return [this.argument];
   }
 }

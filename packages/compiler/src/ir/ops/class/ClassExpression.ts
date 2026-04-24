@@ -28,7 +28,7 @@ export class ClassExpressionOp extends Operation {
     return new ClassExpressionOp(this.id, this.place, this.name, newSuperClass, newElements);
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     const operands: Value[] = [];
     if (this.superClass !== null) operands.push(this.superClass);
     operands.push(...this.elements);

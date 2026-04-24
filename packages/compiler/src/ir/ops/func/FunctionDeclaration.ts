@@ -52,11 +52,11 @@ export class FunctionDeclarationOp extends Operation {
     );
   }
 
-  public getOperands(): Value[] {
+  public operands(): Value[] {
     return this.captures;
   }
 
-  public override getDefs(): Value[] {
+  public override results(): Value[] {
     return [this.place];
   }
 }

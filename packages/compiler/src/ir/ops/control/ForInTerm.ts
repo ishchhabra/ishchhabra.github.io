@@ -33,11 +33,11 @@ export class ForOfTermOp extends TermOp {
     super(id);
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [this.iterable];
   }
 
-  override getDefs(): Value[] {
+  override results(): Value[] {
     return [this.iterationValue];
   }
 
@@ -90,11 +90,11 @@ export class ForInTermOp extends TermOp {
     super(id);
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [this.object];
   }
 
-  override getDefs(): Value[] {
+  override results(): Value[] {
     return [this.iterationValue];
   }
 

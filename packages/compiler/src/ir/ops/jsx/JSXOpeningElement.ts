@@ -43,7 +43,7 @@ export class JSXOpeningElementOp extends Operation {
     );
   }
 
-  public getOperands(): Value[] {
+  public operands(): Value[] {
     return [this.tagPlace, ...this.attributes];
   }
 

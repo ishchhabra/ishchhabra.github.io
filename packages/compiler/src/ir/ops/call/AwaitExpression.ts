@@ -22,7 +22,7 @@ export class AwaitExpressionOp extends Operation {
     return new AwaitExpressionOp(this.id, this.place, values.get(this.argument) ?? this.argument);
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [this.argument];
   }
 }

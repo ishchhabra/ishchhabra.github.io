@@ -32,7 +32,7 @@ export class ArrayExpressionOp extends Operation {
     );
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return this.elements;
   }
 

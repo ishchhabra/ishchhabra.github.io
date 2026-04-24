@@ -15,7 +15,7 @@ export class ReturnTermOp extends TermOp {
     super(id);
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return this.value ? [this.value] : [];
   }
 

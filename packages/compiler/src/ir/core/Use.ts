@@ -9,8 +9,8 @@ import type { Value } from "./Value";
  * cyclic import (`Operation` imports `Value` and `BasicBlock`, which
  * both need the user type).
  *
- *   - `getOperands()` — values this op reads. Always present.
- *   - `getDefs()` — values this op defines. Present on every op that
+ *   - `operands()` — values this op reads. Always present.
+ *   - `results()` — values this op defines. Present on every op that
  *     produces results (instructions); absent on pure terminators
  *     like `BreakTermOp` or `ReturnTermOp`.
  *   - `getBlockRefs()` — blocks this op references as CFG successors.
@@ -18,8 +18,8 @@ import type { Value } from "./Value";
  *     target; absent on ordinary instructions.
  */
 export type User = {
-  getOperands(): readonly Value[];
-  getDefs?: () => readonly Value[];
+  operands(): readonly Value[];
+  results?: () => readonly Value[];
   getBlockRefs?: () => readonly BasicBlock[];
 };
 
@@ -35,11 +35,11 @@ export type User = {
  * documented `@internal` and should not be called from anywhere else.
  */
 export function registerUses(user: User): void {
-  for (const value of user.getOperands()) {
+  for (const value of user.operands()) {
     value._addUse(user);
   }
-  if (user.getDefs) {
-    for (const value of user.getDefs()) {
+  if (user.results) {
+    for (const value of user.results()) {
       value._setDefiner(user);
     }
   }
@@ -55,11 +55,11 @@ export function registerUses(user: User): void {
  * it was registered in. Called by `BasicBlock` on detach / replace.
  */
 export function unregisterUses(user: User): void {
-  for (const value of user.getOperands()) {
+  for (const value of user.operands()) {
     value._removeUse(user);
   }
-  if (user.getDefs) {
-    for (const value of user.getDefs()) {
+  if (user.results) {
+    for (const value of user.results()) {
       value._clearDefinerIf(user);
     }
   }

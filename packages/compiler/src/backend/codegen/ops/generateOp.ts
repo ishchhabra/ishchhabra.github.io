@@ -197,7 +197,7 @@ function hasTransitiveSideEffects(
     if (seen.has(cur)) continue;
     seen.add(cur);
     if (cur.hasSideEffects(env)) return true;
-    for (const operand of cur.getOperands()) {
+    for (const operand of cur.operands()) {
       const def = operand.definer;
       if (def instanceof Operation) stack.push(def);
     }

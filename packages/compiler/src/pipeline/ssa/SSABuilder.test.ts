@@ -106,7 +106,7 @@ describe("SSABuilder — fresh lvals for non-promotable bindings", () => {
     for (const block of funcOp.allBlocks()) {
       for (const op of block.operations) {
         if (op instanceof ObjectDestructureOp || op instanceof StoreLocalOp) {
-          for (const def of op.getDefs()) {
+          for (const def of op.results()) {
             if (def === op.place) continue;
             if (def.declarationId === undefined) continue;
             // Grab the first `a` we see by name-free heuristic: use

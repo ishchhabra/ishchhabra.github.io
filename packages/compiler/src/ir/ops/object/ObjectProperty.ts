@@ -53,7 +53,7 @@ export class ObjectPropertyOp extends Operation {
     );
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     // In destructuring patterns, the value is a binding target (written, not read).
     // Only include it as a read when it's not one of the bindings.
     if (this.bindings.length > 0) {
@@ -62,7 +62,7 @@ export class ObjectPropertyOp extends Operation {
     return [this.key, this.value];
   }
 
-  override getDefs(): Value[] {
+  override results(): Value[] {
     return [this.place, ...this.bindings];
   }
 

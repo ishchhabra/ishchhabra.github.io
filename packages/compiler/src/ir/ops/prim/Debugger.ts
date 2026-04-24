@@ -24,7 +24,7 @@ export class DebuggerStatementOp extends Operation {
     return this;
   }
 
-  getOperands() {
+  operands() {
     return [];
   }
 }

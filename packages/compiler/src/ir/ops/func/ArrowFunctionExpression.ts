@@ -63,7 +63,7 @@ export class ArrowFunctionExpressionOp extends Operation {
     );
   }
 
-  public getOperands(): Value[] {
+  public operands(): Value[] {
     return this.captures;
   }
 

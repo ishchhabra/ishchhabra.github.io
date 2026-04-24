@@ -15,7 +15,7 @@ export class ThrowTermOp extends TermOp {
     super(id);
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [this.value];
   }
 

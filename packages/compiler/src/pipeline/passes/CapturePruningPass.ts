@@ -91,7 +91,7 @@ export class CapturePruningPass extends BaseOptimizationPass {
         // these are not in blocks, so the embedded use-chains don't cover them.
         const headerReadIds = new Set<ValueId>();
         for (const headerInstr of innerFuncOp.prologue) {
-          for (const place of headerInstr.getOperands()) {
+          for (const place of headerInstr.operands()) {
             headerReadIds.add(place.id);
           }
         }

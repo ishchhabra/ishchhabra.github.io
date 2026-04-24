@@ -28,7 +28,7 @@ export class NewExpressionOp extends Operation {
     );
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [this.callee, ...this.args];
   }
 }

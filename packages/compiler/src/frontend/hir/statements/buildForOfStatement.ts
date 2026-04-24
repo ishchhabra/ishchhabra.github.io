@@ -4,7 +4,7 @@ import { Environment } from "../../../environment";
 import {
   ArrayDestructureOp,
   createOperationId,
-  getDestructureTargetDefs,
+  destructureTargetResults,
   type DestructureTarget,
   ForOfTermOp,
   JumpTermOp,
@@ -82,7 +82,7 @@ export function buildForOfStatement(
   functionBuilder.addBlock(bodyBlock);
   functionBuilder.addBlock(exitBlock);
 
-  for (const p of [iterationValuePlace, ...getDestructureTargetDefs(iterationTarget)]) {
+  for (const p of [iterationValuePlace, ...destructureTargetResults(iterationTarget)]) {
     if (!bodyBlock.entryBindings.includes(p)) bodyBlock.entryBindings.push(p);
   }
 

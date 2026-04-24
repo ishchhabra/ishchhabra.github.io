@@ -37,7 +37,7 @@ export class SuperPropertyOp extends Operation {
     return new SuperPropertyOp(this.id, this.place, newProperty, this.computed);
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [this.property];
   }
 

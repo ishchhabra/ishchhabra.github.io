@@ -24,7 +24,7 @@ export class LabeledTermOp extends TermOp {
     super(id);
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [];
   }
 

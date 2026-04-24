@@ -1,7 +1,7 @@
 import {
   destructureTargetHasObservableWrites,
-  getDestructureTargetDefs,
-  getDestructureTargetOperands,
+  destructureTargetResults,
+  destructureTargetOperands,
   OperationId,
   rewriteDestructureTarget,
   type DestructureTarget,
@@ -59,15 +59,15 @@ export class ArrayDestructureOp extends Operation {
     );
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [
       this.value,
-      ...getDestructureTargetOperands({ kind: "array", elements: this.elements }),
+      ...destructureTargetOperands({ kind: "array", elements: this.elements }),
     ];
   }
 
-  override getDefs(): Value[] {
-    return [this.place, ...getDestructureTargetDefs({ kind: "array", elements: this.elements })];
+  override results(): Value[] {
+    return [this.place, ...destructureTargetResults({ kind: "array", elements: this.elements })];
   }
 
   public override hasSideEffects(): boolean {

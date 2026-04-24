@@ -7,8 +7,8 @@ export {
 export {
   collectDestructureTargetBindingPlaces,
   destructureTargetHasObservableWrites,
-  getDestructureTargetDefs,
-  getDestructureTargetOperands,
+  destructureTargetResults,
+  destructureTargetOperands,
   rewriteDestructureTarget,
   type ArrayDestructureTarget,
   type DestructureBindingStorage,

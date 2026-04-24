@@ -36,7 +36,7 @@ export class JSXAttributeOp extends Operation {
     );
   }
 
-  public getOperands(): Value[] {
+  public operands(): Value[] {
     return this.value ? [this.value] : [];
   }
 

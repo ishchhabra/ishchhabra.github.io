@@ -37,7 +37,7 @@ export class ImportDeclarationOp extends Operation {
     return this;
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [...this.specifiers];
   }
 }

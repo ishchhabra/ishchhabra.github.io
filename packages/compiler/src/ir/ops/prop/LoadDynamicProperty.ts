@@ -41,7 +41,7 @@ export class LoadDynamicPropertyOp extends LoadPropertyOp {
     );
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [this.object, this.property];
   }
 

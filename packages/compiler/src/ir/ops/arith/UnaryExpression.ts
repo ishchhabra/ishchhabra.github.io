@@ -38,7 +38,7 @@ export class UnaryExpressionOp extends Operation {
     );
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [this.argument];
   }
 

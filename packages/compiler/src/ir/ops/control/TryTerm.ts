@@ -30,7 +30,7 @@ export class TryTermOp extends TermOp {
     super(id);
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [];
   }
 
@@ -42,7 +42,7 @@ export class TryTermOp extends TermOp {
     return refs;
   }
 
-  getDefs(): Value[] {
+  results(): Value[] {
     return this.handlerParam !== null ? [this.handlerParam] : [];
   }
 

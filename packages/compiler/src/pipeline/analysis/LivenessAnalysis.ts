@@ -79,7 +79,7 @@ export class LivenessAnalysis extends FunctionAnalysis<LivenessResult> {
  */
 function seedLiveReads(funcOp: FuncOp, block: BasicBlock, liveIds: Set<ValueId>): void {
   for (const op of block.operations) {
-    for (const place of op.getOperands()) {
+    for (const place of op.operands()) {
       liveIds.add(place.id);
     }
   }
@@ -102,5 +102,5 @@ function nonEdgeTerminalOperands(funcOp: FuncOp, block: BasicBlock): Value[] {
   forEachOutgoingEdge(funcOp, block, (edge) => {
     for (const arg of edge.args) edgeArgPlaces.add(arg);
   });
-  return terminal.getOperands().filter((p) => !edgeArgPlaces.has(p));
+  return terminal.operands().filter((p) => !edgeArgPlaces.has(p));
 }

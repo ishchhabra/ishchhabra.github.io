@@ -90,14 +90,14 @@ function analyzePromotability(
         // single-assignment and promotable. Only assignment-kind
         // destructures pin targets.
         if (op.kind !== "assignment") continue;
-        for (const def of op.getDefs()) {
+        for (const def of op.results()) {
           if (def === op.place || def.declarationId === undefined) continue;
           mark(def.declarationId, NonPromotableReason.DestructureAssignmentTarget);
         }
         continue;
       }
 
-      for (const def of op.getDefs()) {
+      for (const def of op.results()) {
         if (def === op.place || def.declarationId === undefined) continue;
         mark(def.declarationId, NonPromotableReason.ComplexWriter);
       }
@@ -279,7 +279,7 @@ export class SSABuilder {
     }
     for (const instr of this.funcOp.prologue) {
       if (instr instanceof StoreLocalOp) {
-        for (const place of instr.getDefs()) this.seedStack(stacks, place);
+        for (const place of instr.results()) this.seedStack(stacks, place);
       } else if (instr.place) {
         this.seedStack(stacks, instr.place);
       }
@@ -483,7 +483,7 @@ export class SSABuilder {
   ): void {
     const env = this.moduleIR.environment;
     const freshMap = new Map<Value, Value>();
-    for (const def of op.getDefs()) {
+    for (const def of op.results()) {
       if (def === op.place) continue;
       if (def.declarationId === undefined) continue;
       const fresh = env.createValue(def.declarationId);
@@ -495,7 +495,7 @@ export class SSABuilder {
     const rewritten = op.rewrite(freshMap, { rewriteDefinitions: true });
     const current = rewritten === op ? op : (op.parentBlock?.replaceOp(op, rewritten), rewritten);
 
-    for (const def of current.getDefs()) {
+    for (const def of current.results()) {
       if (def === current.place) continue;
       if (def.declarationId === undefined) continue;
       this.pushScoped(stacks, def, pushed);
@@ -524,7 +524,7 @@ export class SSABuilder {
    * rewrite happened, or the replacement op when one did.
    */
   private renameOpOperands(op: Operation, stacks: Stacks): Operation {
-    const rewriteMap = this.buildRewriteMap(op.getOperands(), stacks);
+    const rewriteMap = this.buildRewriteMap(op.operands(), stacks);
     if (rewriteMap.size === 0) return op;
     const rewritten = op.rewrite(rewriteMap);
     if (rewritten === op) return op;

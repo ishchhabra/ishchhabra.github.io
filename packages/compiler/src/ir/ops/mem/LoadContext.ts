@@ -36,7 +36,7 @@ export class LoadContextOp extends Operation {
     return new LoadContextOp(this.id, this.place, rewrittenTarget);
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [this.value];
   }
 

@@ -30,7 +30,7 @@ export class ExportDefaultDeclarationOp extends Operation {
     return new ExportDefaultDeclarationOp(this.id, this.place, next);
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [this.declaration];
   }
 }

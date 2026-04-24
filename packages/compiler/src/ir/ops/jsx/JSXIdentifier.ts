@@ -33,7 +33,7 @@ export class JSXIdentifierOp extends Operation {
     return new JSXIdentifierOp(this.id, this.place, rewrittenValue);
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [this.value];
   }
 

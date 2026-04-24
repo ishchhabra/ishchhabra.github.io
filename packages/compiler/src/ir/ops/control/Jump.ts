@@ -26,7 +26,7 @@ export class JumpTermOp extends TermOp {
     this.args = args;
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [...this.args];
   }
 

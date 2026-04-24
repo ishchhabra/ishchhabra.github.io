@@ -42,7 +42,7 @@ export class LoadStaticPropertyOp extends LoadPropertyOp {
     );
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [this.object];
   }
 

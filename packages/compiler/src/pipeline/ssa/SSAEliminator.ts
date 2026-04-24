@@ -264,7 +264,7 @@ export class SSAEliminator {
     }
     const terminal = block.terminal;
     if (terminal !== undefined) {
-      for (const p of terminal.getOperands()) {
+      for (const p of terminal.operands()) {
         if (p === resultId) {
           lastUseIdx = ops.length;
           break;

@@ -46,7 +46,7 @@ export class CallExpressionOp extends Operation {
     );
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [this.callee, ...this.args];
   }
 

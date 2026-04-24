@@ -32,7 +32,7 @@ export class ObjectExpressionOp extends Operation {
     );
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return this.properties;
   }
 

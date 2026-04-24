@@ -306,7 +306,7 @@ export class FuncOp extends Operation {
   // -----------------------------------------------------------------------
 
   /** A function-as-op has no SSA operands at the op level. */
-  override getOperands(): Value[] {
+  override operands(): Value[] {
     return [];
   }
 
@@ -403,7 +403,7 @@ export class FuncOp extends Operation {
     }
 
     for (const instr of this.prologue) {
-      for (const place of instr.getOperands()) {
+      for (const place of instr.operands()) {
         if (!ownPlaceIds.has(place.id)) {
           return true;
         }
@@ -411,14 +411,14 @@ export class FuncOp extends Operation {
     }
     for (const block of this.allBlocks()) {
       for (const instr of block.operations) {
-        for (const place of instr.getOperands()) {
+        for (const place of instr.operands()) {
           if (!ownPlaceIds.has(place.id)) {
             return true;
           }
         }
       }
       if (block.terminal) {
-        for (const place of block.terminal.getOperands()) {
+        for (const place of block.terminal.operands()) {
           if (!ownPlaceIds.has(place.id)) {
             return true;
           }
@@ -510,7 +510,7 @@ export class FuncOp extends Operation {
     for (const oldBlock of oldBlocks) {
       for (const op of oldBlock.getAllOps()) {
         if (!op.hasTrait(Trait.HasRegions)) continue;
-        for (const place of [...op.getOperands(), ...op.getDefs()]) {
+        for (const place of [...op.operands(), ...op.results()]) {
           if (!valueMap.has(place)) {
             valueMap.set(place, environment.createValue());
           }
@@ -670,7 +670,7 @@ export class FuncOp extends Operation {
     map: Map<Value, Value>,
     environment: ModuleIR["environment"],
   ): void {
-    for (const def of instr.getDefs()) {
+    for (const def of instr.results()) {
       if (def === instr.place! || map.has(def)) {
         continue;
       }

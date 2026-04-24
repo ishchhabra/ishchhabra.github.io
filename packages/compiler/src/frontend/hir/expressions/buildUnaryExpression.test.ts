@@ -71,9 +71,9 @@ describe("buildUnaryExpression — isolated", () => {
       expect(op.argument).toBe(load.place);
     });
 
-    it("getOperands returns [argument]", () => {
+    it("operands returns [argument]", () => {
       const { op } = buildUnaryFromSource("!a;");
-      expect(op.getOperands()).toEqual([op.argument]);
+      expect(op.operands()).toEqual([op.argument]);
     });
   });
 

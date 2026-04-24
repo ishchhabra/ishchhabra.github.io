@@ -313,7 +313,7 @@ function flowsTo(op: Operation, target: Operation): boolean {
     const cur = stack.pop()!;
     if (seen.has(cur)) continue;
     seen.add(cur);
-    for (const operand of cur.getOperands()) {
+    for (const operand of cur.operands()) {
       if (operand === place) return true;
       const def = operand.definer;
       if (def instanceof Operation) stack.push(def);
@@ -332,7 +332,7 @@ function operandSubtreeHasSideEffects(
 ): boolean {
   const seen = new Set<Operation>();
   const stack: Operation[] = [];
-  for (const operand of root.getOperands()) {
+  for (const operand of root.operands()) {
     const def = operand.definer;
     if (def instanceof Operation) stack.push(def);
   }
@@ -341,7 +341,7 @@ function operandSubtreeHasSideEffects(
     if (seen.has(cur)) continue;
     seen.add(cur);
     if (cur.hasSideEffects(env)) return true;
-    for (const operand of cur.getOperands()) {
+    for (const operand of cur.operands()) {
       const def = operand.definer;
       if (def instanceof Operation) stack.push(def);
     }

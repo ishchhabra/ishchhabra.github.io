@@ -81,9 +81,9 @@ export class Environment {
     // by the same code path that allocates the op. Callers must use
     // `createOperation` (not `new`) if they want `value.definer` to be
     // populated before the op is attached to a block.
-    const getDefs = (op as Operation).getDefs?.bind(op);
-    if (getDefs !== undefined) {
-      for (const def of getDefs()) {
+    const results = (op as Operation).results?.bind(op);
+    if (results !== undefined) {
+      for (const def of results()) {
         def._setDefiner(op as Operation);
       }
     }

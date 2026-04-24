@@ -59,7 +59,7 @@ export class BinaryExpressionOp extends Operation {
     );
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [this.left, this.right];
   }
 

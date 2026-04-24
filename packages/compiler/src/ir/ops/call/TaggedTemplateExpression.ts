@@ -28,7 +28,7 @@ export class TaggedTemplateExpressionOp extends Operation {
     );
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [this.tag, this.quasi];
   }
 }

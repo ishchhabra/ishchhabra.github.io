@@ -275,7 +275,7 @@ export class ConstantPropagationPass {
     if (op instanceof CallExpressionOp) return this.evaluateCall(op);
 
     // Unknown op that produces a value — can't prove constant.
-    if (op.getOperands().length > 0 || op.place !== undefined) {
+    if (op.operands().length > 0 || op.place !== undefined) {
       this.setLattice(op.place, BOTTOM);
     }
   }

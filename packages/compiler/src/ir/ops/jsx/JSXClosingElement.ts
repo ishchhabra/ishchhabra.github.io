@@ -29,7 +29,7 @@ export class JSXClosingElementOp extends Operation {
     return new JSXClosingElementOp(this.id, this.place, values.get(this.tagPlace) ?? this.tagPlace);
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [this.tagPlace];
   }
 

@@ -30,7 +30,7 @@ export class HoleOp extends Operation {
     return this;
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [];
   }
 

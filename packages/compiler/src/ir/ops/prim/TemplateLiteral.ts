@@ -38,7 +38,7 @@ export class TemplateLiteralOp extends Operation {
     );
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [...this.expressions];
   }
 

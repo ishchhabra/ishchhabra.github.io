@@ -59,7 +59,7 @@ export type DestructureTarget =
   | ArrayDestructureTarget
   | ObjectDestructureTarget;
 
-export function getDestructureTargetOperands(target: DestructureTarget): Value[] {
+export function destructureTargetOperands(target: DestructureTarget): Value[] {
   switch (target.kind) {
     case "binding":
       return [];
@@ -68,22 +68,22 @@ export function getDestructureTargetOperands(target: DestructureTarget): Value[]
     case "dynamic-member":
       return [target.object, target.property];
     case "assignment":
-      return [...getDestructureTargetOperands(target.left), target.right];
+      return [...destructureTargetOperands(target.left), target.right];
     case "rest":
-      return getDestructureTargetOperands(target.argument);
+      return destructureTargetOperands(target.argument);
     case "array":
       return target.elements.flatMap((element) =>
-        element === null ? [] : getDestructureTargetOperands(element),
+        element === null ? [] : destructureTargetOperands(element),
       );
     case "object":
       return target.properties.flatMap((property) => [
         ...(property.computed && property.key instanceof Value ? [property.key] : []),
-        ...getDestructureTargetOperands(property.value),
+        ...destructureTargetOperands(property.value),
       ]);
   }
 }
 
-export function getDestructureTargetDefs(target: DestructureTarget): Value[] {
+export function destructureTargetResults(target: DestructureTarget): Value[] {
   switch (target.kind) {
     case "binding":
       return target.storage === "local" ? [target.place] : [];
@@ -91,22 +91,22 @@ export function getDestructureTargetDefs(target: DestructureTarget): Value[] {
     case "dynamic-member":
       return [];
     case "assignment":
-      return getDestructureTargetDefs(target.left);
+      return destructureTargetResults(target.left);
     case "rest":
-      return getDestructureTargetDefs(target.argument);
+      return destructureTargetResults(target.argument);
     case "array":
       return target.elements.flatMap((element) =>
-        element === null ? [] : getDestructureTargetDefs(element),
+        element === null ? [] : destructureTargetResults(element),
       );
     case "object":
-      return target.properties.flatMap((property) => getDestructureTargetDefs(property.value));
+      return target.properties.flatMap((property) => destructureTargetResults(property.value));
   }
 }
 
 /**
  * Collect every binding-leaf place in a destructure target tree,
  * including bindings with `storage: "context"`. This is the wider
- * analog of {@link getDestructureTargetDefs}, which filters out
+ * analog of {@link destructureTargetResults}, which filters out
  * context bindings because they don't participate in SSA rename as
  * ordinary local defs.
  *

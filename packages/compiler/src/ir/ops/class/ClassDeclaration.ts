@@ -37,14 +37,14 @@ export class ClassDeclarationOp extends Operation {
     return new ClassDeclarationOp(this.id, this.place, newSuper, newElements);
   }
 
-  public getOperands(): Value[] {
+  public operands(): Value[] {
     const operands: Value[] = [];
     if (this.superClass !== null) operands.push(this.superClass);
     operands.push(...this.elements);
     return operands;
   }
 
-  public override getDefs(): Value[] {
+  public override results(): Value[] {
     return [this.place];
   }
 }

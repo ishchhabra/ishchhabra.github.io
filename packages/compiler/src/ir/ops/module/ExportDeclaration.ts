@@ -31,7 +31,7 @@ export class ExportDeclarationOp extends Operation {
     return this;
   }
 
-  public getOperands(): Value[] {
+  public operands(): Value[] {
     return this.specifiers;
   }
 }

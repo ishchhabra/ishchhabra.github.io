@@ -30,7 +30,7 @@ export class IfTermOp extends TermOp {
     super(id);
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [this.cond];
   }
 

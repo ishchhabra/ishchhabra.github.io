@@ -2,8 +2,8 @@ import {
   OperationId,
   Value,
   destructureTargetHasObservableWrites,
-  getDestructureTargetDefs,
-  getDestructureTargetOperands,
+  destructureTargetResults,
+  destructureTargetOperands,
   rewriteDestructureTarget,
   type DestructureObjectProperty,
   type DestructureTarget,
@@ -65,17 +65,17 @@ export class ObjectDestructureOp extends Operation {
     );
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [
       this.value,
-      ...getDestructureTargetOperands({ kind: "object", properties: this.properties }),
+      ...destructureTargetOperands({ kind: "object", properties: this.properties }),
     ];
   }
 
-  override getDefs(): Value[] {
+  override results(): Value[] {
     return [
       this.place,
-      ...getDestructureTargetDefs({ kind: "object", properties: this.properties }),
+      ...destructureTargetResults({ kind: "object", properties: this.properties }),
     ];
   }
 

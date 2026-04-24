@@ -11,7 +11,7 @@ import type { Operation } from "./core/Operation";
  *
  * Walks the embedded use chain on `op.place`. Every
  * export wrapper that references this place via its `declaration`
- * field shows up in `uses` because `getOperands()` includes the
+ * field shows up in `uses` because `operands()` includes the
  * `declaration` field.
  *
  * The textbook MLIR replacement for the historical `emit` flag:

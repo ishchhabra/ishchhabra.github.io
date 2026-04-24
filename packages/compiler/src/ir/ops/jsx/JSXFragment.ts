@@ -43,7 +43,7 @@ export class JSXFragmentOp extends Operation {
     );
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [this.openingFragment, this.closingFragment, ...this.children];
   }
 

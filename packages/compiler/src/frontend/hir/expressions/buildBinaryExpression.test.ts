@@ -79,9 +79,9 @@ describe("buildBinaryExpression — isolated", () => {
       expect(op.right).toBe(loadB.place);
     });
 
-    it("getOperands returns [left, right] in source order", () => {
+    it("operands returns [left, right] in source order", () => {
       const { op } = buildBinaryFromSource("a + b;");
-      expect(op.getOperands()).toEqual([op.left, op.right]);
+      expect(op.operands()).toEqual([op.left, op.right]);
     });
 
     it("is pure — hasSideEffects is false", () => {

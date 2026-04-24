@@ -43,11 +43,11 @@ export class DeclareLocalOp extends Operation {
     );
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [];
   }
 
-  override getDefs(): Value[] {
+  override results(): Value[] {
     return [this.place];
   }
 

@@ -23,7 +23,7 @@ export class RegExpLiteralOp extends Operation {
     return this;
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [];
   }
 

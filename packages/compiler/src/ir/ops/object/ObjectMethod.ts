@@ -62,7 +62,7 @@ export class ObjectMethodOp extends Operation {
     );
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [this.key, ...this.captures];
   }
 }

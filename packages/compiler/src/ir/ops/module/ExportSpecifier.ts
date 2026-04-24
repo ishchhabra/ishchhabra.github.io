@@ -31,7 +31,7 @@ export class ExportSpecifierOp extends Operation {
     return new ExportSpecifierOp(this.id, this.place, next, this.exported);
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [this.localPlace];
   }
 }

@@ -1,7 +1,7 @@
 import type { Environment } from "../../environment";
-import type { BasicBlock, BlockId } from "./Block";
 import type { MemoryEffects } from "../memory/MemoryLocation";
 import { NoEffects } from "../memory/MemoryLocation";
+import type { BasicBlock } from "./Block";
 import type { ModuleIR } from "./ModuleIR";
 import type { Value } from "./Value";
 
@@ -154,8 +154,8 @@ export function requireModuleIR(ctx: CloneContext): ModuleIR {
  *     instructions narrow via `public override readonly place: Value`
  *     in their constructors.
  *   - Static `traits` + `hasTrait(t)` for compile-time categorization.
- *   - Abstract `getOperands()`, `rewrite()`, `clone(ctx)`.
- *   - Sensible defaults for `getDefs()`, `hasSideEffects()`,
+ *   - Abstract `operands()`, `rewrite()`, `clone(ctx)`.
+ *   - Sensible defaults for `results()`, `hasSideEffects()`,
  *     `isDeterministic`, `isPure()`, `getBlockRefs()`,
  *     `remap()`, `print()`, `toString()`.
  *
@@ -195,33 +195,24 @@ export abstract class Operation {
   // Operand / def interface
   // -----------------------------------------------------------------
 
-  abstract getOperands(): Value[];
+  /** Values consumed by this operation.
+   *
+   * Operands are incoming value dependencies. They represent the values
+   * this operation needs in order to execute, regardless of whether those
+   * values are temporaries, binding cells, block parameters, or other IR
+   * values.
+   */
+  abstract operands(): Value[];
 
   /**
-   * Places this op writes. Default: `[place]` if the op has a place,
-   * empty otherwise. Multi-def ops (StoreLocal, destructure,
-   * structured ops with `resultPlaces`) override.
+   * Values produced by this operation.
+   *
+   * Results are outgoing value definitions made available to later IR.
+   * Single-result operations usually return their primary `result`; ops
+   * that introduce multiple values return them in stable positional order.
    */
-  getDefs(): Value[] {
+  results(): Value[] {
     return this.place !== undefined ? [this.place] : [];
-  }
-
-  /**
-   * MLIR-style: the SSA values this op produces. Canonical spelling
-   * matching `mlir::Operation::getResults()`. Aliases {@link getDefs}.
-   */
-  getResults(): readonly Value[] {
-    return this.getDefs();
-  }
-
-  /** Getter form for the same value, for call sites that read it
-   *  as a property. */
-  get results(): readonly Value[] {
-    return this.getDefs();
-  }
-
-  getUses(): Value[] {
-    return this.getOperands();
   }
 
   // -----------------------------------------------------------------
@@ -295,24 +286,24 @@ export abstract class Operation {
   // The default implementation checks that:
   //   - every operand is a non-null Value.
   //   - every def is a non-null Value.
-  //   - the op's own `place`, if declared, appears in `getDefs()`.
+  //   - the op's own `place`, if declared, appears in `results()`.
   //
   // Concrete ops override to add op-specific invariants.
   // -----------------------------------------------------------------
 
   verify(): void {
-    for (const operand of this.getOperands()) {
+    for (const operand of this.operands()) {
       if (operand == null) {
         throw new VerifyError(this, "has null operand");
       }
     }
-    for (const def of this.getDefs()) {
+    for (const def of this.results()) {
       if (def == null) {
         throw new VerifyError(this, "has null def");
       }
     }
     if (this.place !== undefined) {
-      const defs = this.getDefs();
+      const defs = this.results();
       if (defs.length === 0 || defs[0] !== this.place) {
         // Not an error by default — multi-def ops (StoreLocal,
         // destructure) legally include `place` at a non-first index
@@ -320,7 +311,7 @@ export abstract class Operation {
         // than a value. We only require that `place` be in the list
         // if it's declared at all.
         if (!defs.includes(this.place)) {
-          throw new VerifyError(this, `place ${this.place.print()} is not in getDefs()`);
+          throw new VerifyError(this, `place ${this.place.print()} is not in results()`);
         }
       }
     }
@@ -328,7 +319,7 @@ export abstract class Operation {
     // Use-chain consistency: every operand lists `this` as a user.
     // Skipped for unattached ops — `registerUses` runs on append.
     if (this.parentBlock !== null) {
-      for (const operand of this.getOperands()) {
+      for (const operand of this.operands()) {
         if (!operand.uses.has(this)) {
           throw new VerifyError(this, `operand ${operand.print()} does not list this as a user`);
         }

@@ -35,7 +35,7 @@ export class SuperCallOp extends Operation {
     return new SuperCallOp(this.id, this.place, newArgs);
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return this.args;
   }
 

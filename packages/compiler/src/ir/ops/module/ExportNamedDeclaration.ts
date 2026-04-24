@@ -30,7 +30,7 @@ export class ExportNamedDeclarationOp extends Operation {
     return this;
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [...this.specifiers, ...(this.declaration ? [this.declaration] : [])];
   }
 }

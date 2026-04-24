@@ -20,7 +20,7 @@ export class SwitchTermOp extends TermOp {
     super(id);
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [this.discriminant, ...this.cases.map((c) => c.test)];
   }
 

@@ -41,11 +41,11 @@ export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
         if (instr.hasSideEffects(this.environment)) continue;
 
         if (instr instanceof StoreLocalOp) {
-          if (instr.getDefs().some((p) => p.uses.size > 0)) continue;
+          if (instr.results().some((p) => p.uses.size > 0)) continue;
           const definer = instr.value.definer;
           if (definer instanceof Operation && !definer.isPure(this.environment)) continue;
         } else {
-          if (instr.getDefs().some((p) => p.uses.size > 0)) continue;
+          if (instr.results().some((p) => p.uses.size > 0)) continue;
         }
 
         block.removeOpAt(i);

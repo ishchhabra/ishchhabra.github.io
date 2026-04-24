@@ -28,7 +28,7 @@ export class ForTermOp extends TermOp {
     super(id);
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [];
   }
 

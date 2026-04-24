@@ -58,17 +58,17 @@ export class StoreLocalOp extends Operation {
     );
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     // Mirror LLVM's `store addr, val`: the address is a use, the
     // value is a use, and the store itself produces no SSA value.
     // For assignment-kind stores, `lval` names the binding location
     // that must already exist — it's a use, not a def. For
     // declaration-kind stores, `lval` names the binding being
-    // introduced; that's handled by `getDefs` below.
+    // introduced; that's handled by `results` below.
     return this.kind === "assignment" ? [this.value, this.lval] : [this.value];
   }
 
-  override getDefs(): Value[] {
+  override results(): Value[] {
     // Declarations introduce the binding — `lval` is a new def,
     // analogous to `alloca`. Assignments do not produce a new
     // binding; they mutate memory at an existing `lval`, matching

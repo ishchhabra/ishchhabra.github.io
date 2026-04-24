@@ -36,7 +36,7 @@ export class LoadLocalOp extends Operation {
     return new LoadLocalOp(this.id, this.place, rewrittenTarget);
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [this.value];
   }
 

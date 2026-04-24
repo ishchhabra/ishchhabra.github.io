@@ -37,11 +37,11 @@ export class AssignmentPatternOp extends Operation {
     );
   }
 
-  public getOperands(): Value[] {
+  public operands(): Value[] {
     return [this.right];
   }
 
-  public override getDefs(): Value[] {
+  public override results(): Value[] {
     return [this.place, ...this.bindings];
   }
 

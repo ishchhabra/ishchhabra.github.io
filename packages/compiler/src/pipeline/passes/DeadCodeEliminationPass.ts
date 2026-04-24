@@ -55,7 +55,7 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
    * mutations alive even when the op itself has no outer defs.
    */
   private structureHasLiveDef(op: Operation, liveness: LivenessResult): boolean {
-    for (const p of op.getDefs()) {
+    for (const p of op.results()) {
       if (liveness.isLive(p.id)) return true;
     }
     return false;
@@ -119,7 +119,7 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
           continue;
         }
         if (op.hasSideEffects(this.environment)) continue;
-        if (op.getDefs().some((p) => liveness.isLive(p.id))) continue;
+        if (op.results().some((p) => liveness.isLive(p.id))) continue;
         block.removeOpAt(i);
         changed = true;
       }

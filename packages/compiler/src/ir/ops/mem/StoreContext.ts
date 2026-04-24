@@ -60,11 +60,11 @@ export class StoreContextOp extends Operation {
     return new StoreContextOp(this.id, this.place, lval, value, this.type, this.kind, bindings);
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [this.lval, this.value];
   }
 
-  override getDefs(): Value[] {
+  override results(): Value[] {
     return [this.place, ...this.bindings];
   }
 

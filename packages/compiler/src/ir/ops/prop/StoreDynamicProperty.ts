@@ -42,7 +42,7 @@ export class StoreDynamicPropertyOp extends StorePropertyOp {
     );
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [this.object, this.property, this.value];
   }
 

@@ -30,7 +30,7 @@ export class WhileTermOp extends TermOp {
     super(id);
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [];
   }
 

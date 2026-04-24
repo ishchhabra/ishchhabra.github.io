@@ -106,15 +106,15 @@ describe("buildMemberExpression — isolated", () => {
       expect((op as LoadDynamicPropertyOp).property).toBe(loadK.place);
     });
 
-    it("getOperands returns [object] for static load", () => {
+    it("operands returns [object] for static load", () => {
       const { op } = buildMemberFromSource("o.x;");
-      expect(op.getOperands()).toEqual([(op as LoadStaticPropertyOp).object]);
+      expect(op.operands()).toEqual([(op as LoadStaticPropertyOp).object]);
     });
 
-    it("getOperands returns [object, property] for dynamic load", () => {
+    it("operands returns [object, property] for dynamic load", () => {
       const { op } = buildMemberFromSource("o[k];");
       const dyn = op as LoadDynamicPropertyOp;
-      expect(op.getOperands()).toEqual([dyn.object, dyn.property]);
+      expect(op.operands()).toEqual([dyn.object, dyn.property]);
     });
 
     it("both static and dynamic loads report side effects", () => {

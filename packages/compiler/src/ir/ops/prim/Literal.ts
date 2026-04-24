@@ -33,7 +33,7 @@ export class LiteralOp extends Operation {
     return this;
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [];
   }
 

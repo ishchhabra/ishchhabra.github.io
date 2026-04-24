@@ -77,7 +77,7 @@ export class ClassPropertyOp extends Operation {
     );
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [this.key, ...this.captures];
   }
 }

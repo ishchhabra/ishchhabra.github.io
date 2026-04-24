@@ -25,7 +25,7 @@ export class SequenceExpressionOp extends Operation {
     );
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [...this.expressions];
   }
 

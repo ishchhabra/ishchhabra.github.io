@@ -28,7 +28,7 @@ export class ImportExpressionOp extends Operation {
     return new ImportExpressionOp(this.id, this.place, values.get(this.source) ?? this.source);
   }
 
-  getOperands(): Value[] {
+  operands(): Value[] {
     return [this.source];
   }
 }
