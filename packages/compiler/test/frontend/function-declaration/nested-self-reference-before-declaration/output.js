@@ -1,69 +1,69 @@
 function $0($1) {
   function $2($3) {
-    const $94 = $3;
+    const $83 = $3;
     let $7;
     let $10;
     let $16;
-    let $24;
-    let $29;
-    let $35;
-    let $54;
-    let $60;
-    if ($94) {
-      const $96 = $3.position;
-      $7 = $96;
+    let $23;
+    let $28;
+    let $34;
+    let $53;
+    let $59;
+    if ($83) {
+      const $84 = $3.position;
+      $7 = $84;
     } else {
-      $7 = $94;
+      $7 = $83;
     }
     if ($7) {
-      const $98 = $3.position[$1];
-      $10 = $98;
+      const $85 = $3.position[$1];
+      $10 = $85;
     } else {
       $10 = $7;
     }
     if ($10) {
       $16 = $10;
     } else {
-      const $100 = {};
-      $16 = $100;
+      const $86 = {};
+      $16 = $86;
     }
-    const $102 = typeof $16.line === "number";
-    if ($102) {
-      const $104 = $16.line > 0;
-      $24 = $104;
+    const $87 = typeof $16.line === "number";
+    if ($87) {
+      const $88 = $16.line > 0;
+      $23 = $88;
     } else {
-      $24 = $102;
+      $23 = $87;
     }
-    if ($24) {
-      const $106 = typeof $16.column === "number";
-      $29 = $106;
+    if ($23) {
+      const $89 = typeof $16.column === "number";
+      $28 = $89;
     } else {
-      $29 = $24;
+      $28 = $23;
     }
-    if ($29) {
-      const $108 = $16.column > 0;
-      $35 = $108;
+    if ($28) {
+      const $90 = $16.column > 0;
+      $34 = $90;
     } else {
-      $35 = $29;
+      $34 = $28;
     }
-    if ($35) {
-      const $110 = typeof $16.offset === "number";
-      if ($110) {
-        const $112 = $16.offset > -1;
-        $54 = $112;
+    if ($34) {
+      const $91 = typeof $16.offset === "number";
+      if ($91) {
+        const $92 = $16.offset > -1;
+        $53 = $92;
       } else {
-        $54 = $110;
+        $53 = $91;
       }
-      if ($54) {
-        const $114 = $16.offset;
-        $60 = $114;
+      if ($53) {
+        const $93 = $16.offset;
+        $59 = $93;
       } else {
-        $60 = undefined;
+        $59 = undefined;
       }
       return {
         line: $16.line,
         column: $16.column,
-        offset: $60,
+        offset: $59,
       };
     }
   }

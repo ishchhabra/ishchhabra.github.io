@@ -1,10 +1,10 @@
 function $0($1) {
-  let $17;
+  let $15;
   try {
-    const $21 = JSON.parse($1);
-    $17 = $21;
-  } catch ($11) {
-    $17 = "error";
+    const $18 = JSON.parse($1);
+    $15 = $18;
+  } catch ($10) {
+    $15 = "error";
   }
-  return $17;
+  return $15;
 }

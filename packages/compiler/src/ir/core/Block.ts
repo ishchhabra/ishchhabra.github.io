@@ -55,7 +55,7 @@ export class BasicBlock {
    *   - Pushed onto the rename stack at block entry (like params).
    *   - **Not** counted as SSA-merge sinks by `SSAEliminator`.
    *   - **Not** wired through the edge infrastructure
-   *     (`blockArgs.ts`) — their value is supplied by the runtime
+   *     (`ir/cfg/edges.ts`) — their value is supplied by the runtime
    *     (iterator protocol / exception-throw mechanism), not via
    *     explicit operand forwarding from predecessor terminators.
    *   - Codegen doesn't emit a prelude `let = undefined` for them;

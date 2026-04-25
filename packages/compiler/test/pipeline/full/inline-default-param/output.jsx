@@ -6,8 +6,8 @@ function $0($3 = 5) {
 function $1() {
   return (
     <div>
-      {$0().map(($37) => (
-        <span key={$37.slug}>{$37.slug}</span>
+      {$0().map(($35) => (
+        <span key={$35.slug}>{$35.slug}</span>
       ))}
     </div>
   );

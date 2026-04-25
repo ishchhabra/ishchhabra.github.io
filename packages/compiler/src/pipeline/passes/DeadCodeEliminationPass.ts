@@ -3,7 +3,7 @@ import { FuncOp } from "../../ir/core/FuncOp";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { LivenessAnalysis, LivenessResult } from "../analysis/LivenessAnalysis";
 import { BaseOptimizationPass, OptimizationResult } from "../late-optimizer/OptimizationPass";
-import { Edge, forEachIncomingEdge, forEachOutgoingEdge } from "../ssa/blockArgs";
+import { incomingEdges, outgoingEdges } from "../../ir/cfg";
 
 /**
  * SSA-phase Dead Code Elimination.
@@ -13,7 +13,7 @@ import { Edge, forEachIncomingEdge, forEachOutgoingEdge } from "../ssa/blockArgs
  * are not live.
  *
  * Block-param shrinking works through the uniform edge API
- * ({@link forEachIncomingEdge} / {@link Edge.apply}) so it's
+ * ({@link incomingEdges} / Edge.rewriteArgs) so it's
  * agnostic to whether the edges come from `JumpTermOp`s or structured-op
  * ports. Blocks whose params receive values from structured-op
  * virtual edges (iter-arg region entries, if-arm yields) are left
@@ -62,9 +62,9 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
 
       // Rewrite every incoming edge's args to the new mask via the
       // uniform edge API. Works for any edge kind.
-      forEachIncomingEdge(this.funcOp, { kind: "block", block }, (edge: Edge) => {
-        edge.apply(edge.args.filter((_, i) => mask[i]));
-      });
+      for (const edge of incomingEdges(this.funcOp, block)) {
+        edge.rewriteArgs(edge.args.filter((_, i) => mask[i]));
+      }
     }
 
     return changed;
@@ -77,18 +77,15 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
    * bundle and shouldn't be shrunk by generic DCE.
    */
   private hasStructuredOpIncomingEdge(block: import("../../ir/core/Block").BasicBlock): boolean {
-    let flagged = false;
     for (const predBlock of this.funcOp.blocks) {
-      forEachOutgoingEdge(this.funcOp, predBlock, (edge) => {
-        if (flagged) return;
-        if (edge.sink.kind !== "block" || edge.sink.block !== block) return;
+      for (const edge of outgoingEdges(this.funcOp, predBlock)) {
+        if (edge.sink !== block) continue;
         const term = predBlock.terminal;
         const isJump = term !== undefined && term.constructor.name === "JumpTermOp";
-        if (!isJump) flagged = true;
-      });
-      if (flagged) break;
+        if (!isJump) return true;
+      }
     }
-    return flagged;
+    return false;
   }
 
   private removeDeadInstructions(liveness: LivenessResult): boolean {

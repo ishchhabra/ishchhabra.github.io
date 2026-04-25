@@ -24,9 +24,10 @@ import {
   UNRESOLVED,
 } from "../../ir/builtins";
 import { BasicBlock } from "../../ir/core/Block";
+import { incomingEdges } from "../../ir/cfg";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { ModuleIR } from "../../ir/core/ModuleIR";
-import { BranchTermOp, JumpTermOp } from "../../ir/ops/control";
+import { TermOp } from "../../ir/core/TermOp";
 import { TemplateLiteralOp } from "../../ir/ops/prim/TemplateLiteral";
 import { getQualifiedName, type ResolveConstantContext } from "./resolveConstant";
 
@@ -79,7 +80,7 @@ function meet(a: Lattice, b: Lattice): Lattice {
  *     re-evaluate every op that reads the value via the embedded
  *     {@link Value.users} chain — sparse, never a full block sweep.
  *   - Block params are evaluated like phi nodes: meet of the
- *     corresponding `JumpTermOp.args[i]` across each predecessor edge.
+ *     corresponding `edge.args[i]` across each incoming CFG edge.
  *
  * Folding decisions:
  *
@@ -175,14 +176,10 @@ export class ConstantPropagationPass {
       const value = this.ssaWorklist.pop()!;
       for (const user of value.users) {
         const op = user as Operation;
-        if (op instanceof JumpTermOp) {
-          // Block-arg flow: a changed arg may update a target block param.
-          this.evaluateBlockParams(op.target);
-          continue;
-        }
-        if (op instanceof BranchTermOp) {
-          this.evaluateBlockParams(op.trueTarget);
-          this.evaluateBlockParams(op.falseTarget);
+        if (op instanceof TermOp) {
+          for (const successor of op.successors()) {
+            this.evaluateBlockParams(successor.block);
+          }
           continue;
         }
         this.evaluate(op);
@@ -222,28 +219,16 @@ export class ConstantPropagationPass {
 
   /**
    * Merge-sink evaluation. For each param index `i`, meet the value
-   * arriving on that index from every flat-CFG predecessor (each
-   * predecessor's terminator is a {@link JumpTermOp} whose `args[i]`
-   * flows into `block.params[i]`).
+   * arriving on that index from every incoming CFG edge.
    */
   private evaluateBlockParams(block: BasicBlock): void {
     if (block.params.length === 0) return;
     for (let i = 0; i < block.params.length; i++) {
       let m: Lattice = TOP;
-      for (const pred of block.predecessors()) {
-        const terminal = pred.terminal;
-        let arg: Value | undefined;
-        if (terminal instanceof JumpTermOp && terminal.target === block) {
-          arg = terminal.args[i];
-        } else if (terminal instanceof BranchTermOp) {
-          if (terminal.trueTarget === block) arg = terminal.trueArgs[i];
-          else if (terminal.falseTarget === block) arg = terminal.falseArgs[i];
-        } else {
-          continue;
-        }
+      for (const edge of incomingEdges(this.funcOp, block)) {
+        const arg = edge.args[i];
         if (arg === undefined) continue;
         m = meet(m, this.getLattice(arg));
-        if (m === BOTTOM) break;
       }
       this.setLattice(block.params[i], m);
     }
@@ -254,8 +239,10 @@ export class ConstantPropagationPass {
   // -------------------------------------------------------------------------
 
   private evaluate(op: Operation): void {
-    if (op instanceof JumpTermOp) {
-      this.evaluateBlockParams(op.target);
+    if (op instanceof TermOp) {
+      for (const successor of op.successors()) {
+        this.evaluateBlockParams(successor.block);
+      }
       return;
     }
     if (op.place === undefined) return;

@@ -49,7 +49,7 @@ function buildAssignFromSource(source: string) {
 
 describe("buildAssignmentExpression — end-to-end smoke", () => {
   it("simple identifier assignment", () => {
-    expect(printFn(buildFn("let x; x = 1;"))).toContain("store_local $0, $3");
+    expect(printFn(buildFn("let x; x = 1;"))).toContain("store_local $0, $2");
   });
 });
 

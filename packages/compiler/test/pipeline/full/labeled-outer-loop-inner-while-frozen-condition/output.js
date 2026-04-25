@@ -1,60 +1,60 @@
 function $0($1) {
-  const $109 = $1.nextSub;
+  const $95 = $1.nextSub;
+  let $61;
+  let $64;
+  $64 = $1;
+  let $65;
   let $66;
+  $66 = $95;
+  let $68;
   let $69;
-  $69 = $1;
   let $70;
-  let $71;
-  $71 = $109;
+  let $72;
+  $72 = undefined;
   let $73;
-  let $74;
-  let $75;
-  let $77;
-  $77 = undefined;
-  let $78;
   top: do {
-    if ($69.flags & 1) {
-      const $111 = $69.sub;
-      if ($111 !== undefined) {
-        const $113 = $111.nextSub;
-        if ($113 !== undefined) {
-          const $115 = {
-            value: $71,
-            prev: $77,
+    if ($64.flags & 1) {
+      const $96 = $64.sub;
+      if ($96 !== undefined) {
+        const $97 = $96.nextSub;
+        if ($97 !== undefined) {
+          const $98 = {
+            value: $66,
+            prev: $72,
           };
-          $73 = $113;
-          $78 = $115;
+          $68 = $97;
+          $73 = $98;
         } else {
-          $73 = $71;
-          $78 = $77;
+          $68 = $66;
+          $73 = $72;
         }
-        $66 = $111;
-        $70 = $73;
-        $74 = $78;
+        $61 = $96;
+        $65 = $68;
+        $69 = $73;
         continue;
       }
     }
-    if ($71 !== undefined) {
-      const $117 = $71.nextSub;
-      $66 = $71;
-      $70 = $117;
-      $74 = $77;
+    if ($66 !== undefined) {
+      const $99 = $66.nextSub;
+      $61 = $66;
+      $65 = $99;
+      $69 = $72;
       continue;
     }
-    $75 = $77;
-    while ($75 !== undefined) {
-      const $119 = $75.value;
-      const $121 = $75.prev;
-      if ($119 !== undefined) {
-        const $123 = $119.nextSub;
-        $66 = $119;
-        $70 = $123;
-        $74 = $121;
+    $70 = $72;
+    while ($70 !== undefined) {
+      const $100 = $70.value;
+      const $101 = $70.prev;
+      if ($100 !== undefined) {
+        const $102 = $100.nextSub;
+        $61 = $100;
+        $65 = $102;
+        $69 = $101;
         continue top;
       }
-      $75 = $121;
+      $70 = $101;
       continue;
     }
     break;
-  } while ((($69 = $66), ($71 = $70), ($77 = $74), true));
+  } while ((($64 = $61), ($66 = $65), ($72 = $69), true));
 }

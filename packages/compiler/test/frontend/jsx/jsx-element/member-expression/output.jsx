@@ -1,3 +1,3 @@
-const $21 = {
+const $19 = {
   Bar: () => <div />,
 };

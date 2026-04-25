@@ -1,8 +1,8 @@
-let $16;
-$16 = 0;
-while ($16 < 10) {
-  const $20 = $16 + 1;
-  $16 = $20;
+let $15;
+$15 = 0;
+while ($15 < 10) {
+  const $18 = $15 + 1;
+  $15 = $18;
   continue;
 }
-console.log($16);
+console.log($15);

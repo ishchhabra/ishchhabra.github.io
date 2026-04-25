@@ -2,12 +2,7 @@ import { ValueId } from "../../ir";
 import { BasicBlock } from "../../ir/core/Block";
 import { FuncOp } from "../../ir/core/FuncOp";
 import type { Value } from "../../ir/core/Value";
-import {
-  collectAllSinks,
-  forEachIncomingEdge,
-  forEachOutgoingEdge,
-  sinkParams,
-} from "../ssa/blockArgs";
+import { incomingEdges, mergeSinks, outgoingEdges } from "../../ir/cfg";
 import { FunctionAnalysis, AnalysisManager } from "./AnalysisManager";
 
 /**
@@ -15,8 +10,7 @@ import { FunctionAnalysis, AnalysisManager } from "./AnalysisManager";
  * live in the function.
  *
  * Seeds from directly-read places and propagates through edge args
- * (both flat-CFG JumpTermOp edges and structured-op virtual edges,
- * uniformly via {@link forEachIncomingEdge}).
+ * (uniformly via {@link incomingEdges}).
  */
 export class LivenessResult {
   constructor(private readonly liveIds: ReadonlySet<ValueId>) {}
@@ -39,21 +33,18 @@ export class LivenessAnalysis extends FunctionAnalysis<LivenessResult> {
       seedLiveReads(funcOp, block, liveIds);
     }
 
-    const sinks = collectAllSinks(funcOp);
+    const sinks = mergeSinks(funcOp);
 
     let changed = true;
     while (changed) {
       changed = false;
 
       // Edge-args propagation: if a sink param is live, every
-      // matching arg on each incoming edge is live too. Uniform over
-      // block.params (target of JumpTermOp / op-entry / condition-true /
-      // yield-back) and op.resultPlaces (target of condition-false /
-      // yield-to-results).
+      // matching arg on each incoming edge is live too.
       for (const sink of sinks) {
-        const params = sinkParams(sink);
+        const params = sink.params;
         if (params.length === 0) continue;
-        forEachIncomingEdge(funcOp, sink, (edge) => {
+        for (const edge of incomingEdges(funcOp, sink)) {
           for (let i = 0; i < params.length; i++) {
             if (!liveIds.has(params[i].id)) continue;
             const arg = edge.args[i];
@@ -63,7 +54,7 @@ export class LivenessAnalysis extends FunctionAnalysis<LivenessResult> {
               changed = true;
             }
           }
-        });
+        }
       }
     }
 
@@ -97,8 +88,8 @@ function nonEdgeTerminalOperands(funcOp: FuncOp, block: BasicBlock): Value[] {
   const terminal = block.terminal;
   if (terminal === undefined) return [];
   const edgeArgPlaces = new Set<Value>();
-  forEachOutgoingEdge(funcOp, block, (edge) => {
+  for (const edge of outgoingEdges(funcOp, block)) {
     for (const arg of edge.args) edgeArgPlaces.add(arg);
-  });
+  }
   return terminal.operands().filter((p) => !edgeArgPlaces.has(p));
 }

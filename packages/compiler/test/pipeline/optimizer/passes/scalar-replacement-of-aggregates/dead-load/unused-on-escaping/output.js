@@ -1,6 +1,6 @@
-const $17 = {
+const $16 = {
   a: 1,
   b: 2,
 };
-console.log($17);
-$17.a;
+console.log($16);
+$16.a;

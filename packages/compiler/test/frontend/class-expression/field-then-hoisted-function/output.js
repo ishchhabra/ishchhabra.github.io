@@ -1,9 +1,9 @@
 var $1;
 function $0() {
-  return $5;
+  return $4;
 }
-const $5 = 1;
+const $4 = 1;
 (class {
-  x = $5;
+  x = $4;
 });
 export { $0 as afterClass };

@@ -1,13 +1,13 @@
-let $22;
+let $20;
 switch (2) {
   case 1:
-    $22 = "one";
+    $20 = "one";
     break;
   case 2:
-    $22 = "two";
+    $20 = "two";
     break;
   default:
-    $22 = "other";
+    $20 = "other";
     break;
 }
-console.log($22);
+console.log($20);

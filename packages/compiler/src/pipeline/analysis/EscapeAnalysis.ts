@@ -16,7 +16,7 @@ import {
   ReturnTermOp,
   ThrowTermOp,
 } from "../../ir";
-import { forEachOutgoingEdge } from "../ssa/blockArgs";
+import { outgoingEdges } from "../../ir/cfg";
 import { StoreStaticPropertyOp } from "../../ir/ops/prop/StoreStaticProperty";
 import { StoreDynamicPropertyOp } from "../../ir/ops/prop/StoreDynamicProperty";
 import { FuncOp } from "../../ir/core/FuncOp";
@@ -279,16 +279,15 @@ export class EscapeAnalysis extends FunctionAnalysis<EscapeAnalysisResult> {
 function buildIncomingEdgeArgsIndex(funcOp: FuncOp): Map<BlockId, readonly (readonly Value[])[]> {
   const index = new Map<BlockId, (readonly Value[])[]>();
   for (const predBlock of funcOp.blocks) {
-    forEachOutgoingEdge(funcOp, predBlock, (edge) => {
-      if (edge.sink.kind !== "block") return;
-      const succId = edge.sink.block.id;
+    for (const edge of outgoingEdges(funcOp, predBlock)) {
+      const succId = edge.sink.id;
       let list = index.get(succId);
       if (list === undefined) {
         list = [];
         index.set(succId, list);
       }
       list.push(edge.args);
-    });
+    }
   }
   return index;
 }

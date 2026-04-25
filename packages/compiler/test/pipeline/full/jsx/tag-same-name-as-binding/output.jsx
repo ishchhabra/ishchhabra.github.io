@@ -1,7 +1,7 @@
 function $0($3, $4) {
   return $3 + $4;
 }
-function $1({ code: $9, lang: $10 }) {
+function $1({ code: $8, lang: $9 }) {
   return (
     <pre>
       <code
@@ -9,7 +9,7 @@ function $1({ code: $9, lang: $10 }) {
           fontFamily: "mono",
         }}
         dangerouslySetInnerHTML={{
-          __html: $0($9, $10),
+          __html: $0($8, $9),
         }}
       />
     </pre>

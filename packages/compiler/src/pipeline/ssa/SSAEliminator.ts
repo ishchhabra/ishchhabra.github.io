@@ -1,7 +1,6 @@
 import {
   BindingDeclOp,
   BindingInitOp,
-  LiteralOp,
   LoadContextOp,
   LoadLocalOp,
   makeOperationId,
@@ -9,11 +8,11 @@ import {
   StoreContextOp,
   StoreLocalOp,
 } from "../../ir";
+import { Edge, incomingEdges, mergeSinks } from "../../ir/cfg";
 import { BasicBlock } from "../../ir/core/Block";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { Value } from "../../ir/core/Value";
-import { collectAllSinks, Edge, EdgeSink, forEachIncomingEdge, sinkParams } from "./blockArgs";
 
 /**
  * Out-of-SSA lowering.
@@ -22,8 +21,8 @@ import { collectAllSinks, Edge, EdgeSink, forEachIncomingEdge, sinkParams } from
  *
  * 1. **Phi destruction** (Sreedhar Method I). Uniform over every
  *    SSA merge sink — regular block params *and* structured-op
- *    `resultPlaces` — via {@link collectAllSinks} +
- *    {@link forEachIncomingEdge}. For each sink param declare a
+ *    `resultPlaces` — via {@link mergeSinks} +
+ *    {@link incomingEdges}. For each sink param declare a
  *    backing `let` at function entry, then at each predecessor edge
  *    emit a `param = arg` copy store right before that predecessor's
  *    terminator. Placing stores before the terminator works without
@@ -75,12 +74,11 @@ export class SSAEliminator {
     // emitted copy stores when both arms qualify; non-ternary paths
     // rely on the declaration to back downstream references to the
     // result place.
-    type SinkSite = { sink: EdgeSink; param: Value; index: number };
+    type SinkSite = { sink: BasicBlock; param: Value; index: number };
     const sites: SinkSite[] = [];
-    for (const sink of collectAllSinks(this.funcOp)) {
-      const params = sinkParams(sink);
-      for (let i = 0; i < params.length; i++) {
-        sites.push({ sink, param: params[i], index: i });
+    for (const sink of mergeSinks(this.funcOp)) {
+      for (let i = 0; i < sink.params.length; i++) {
+        sites.push({ sink, param: sink.params[i], index: i });
       }
     }
     sites.sort((a, b) => a.param.id - b.param.id);
@@ -94,15 +92,15 @@ export class SSAEliminator {
 
       this.#insertParamDeclaration(sink, param);
 
-      forEachIncomingEdge(this.funcOp, sink, (edge: Edge) => {
+      for (const edge of incomingEdges(this.funcOp, sink)) {
         const arg = edge.args[index] ?? param;
         // Defensive self-store filter: some passes produce trivial
         // `arg = param` edges where args forward unchanged (the two
         // condition edges of a WhileOp share args with their own
         // beforeRegion params when the loop body doesn't mutate).
-        if (arg.id === param.id) return;
+        if (arg.id === param.id) continue;
         this.#insertCopyStore(edge, param, arg);
-      });
+      }
     }
   }
 
@@ -126,7 +124,7 @@ export class SSAEliminator {
    *     SSAEliminator) and avoids ordering conflicts with any
    *     user-source declarations at the top of the entry block.
    */
-  #insertParamDeclaration(sink: EdgeSink, param: Value): void {
+  #insertParamDeclaration(sink: BasicBlock, param: Value): void {
     // Declaration metadata is keyed by the param's own declarationId.
     // Frontend-created result places (e.g. ??= / ternary) have no
     // `originalDeclarationId` — they're SSA-internal merge points —
@@ -176,7 +174,7 @@ export class SSAEliminator {
    *     declarations in a single prologue-style band.
    */
   #resolveDeclarationInsertion(
-    _sink: EdgeSink,
+    _sink: BasicBlock,
   ):
     | { kind: "append"; block: BasicBlock }
     | { kind: "insertAt"; block: BasicBlock; index: number } {
@@ -189,7 +187,17 @@ export class SSAEliminator {
     const storeId = makeOperationId(this.moduleIR.environment.nextOperationId++);
     const storePlace = this.moduleIR.environment.createValue(param.declarationId);
     const storeInstr = new StoreLocalOp(storeId, storePlace, param, arg);
-    edge.insertCopyStore(storeInstr);
+
+    // Single-successor predecessor (JumpTermOp): copy can sit in the
+    // predecessor itself before the terminator — the path from
+    // predecessor entry to sink is uncontended. Multi-successor
+    // (BranchTermOp): the edge is critical; split it so the copy
+    // executes only on this arm.
+    if (edge.terminator.successorCount() === 1) {
+      edge.pred.appendOp(storeInstr);
+    } else {
+      edge.split().appendOp(storeInstr);
+    }
   }
 
   // ---------------------------------------------------------------------

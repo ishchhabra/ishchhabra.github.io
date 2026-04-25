@@ -1,12 +1,12 @@
 var $1;
 function $0() {
-  var $5;
-  let $23;
+  var $4;
+  let $20;
   if (Math.random()) {
-    $23 = 3;
+    $20 = 3;
   } else {
-    $23 = 2;
+    $20 = 2;
   }
-  return $23;
+  return $20;
 }
 export { $0 as f };

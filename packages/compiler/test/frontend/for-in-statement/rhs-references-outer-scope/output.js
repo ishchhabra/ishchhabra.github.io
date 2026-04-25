@@ -1,7 +1,7 @@
-for (const $11 in {
+for (const $10 in {
   a: 1,
   b: 2,
 }) {
-  console.log($11);
+  console.log($10);
   continue;
 }

@@ -1,19 +1,19 @@
 function $0($1) {
-  let $11;
-  let $27;
+  let $10;
+  let $25;
   try {
-    const $33 = sessionStorage.getItem("k");
-    if ($33) {
-      $11 = $33;
+    const $29 = sessionStorage.getItem("k");
+    if ($29) {
+      $10 = $29;
     } else {
-      $11 = "{}";
+      $10 = "{}";
     }
-    const $35 = JSON.parse($11);
-    $27 = $35;
-  } catch ($15) {
-    console.error($15);
+    const $30 = JSON.parse($10);
+    $25 = $30;
+  } catch ($14) {
+    console.error($14);
     return;
   }
-  return $27[$1];
+  return $25[$1];
 }
 export { $0 as restore };

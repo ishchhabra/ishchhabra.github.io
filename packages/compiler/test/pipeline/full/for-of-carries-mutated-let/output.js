@@ -1,7 +1,7 @@
 function $0($1) {
-  for (const $7 of $1) {
-    if ($7.id) {
-      $7.id;
+  for (const $6 of $1) {
+    if ($6.id) {
+      $6.id;
     }
     continue;
   }

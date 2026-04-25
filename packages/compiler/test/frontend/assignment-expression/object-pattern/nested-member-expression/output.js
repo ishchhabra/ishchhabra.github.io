@@ -1,9 +1,9 @@
-const $24 = {
+const $23 = {
   nested: {
     value: 1,
   },
 };
-({ value: $24.nested.value } = {
+({ value: $23.nested.value } = {
   value: 2,
 });
-console.log($24.nested.value);
+console.log($23.nested.value);

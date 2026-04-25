@@ -1,13 +1,13 @@
+let $17;
 let $18;
-let $19;
 if (globalThis.a) {
   if (globalThis.b) {
-    $19 = 1;
+    $18 = 1;
   } else {
-    $19 = 2;
+    $18 = 2;
   }
-  $18 = $19;
+  $17 = $18;
 } else {
-  $18 = 3;
+  $17 = 3;
 }
-console.log($18);
+console.log($17);

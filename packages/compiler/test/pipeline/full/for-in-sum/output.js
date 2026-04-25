@@ -1,5 +1,5 @@
 function $0($1) {
-  for (const $7 in $1) {
+  for (const $6 in $1) {
     continue;
   }
   return 0;

@@ -1,7 +1,7 @@
-let $22;
+let $19;
 if (globalThis.flag) {
-  $22 = 1;
+  $19 = 1;
 } else {
-  $22 = 2;
+  $19 = 2;
 }
-console.log($22);
+console.log($19);

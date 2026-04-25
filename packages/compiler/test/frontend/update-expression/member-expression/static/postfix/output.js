@@ -1,4 +1,4 @@
-const $20 = {
+const $16 = {
   count: 0,
 };
-$20.count = $20.count + 1;
+$16.count = $16.count + 1;
