@@ -1,16 +1,17 @@
-let blockparam_37 = undefined;
-let blockparam_38 = undefined;
+let $2;
+let $36;
+let $37;
 if (10 > 5) {
   if (20 < 15) {
-    const $49 = 10 + 20;
-    blockparam_38 = $49;
+    const $43 = 10 + 20;
+    $37 = $43;
   } else {
-    const $51 = 10 - 20;
-    blockparam_38 = $51;
+    const $44 = 10 - 20;
+    $37 = $44;
   }
-  blockparam_37 = blockparam_38;
+  $36 = $37;
 } else {
-  const $47 = 10 * 20;
-  blockparam_37 = $47;
+  const $42 = 10 * 20;
+  $36 = $42;
 }
-console.log(blockparam_37 * 2);
+console.log($36 * 2);

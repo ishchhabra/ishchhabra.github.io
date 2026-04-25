@@ -1,8 +1,8 @@
-let blockparam_16 = undefined;
-blockparam_16 = 0;
-let $21;
+let $16;
+$16 = 0;
+let $19;
 do {
-  $21 = blockparam_16 + 1;
+  $19 = $16 + 1;
   continue;
-} while (((blockparam_16 = $21), $21 < 10));
-console.log($21);
+} while ((($16 = $19), $19 < 10));
+console.log($19);

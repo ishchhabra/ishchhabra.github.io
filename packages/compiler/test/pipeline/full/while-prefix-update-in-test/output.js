@@ -1,9 +1,9 @@
-const $33 = ["a", "b", "c"];
-let blockparam_28 = undefined;
-blockparam_28 = -1;
-let $35;
-while ((($35 = blockparam_28 + 1), $35 < $33.length)) {
-  [].push($33[$35]);
-  blockparam_28 = $35;
+const $31 = ["a", "b", "c"];
+let $28;
+$28 = -1;
+let $32;
+while ((($32 = $28 + 1), $32 < $31.length)) {
+  [].push($31[$32]);
+  $28 = $32;
   continue;
 }

@@ -1,8 +1,8 @@
-let blockparam_16 = undefined;
-blockparam_16 = 3;
-let $21;
-while ((($21 = blockparam_16 - 1), blockparam_16)) {
-  [].push($21);
-  blockparam_16 = $21;
+let $16;
+$16 = 3;
+let $19;
+while ((($19 = $16 - 1), $16)) {
+  [].push($19);
+  $16 = $19;
   continue;
 }

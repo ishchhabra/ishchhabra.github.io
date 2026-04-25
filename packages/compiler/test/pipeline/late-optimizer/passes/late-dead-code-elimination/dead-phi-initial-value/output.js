@@ -1,8 +1,8 @@
-let blockparam_14 = undefined;
+let $14;
 if (globalThis.cond) {
-  const $19 = globalThis.compute();
-  blockparam_14 = $19;
+  const $17 = globalThis.compute();
+  $14 = $17;
 } else {
-  blockparam_14 = 0;
+  $14 = 0;
 }
-console.log(blockparam_14);
+console.log($14);

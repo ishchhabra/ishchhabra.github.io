@@ -1,11 +1,11 @@
-const $32 = globalThis.a;
-const $34 = globalThis.b;
-let blockparam_27 = undefined;
-if ($32 > $34) {
-  const $36 = $32 + $34;
-  blockparam_27 = $36;
+const $29 = globalThis.a;
+const $30 = globalThis.b;
+let $26;
+if ($29 > $30) {
+  const $31 = $29 + $30;
+  $26 = $31;
 } else {
-  const $38 = $32 - $34;
-  blockparam_27 = $38;
+  const $32 = $29 - $30;
+  $26 = $32;
 }
-console.log(blockparam_27);
+console.log($26);

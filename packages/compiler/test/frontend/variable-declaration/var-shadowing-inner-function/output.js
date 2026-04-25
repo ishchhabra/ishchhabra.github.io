@@ -1,10 +1,12 @@
+var $1;
 function $0() {
-  let blockparam_20 = undefined;
+  var $4;
+  let $20;
   if (Math.random()) {
-    blockparam_20 = 3;
+    $20 = 3;
   } else {
-    blockparam_20 = 2;
+    $20 = 2;
   }
-  return blockparam_20;
+  return $20;
 }
 export { $0 as f };

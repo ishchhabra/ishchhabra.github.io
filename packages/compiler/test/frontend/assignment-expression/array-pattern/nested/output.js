@@ -1,7 +1,7 @@
-let $0 = undefined;
-let $1 = undefined;
-let $2 = undefined;
-let $3 = undefined;
+let $0;
+let $1;
+let $2;
+let $3;
 [[$0, $1], [$2, $3]] = [
   [1, 2],
   [3, 4],

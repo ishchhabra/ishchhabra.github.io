@@ -1,6 +1,6 @@
 function $0() {
   return [1, 2];
 }
-let $1 = undefined;
-let $2 = undefined;
+let $1;
+let $2;
 [$1, $2] = $0();

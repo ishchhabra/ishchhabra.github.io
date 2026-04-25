@@ -1,9 +1,9 @@
-let blockparam_28 = undefined;
-blockparam_28 = 0;
-let blockparam_29 = undefined;
-for (let $39; blockparam_28 < 10; $39 = blockparam_28 + 1, blockparam_28 = $39) {
-  blockparam_29 = 0;
-  for (let $41; blockparam_29 < 10; $41 = blockparam_29 + 1, blockparam_29 = $41) {
-    console.log(blockparam_28, blockparam_29);
+let $28;
+$28 = 0;
+let $29;
+for (let $35; $28 < 10; $35 = $28 + 1, $28 = $35) {
+  $29 = 0;
+  for (let $36; $29 < 10; $36 = $29 + 1, $29 = $36) {
+    console.log($28, $29);
   }
 }

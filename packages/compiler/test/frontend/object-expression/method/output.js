@@ -1,8 +1,8 @@
 ({
-  add($2, $3) {
-    return $2 + $3;
+  add($3, $4) {
+    return $3 + $4;
   },
-  subtract($9, $10) {
-    return $9 - $10;
+  subtract($10, $11) {
+    return $10 - $11;
   },
 });

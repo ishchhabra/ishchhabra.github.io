@@ -1,3 +1,3 @@
-let $0 = undefined;
-let $1 = undefined;
+let $0;
+let $1;
 [$0, ...$1] = [1, 2, 3, 4];

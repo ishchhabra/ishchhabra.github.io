@@ -10,13 +10,13 @@ function $1($35) {
   return $2.some(($39) => $35[$39] >= 0);
 }
 const $2 = ["top", "right", "bottom", "left"];
-const $3 = function ($54) {
+const $3 = function ($55) {
   return {
     name: "hide",
-    options: $54,
-    async fn($62) {
-      const { rects: $63, platform: $64 } = $62;
-      const $109 = $0(await $64.detectOverflow($62), $63.reference);
+    options: $55,
+    async fn($63) {
+      const { rects: $64, platform: $65 } = $63;
+      const $109 = $0(await $65.detectOverflow($63), $64.reference);
       return {
         data: {
           referenceHiddenOffsets: $109,

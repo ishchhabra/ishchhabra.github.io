@@ -1,9 +1,9 @@
 function $0() {
   let $1 = 0;
-  let blockparam_27 = undefined;
-  blockparam_27 = 0;
-  for (let $32; blockparam_27 < 3; $32 = blockparam_27 + 1, blockparam_27 = $32) {
-    $1 = $1 + blockparam_27;
+  let $27;
+  $27 = 0;
+  for (let $30; $27 < 3; $30 = $27 + 1, $27 = $30) {
+    $1 = $1 + $27;
   }
   return (() => $1)();
 }

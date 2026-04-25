@@ -1,7 +1,7 @@
-let blockparam_11 = undefined;
-blockparam_11 = 5;
-while (blockparam_11 > 0) {
-  const $16 = blockparam_11 - 1;
-  blockparam_11 = $16;
+let $11;
+$11 = 5;
+while ($11 > 0) {
+  const $14 = $11 - 1;
+  $11 = $14;
   continue;
 }

@@ -1,14 +1,14 @@
-let blockparam_24 = undefined;
-blockparam_24 = 5;
-let blockparam_25 = undefined;
-while (blockparam_24 > 0) {
-  blockparam_25 = 3;
-  while (blockparam_25 > 0) {
-    const $35 = blockparam_25 - 1;
-    blockparam_25 = $35;
+let $24;
+$24 = 5;
+let $25;
+while ($24 > 0) {
+  $25 = 3;
+  while ($25 > 0) {
+    const $31 = $25 - 1;
+    $25 = $31;
     continue;
   }
-  const $37 = blockparam_24 - 1;
-  blockparam_24 = $37;
+  const $32 = $24 - 1;
+  $24 = $32;
   continue;
 }

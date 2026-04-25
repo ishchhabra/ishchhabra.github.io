@@ -5,20 +5,20 @@ function $1() {
   const $8 = globalThis.getA();
   const $9 = globalThis.getB();
   return globalThis.useMemo(() => {
-    let $23 = undefined;
-    let $28 = undefined;
+    let $24;
+    let $29;
     if ($8) {
-      const $49 = $9;
-      if ($49 != null) {
-        $28 = $49;
+      const $45 = $9;
+      if ($45 != null) {
+        $29 = $45;
       } else {
-        $28 = "default";
+        $29 = "default";
       }
-      $23 = $28;
+      $24 = $29;
     } else {
-      $23 = "fallback";
+      $24 = "fallback";
     }
-    return $23;
+    return $24;
   }, [$8, $9]);
 }
 export { $0 as Component };

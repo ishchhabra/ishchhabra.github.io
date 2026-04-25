@@ -1,13 +1,13 @@
-let blockparam_20 = undefined;
+let $20;
 switch (2) {
   case 1:
-    blockparam_20 = "one";
+    $20 = "one";
     break;
   case 2:
-    blockparam_20 = "two";
+    $20 = "two";
     break;
   default:
-    blockparam_20 = "other";
+    $20 = "other";
     break;
 }
-console.log(blockparam_20);
+console.log($20);

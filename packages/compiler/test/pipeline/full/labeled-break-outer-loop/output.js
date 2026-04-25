@@ -1,12 +1,12 @@
-let blockparam_31 = undefined;
-blockparam_31 = 0;
-let blockparam_32 = undefined;
-outer: for (let $43; blockparam_31 < 3; $43 = blockparam_31 + 1, blockparam_31 = $43) {
-  blockparam_32 = 0;
-  for (let $45; blockparam_32 < 3; $45 = blockparam_32 + 1, blockparam_32 = $45) {
-    if (blockparam_32 === 1) {
+let $31;
+$31 = 0;
+let $32;
+outer: for (let $39; $31 < 3; $39 = $31 + 1, $31 = $39) {
+  $32 = 0;
+  for (let $40; $32 < 3; $40 = $32 + 1, $32 = $40) {
+    if ($32 === 1) {
       break outer;
     }
-    console.log(blockparam_31, blockparam_32);
+    console.log($31, $32);
   }
 }

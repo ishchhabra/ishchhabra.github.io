@@ -1,4 +1,5 @@
 function $0() {
+  var $1;
   for (; true; ) {
     break;
   }

@@ -1,7 +1,7 @@
-let $0 = undefined;
-let $1 = undefined;
+let $0;
+let $1;
 [$0 = 1, $1 = 2] = [];
-let $2 = undefined;
+let $2;
 ({ c: $2 = 3 } = {});
-let $3 = undefined;
+let $3;
 [{ e: $3 = "default" } = {}] = [];

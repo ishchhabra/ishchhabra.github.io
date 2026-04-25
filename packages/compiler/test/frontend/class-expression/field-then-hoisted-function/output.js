@@ -1,3 +1,4 @@
+var $1;
 function $0() {
   return $4;
 }

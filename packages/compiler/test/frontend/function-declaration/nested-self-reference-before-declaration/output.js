@@ -1,68 +1,68 @@
 function $0($1) {
   function $2($3) {
-    const $99 = $3;
-    let $6 = undefined;
-    let $9 = undefined;
-    let $15 = undefined;
-    let $23 = undefined;
-    let $28 = undefined;
-    let $34 = undefined;
-    let $53 = undefined;
-    let $59 = undefined;
-    if ($99) {
-      const $101 = $3.position;
-      $6 = $101;
+    const $83 = $3;
+    let $7;
+    let $10;
+    let $16;
+    let $23;
+    let $28;
+    let $34;
+    let $53;
+    let $59;
+    if ($83) {
+      const $84 = $3.position;
+      $7 = $84;
     } else {
-      $6 = $99;
+      $7 = $83;
     }
-    if ($6) {
-      const $103 = $3.position[$1];
-      $9 = $103;
+    if ($7) {
+      const $85 = $3.position[$1];
+      $10 = $85;
     } else {
-      $9 = $6;
+      $10 = $7;
     }
-    if ($9) {
-      $15 = $9;
+    if ($10) {
+      $16 = $10;
     } else {
-      const $105 = {};
-      $15 = $105;
+      const $86 = {};
+      $16 = $86;
     }
-    const $107 = typeof $15.line === "number";
-    if ($107) {
-      const $109 = $15.line > 0;
-      $23 = $109;
+    const $87 = typeof $16.line === "number";
+    if ($87) {
+      const $88 = $16.line > 0;
+      $23 = $88;
     } else {
-      $23 = $107;
+      $23 = $87;
     }
     if ($23) {
-      const $111 = typeof $15.column === "number";
-      $28 = $111;
+      const $89 = typeof $16.column === "number";
+      $28 = $89;
     } else {
       $28 = $23;
     }
     if ($28) {
-      const $113 = $15.column > 0;
-      $34 = $113;
+      const $90 = $16.column > 0;
+      $34 = $90;
     } else {
       $34 = $28;
     }
     if ($34) {
-      const $115 = typeof $15.offset === "number";
-      if ($115) {
-        const $117 = $15.offset > -1;
-        $53 = $117;
+      const $91 = typeof $16.offset === "number";
+      if ($91) {
+        const $92 = $16.offset > -1;
+        $53 = $92;
       } else {
-        $53 = $115;
+        $53 = $91;
       }
       if ($53) {
-        const $119 = $15.offset;
-        $59 = $119;
+        const $93 = $16.offset;
+        $59 = $93;
       } else {
         $59 = undefined;
       }
       return {
-        line: $15.line,
-        column: $15.column,
+        line: $16.line,
+        column: $16.column,
         offset: $59,
       };
     }

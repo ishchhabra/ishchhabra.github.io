@@ -1,18 +1,18 @@
-let blockparam_37 = undefined;
-blockparam_37 = 0;
-let blockparam_38 = undefined;
-outer: for (let $49; blockparam_37 < 5; $49 = blockparam_37 + 1, blockparam_37 = $49) {
-  blockparam_38 = 0;
-  inner: for (let $51; blockparam_38 < 5; $51 = blockparam_38 + 1, blockparam_38 = $51) {
-    if (blockparam_38 === 2) {
+let $37;
+$37 = 0;
+let $38;
+outer: for (let $45; $37 < 5; $45 = $37 + 1, $37 = $45) {
+  $38 = 0;
+  inner: for (let $46; $38 < 5; $46 = $38 + 1, $38 = $46) {
+    if ($38 === 2) {
       continue;
     }
-    if (blockparam_38 === 3) {
+    if ($38 === 3) {
       continue outer;
     }
-    if (blockparam_37 === 4) {
+    if ($37 === 4) {
       break outer;
     }
-    console.log(blockparam_37, blockparam_38);
+    console.log($37, $38);
   }
 }

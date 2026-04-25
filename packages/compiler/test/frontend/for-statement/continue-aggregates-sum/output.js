@@ -1,17 +1,13 @@
-let blockparam_22 = undefined;
-let blockparam_23 = undefined;
-blockparam_23 = 0;
-let blockparam_24 = undefined;
-blockparam_24 = 0;
-for (
-  let $37;
-  blockparam_24 < 10;
-  $37 = blockparam_24 + 1, blockparam_23 = blockparam_22, blockparam_24 = $37
-) {
-  if (blockparam_24 === 5) {
-    blockparam_22 = blockparam_23;
+let $22;
+let $23;
+$23 = 0;
+let $24;
+$24 = 0;
+for (let $31; $24 < 10; $31 = $24 + 1, $23 = $22, $24 = $31) {
+  if ($24 === 5) {
+    $22 = $23;
     continue;
   }
-  const $39 = blockparam_23 + blockparam_24;
-  blockparam_22 = $39;
+  const $32 = $23 + $24;
+  $22 = $32;
 }

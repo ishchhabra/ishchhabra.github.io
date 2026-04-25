@@ -1,30 +1,30 @@
 function $0($1) {
-  let $13 = undefined;
-  let $22 = undefined;
-  let $35 = undefined;
+  let $14;
+  let $23;
+  let $35;
   if ($1 !== undefined) {
     if ($1.startsWith("/")) {
-      $22 = $1;
+      $23 = $1;
     } else {
-      $22 = $1;
+      $23 = $1;
     }
-    const $61 = [
+    const $55 = [
       {
         rel: "canonical",
-        href: `/${$22}`,
+        href: `/${$23}`,
       },
     ];
-    $13 = $61;
+    $14 = $55;
   } else {
-    $13 = undefined;
+    $14 = undefined;
   }
-  if ($13) {
-    const $63 = {
-      links: $13,
+  if ($14) {
+    const $56 = {
+      links: $14,
     };
-    $35 = $63;
+    $35 = $56;
   } else {
-    $35 = $13;
+    $35 = $14;
   }
   return {
     meta: [

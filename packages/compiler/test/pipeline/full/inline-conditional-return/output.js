@@ -1,5 +1,5 @@
 function $0() {
-  let $2 = undefined;
+  let $2;
   if (true) {
     $2 = 1;
   } else {

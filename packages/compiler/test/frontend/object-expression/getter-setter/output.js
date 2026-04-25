@@ -3,7 +3,7 @@
   get value() {
     return this._value;
   },
-  set value($9) {
-    this._value = $9;
+  set value($10) {
+    this._value = $10;
   },
 });

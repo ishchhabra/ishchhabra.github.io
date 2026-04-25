@@ -1,10 +1,11 @@
 function $0($1, $2, $3) {
-  let blockparam_25 = undefined;
+  let $4;
+  let $24;
   if ($1) {
-    blockparam_25 = $2;
+    $24 = $2;
   } else {
-    blockparam_25 = $3;
+    $24 = $3;
   }
-  return blockparam_25;
+  return $24;
 }
 console.log($0(true, 1, 2));

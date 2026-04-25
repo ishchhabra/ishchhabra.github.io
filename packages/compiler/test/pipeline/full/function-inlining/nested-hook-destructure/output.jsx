@@ -1,12 +1,12 @@
 function $0() {
   const { a: $2, b: $3 } = useRouterState({
-    select: ($6) => ({
-      a: $6.a,
-      b: $6.b,
+    select: ($7) => ({
+      a: $7.a,
+      b: $7.b,
     }),
   });
   return useMemo(() => {
-    let $24 = undefined;
+    let $24;
     if ($2) {
       $24 = $3;
     } else {

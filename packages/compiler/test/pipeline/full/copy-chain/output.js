@@ -1,7 +1,7 @@
-let blockparam_20 = undefined;
+let $19;
 if (globalThis.flag) {
-  blockparam_20 = 1;
+  $19 = 1;
 } else {
-  blockparam_20 = 2;
+  $19 = 2;
 }
-console.log(blockparam_20);
+console.log($19);

@@ -1,13 +1,13 @@
-let blockparam_18 = undefined;
-let blockparam_19 = undefined;
+let $17;
+let $18;
 if (globalThis.a) {
   if (globalThis.b) {
-    blockparam_19 = 1;
+    $18 = 1;
   } else {
-    blockparam_19 = 2;
+    $18 = 2;
   }
-  blockparam_18 = blockparam_19;
+  $17 = $18;
 } else {
-  blockparam_18 = 3;
+  $17 = 3;
 }
-console.log(blockparam_18);
+console.log($17);

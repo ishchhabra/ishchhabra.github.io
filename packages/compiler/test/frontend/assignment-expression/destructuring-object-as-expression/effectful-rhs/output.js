@@ -3,5 +3,5 @@ function $0() {
     x: 1,
   };
 }
-let $1 = undefined;
+let $1;
 ({ x: $1 } = $0());

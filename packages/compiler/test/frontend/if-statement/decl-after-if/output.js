@@ -1,10 +1,10 @@
-let blockparam_16 = undefined;
+let $16;
 if (true) {
   console.log("first");
 }
 if (true) {
-  blockparam_16 = 20;
+  $16 = 20;
 } else {
-  blockparam_16 = 10;
+  $16 = 10;
 }
-console.log(blockparam_16);
+console.log($16);

@@ -1,5 +1,5 @@
 function $0($2, $3, $4) {
-  let $11 = undefined;
+  let $11;
   if ($3 > 0) {
     $11 = $4;
   } else {
@@ -8,7 +8,7 @@ function $0($2, $3, $4) {
   return $2.substring(0, $11);
 }
 function $1($15, $16) {
-  let $22 = undefined;
+  let $22;
   if ($16 > 0) {
     $22 = "a";
   } else {

@@ -2,7 +2,7 @@ function $0($2) {
   return $2.trim();
 }
 function $1($6, $7) {
-  let $13 = undefined;
+  let $13;
   if ($7) {
     $13 = "\n";
   } else {

@@ -1,8 +1,8 @@
-let blockparam_19 = undefined;
-blockparam_19 = 0;
-for (let $24; blockparam_19 < 10; $24 = blockparam_19 + 1, blockparam_19 = $24) {
-  if (blockparam_19 === 5) {
+let $19;
+$19 = 0;
+for (let $22; $19 < 10; $22 = $19 + 1, $19 = $22) {
+  if ($19 === 5) {
     break;
   }
-  console.log(blockparam_19);
+  console.log($19);
 }
