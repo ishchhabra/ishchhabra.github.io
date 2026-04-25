@@ -1,8 +1,9 @@
-import { ValueId } from "../../ir";
+import { BindingInitOp, StoreLocalOp, ValueId } from "../../ir";
 import { BasicBlock } from "../../ir/core/Block";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { Operation, Trait } from "../../ir/core/Operation";
 import type { Value } from "../../ir/core/Value";
+import { isDeclarationExported } from "../../ir/exportClaim";
 import {
   collectAllSinks,
   forEachIncomingEdge,
@@ -81,6 +82,16 @@ function seedLiveReads(funcOp: FuncOp, block: BasicBlock, liveIds: Set<ValueId>)
   for (const op of block.operations) {
     for (const place of op.operands()) {
       liveIds.add(place.id);
+    }
+    // Exports observe a binding via declarationId, not via SSA value
+    // operands, so a store/init to an exported binding has no
+    // operand-based reader. Mark its lval as live so DCE doesn't
+    // strip the very binding the export reaches.
+    if (op instanceof BindingInitOp && isDeclarationExported(funcOp, op.place.declarationId)) {
+      liveIds.add(op.place.id);
+    } else if (op instanceof StoreLocalOp && isDeclarationExported(funcOp, op.lval.declarationId)) {
+      liveIds.add(op.lval.id);
+      liveIds.add(op.place.id);
     }
   }
   if (block.terminal !== undefined) {
