@@ -129,14 +129,7 @@ export function buildUpdateExpression(
   const place = environment.createValue();
   const instruction = isContext
     ? environment.createOperation(StoreContextOp, place, lvalPlace, valuePlace, "let", "assignment")
-    : environment.createOperation(
-        StoreLocalOp,
-        place,
-        lvalPlace,
-        valuePlace,
-        "const",
-        "assignment",
-      );
+    : environment.createOperation(StoreLocalOp, place, lvalPlace, valuePlace);
   functionBuilder.addOp(instruction);
   environment.registerDeclaration(declarationId, functionBuilder.currentBlock.id, lvalPlace);
 

@@ -31,6 +31,7 @@ export function generateFunctionDeclarationOp(
     instruction.async,
   );
   generator.declarationAstCache.set(instruction, decl);
+  generator.declaredDeclarations.add(instruction.place.declarationId);
 
   // `values` holds expression-compatible references. Use sites
   // (JSX tags, calls, exports specifiers, loads) see an Identifier

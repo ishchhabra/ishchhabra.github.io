@@ -176,17 +176,19 @@ export class CodeGenerator {
       return existingDeclarationIdentifier;
     }
 
-    const name = place.name;
+    const name = aliasableDeclaration ? (metadata.bindingValue?.name ?? place.name) : place.name;
     const identifier = t.identifier(name);
     if (aliasableDeclaration) {
       this.declarationIdentifiers.set(place.declarationId, identifier);
+      if (metadata.bindingValue !== undefined) {
+        this.values.set(metadata.bindingValue.id, identifier);
+      }
     }
     this.values.set(place.id, identifier);
     return identifier;
   }
 
   generate(): string {
-    this.preRegisterBindingIdentifiers(this.moduleIR);
     const { statements } = generateFunction(this.entryFunction, [], this);
     const program = t.program(statements);
     return generate(program).code;
@@ -228,7 +230,6 @@ export class CodeGenerator {
     }
 
     const generator = new CodeGenerator(modulePath, this.projectUnit);
-    generator.preRegisterBindingIdentifiers(moduleIR);
     const entryFunction = moduleIR.entryFuncOp;
     if (entryFunction === undefined) {
       throw new Error(`CodeGenerator: module ${modulePath} has no entry function`);
@@ -236,28 +237,5 @@ export class CodeGenerator {
     const { statements } = generateFunction(entryFunction, [], generator);
     const program = t.program(statements);
     return generate(program).code;
-  }
-
-  /**
-   * Pre-registers all binding identifiers from every function in the module.
-   * This ensures cross-function closure references (where a closure in one
-   * function references a variable declared in a sibling function) can always
-   * resolve the binding's place, regardless of function generation order.
-   */
-  private preRegisterBindingIdentifiers(moduleIR: ModuleIR): void {
-    for (const [declarationId, metadata] of moduleIR.environment.declarationMetadata) {
-      const place = metadata.bindingValue;
-      if (place === undefined) {
-        continue;
-      }
-      const identifier = t.identifier(place.name);
-      if (getCodegenDeclarationKind(metadata.kind) !== undefined) {
-        this.declarationIdentifiers.set(declarationId, identifier);
-      }
-      this.values.set(place.id, identifier);
-      if (metadata.kind === "param" || metadata.kind === "import" || metadata.kind === "catch") {
-        this.declaredDeclarations.add(declarationId);
-      }
-    }
   }
 }

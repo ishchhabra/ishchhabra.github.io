@@ -121,10 +121,10 @@ describe("buildMemberExpression — isolated", () => {
       // Property reads can invoke getters, trigger Proxy traps, or
       // throw on null/undefined receivers. Shared base keeps the
       // two variants symmetric.
-      const { op: staticOp } = buildMemberFromSource("o.x;");
-      const { op: dynOp } = buildMemberFromSource("o[k];");
-      expect(staticOp.hasSideEffects()).toBe(true);
-      expect(dynOp.hasSideEffects()).toBe(true);
+      const { harness: staticHarness, op: staticOp } = buildMemberFromSource("o.x;");
+      const { harness: dynHarness, op: dynOp } = buildMemberFromSource("o[k];");
+      expect(staticOp.hasSideEffects(staticHarness.env)).toBe(true);
+      expect(dynOp.hasSideEffects(dynHarness.env)).toBe(true);
     });
   });
 });

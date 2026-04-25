@@ -1,6 +1,7 @@
 import { Environment } from "../../environment";
 import {
   ArrowFunctionExpressionOp,
+  BindingInitOp,
   ClassMethodOp,
   FunctionExpressionOp,
   LoadContextOp,
@@ -19,6 +20,8 @@ import { isClaimedByExportDeclaration, isDeclarationExported } from "../../ir/ex
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { MutabilityAnalysis, MutabilityInfo } from "../analysis/MutabilityAnalysis";
 import { BaseOptimizationPass, OptimizationResult } from "../late-optimizer/OptimizationPass";
+
+type SsaBindingWrite = BindingInitOp | StoreLocalOp;
 
 /**
  * Single-use forward substitution.
@@ -58,7 +61,7 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
     for (const block of this.funcOp.blocks) {
       for (let i = block.operations.length - 1; i >= 0; i--) {
         const store = block.operations[i];
-        if (!(store instanceof StoreLocalOp)) continue;
+        if (!(store instanceof BindingInitOp) && !(store instanceof StoreLocalOp)) continue;
 
         const user = this.findInliningCandidate(block, i, store);
         if (user === undefined) continue;
@@ -80,14 +83,14 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
   private findInliningCandidate(
     block: BasicBlock,
     storeIndex: number,
-    store: StoreLocalOp,
+    store: SsaBindingWrite,
   ): Operation | undefined {
     if (!this.isSsaStore(store)) return undefined;
 
     // Exported bindings observe their store's lval via declarationId
     // (not via SSA users), so removing the store would orphan the
     // export. Leave them materialized.
-    if (isDeclarationExported(this.funcOp, store.lval.declarationId)) return undefined;
+    if (isDeclarationExported(this.funcOp, this.getWrittenValue(store).declarationId)) return undefined;
 
     const user = this.getSingleUser(store);
     if (user === undefined) return undefined;
@@ -122,23 +125,24 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
     return user;
   }
 
-  private isSsaStore(store: StoreLocalOp): boolean {
-    if (store.bindings.length > 0) return false;
+  private isSsaStore(store: SsaBindingWrite): boolean {
+    if (store instanceof StoreLocalOp && store.bindings.length > 0) return false;
     // Canonical "true SSA binding" query: a single store to the
-    // declarationId anywhere in the function body. The IR-level
-    // `type === "const"` flag is neither necessary nor sufficient —
-    // reassignments can share a declarationId and frontend builders
-    // may emit `type: "const"` on assignment stores.
-    return this.mutability.isSingleAssignment(store.lval.declarationId);
+    // declarationId anywhere in the function body.
+    return this.mutability.isSingleAssignment(this.getWrittenValue(store).declarationId);
   }
 
-  private getSingleUser(store: StoreLocalOp): Operation | undefined {
+  private getSingleUser(store: SsaBindingWrite): Operation | undefined {
     const uses = new Set<Operation>();
     for (const u of store.place.users) {
+      if (u === store) continue;
       if (u instanceof Operation) uses.add(u);
     }
-    for (const u of store.lval.users) {
-      if (u instanceof Operation) uses.add(u);
+    if (store instanceof StoreLocalOp) {
+      for (const u of store.lval.users) {
+        if (u === store) continue;
+        if (u instanceof Operation) uses.add(u);
+      }
     }
     if (uses.size !== 1) return undefined;
     return uses.values().next().value;
@@ -191,11 +195,14 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
   // Rewriting
   // --------------------------------------------------------------------
 
-  private buildRewriteMap(store: StoreLocalOp): Map<Value, Value> {
-    return new Map<Value, Value>([
-      [store.place, store.value],
-      [store.lval, store.value],
-    ]);
+  private buildRewriteMap(store: SsaBindingWrite): Map<Value, Value> {
+    const values = new Map<Value, Value>([[store.place, store.value]]);
+    if (store instanceof StoreLocalOp) values.set(store.lval, store.value);
+    return values;
+  }
+
+  private getWrittenValue(store: SsaBindingWrite): Value {
+    return store instanceof StoreLocalOp ? store.lval : store.place;
   }
 
   private rewriteUser(user: Operation, values: Map<Value, Value>): boolean {

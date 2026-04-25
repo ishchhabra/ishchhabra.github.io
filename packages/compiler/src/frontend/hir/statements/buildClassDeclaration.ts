@@ -1,6 +1,6 @@
 import type { Class } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { Value, StoreLocalOp } from "../../../ir";
+import { BindingDeclOp, Value, StoreLocalOp } from "../../../ir";
 import { ClassDeclarationOp } from "../../../ir/ops/class/ClassDeclaration";
 import { ClassExpressionOp } from "../../../ir/ops/class/ClassExpression";
 import { type Scope } from "../../scope/Scope";
@@ -69,16 +69,9 @@ export function buildClassDeclaration(
     functionBuilder.addOp(instruction);
 
     const storePlace = environment.createValue();
+    functionBuilder.addOp(environment.createOperation(BindingDeclOp, identifierPlace, "let"));
     functionBuilder.addOp(
-      environment.createOperation(
-        StoreLocalOp,
-        storePlace,
-        identifierPlace,
-        classPlace,
-        "let",
-        "declaration",
-        [],
-      ),
+      environment.createOperation(StoreLocalOp, storePlace, identifierPlace, classPlace, []),
     );
     functionBuilder.markDeclarationInitialized(declarationId);
     return classPlace;

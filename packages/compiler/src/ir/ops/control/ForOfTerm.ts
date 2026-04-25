@@ -9,6 +9,8 @@ import {
   TermOp,
 } from "../../core/TermOp";
 
+export type LoopHeadBindingKind = "let" | "const" | "var" | null;
+
 /**
  * `for (target of iterable) body` / `for await (target of ...)`.
  *
@@ -31,6 +33,7 @@ export class ForOfTermOp extends TermOp {
     id: OperationId,
     public readonly iterable: Value,
     public readonly iterationValue: Value,
+    public readonly iterationBindingKind: LoopHeadBindingKind,
     public bodyBlock: BasicBlock,
     public exitBlock: BasicBlock,
     public readonly isAwait: boolean,
@@ -64,6 +67,7 @@ export class ForOfTermOp extends TermOp {
         this.id,
         this.iterable,
         this.iterationValue,
+        this.iterationBindingKind,
         successor.block,
         this.exitBlock,
         this.isAwait,
@@ -75,6 +79,7 @@ export class ForOfTermOp extends TermOp {
         this.id,
         this.iterable,
         this.iterationValue,
+        this.iterationBindingKind,
         this.bodyBlock,
         successor.block,
         this.isAwait,
@@ -91,6 +96,7 @@ export class ForOfTermOp extends TermOp {
       this.id,
       newIter,
       this.iterationValue,
+      this.iterationBindingKind,
       this.bodyBlock,
       this.exitBlock,
       this.isAwait,
@@ -103,6 +109,7 @@ export class ForOfTermOp extends TermOp {
       nextId(ctx),
       remapPlace(ctx, this.iterable),
       remapPlace(ctx, this.iterationValue),
+      this.iterationBindingKind,
       ctx.blockMap.get(this.bodyBlock) ?? this.bodyBlock,
       ctx.blockMap.get(this.exitBlock) ?? this.exitBlock,
       this.isAwait,

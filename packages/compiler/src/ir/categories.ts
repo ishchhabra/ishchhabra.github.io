@@ -52,6 +52,7 @@ import { AssignmentPatternOp } from "./ops/pattern/AssignmentPattern";
 import { ArrayExpressionOp } from "./ops/object/ArrayExpression";
 import { ArrowFunctionExpressionOp } from "./ops/func/ArrowFunctionExpression";
 import { AwaitExpressionOp } from "./ops/call/AwaitExpression";
+import { BindingDeclOp, BindingInitOp } from "./ops/mem/BindingDecl";
 import { BinaryExpressionOp } from "./ops/arith/BinaryExpression";
 import { CallExpressionOp } from "./ops/call/CallExpression";
 import { ClassExpressionOp } from "./ops/class/ClassExpression";
@@ -110,15 +111,10 @@ export type ValueOp =
   | UnaryExpressionOp
   | YieldExpressionOp;
 
-/**
- * NOTE: `DeclareLocalOp` is intentionally NOT in this union. It
- * extends `Operation` directly (not `MemoryInstruction`), and
- * the old codegen/pass dispatch preserved that distinction by
- * checking it BEFORE the memory check. Keeping it out of `MemoryOp`
- * preserves the dispatch order exactly.
- */
 export type MemoryOp =
   | ArrayDestructureOp
+  | BindingDeclOp
+  | BindingInitOp
   | LoadContextOp
   | LoadDynamicPropertyOp
   | LoadGlobalOp
@@ -194,6 +190,8 @@ const VALUE_CTORS = new Set<Function>([
 
 const MEMORY_CTORS = new Set<Function>([
   ArrayDestructureOp,
+  BindingDeclOp,
+  BindingInitOp,
   LoadContextOp,
   LoadDynamicPropertyOp,
   LoadGlobalOp,

@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { Node, VariableDeclaration } from "oxc-parser";
-import { ArrayDestructureOp, ObjectDestructureOp, StoreLocalOp } from "../../../ir";
+import {
+  ArrayDestructureOp,
+  BindingDeclOp,
+  BindingInitOp,
+  ObjectDestructureOp,
+  StoreLocalOp,
+} from "../../../ir";
 import { buildFn, findAstNode, makeIsolatedHarness, printFn, printOps } from "../__testing__/ir";
 import { buildVariableDeclaration } from "./buildVariableDeclaration";
 
@@ -27,7 +33,7 @@ function buildVarDeclFromSource(source: string) {
 describe("buildVariableDeclaration — end-to-end smoke", () => {
   it("renders through the full HIR pipeline", () => {
     expect(printFn(buildFn("let x = 1;"))).toBe(
-      ["bb0:", "  $1 = 1", "  $2 = store_local $0, $1 {kind = declaration}"].join("\n"),
+      ["bb0:", "  $2 = 1", "  $0 = binding_init let $2"].join("\n"),
     );
   });
 });
@@ -38,17 +44,17 @@ describe("buildVariableDeclaration — end-to-end smoke", () => {
 
 describe("buildVariableDeclaration — isolated", () => {
   describe("simple declarations", () => {
-    it("`let x = 1` emits a declaration-kind store_local", () => {
+    it("`let x = 1` emits a binding initializer", () => {
       const h = buildVarDeclFromSource("let x = 1;");
       expect(printOps(h.fnBuilder.currentBlock.operations)).toBe(
-        ["$1 = 1", "$2 = store_local $0, $1 {kind = declaration}"].join("\n"),
+        ["$2 = 1", "$0 = binding_init let $2"].join("\n"),
       );
     });
 
-    it("`const y = 2` emits a declaration-kind store_local", () => {
+    it("`const y = 2` emits a binding initializer", () => {
       const h = buildVarDeclFromSource("const y = 2;");
       expect(printOps(h.fnBuilder.currentBlock.operations)).toBe(
-        ["$1 = 2", "$2 = store_local $0, $1 {kind = declaration}"].join("\n"),
+        ["$2 = 2", "$0 = binding_init const $2"].join("\n"),
       );
     });
 
@@ -62,49 +68,38 @@ describe("buildVariableDeclaration — isolated", () => {
       const ops = h.fnBuilder.currentBlock.operations;
       const lastStore = ops[ops.length - 1];
       expect(lastStore).toBeInstanceOf(StoreLocalOp);
-      expect((lastStore as StoreLocalOp).type).toBe("var");
     });
 
-    it("multi-declarator `let x = 1, y = 2` emits one store per declarator", () => {
+    it("multi-declarator `let x = 1, y = 2` emits one binding initializer per declarator", () => {
       const h = buildVarDeclFromSource("let x = 1, y = 2;");
-      const stores = h.fnBuilder.currentBlock.operations.filter(
-        (op): op is StoreLocalOp => op instanceof StoreLocalOp,
+      const initializers = h.fnBuilder.currentBlock.operations.filter(
+        (op): op is BindingInitOp => op instanceof BindingInitOp,
       );
-      expect(stores.length).toBe(2);
-      for (const store of stores) {
-        expect(store.kind).toBe("declaration");
-        expect(store.type).toBe("let");
-      }
+      expect(initializers.map((init) => init.kind)).toEqual(["let", "let"]);
     });
   });
 
-  describe("syntactic kind is preserved on the op", () => {
+  describe("syntactic kind is preserved on the binding initializer", () => {
     it.each([
       { keyword: "let", source: "let x = 1;" },
       { keyword: "const", source: "const x = 1;" },
-      { keyword: "var", source: "var x = 1;" },
-    ] as const)("`$keyword` → store_local.type = `$keyword`", ({ keyword, source }) => {
+    ] as const)("`$keyword` → binding_init.kind = `$keyword`", ({ keyword, source }) => {
       const h = buildVarDeclFromSource(source);
-      const store = h.fnBuilder.currentBlock.operations.find(
-        (op): op is StoreLocalOp => op instanceof StoreLocalOp,
+      const initializer = h.fnBuilder.currentBlock.operations.find(
+        (op): op is BindingInitOp => op instanceof BindingInitOp,
       );
-      expect(store).toBeDefined();
-      expect(store!.type).toBe(keyword);
+      expect(initializer).toBeDefined();
+      expect(initializer!.kind).toBe(keyword);
     });
   });
 
   describe("uninitialized declarations", () => {
-    // `let a;` has no initializer. The builder emits a LoadGlobal for
-    // the identifier `undefined` and uses that as the value operand.
-    // This is brittle to user-shadowing `undefined` — flagged in the
-    // local TODO, tracked separately.
-    it("`let a` synthesizes an undefined value via LoadGlobal", () => {
+    it("`let a` emits a bare binding declaration", () => {
       const h = buildVarDeclFromSource("let a;");
       const ops = h.fnBuilder.currentBlock.operations;
-      expect(ops[0].print()).toBe("$1 = LoadGlobal undefined");
-      const store = ops[ops.length - 1];
-      expect(store).toBeInstanceOf(StoreLocalOp);
-      expect((store as StoreLocalOp).kind).toBe("declaration");
+      expect(ops).toHaveLength(1);
+      expect(ops[0]).toBeInstanceOf(BindingDeclOp);
+      expect(ops[0].print()).toBe("binding_decl let $0");
     });
   });
 
@@ -112,7 +107,7 @@ describe("buildVariableDeclaration — isolated", () => {
     it("`let [a, b] = arr` emits one array_destructure op", () => {
       const h = buildVarDeclFromSource("let [a, b] = arr;");
       expect(printOps(h.fnBuilder.currentBlock.operations)).toBe(
-        ["$2 = LoadGlobal arr", "$3 = array_destructure $2 {kind = declaration}"].join("\n"),
+        ["$3 = LoadGlobal arr", "$2 = array_destructure $3 {kind = declaration}"].join("\n"),
       );
     });
 
@@ -131,7 +126,7 @@ describe("buildVariableDeclaration — isolated", () => {
     it("`let {x, y} = obj` emits one object_destructure op", () => {
       const h = buildVarDeclFromSource("let {x, y} = obj;");
       expect(printOps(h.fnBuilder.currentBlock.operations)).toBe(
-        ["$2 = LoadGlobal obj", "$3 = object_destructure $2 {kind = declaration}"].join("\n"),
+        ["$3 = LoadGlobal obj", "$2 = object_destructure $3 {kind = declaration}"].join("\n"),
       );
     });
 
@@ -148,18 +143,18 @@ describe("buildVariableDeclaration — isolated", () => {
   });
 
   describe("semantics", () => {
-    it("store wires value operand to the RHS builder's result", () => {
+    it("binding initializer wires value operand to the RHS builder's result", () => {
       const h = buildVarDeclFromSource("let x = 1;");
-      const [lit, store] = h.fnBuilder.currentBlock.operations;
-      expect((store as StoreLocalOp).value).toBe(lit.place);
+      const [lit, init] = h.fnBuilder.currentBlock.operations;
+      expect((init as BindingInitOp).value).toBe(lit.place);
     });
 
-    it("store reports side effects (writes bind the lval cell)", () => {
+    it("binding initializer reports initializer side effects", () => {
       const h = buildVarDeclFromSource("let x = 1;");
-      const store = h.fnBuilder.currentBlock.operations.find(
-        (o): o is StoreLocalOp => o instanceof StoreLocalOp,
+      const init = h.fnBuilder.currentBlock.operations.find(
+        (o): o is BindingInitOp => o instanceof BindingInitOp,
       );
-      expect(store!.hasSideEffects()).toBe(true);
+      expect(init!.hasSideEffects(h.env)).toBe(false);
     });
   });
 });

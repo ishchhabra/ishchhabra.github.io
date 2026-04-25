@@ -1,6 +1,8 @@
 import { CompilerOptions } from "../../compile";
 import { ProjectUnit } from "../../frontend/ProjectBuilder";
 import {
+  BindingDeclOp,
+  BindingInitOp,
   BinaryExpressionOp,
   CallExpressionOp,
   LiteralOp,
@@ -267,6 +269,11 @@ export class ConstantPropagationPass {
 
     if (op instanceof LiteralOp) {
       this.setLattice(op.place, this.makeConst(op.value));
+      return;
+    }
+    if (op instanceof BindingDeclOp) return;
+    if (op instanceof BindingInitOp) {
+      this.forward(op.place, op.value);
       return;
     }
     if (op instanceof BinaryExpressionOp) return this.evaluateBinary(op);

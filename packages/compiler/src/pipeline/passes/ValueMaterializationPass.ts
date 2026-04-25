@@ -1,6 +1,7 @@
 import {
+  BindingDeclOp,
+  BindingInitOp,
   CallExpressionOp,
-  DeclareLocalOp,
   LiteralOp,
   LoadContextOp,
   LoadDynamicPropertyOp,
@@ -95,17 +96,10 @@ export class ValueMaterializationPass {
         if (!this.needsSpill(op)) continue;
 
         const lval = env.createValue();
-        const store = env.createOperation(
-          StoreLocalOp,
-          env.createValue(),
-          lval,
-          op.place!,
-          "const",
-          "declaration",
-        );
-        block.insertOpAt(i + 1, store);
-        this.rewriteUses(op, lval, store);
-        i++; // skip the inserted store
+        const init = env.createOperation(BindingInitOp, lval, "const", op.place!);
+        block.insertOpAt(i + 1, init);
+        this.rewriteUses(op, lval, init);
+        i++; // skip inserted binding init
       }
     }
   }
@@ -118,7 +112,9 @@ export class ValueMaterializationPass {
     if (op.place === undefined) return false;
 
     // A. Already named or emits non-Expression AST.
-    if (op instanceof StoreLocalOp) return false;
+    if (op instanceof BindingDeclOp || op instanceof BindingInitOp || op instanceof StoreLocalOp) {
+      return false;
+    }
     if (emitsNonExpression(op)) return false;
 
     // B. Trivially duplicable.
@@ -225,12 +221,12 @@ export class ValueMaterializationPass {
   // Rewriting
   // ---------------------------------------------------------------
 
-  private rewriteUses(op: Operation, newPlace: Value, spillStore: StoreLocalOp): void {
+  private rewriteUses(op: Operation, newPlace: Value, spillOp: Operation): void {
     const oldPlace = op.place!;
     const map = new Map<Value, Value>([[oldPlace, newPlace]]);
     for (const block of this.funcOp.blocks) {
       for (const inner of block.getAllOps()) {
-        if (inner === spillStore) continue;
+        if (inner === spillOp) continue;
         const rewritten = inner.rewrite(map);
         if (rewritten !== inner) block.replaceOp(inner, rewritten);
       }
@@ -251,7 +247,6 @@ export class ValueMaterializationPass {
  */
 function emitsNonExpression(op: Operation): boolean {
   return (
-    op instanceof DeclareLocalOp ||
     op instanceof ObjectPropertyOp ||
     op instanceof ObjectMethodOp ||
     op instanceof ClassMethodOp ||

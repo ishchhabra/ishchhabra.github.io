@@ -70,11 +70,7 @@ export class AlgebraicSimplificationPass extends BaseOptimizationPass {
         } else if (op instanceof StoreLocalOp) {
           // Only track literal values through source bindings with
           // a single store in the function body. That is the
-          // declarationId-layer "true SSA binding" query — the
-          // IR-level `type === "const"` flag is not sufficient
-          // because reassignments can share a declarationId and
-          // because the frontend may emit non-"let" types on
-          // assignment stores.
+          // declarationId-layer "true SSA binding" query.
           if (this.mutability.isSingleAssignment(op.lval.declarationId)) {
             const val = this.literals.get(op.value.id);
             if (val !== undefined) {

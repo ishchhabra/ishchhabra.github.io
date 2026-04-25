@@ -54,16 +54,20 @@ describe("SSAEliminator", () => {
     expect(branch.falseArgs).toHaveLength(0);
 
     for (const split of [branch.trueTarget, branch.falseTarget]) {
-      expect(split.operations.some((op) => op instanceof StoreLocalOp && op.kind === "assignment")).toBe(
-        true,
-      );
+      expect(split.operations.some((op) => op instanceof StoreLocalOp)).toBe(true);
       expect(split.terminal).toBeInstanceOf(JumpTermOp);
       expect((split.terminal as JumpTermOp).target).toBe(join);
     }
 
-    const entryAssignmentCopies = entry.operations.filter(
-      (op) => op instanceof StoreLocalOp && op.kind === "assignment" && op.lval === join.params[0],
-    );
+    const entryAssignmentCopies = entry.operations.filter((op) => {
+      const valueDef = op instanceof StoreLocalOp ? op.value.def : undefined;
+      return (
+        op instanceof StoreLocalOp &&
+        op.lval === join.params[0] &&
+        valueDef instanceof LiteralOp &&
+        valueDef.value !== undefined
+      );
+    });
     expect(entryAssignmentCopies).toHaveLength(0);
   });
 });

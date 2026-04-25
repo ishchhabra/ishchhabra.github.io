@@ -3,12 +3,14 @@ import type { VariableDeclaration, VariableDeclarator } from "oxc-parser";
 import { Environment } from "../../../environment";
 import {
   ArrayDestructureOp,
+  BindingDeclOp,
+  BindingInitOp,
+  LiteralOp,
   ObjectDestructureOp,
   Value,
   StoreContextOp,
   StoreLocalOp,
 } from "../../../ir";
-import { LoadGlobalOp } from "../../../ir/ops/prop/LoadGlobal";
 import { type Scope } from "../../scope/Scope";
 import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -32,19 +34,6 @@ export function buildVariableDeclaration(
     const id = declaration.id;
     const init = declaration.init;
 
-    let valuePlace;
-    if (init == null) {
-      // No initializer — emit LoadGlobal("undefined") instead of mutating the AST.
-      const undefinedPlace = environment.createValue();
-      functionBuilder.addOp(environment.createOperation(LoadGlobalOp, undefinedPlace, "undefined"));
-      valuePlace = undefinedPlace;
-    } else {
-      valuePlace = buildNode(init, scope, functionBuilder, moduleBuilder, environment);
-    }
-    if (valuePlace === undefined || Array.isArray(valuePlace)) {
-      throw new Error("Value place must be a single place");
-    }
-
     const target = buildLVal(
       id as AST.Pattern,
       scope,
@@ -54,11 +43,34 @@ export function buildVariableDeclaration(
       { kind: "declaration", declarationKind: kind },
     );
     const place = environment.createValue();
+
+    if (init == null && target.kind === "binding" && kind !== "var" && target.storage === "local") {
+      if (kind === "const") {
+        throw new Error("Missing initializer in const declaration");
+      }
+      const instruction = environment.createOperation(BindingDeclOp, target.place, kind);
+      functionBuilder.addOp(instruction);
+      return instruction.place;
+    }
+
+    let valuePlace;
+    if (init == null) {
+      const undefinedPlace = environment.createValue();
+      functionBuilder.addOp(environment.createOperation(LiteralOp, undefinedPlace, undefined));
+      valuePlace = undefinedPlace;
+    } else {
+      valuePlace = buildNode(init, scope, functionBuilder, moduleBuilder, environment);
+    }
+    if (valuePlace === undefined || Array.isArray(valuePlace)) {
+      throw new Error("Value place must be a single place");
+    }
+
     if (target.kind === "binding") {
-      // var declarations were already hoisted (DeclareLocal + StoreLocal/StoreContext
-      // with undefined). The write here is an assignment to the existing binding,
-      // not a new declaration.
-      const contextKind = kind === "var" ? "assignment" : "declaration";
+      if (kind !== "var" && target.storage === "local") {
+        const instruction = environment.createOperation(BindingInitOp, target.place, kind, valuePlace);
+        functionBuilder.addOp(instruction);
+        return instruction.place;
+      }
       const instruction =
         target.storage === "context"
           ? environment.createOperation(
@@ -67,16 +79,9 @@ export function buildVariableDeclaration(
               target.place,
               valuePlace,
               "let",
-              contextKind,
+              kind === "var" ? "assignment" : "declaration",
             )
-          : environment.createOperation(
-              StoreLocalOp,
-              place,
-              target.place,
-              valuePlace,
-              kind,
-              contextKind,
-            );
+          : environment.createOperation(StoreLocalOp, place, target.place, valuePlace);
       functionBuilder.addOp(instruction);
       return place;
     }

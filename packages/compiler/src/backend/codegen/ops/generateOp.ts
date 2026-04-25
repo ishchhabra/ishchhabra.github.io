@@ -1,9 +1,10 @@
 import * as t from "@babel/types";
 import {
   ArrayDestructureOp,
+  BindingDeclOp,
+  BindingInitOp,
   BranchTermOp,
   DebuggerStatementOp,
-  DeclareLocalOp,
   ExportSpecifierOp,
   ForInTermOp,
   ForOfTermOp,
@@ -54,7 +55,7 @@ import { generateThrowTerminal } from "../terminals/generateThrow";
 import { generateDeclarationOp } from "./declaration/generateDeclaration";
 import { generateDebuggerStatementOp } from "./generateDebuggerStatement";
 import { generateJSXOp } from "./jsx/generateJSX";
-import { generateDeclareLocalOp } from "./memory/generateDeclareLocal";
+import { generateBindingDeclOp, generateBindingInitOp } from "./memory/generateBindingDecl";
 import { generateMemoryOp } from "./memory/generateMemory";
 import { generateModuleOp } from "./module/generateModule";
 import { generatePatternOp } from "./pattern/generatePattern";
@@ -108,6 +109,12 @@ export function generateOp(
   }
   if (instruction instanceof DebuggerStatementOp) {
     return [generateDebuggerStatementOp(instruction, generator)];
+  } else if (instruction instanceof BindingDeclOp) {
+    const statement = generateBindingDeclOp(instruction, generator);
+    return statement === undefined ? [] : [statement];
+  } else if (instruction instanceof BindingInitOp) {
+    const statement = generateBindingInitOp(instruction, generator);
+    return statement === undefined ? [] : [statement];
   } else if (isDeclarationOp(instruction)) {
     const statement = generateDeclarationOp(instruction, generator);
     if (
@@ -120,9 +127,6 @@ export function generateOp(
     return [statement];
   } else if (isJSXOp(instruction)) {
     generateJSXOp(instruction, generator);
-    return [];
-  } else if (instruction instanceof DeclareLocalOp) {
-    generateDeclareLocalOp(instruction, generator);
     return [];
   } else if (isMemoryOp(instruction)) {
     const statement = generateMemoryOp(instruction, generator);

@@ -562,8 +562,12 @@ export function generateForOfTerm(
     const bodyStatements = emitArm(term.bodyBlock, funcOp, generator);
     generator.controlStack.length = savedControl;
 
+    const left =
+      term.iterationBindingKind === null
+        ? iterValId
+        : t.variableDeclaration(term.iterationBindingKind, [t.variableDeclarator(iterValId)]);
     const fos = t.forOfStatement(
-      t.variableDeclaration("const", [t.variableDeclarator(iterValId)]),
+      left,
       iterNode,
       t.blockStatement(bodyStatements),
       term.isAwait,
@@ -602,8 +606,12 @@ export function generateForInTerm(
     const bodyStatements = emitArm(term.bodyBlock, funcOp, generator);
     generator.controlStack.length = savedControl;
 
+    const left =
+      term.iterationBindingKind === null
+        ? iterValId
+        : t.variableDeclaration(term.iterationBindingKind, [t.variableDeclarator(iterValId)]);
     const fis = t.forInStatement(
-      t.variableDeclaration("const", [t.variableDeclarator(iterValId)]),
+      left,
       objNode,
       t.blockStatement(bodyStatements),
     );

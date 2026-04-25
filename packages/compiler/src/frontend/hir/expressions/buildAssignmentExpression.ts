@@ -176,8 +176,6 @@ function buildIdentifierAssignment(
         place,
         target.place,
         resultPlace,
-        "const",
-        "assignment",
       );
   functionBuilder.addOp(instruction);
   return resultPlace;
@@ -292,8 +290,6 @@ function buildLogicalIdentifierAssignment(
           environment.createValue(),
           target.place,
           stabilizedRightPlace,
-          "const",
-          "assignment",
         ),
   );
   functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), joinBlock, [stabilizedRightPlace]));

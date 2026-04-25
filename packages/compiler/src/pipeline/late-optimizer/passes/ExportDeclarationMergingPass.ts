@@ -1,6 +1,5 @@
 import {
   BasicBlock,
-  DeclareLocalOp,
   ExportDefaultDeclarationOp,
   ExportNamedDeclarationOp,
   StoreLocalOp,
@@ -88,15 +87,7 @@ export class ExportDeclarationMergingPass extends BaseOptimizationPass {
         exportSpec.localDeclarationId,
       );
       if (localPlace === undefined) continue;
-      const bi = instrs.find(
-        (instr): instr is DeclareLocalOp =>
-          instr instanceof DeclareLocalOp && instr.place.id === localPlace.id,
-      );
-      if (bi === undefined) continue;
-
-      // Find the declaration that uses this binding — either a StoreLocal
-      // (for variables/constants) or a FunctionDeclaration (for named functions).
-      const decl = this.findDeclaration(instrs, bi);
+      const decl = this.findDeclaration(instrs, localPlace);
       if (decl === undefined) continue;
 
       // Find the ExportNamedDeclaration that contains this ExportSpecifier.
@@ -114,7 +105,11 @@ export class ExportDeclarationMergingPass extends BaseOptimizationPass {
       // `export default` captures the value at that point — it is NOT a live
       // binding. Merging a hoisted var's undefined init into a default export
       // would permanently export `undefined` instead of the final value.
-      if (exportSpec.exported === "default" && decl.type === "var") continue;
+      const metadata = this.funcOp.moduleIR.environment.getDeclarationMetadata(
+        localPlace.declarationId,
+      );
+      const declarationKind = metadata?.kind;
+      if (exportSpec.exported === "default" && declarationKind === "var") continue;
 
       const declIndex = instrs.indexOf(decl);
       const exportDeclIndex = instrs.indexOf(exportDecl);
@@ -125,8 +120,8 @@ export class ExportDeclarationMergingPass extends BaseOptimizationPass {
         // Don't rename the BI — keeps the function name for debugging/stack traces.
         merged = new ExportDefaultDeclarationOp(exportDecl.id, exportDecl.place, decl.place);
       } else {
-        // For named exports, rename the BI and convert to declaration form.
-        bi.place.name = exportSpec.exported;
+        // For named exports, rename the binding and convert to declaration form.
+        localPlace.name = exportSpec.exported;
 
         merged = new ExportNamedDeclarationOp(exportDecl.id, exportDecl.place, [], decl.place);
       }
@@ -134,7 +129,7 @@ export class ExportDeclarationMergingPass extends BaseOptimizationPass {
       // For hoisted var declarations, the merged export must appear right
       // after the declaration (at the hoist point), not at the original
       // export position, to preserve correct statement ordering.
-      if (decl.type === "var" && declIndex < exportDeclIndex) {
+      if (declarationKind === "var" && declIndex < exportDeclIndex) {
         block.removeOpAt(exportDeclIndex);
         block.insertOpAt(declIndex + 1, merged);
       } else {
@@ -160,14 +155,14 @@ export class ExportDeclarationMergingPass extends BaseOptimizationPass {
   }
 
   /**
-   * Finds the StoreLocal instruction that writes to the given binding.
+   * Finds the StoreLocal instruction that initializes the exported binding.
    */
   private findDeclaration(
     instrs: readonly import("../../../ir").Operation[],
-    bi: DeclareLocalOp,
+    localPlace: import("../../../ir").Value,
   ): StoreLocalOp | undefined {
     for (const instr of instrs) {
-      if (instr instanceof StoreLocalOp && instr.lval.id === bi.place.id) {
+      if (instr instanceof StoreLocalOp && instr.lval.id === localPlace.id) {
         return instr;
       }
     }

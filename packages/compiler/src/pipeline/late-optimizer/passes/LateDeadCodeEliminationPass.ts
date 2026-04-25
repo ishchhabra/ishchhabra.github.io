@@ -13,15 +13,9 @@ import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
  * The base class re-runs `step()` until fixpoint so that chains of dead
  * instructions are cleaned up across iterations.
  *
- * This pass is agnostic to `StoreLocalOp.kind` — it never inspects
- * whether a store is a declaration or assignment. The
- * declaration ↔ assignment coupling is expressed via
- * `StoreLocalOp.hasSideEffects()`, which returns `true` for
- * assignment-kind stores. Side-effectful ops are skipped by the
- * removal loop, so any surviving assignment implicitly keeps its
- * declaration alive through the standard use-def chain without the
- * DCE needing to know about the coupling directly. When proper Dead
- * Store Elimination lands, assignments can drop to side-effect-free
+ * StoreLocal is side-effectful because it writes a binding cell.
+ * Side-effectful ops are skipped by the removal loop. When proper
+ * Dead Store Elimination lands, stores can drop to side-effect-free
  * and a unified liveness walk will handle both shapes uniformly.
  */
 export class LateDeadCodeEliminationPass extends BaseOptimizationPass {

@@ -1,14 +1,14 @@
 import * as t from "@babel/types";
-import { getCodegenDeclarationKind, StoreLocalOp } from "../../../../ir";
+import { StoreLocalOp } from "../../../../ir";
 import { CodeGenerator } from "../../../CodeGenerator";
 
 export function generateStoreLocalOp(
   instruction: StoreLocalOp,
   generator: CodeGenerator,
 ): t.Statement {
-  let lval = generator.values.get(instruction.lval.id);
+  let lval = generator.values.get(instruction.binding.id);
   if (lval === undefined || lval === null) {
-    lval = generator.getPlaceIdentifier(instruction.lval);
+    lval = generator.getPlaceIdentifier(instruction.binding);
   }
   t.assertLVal(lval);
 
@@ -24,33 +24,8 @@ export function generateStoreLocalOp(
   }
   t.assertExpression(value);
 
-  const declId = instruction.lval.declarationId;
-  const metadata = generator.getDeclarationMetadata(declId);
-  const kind = metadata ? getCodegenDeclarationKind(metadata.kind) : undefined;
-
-  let node: t.Statement;
-  // Emit `let X = value` at most once per declarationId in a given
-  // function. SSA lowering can insert multiple declaration-kind
-  // stores for the same binding (e.g. when multiple SSA merge sinks
-  // share a decl after synthetic metadata registration); subsequent
-  // stores must emit as plain assignments to avoid duplicate `let`
-  // declarations that JS parsers reject.
-  const alreadyDeclared = generator.declaredDeclarations.has(declId);
-  if (instruction.kind === "declaration" && kind !== undefined && !alreadyDeclared) {
-    node = t.variableDeclaration(kind, [t.variableDeclarator(lval, value)]);
-    generator.declaredDeclarations.add(declId);
-  } else if (kind !== undefined) {
-    const assignment = t.assignmentExpression("=", lval as t.LVal, value);
-    node = t.expressionStatement(assignment);
-  } else {
-    if (instruction.kind === "declaration" && !alreadyDeclared) {
-      node = t.variableDeclaration(instruction.type, [t.variableDeclarator(lval, value)]);
-      generator.declaredDeclarations.add(declId);
-    } else {
-      const assignment = t.assignmentExpression("=", lval as t.LVal, value);
-      node = t.expressionStatement(assignment);
-    }
-  }
+  const assignment = t.assignmentExpression("=", lval as t.LVal, value);
+  const node = t.expressionStatement(assignment);
 
   // Always cache the full Declaration / ExpressionStatement node in
   // `places[op.place.id]` so an export wrapper that references this

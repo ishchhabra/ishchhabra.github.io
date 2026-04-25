@@ -3,6 +3,7 @@ import { ProjectBuilder } from "../../frontend/ProjectBuilder";
 import type { FuncOp } from "../../ir/core/FuncOp";
 import type { ModuleIR } from "../../ir/core/ModuleIR";
 import {
+  BindingInitOp,
   LoadLocalOp,
   StoreLocalOp,
   ArrayDestructureOp,
@@ -38,6 +39,16 @@ function allStores(fn: FuncOp): StoreLocalOp[] {
     }
   }
   return stores;
+}
+
+function allLocalWrites(fn: FuncOp): Array<BindingInitOp | StoreLocalOp> {
+  const writes: Array<BindingInitOp | StoreLocalOp> = [];
+  for (const block of fn.blocks) {
+    for (const op of block.operations) {
+      if (op instanceof BindingInitOp || op instanceof StoreLocalOp) writes.push(op);
+    }
+  }
+  return writes;
 }
 
 function allLoads(fn: FuncOp): LoadLocalOp[] {
@@ -80,12 +91,12 @@ describe("SSABuilder — fresh lvals for non-promotable bindings", () => {
       export let x = 1;
       x = 2;
     `);
-    const stores = allStores(funcOp);
-    expect(stores.length).toBeGreaterThanOrEqual(2);
+    const writes = allLocalWrites(funcOp);
+    expect(writes.length).toBeGreaterThanOrEqual(2);
 
-    const lvalValues = new Set(stores.map((s) => s.lval));
-    // Every store should define a unique lval Value.
-    expect(lvalValues.size).toBe(stores.length);
+    const lvalValues = new Set(writes.map((w) => (w instanceof StoreLocalOp ? w.lval : w.place)));
+    // Every write should define a unique lval Value.
+    expect(lvalValues.size).toBe(writes.length);
   });
 
   it("assignment-destructure targets are non-promotable; destructure defs get fresh Values", () => {

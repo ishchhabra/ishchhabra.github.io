@@ -7,7 +7,6 @@ import {
   type DestructureTarget,
   type Value,
 } from "../../core";
-import type { StoreLocalKind } from "../mem/StoreLocal";
 
 import type { CloneContext } from "../../core/Operation";
 import { Operation } from "../../core/Operation";
@@ -24,7 +23,7 @@ export class ArrayDestructureOp extends Operation {
     public override readonly place: Value,
     public readonly elements: Array<DestructureTarget | null>,
     public readonly value: Value,
-    public readonly kind: StoreLocalKind,
+    public readonly kind: "declaration" | "assignment",
     public readonly declarationKind: "let" | "const" | "var" | null = null,
   ) {
     super(id);

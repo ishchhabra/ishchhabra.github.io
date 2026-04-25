@@ -3,6 +3,8 @@ import type { ForInStatement, MemberExpression } from "oxc-parser";
 import { Environment } from "../../../environment";
 import {
   ArrayDestructureOp,
+  BindingDeclOp,
+  BindingInitOp,
   createOperationId,
   destructureTargetResults,
   type DestructureTarget,
@@ -42,6 +44,7 @@ export function buildForInStatement(
 
   const left = node.left;
   let iterationValuePlace: Value;
+  let iterationBindingKind: "let" | "const" | "var" | null;
   let iterationTarget: DestructureTarget;
   let bareLVal: AST.Pattern | MemberExpression | undefined;
 
@@ -61,6 +64,7 @@ export function buildForInStatement(
     );
     iterationValuePlace =
       iterationTarget.kind === "binding" ? iterationTarget.place : environment.createValue();
+    iterationBindingKind = iterationTarget.kind === "binding" ? kind : "const";
   } else {
     bareLVal = left as AST.Pattern | MemberExpression;
     iterationTarget = buildLVal(bareLVal, scope, functionBuilder, moduleBuilder, environment, {
@@ -68,6 +72,7 @@ export function buildForInStatement(
     });
     iterationValuePlace =
       iterationTarget.kind === "binding" ? iterationTarget.place : environment.createValue();
+    iterationBindingKind = iterationTarget.kind === "binding" ? null : "const";
   }
 
   const bodyBlock = environment.createBlock();
@@ -83,6 +88,7 @@ export function buildForInStatement(
     createOperationId(environment),
     objectPlace,
     iterationValuePlace,
+    iterationBindingKind,
     bodyBlock,
     exitBlock,
     label,
@@ -125,17 +131,30 @@ function emitLoopIterationAssignment(
   destructureKind: "declaration" | "assignment" = "assignment",
 ): void {
   if (target.kind === "binding") {
-    const StoreInstruction = target.storage === "context" ? StoreContextOp : StoreLocalOp;
-    functionBuilder.addOp(
-      environment.createOperation(
-        StoreInstruction,
-        environment.createValue(),
-        target.place,
-        valuePlace,
-        "const",
-        destructureKind === "declaration" ? "declaration" : "assignment",
-      ),
-    );
+    if (target.storage === "context") {
+      functionBuilder.addOp(
+        environment.createOperation(
+          StoreContextOp,
+          environment.createValue(),
+          target.place,
+          valuePlace,
+          "let",
+          destructureKind === "declaration" ? "declaration" : "assignment",
+        ),
+      );
+    } else {
+      if (destructureKind === "declaration") {
+        if (target.place !== valuePlace) {
+          functionBuilder.addOp(
+            environment.createOperation(BindingInitOp, target.place, "const", valuePlace),
+          );
+        }
+      } else {
+        functionBuilder.addOp(
+          environment.createOperation(StoreLocalOp, environment.createValue(), target.place, valuePlace),
+        );
+      }
+    }
     return;
   }
 

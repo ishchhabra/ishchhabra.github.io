@@ -1,4 +1,4 @@
-import { StoreContextOp, StoreLocalOp } from "../../ir";
+import { BindingInitOp, StoreContextOp, StoreLocalOp } from "../../ir";
 import type { FuncOp } from "../../ir/core/FuncOp";
 import type { DeclarationId } from "../../ir/core/Value";
 import { ArrayDestructureOp } from "../../ir/ops/pattern/ArrayDestructure";
@@ -39,10 +39,8 @@ const NO_DEF_SITES: readonly StoreOp[] = Object.freeze([]);
  * # Consumers
  *
  * - {@link ExpressionInliningPass} uses {@link isSingleAssignment} to
- *   confirm that a `const`-typed store is actually a true SSA binding
- *   before substituting it. The IR-level `type === "const"` flag is not
- *   sufficient: SSA destruction may emit multiple const-typed stores
- *   that share a declarationId.
+ *   confirm that a materialized store is actually a true SSA binding
+ *   before substituting it.
  * - Future flow-insensitive fast paths in `LateConstantPropagationPass`
  *   and `LateCopyPropagationPass` can skip their kill/gen dataflow
  *   entirely for single-assignment decls.
@@ -72,8 +70,7 @@ export class MutabilityInfo {
 
   /**
    * True iff `decl` has exactly one store op in the function body.
-   * This is the canonical "is this a true SSA binding?" query —
-   * stronger than the IR-level `StoreLocalOp.type === "const"` flag.
+   * This is the canonical "is this a true SSA binding?" query.
    */
   isSingleAssignment(decl: DeclarationId): boolean {
     return this.getStoreCount(decl) === 1;
@@ -109,6 +106,10 @@ export class MutabilityInfo {
  * value.
  */
 function collectOpWriters(op: Operation, record: (decl: DeclarationId, op: StoreOp) => void): void {
+  if (op instanceof BindingInitOp) {
+    record(op.place.declarationId, op);
+    return;
+  }
   if (op instanceof StoreLocalOp || op instanceof StoreContextOp) {
     record(op.lval.declarationId, op);
     return;

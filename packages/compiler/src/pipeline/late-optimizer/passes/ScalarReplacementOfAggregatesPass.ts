@@ -1,6 +1,8 @@
 import { Environment } from "../../../environment";
 import {
   BasicBlock,
+  BindingDeclOp,
+  BindingInitOp,
   Value,
   ValueId,
   LiteralOp,
@@ -129,8 +131,8 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
       for (let i = 0; i < block.operations.length; i++) {
         const instr = block.operations[i];
         let valuePlace: Value;
-        let storeKind: StoreLocalOp["kind"];
-        let declarationKind: StoreLocalOp["type"];
+        let storeKind: "declaration" | "assignment";
+        let declarationKind: "let" | "const" | "var";
         let pattern: ObjectDestructureOp | null = null;
 
         if (instr instanceof ObjectDestructureOp) {
@@ -157,9 +159,26 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
 
         for (let j = 0; j < replacements.length; j++) {
           const { lval, value } = replacements[j];
+          if (storeKind === "declaration") {
+            const init = new BindingInitOp(
+              makeOperationId(this.environment.nextOperationId++),
+              lval,
+              declarationKind,
+              value,
+            );
+            block.insertOpAt(i + j, init);
+            continue;
+          }
           const id = makeOperationId(this.environment.nextOperationId++);
           const place = this.environment.createValue();
-          const scalar = new StoreLocalOp(id, place, lval, value, declarationKind, storeKind);
+          const scalar = new StoreLocalOp(
+            id,
+            place,
+            lval,
+            value,
+            [],
+            this.findBindingCell(lval) ?? lval,
+          );
           block.insertOpAt(i + j, scalar);
         }
 
@@ -169,6 +188,20 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
     }
 
     return changed;
+  }
+
+  private findBindingCell(lval: Value): Value | undefined {
+    const declarationId = lval.originalDeclarationId ?? lval.declarationId;
+
+    for (const block of this.funcOp.blocks) {
+      for (const op of block.operations) {
+        if (!(op instanceof BindingDeclOp) && !(op instanceof BindingInitOp)) continue;
+        const opDeclarationId = op.place.originalDeclarationId ?? op.place.declarationId;
+        if (opDeclarationId === declarationId) return op.place;
+      }
+    }
+
+    return this.environment.getDeclarationBinding(declarationId);
   }
 
   // ---------------------------------------------------------------------------

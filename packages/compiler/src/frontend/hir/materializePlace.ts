@@ -2,10 +2,11 @@ import { Environment } from "../../environment";
 import {
   ArrayExpressionOp,
   AwaitExpressionOp,
+  BindingDeclOp,
+  BindingInitOp,
   BinaryExpressionOp,
   CallExpressionOp,
   ClassExpressionOp,
-  DeclareLocalOp,
   ImportExpressionOp,
   LiteralOp,
   LoadContextOp,
@@ -37,22 +38,12 @@ export function materializePlace(
   environment: Environment,
 ): Value {
   const bindingPlace = environment.createValue();
-  functionBuilder.addOp(environment.createOperation(DeclareLocalOp, bindingPlace, "const"));
   environment.registerDeclaration(
     bindingPlace.declarationId,
     functionBuilder.currentBlock.id,
     bindingPlace,
   );
-  functionBuilder.addOp(
-    environment.createOperation(
-      StoreLocalOp,
-      environment.createValue(),
-      bindingPlace,
-      valuePlace,
-      "const",
-      "declaration",
-    ),
-  );
+  functionBuilder.addOp(environment.createOperation(BindingInitOp, bindingPlace, "const", valuePlace));
   return bindingPlace;
 }
 
@@ -70,7 +61,6 @@ export function isStablePlace(
   }
 
   if (
-    instruction instanceof DeclareLocalOp ||
     instruction instanceof LoadLocalOp ||
     instruction instanceof LoadContextOp ||
     instruction instanceof LiteralOp ||

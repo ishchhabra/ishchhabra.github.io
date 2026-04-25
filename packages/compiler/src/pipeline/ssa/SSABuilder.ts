@@ -4,6 +4,7 @@ import {
   BlockId,
   DeclarationId,
   Value,
+  BindingInitOp,
   LiteralOp,
   LoadLocalOp,
   makeOperationId,
@@ -81,7 +82,7 @@ function analyzePromotability(
 
   for (const block of funcOp.blocks) {
     for (const op of block.operations) {
-      if (op instanceof StoreLocalOp) continue;
+      if (op instanceof StoreLocalOp || op instanceof BindingInitOp) continue;
 
       if (op instanceof ArrayDestructureOp || op instanceof ObjectDestructureOp) {
         // Declaration-kind destructures carry their own `let` / `const`;
@@ -431,6 +432,17 @@ export class SSABuilder {
       return;
     }
 
+    if (current instanceof BindingInitOp) {
+      const decl = current.place.declarationId;
+      if (this.isPromotable(decl)) {
+        this.pushScopedForDecl(stacks, decl, current.value, pushed);
+        toDelete.add(current);
+        return;
+      }
+      this.pushScopedForDecl(stacks, decl, current.place, pushed);
+      return;
+    }
+
     this.renameNonPromotableDefs(current, stacks, pushed);
   }
 
@@ -454,9 +466,8 @@ export class SSABuilder {
       op.place,
       freshLval,
       op.value,
-      op.type,
-      op.kind,
       op.bindings,
+      op.binding,
     );
     op.parentBlock?.replaceOp(op, renamed);
     this.pushScoped(stacks, freshLval, pushed);

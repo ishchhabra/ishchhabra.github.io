@@ -49,7 +49,7 @@ function buildAssignFromSource(source: string) {
 
 describe("buildAssignmentExpression — end-to-end smoke", () => {
   it("simple identifier assignment", () => {
-    expect(printFn(buildFn("let x; x = 1;"))).toContain("{kind = assignment}");
+    expect(printFn(buildFn("let x; x = 1;"))).toContain("store_local $0, $2");
   });
 });
 
@@ -57,9 +57,8 @@ describe("buildAssignmentExpression — end-to-end smoke", () => {
 // Isolated — assignment expressions
 //
 // Note: the isolated harness runs `instantiateScopeBindings`, which
-// emits declaration-form stores for every declared binding in the
-// program (e.g. `let x;` → `LoadGlobal undefined; store_local {kind =
-// declaration}`). The helper slices ops added *after* the build call
+// emits binding declarations for every declared binding in the
+// program. The helper slices ops added *after* the build call
 // so assertions focus on the AssignmentExpression's output alone.
 // -----------------------------------------------------------------
 
@@ -69,13 +68,6 @@ describe("buildAssignmentExpression — isolated", () => {
       const { opsAdded } = buildAssignFromSource("let x; x = 1;");
       const last = opsAdded[opsAdded.length - 1];
       expect(last).toBeInstanceOf(StoreLocalOp);
-      const store = last as StoreLocalOp;
-      expect(store.kind).toBe("assignment");
-      // `StoreLocalOp.type` on assignment-form is always `"const"` for
-      // locals (`"let"` for context vars), regardless of the original
-      // declaration's kind. The source-of-truth for syntactic kind is
-      // `DeclarationMetadata.kind` — see TODO.local.md for removal.
-      expect(store.type).toBe("const");
     });
 
     it("compound `x += 2` emits Binary + StoreLocal(assignment)", () => {
@@ -87,7 +79,6 @@ describe("buildAssignmentExpression — isolated", () => {
       expect(binary).toBeDefined();
       expect(binary!.operator).toBe("+");
       expect(store).toBeDefined();
-      expect(store!.kind).toBe("assignment");
     });
 
     it.each([
@@ -180,19 +171,19 @@ describe("buildAssignmentExpression — isolated", () => {
     });
 
     it("StoreStaticProperty reports side effects", () => {
-      const { opsAdded } = buildAssignFromSource("obj.x = 1;");
+      const { harness, opsAdded } = buildAssignFromSource("obj.x = 1;");
       const store = opsAdded.find(
         (o): o is StoreStaticPropertyOp => o instanceof StoreStaticPropertyOp,
       )!;
-      expect(store.hasSideEffects()).toBe(true);
+      expect(store.hasSideEffects(harness.env)).toBe(true);
     });
 
     it("StoreDynamicProperty reports side effects", () => {
-      const { opsAdded } = buildAssignFromSource("obj[k] = 1;");
+      const { harness, opsAdded } = buildAssignFromSource("obj[k] = 1;");
       const store = opsAdded.find(
         (o): o is StoreDynamicPropertyOp => o instanceof StoreDynamicPropertyOp,
       )!;
-      expect(store.hasSideEffects()).toBe(true);
+      expect(store.hasSideEffects(harness.env)).toBe(true);
     });
   });
 });
@@ -339,7 +330,6 @@ describe("buildAssignmentExpression — logical identifier assignments", () => {
         (o): o is StoreLocalOp => o instanceof StoreLocalOp,
       );
       expect(store).toBeDefined();
-      expect(store!.kind).toBe("assignment");
       // The jump carries a single arg — the stabilized RHS value.
       const args = (term.thenBlock.terminal as JumpTermOp).args;
       expect(args.length).toBe(1);

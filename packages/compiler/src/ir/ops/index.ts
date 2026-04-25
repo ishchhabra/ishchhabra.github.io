@@ -17,7 +17,7 @@
  *   prop/    — LoadGlobal, LoadStatic/DynamicProperty, StoreStatic/
  *              DynamicProperty, MetaProperty, ThisExpression,
  *              SuperProperty
- *   mem/     — LoadLocal, StoreLocal, DeclareLocal, LoadContext,
+ *   mem/     — BindingDecl, LoadLocal, StoreLocal, LoadContext,
  *              StoreContext
  *   module/  — Import / Export declarations and specifiers
  *   jsx/     — JSX elements, fragments, attributes, text
@@ -101,9 +101,14 @@ export { StoreStaticPropertyOp } from "./prop/StoreStaticProperty";
 export { StoreDynamicPropertyOp } from "./prop/StoreDynamicProperty";
 
 // mem
+export {
+  BindingDeclOp,
+  BindingInitOp,
+  type BindingDeclKind,
+  type BindingKind,
+} from "./mem/BindingDecl";
 export { LoadLocalOp } from "./mem/LoadLocal";
-export { StoreLocalOp, type StoreLocalKind } from "./mem/StoreLocal";
-export { DeclareLocalOp } from "./mem/DeclareLocal";
+export { StoreLocalOp } from "./mem/StoreLocal";
 export { LoadContextOp } from "./mem/LoadContext";
 export { StoreContextOp, type StoreContextKind } from "./mem/StoreContext";
 

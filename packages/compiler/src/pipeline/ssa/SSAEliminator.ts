@@ -1,5 +1,6 @@
 import {
-  DeclareLocalOp,
+  BindingDeclOp,
+  BindingInitOp,
   LiteralOp,
   LoadContextOp,
   LoadLocalOp,
@@ -135,28 +136,14 @@ export class SSAEliminator {
 
     const env = this.moduleIR.environment;
 
-    const undefinedId = makeOperationId(env.nextOperationId++);
-    const undefinedPlace = env.createValue();
-    const undefinedInstr = new LiteralOp(undefinedId, undefinedPlace, undefined);
-
-    const storeId = makeOperationId(env.nextOperationId++);
-    const storePlace = env.createValue(param.declarationId);
-    const storeInstr = new StoreLocalOp(
-      storeId,
-      storePlace,
-      param,
-      undefinedPlace,
-      "let",
-      "declaration",
-    );
+    const declId = makeOperationId(env.nextOperationId++);
+    const declInstr = new BindingDeclOp(declId, param, "let");
 
     const insertion = this.#resolveDeclarationInsertion(sink);
     if (insertion.kind === "append") {
-      insertion.block.appendOp(undefinedInstr);
-      insertion.block.appendOp(storeInstr);
+      insertion.block.appendOp(declInstr);
     } else {
-      insertion.block.insertOpAt(insertion.index, undefinedInstr);
-      insertion.block.insertOpAt(insertion.index + 1, storeInstr);
+      insertion.block.insertOpAt(insertion.index, declInstr);
     }
   }
 
@@ -201,7 +188,7 @@ export class SSAEliminator {
   #insertCopyStore(edge: Edge, param: Value, arg: Value): void {
     const storeId = makeOperationId(this.moduleIR.environment.nextOperationId++);
     const storePlace = this.moduleIR.environment.createValue(param.declarationId);
-    const storeInstr = new StoreLocalOp(storeId, storePlace, param, arg, "let", "assignment");
+    const storeInstr = new StoreLocalOp(storeId, storePlace, param, arg);
     edge.insertCopyStore(storeInstr);
   }
 
@@ -276,8 +263,8 @@ export class SSAEliminator {
     for (let j = defIdx + 1; j < lastUseIdx; j++) {
       const mid = ops[j];
       if (
-        (mid instanceof StoreLocalOp || mid instanceof StoreContextOp) &&
-        mid.kind === "assignment" &&
+        (mid instanceof StoreLocalOp ||
+          (mid instanceof StoreContextOp && mid.kind === "assignment")) &&
         mid.lval.declarationId === srcDecl
       ) {
         return true;
@@ -288,7 +275,6 @@ export class SSAEliminator {
 
   /**
    * Insert
-   *     DeclareLocal const $snap
    *     StoreLocal(declaration) $snap = <source>
    * immediately before `load`, and replace `load` with a fresh LoadLocal
    * that reads from `$snap` and keeps the same result place. Returns the
@@ -304,28 +290,18 @@ export class SSAEliminator {
 
     const snapPlace = env.createValue();
 
-    const declareOp = new DeclareLocalOp(
+    const initOp = new BindingInitOp(
       makeOperationId(env.nextOperationId++),
       snapPlace,
       "const",
-    );
-
-    const storeResultPlace = env.createValue();
-    const storeOp = new StoreLocalOp(
-      makeOperationId(env.nextOperationId++),
-      storeResultPlace,
-      snapPlace,
       load.value,
-      "const",
-      "declaration",
     );
 
-    block.insertOpAt(defIdx, declareOp);
-    block.insertOpAt(defIdx + 1, storeOp);
+    block.insertOpAt(defIdx, initOp);
 
     const newLoad = new LoadLocalOp(makeOperationId(env.nextOperationId++), load.place, snapPlace);
     block.replaceOp(load, newLoad);
 
-    return 2;
+    return 1;
   }
 }
