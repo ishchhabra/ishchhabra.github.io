@@ -1,3 +1,3 @@
 function $0(...$1) {
-  return $1.reduce(($7, $8) => $7 + $8, 0);
+  return $1.reduce(($5, $6) => $5 + $6, 0);
 }

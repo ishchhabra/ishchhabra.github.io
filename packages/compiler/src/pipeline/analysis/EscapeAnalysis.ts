@@ -103,7 +103,7 @@ export class EscapeAnalysis extends FunctionAnalysis<EscapeAnalysisResult> {
     };
 
     // Phase 1: Walk all instructions and classify uses.
-    for (const block of funcOp.allBlocks()) {
+    for (const block of funcOp.blocks) {
       for (const instr of block.operations) {
         // Ensure every defined identifier has an entry.
         for (const place of instr.results()) {
@@ -246,7 +246,7 @@ export class EscapeAnalysis extends FunctionAnalysis<EscapeAnalysisResult> {
       // Block-args propagation: if a block param escapes, every
       // incoming edge arg at that position escapes too (the param
       // may forward any of them out of the function).
-      for (const block of funcOp.allBlocks()) {
+      for (const block of funcOp.blocks) {
         if (block.params.length === 0) continue;
         const incoming = incomingEdgeArgs.get(block.id);
         if (incoming === undefined) continue;
@@ -278,7 +278,7 @@ export class EscapeAnalysis extends FunctionAnalysis<EscapeAnalysisResult> {
  */
 function buildIncomingEdgeArgsIndex(funcOp: FuncOp): Map<BlockId, readonly (readonly Value[])[]> {
   const index = new Map<BlockId, (readonly Value[])[]>();
-  for (const predBlock of funcOp.allBlocks()) {
+  for (const predBlock of funcOp.blocks) {
     forEachOutgoingEdge(funcOp, predBlock, (edge) => {
       if (edge.sink.kind !== "block") return;
       const succId = edge.sink.block.id;

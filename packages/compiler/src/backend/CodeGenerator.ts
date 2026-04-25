@@ -5,7 +5,6 @@ import {
   BlockId,
   type ControlContext,
   DeclarationId,
-  FunctionDeclarationOp,
   getCodegenDeclarationKind,
   Value,
   ValueId,
@@ -258,14 +257,6 @@ export class CodeGenerator {
       this.values.set(place.id, identifier);
       if (metadata.kind === "param" || metadata.kind === "import" || metadata.kind === "catch") {
         this.declaredDeclarations.add(declarationId);
-      }
-    }
-
-    for (const [, funcOp] of moduleIR.functions) {
-      for (const instruction of funcOp.header) {
-        if (instruction instanceof FunctionDeclarationOp) {
-          this.values.set(instruction.place.id, this.getPlaceIdentifier(instruction.place));
-        }
       }
     }
   }

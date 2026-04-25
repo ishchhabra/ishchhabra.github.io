@@ -32,7 +32,7 @@ function buildAndSSA(source: string): { funcOp: FuncOp; moduleIR: ModuleIR } {
 
 function allStores(fn: FuncOp): StoreLocalOp[] {
   const stores: StoreLocalOp[] = [];
-  for (const block of fn.allBlocks()) {
+  for (const block of fn.blocks) {
     for (const op of block.operations) {
       if (op instanceof StoreLocalOp) stores.push(op);
     }
@@ -42,7 +42,7 @@ function allStores(fn: FuncOp): StoreLocalOp[] {
 
 function allLoads(fn: FuncOp): LoadLocalOp[] {
   const loads: LoadLocalOp[] = [];
-  for (const block of fn.allBlocks()) {
+  for (const block of fn.blocks) {
     for (const op of block.operations) {
       if (op instanceof LoadLocalOp) loads.push(op);
     }
@@ -103,7 +103,7 @@ describe("SSABuilder — fresh lvals for non-promotable bindings", () => {
     // write).
     const aDefs = new Set<unknown>();
     let aDeclId: number | undefined;
-    for (const block of funcOp.allBlocks()) {
+    for (const block of funcOp.blocks) {
       for (const op of block.operations) {
         if (op instanceof ObjectDestructureOp || op instanceof StoreLocalOp) {
           for (const def of op.results()) {
@@ -155,7 +155,7 @@ describe("SSABuilder — block-param placement at merges", () => {
     // Find a block whose params include a Value with the same
     // declarationId as x. That's the phi-style merge param.
     let phiBlockParams = 0;
-    for (const block of funcOp.allBlocks()) {
+    for (const block of funcOp.blocks) {
       for (const param of block.params) {
         if (param.originalDeclarationId !== undefined) {
           phiBlockParams++;
@@ -178,7 +178,7 @@ describe("SSABuilder — block-param placement at merges", () => {
 
     // For every block with >0 params, every predecessor reaching via
     // JumpTermOp must carry the same number of args.
-    for (const block of funcOp.allBlocks()) {
+    for (const block of funcOp.blocks) {
       if (block.params.length === 0) continue;
       if (block === funcOp.entryBlock) continue;
       for (const pred of block.predecessors()) {
@@ -231,7 +231,7 @@ describe("SSABuilder — invariants", () => {
       if (cond()) x = 1; else x = 2;
       f(x);
     `);
-    for (const block of funcOp.allBlocks()) {
+    for (const block of funcOp.blocks) {
       for (let i = 0; i < block.params.length; i++) {
         const param = block.params[i];
         if (param.originalDeclarationId === undefined) continue;
@@ -270,7 +270,7 @@ describe("SSABuilder — CFG-terminator sanity", () => {
     const { funcOp } = buildAndSSA(`
       if (cond()) { f(1); } else { f(2); }
     `);
-    for (const block of funcOp.allBlocks()) {
+    for (const block of funcOp.blocks) {
       if (block.terminal instanceof IfTermOp) {
         // Nothing to assert directly on IfTermOp args — the shape has
         // no .args. The check is that the IR is well-formed, which

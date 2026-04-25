@@ -1,6 +1,6 @@
-import { Operation, BlockId, DeclarationId, LoadLocalOp, Value, StoreLocalOp } from "../../../ir";
+import { BlockId, DeclarationId, LoadLocalOp, Value, StoreLocalOp } from "../../../ir";
 import { FuncOp } from "../../../ir/core/FuncOp";
-import { Trait } from "../../../ir/core/Operation";
+import type { Operation } from "../../../ir/core/Operation";
 import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
 
 /**
@@ -36,7 +36,7 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
 
     let changed = false;
 
-    for (const block of this.funcOp.allBlocks()) {
+    for (const block of this.funcOp.blocks) {
       const blockId = block.id;
       /** Current copy state at block entry (IN[B]). */
       const state = this.meet(blockId, outState);
@@ -49,16 +49,6 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
           if (resolved && resolved.declarationId !== srcDecl) {
             block.replaceOp(instr, new LoadLocalOp(instr.id, instr.place, resolved));
             changed = true;
-          }
-          continue;
-        }
-
-        // Structured ops may mutate variables inside their regions.
-        // Conservatively kill every copy relationship involving any
-        // decl stored to in any nested region.
-        if (instr.hasTrait(Trait.HasRegions)) {
-          for (const decl of this.collectStoredDecls(instr)) {
-            this.kill(state, decl);
           }
           continue;
         }
@@ -82,7 +72,7 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
    * Only copy relationships that agree across *all* predecessors survive.
    */
   private meet(blockId: BlockId, outState: Map<BlockId, CopyState>): CopyState {
-    const block = this.funcOp.maybeBlock(blockId);
+    const block = this.funcOp.blocks.find((candidate) => candidate.id === blockId);
     const preds = block?.predecessors();
 
     if (!preds || preds.size === 0) {
@@ -167,14 +157,6 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
         state.delete(k);
       }
     }
-  }
-
-  private collectStoredDecls(op: Operation): Set<DeclarationId> {
-    const decls = new Set<DeclarationId>();
-    if (op instanceof StoreLocalOp) {
-      decls.add(op.lval.declarationId);
-    }
-    return decls;
   }
 
   /**

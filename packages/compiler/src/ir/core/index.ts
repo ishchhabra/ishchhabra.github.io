@@ -42,4 +42,3 @@ export {
   TermOp,
   type CFGSuccessor,
 } from "./TermOp";
-export { Region } from "./Region";

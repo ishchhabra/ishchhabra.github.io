@@ -89,9 +89,9 @@ export class DominatorTree {
    * no separate CFG analysis needed.
    */
   static compute(funcOp: FuncOp): DominatorTree {
-    const entry = funcOp.entryBlockId;
+    const entry = funcOp.entryBlock.id;
     const predecessors = new Map<BlockId, Set<BlockId>>();
-    for (const block of funcOp.allBlocks()) {
+    for (const block of funcOp.blocks) {
       const preds = new Set<BlockId>();
       for (const pred of block.predecessors()) preds.add(pred.id);
       predecessors.set(block.id, preds);

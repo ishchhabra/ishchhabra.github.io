@@ -36,7 +36,7 @@ export class LivenessAnalysis extends FunctionAnalysis<LivenessResult> {
     // args, ConditionTermOp trailing args, YieldTermOp values flowing to a
     // sink) are deferred to the edge-arg propagation phase — they're
     // only live when their sink param is live.
-    for (const block of funcOp.allBlocks()) {
+    for (const block of funcOp.blocks) {
       seedLiveReads(funcOp, block, liveIds);
     }
 

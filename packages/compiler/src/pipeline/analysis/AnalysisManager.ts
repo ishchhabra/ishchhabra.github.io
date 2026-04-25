@@ -1,4 +1,4 @@
-import type { FuncOp } from "../../ir/core/FuncOp";
+import { FuncOp } from "../../ir/core/FuncOp";
 import type { ProjectUnit } from "../../frontend/ProjectBuilder";
 
 /**
@@ -133,7 +133,7 @@ export class AnalysisManager {
     analysisClass: FunctionAnalysisClass<Result> | ProjectAnalysisClass<Result>,
     ir: FuncOp | ProjectUnit,
   ): Result {
-    if (isFuncOp(ir)) {
+    if (ir instanceof FuncOp) {
       return this.getFunction(analysisClass as FunctionAnalysisClass<Result>, ir);
     }
     return this.getProject(analysisClass as ProjectAnalysisClass<Result>, ir);
@@ -206,6 +206,3 @@ export class AnalysisManager {
   }
 }
 
-function isFuncOp(ir: FuncOp | ProjectUnit): ir is FuncOp {
-  return "body" in ir && "id" in ir;
-}

@@ -64,7 +64,7 @@ export class LoopInfo {
 
   static compute(funcOp: FuncOp, dom: DominatorTree): LoopInfo {
     const predecessors = new Map<BlockId, Set<BlockId>>();
-    for (const block of funcOp.allBlocks()) {
+    for (const block of funcOp.blocks) {
       const preds = new Set<BlockId>();
       for (const pred of block.predecessors()) preds.add(pred.id);
       predecessors.set(block.id, preds);
@@ -73,7 +73,7 @@ export class LoopInfo {
       dom.getDominators(b),
     );
 
-    const headersWithBackEdges = [...funcOp.allBlocks()]
+    const headersWithBackEdges = [...funcOp.blocks]
       .map((_b) => _b.id)
       .filter((h) => (backEdgeMap.get(h)?.size ?? 0) > 0);
 
@@ -122,7 +122,7 @@ export class LoopInfo {
     const topLevel = topLevelRaws.map((r) => buildLoop(r, null));
 
     const innermost = new Map<BlockId, Loop>();
-    for (const blockId of funcOp.blockIds()) {
+    for (const { id: blockId } of funcOp.blocks) {
       const containing = raws.filter((r) => r.blocks.has(blockId));
       if (containing.length === 0) continue;
       const smallest = containing.reduce((a, b) => (a.blocks.size <= b.blocks.size ? a : b));

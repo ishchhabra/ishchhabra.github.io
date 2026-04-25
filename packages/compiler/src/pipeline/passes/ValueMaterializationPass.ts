@@ -88,7 +88,7 @@ export class ValueMaterializationPass {
 
   public run(): void {
     const env = this.moduleIR.environment;
-    for (const block of this.funcOp.allBlocks()) {
+    for (const block of this.funcOp.blocks) {
       const ops = block.operations;
       for (let i = 0; i < ops.length; i++) {
         const op = ops[i];
@@ -228,7 +228,7 @@ export class ValueMaterializationPass {
   private rewriteUses(op: Operation, newPlace: Value, spillStore: StoreLocalOp): void {
     const oldPlace = op.place!;
     const map = new Map<Value, Value>([[oldPlace, newPlace]]);
-    for (const block of this.funcOp.allBlocks()) {
+    for (const block of this.funcOp.blocks) {
       for (const inner of block.getAllOps()) {
         if (inner === spillStore) continue;
         const rewritten = inner.rewrite(map);

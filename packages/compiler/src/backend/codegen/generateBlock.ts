@@ -37,7 +37,7 @@ export function generateBasicBlock(
   funcOp: FuncOp,
   generator: CodeGenerator,
 ): Array<t.Statement> {
-  const block = funcOp.maybeBlock(blockId);
+  const block = funcOp.blocks.find((candidate) => candidate.id === blockId);
   if (block === undefined) {
     throw new Error(`Block ${blockId} not found`);
   }

@@ -35,7 +35,7 @@ export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
   protected step(): OptimizationResult {
     let changed = false;
 
-    for (const block of this.funcOp.allBlocks()) {
+    for (const block of this.funcOp.blocks) {
       for (let i = block.operations.length - 1; i >= 0; i--) {
         const instr = block.operations[i];
         if (instr.hasSideEffects(this.environment)) continue;

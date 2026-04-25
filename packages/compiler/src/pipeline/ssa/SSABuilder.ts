@@ -64,7 +64,7 @@ function analyzePromotability(
     mark(decl, NonPromotableReason.Context);
   }
 
-  for (const block of funcOp.allBlocks()) {
+  for (const block of funcOp.blocks) {
     for (const op of block.getAllOps()) {
       const captures = (op as { captures?: readonly Value[] }).captures;
       if (captures !== undefined) {
@@ -79,7 +79,7 @@ function analyzePromotability(
     }
   }
 
-  for (const block of funcOp.allBlocks()) {
+  for (const block of funcOp.blocks) {
     for (const op of block.operations) {
       if (op instanceof StoreLocalOp) continue;
 
@@ -263,24 +263,18 @@ export class SSABuilder {
   // ===========================================================================
 
   /**
-   * Seed permanent rename-stack entries for function-header definitions:
-   * formal parameters, destructured parameter bindings, and prologue ops.
+   * Seed permanent rename-stack entries for function parameter definitions:
+   * formal parameters and destructured parameter bindings.
    * These live at the bottom of their stacks for the whole function.
    */
   private seedHeaderDefinitions(stacks: Stacks): void {
-    for (const place of this.funcOp.params) {
-      this.seedStack(stacks, place);
+    for (const param of this.funcOp.params) {
+      this.seedStack(stacks, param.value);
     }
-    for (const pattern of this.funcOp.paramPatterns) {
-      for (const place of collectDestructureTargetBindingPlaces(pattern)) {
+    for (const param of this.funcOp.params) {
+      if (param.kind !== "arg") continue;
+      for (const place of collectDestructureTargetBindingPlaces(param.source.target)) {
         this.seedStack(stacks, place);
-      }
-    }
-    for (const instr of this.funcOp.prologue) {
-      if (instr instanceof StoreLocalOp) {
-        for (const place of instr.results()) this.seedStack(stacks, place);
-      } else if (instr.place) {
-        this.seedStack(stacks, instr.place);
       }
     }
   }
@@ -303,7 +297,7 @@ export class SSABuilder {
 
   private placeBlockParams(): void {
     const blockIds = new Set<BlockId>();
-    for (const block of this.funcOp.body.blocks) blockIds.add(block.id);
+    for (const block of this.funcOp.blocks) blockIds.add(block.id);
     if (blockIds.size <= 1) return;
 
     const domTree = this.AM.get(DominatorTreeAnalysis, this.funcOp);
@@ -336,7 +330,7 @@ export class SSABuilder {
         const place = createParamValue(this.moduleIR.environment);
         place.originalDeclarationId = declId;
 
-        const frontierBlock = this.funcOp.getBlock(frontier);
+        const frontierBlock = this.requireBlock(frontier);
         frontierBlock.params = [...frontierBlock.params, place];
         hasParam.add(frontier);
 
@@ -390,7 +384,7 @@ export class SSABuilder {
     }
 
     for (const childId of this.domTreeChildren.get(block.id) ?? []) {
-      this.renameBlock(this.funcOp.getBlock(childId), stacks);
+      this.renameBlock(this.requireBlock(childId), stacks);
     }
 
     this.popScoped(stacks, pushed);
@@ -680,6 +674,14 @@ export class SSABuilder {
       if (top !== place) map.set(place, top);
     }
     return map;
+  }
+
+  private requireBlock(blockId: BlockId): BasicBlock {
+    const block = this.funcOp.blocks.find((candidate) => candidate.id === blockId);
+    if (block === undefined) {
+      throw new Error(`Block ${blockId} not found in function ${this.funcOp.id}`);
+    }
+    return block;
   }
 }
 

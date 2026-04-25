@@ -226,7 +226,7 @@ function buildLogicalAssignFromSource(source: string): {
     harness.moduleBuilder,
     harness.env,
   );
-  const parentBlock = [...harness.fnBuilder.bodyRegion.allBlocks()].find(
+  const parentBlock = harness.fnBuilder.blocks.find(
     (b) => b.id === parentBlockId,
   );
   if (!parentBlock) throw new Error("parent block missing");

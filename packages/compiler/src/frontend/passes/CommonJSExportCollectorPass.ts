@@ -31,7 +31,7 @@ export class CommonJSExportCollectorPass {
   ) {}
 
   public run() {
-    for (const block of this.funcOp.allBlocks()) {
+    for (const block of this.funcOp.blocks) {
       const blockId = block.id;
       if (!this.isAlwaysExecutedBlock(blockId)) {
         continue;
@@ -82,7 +82,7 @@ export class CommonJSExportCollectorPass {
    */
   private isAlwaysExecutedBlock(blockId: BlockId): boolean {
     const domTree = this.AM.get(DominatorTreeAnalysis, this.funcOp);
-    for (const block of this.funcOp.allBlocks()) {
+    for (const block of this.funcOp.blocks) {
       const term = block.terminal;
       if (!(term instanceof ReturnTermOp || term instanceof ThrowTermOp)) continue;
       if (!domTree.dominates(blockId, block.id)) return false;

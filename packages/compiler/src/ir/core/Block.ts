@@ -1,7 +1,7 @@
 import { Value } from "./Value";
 import { Operation } from "./Operation";
 import { TermOp } from "./TermOp";
-import type { Region } from "./Region";
+import type { FuncOp } from "./FuncOp";
 
 
 /**
@@ -33,11 +33,8 @@ export class BasicBlock {
   private _ops: Operation[] = [];
   private _terminal: TermOp | null = null;
 
-  /**
-   * MLIR-style region ownership back-pointer: the {@link Region}
-   * this block belongs to.
-   */
-  public parent: Region | null = null;
+  /** Function that owns this block, or null while the block is being moved/built. */
+  public parent: FuncOp | null = null;
 
   /**
    * MLIR / Cranelift-style block parameters. Populated by the SSA
@@ -224,10 +221,9 @@ export class BasicBlock {
    * Remove and return non-terminator ops from `start` to the end of
    * the list. This is a **move**, not a deletion: the ops keep their
    * operand/result use-list registrations intact because the caller
-   * (currently `FuncOpBuilder.addHeaderOps`) re-homes them into a
-   * different IR owner (`FuncOp.header`/`prologue`). Only the
-   * `parentBlock` back-pointer is cleared, since they're no longer
-   * inside this block.
+   * (currently `FuncOpBuilder.addHeaderOps`) re-homes them into the
+   * function entry block. Only the `parentBlock` back-pointer is
+   * cleared while they are in transit.
    *
    * Do not use this for true removal — use `removeOpAt` so use-lists
    * unregister.

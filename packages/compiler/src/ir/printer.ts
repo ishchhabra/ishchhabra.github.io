@@ -14,10 +14,6 @@
  * ```
  * module {
  *   fn0 "main"(x: %1, y: %2) {
- *     source.header:
- *       ...
- *     runtime.prologue:
- *       ...
  *     bb0:                                  ; scope=0
  *       %6 = ...
  *       jump bb1
@@ -58,14 +54,7 @@ export function printFuncOp(funcOp: FuncOp, depth = 0): string {
 }
 
 function printFuncOpInto(funcOp: FuncOp, lines: string[], depth: number): void {
-  if (funcOp.prologue.length > 0) {
-    push(lines, depth, "prologue:");
-    for (const instr of funcOp.prologue) {
-      push(lines, depth + 1, instr.print());
-    }
-  }
-
-  for (const block of funcOp.allBlocks()) {
+  for (const block of funcOp.blocks) {
     const paramsAnnotation =
       block.params.length > 0 ? `(${block.params.map((p) => p.print()).join(", ")})` : "";
     const header = `bb${block.id}${paramsAnnotation}:`;
@@ -84,7 +73,10 @@ export function printModuleIR(moduleIR: ModuleIR): string {
   const lines: string[] = [];
   lines.push("module {");
   for (const [id, funcIR] of moduleIR.functions) {
-    const params = funcIR.paramPatterns.map((p) => printDestructureTarget(p)).join(", ");
+    const params = funcIR.params
+      .filter((p) => p.kind === "arg")
+      .map((p) => printDestructureTarget(p.source.target))
+      .join(", ");
     const modifiers: string[] = [];
     if (funcIR.async) modifiers.push("async");
     if (funcIR.generator) modifiers.push("generator");

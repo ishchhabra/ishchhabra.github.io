@@ -34,7 +34,7 @@ function buildLogicalFromSource(source: string): {
   );
 
   // Locate the IfTermOp on the original parent block.
-  const parentBlock = [...harness.fnBuilder.bodyRegion.allBlocks()].find(
+  const parentBlock = harness.fnBuilder.blocks.find(
     (b) => b.id === parentBlockId,
   );
   if (!parentBlock) throw new Error("parent block missing");
@@ -192,7 +192,7 @@ describe("buildLogicalExpression — isolated", () => {
       // currentBlock is now joinBlock — parent block's ops are:
       //   LoadGlobal a, LiteralOp null, BinaryExpression `!=`
       // Navigate back to the parent via term.
-      const parent = [...harness.fnBuilder.bodyRegion.allBlocks()].find(
+      const parent = harness.fnBuilder.blocks.find(
         (b) => b.terminal === term,
       )!;
       const pOps = parent.operations;
@@ -213,7 +213,7 @@ describe("buildLogicalExpression — isolated", () => {
 
     it("truthy arm (lhs != null) passes LHS through — short-circuit", () => {
       const { term, harness } = buildLogicalFromSource("a ?? b;");
-      const parent = [...harness.fnBuilder.bodyRegion.allBlocks()].find(
+      const parent = harness.fnBuilder.blocks.find(
         (b) => b.terminal === term,
       )!;
       const loadA = parent.operations.find(
@@ -237,7 +237,7 @@ describe("buildLogicalExpression — isolated", () => {
   describe("invariants", () => {
     it("generates three fresh blocks (thenBlock, elseBlock, fallthroughBlock are newly created)", () => {
       const { harness, term } = buildLogicalFromSource("a && b;");
-      const allBlocks = [...harness.fnBuilder.bodyRegion.allBlocks()];
+      const allBlocks = harness.fnBuilder.blocks;
       // The three blocks are distinct and exist in the function body.
       expect(allBlocks).toContain(term.thenBlock);
       expect(allBlocks).toContain(term.elseBlock);
@@ -250,4 +250,3 @@ describe("buildLogicalExpression — isolated", () => {
     });
   });
 });
-

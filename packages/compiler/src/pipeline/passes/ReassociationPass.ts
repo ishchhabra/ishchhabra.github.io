@@ -53,7 +53,7 @@ export class ReassociationPass {
 
   public run(): { changed: boolean } {
     let changed = false;
-    for (const block of this.funcOp.allBlocks()) {
+    for (const block of this.funcOp.blocks) {
       for (const op of [...block.operations]) {
         if (!(op instanceof BinaryExpressionOp)) continue;
         if (!isReassociatable(op.operator)) continue;

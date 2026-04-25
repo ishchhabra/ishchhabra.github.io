@@ -1,11 +1,11 @@
-import { BlockId } from "../../ir";
+import { BasicBlock, BlockId } from "../../ir";
 
 /**
  * Minimal block source used by back-edge analysis. The FuncOp
- * satisfies this interface via its `blockIds()` region walker.
+ * satisfies this interface via its `blocks` list.
  */
 export interface BlockIdSource {
-  blockIds(): IterableIterator<BlockId>;
+  blocks: readonly BasicBlock[];
 }
 
 /**
@@ -21,7 +21,7 @@ export function getBackEdgesWithDominance(
   getDominatorsOf: (blockId: BlockId) => ReadonlySet<BlockId>,
 ): Map<BlockId, Set<BlockId>> {
   const dominators = new Map<BlockId, Set<BlockId>>();
-  for (const blockId of blocks.blockIds()) {
+  for (const { id: blockId } of blocks.blocks) {
     dominators.set(blockId, new Set(getDominatorsOf(blockId)));
   }
   return getBackEdges(blocks, dominators, predecessors);
@@ -33,7 +33,7 @@ export function getBackEdges(
   predecessors: Map<BlockId, Set<BlockId>>,
 ): Map<BlockId, Set<BlockId>> {
   const backEdges = new Map<BlockId, Set<BlockId>>();
-  const blockIds = [...blocks.blockIds()];
+  const blockIds = blocks.blocks.map((block) => block.id);
 
   // Initialize empty sets for all blocks
   for (const blockId of blockIds) {

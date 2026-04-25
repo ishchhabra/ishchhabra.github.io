@@ -39,7 +39,7 @@ describe("LoopInfo", () => {
     const dom = DominatorTree.compute(fn);
     const li = LoopInfo.compute(fn, dom);
     expect(li.getTopLevelLoops().length).toBe(0);
-    expect(li.getBackEdgePredecessors(fn.entryBlockId).size).toBe(0);
+    expect(li.getBackEdgePredecessors(fn.entryBlock.id).size).toBe(0);
   });
 
   it("satisfies structural invariants for every discovered loop", () => {

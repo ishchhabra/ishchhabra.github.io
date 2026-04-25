@@ -89,7 +89,7 @@ export class MutabilityInfo {
       }
       sites.push(op);
     };
-    for (const block of funcOp.allBlocks()) {
+    for (const block of funcOp.blocks) {
       for (const op of block.getAllOps()) {
         collectOpWriters(op, record);
       }

@@ -195,7 +195,7 @@ export class SSAEliminator {
     | { kind: "insertAt"; block: BasicBlock; index: number } {
     // All sinks are blocks in the flat CFG. Declarations land at the
     // function entry block — any merge point is dominated by it.
-    return { kind: "append", block: this.funcOp.getBlock(this.funcOp.entryBlockId) };
+    return { kind: "append", block: this.funcOp.entryBlock };
   }
 
   #insertCopyStore(edge: Edge, param: Value, arg: Value): void {
@@ -223,7 +223,7 @@ export class SSAEliminator {
    * and StoreContextOp, so the load-detection side must too.
    */
   #preserveInterferingLoads(): void {
-    for (const block of this.funcOp.allBlocks()) {
+    for (const block of this.funcOp.blocks) {
       this.#preserveInterferingLoadsInBlock(block);
     }
   }

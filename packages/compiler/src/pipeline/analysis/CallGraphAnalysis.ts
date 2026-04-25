@@ -210,7 +210,7 @@ export class CallGraphAnalysis extends ProjectAnalysis<CallGraphResult> {
  */
 function gatherDeclarations(moduleIR: ModuleIR, moduleDecls: Map<DeclarationId, FuncOpId>): void {
   for (const funcIR of moduleIR.functions.values()) {
-    for (const block of funcIR.allBlocks()) {
+    for (const block of funcIR.blocks) {
       for (const instr of block.operations) {
         // function foo() {} — hoisted declaration
         if (instr instanceof FunctionDeclarationOp) {
@@ -254,7 +254,7 @@ function gatherCalls(
 
   // Record call edges.
   for (const funcIR of moduleIR.functions.values()) {
-    for (const block of funcIR.allBlocks()) {
+    for (const block of funcIR.blocks) {
       for (const instr of block.operations) {
         if (!(instr instanceof CallExpressionOp)) {
           continue;

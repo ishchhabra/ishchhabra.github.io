@@ -84,7 +84,7 @@ export class AlgebraicSimplificationPass extends BaseOptimizationPass {
         }
       }
     };
-    for (const block of funcOp.allBlocks()) {
+    for (const block of funcOp.blocks) {
       walkOps(block.operations);
     }
   }
@@ -92,7 +92,7 @@ export class AlgebraicSimplificationPass extends BaseOptimizationPass {
   public step() {
     let changed = false;
 
-    for (const block of this.funcOp.allBlocks()) {
+    for (const block of this.funcOp.blocks) {
       changed ||= this.simplifyBlock(block);
     }
 

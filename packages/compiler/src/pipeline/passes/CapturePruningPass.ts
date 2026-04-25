@@ -1,4 +1,4 @@
-import { Operation, ValueId } from "../../ir";
+import { Operation } from "../../ir";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { Value } from "../../ir/core/Value";
 import { FunctionDeclarationOp } from "../../ir/ops/func/FunctionDeclaration";
@@ -63,10 +63,10 @@ function rebuildWithCaptures(instr: FunctionBearingInstruction, newCaptures: Val
  * After any transformation that modifies a nested function's body (e.g.
  * inlining, constant propagation), a capture slot may become unused — the
  * outer-scope Value is still listed in `captures` but the corresponding
- * `captureParam` inside the inner FuncOp has no readers.
+ * capture param inside the inner FuncOp has no readers.
  *
  * This pass reconciles the two: for each function-bearing instruction, it
- * checks which captureParams are actually read inside the inner function
+ * checks which capture params are actually read inside the inner function
  * body (via the embedded {@link Value.users} chain), and removes capture/captureParam
  * pairs that are dead.
  */
@@ -78,7 +78,7 @@ export class CapturePruningPass extends BaseOptimizationPass {
   protected step(): OptimizationResult {
     let changed = false;
 
-    for (const block of this.funcOp.allBlocks()) {
+    for (const block of this.funcOp.blocks) {
       for (const instr of block.operations) {
         const fields = getFunctionBearingFields(instr);
         if (!fields || fields.captures.length === 0) {
@@ -87,23 +87,12 @@ export class CapturePruningPass extends BaseOptimizationPass {
 
         const { funcOp: innerFuncOp, captures } = fields;
 
-        // Check prologue reads (parameter bindings / lowered setup) —
-        // these are not in blocks, so the embedded use-chains don't cover them.
-        const headerReadIds = new Set<ValueId>();
-        for (const headerInstr of innerFuncOp.prologue) {
-          for (const place of headerInstr.operands()) {
-            headerReadIds.add(place.id);
-          }
-        }
-
-        const isRead = (id: ValueId): boolean => headerReadIds.has(id);
-
         // Determine which capture slots are still live.
-        const captureParams = innerFuncOp.captureParams;
+        const captureParams = innerFuncOp.params.filter((param) => param.kind === "capture");
         const liveIndices: number[] = [];
         for (let j = 0; j < captureParams.length; j++) {
-          const param = captureParams[j];
-          if (param.users.size > 0 || isRead(param.id)) {
+          const param = captureParams[j].value;
+          if (param.users.size > 0) {
             liveIndices.push(j);
           }
         }
@@ -112,7 +101,7 @@ export class CapturePruningPass extends BaseOptimizationPass {
           continue; // All captures are live — nothing to prune.
         }
 
-        // Rebuild captures and captureParams with only the live slots.
+        // Rebuild captures and capture params with only the live slots.
         const newCaptures = liveIndices.map((j) => captures[j]);
         const newCaptureParams = liveIndices.map((j) => captureParams[j]);
 
@@ -121,13 +110,10 @@ export class CapturePruningPass extends BaseOptimizationPass {
           rebuildWithCaptures(instr as FunctionBearingInstruction, newCaptures),
         );
 
-        // Update captureParams on the inner FuncOp to match. Assigning
-        // a fresh readonly array replaces the old list in one shot
-        // rather than mutating it element-by-element. See 3.7 in the
-        // migration status — this cast is the one remaining place the
-        // "captureParams is per-function immutable" invariant is
-        // intentionally punctured.
-        (innerFuncOp as { captureParams: readonly Value[] }).captureParams = newCaptureParams;
+        innerFuncOp.replaceParams([
+          ...innerFuncOp.params.filter((param) => param.kind !== "capture"),
+          ...newCaptureParams,
+        ]);
 
         changed = true;
       }

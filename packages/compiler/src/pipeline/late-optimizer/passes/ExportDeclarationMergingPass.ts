@@ -53,7 +53,7 @@ export class ExportDeclarationMergingPass extends BaseOptimizationPass {
   protected step(): OptimizationResult {
     let changed = false;
 
-    for (const block of this.funcOp.allBlocks()) {
+    for (const block of this.funcOp.blocks) {
       if (this.mergeExportDeclarationsInBlock(block)) {
         changed = true;
       }

@@ -1,6 +1,7 @@
 import type { Expression, Node, PrivateIdentifier } from "oxc-parser";
 import { Environment } from "../../environment";
-import { type DestructureObjectProperty, type DestructureTarget, Value } from "../../ir";
+import { type DestructureObjectProperty, type DestructureTarget, Operation, Value } from "../../ir";
+import type { FunctionParam } from "../../ir/core/FuncOp";
 import type * as AST from "../estree";
 import { type Scope } from "../scope/Scope";
 import { instantiateFunctionParamBindings } from "./bindings/instantiateFunctionParamBindings";
@@ -9,21 +10,7 @@ import { FuncOpBuilder } from "./FuncOpBuilder";
 import { getValueFromStaticKey } from "./getValueFromStaticKey";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
 
-export interface BuiltFunctionParam {
-  place: Value;
-  target: DestructureTarget;
-}
-
-/**
- * One formal parameter after lowering: the runtime param root `place`
- * and the source-level param `target`. The leaf binding Places are
- * discoverable on demand by walking `target` via
- * {@link collectDestructureTargetBindingPlaces}; nothing caches them.
- */
-interface ParamBuildResult {
-  place: Value;
-  target: DestructureTarget;
-}
+type FunctionArgParam = Extract<FunctionParam, { kind: "arg" }>;
 
 export function buildFunctionParams(
   params: AST.Pattern[],
@@ -31,12 +18,11 @@ export function buildFunctionParams(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): BuiltFunctionParam[] {
+): FunctionArgParam[] {
   instantiateFunctionParamBindings(params, scope, functionBuilder, environment);
 
   return params.map((param) => {
-    const result = buildFunctionParam(param, scope, functionBuilder, moduleBuilder, environment);
-    return { place: result.place, target: result.target };
+    return buildFunctionParam(param, scope, functionBuilder, moduleBuilder, environment);
   });
 }
 
@@ -46,7 +32,7 @@ function buildFunctionParam(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): ParamBuildResult {
+): FunctionArgParam {
   if (param.type === "Identifier") {
     return buildFunctionIdentifierParam(param, scope, functionBuilder, environment);
   }
@@ -89,16 +75,20 @@ function buildFunctionIdentifierParam(
   scope: Scope,
   functionBuilder: FuncOpBuilder,
   environment: Environment,
-): ParamBuildResult {
+): FunctionArgParam {
   const place = buildFunctionIdentifierParamPlace(node, scope, functionBuilder, environment);
   const declarationId = place.declarationId;
   functionBuilder.markDeclarationInitialized(declarationId);
   return {
-    place,
-    target: {
-      kind: "binding",
-      place,
-      storage: environment.contextDeclarationIds.has(declarationId) ? "context" : "local",
+    value: place,
+    kind: "arg",
+    source: {
+      target: {
+        kind: "binding",
+        place,
+        storage: environment.contextDeclarationIds.has(declarationId) ? "context" : "local",
+      },
+      ops: [],
     },
   };
 }
@@ -109,8 +99,9 @@ function buildFunctionArrayPatternParam(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): ParamBuildResult {
+): FunctionArgParam {
   const paramPlace = environment.createValue();
+  const ops: Operation[] = [];
   const elements = node.elements.map((element) => {
     // Holes in array patterns (e.g. `function([,b]){}`) are structural markers
     // in the pattern shape, not values in the data-flow graph.
@@ -119,11 +110,16 @@ function buildFunctionArrayPatternParam(
     }
 
     const result = buildFunctionParam(element, scope, functionBuilder, moduleBuilder, environment);
-    return result.target;
+    ops.push(...result.source.ops);
+    return result.source.target;
   });
   return {
-    place: paramPlace,
-    target: { kind: "array", elements },
+    value: paramPlace,
+    kind: "arg",
+    source: {
+      target: { kind: "array", elements },
+      ops,
+    },
   };
 }
 
@@ -133,8 +129,9 @@ function buildFunctionObjectPatternParam(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): ParamBuildResult {
+): FunctionArgParam {
   const place = environment.createValue();
+  const ops: Operation[] = [];
   const properties: DestructureObjectProperty[] = node.properties.map((property) => {
     if (property.type === "Property") {
       let key: string | number | Value;
@@ -147,7 +144,7 @@ function buildFunctionObjectPatternParam(
           throw new Error("Object pattern computed key must be a single place");
         }
         const keyInstructions = functionBuilder.currentBlock.spliceInstructions(insertPoint);
-        functionBuilder.addHeaderOps(keyInstructions);
+        ops.push(...keyInstructions);
         key = p;
       } else {
         key = buildFunctionObjectPropertyKey(property.key);
@@ -161,11 +158,12 @@ function buildFunctionObjectPatternParam(
         moduleBuilder,
         environment,
       );
+      ops.push(...valueResult.source.ops);
       return {
         key,
         computed: property.computed,
         shorthand: property.shorthand,
-        value: valueResult.target,
+        value: valueResult.source.target,
       };
     }
 
@@ -177,13 +175,14 @@ function buildFunctionObjectPatternParam(
         moduleBuilder,
         environment,
       );
+      ops.push(...argumentResult.source.ops);
       return {
         key: "rest",
         computed: false,
         shorthand: false,
         value: {
           kind: "rest",
-          argument: argumentResult.target,
+          argument: argumentResult.source.target,
         },
       };
     }
@@ -191,8 +190,12 @@ function buildFunctionObjectPatternParam(
     throw new Error("Unsupported object pattern property");
   });
   return {
-    place,
-    target: { kind: "object", properties },
+    value: place,
+    kind: "arg",
+    source: {
+      target: { kind: "object", properties },
+      ops,
+    },
   };
 }
 
@@ -212,7 +215,7 @@ function buildFunctionAssignmentPatternParam(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): ParamBuildResult {
+): FunctionArgParam {
   // buildNode emits instructions into the current block, but parameter default
   // value instructions must live in the function header for codegen.
   const insertPoint = functionBuilder.currentBlock.operations.length;
@@ -221,7 +224,6 @@ function buildFunctionAssignmentPatternParam(
     throw new Error("Default value must be a single expression");
   }
   const defaultValueInstructions = functionBuilder.currentBlock.spliceInstructions(insertPoint);
-  functionBuilder.addHeaderOps(defaultValueInstructions);
 
   const leftResult = buildFunctionParam(
     node.left,
@@ -231,11 +233,15 @@ function buildFunctionAssignmentPatternParam(
     environment,
   );
   return {
-    place: environment.createValue(),
-    target: {
-      kind: "assignment",
-      left: leftResult.target,
-      right: rightPlace,
+    value: environment.createValue(),
+    kind: "arg",
+    source: {
+      target: {
+        kind: "assignment",
+        left: leftResult.source.target,
+        right: rightPlace,
+      },
+      ops: [...defaultValueInstructions, ...leftResult.source.ops],
     },
   };
 }
@@ -246,7 +252,7 @@ function buildFunctionRestElementParam(
   functionBuilder: FuncOpBuilder,
   moduleBuilder: ModuleIRBuilder,
   environment: Environment,
-): ParamBuildResult {
+): FunctionArgParam {
   const argumentResult = buildFunctionParam(
     node.argument,
     scope,
@@ -255,10 +261,14 @@ function buildFunctionRestElementParam(
     environment,
   );
   return {
-    place: environment.createValue(),
-    target: {
-      kind: "rest",
-      argument: argumentResult.target,
+    value: environment.createValue(),
+    kind: "arg",
+    source: {
+      target: {
+        kind: "rest",
+        argument: argumentResult.source.target,
+      },
+      ops: argumentResult.source.ops,
     },
   };
 }

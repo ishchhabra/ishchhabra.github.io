@@ -22,10 +22,10 @@ describe("DominatorTree", () => {
       }
     `);
     const dom = DominatorTree.compute(fn);
-    const root = fn.entryBlockId;
+    const root = fn.entryBlock.id;
     expect(dom.getRoot()).toBe(root);
     expect(dom.getImmediateDominator(root)).toBeUndefined();
-    for (const blockId of fn.blockIds()) {
+    for (const { id: blockId } of fn.blocks) {
       expect(dom.dominates(root, blockId)).toBe(true);
       expect(dom.dominates(blockId, blockId)).toBe(true);
     }
@@ -40,8 +40,8 @@ describe("DominatorTree", () => {
       }
     `);
     const dom = DominatorTree.compute(fn);
-    const root = fn.entryBlockId;
-    for (const blockId of fn.blockIds()) {
+    const root = fn.entryBlock.id;
+    for (const { id: blockId } of fn.blocks) {
       expect(dom.findNearestCommonDominator(root, blockId)).toBe(root);
     }
   });
@@ -55,8 +55,8 @@ describe("DominatorTree", () => {
       }
     `);
     const dom = DominatorTree.compute(fn);
-    const root = fn.entryBlockId;
-    for (const blockId of fn.blockIds()) {
+    const root = fn.entryBlock.id;
+    for (const { id: blockId } of fn.blocks) {
       const idom = dom.getImmediateDominator(blockId);
       if (blockId === root) {
         expect(idom).toBeUndefined();

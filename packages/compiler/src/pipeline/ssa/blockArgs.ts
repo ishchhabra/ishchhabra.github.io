@@ -66,7 +66,7 @@ export function forEachIncomingEdge(
   sink: EdgeSink,
   visit: (edge: Edge) => void,
 ): void {
-  const blocks = Array.from(funcOp.allBlocks());
+  const blocks = Array.from(funcOp.blocks);
   for (const predBlock of blocks) {
     forEachOutgoingEdge(funcOp, predBlock, (edge) => {
       if (sinkEquals(edge.sink, sink)) visit(edge);
@@ -80,9 +80,9 @@ export function forEachIncomingEdge(
  */
 export function collectAllSinks(funcOp: FuncOp): EdgeSink[] {
   const sinks: EdgeSink[] = [];
-  const entryBlockId = funcOp.entryBlockId;
-  for (const block of funcOp.allBlocks()) {
-    if (block.id !== entryBlockId && block.params.length > 0) {
+  const entryBlock = funcOp.entryBlock;
+  for (const block of funcOp.blocks) {
+    if (block !== entryBlock && block.params.length > 0) {
       sinks.push({ kind: "block", block });
     }
   }

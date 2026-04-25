@@ -154,13 +154,10 @@ export class ConstantPropagationPass {
    */
   private seed(): void {
     for (const param of this.funcOp.params) {
-      this.setLattice(param, BOTTOM);
-    }
-    for (const captureParam of this.funcOp.captureParams) {
-      this.setLattice(captureParam, BOTTOM);
+      this.setLattice(param.value, BOTTOM);
     }
     // Non-SSA block params on merge sinks start TOP and converge.
-    for (const block of this.funcOp.allBlocks()) {
+    for (const block of this.funcOp.blocks) {
       for (const op of block.getAllOps()) {
         this.evaluate(op);
       }
@@ -549,7 +546,7 @@ export class ConstantPropagationPass {
    */
   private apply(): boolean {
     let changed = false;
-    for (const block of this.funcOp.allBlocks()) {
+    for (const block of this.funcOp.blocks) {
       for (const op of [...block.operations]) {
         if (op instanceof LiteralOp) continue;
         if (op.place === undefined) continue;

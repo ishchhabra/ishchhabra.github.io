@@ -23,7 +23,7 @@ export function computeProcessingOrder(moduleIR: ModuleIR): FuncOp[] {
 
   // Map declarationIds to FuncOpIds for call resolution.
   for (const funcIR of moduleIR.functions.values()) {
-    for (const block of funcIR.allBlocks()) {
+    for (const block of funcIR.blocks) {
       for (const instr of block.operations) {
         if (instr instanceof FunctionDeclarationOp) {
           declToFunc.set(instr.place.declarationId, instr.funcOp.id);
@@ -53,7 +53,7 @@ export function computeProcessingOrder(moduleIR: ModuleIR): FuncOp[] {
     }
 
     // Calls: caller depends on callee (intra-module only).
-    for (const block of funcIR.allBlocks()) {
+    for (const block of funcIR.blocks) {
       for (const instr of block.operations) {
         if (!(instr instanceof CallExpressionOp)) continue;
 

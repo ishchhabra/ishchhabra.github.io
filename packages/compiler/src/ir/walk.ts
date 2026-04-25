@@ -1,7 +1,6 @@
 import type { BasicBlock } from "./core/Block";
 import type { FuncOp } from "./core/FuncOp";
 import type { Operation } from "./core/Operation";
-import type { Region } from "./core/Region";
 
 /**
  * MLIR-style `Operation::walk` — recursively visit every op reachable
@@ -28,12 +27,6 @@ export function walkOp(op: Operation, visit: WalkVisitor): void {
   visit(op);
 }
 
-export function walkRegion(region: Region, visit: WalkVisitor): void {
-  for (const block of region.blocks) {
-    walkBlock(block, visit);
-  }
-}
-
 export function walkBlock(block: BasicBlock, visit: WalkVisitor): void {
   // MLIR-style: terminator is logically the last op in the block.
   // getAllOps() yields instructions then terminator in program order.
@@ -43,9 +36,8 @@ export function walkBlock(block: BasicBlock, visit: WalkVisitor): void {
 }
 
 /**
- * Walk every op in a function — source header, runtime prologue,
- * and every block's op list (regular instructions, structured ops,
- * terminator). Recurses into any regions owned by the ops visited.
+ * Walk every op in a function — every block's op list (regular
+ * instructions, structured ops, terminator).
  *
  * This is the convenience entry-point for passes that want "touch
  * every op in this function once." Block params are not ops and are
@@ -53,8 +45,7 @@ export function walkBlock(block: BasicBlock, visit: WalkVisitor): void {
  * directly.
  */
 export function walkFunction(funcOp: FuncOp, visit: WalkVisitor): void {
-  for (const op of funcOp.prologue) walkOp(op, visit);
-  for (const block of funcOp.allBlocks()) {
+  for (const block of funcOp.blocks) {
     walkBlock(block, visit);
   }
 }

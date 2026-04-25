@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { Environment } from "../../environment";
 import { ProjectEnvironment } from "../../ProjectEnvironment";
 import { BasicBlock, LiteralOp, ReturnTermOp, StoreLocalOp } from "../../ir";
-import { Region } from "../../ir/core/Region";
 import { FuncOp, makeFuncOpId } from "../../ir/core/FuncOp";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { BranchTermOp, JumpTermOp } from "../../ir/ops/control";
@@ -32,12 +31,9 @@ function buildBranchEdgePhiFixture(): { entry: BasicBlock; join: BasicBlock; fun
     moduleIR,
     makeFuncOpId(env.nextOperationId++),
     [],
-    [],
-    [],
-    [],
     false,
     false,
-    new Region([entry, join]),
+    [entry, join],
   );
 
   return { entry, join, funcOp, moduleIR };

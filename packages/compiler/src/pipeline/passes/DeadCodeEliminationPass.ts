@@ -1,6 +1,5 @@
 import { Environment } from "../../environment";
 import { FuncOp } from "../../ir/core/FuncOp";
-import { Operation, Trait } from "../../ir/core/Operation";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { LivenessAnalysis, LivenessResult } from "../analysis/LivenessAnalysis";
 import { BaseOptimizationPass, OptimizationResult } from "../late-optimizer/OptimizationPass";
@@ -48,23 +47,10 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
     return { changed };
   }
 
-  /**
-   * A structured op is live iff any def anywhere inside its regions
-   * is live — including result places, nested op defs, and contained
-   * block params. Walking the full region tree keeps loop-carried
-   * mutations alive even when the op itself has no outer defs.
-   */
-  private structureHasLiveDef(op: Operation, liveness: LivenessResult): boolean {
-    for (const p of op.results()) {
-      if (liveness.isLive(p.id)) return true;
-    }
-    return false;
-  }
-
   private removeDeadBlockParams(liveness: LivenessResult): boolean {
     let changed = false;
 
-    for (const block of this.funcOp.allBlocks()) {
+    for (const block of this.funcOp.blocks) {
       if (block.params.length === 0) continue;
       if (this.hasStructuredOpIncomingEdge(block)) continue;
 
@@ -92,7 +78,7 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
    */
   private hasStructuredOpIncomingEdge(block: import("../../ir/core/Block").BasicBlock): boolean {
     let flagged = false;
-    for (const predBlock of this.funcOp.allBlocks()) {
+    for (const predBlock of this.funcOp.blocks) {
       forEachOutgoingEdge(this.funcOp, predBlock, (edge) => {
         if (flagged) return;
         if (edge.sink.kind !== "block" || edge.sink.block !== block) return;
@@ -108,16 +94,9 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
   private removeDeadInstructions(liveness: LivenessResult): boolean {
     let changed = false;
 
-    for (const block of this.funcOp.allBlocks()) {
+    for (const block of this.funcOp.blocks) {
       for (let i = block.operations.length - 1; i >= 0; i--) {
         const op = block.operations[i];
-        if (op.hasTrait(Trait.HasRegions)) {
-          if (op.hasSideEffects(this.environment)) continue;
-          if (this.structureHasLiveDef(op, liveness)) continue;
-          block.removeOpAt(i);
-          changed = true;
-          continue;
-        }
         if (op.hasSideEffects(this.environment)) continue;
         if (op.results().some((p) => liveness.isLive(p.id))) continue;
         block.removeOpAt(i);

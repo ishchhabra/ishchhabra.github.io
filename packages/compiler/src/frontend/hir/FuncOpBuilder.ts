@@ -1,8 +1,6 @@
 import type { BlockStatement, Expression, Node, Program, Statement } from "oxc-parser";
 import { Environment } from "../../environment";
 import {
-  ArrayDestructureOp,
-  ArrayExpressionOp,
   Operation,
   BasicBlock,
   BlockId,
@@ -11,10 +9,9 @@ import {
   DeclarationId,
   type DeclarationKind,
   Value,
-  Region,
   ReturnTermOp,
 } from "../../ir";
-import { FuncOp, type FuncOpId, makeFuncOpId } from "../../ir/core/FuncOp";
+import { FuncOp, type FuncOpId, type FunctionParam, makeFuncOpId } from "../../ir/core/FuncOp";
 import { VERIFY_IR } from "../../ir/verify";
 import type * as AST from "../estree";
 import { isExpression, unwrapTSTypeWrappers } from "../estree";
@@ -29,51 +26,17 @@ export type DeclarationState = "uninitialized" | "initialized";
 
 export class FuncOpBuilder {
   public currentBlock: BasicBlock;
-  /**
-   * Full list of entry-time setup ops, handed to `FuncOp.prologue`
-   * at build time. Includes everything in {@link header} plus any
-   * runtime-only ops (param-array gathering, lowered destructuring)
-   * that passes see but codegen doesn't.
-   */
-  public readonly prologue: Operation[] = [];
-  /**
-   * Strict subset of {@link prologue}: ops that codegen walks during
-   * signature emission (default values, computed destructure keys).
-   * `addHeaderOp` pushes to both; runtime-only ops go into `prologue`
-   * alone.
-   */
-  public readonly header: Operation[] = [];
   public readonly controlStack: ControlContext[] = [];
   public readonly blockLabels: Map<BlockId, string> = new Map();
 
-  /**
-   * The function's top-level body region. The source of truth for
-   * block ownership — `addBlock` always appends to the region on top
-   * of {@link regionStack}, which starts with this body region and
-   * grows when structured-CF builders push a nested region.
-   */
-  public readonly bodyRegion: Region;
-
-  /**
-   * Region stack. Always non-empty: the bottom is the function's
-   * body region, and structured-CF builders push inner regions on
-   * top via {@link withStructureRegion} so blocks created while the
-   * inner region is on top land inside it.
-   */
-  private readonly regionStack: Region[];
+  /** Function-owned blocks in CFG order. */
+  public readonly blocks: BasicBlock[] = [];
 
   /**
    * Transient set of every block id that belongs to this builder's
    * function, populated on every {@link addBlock}. Used only during
    * the building phase so queries like {@link isOwnDeclaration} can
-   * check "is this block mine?" before the region hierarchy is fully
-   * attached — when a nested structure region is still floating
-   * (its owning BlockOp / IfOp / ... hasn't been instantiated yet)
-   * its blocks are not yet reachable from `bodyRegion.allBlocks()`.
-   *
-   * This is NOT exposed on the built `FuncOp`: once building is done
-   * and every region is attached to its owning op, the region tree
-   * is the single source of truth.
+   * check "is this block mine?" before the final FuncOp is created.
    */
   private readonly ownedBlockIds: Set<BlockId> = new Set();
 
@@ -128,50 +91,28 @@ export class FuncOpBuilder {
   ) {
     this.funcOpId = makeFuncOpId(this.environment.nextOperationId++);
     this.parentFuncOpId = parentFuncOpId;
-    this.bodyRegion = new Region([]);
-    this.regionStack = [this.bodyRegion];
     const entryBlock = this.environment.createBlock();
     this.addBlock(entryBlock);
     this.currentBlock = entryBlock;
   }
 
   /**
-   * Register a newly-created block with the builder by appending it
-   * to the region on top of {@link regionStack}. The stack always
-   * has the function's {@link bodyRegion} at the bottom, so blocks
-   * created outside any structured-CF builder land in the body
-   * region. Structured-CF builders push their own region via
-   * {@link withStructureRegion} so blocks built while that region is
-   * on top land inside it. The block id is also recorded in the
-   * transient {@link ownedBlockIds} set so `isOwnDeclaration` can
-   * tell "this block is mine" before the whole region hierarchy is
-   * attached.
+   * Register a newly-created block with the builder. The block id is
+   * also recorded in the transient {@link ownedBlockIds} set so
+   * `isOwnDeclaration` can tell "this block is mine" before the
+   * final FuncOp is created.
    */
   /** Look up a block by id among those owned by this builder. */
   public maybeBlock(id: BlockId): BasicBlock | undefined {
-    for (const b of this.bodyRegion.allBlocks()) {
+    for (const b of this.blocks) {
       if (b.id === id) return b;
     }
     return undefined;
   }
 
   public addBlock(block: BasicBlock): void {
-    this.regionStack[this.regionStack.length - 1].appendBlock(block);
+    this.blocks.push(block);
     this.ownedBlockIds.add(block.id);
-  }
-
-  /**
-   * Run `fn` with `region` pushed onto the region stack. Any block
-   * created via {@link addBlock} inside `fn` (and not claimed by a
-   * more deeply nested structure region) is appended to `region`.
-   */
-  public withStructureRegion<T>(region: Region, fn: () => T): T {
-    this.regionStack.push(region);
-    try {
-      return fn();
-    } finally {
-      this.regionStack.pop();
-    }
   }
 
   /** Resolve the scope for a given AST node. */
@@ -195,30 +136,6 @@ export class FuncOpBuilder {
       this.moduleBuilder,
       this.environment,
     );
-    const params = builtParams.map((p) => p.place);
-    const paramTargets = builtParams.map((p) => p.target);
-    const requiresRuntimeParamDestructure = builtParams.some(
-      (param) => param.target.kind !== "binding" || param.target.place !== param.place,
-    );
-    if (requiresRuntimeParamDestructure) {
-      const runtimeParamArray = this.environment.createOperation(
-        ArrayExpressionOp,
-        this.environment.createValue(),
-        params,
-      );
-      this.prologue.push(runtimeParamArray);
-
-      const runtimeParamDestructure = this.environment.createOperation(
-        ArrayDestructureOp,
-        this.environment.createValue(),
-        paramTargets,
-        runtimeParamArray.place,
-        "declaration",
-        "const",
-      );
-      this.prologue.push(runtimeParamDestructure);
-    }
-
     const functionId = this.funcOpId;
 
     const effectiveBody = unwrapTSTypeWrappers(this.bodyNode) as
@@ -259,12 +176,13 @@ export class FuncOpBuilder {
       );
     }
 
-    // Textbook MLIR: function parameters are the entry block's block
-    // parameters. Each formal param's SSA root Value binds to the
-    // entry block's params[i] slot, and the caller supplies argument
-    // values when it invokes the function. Same Value instances that
-    // used to live in `FunctionRuntime.params`.
-    this.bodyRegion.entry.params = params;
+    const functionParams: FunctionParam[] = [
+      ...builtParams,
+      ...[...this.captureParams.values()].map((value): FunctionParam => ({
+        value,
+        kind: "capture",
+      })),
+    ];
 
     // The constructor self-registers in moduleIR.functions, so no explicit
     // registration step is needed here.
@@ -272,13 +190,10 @@ export class FuncOpBuilder {
     const funcOp = new FuncOp(
       this.moduleBuilder.moduleIR,
       functionId,
-      this.prologue,
-      this.header,
-      paramTargets,
-      [...this.captureParams.values()],
+      functionParams,
       this.async,
       this.generator,
-      this.bodyRegion,
+      this.blocks,
       this.blockLabels,
       this.parentFuncOpId,
       bodyScopeKind,
@@ -291,14 +206,10 @@ export class FuncOpBuilder {
     if (VERIFY_IR) instruction.verify();
   }
 
-  public addHeaderOp(instruction: Operation) {
-    this.prologue.push(instruction);
-    this.header.push(instruction);
-  }
-
   public addHeaderOps(ops: Operation[]) {
-    this.prologue.push(...ops);
-    this.header.push(...ops);
+    for (const op of ops) {
+      this.blocks[0]!.appendOp(op);
+    }
   }
 
   public registerDeclarationName(name: string, declarationId: DeclarationId, scope: Scope) {

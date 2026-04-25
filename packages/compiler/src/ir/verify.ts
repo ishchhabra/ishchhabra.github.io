@@ -24,20 +24,19 @@ export const VERIFY_IR: boolean =
   (process.env.VITEST === "true" || process.env.NODE_ENV === "test");
 
 export function verifyFunction(funcOp: FuncOp): void {
-  const knownBlocks = new Set<BasicBlock>(funcOp.allBlocks());
+  const knownBlocks = new Set<BasicBlock>(funcOp.blocks);
 
-  for (const op of funcOp.prologue) op.verify();
-  for (const block of funcOp.allBlocks()) {
+  for (const block of funcOp.blocks) {
     for (const op of block.getAllOps()) op.verify();
   }
 
-  for (const block of funcOp.allBlocks()) {
+  for (const block of funcOp.blocks) {
     if (block.terminal === undefined) {
       throw new Error(`IR verify: block bb${block.id} has no terminal`);
     }
   }
 
-  for (const block of funcOp.allBlocks()) {
+  for (const block of funcOp.blocks) {
     for (const op of block.getAllOps()) {
       if (!(op instanceof TermOp)) continue;
       for (const successor of op.successors()) {

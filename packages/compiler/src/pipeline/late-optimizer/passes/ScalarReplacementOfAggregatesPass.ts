@@ -125,7 +125,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
   private stepDestructuring(): boolean {
     let changed = false;
 
-    for (const block of this.funcOp.allBlocks()) {
+    for (const block of this.funcOp.blocks) {
       for (let i = 0; i < block.operations.length; i++) {
         const instr = block.operations[i];
         let valuePlace: Value;
@@ -184,7 +184,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
       { objExpr: ObjectExpressionOp; propMap: Map<string, Value> }
     >();
 
-    for (const block of this.funcOp.allBlocks()) {
+    for (const block of this.funcOp.blocks) {
       for (const instr of block.operations) {
         if (!(instr instanceof ObjectExpressionOp)) continue;
         if (!escapeResult.doesNotEscape(instr.place.id)) continue;
@@ -207,7 +207,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
     const rewrites = new Map<Value, Value>();
     const toRemove = new Map<BasicBlock, number[]>();
 
-    for (const block of this.funcOp.allBlocks()) {
+    for (const block of this.funcOp.blocks) {
       for (let i = 0; i < block.operations.length; i++) {
         const instr = block.operations[i];
         if (!(instr instanceof LoadStaticPropertyOp)) continue;
@@ -246,7 +246,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
     //    values. `block.rewriteAll` walks terminators too — including
     //    their block-args edge operands — so no separate merge-value
     //    fixup is needed.
-    for (const block of this.funcOp.allBlocks()) {
+    for (const block of this.funcOp.blocks) {
       for (const op of [...block.getAllOps()]) {
         const rewritten = op.rewrite(rewrites);
         if (rewritten !== op) block.replaceOp(op, rewritten);
@@ -287,7 +287,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
   private removeModifiedObjects(
     candidates: Map<ValueId, { objExpr: ObjectExpressionOp; propMap: Map<string, Value> }>,
   ): void {
-    for (const block of this.funcOp.allBlocks()) {
+    for (const block of this.funcOp.blocks) {
       for (const instr of block.operations) {
         // Direct property stores.
         if (instr instanceof StoreStaticPropertyOp || instr instanceof StoreDynamicPropertyOp) {
@@ -332,7 +332,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
     const rewrites = new Map<Value, Value>();
     const toRemove = new Map<BasicBlock, number[]>();
 
-    for (const block of this.funcOp.allBlocks()) {
+    for (const block of this.funcOp.blocks) {
       // Virtual state: objectId → (propertyKey → current value Value)
       const virtualState = new Map<ValueId, Map<string, Value>>();
 
@@ -426,7 +426,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
     // `block.rewriteAll` walks terminators too, so the block-args
     // edge operands are rewritten in the same sweep; we just rebuild
     // phis from the updated block args afterward.
-    for (const block of this.funcOp.allBlocks()) {
+    for (const block of this.funcOp.blocks) {
       for (const op of [...block.getAllOps()]) {
         const rewritten = op.rewrite(rewrites);
         if (rewritten !== op) block.replaceOp(op, rewritten);
@@ -453,7 +453,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
     const escapeResult = this.AM.get(EscapeAnalysis, this.funcOp);
     const toRemove = new Map<BasicBlock, number[]>();
 
-    for (const block of this.funcOp.allBlocks()) {
+    for (const block of this.funcOp.blocks) {
       for (let i = 0; i < block.operations.length; i++) {
         const instr = block.operations[i];
 

@@ -43,7 +43,7 @@ export function buildFn(source: string): FuncOp {
 
 export function printFn(fn: FuncOp): string {
   const lines: string[] = [];
-  for (const block of fn.allBlocks()) {
+  for (const block of fn.blocks) {
     lines.push(`bb${block.id}:`);
     for (const op of block.operations) lines.push("  " + op.print());
     if (block.terminal) lines.push("  " + block.terminal.print());
@@ -52,7 +52,7 @@ export function printFn(fn: FuncOp): string {
 }
 
 export function findOp<T extends Operation>(fn: FuncOp, Ctor: new (...args: never[]) => T): T {
-  for (const block of fn.allBlocks()) {
+  for (const block of fn.blocks) {
     for (const op of block.operations) if (op instanceof Ctor) return op as T;
   }
   throw new Error(`op of type ${Ctor.name} not found`);

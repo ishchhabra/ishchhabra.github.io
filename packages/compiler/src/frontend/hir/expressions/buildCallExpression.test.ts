@@ -201,7 +201,7 @@ describe("buildCallExpression — super", () => {
 
     let superCall: SuperCallOp | undefined;
     for (const fn of mod.functions.values()) {
-      for (const block of fn.allBlocks()) {
+      for (const block of fn.blocks) {
         for (const op of block.operations) {
           if (op instanceof SuperCallOp) {
             superCall = op;

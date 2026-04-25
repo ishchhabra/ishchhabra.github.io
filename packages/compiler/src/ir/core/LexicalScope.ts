@@ -21,7 +21,7 @@ export function makeScopeId(id: number): ScopeId {
  * `makeLexicalScopeId`, and `Environment.scopes` registry have been
  * deleted. Scope identity no longer needs to survive past frontend
  * building: the MLIR-style region tree carries scope KIND on each
- * {@link Region}, and the function inliner walks
+ * the function body, and the function inliner walks
  * `FuncOp.parentFuncOpId` for visibility checks.
  */
 export type LexicalScopeKind =

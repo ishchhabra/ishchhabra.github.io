@@ -39,8 +39,6 @@ export const enum Trait {
   Pure = "Pure",
   /** Introduces a new lexical scope. */
   IntroducesScope = "IntroducesScope",
-  /** Owns one or more nested regions (structured control flow). */
-  HasRegions = "HasRegions",
 }
 
 // ---------------------------------------------------------------------
