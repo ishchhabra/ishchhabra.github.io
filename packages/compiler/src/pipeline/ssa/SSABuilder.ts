@@ -20,7 +20,6 @@ import { ExportDefaultDeclarationOp } from "../../ir/ops/module/ExportDefaultDec
 import { BranchTermOp, JumpTermOp } from "../../ir/ops/control";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { DominatorTreeAnalysis, type DominatorTree } from "../analysis/DominatorTreeAnalysis";
-import { createParamValue } from "./utils";
 
 type Stacks = Map<DeclarationId, Value[]>;
 
@@ -328,7 +327,7 @@ export class SSABuilder {
       for (const frontier of domTree.getDominanceFrontier(block)) {
         if (hasParam.has(frontier)) continue;
 
-        const place = createParamValue(this.moduleIR.environment);
+        const place = this.moduleIR.environment.createValue();
         place.originalDeclarationId = declId;
 
         const frontierBlock = this.requireBlock(frontier);
