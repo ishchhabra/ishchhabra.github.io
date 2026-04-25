@@ -118,48 +118,103 @@ export function generateWhileTerm(
   const hostBlock = term.parentBlock;
   return withFallthrough(term.exitBlock, funcOp, generator, () => {
     const savedControl = generator.controlStack.length;
+    const testBlock = term.testBlock;
     if (hostBlock !== null) {
       generator.controlStack.push({
         kind: "loop",
         label: term.label,
         breakTarget: term.exitBlock.id,
-        continueTarget: hostBlock.id,
+        // `continue` in a do-while skips to the test (cond eval); for
+        // a while loop, hostBlock is itself the test landing pad.
+        continueTarget: term.kind === "do-while" ? testBlock.id : hostBlock.id,
         structured: false,
       });
     }
 
-    // Emit testBlock's non-terminator ops for their codegen side
-    // effects (populating generator.values with the cond expression),
-    // and collect the emitted statements so we can lower them into
-    // a sequence expression fed into `while (...)`. The BranchTermOp
-    // is NOT emitted here — we read cond from it directly.
-    const testBlock = term.testBlock;
-    if (!generator.generatedBlocks.has(testBlock.id)) {
-      generator.generatedBlocks.add(testBlock.id);
-    }
-    for (const binding of testBlock.entryBindings) {
-      if (!generator.values.has(binding.id)) generator.getPlaceIdentifier(binding);
-    }
-    const testStmts: Array<t.Statement> = [];
-    for (const op of testBlock.operations) {
-      testStmts.push(...generateOp(op, funcOp, generator));
-    }
     const branch = testBlock.terminal;
     if (!(branch instanceof BranchTermOp)) {
       throw new Error(
         `WhileTermOp expected testBlock to end in BranchTermOp, got ${branch?.constructor.name}`,
       );
     }
-    const condNode = generator.values.get(branch.cond.id);
-    if (condNode === undefined) {
-      throw new Error(`Value ${branch.cond.id} not found for WhileTermOp cond`);
-    }
-    t.assertExpression(condNode);
 
-    const bodyStatements = emitArm(term.bodyBlock, funcOp, generator);
+    // Emission order:
+    //  - while: test runs first per JS semantics; body may reference
+    //    values the test defines (e.g. `while (depth--)` body reads
+    //    the post-decrement value), so emit test first.
+    //  - do-while: body runs first; test may reference body-defined
+    //    values (e.g. `do { i++ } while (i < 10)`), and body's
+    //    terminator JumpTermOp(testBlock) must be elided via the
+    //    fallthrough stack so codegen falls through into the test
+    //    naturally.
+    let testStmts: Array<t.Statement> = [];
+    let condNode: t.Expression | undefined;
+    const emitTest = (): void => {
+      if (!generator.generatedBlocks.has(testBlock.id)) {
+        generator.generatedBlocks.add(testBlock.id);
+      }
+      for (const binding of testBlock.entryBindings) {
+        if (!generator.values.has(binding.id)) generator.getPlaceIdentifier(binding);
+      }
+      for (const op of testBlock.operations) {
+        testStmts.push(...generateOp(op, funcOp, generator));
+      }
+      const cond = generator.values.get(branch.cond.id);
+      if (cond === undefined) {
+        throw new Error(`Value ${branch.cond.id} not found for WhileTermOp cond`);
+      }
+      t.assertExpression(cond);
+      condNode = cond;
+    };
+
+    let bodyStatements: Array<t.Statement>;
+    if (term.kind === "do-while") {
+      generator.structuredFallthroughStack.push(testBlock.id);
+      bodyStatements = emitArm(term.bodyBlock, funcOp, generator);
+      const popped = generator.structuredFallthroughStack.pop();
+      if (popped !== testBlock.id) {
+        throw new Error("structuredFallthroughStack corrupted (do-while body)");
+      }
+      emitTest();
+    } else {
+      emitTest();
+      bodyStatements = emitArm(term.bodyBlock, funcOp, generator);
+    }
+    if (condNode === undefined) {
+      throw new Error("WhileTermOp: cond not emitted");
+    }
+
+    // For do-while, the loop's back-edge goes from the test's true arm
+    // to the hostBlock. SSAEliminator splits that critical edge into a
+    // synthetic block holding the per-iteration phi copies. Inline its
+    // ops into the test sequence so they run on each iteration before
+    // the next body run. (For `while`, the equivalent copies live at
+    // the end of bodyBlock and get emitted by the body walk above.)
+    if (term.kind === "do-while" && hostBlock !== null && branch.trueTarget !== hostBlock) {
+      const split = branch.trueTarget;
+      const splitTerm = split.terminal;
+      if (splitTerm instanceof JumpTermOp && splitTerm.target === hostBlock) {
+        if (!generator.generatedBlocks.has(split.id)) {
+          generator.generatedBlocks.add(split.id);
+          for (const op of split.operations) {
+            testStmts.push(...generateOp(op, funcOp, generator));
+          }
+        }
+      }
+    }
+
     generator.controlStack.length = savedControl;
 
     const { testExpression, hoistedDeclarations } = lowerTestStatements(testStmts, condNode);
+
+    // For do-while, body executes inside its own block scope. If the
+    // test expression (or any code emitted past the loop) references
+    // `const $X = expr;` declarations in body, those bindings must be
+    // hoisted to outer scope — JS block scoping makes body-scoped
+    // `const`/`let` invisible in the `while (...)` clause.
+    if (term.kind === "do-while") {
+      hoistBodyDeclsReferencedByTest(bodyStatements, testExpression, hoistedDeclarations);
+    }
 
     let loopStmt: t.Statement;
     if (term.kind === "do-while") {
@@ -172,6 +227,86 @@ export function generateWhileTerm(
     }
     return [...hoistedDeclarations, loopStmt];
   });
+}
+
+/**
+ * For do-while, walk top-level body statements looking for
+ * `const X = expr;` / `let X = expr;` declarations whose name is
+ * referenced inside the test expression. JS block scopes such
+ * declarations to the body block, but the `while (...)` clause sits
+ * outside it — so any test reference would ReferenceError. Rewrite
+ * each such declarator to `X = expr;` and prepend a `let X;` to
+ * hoistedDeclarations.
+ */
+function hoistBodyDeclsReferencedByTest(
+  bodyStatements: t.Statement[],
+  testExpression: t.Expression,
+  hoistedDeclarations: t.Statement[],
+): void {
+  const referenced = collectReferencedIdentifiers(testExpression);
+  if (referenced.size === 0) return;
+
+  for (let i = 0; i < bodyStatements.length; i++) {
+    const stmt = bodyStatements[i];
+    if (!t.isVariableDeclaration(stmt)) continue;
+    if (stmt.kind !== "const" && stmt.kind !== "let") continue;
+
+    const keep: t.VariableDeclarator[] = [];
+    const replacements: t.Statement[] = [];
+    for (const decl of stmt.declarations) {
+      if (!t.isIdentifier(decl.id) || !referenced.has(decl.id.name) || decl.init === null || decl.init === undefined) {
+        keep.push(decl);
+        continue;
+      }
+      hoistedDeclarations.push(
+        t.variableDeclaration("let", [t.variableDeclarator(t.identifier(decl.id.name), null)]),
+      );
+      replacements.push(
+        t.expressionStatement(
+          t.assignmentExpression("=", t.identifier(decl.id.name), decl.init),
+        ),
+      );
+    }
+
+    if (replacements.length === 0) continue;
+    if (keep.length > 0) {
+      bodyStatements.splice(
+        i,
+        1,
+        t.variableDeclaration(stmt.kind, keep),
+        ...replacements,
+      );
+      i += replacements.length;
+    } else {
+      bodyStatements.splice(i, 1, ...replacements);
+      i += replacements.length - 1;
+    }
+  }
+}
+
+function collectReferencedIdentifiers(node: t.Node): Set<string> {
+  const names = new Set<string>();
+  walkExpression(node, (n) => {
+    if (t.isIdentifier(n)) names.add(n.name);
+  });
+  return names;
+}
+
+function walkExpression(node: t.Node, visit: (n: t.Node) => void): void {
+  visit(node);
+  for (const key of Object.keys(node) as Array<keyof t.Node>) {
+    if (key === "loc" || key === "type") continue;
+    const value = (node as unknown as Record<string, unknown>)[key];
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (item !== null && typeof item === "object" && "type" in item) {
+          walkExpression(item as t.Node, visit);
+        }
+      }
+    } else if (value !== null && typeof value === "object" && "type" in (value as object)) {
+      walkExpression(value as t.Node, visit);
+    }
+  }
 }
 
 /**

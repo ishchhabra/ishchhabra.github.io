@@ -24,7 +24,7 @@ import {
 import { BasicBlock } from "../../ir/core/Block";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { ModuleIR } from "../../ir/core/ModuleIR";
-import { JumpTermOp } from "../../ir/ops/control";
+import { BranchTermOp, JumpTermOp } from "../../ir/ops/control";
 import { TemplateLiteralOp } from "../../ir/ops/prim/TemplateLiteral";
 import { getQualifiedName, type ResolveConstantContext } from "./resolveConstant";
 
@@ -178,6 +178,11 @@ export class ConstantPropagationPass {
           this.evaluateBlockParams(op.target);
           continue;
         }
+        if (op instanceof BranchTermOp) {
+          this.evaluateBlockParams(op.trueTarget);
+          this.evaluateBlockParams(op.falseTarget);
+          continue;
+        }
         this.evaluate(op);
       }
     }
@@ -225,8 +230,15 @@ export class ConstantPropagationPass {
       let m: Lattice = TOP;
       for (const pred of block.predecessors()) {
         const terminal = pred.terminal;
-        if (!(terminal instanceof JumpTermOp) || terminal.target !== block) continue;
-        const arg = terminal.args[i];
+        let arg: Value | undefined;
+        if (terminal instanceof JumpTermOp && terminal.target === block) {
+          arg = terminal.args[i];
+        } else if (terminal instanceof BranchTermOp) {
+          if (terminal.trueTarget === block) arg = terminal.trueArgs[i];
+          else if (terminal.falseTarget === block) arg = terminal.falseArgs[i];
+        } else {
+          continue;
+        }
         if (arg === undefined) continue;
         m = meet(m, this.getLattice(arg));
         if (m === BOTTOM) break;

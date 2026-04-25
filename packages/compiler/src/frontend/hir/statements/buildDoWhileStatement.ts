@@ -12,13 +12,16 @@ import { buildOwnedBody } from "./buildOwnedBody";
  * {@link WhileTermOp} host block and `kind = "do-while"`.
  *
  *   parentBlock --Jump-->      hostBlock
- *   hostBlock   --WhileTermOp(do-while)--> testBlock / bodyBlock / exitBlock
- *   testBlock   (test ops) --BranchTermOp--> bodyBlock / exitBlock
- *   bodyBlock   --Jump-->      hostBlock    (back-edge)
+ *   hostBlock   --WhileTermOp(do-while, successor=bodyBlock)--> bodyBlock
+ *   bodyBlock   --Jump-->      testBlock
+ *   testBlock   (test ops) --BranchTermOp--> hostBlock / exitBlock
  *
- * The first-iteration-runs-body-unconditionally semantics are
- * restored by codegen emitting `do { body } while (cond)` when it
- * sees `kind = "do-while"`. Dataflow is identical to a regular while.
+ * Body precedes test in the CFG cycle, matching `do-while` execution
+ * order: each iteration runs body first, then test. The host block
+ * carries loop-carried values via its block params (driven by the
+ * parent on initial entry and by the back-edge from the test on
+ * subsequent iterations); body reads them through host. Codegen
+ * emits `do { body } while (cond)` when it sees `kind = "do-while"`.
  */
 export function buildDoWhileStatement(
   node: DoWhileStatement,
@@ -35,8 +38,8 @@ export function buildDoWhileStatement(
   const bodyBlock = environment.createBlock();
   const exitBlock = environment.createBlock();
   functionBuilder.addBlock(hostBlock);
-  functionBuilder.addBlock(testBlock);
   functionBuilder.addBlock(bodyBlock);
+  functionBuilder.addBlock(testBlock);
   functionBuilder.addBlock(exitBlock);
 
   parentBlock.setTerminal(new JumpTermOp(createOperationId(environment), hostBlock, []));
@@ -58,13 +61,13 @@ export function buildDoWhileStatement(
     kind: "loop",
     label,
     breakTarget: exitBlock.id,
-    continueTarget: hostBlock.id,
+    continueTarget: testBlock.id,
     structured: false,
   });
   buildOwnedBody(node.body, scope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), hostBlock, []));
+    functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), testBlock, []));
   }
 
   // Test block
@@ -74,7 +77,7 @@ export function buildDoWhileStatement(
     throw new Error("Do-while statement test must be a single place");
   }
   functionBuilder.currentBlock.setTerminal(
-    new BranchTermOp(createOperationId(environment), testPlace, bodyBlock, exitBlock),
+    new BranchTermOp(createOperationId(environment), testPlace, hostBlock, exitBlock),
   );
 
   functionBuilder.currentBlock = exitBlock;

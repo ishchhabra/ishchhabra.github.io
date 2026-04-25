@@ -15,7 +15,7 @@ import { BasicBlock } from "../../ir/core/Block";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { Value } from "../../ir/core/Value";
 import { TermOp } from "../../ir/core/TermOp";
-import { isClaimedByExportDeclaration } from "../../ir/exportClaim";
+import { isClaimedByExportDeclaration, isDeclarationExported } from "../../ir/exportClaim";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { MutabilityAnalysis, MutabilityInfo } from "../analysis/MutabilityAnalysis";
 import { BaseOptimizationPass, OptimizationResult } from "../late-optimizer/OptimizationPass";
@@ -83,6 +83,11 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
     store: StoreLocalOp,
   ): Operation | undefined {
     if (!this.isSsaStore(store)) return undefined;
+
+    // Exported bindings observe their store's lval via declarationId
+    // (not via SSA users), so removing the store would orphan the
+    // export. Leave them materialized.
+    if (isDeclarationExported(this.funcOp, store.lval.declarationId)) return undefined;
 
     const user = this.getSingleUser(store);
     if (user === undefined) return undefined;

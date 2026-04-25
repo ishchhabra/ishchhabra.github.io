@@ -1,8 +1,8 @@
 let blockparam_16 = undefined;
 blockparam_16 = 0;
+let $21;
 do {
-  const $21 = blockparam_16 + 1;
-  blockparam_16 = $21;
+  $21 = blockparam_16 + 1;
   continue;
-} while (blockparam_16 < 10);
-console.log(blockparam_16);
+} while (((blockparam_16 = $21), $21 < 10));
+console.log($21);

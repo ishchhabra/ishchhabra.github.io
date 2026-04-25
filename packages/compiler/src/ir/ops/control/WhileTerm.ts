@@ -45,13 +45,26 @@ export class WhileTermOp extends TermOp {
   }
 
   successor(index: number): CFGSuccessor {
-    if (index === 0) return { block: this.testBlock, args: [] };
+    if (index === 0) {
+      const target = this.kind === "do-while" ? this.bodyBlock : this.testBlock;
+      return { block: target, args: [] };
+    }
     return invalidSuccessorIndex(this.constructor.name, index);
   }
 
   withSuccessor(index: number, successor: CFGSuccessor): WhileTermOp {
     assertNoSuccessorArgs(this.constructor.name, successor);
     if (index !== 0) return invalidSuccessorIndex(this.constructor.name, index);
+    if (this.kind === "do-while") {
+      return new WhileTermOp(
+        this.id,
+        this.testBlock,
+        successor.block,
+        this.exitBlock,
+        this.kind,
+        this.label,
+      );
+    }
     return new WhileTermOp(
       this.id,
       successor.block,
