@@ -67,7 +67,12 @@ export function buildVariableDeclaration(
 
     if (target.kind === "binding") {
       if (kind !== "var" && target.storage === "local") {
-        const instruction = environment.createOperation(BindingInitOp, target.place, kind, valuePlace);
+        const instruction = environment.createOperation(
+          BindingInitOp,
+          target.place,
+          kind,
+          valuePlace,
+        );
         functionBuilder.addOp(instruction);
         return instruction.place;
       }

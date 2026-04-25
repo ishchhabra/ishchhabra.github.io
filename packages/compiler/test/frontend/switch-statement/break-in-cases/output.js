@@ -1,14 +1,14 @@
 let $1;
-let $19;
+let $21;
 switch ("greet") {
   case "greet":
-    $19 = "hello";
+    $21 = "hello";
     break;
   case "farewell":
-    $19 = "goodbye";
+    $21 = "goodbye";
     break;
   default:
-    $19 = "unknown action";
+    $21 = "unknown action";
     break;
 }
-console.log($19);
+console.log($21);

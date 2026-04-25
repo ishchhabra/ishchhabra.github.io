@@ -146,7 +146,9 @@ function makeBranchEdge(
       const currentArgs = arm === "true" ? current.trueArgs : current.falseArgs;
       const split = env.createBlock();
       split.appendOp(store);
-      split.setTerminal(new JumpTermOp(makeOperationId(env.nextOperationId++), currentSucc, currentArgs));
+      split.setTerminal(
+        new JumpTermOp(makeOperationId(env.nextOperationId++), currentSucc, currentArgs),
+      );
       funcOp.addBlock(split);
 
       const nextTrueTarget = arm === "true" ? split : current.trueTarget;

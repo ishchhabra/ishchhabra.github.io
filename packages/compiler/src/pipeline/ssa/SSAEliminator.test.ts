@@ -7,7 +7,12 @@ import { ModuleIR } from "../../ir/core/ModuleIR";
 import { BranchTermOp, JumpTermOp } from "../../ir/ops/control";
 import { SSAEliminator } from "./SSAEliminator";
 
-function buildBranchEdgePhiFixture(): { entry: BasicBlock; join: BasicBlock; funcOp: FuncOp; moduleIR: ModuleIR } {
+function buildBranchEdgePhiFixture(): {
+  entry: BasicBlock;
+  join: BasicBlock;
+  funcOp: FuncOp;
+  moduleIR: ModuleIR;
+} {
   const env = new Environment(new ProjectEnvironment());
   const moduleIR = new ModuleIR("m.js", env);
   const entry = env.createBlock();
@@ -27,14 +32,10 @@ function buildBranchEdgePhiFixture(): { entry: BasicBlock; join: BasicBlock; fun
   join.params = [phi];
   join.setTerminal(env.createOperation(ReturnTermOp, phi));
 
-  const funcOp = new FuncOp(
-    moduleIR,
-    makeFuncOpId(env.nextOperationId++),
-    [],
-    false,
-    false,
-    [entry, join],
-  );
+  const funcOp = new FuncOp(moduleIR, makeFuncOpId(env.nextOperationId++), [], false, false, [
+    entry,
+    join,
+  ]);
 
   return { entry, join, funcOp, moduleIR };
 }

@@ -4,10 +4,10 @@ function $0($3) {
   }
   return $1($3 - 1);
 }
-function $1($14) {
-  if ($14 === 0) {
+function $1($15) {
+  if ($15 === 0) {
     return false;
   }
-  return $0($14 - 1);
+  return $0($15 - 1);
 }
 $0(4);

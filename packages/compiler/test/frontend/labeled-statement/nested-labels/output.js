@@ -1,20 +1,20 @@
-let $37;
-$37 = 0;
-let $38;
 let $39;
-$39 = undefined;
-outer: for (let $47; $37 < 5; $47 = $37 + 1, $37 = $47, $39 = $38) {
-  $38 = 0;
-  inner: for (let $48; $38 < 5; $48 = $38 + 1, $38 = $48) {
-    if ($38 === 2) {
+$39 = 0;
+let $40;
+let $41;
+$41 = undefined;
+outer: for (let $52; $39 < 5; $52 = $39 + 1, $39 = $52, $41 = $40) {
+  $40 = 0;
+  inner: for (let $54; $40 < 5; $54 = $40 + 1, $40 = $54) {
+    if ($40 === 2) {
       continue;
     }
-    if ($38 === 3) {
+    if ($40 === 3) {
       continue outer;
     }
-    if ($37 === 4) {
+    if ($39 === 4) {
       break outer;
     }
-    console.log($37, $38);
+    console.log($39, $40);
   }
 }

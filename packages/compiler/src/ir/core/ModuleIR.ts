@@ -40,7 +40,7 @@ export function getExportBindingPlace(
   environment: Environment,
 ): Value | undefined {
   if (exp.instruction instanceof ExportSpecifierOp) {
-    return environment.getDeclarationBinding(exp.instruction.localDeclarationId);
+    return exp.instruction.local;
   }
   const decl = exp.declaration;
   if (decl instanceof StoreLocalOp) return decl.lval;

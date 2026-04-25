@@ -1,17 +1,17 @@
 function $0($3) {
   function $4($5) {
-    const $34 = $5;
+    const $40 = $5;
     let $7;
     let $10;
-    if ($34) {
-      const $35 = $5.position;
-      $7 = $35;
+    if ($40) {
+      const $42 = $5.position;
+      $7 = $42;
     } else {
-      $7 = $34;
+      $7 = $40;
     }
     if ($7) {
-      const $36 = $5.position[$3];
-      $10 = $36;
+      const $44 = $5.position[$3];
+      $10 = $44;
     } else {
       $10 = $7;
     }
@@ -19,7 +19,5 @@ function $0($3) {
   }
   return $4;
 }
-const $1 = $0("end");
-export { $1 as pointEnd };
-const $2 = $0("start");
-export { $2 as pointStart };
+export const pointEnd = $0("end");
+export const pointStart = $0("start");

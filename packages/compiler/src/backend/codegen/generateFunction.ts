@@ -1,6 +1,6 @@
 import * as t from "@babel/types";
 import { collectDestructureTargetBindingPlaces } from "../../ir";
-import { FuncOp } from "../../ir/core/FuncOp";
+import { FuncOp, FunctionParam } from "../../ir/core/FuncOp";
 import { Value } from "../../ir/core/Value";
 import { CodeGenerator } from "../CodeGenerator";
 import { generateBlock } from "./generateBlock";
@@ -49,8 +49,9 @@ function generateFunctionParams(
   funcOp: FuncOp,
   generator: CodeGenerator,
 ): Array<t.Identifier | t.RestElement | t.Pattern> {
-  return funcOp.params.filter((param) => param.kind === "arg").map((param) => {
-    if (param.kind === "arg") {
+  return funcOp.params
+    .filter((param): param is Extract<FunctionParam, { kind: "arg" }> => param.kind === "arg")
+    .map((param) => {
       for (const place of collectDestructureTargetBindingPlaces(param.source.target)) {
         generator.getPlaceIdentifier(place);
         generator.declaredDeclarations.add(place.declarationId);
@@ -62,7 +63,5 @@ function generateFunctionParams(
         | t.Identifier
         | t.RestElement
         | t.Pattern;
-    }
-    return generator.getPlaceIdentifier(param.value);
-  });
+    });
 }

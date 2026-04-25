@@ -31,11 +31,9 @@ export function buildTryStatement(
   functionBuilder.currentBlock = tryBlock;
   buildOwnedBody(node.block, scope, functionBuilder, moduleBuilder, environment);
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.setTerminal(new JumpTermOp(
-      createOperationId(environment),
-      (finallyBlock ?? fallthroughBlock),
-      [],
-    ));
+    functionBuilder.currentBlock.setTerminal(
+      new JumpTermOp(createOperationId(environment), finallyBlock ?? fallthroughBlock, []),
+    );
   }
 
   // Build catch handler
@@ -70,11 +68,9 @@ export function buildTryStatement(
 
     buildOwnedBody(catchClause.body, scope, functionBuilder, moduleBuilder, environment);
     if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.setTerminal(new JumpTermOp(
-        createOperationId(environment),
-        (finallyBlock ?? fallthroughBlock),
-        [],
-      ));
+      functionBuilder.currentBlock.setTerminal(
+        new JumpTermOp(createOperationId(environment), finallyBlock ?? fallthroughBlock, []),
+      );
     }
   }
 
@@ -83,19 +79,23 @@ export function buildTryStatement(
     functionBuilder.currentBlock = finallyBlock;
     buildOwnedBody(node.finalizer, scope, functionBuilder, moduleBuilder, environment);
     if (functionBuilder.currentBlock.terminal === undefined) {
-      functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), fallthroughBlock, []));
+      functionBuilder.currentBlock.setTerminal(
+        new JumpTermOp(createOperationId(environment), fallthroughBlock, []),
+      );
     }
   }
 
   // Terminate parent with TryTermOp routing to try-body
-  parentBlock.setTerminal(new TryTermOp(
-    createOperationId(environment),
-    tryBlock,
-    handlerBlock,
-    handlerParam,
-    finallyBlock,
-    fallthroughBlock,
-  ));
+  parentBlock.setTerminal(
+    new TryTermOp(
+      createOperationId(environment),
+      tryBlock,
+      handlerBlock,
+      handlerParam,
+      finallyBlock,
+      fallthroughBlock,
+    ),
+  );
 
   functionBuilder.currentBlock = fallthroughBlock;
   return undefined;

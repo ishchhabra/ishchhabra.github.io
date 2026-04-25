@@ -61,9 +61,7 @@ export function splitForUpdate(stmts: readonly t.Statement[]): {
         const id = decl.id as t.Identifier;
         declarators.push(t.variableDeclarator(t.identifier(id.name)));
         if (decl.init !== null && decl.init !== undefined) {
-          expressions.push(
-            t.assignmentExpression("=", t.identifier(id.name), decl.init),
-          );
+          expressions.push(t.assignmentExpression("=", t.identifier(id.name), decl.init));
         }
       }
       continue;
@@ -96,9 +94,7 @@ export function toSequence(exprs: readonly t.Expression[]): t.Expression | null 
  * emission is possible before falling back to a structural wrapper
  * like `while (true) { ...; if (!cond) break; ... }`.
  */
-export function statementsAsExpression(
-  stmts: readonly t.Statement[],
-): t.Expression | null {
+export function statementsAsExpression(stmts: readonly t.Statement[]): t.Expression | null {
   const exprs: t.Expression[] = [];
   for (const stmt of stmts) {
     if (!t.isExpressionStatement(stmt)) return null;

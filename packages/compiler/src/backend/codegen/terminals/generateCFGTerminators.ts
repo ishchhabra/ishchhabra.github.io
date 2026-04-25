@@ -254,7 +254,12 @@ function hoistBodyDeclsReferencedByTest(
     const keep: t.VariableDeclarator[] = [];
     const replacements: t.Statement[] = [];
     for (const decl of stmt.declarations) {
-      if (!t.isIdentifier(decl.id) || !referenced.has(decl.id.name) || decl.init === null || decl.init === undefined) {
+      if (
+        !t.isIdentifier(decl.id) ||
+        !referenced.has(decl.id.name) ||
+        decl.init === null ||
+        decl.init === undefined
+      ) {
         keep.push(decl);
         continue;
       }
@@ -262,20 +267,13 @@ function hoistBodyDeclsReferencedByTest(
         t.variableDeclaration("let", [t.variableDeclarator(t.identifier(decl.id.name), null)]),
       );
       replacements.push(
-        t.expressionStatement(
-          t.assignmentExpression("=", t.identifier(decl.id.name), decl.init),
-        ),
+        t.expressionStatement(t.assignmentExpression("=", t.identifier(decl.id.name), decl.init)),
       );
     }
 
     if (replacements.length === 0) continue;
     if (keep.length > 0) {
-      bodyStatements.splice(
-        i,
-        1,
-        t.variableDeclaration(stmt.kind, keep),
-        ...replacements,
-      );
+      bodyStatements.splice(i, 1, t.variableDeclaration(stmt.kind, keep), ...replacements);
       i += replacements.length;
     } else {
       bodyStatements.splice(i, 1, ...replacements);
@@ -343,9 +341,7 @@ function lowerTestStatements(
   const hoistedDeclarations: t.Statement[] =
     declarators.length > 0 ? [t.variableDeclaration("let", declarators)] : [];
   const testExpression =
-    expressions.length > 0
-      ? t.sequenceExpression([...expressions, condNode])
-      : condNode;
+    expressions.length > 0 ? t.sequenceExpression([...expressions, condNode]) : condNode;
   return { testExpression, hoistedDeclarations };
 }
 
@@ -501,9 +497,7 @@ export function generateBranchTerm(
   if (falseStmts.length === 0) {
     return [t.ifStatement(condNode, unwrap(trueStmts))];
   }
-  return [
-    t.ifStatement(condNode, t.blockStatement(trueStmts), t.blockStatement(falseStmts)),
-  ];
+  return [t.ifStatement(condNode, t.blockStatement(trueStmts), t.blockStatement(falseStmts))];
 }
 
 function unwrap(stmts: Array<t.Statement>): t.Statement {
@@ -566,12 +560,7 @@ export function generateForOfTerm(
       term.iterationBindingKind === null
         ? iterValId
         : t.variableDeclaration(term.iterationBindingKind, [t.variableDeclarator(iterValId)]);
-    const fos = t.forOfStatement(
-      left,
-      iterNode,
-      t.blockStatement(bodyStatements),
-      term.isAwait,
-    );
+    const fos = t.forOfStatement(left, iterNode, t.blockStatement(bodyStatements), term.isAwait);
     if (term.label !== undefined) {
       return [t.labeledStatement(t.identifier(term.label), fos)];
     }
@@ -610,11 +599,7 @@ export function generateForInTerm(
       term.iterationBindingKind === null
         ? iterValId
         : t.variableDeclaration(term.iterationBindingKind, [t.variableDeclarator(iterValId)]);
-    const fis = t.forInStatement(
-      left,
-      objNode,
-      t.blockStatement(bodyStatements),
-    );
+    const fis = t.forInStatement(left, objNode, t.blockStatement(bodyStatements));
     if (term.label !== undefined) {
       return [t.labeledStatement(t.identifier(term.label), fis)];
     }

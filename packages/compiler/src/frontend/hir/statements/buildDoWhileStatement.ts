@@ -67,7 +67,9 @@ export function buildDoWhileStatement(
   buildOwnedBody(node.body, scope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), testBlock, []));
+    functionBuilder.currentBlock.setTerminal(
+      new JumpTermOp(createOperationId(environment), testBlock, []),
+    );
   }
 
   // Test block

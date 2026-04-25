@@ -24,9 +24,9 @@ describe("BasicBlock.setTerminal", () => {
     const block = env.createBlock();
     const target = env.createBlock();
     block.setTerminal(new JumpTermOp(createOperationId(env), target, []));
-    expect(() =>
-      block.setTerminal(new JumpTermOp(createOperationId(env), target, [])),
-    ).toThrow(/already has terminal/);
+    expect(() => block.setTerminal(new JumpTermOp(createOperationId(env), target, []))).toThrow(
+      /already has terminal/,
+    );
   });
 
   it("throw message names the block id and both terminator classes", () => {
@@ -34,11 +34,10 @@ describe("BasicBlock.setTerminal", () => {
     const block = env.createBlock();
     const target = env.createBlock();
     block.setTerminal(new JumpTermOp(createOperationId(env), target, []));
-    expect(() =>
-      block.setTerminal(new JumpTermOp(createOperationId(env), target, [])),
-    ).toThrow(new RegExp(`Block ${block.id}.*JumpTermOp.*JumpTermOp`));
+    expect(() => block.setTerminal(new JumpTermOp(createOperationId(env), target, []))).toThrow(
+      new RegExp(`Block ${block.id}.*JumpTermOp.*JumpTermOp`),
+    );
   });
-
 });
 
 describe("TermOp successors", () => {
@@ -92,9 +91,9 @@ describe("BasicBlock.replaceTerminal", () => {
     const env = makeEnv();
     const block = env.createBlock();
     const target = env.createBlock();
-    expect(() =>
-      block.replaceTerminal(new JumpTermOp(createOperationId(env), target, [])),
-    ).toThrow(/no terminal to replace/);
+    expect(() => block.replaceTerminal(new JumpTermOp(createOperationId(env), target, []))).toThrow(
+      /no terminal to replace/,
+    );
   });
 
   it("unregisters the old terminator from its target's use-list", () => {

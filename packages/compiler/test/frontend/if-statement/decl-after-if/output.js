@@ -1,10 +1,10 @@
-let $16;
+let $17;
 if (true) {
   console.log("first");
 }
 if (true) {
-  $16 = 20;
+  $17 = 20;
 } else {
-  $16 = 10;
+  $17 = 10;
 }
-console.log($16);
+console.log($17);

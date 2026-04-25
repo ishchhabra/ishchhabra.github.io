@@ -103,7 +103,9 @@ export function buildForStatement(
   buildOwnedBody(node.body, forScope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), updateBlock, []));
+    functionBuilder.currentBlock.setTerminal(
+      new JumpTermOp(createOperationId(environment), updateBlock, []),
+    );
   }
 
   // Update
@@ -112,7 +114,9 @@ export function buildForStatement(
     buildExpressionAsStatement(node.update, forScope, functionBuilder, moduleBuilder, environment);
   }
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), hostBlock, []));
+    functionBuilder.currentBlock.setTerminal(
+      new JumpTermOp(createOperationId(environment), hostBlock, []),
+    );
   }
 
   functionBuilder.currentBlock = exitBlock;

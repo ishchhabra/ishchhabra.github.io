@@ -152,7 +152,9 @@ export class FuncOpBuilder {
         this.environment,
       );
       if (resultPlace !== undefined && !Array.isArray(resultPlace)) {
-        this.currentBlock.setTerminal(new ReturnTermOp(createOperationId(this.environment), resultPlace));
+        this.currentBlock.setTerminal(
+          new ReturnTermOp(createOperationId(this.environment), resultPlace),
+        );
       }
     } else {
       const bodyScope = this.scopeFor(effectiveBody);
@@ -178,10 +180,12 @@ export class FuncOpBuilder {
 
     const functionParams: FunctionParam[] = [
       ...builtParams,
-      ...[...this.captureParams.values()].map((value): FunctionParam => ({
-        value,
-        kind: "capture",
-      })),
+      ...[...this.captureParams.values()].map(
+        (value): FunctionParam => ({
+          value,
+          kind: "capture",
+        }),
+      ),
     ];
 
     // The constructor self-registers in moduleIR.functions, so no explicit

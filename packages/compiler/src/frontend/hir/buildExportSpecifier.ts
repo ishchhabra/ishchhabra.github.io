@@ -43,7 +43,7 @@ export function buildExportSpecifier(
   const instruction = environment.createOperation(
     ExportSpecifierOp,
     place,
-    declarationId,
+    localPlace,
     exportedName,
   );
   functionBuilder.addOp(instruction);

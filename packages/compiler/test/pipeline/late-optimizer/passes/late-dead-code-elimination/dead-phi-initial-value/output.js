@@ -1,8 +1,8 @@
-let $14;
+let $15;
 if (globalThis.cond) {
-  const $17 = globalThis.compute();
-  $14 = $17;
+  const $19 = globalThis.compute();
+  $15 = $19;
 } else {
-  $14 = 0;
+  $15 = 0;
 }
-console.log($14);
+console.log($15);

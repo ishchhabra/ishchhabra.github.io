@@ -1,13 +1,13 @@
 function $0($2) {
   return $2.trim();
 }
-function $1($6, $7) {
-  let $13;
-  if ($7) {
-    $13 = "\n";
+function $1($7, $8) {
+  let $14;
+  if ($8) {
+    $14 = "\n";
   } else {
-    $13 = "";
+    $14 = "";
   }
-  return $0($6) + $13;
+  return $0($7) + $14;
 }
 export default $1;

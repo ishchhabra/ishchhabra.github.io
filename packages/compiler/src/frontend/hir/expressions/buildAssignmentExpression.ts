@@ -171,12 +171,7 @@ function buildIdentifierAssignment(
         "let",
         "assignment",
       )
-    : environment.createOperation(
-        StoreLocalOp,
-        place,
-        target.place,
-        resultPlace,
-      );
+    : environment.createOperation(StoreLocalOp, place, target.place, resultPlace);
   functionBuilder.addOp(instruction);
   return resultPlace;
 }
@@ -260,7 +255,9 @@ function buildLogicalIdentifierAssignment(
   functionBuilder.addBlock(altBlock);
   functionBuilder.addBlock(joinBlock);
 
-  parentBlock.setTerminal(new IfTermOp(createOperationId(environment), conditionPlace, consBlock, altBlock, joinBlock));
+  parentBlock.setTerminal(
+    new IfTermOp(createOperationId(environment), conditionPlace, consBlock, altBlock, joinBlock),
+  );
 
   functionBuilder.currentBlock = consBlock;
   const rightPlace = buildNode(node.right, scope, functionBuilder, moduleBuilder, environment);
@@ -268,9 +265,16 @@ function buildLogicalIdentifierAssignment(
     throw new Error("Logical assignment right must be a single place");
   }
   const stabilizedRightPlace = stabilizePlace(rightPlace, functionBuilder, environment);
-  const target = buildLVal(left as AST.Pattern, scope, functionBuilder, moduleBuilder, environment, {
-    kind: "assignment",
-  });
+  const target = buildLVal(
+    left as AST.Pattern,
+    scope,
+    functionBuilder,
+    moduleBuilder,
+    environment,
+    {
+      kind: "assignment",
+    },
+  );
   if (target.kind !== "binding") {
     throw new Error(`Expected binding assignment target, got: ${target.kind}`);
   }
@@ -292,7 +296,9 @@ function buildLogicalIdentifierAssignment(
           stabilizedRightPlace,
         ),
   );
-  functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), joinBlock, [stabilizedRightPlace]));
+  functionBuilder.currentBlock.setTerminal(
+    new JumpTermOp(createOperationId(environment), joinBlock, [stabilizedRightPlace]),
+  );
 
   altBlock.setTerminal(new JumpTermOp(createOperationId(environment), joinBlock, [oldValuePlace]));
 
@@ -391,7 +397,9 @@ function buildLogicalMemberAssignment(
   functionBuilder.addBlock(altBlock);
   functionBuilder.addBlock(joinBlock);
 
-  parentBlock.setTerminal(new IfTermOp(createOperationId(environment), conditionPlace, consBlock, altBlock, joinBlock));
+  parentBlock.setTerminal(
+    new IfTermOp(createOperationId(environment), conditionPlace, consBlock, altBlock, joinBlock),
+  );
 
   functionBuilder.currentBlock = consBlock;
   const rightPlace = buildNode(node.right, scope, functionBuilder, moduleBuilder, environment);
@@ -407,7 +415,9 @@ function buildLogicalMemberAssignment(
       environment,
     ),
   );
-  functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), joinBlock, [stabilizedRightPlace]));
+  functionBuilder.currentBlock.setTerminal(
+    new JumpTermOp(createOperationId(environment), joinBlock, [stabilizedRightPlace]),
+  );
 
   altBlock.setTerminal(new JumpTermOp(createOperationId(environment), joinBlock, [cachedPlace]));
 

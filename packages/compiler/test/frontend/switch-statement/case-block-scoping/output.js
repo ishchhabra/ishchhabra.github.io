@@ -17,8 +17,7 @@ function $0($2) {
       };
   }
 }
-const $1 = $0({
+export const result = $0({
   type: "text",
   value: "hello",
 });
-export { $1 as result };

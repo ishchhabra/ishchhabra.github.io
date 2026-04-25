@@ -6,24 +6,23 @@ function $0($4, $5) {
     left: $4.left - $5.width,
   };
 }
-function $1($35) {
-  return $2.some(($39) => $35[$39] >= 0);
+function $1($36) {
+  return $2.some(($40) => $36[$40] >= 0);
 }
 const $2 = ["top", "right", "bottom", "left"];
-const $3 = function ($55) {
+export const hide = function ($58) {
   return {
     name: "hide",
-    options: $55,
-    async fn($63) {
-      const { rects: $64, platform: $65 } = $63;
-      const $109 = $0(await $65.detectOverflow($63), $64.reference);
+    options: $58,
+    async fn($66) {
+      const { rects: $67, platform: $68 } = $66;
+      const $115 = $0(await $68.detectOverflow($66), $67.reference);
       return {
         data: {
-          referenceHiddenOffsets: $109,
-          referenceHidden: $1($109),
+          referenceHiddenOffsets: $115,
+          referenceHidden: $1($115),
         },
       };
     },
   };
 };
-export { $3 as hide };

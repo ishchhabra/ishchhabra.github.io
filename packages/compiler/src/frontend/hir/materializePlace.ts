@@ -43,7 +43,9 @@ export function materializePlace(
     functionBuilder.currentBlock.id,
     bindingPlace,
   );
-  functionBuilder.addOp(environment.createOperation(BindingInitOp, bindingPlace, "const", valuePlace));
+  functionBuilder.addOp(
+    environment.createOperation(BindingInitOp, bindingPlace, "const", valuePlace),
+  );
   return bindingPlace;
 }
 

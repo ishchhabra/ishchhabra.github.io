@@ -34,9 +34,7 @@ function buildLogicalFromSource(source: string): {
   );
 
   // Locate the IfTermOp on the original parent block.
-  const parentBlock = harness.fnBuilder.blocks.find(
-    (b) => b.id === parentBlockId,
-  );
+  const parentBlock = harness.fnBuilder.blocks.find((b) => b.id === parentBlockId);
   if (!parentBlock) throw new Error("parent block missing");
   const term = parentBlock.terminal;
   if (!(term instanceof IfTermOp)) {
@@ -192,9 +190,7 @@ describe("buildLogicalExpression — isolated", () => {
       // currentBlock is now joinBlock — parent block's ops are:
       //   LoadGlobal a, LiteralOp null, BinaryExpression `!=`
       // Navigate back to the parent via term.
-      const parent = harness.fnBuilder.blocks.find(
-        (b) => b.terminal === term,
-      )!;
+      const parent = harness.fnBuilder.blocks.find((b) => b.terminal === term)!;
       const pOps = parent.operations;
       const binary = pOps.find((o) => o instanceof BinaryExpressionOp) as
         | BinaryExpressionOp
@@ -213,12 +209,8 @@ describe("buildLogicalExpression — isolated", () => {
 
     it("truthy arm (lhs != null) passes LHS through — short-circuit", () => {
       const { term, harness } = buildLogicalFromSource("a ?? b;");
-      const parent = harness.fnBuilder.blocks.find(
-        (b) => b.terminal === term,
-      )!;
-      const loadA = parent.operations.find(
-        (o) => o.print().includes("LoadGlobal a"),
-      );
+      const parent = harness.fnBuilder.blocks.find((b) => b.terminal === term)!;
+      const loadA = parent.operations.find((o) => o.print().includes("LoadGlobal a"));
       expect(term.thenBlock.operations.length).toBe(0);
       const args = (term.thenBlock.terminal as JumpTermOp).args;
       expect(args[0]).toBe(loadA!.place);

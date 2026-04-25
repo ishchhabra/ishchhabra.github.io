@@ -91,16 +91,18 @@ export function buildForOfStatement(
     if (!bodyBlock.entryBindings.includes(p)) bodyBlock.entryBindings.push(p);
   }
 
-  parentBlock.setTerminal(new ForOfTermOp(
-    createOperationId(environment),
-    iterablePlace,
-    iterationValuePlace,
-    iterationBindingKind,
-    bodyBlock,
-    exitBlock,
-    node.await,
-    label,
-  ));
+  parentBlock.setTerminal(
+    new ForOfTermOp(
+      createOperationId(environment),
+      iterablePlace,
+      iterationValuePlace,
+      iterationBindingKind,
+      bodyBlock,
+      exitBlock,
+      node.await,
+      label,
+    ),
+  );
 
   functionBuilder.currentBlock = bodyBlock;
   // Emit the per-iteration assignment for any non-binding target —
@@ -110,8 +112,7 @@ export function buildForOfStatement(
   // `declaration` when for-of has `const/let/var [x, y] of ...` —
   // emits `const [x, y] = iter` in the body. `assignment` for bare
   // LHS like `for ([x, y] of ...)`.
-  const destructureKind =
-    left.type === "VariableDeclaration" ? "declaration" : "assignment";
+  const destructureKind = left.type === "VariableDeclaration" ? "declaration" : "assignment";
   if (bareLVal !== undefined || iterationTarget.kind !== "binding") {
     emitLoopIterationAssignment(
       iterationTarget,
@@ -131,7 +132,9 @@ export function buildForOfStatement(
   buildOwnedBody(node.body, forScope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), parentBlock, []));
+    functionBuilder.currentBlock.setTerminal(
+      new JumpTermOp(createOperationId(environment), parentBlock, []),
+    );
   }
 
   functionBuilder.currentBlock = exitBlock;
@@ -166,7 +169,12 @@ function emitLoopIterationAssignment(
         }
       } else {
         functionBuilder.addOp(
-          environment.createOperation(StoreLocalOp, environment.createValue(), target.place, valuePlace),
+          environment.createOperation(
+            StoreLocalOp,
+            environment.createValue(),
+            target.place,
+            valuePlace,
+          ),
         );
       }
     }

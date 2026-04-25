@@ -1,5 +1,5 @@
 import * as t from "@babel/types";
-import { ExportDefaultDeclarationOp } from "../../../../ir";
+import { BindingInitOp, ExportDefaultDeclarationOp } from "../../../../ir";
 import { ClassDeclarationOp } from "../../../../ir/ops/class/ClassDeclaration";
 import { FunctionDeclarationOp } from "../../../../ir/ops/func/FunctionDeclaration";
 import { CodeGenerator } from "../../../CodeGenerator";
@@ -21,6 +21,14 @@ export function generateExportDefaultDeclarationOp(
   }
   if (definer instanceof ClassDeclarationOp) {
     return t.exportDefaultDeclaration(generateClassDeclarationOp(definer, generator));
+  }
+  if (definer instanceof BindingInitOp) {
+    let value = generator.values.get(definer.value.id);
+    if (value === undefined || value === null) {
+      value = generator.getPlaceIdentifier(definer.value);
+    }
+    t.assertExpression(value);
+    return t.exportDefaultDeclaration(value);
   }
 
   const value = generator.values.get(instruction.declaration.id);

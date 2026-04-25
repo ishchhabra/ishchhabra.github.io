@@ -1,11 +1,11 @@
-const $29 = globalThis.a;
-const $30 = globalThis.b;
-let $26;
-if ($29 > $30) {
-  const $31 = $29 + $30;
-  $26 = $31;
+const $33 = globalThis.a;
+const $35 = globalThis.b;
+let $29;
+if ($33 > $35) {
+  const $37 = $33 + $35;
+  $29 = $37;
 } else {
-  const $32 = $29 - $30;
-  $26 = $32;
+  const $39 = $33 - $35;
+  $29 = $39;
 }
-console.log($26);
+console.log($29);

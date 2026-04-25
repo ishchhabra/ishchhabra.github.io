@@ -69,9 +69,7 @@ describe("buildCallExpression — isolated", () => {
       const load = opsAdded.find(
         (o): o is LoadStaticPropertyOp => o instanceof LoadStaticPropertyOp,
       )!;
-      const call = opsAdded.find(
-        (o): o is CallExpressionOp => o instanceof CallExpressionOp,
-      )!;
+      const call = opsAdded.find((o): o is CallExpressionOp => o instanceof CallExpressionOp)!;
       expect(call.callee).toBe(load.place);
       expect(load.property).toBe("m");
     });
@@ -81,9 +79,7 @@ describe("buildCallExpression — isolated", () => {
       const load = opsAdded.find(
         (o): o is LoadDynamicPropertyOp => o instanceof LoadDynamicPropertyOp,
       )!;
-      const call = opsAdded.find(
-        (o): o is CallExpressionOp => o instanceof CallExpressionOp,
-      )!;
+      const call = opsAdded.find((o): o is CallExpressionOp => o instanceof CallExpressionOp)!;
       expect(call.callee).toBe(load.place);
     });
   });
@@ -91,20 +87,14 @@ describe("buildCallExpression — isolated", () => {
   describe("arguments", () => {
     it("zero args: args array is empty", () => {
       const { opsAdded } = buildCallFromSource("f();");
-      const call = opsAdded.find(
-        (o): o is CallExpressionOp => o instanceof CallExpressionOp,
-      )!;
+      const call = opsAdded.find((o): o is CallExpressionOp => o instanceof CallExpressionOp)!;
       expect(call.args).toEqual([]);
     });
 
     it("multiple args: in source order", () => {
       const { opsAdded } = buildCallFromSource("f(1, 2, 3);");
-      const literals = opsAdded.filter(
-        (o): o is LiteralOp => o instanceof LiteralOp,
-      );
-      const call = opsAdded.find(
-        (o): o is CallExpressionOp => o instanceof CallExpressionOp,
-      )!;
+      const literals = opsAdded.filter((o): o is LiteralOp => o instanceof LiteralOp);
+      const call = opsAdded.find((o): o is CallExpressionOp => o instanceof CallExpressionOp)!;
       expect(literals.length).toBe(3);
       expect(call.args.length).toBe(3);
       expect(call.args[0]).toBe(literals[0].place);
@@ -117,9 +107,7 @@ describe("buildCallExpression — isolated", () => {
       // Side-effectful arg expressions must lower to ops BEFORE the
       // Call op in block order — left-to-right JS evaluation.
       const { opsAdded } = buildCallFromSource("f(g(), h());");
-      const callOps = opsAdded.filter(
-        (o): o is CallExpressionOp => o instanceof CallExpressionOp,
-      );
+      const callOps = opsAdded.filter((o): o is CallExpressionOp => o instanceof CallExpressionOp);
       // Three calls total: g(), h(), then f(...).
       expect(callOps.length).toBe(3);
       // The outer call is the last one.
@@ -131,12 +119,8 @@ describe("buildCallExpression — isolated", () => {
 
     it("spread argument: `f(...args)` emits a SpreadElementOp in the args", () => {
       const { opsAdded } = buildCallFromSource("f(...args);");
-      const spread = opsAdded.find(
-        (o): o is SpreadElementOp => o instanceof SpreadElementOp,
-      )!;
-      const call = opsAdded.find(
-        (o): o is CallExpressionOp => o instanceof CallExpressionOp,
-      )!;
+      const spread = opsAdded.find((o): o is SpreadElementOp => o instanceof SpreadElementOp)!;
+      const call = opsAdded.find((o): o is CallExpressionOp => o instanceof CallExpressionOp)!;
       expect(spread).toBeDefined();
       expect(call.args.length).toBe(1);
       expect(call.args[0]).toBe(spread.place);
@@ -146,17 +130,13 @@ describe("buildCallExpression — isolated", () => {
   describe("optional call", () => {
     it("`f?.()` sets `optional = true` on the CallExpressionOp", () => {
       const { opsAdded } = buildCallFromSource("f?.();");
-      const call = opsAdded.find(
-        (o): o is CallExpressionOp => o instanceof CallExpressionOp,
-      )!;
+      const call = opsAdded.find((o): o is CallExpressionOp => o instanceof CallExpressionOp)!;
       expect(call.optional).toBe(true);
     });
 
     it("plain `f()` sets `optional = false`", () => {
       const { opsAdded } = buildCallFromSource("f();");
-      const call = opsAdded.find(
-        (o): o is CallExpressionOp => o instanceof CallExpressionOp,
-      )!;
+      const call = opsAdded.find((o): o is CallExpressionOp => o instanceof CallExpressionOp)!;
       expect(call.optional).toBe(false);
     });
 
@@ -168,9 +148,7 @@ describe("buildCallExpression — isolated", () => {
       const load = opsAdded.find(
         (o): o is LoadStaticPropertyOp => o instanceof LoadStaticPropertyOp,
       )!;
-      const call = opsAdded.find(
-        (o): o is CallExpressionOp => o instanceof CallExpressionOp,
-      )!;
+      const call = opsAdded.find((o): o is CallExpressionOp => o instanceof CallExpressionOp)!;
       expect(load.optional).toBe(true);
       expect(call.optional).toBe(false);
     });
@@ -179,9 +157,7 @@ describe("buildCallExpression — isolated", () => {
   describe("operands", () => {
     it("includes callee then args in order", () => {
       const { opsAdded } = buildCallFromSource("f(1, 2);");
-      const call = opsAdded.find(
-        (o): o is CallExpressionOp => o instanceof CallExpressionOp,
-      )!;
+      const call = opsAdded.find((o): o is CallExpressionOp => o instanceof CallExpressionOp)!;
       const operands = call.operands();
       expect(operands[0]).toBe(call.callee);
       expect(operands.slice(1)).toEqual(call.args);

@@ -36,9 +36,4 @@ export {
   type CloneContext,
   type OperationId,
 } from "./Operation";
-export {
-  assertNoSuccessorArgs,
-  invalidSuccessorIndex,
-  TermOp,
-  type CFGSuccessor,
-} from "./TermOp";
+export { assertNoSuccessorArgs, invalidSuccessorIndex, TermOp, type CFGSuccessor } from "./TermOp";

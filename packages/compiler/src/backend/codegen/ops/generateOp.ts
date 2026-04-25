@@ -110,13 +110,14 @@ export function generateOp(
   if (instruction instanceof DebuggerStatementOp) {
     return [generateDebuggerStatementOp(instruction, generator)];
   } else if (instruction instanceof BindingDeclOp) {
+    if (isClaimedByExportDeclaration(instruction)) return [];
     const statement = generateBindingDeclOp(instruction, generator);
     return statement === undefined ? [] : [statement];
   } else if (instruction instanceof BindingInitOp) {
+    if (isClaimedByExportDeclaration(instruction)) return [];
     const statement = generateBindingInitOp(instruction, generator);
     return statement === undefined ? [] : [statement];
   } else if (isDeclarationOp(instruction)) {
-    const statement = generateDeclarationOp(instruction, generator);
     if (
       (instruction instanceof FunctionDeclarationOp || instruction instanceof ClassDeclarationOp) &&
       isClaimedByExportDeclaration(instruction)
@@ -124,6 +125,7 @@ export function generateOp(
       return [];
     }
 
+    const statement = generateDeclarationOp(instruction, generator);
     return [statement];
   } else if (isJSXOp(instruction)) {
     generateJSXOp(instruction, generator);

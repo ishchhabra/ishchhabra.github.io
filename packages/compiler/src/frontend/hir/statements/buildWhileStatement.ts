@@ -40,7 +40,14 @@ export function buildWhileStatement(
   parentBlock.setTerminal(new JumpTermOp(createOperationId(environment), hostBlock, []));
 
   hostBlock.setTerminal(
-    new WhileTermOp(createOperationId(environment), testBlock, bodyBlock, exitBlock, "while", label),
+    new WhileTermOp(
+      createOperationId(environment),
+      testBlock,
+      bodyBlock,
+      exitBlock,
+      "while",
+      label,
+    ),
   );
 
   // Test block: evaluate cond, branch.
@@ -65,7 +72,9 @@ export function buildWhileStatement(
   buildOwnedBody(node.body, scope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), hostBlock, []));
+    functionBuilder.currentBlock.setTerminal(
+      new JumpTermOp(createOperationId(environment), hostBlock, []),
+    );
   }
 
   functionBuilder.currentBlock = exitBlock;

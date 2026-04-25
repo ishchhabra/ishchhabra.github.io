@@ -1,8 +1,11 @@
 import {
   BasicBlock,
+  BindingDeclOp,
+  BindingInitOp,
   ExportDefaultDeclarationOp,
   ExportNamedDeclarationOp,
-  StoreLocalOp,
+  Operation,
+  Value,
 } from "../../../ir";
 import { ExportSpecifierOp } from "../../../ir/ops/module/ExportSpecifier";
 import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
@@ -83,10 +86,7 @@ export class ExportDeclarationMergingPass extends BaseOptimizationPass {
     // For each ExportSpecifier, try to merge with its declaration.
     for (const exportSpec of exportSpecifiers) {
       // Find the binding instruction that defines the local place.
-      const localPlace = this.funcOp.moduleIR.environment.getDeclarationBinding(
-        exportSpec.localDeclarationId,
-      );
-      if (localPlace === undefined) continue;
+      const localPlace = exportSpec.local;
       const decl = this.findDeclaration(instrs, localPlace);
       if (decl === undefined) continue;
 
@@ -154,15 +154,15 @@ export class ExportDeclarationMergingPass extends BaseOptimizationPass {
     return changed;
   }
 
-  /**
-   * Finds the StoreLocal instruction that initializes the exported binding.
-   */
   private findDeclaration(
-    instrs: readonly import("../../../ir").Operation[],
-    localPlace: import("../../../ir").Value,
-  ): StoreLocalOp | undefined {
+    instrs: readonly Operation[],
+    localPlace: Value,
+  ): BindingDeclOp | BindingInitOp | undefined {
     for (const instr of instrs) {
-      if (instr instanceof StoreLocalOp && instr.lval.id === localPlace.id) {
+      if (instr instanceof BindingDeclOp && instr.place.id === localPlace.id) {
+        return instr;
+      }
+      if (instr instanceof BindingInitOp && instr.place.id === localPlace.id) {
         return instr;
       }
     }

@@ -24,10 +24,9 @@ export function buildThrowStatement(
     throw new Error("Throw statement argument must be a single expression");
   }
 
-  functionBuilder.currentBlock.setTerminal(new ThrowTermOp(
-    createOperationId(environment),
-    argumentPlace,
-  ));
+  functionBuilder.currentBlock.setTerminal(
+    new ThrowTermOp(createOperationId(environment), argumentPlace),
+  );
 
   return undefined;
 }

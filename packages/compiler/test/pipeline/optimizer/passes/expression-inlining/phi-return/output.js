@@ -1,11 +1,11 @@
 function $0($1, $2, $3) {
   let $4;
-  let $24;
+  let $27;
   if ($1) {
-    $24 = $2;
+    $27 = $2;
   } else {
-    $24 = $3;
+    $27 = $3;
   }
-  return $24;
+  return $27;
 }
 console.log($0(true, 1, 2));

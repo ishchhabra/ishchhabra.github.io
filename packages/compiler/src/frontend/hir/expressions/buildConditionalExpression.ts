@@ -37,7 +37,9 @@ export function buildConditionalExpression(
   functionBuilder.addBlock(altBlock);
   functionBuilder.addBlock(joinBlock);
 
-  parentBlock.setTerminal(new IfTermOp(createOperationId(environment), testPlace, consBlock, altBlock, joinBlock));
+  parentBlock.setTerminal(
+    new IfTermOp(createOperationId(environment), testPlace, consBlock, altBlock, joinBlock),
+  );
 
   functionBuilder.currentBlock = consBlock;
   buildArm(node.consequent, joinBlock, scope, functionBuilder, moduleBuilder, environment);
@@ -62,6 +64,8 @@ function buildArm(
     throw new Error("Conditional expression arm must be a single place");
   }
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), joinBlock, [place]));
+    functionBuilder.currentBlock.setTerminal(
+      new JumpTermOp(createOperationId(environment), joinBlock, [place]),
+    );
   }
 }

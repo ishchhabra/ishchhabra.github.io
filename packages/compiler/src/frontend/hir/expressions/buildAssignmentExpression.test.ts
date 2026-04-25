@@ -49,7 +49,7 @@ function buildAssignFromSource(source: string) {
 
 describe("buildAssignmentExpression — end-to-end smoke", () => {
   it("simple identifier assignment", () => {
-    expect(printFn(buildFn("let x; x = 1;"))).toContain("store_local $0, $2");
+    expect(printFn(buildFn("let x; x = 1;"))).toContain("store_local $0, $3");
   });
 });
 
@@ -217,9 +217,7 @@ function buildLogicalAssignFromSource(source: string): {
     harness.moduleBuilder,
     harness.env,
   );
-  const parentBlock = harness.fnBuilder.blocks.find(
-    (b) => b.id === parentBlockId,
-  );
+  const parentBlock = harness.fnBuilder.blocks.find((b) => b.id === parentBlockId);
   if (!parentBlock) throw new Error("parent block missing");
   const term = parentBlock.terminal;
   if (!(term instanceof IfTermOp)) {
@@ -249,18 +247,15 @@ describe("buildAssignmentExpression — logical identifier assignments", () => {
       },
     );
 
-    it.each(["||=", "&&=", "??="] as const)(
-      "`x %s y` both arms jump to the join block",
-      (op) => {
-        const { term } = buildLogicalAssignFromSource(`let x = 1; x ${op} 2;`);
-        const thenJump = term.thenBlock.terminal;
-        const elseJump = term.elseBlock.terminal;
-        expect(thenJump).toBeInstanceOf(JumpTermOp);
-        expect(elseJump).toBeInstanceOf(JumpTermOp);
-        expect((thenJump as JumpTermOp).target).toBe(term.fallthroughBlock);
-        expect((elseJump as JumpTermOp).target).toBe(term.fallthroughBlock);
-      },
-    );
+    it.each(["||=", "&&=", "??="] as const)("`x %s y` both arms jump to the join block", (op) => {
+      const { term } = buildLogicalAssignFromSource(`let x = 1; x ${op} 2;`);
+      const thenJump = term.thenBlock.terminal;
+      const elseJump = term.elseBlock.terminal;
+      expect(thenJump).toBeInstanceOf(JumpTermOp);
+      expect(elseJump).toBeInstanceOf(JumpTermOp);
+      expect((thenJump as JumpTermOp).target).toBe(term.fallthroughBlock);
+      expect((elseJump as JumpTermOp).target).toBe(term.fallthroughBlock);
+    });
 
     it.each(["||=", "&&=", "??="] as const)(
       "`x %s y` leaves currentBlock set to the join block",
@@ -377,9 +372,7 @@ describe("buildAssignmentExpression — logical member assignments", () => {
     "`obj.x %s y` loads obj.x exactly once (getter fires once)",
     (op) => {
       const { parentBlock } = buildLogicalAssignFromSource(`obj.x ${op} 2;`);
-      const loads = parentBlock.operations.filter(
-        (o) => o instanceof LoadStaticPropertyOp,
-      );
+      const loads = parentBlock.operations.filter((o) => o instanceof LoadStaticPropertyOp);
       expect(loads.length).toBe(1);
     },
   );
@@ -392,9 +385,7 @@ describe("buildAssignmentExpression — logical member assignments", () => {
         (o): o is LoadStaticPropertyOp => o instanceof LoadStaticPropertyOp,
       )!;
       // No additional LoadStaticPropertyOp inside either arm.
-      expect(
-        term.elseBlock.operations.some((o) => o instanceof LoadStaticPropertyOp),
-      ).toBe(false);
+      expect(term.elseBlock.operations.some((o) => o instanceof LoadStaticPropertyOp)).toBe(false);
       const args = (term.elseBlock.terminal as JumpTermOp).args;
       expect(args[0]).toBe(cachedLoad.place);
     },

@@ -48,12 +48,9 @@ export function buildLabeledStatement(
   functionBuilder.addBlock(bodyBlock);
   functionBuilder.addBlock(fallthroughBlock);
 
-  parentBlock.setTerminal(new LabeledTermOp(
-    createOperationId(environment),
-    bodyBlock,
-    fallthroughBlock,
-    label,
-  ));
+  parentBlock.setTerminal(
+    new LabeledTermOp(createOperationId(environment), bodyBlock, fallthroughBlock, label),
+  );
 
   functionBuilder.currentBlock = bodyBlock;
   functionBuilder.controlStack.push({
@@ -66,7 +63,9 @@ export function buildLabeledStatement(
   functionBuilder.controlStack.pop();
 
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), fallthroughBlock, []));
+    functionBuilder.currentBlock.setTerminal(
+      new JumpTermOp(createOperationId(environment), fallthroughBlock, []),
+    );
   }
 
   functionBuilder.currentBlock = fallthroughBlock;

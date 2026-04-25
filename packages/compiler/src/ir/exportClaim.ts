@@ -24,20 +24,31 @@ import type { FuncOp } from "./core/FuncOp";
  */
 export function isClaimedByExportDeclaration(op: Operation): boolean {
   if (op.place === undefined) return false;
-  for (const user of op.place.users) {
-    if (user instanceof ExportNamedDeclarationOp && user.declaration === op.place) {
-      return true;
-    }
-    if (user instanceof ExportDefaultDeclarationOp && user.declaration === op.place) {
+  return isUsedAsExportDeclaration(op.place);
+}
+
+function isUsedAsExportDeclaration(place: NonNullable<Operation["place"]>): boolean {
+  for (const user of place.users) {
+    if (isExportDeclarationUse(user, place)) {
       return true;
     }
   }
   return false;
 }
 
+function isExportDeclarationUse(user: Operation, place: NonNullable<Operation["place"]>): boolean {
+  if (user instanceof ExportNamedDeclarationOp) {
+    return user.declaration === place;
+  }
+  if (user instanceof ExportDefaultDeclarationOp) {
+    return user.declaration === place;
+  }
+  return false;
+}
+
 /**
  * True if `declarationId` is named by any export op in the function —
- * i.e. an `ExportSpecifierOp`'s `localDeclarationId`, or an
+ * i.e. an `ExportSpecifierOp`'s `local` value, or an
  * `ExportNamedDeclarationOp` / `ExportDefaultDeclarationOp` whose
  * `declaration` carries this id. Exports observe the binding by
  * declarationId after the import/export refactor (488d360c), so
@@ -47,7 +58,7 @@ export function isClaimedByExportDeclaration(op: Operation): boolean {
 export function isDeclarationExported(funcOp: FuncOp, declarationId: DeclarationId): boolean {
   for (const block of funcOp.blocks) {
     for (const op of block.operations) {
-      if (op instanceof ExportSpecifierOp && op.localDeclarationId === declarationId) {
+      if (op instanceof ExportSpecifierOp && op.local.declarationId === declarationId) {
         return true;
       }
       if (op instanceof ExportNamedDeclarationOp) {

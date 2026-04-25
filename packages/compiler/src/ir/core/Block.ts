@@ -3,7 +3,6 @@ import { Operation } from "./Operation";
 import { TermOp } from "./TermOp";
 import type { FuncOp } from "./FuncOp";
 
-
 /**
  * Simulated opaque type for BlockId to prevent using normal numbers
  * as ids accidentally.

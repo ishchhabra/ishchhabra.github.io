@@ -1,15 +1,15 @@
-const $29 = globalThis.x;
+const $33 = globalThis.x;
 let $1;
-let $23;
-let $24;
-if ($29 > 0) {
-  $24 = "positive";
+let $25;
+let $26;
+if ($33 > 0) {
+  $26 = "positive";
 } else {
-  if ($29 < 0) {
-    $23 = "negative";
+  if ($33 < 0) {
+    $25 = "negative";
   } else {
-    $23 = "zero";
+    $25 = "zero";
   }
-  $24 = $23;
+  $26 = $25;
 }
-console.log($24);
+console.log($26);

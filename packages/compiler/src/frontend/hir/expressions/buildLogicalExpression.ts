@@ -63,18 +63,42 @@ export function buildLogicalExpression(
   switch (node.operator) {
     case "&&":
       // truthy → eval RHS and pass; falsy → pass LHS
-      buildRhsArm(node.right, truthyBlock, joinBlock, scope, functionBuilder, moduleBuilder, environment);
+      buildRhsArm(
+        node.right,
+        truthyBlock,
+        joinBlock,
+        scope,
+        functionBuilder,
+        moduleBuilder,
+        environment,
+      );
       buildPassthroughArm(leftPlace, falsyBlock, joinBlock, functionBuilder, environment);
       break;
     case "||":
       // truthy → pass LHS; falsy → eval RHS
       buildPassthroughArm(leftPlace, truthyBlock, joinBlock, functionBuilder, environment);
-      buildRhsArm(node.right, falsyBlock, joinBlock, scope, functionBuilder, moduleBuilder, environment);
+      buildRhsArm(
+        node.right,
+        falsyBlock,
+        joinBlock,
+        scope,
+        functionBuilder,
+        moduleBuilder,
+        environment,
+      );
       break;
     case "??":
       // lhs != null (truthy) → pass LHS; nullish (falsy) → eval RHS
       buildPassthroughArm(leftPlace, truthyBlock, joinBlock, functionBuilder, environment);
-      buildRhsArm(node.right, falsyBlock, joinBlock, scope, functionBuilder, moduleBuilder, environment);
+      buildRhsArm(
+        node.right,
+        falsyBlock,
+        joinBlock,
+        scope,
+        functionBuilder,
+        moduleBuilder,
+        environment,
+      );
       break;
     default: {
       const exhaustive: never = node.operator;

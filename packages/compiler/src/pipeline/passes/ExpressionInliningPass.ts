@@ -16,7 +16,7 @@ import { BasicBlock } from "../../ir/core/Block";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { Value } from "../../ir/core/Value";
 import { TermOp } from "../../ir/core/TermOp";
-import { isClaimedByExportDeclaration, isDeclarationExported } from "../../ir/exportClaim";
+import { isDeclarationExported } from "../../ir/exportClaim";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { MutabilityAnalysis, MutabilityInfo } from "../analysis/MutabilityAnalysis";
 import { BaseOptimizationPass, OptimizationResult } from "../late-optimizer/OptimizationPass";
@@ -90,7 +90,8 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
     // Exported bindings observe their store's lval via declarationId
     // (not via SSA users), so removing the store would orphan the
     // export. Leave them materialized.
-    if (isDeclarationExported(this.funcOp, this.getWrittenValue(store).declarationId)) return undefined;
+    if (isDeclarationExported(this.funcOp, this.getWrittenValue(store).declarationId))
+      return undefined;
 
     const user = this.getSingleUser(store);
     if (user === undefined) return undefined;
@@ -176,8 +177,8 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
     for (let j = storeIndex + 1; j < userIndex; j++) {
       const op = block.operations[j];
 
-      // Unclaimed StoreLocals lower to declaration statements.
-      if (op instanceof StoreLocalOp && !isClaimedByExportDeclaration(op)) return true;
+      // StoreLocal always lowers to a declaration/assignment statement.
+      if (op instanceof StoreLocalOp) return true;
 
       // Context stores mutate captured bindings — inlining a read
       // across one risks observing the post-mutation value.

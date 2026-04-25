@@ -1,2 +1,1 @@
-const $0 = 42;
-export { $0 as external };
+export const external = 42;

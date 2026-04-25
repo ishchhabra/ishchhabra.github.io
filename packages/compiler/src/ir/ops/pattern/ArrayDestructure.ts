@@ -59,10 +59,7 @@ export class ArrayDestructureOp extends Operation {
   }
 
   operands(): Value[] {
-    return [
-      this.value,
-      ...destructureTargetOperands({ kind: "array", elements: this.elements }),
-    ];
+    return [this.value, ...destructureTargetOperands({ kind: "array", elements: this.elements })];
   }
 
   override results(): Value[] {

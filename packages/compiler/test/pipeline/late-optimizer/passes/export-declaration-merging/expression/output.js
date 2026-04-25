@@ -1,2 +1,1 @@
-const $2 = 1 + 2;
-export { $2 as sum };
+export const sum = 1 + 2;

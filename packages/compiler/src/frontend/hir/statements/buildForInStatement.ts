@@ -84,19 +84,20 @@ export function buildForInStatement(
     if (!bodyBlock.entryBindings.includes(p)) bodyBlock.entryBindings.push(p);
   }
 
-  parentBlock.setTerminal(new ForInTermOp(
-    createOperationId(environment),
-    objectPlace,
-    iterationValuePlace,
-    iterationBindingKind,
-    bodyBlock,
-    exitBlock,
-    label,
-  ));
+  parentBlock.setTerminal(
+    new ForInTermOp(
+      createOperationId(environment),
+      objectPlace,
+      iterationValuePlace,
+      iterationBindingKind,
+      bodyBlock,
+      exitBlock,
+      label,
+    ),
+  );
 
   functionBuilder.currentBlock = bodyBlock;
-  const destructureKind =
-    left.type === "VariableDeclaration" ? "declaration" : "assignment";
+  const destructureKind = left.type === "VariableDeclaration" ? "declaration" : "assignment";
   if (bareLVal !== undefined || iterationTarget.kind !== "binding") {
     emitLoopIterationAssignment(
       iterationTarget,
@@ -116,7 +117,9 @@ export function buildForInStatement(
   buildOwnedBody(node.body, forScope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
   if (functionBuilder.currentBlock.terminal === undefined) {
-    functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), parentBlock, []));
+    functionBuilder.currentBlock.setTerminal(
+      new JumpTermOp(createOperationId(environment), parentBlock, []),
+    );
   }
 
   functionBuilder.currentBlock = exitBlock;
@@ -151,7 +154,12 @@ function emitLoopIterationAssignment(
         }
       } else {
         functionBuilder.addOp(
-          environment.createOperation(StoreLocalOp, environment.createValue(), target.place, valuePlace),
+          environment.createOperation(
+            StoreLocalOp,
+            environment.createValue(),
+            target.place,
+            valuePlace,
+          ),
         );
       }
     }

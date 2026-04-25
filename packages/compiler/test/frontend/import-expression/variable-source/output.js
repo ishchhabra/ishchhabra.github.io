@@ -1,1 +1,1 @@
-import("./module").then(($6) => console.log($6));
+import("./module").then(($7) => console.log($7));

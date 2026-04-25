@@ -35,7 +35,8 @@ export class SwitchTermOp extends TermOp {
   }
 
   successor(index: number): CFGSuccessor {
-    if (index >= 0 && index < this.cases.length) return { block: this.cases[index].block, args: [] };
+    if (index >= 0 && index < this.cases.length)
+      return { block: this.cases[index].block, args: [] };
     if (index === this.cases.length) return { block: this.defaultBlock, args: [] };
     if (index === this.cases.length + 1) return { block: this.fallthroughBlock, args: [] };
     return invalidSuccessorIndex(this.constructor.name, index);

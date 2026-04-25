@@ -14,10 +14,9 @@ export function buildReturnStatement(
   environment: Environment,
 ) {
   if (node.argument == null) {
-    functionBuilder.currentBlock.setTerminal(new ReturnTermOp(
-      createOperationId(functionBuilder.environment),
-      null,
-    ));
+    functionBuilder.currentBlock.setTerminal(
+      new ReturnTermOp(createOperationId(functionBuilder.environment), null),
+    );
     return undefined;
   }
 
@@ -26,9 +25,8 @@ export function buildReturnStatement(
     throw new Error("Return statement argument must be a single place");
   }
 
-  functionBuilder.currentBlock.setTerminal(new ReturnTermOp(
-    createOperationId(functionBuilder.environment),
-    valuePlace,
-  ));
+  functionBuilder.currentBlock.setTerminal(
+    new ReturnTermOp(createOperationId(functionBuilder.environment), valuePlace),
+  );
   return undefined;
 }

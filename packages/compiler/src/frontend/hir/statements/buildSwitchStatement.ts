@@ -85,7 +85,9 @@ export function buildSwitchStatement(
     if (functionBuilder.currentBlock.terminal === undefined) {
       // Fall-through to next case or fallthroughBlock if last
       const nextTarget = i + 1 < caseBlocks.length ? caseBlocks[i + 1] : fallthroughBlock;
-      functionBuilder.currentBlock.setTerminal(new JumpTermOp(createOperationId(environment), nextTarget, []));
+      functionBuilder.currentBlock.setTerminal(
+        new JumpTermOp(createOperationId(environment), nextTarget, []),
+      );
     }
   }
 
@@ -105,14 +107,16 @@ export function buildSwitchStatement(
     defaultBlock = fallthroughBlock;
   }
 
-  parentBlock.setTerminal(new SwitchTermOp(
-    createOperationId(environment),
-    discriminantPlace,
-    termCases,
-    defaultBlock,
-    fallthroughBlock,
-    label,
-  ));
+  parentBlock.setTerminal(
+    new SwitchTermOp(
+      createOperationId(environment),
+      discriminantPlace,
+      termCases,
+      defaultBlock,
+      fallthroughBlock,
+      label,
+    ),
+  );
 
   functionBuilder.currentBlock = fallthroughBlock;
   return undefined;

@@ -54,10 +54,22 @@ export class IfTermOp extends TermOp {
   withSuccessor(index: number, successor: CFGSuccessor): IfTermOp {
     assertNoSuccessorArgs(this.constructor.name, successor);
     if (index === 0) {
-      return new IfTermOp(this.id, this.cond, successor.block, this.elseBlock, this.fallthroughBlock);
+      return new IfTermOp(
+        this.id,
+        this.cond,
+        successor.block,
+        this.elseBlock,
+        this.fallthroughBlock,
+      );
     }
     if (index === 1) {
-      return new IfTermOp(this.id, this.cond, this.thenBlock, successor.block, this.fallthroughBlock);
+      return new IfTermOp(
+        this.id,
+        this.cond,
+        this.thenBlock,
+        successor.block,
+        this.fallthroughBlock,
+      );
     }
     if (index === 2) {
       return new IfTermOp(this.id, this.cond, this.thenBlock, this.elseBlock, successor.block);

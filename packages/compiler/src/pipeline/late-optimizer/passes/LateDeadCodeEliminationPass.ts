@@ -1,7 +1,6 @@
 import { Environment } from "../../../environment";
-import { BindingInitOp, Operation, StoreLocalOp } from "../../../ir";
+import { Operation, StoreLocalOp } from "../../../ir";
 import { FuncOp } from "../../../ir/core/FuncOp";
-import { isDeclarationExported } from "../../../ir/exportClaim";
 import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
 
 /**
@@ -34,16 +33,6 @@ export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
       for (let i = block.operations.length - 1; i >= 0; i--) {
         const instr = block.operations[i];
         if (instr.hasSideEffects(this.environment)) continue;
-
-        // Exports reach their binding via declarationId rather than
-        // SSA operand chains, so a store/init to an exported binding
-        // looks unused but must stay.
-        if (instr instanceof BindingInitOp && isDeclarationExported(this.funcOp, instr.place.declarationId)) {
-          continue;
-        }
-        if (instr instanceof StoreLocalOp && isDeclarationExported(this.funcOp, instr.lval.declarationId)) {
-          continue;
-        }
 
         if (instr instanceof StoreLocalOp) {
           if (instr.results().some((p) => p.users.size > 0)) continue;

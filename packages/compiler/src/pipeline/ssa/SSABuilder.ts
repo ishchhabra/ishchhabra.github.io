@@ -71,7 +71,7 @@ function analyzePromotability(
         for (const c of captures) mark(c.declarationId, NonPromotableReason.Captured);
       }
       if (op instanceof ExportSpecifierOp) {
-        mark(op.localDeclarationId, NonPromotableReason.Exported);
+        mark(op.local.declarationId, NonPromotableReason.Exported);
       } else if (op instanceof ExportDefaultDeclarationOp) {
         const d = op.declaration.declarationId;
         if (d !== undefined) mark(d, NonPromotableReason.Exported);
@@ -460,14 +460,7 @@ export class SSABuilder {
     const env = this.moduleIR.environment;
     const freshLval = env.createValue(op.lval.declarationId);
     freshLval.originalDeclarationId = op.lval.originalDeclarationId ?? op.lval.declarationId;
-    const renamed = new StoreLocalOp(
-      op.id,
-      op.place,
-      freshLval,
-      op.value,
-      op.bindings,
-      op.binding,
-    );
+    const renamed = new StoreLocalOp(op.id, op.place, freshLval, op.value, op.bindings, op.binding);
     op.parentBlock?.replaceOp(op, renamed);
     this.pushScoped(stacks, freshLval, pushed);
   }
@@ -479,11 +472,7 @@ export class SSABuilder {
    * Value onto the decl's rename stack. Covers `ArrayDestructureOp` /
    * `ObjectDestructureOp` binding targets, and any other multi-def op.
    */
-  private renameNonPromotableDefs(
-    op: Operation,
-    stacks: Stacks,
-    pushed: DeclarationId[],
-  ): void {
+  private renameNonPromotableDefs(op: Operation, stacks: Stacks, pushed: DeclarationId[]): void {
     const env = this.moduleIR.environment;
     const freshMap = new Map<Value, Value>();
     for (const def of op.results()) {
@@ -572,11 +561,7 @@ export class SSABuilder {
    * reaching definitions. Same logic as {@link fillJumpArgs} but applied
    * to both successors.
    */
-  private fillBranchArgs(
-    block: BasicBlock,
-    terminal: BranchTermOp,
-    stacks: Stacks,
-  ): void {
+  private fillBranchArgs(block: BasicBlock, terminal: BranchTermOp, stacks: Stacks): void {
     const fill = (params: readonly Value[], existing: readonly Value[]): Value[] => {
       let frontendArgIdx = 0;
       return params.map((param) => {
