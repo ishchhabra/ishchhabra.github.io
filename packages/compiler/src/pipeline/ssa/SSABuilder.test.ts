@@ -79,6 +79,15 @@ describe("SSABuilder — mem2reg for promotable bindings", () => {
     expect(allStores(funcOp)).toHaveLength(0);
     expect(allLoads(funcOp)).toHaveLength(0);
   });
+
+  it("elides loads after assignment destructure to an uncaptured local", () => {
+    const { funcOp } = buildAndSSA(`
+      let a = 1;
+      ({ a } = { a: 2 });
+      f(a);
+    `);
+    expect(allLoads(funcOp)).toHaveLength(0);
+  });
 });
 
 describe("SSABuilder — fresh lvals for non-promotable bindings", () => {
@@ -99,39 +108,22 @@ describe("SSABuilder — fresh lvals for non-promotable bindings", () => {
     expect(lvalValues.size).toBe(writes.length);
   });
 
-  it("assignment-destructure targets are non-promotable; destructure defs get fresh Values", () => {
-    // `({a} = ...)` after `const {a, b} = ...` marks `a` as a
-    // DestructureAssignmentTarget → non-promotable. The assignment
-    // destructure's target must get a fresh SSA Value distinct from
-    // the declaration-destructure's.
+  it("promotes assignment destructure targets into const declaration destructures", () => {
     const { funcOp } = buildAndSSA(`
-      const { a, b } = { a: 1, b: 2 };
+      let { a, b } = { a: 1, b: 2 };
       ({ a } = { a: 3 });
       f(a, b);
     `);
-    // Collect every Value that's a def with declarationId matching
-    // the decl of `a`. All such Values should be distinct (one per
-    // write).
-    const aDefs = new Set<unknown>();
-    let aDeclId: number | undefined;
+    const destructures: ObjectDestructureOp[] = [];
     for (const block of funcOp.blocks) {
       for (const op of block.operations) {
-        if (op instanceof ObjectDestructureOp || op instanceof StoreLocalOp) {
-          for (const def of op.results()) {
-            if (def === op.place) continue;
-            if (def.declarationId === undefined) continue;
-            // Grab the first `a` we see by name-free heuristic: use
-            // originalDeclarationId when present. Simpler: count
-            // distinct Values that share some declarationId.
-            aDeclId ??= def.declarationId;
-            if (def.declarationId === aDeclId) aDefs.add(def);
-          }
-        }
+        if (op instanceof ObjectDestructureOp) destructures.push(op);
       }
     }
-    // At least two distinct Values for `a` — one from the initial
-    // destructure, one from the reassignment destructure.
-    expect(aDefs.size).toBeGreaterThanOrEqual(2);
+    const assignmentDestructure = destructures.at(-1);
+    expect(assignmentDestructure).toBeDefined();
+    expect(assignmentDestructure!.kind).toBe("declaration");
+    expect(assignmentDestructure!.declarationKind).toBe("const");
   });
 
   it("load after non-promotable store reads the store's fresh lval", () => {

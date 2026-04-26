@@ -13,7 +13,10 @@ import {
 import { incomingProducedValues } from "../../ir/cfg";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { ModuleIR } from "../../ir/core/ModuleIR";
-import { collectDestructureTargetBindingPlaces } from "../../ir/core/Destructure";
+import {
+  collectDestructureTargetBindingPlaces,
+  type DestructureTarget,
+} from "../../ir/core/Destructure";
 import { ArrayDestructureOp } from "../../ir/ops/pattern/ArrayDestructure";
 import { ObjectDestructureOp } from "../../ir/ops/pattern/ObjectDestructure";
 import { ExportSpecifierOp } from "../../ir/ops/module/ExportSpecifier";
@@ -30,7 +33,6 @@ enum NonPromotableReason {
   Captured = "captured",
   Exported = "exported",
   ComplexWriter = "complex-writer",
-  DestructureAssignmentTarget = "destructure-assignment-target",
 }
 
 /**
@@ -44,9 +46,8 @@ enum NonPromotableReason {
  *      Values would embed stale values in the closure's capture list.
  *   3. It is referenced by an `ExportSpecifierOp` or
  *      `ExportDefaultDeclarationOp` (ECMA-262 §16.2.1.7).
- *   4. It is a destructure-assignment target (`[a, b] = ...`,
- *      `({x} = ...)`) — the named binding must stay.
- *   5. Some writer is a multi-def op other than a plain `StoreLocalOp`
+ *   4. Some writer is a multi-def op other than a plain
+ *      destructure op or `StoreLocalOp`
  *      (for-of / for-in iter targets, try-catch handler params, …).
  *
  * RHS purity is NOT considered — ordering of side-effectful
@@ -84,18 +85,7 @@ function analyzePromotability(
     for (const op of block.operations) {
       if (op instanceof StoreLocalOp || op instanceof BindingInitOp) continue;
 
-      if (op instanceof ArrayDestructureOp || op instanceof ObjectDestructureOp) {
-        // Declaration-kind destructures carry their own `let` / `const`;
-        // codegen emits the declaration inline, so targets stay
-        // single-assignment and promotable. Only assignment-kind
-        // destructures pin targets.
-        if (op.kind !== "assignment") continue;
-        for (const def of op.results()) {
-          if (def === op.place || def.declarationId === undefined) continue;
-          mark(def.declarationId, NonPromotableReason.DestructureAssignmentTarget);
-        }
-        continue;
-      }
+      if (op instanceof ArrayDestructureOp || op instanceof ObjectDestructureOp) continue;
 
       for (const def of op.results()) {
         if (def === op.place || def.declarationId === undefined) continue;
@@ -445,7 +435,78 @@ export class SSABuilder {
       return;
     }
 
+    if (current instanceof ArrayDestructureOp || current instanceof ObjectDestructureOp) {
+      this.renameDestructure(current, stacks, pushed);
+      return;
+    }
+
     this.renameNonPromotableDefs(current, stacks, pushed);
+  }
+
+  private renameDestructure(
+    op: ArrayDestructureOp | ObjectDestructureOp,
+    stacks: Stacks,
+    pushed: DeclarationId[],
+  ): void {
+    if (op.kind !== "assignment" || !this.isPromotableDestructureAssignment(op)) {
+      this.renameNonPromotableDefs(op, stacks, pushed);
+      return;
+    }
+
+    const env = this.moduleIR.environment;
+    const freshMap = new Map<Value, Value>();
+    const stackPushes: Array<{ decl: DeclarationId; value: Value }> = [];
+    for (const target of this.collectPromotableBindingTargets(op)) {
+      const decl = target.place.declarationId;
+      const fresh = env.createValue();
+      freshMap.set(target.place, fresh);
+      stackPushes.push({ decl, value: fresh });
+    }
+
+    const rewritten = op.rewrite(freshMap, { rewriteDefinitions: true });
+    const replacement =
+      rewritten instanceof ArrayDestructureOp
+        ? new ArrayDestructureOp(
+            rewritten.id,
+            rewritten.place,
+            rewritten.elements,
+            rewritten.value,
+            "declaration",
+            "const",
+          )
+        : new ObjectDestructureOp(
+            rewritten.id,
+            rewritten.place,
+            rewritten.properties,
+            rewritten.value,
+            "declaration",
+            "const",
+          );
+    op.parentBlock?.replaceOp(op, replacement);
+
+    for (const { decl, value } of stackPushes) {
+      this.pushScopedForDecl(stacks, decl, value, pushed);
+    }
+  }
+
+  private isPromotableDestructureAssignment(op: ArrayDestructureOp | ObjectDestructureOp): boolean {
+    const targets = this.collectPromotableBindingTargets(op);
+    for (const target of targets) {
+      if (!this.isPromotable(target.place.declarationId)) return false;
+    }
+    return targets.length > 0;
+  }
+
+  private collectPromotableBindingTargets(
+    op: ArrayDestructureOp | ObjectDestructureOp,
+  ): Array<{ place: Value }> {
+    const root: DestructureTarget =
+      op instanceof ArrayDestructureOp
+        ? { kind: "array", elements: op.elements }
+        : { kind: "object", properties: op.properties };
+    const targets: Array<{ place: Value }> = [];
+    if (!collectLocalBindingTargets(root, targets)) return [];
+    return targets;
   }
 
   /**
@@ -687,4 +748,33 @@ function argsEqual(a: readonly Value[], b: readonly Value[]): boolean {
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
   return true;
+}
+
+function collectLocalBindingTargets(
+  target: DestructureTarget,
+  out: Array<{ place: Value }>,
+): boolean {
+  switch (target.kind) {
+    case "binding":
+      if (target.storage !== "local") return false;
+      out.push({ place: target.place });
+      return true;
+    case "static-member":
+    case "dynamic-member":
+      return false;
+    case "assignment":
+      return collectLocalBindingTargets(target.left, out);
+    case "rest":
+      return collectLocalBindingTargets(target.argument, out);
+    case "array":
+      for (const element of target.elements) {
+        if (element !== null && !collectLocalBindingTargets(element, out)) return false;
+      }
+      return true;
+    case "object":
+      for (const property of target.properties) {
+        if (!collectLocalBindingTargets(property.value, out)) return false;
+      }
+      return true;
+  }
 }
