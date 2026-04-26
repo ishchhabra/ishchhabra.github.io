@@ -3,9 +3,9 @@ import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
 import { type CloneContext, nextId } from "../../core/Operation";
 import {
-  assertNoSuccessorArgs,
-  type CFGSuccessor,
-  invalidSuccessorIndex,
+  assertNoTargetArgs,
+  type BlockTarget,
+  invalidTargetIndex,
   TermOp,
 } from "../../core/TermOp";
 
@@ -38,18 +38,18 @@ export class ForTermOp extends TermOp {
     return [];
   }
 
-  successorCount(): number {
+  targetCount(): number {
     return 1;
   }
 
-  successor(index: number): CFGSuccessor {
+  target(index: number): BlockTarget {
     if (index === 0) return { block: this.testBlock, args: [] };
-    return invalidSuccessorIndex(this.constructor.name, index);
+    return invalidTargetIndex(this.constructor.name, index);
   }
 
-  withSuccessor(index: number, successor: CFGSuccessor): ForTermOp {
-    assertNoSuccessorArgs(this.constructor.name, successor);
-    if (index !== 0) return invalidSuccessorIndex(this.constructor.name, index);
+  withTarget(index: number, successor: BlockTarget): ForTermOp {
+    assertNoTargetArgs(this.constructor.name, successor);
+    if (index !== 0) return invalidTargetIndex(this.constructor.name, index);
     return new ForTermOp(
       this.id,
       successor.block,

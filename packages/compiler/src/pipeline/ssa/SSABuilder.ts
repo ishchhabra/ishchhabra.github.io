@@ -599,7 +599,7 @@ export class SSABuilder {
    * section for how SSA-rename vs frontend-semantic params are split.
    */
   private fillJumpArgs(block: BasicBlock, terminal: JumpTermOp, stacks: Stacks): void {
-    const succ = terminal.target;
+    const succ = terminal.targetBlock;
     if (succ.params.length === 0) return;
 
     const existing = terminal.args;
@@ -616,7 +616,7 @@ export class SSABuilder {
     });
 
     if (argsEqual(existing, args)) return;
-    block.replaceOp(terminal, new JumpTermOp(terminal.id, terminal.target, args));
+    block.replaceOp(terminal, new JumpTermOp(terminal.id, terminal.targetBlock, args));
   }
 
   /**

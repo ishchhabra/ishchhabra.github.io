@@ -57,7 +57,7 @@ describe("SSAEliminator", () => {
     for (const split of [branch.trueTarget, branch.falseTarget]) {
       expect(split.operations.some((op) => op instanceof StoreLocalOp)).toBe(true);
       expect(split.terminal).toBeInstanceOf(JumpTermOp);
-      expect((split.terminal as JumpTermOp).target).toBe(join);
+      expect((split.terminal as JumpTermOp).targetBlock).toBe(join);
     }
 
     const entryAssignmentCopies = entry.operations.filter((op) => {

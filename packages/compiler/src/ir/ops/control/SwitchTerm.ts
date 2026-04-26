@@ -3,9 +3,10 @@ import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
 import { type CloneContext, nextId, remapPlace } from "../../core/Operation";
 import {
-  assertNoSuccessorArgs,
-  type CFGSuccessor,
-  invalidSuccessorIndex,
+  assertNoTargetArgs,
+  type ControlFlowFacts,
+  type BlockTarget,
+  invalidTargetIndex,
   TermOp,
 } from "../../core/TermOp";
 
@@ -30,20 +31,34 @@ export class SwitchTermOp extends TermOp {
     return [this.discriminant, ...this.cases.map((c) => c.test)];
   }
 
-  successorCount(): number {
+  targetCount(): number {
     return this.cases.length + 2;
   }
 
-  successor(index: number): CFGSuccessor {
+  target(index: number): BlockTarget {
     if (index >= 0 && index < this.cases.length)
       return { block: this.cases[index].block, args: [] };
     if (index === this.cases.length) return { block: this.defaultBlock, args: [] };
     if (index === this.cases.length + 1) return { block: this.fallthroughBlock, args: [] };
-    return invalidSuccessorIndex(this.constructor.name, index);
+    return invalidTargetIndex(this.constructor.name, index);
   }
 
-  withSuccessor(index: number, successor: CFGSuccessor): SwitchTermOp {
-    assertNoSuccessorArgs(this.constructor.name, successor);
+  override successorIndices(): readonly number[] {
+    return Array.from({ length: this.cases.length + 1 }, (_, i) => i);
+  }
+
+  override takenSuccessorIndices(facts: ControlFlowFacts): readonly number[] {
+    for (let i = 0; i < this.cases.length; i++) {
+      const equality = facts.strictEqual(this.discriminant, this.cases[i].test);
+      if (equality === "pending") return [];
+      if (equality === "unknown") return this.successorIndices();
+      if (equality) return [i];
+    }
+    return [this.cases.length];
+  }
+
+  withTarget(index: number, successor: BlockTarget): SwitchTermOp {
+    assertNoTargetArgs(this.constructor.name, successor);
     if (index >= 0 && index < this.cases.length) {
       const cases = this.cases.map((switchCase, caseIndex) =>
         caseIndex === index ? { ...switchCase, block: successor.block } : switchCase,
@@ -77,7 +92,7 @@ export class SwitchTermOp extends TermOp {
         this.label,
       );
     }
-    return invalidSuccessorIndex(this.constructor.name, index);
+    return invalidTargetIndex(this.constructor.name, index);
   }
 
   rewrite(values: Map<Value, Value>): SwitchTermOp {

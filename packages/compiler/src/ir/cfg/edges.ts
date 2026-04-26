@@ -11,14 +11,14 @@ import type { Value } from "../core/Value";
 import { BranchTermOp, JumpTermOp } from "../ops/control";
 
 /**
- * A live view onto one positional CFG edge — the `index`-th successor
+ * A live view onto one positional CFG edge — the `index`-th target
  * slot of `pred`'s terminator.
  *
  * Lazy by design: `terminator`, `sink`, and `args` re-read the
  * predecessor's current terminator on every access. After
  * {@link rewriteArgs} or {@link split} replaces that terminator, the
- * Edge stays valid as long as the successor index is preserved (which
- * `withSuccessor` guarantees by contract). Eager fields would freeze
+ * Edge stays valid as long as the target index is preserved (which
+ * `withTarget` guarantees by contract). Eager fields would freeze
  * a stale array reference — silent bug surface for any pass that
  * mutates one edge before reading another.
  *
@@ -42,12 +42,12 @@ export class Edge {
 
   /** Destination block. */
   get sink(): BasicBlock {
-    return this.terminator.successor(this.index).block;
+    return this.terminator.target(this.index).block;
   }
 
   /** Args bound positionally to `sink.params`. */
   get args(): readonly SuccessorArg[] {
-    return this.terminator.successor(this.index).args;
+    return this.terminator.target(this.index).args;
   }
 
   /**
@@ -56,9 +56,9 @@ export class Edge {
    */
   rewriteArgs(newArgs: readonly SuccessorArg[]): void {
     const term = this.terminator;
-    const succ = term.successor(this.index);
+    const succ = term.target(this.index);
     if (newArgs === succ.args) return;
-    this.pred.replaceOp(term, term.withSuccessor(this.index, { ...succ, args: newArgs }));
+    this.pred.replaceOp(term, term.withTarget(this.index, { ...succ, args: newArgs }));
   }
 
   /**
@@ -73,7 +73,7 @@ export class Edge {
   split(): BasicBlock {
     const env = this.funcOp.moduleIR.environment;
     const term = this.terminator;
-    const succ = term.successor(this.index);
+    const succ = term.target(this.index);
 
     const splitBlock = env.createBlock();
     splitBlock.setTerminal(
@@ -85,25 +85,24 @@ export class Edge {
     );
     this.funcOp.addBlock(splitBlock);
 
-    this.pred.replaceOp(term, term.withSuccessor(this.index, { block: splitBlock, args: [] }));
+    this.pred.replaceOp(term, term.withTarget(this.index, { block: splitBlock, args: [] }));
     return splitBlock;
   }
 }
 
 /**
- * Yield every flat-CFG outgoing edge of `block` in successor-index
+ * Yield every flat-CFG outgoing edge of `block` in target-index
  * order. Only `JumpTermOp` and `BranchTermOp` carry positional args
  * along their successor edges; structured terminators (ForOf, ForIn,
  * For, While, If, Try, Switch, Labeled) route control without
  * forwarding args, so their successor slots aren't surfaced as edges
  * here. Code that needs to walk structured-control successors should
- * iterate `terminal.successors()` directly.
+ * iterate `terminal.targets()` directly.
  */
 export function* outgoingEdges(funcOp: FuncOp, block: BasicBlock): Iterable<Edge> {
   const terminal = block.terminal;
   if (!(terminal instanceof JumpTermOp) && !(terminal instanceof BranchTermOp)) return;
-  const count = terminal.successorCount();
-  for (let i = 0; i < count; i++) {
+  for (const i of terminal.successorIndices()) {
     yield new Edge(block, i, funcOp);
   }
 }
@@ -124,8 +123,8 @@ export function incomingProducedValues(funcOp: FuncOp, block: BasicBlock): Value
   for (const pred of funcOp.blocks) {
     const terminal = pred.terminal;
     if (!(terminal instanceof TermOp)) continue;
-    for (let i = 0; i < terminal.successorCount(); i++) {
-      const successor = terminal.successor(i);
+    for (const i of terminal.successorIndices()) {
+      const successor = terminal.target(i);
       if (successor.block !== block) continue;
       values.push(...producedSuccessorValues(successor.args));
     }
@@ -160,8 +159,8 @@ export function getEdgeArgs(
 ): readonly Value[] | undefined {
   const terminal = block.terminal;
   if (!(terminal instanceof TermOp)) return undefined;
-  for (let i = 0; i < terminal.successorCount(); i++) {
-    const succ = terminal.successor(i);
+  for (const i of terminal.successorIndices()) {
+    const succ = terminal.target(i);
     if (succ.block === succBlock) return successorArgValues(succ.args);
   }
   return undefined;

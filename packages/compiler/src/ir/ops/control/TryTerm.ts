@@ -3,8 +3,8 @@ import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
 import { type CloneContext, nextId, remapPlace } from "../../core/Operation";
 import {
-  type CFGSuccessor,
-  invalidSuccessorIndex,
+  type BlockTarget,
+  invalidTargetIndex,
   producedSuccessorArg,
   TermOp,
 } from "../../core/TermOp";
@@ -39,11 +39,11 @@ export class TryTermOp extends TermOp {
     return [];
   }
 
-  successorCount(): number {
+  targetCount(): number {
     return 2 + (this.handlerBlock === null ? 0 : 1) + (this.finallyBlock === null ? 0 : 1);
   }
 
-  successor(index: number): CFGSuccessor {
+  target(index: number): BlockTarget {
     const block = this.successorBlock(index);
     if (block === this.handlerBlock && this.handlerParam !== null) {
       return { block, args: [producedSuccessorArg(this.handlerParam)] };
@@ -51,7 +51,11 @@ export class TryTermOp extends TermOp {
     return { block, args: [] };
   }
 
-  withSuccessor(index: number, successor: CFGSuccessor): TryTermOp {
+  override successorIndices(): readonly number[] {
+    return Array.from({ length: this.targetCount() - 1 }, (_, i) => i);
+  }
+
+  withTarget(index: number, successor: BlockTarget): TryTermOp {
     this.successorBlock(index);
     let bodyBlock = this.bodyBlock;
     let handlerBlock = this.handlerBlock;
@@ -103,6 +107,6 @@ export class TryTermOp extends TermOp {
     if (this.handlerBlock !== null && index === nextIndex++) return this.handlerBlock;
     if (this.finallyBlock !== null && index === nextIndex++) return this.finallyBlock;
     if (index === nextIndex) return this.fallthroughBlock;
-    return invalidSuccessorIndex(this.constructor.name, index);
+    return invalidTargetIndex(this.constructor.name, index);
   }
 }

@@ -39,7 +39,7 @@ export function verifyFunction(funcOp: FuncOp): void {
   for (const block of funcOp.blocks) {
     for (const op of block.getAllOps()) {
       if (!(op instanceof TermOp)) continue;
-      for (const successor of op.successors()) {
+      for (const successor of op.targets()) {
         if (!knownBlocks.has(successor.block)) {
           throw new VerifyError(op, `references non-existent block bb${successor.block.id}`);
         }

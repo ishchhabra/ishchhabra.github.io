@@ -3,9 +3,9 @@ import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
 import { type CloneContext, nextId } from "../../core/Operation";
 import {
-  assertNoSuccessorArgs,
-  type CFGSuccessor,
-  invalidSuccessorIndex,
+  assertNoTargetArgs,
+  type BlockTarget,
+  invalidTargetIndex,
   TermOp,
 } from "../../core/TermOp";
 
@@ -34,25 +34,29 @@ export class LabeledTermOp extends TermOp {
     return [];
   }
 
-  successorCount(): number {
+  targetCount(): number {
     return 2;
   }
 
-  successor(index: number): CFGSuccessor {
+  target(index: number): BlockTarget {
     if (index === 0) return { block: this.bodyBlock, args: [] };
     if (index === 1) return { block: this.fallthroughBlock, args: [] };
-    return invalidSuccessorIndex(this.constructor.name, index);
+    return invalidTargetIndex(this.constructor.name, index);
   }
 
-  withSuccessor(index: number, successor: CFGSuccessor): LabeledTermOp {
-    assertNoSuccessorArgs(this.constructor.name, successor);
+  override successorIndices(): readonly number[] {
+    return [0];
+  }
+
+  withTarget(index: number, successor: BlockTarget): LabeledTermOp {
+    assertNoTargetArgs(this.constructor.name, successor);
     if (index === 0) {
       return new LabeledTermOp(this.id, successor.block, this.fallthroughBlock, this.label);
     }
     if (index === 1) {
       return new LabeledTermOp(this.id, this.bodyBlock, successor.block, this.label);
     }
-    return invalidSuccessorIndex(this.constructor.name, index);
+    return invalidTargetIndex(this.constructor.name, index);
   }
 
   rewrite(_values: Map<Value, Value>): LabeledTermOp {

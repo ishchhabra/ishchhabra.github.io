@@ -186,7 +186,7 @@ describe("SSABuilder — block-param placement at merges", () => {
       if (block === funcOp.entryBlock) continue;
       for (const pred of block.predecessors()) {
         const term = pred.terminal;
-        if (term instanceof JumpTermOp && term.target === block) {
+        if (term instanceof JumpTermOp && term.targetBlock === block) {
           expect(term.args.length).toBe(block.params.length);
         }
       }
@@ -240,7 +240,7 @@ describe("SSABuilder — invariants", () => {
         if (param.originalDeclarationId === undefined) continue;
         for (const pred of block.predecessors()) {
           const term = pred.terminal;
-          if (term instanceof JumpTermOp && term.target === block) {
+          if (term instanceof JumpTermOp && term.targetBlock === block) {
             expect(term.args[i]).toBeDefined();
           }
         }

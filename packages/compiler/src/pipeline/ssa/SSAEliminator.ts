@@ -195,7 +195,7 @@ export class SSAEliminator {
     // predecessor entry to sink is uncontended. Multi-successor
     // (BranchTermOp): the edge is critical; split it so the copy
     // executes only on this arm.
-    if (edge.terminator.successorCount() === 1) {
+    if (edge.terminator.successorIndices().length === 1) {
       edge.pred.appendOp(storeInstr);
     } else {
       edge.split().appendOp(storeInstr);

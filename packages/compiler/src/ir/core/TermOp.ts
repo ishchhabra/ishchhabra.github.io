@@ -6,9 +6,17 @@ export type SuccessorArg =
   | { readonly kind: "value"; readonly value: Value }
   | { readonly kind: "produced"; readonly value: Value };
 
-export interface CFGSuccessor {
+export interface BlockTarget {
   readonly block: BasicBlock;
   readonly args: readonly SuccessorArg[];
+}
+
+export type Truthiness = boolean | "unknown" | "pending";
+export type Equality = boolean | "unknown" | "pending";
+
+export interface ControlFlowFacts {
+  truthiness(value: Value): Truthiness;
+  strictEqual(left: Value, right: Value): Equality;
 }
 
 export function valueSuccessorArg(value: Value): SuccessorArg {
@@ -36,39 +44,47 @@ export function producedSuccessorValues(args: readonly SuccessorArg[]): Value[] 
 }
 
 export abstract class TermOp extends Operation {
-  abstract successorCount(): number;
-  abstract successor(index: number): CFGSuccessor;
-  abstract withSuccessor(index: number, successor: CFGSuccessor): TermOp;
+  abstract targetCount(): number;
+  abstract target(index: number): BlockTarget;
+  abstract withTarget(index: number, target: BlockTarget): TermOp;
 
-  successors(): CFGSuccessor[] {
-    const successors: CFGSuccessor[] = [];
-    for (let i = 0; i < this.successorCount(); i++) {
-      successors.push(this.successor(i));
+  targets(): BlockTarget[] {
+    const targets: BlockTarget[] = [];
+    for (let i = 0; i < this.targetCount(); i++) {
+      targets.push(this.target(i));
     }
-    return successors;
+    return targets;
+  }
+
+  successorIndices(): readonly number[] {
+    return Array.from({ length: this.targetCount() }, (_, i) => i);
+  }
+
+  takenSuccessorIndices(_facts: ControlFlowFacts): readonly number[] {
+    return this.successorIndices();
   }
 
   override attach(block: BasicBlock | null): void {
     super.attach(block);
-    for (const successor of this.successors()) {
-      successor.block._addUse(this);
+    for (const target of this.targets()) {
+      target.block._addUse(this);
     }
   }
 
   override detach(): void {
-    for (const successor of this.successors()) {
-      successor.block._removeUse(this);
+    for (const target of this.targets()) {
+      target.block._removeUse(this);
     }
     super.detach();
   }
 
   override remap(from: BasicBlock, to: BasicBlock): void {
     let replacement: TermOp | undefined;
-    for (let i = 0; i < (replacement ?? this).successorCount(); i++) {
+    for (let i = 0; i < (replacement ?? this).targetCount(); i++) {
       const current = replacement ?? this;
-      const successor = current.successor(i);
-      if (successor.block !== from) continue;
-      replacement = current.withSuccessor(i, { ...successor, block: to });
+      const target = current.target(i);
+      if (target.block !== from) continue;
+      replacement = current.withTarget(i, { ...target, block: to });
     }
     if (replacement === undefined) return;
     if (this.parentBlock === null) {
@@ -78,12 +94,12 @@ export abstract class TermOp extends Operation {
   }
 }
 
-export function assertNoSuccessorArgs(opName: string, successor: CFGSuccessor): void {
+export function assertNoTargetArgs(opName: string, successor: BlockTarget): void {
   if (successor.args.length !== 0) {
     throw new Error(`${opName} successor edges do not accept block arguments`);
   }
 }
 
-export function invalidSuccessorIndex(opName: string, index: number): never {
+export function invalidTargetIndex(opName: string, index: number): never {
   throw new Error(`${opName} successor index ${index} is out of range`);
 }

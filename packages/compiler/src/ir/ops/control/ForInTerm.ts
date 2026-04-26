@@ -3,8 +3,8 @@ import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
 import { type CloneContext, nextId, remapPlace } from "../../core/Operation";
 import {
-  type CFGSuccessor,
-  invalidSuccessorIndex,
+  type BlockTarget,
+  invalidTargetIndex,
   producedSuccessorArg,
   TermOp,
 } from "../../core/TermOp";
@@ -38,19 +38,19 @@ export class ForInTermOp extends TermOp {
     return [this.iterationValue];
   }
 
-  successorCount(): number {
+  targetCount(): number {
     return 2;
   }
 
-  successor(index: number): CFGSuccessor {
+  target(index: number): BlockTarget {
     if (index === 0) {
       return { block: this.bodyBlock, args: [producedSuccessorArg(this.iterationValue)] };
     }
     if (index === 1) return { block: this.exitBlock, args: [] };
-    return invalidSuccessorIndex(this.constructor.name, index);
+    return invalidTargetIndex(this.constructor.name, index);
   }
 
-  withSuccessor(index: number, successor: CFGSuccessor): ForInTermOp {
+  withTarget(index: number, successor: BlockTarget): ForInTermOp {
     if (index === 0) {
       return new ForInTermOp(
         this.id,
@@ -73,7 +73,7 @@ export class ForInTermOp extends TermOp {
         this.label,
       );
     }
-    return invalidSuccessorIndex(this.constructor.name, index);
+    return invalidTargetIndex(this.constructor.name, index);
   }
 
   rewrite(values: Map<Value, Value>): ForInTermOp {

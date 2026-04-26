@@ -24,10 +24,16 @@ import {
   UNRESOLVED,
 } from "../../ir/builtins";
 import { BasicBlock } from "../../ir/core/Block";
-import { incomingEdges } from "../../ir/cfg";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { ModuleIR } from "../../ir/core/ModuleIR";
-import { successorArgValue, TermOp } from "../../ir/core/TermOp";
+import {
+  successorArgValue,
+  TermOp,
+  type ControlFlowFacts,
+  type Equality,
+  type SuccessorArg,
+  type Truthiness,
+} from "../../ir/core/TermOp";
 import { TemplateLiteralOp } from "../../ir/ops/prim/TemplateLiteral";
 import { isDCERemovable } from "../../ir/effects/predicates";
 import { getQualifiedName, type ResolveConstantContext } from "./resolveConstant";
@@ -64,24 +70,24 @@ function meet(a: Lattice, b: Lattice): Lattice {
 // ---------------------------------------------------------------------------
 
 /**
- * Sparse constant propagation — the value-lattice half of SCCP
- * (Wegman-Zadeck 1991), without the conditional-branch-folding half.
- * Matches the factoring used in MLIR, Cranelift, and V8 Turbofan for
- * region-based IRs: a single pass computes a constant lattice over
- * all values; structural rewrites (collapsing a constant-test `IfOp`
- * into its taken region, deleting a dead `WhileOp`, etc.) belong to
- * a separate canonicalization pass that runs after this one has
- * replaced the constant-valued test with a literal.
+ * Sparse Conditional Constant Propagation (Wegman-Zadeck 1991).
+ *
+ * This is the textbook SCCP algorithm over the compiler's flat CFG:
+ * it tracks both value lattice cells and executable control-flow
+ * edges, so block params (phi equivalents) meet only values from
+ * executable predecessors.
  *
  * Algorithm:
  *
  *   - Lattice cell per {@link Value}: TOP (not-yet-computed), BOTTOM
  *     (not a compile-time constant), or a specific primitive.
- *   - SSA worklist: when a value's cell changes, enqueue. Dequeue,
- *     re-evaluate every op that reads the value via the embedded
- *     {@link Value.users} chain — sparse, never a full block sweep.
- *   - Block params are evaluated like phi nodes: meet of the
- *     corresponding `edge.args[i]` across each incoming CFG edge.
+ *   - CFG worklist: when a block becomes executable, evaluate its ops.
+ *     When an edge becomes executable, re-evaluate the destination
+ *     block params.
+ *   - SSA worklist: when a value cell changes, re-evaluate only users
+ *     in executable blocks.
+ *   - Block params are evaluated like phi nodes over executable
+ *     incoming edges only.
  *
  * Folding decisions:
  *
@@ -102,22 +108,22 @@ function meet(a: Lattice, b: Lattice): Lattice {
  *
  * **Not in this pass (intentional, handled elsewhere):**
  *
- *   - Conditional-executability tracking and dead-edge precision
- *     (the "C" in SCCP). Without a structural branch folder, the
- *     extra lattice precision can't be exploited — both LLVM's SCCP
- *     and MLIR's sparse CP skip it in region-heavy IRs. When a
- *     canonicalizer pass for `IfOp` / `WhileOp` / `ConditionTermOp`
- *     exists, we can revisit adding it.
+ *   - Structural CFG rewriting (`if (true)` → selected arm, unreachable
+ *     block deletion). SCCP exposes those facts by replacing constant
+ *     conditions with literals; SimplifyCFG should own CFG surgery.
  *   - Partial template-literal folding (e.g. `` `a${k}b${x}` `` →
  *     `` `aCONSTb${x}` ``). {@link AlgebraicSimplificationPass}'s job.
  */
-export class ConstantPropagationPass {
+export class ConstantPropagationPass implements ControlFlowFacts {
   private readonly lattice = new Map<Value, Lattice>();
   /** Values resolved by the `options.resolveConstant` hook, for replace-policy. */
   private readonly hookResolved = new Set<Value>();
   /** Values resolved from a builtin call evaluator, for replace-policy. */
   private readonly builtinResolved = new Set<Value>();
   private readonly ssaWorklist: Value[] = [];
+  private readonly cfgWorklist: BasicBlock[] = [];
+  private readonly executableBlocks = new Set<BasicBlock>();
+  private readonly executableEdges = new Set<string>();
   private readonly resolveCtx: ResolveConstantContext;
 
   constructor(
@@ -152,20 +158,18 @@ export class ConstantPropagationPass {
   // -------------------------------------------------------------------------
 
   /**
-   * Function entry: parameters and captures are externally supplied
-   * (BOTTOM). Every literal op immediately has a known constant.
-   * Block params start as TOP and converge via predecessor meets.
+   * Function entry: parameters are externally supplied (BOTTOM).
+   * Execution starts at the entry block; every other block becomes
+   * executable only through a marked CFG edge.
    */
   private seed(): void {
     for (const param of this.funcOp.params) {
       this.setLattice(param.value, BOTTOM);
     }
-    // Non-SSA block params on merge sinks start TOP and converge.
-    for (const block of this.funcOp.blocks) {
-      for (const op of block.getAllOps()) {
-        this.evaluate(op);
-      }
+    for (const param of this.funcOp.entryBlock.params) {
+      this.setLattice(param, BOTTOM);
     }
+    this.markBlockExecutable(this.funcOp.entryBlock);
   }
 
   // -------------------------------------------------------------------------
@@ -173,16 +177,15 @@ export class ConstantPropagationPass {
   // -------------------------------------------------------------------------
 
   private drain(): void {
-    while (this.ssaWorklist.length > 0) {
+    while (this.ssaWorklist.length > 0 || this.cfgWorklist.length > 0) {
+      while (this.cfgWorklist.length > 0) {
+        this.evaluateBlock(this.cfgWorklist.pop()!);
+      }
+
+      if (this.ssaWorklist.length === 0) continue;
       const value = this.ssaWorklist.pop()!;
-      for (const user of value.users) {
-        const op = user as Operation;
-        if (op instanceof TermOp) {
-          for (const successor of op.successors()) {
-            this.evaluateBlockParams(successor.block);
-          }
-          continue;
-        }
+      for (const op of value.users) {
+        if (!this.isExecutableOp(op)) continue;
         this.evaluate(op);
       }
     }
@@ -214,24 +217,97 @@ export class ConstantPropagationPass {
     return { kind: "const", value };
   }
 
+  truthiness(value: Value): Truthiness {
+    const l = this.getLattice(value);
+    if (l === TOP) return "pending";
+    if (l === BOTTOM) return "unknown";
+    return Boolean(l.value);
+  }
+
+  strictEqual(left: Value, right: Value): Equality {
+    const l = this.getLattice(left);
+    const r = this.getLattice(right);
+    if (l === TOP || r === TOP) return "pending";
+    if (l === BOTTOM || r === BOTTOM) return "unknown";
+    return Object.is(l.value, r.value);
+  }
+
   // -------------------------------------------------------------------------
   // Block params (phi-like evaluation)
   // -------------------------------------------------------------------------
 
+  private evaluateBlock(block: BasicBlock): void {
+    this.evaluateBlockParams(block);
+    for (const op of block.getAllOps()) {
+      this.evaluate(op);
+    }
+  }
+
+  private isExecutableOp(op: Operation): boolean {
+    const block = op.parentBlock;
+    return block !== null && this.executableBlocks.has(block);
+  }
+
+  private markBlockExecutable(block: BasicBlock): void {
+    if (this.executableBlocks.has(block)) return;
+    this.executableBlocks.add(block);
+    this.cfgWorklist.push(block);
+  }
+
+  private markEdgeExecutable(pred: BasicBlock, index: number): void {
+    const terminal = pred.terminal;
+    if (terminal === undefined) return;
+    const successor = terminal.target(index);
+    const key = this.edgeKey(pred, index);
+    if (this.executableEdges.has(key)) {
+      this.evaluateBlockParams(successor.block);
+      return;
+    }
+    this.executableEdges.add(key);
+    this.markProducedArgsOverdefined(successor.args);
+    this.markBlockExecutable(successor.block);
+    this.evaluateBlockParams(successor.block);
+  }
+
+  private edgeKey(pred: BasicBlock, index: number): string {
+    return `${pred.id}:${index}`;
+  }
+
+  private markProducedArgsOverdefined(args: readonly SuccessorArg[]): void {
+    for (const arg of args) {
+      if (arg.kind === "produced") this.setLattice(arg.value, BOTTOM);
+    }
+  }
+
   /**
    * Merge-sink evaluation. For each param index `i`, meet the value
-   * arriving on that index from every incoming CFG edge.
+   * arriving on that index from every executable incoming CFG edge.
    */
   private evaluateBlockParams(block: BasicBlock): void {
     if (block.params.length === 0) return;
     for (let i = 0; i < block.params.length; i++) {
       let m: Lattice = TOP;
-      for (const edge of incomingEdges(this.funcOp, block)) {
-        const arg = edge.args[i];
+      for (const { args } of this.executableIncomingSuccessors(block)) {
+        const arg = args[i];
         if (arg === undefined) continue;
         m = meet(m, this.getLattice(successorArgValue(arg)));
       }
       this.setLattice(block.params[i], m);
+    }
+  }
+
+  private *executableIncomingSuccessors(
+    block: BasicBlock,
+  ): IterableIterator<{ args: readonly SuccessorArg[] }> {
+    for (const pred of this.funcOp.blocks) {
+      const terminal = pred.terminal;
+      if (terminal === undefined) continue;
+      for (const i of terminal.successorIndices()) {
+        if (!this.executableEdges.has(this.edgeKey(pred, i))) continue;
+        const successor = terminal.target(i);
+        if (successor.block !== block) continue;
+        yield { args: successor.args };
+      }
     }
   }
 
@@ -241,10 +317,7 @@ export class ConstantPropagationPass {
 
   private evaluate(op: Operation): void {
     if (op instanceof TermOp) {
-      for (const successor of op.successors()) {
-        this.evaluateBlockParams(successor.block);
-      }
-      return;
+      return this.evaluateTerm(op);
     }
     if (op.place === undefined) return;
 
@@ -281,6 +354,15 @@ export class ConstantPropagationPass {
     // Unknown op that produces a value — can't prove constant.
     if (op.operands().length > 0 || op.place !== undefined) {
       this.setLattice(op.place, BOTTOM);
+    }
+  }
+
+  private evaluateTerm(op: TermOp): void {
+    const block = op.parentBlock;
+    if (block === null) return;
+
+    for (const i of op.takenSuccessorIndices(this)) {
+      this.markEdgeExecutable(block, i);
     }
   }
 

@@ -3,8 +3,9 @@ import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
 import { type CloneContext, nextId, remapPlace } from "../../core/Operation";
 import {
-  type CFGSuccessor,
-  invalidSuccessorIndex,
+  type ControlFlowFacts,
+  type BlockTarget,
+  invalidTargetIndex,
   successorArgValues,
   TermOp,
   valueSuccessorArgs,
@@ -46,17 +47,24 @@ export class BranchTermOp extends TermOp {
     return [this.cond, ...this.trueArgs, ...this.falseArgs];
   }
 
-  successorCount(): number {
+  targetCount(): number {
     return 2;
   }
 
-  successor(index: number): CFGSuccessor {
+  target(index: number): BlockTarget {
     if (index === 0) return { block: this.trueTarget, args: valueSuccessorArgs(this.trueArgs) };
     if (index === 1) return { block: this.falseTarget, args: valueSuccessorArgs(this.falseArgs) };
-    return invalidSuccessorIndex(this.constructor.name, index);
+    return invalidTargetIndex(this.constructor.name, index);
   }
 
-  withSuccessor(index: number, successor: CFGSuccessor): BranchTermOp {
+  override takenSuccessorIndices(facts: ControlFlowFacts): readonly number[] {
+    const cond = facts.truthiness(this.cond);
+    if (cond === "pending") return [];
+    if (cond === "unknown") return [0, 1];
+    return cond ? [0] : [1];
+  }
+
+  withTarget(index: number, successor: BlockTarget): BranchTermOp {
     if (index === 0) {
       return new BranchTermOp(
         this.id,
@@ -77,7 +85,7 @@ export class BranchTermOp extends TermOp {
         successorArgValues(successor.args),
       );
     }
-    return invalidSuccessorIndex(this.constructor.name, index);
+    return invalidTargetIndex(this.constructor.name, index);
   }
 
   rewrite(values: Map<Value, Value>): BranchTermOp {

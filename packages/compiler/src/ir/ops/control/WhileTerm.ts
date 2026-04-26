@@ -3,9 +3,9 @@ import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
 import { type CloneContext, nextId } from "../../core/Operation";
 import {
-  assertNoSuccessorArgs,
-  type CFGSuccessor,
-  invalidSuccessorIndex,
+  assertNoTargetArgs,
+  type BlockTarget,
+  invalidTargetIndex,
   TermOp,
 } from "../../core/TermOp";
 
@@ -40,21 +40,21 @@ export class WhileTermOp extends TermOp {
     return [];
   }
 
-  successorCount(): number {
+  targetCount(): number {
     return 1;
   }
 
-  successor(index: number): CFGSuccessor {
+  target(index: number): BlockTarget {
     if (index === 0) {
       const target = this.kind === "do-while" ? this.bodyBlock : this.testBlock;
       return { block: target, args: [] };
     }
-    return invalidSuccessorIndex(this.constructor.name, index);
+    return invalidTargetIndex(this.constructor.name, index);
   }
 
-  withSuccessor(index: number, successor: CFGSuccessor): WhileTermOp {
-    assertNoSuccessorArgs(this.constructor.name, successor);
-    if (index !== 0) return invalidSuccessorIndex(this.constructor.name, index);
+  withTarget(index: number, successor: BlockTarget): WhileTermOp {
+    assertNoTargetArgs(this.constructor.name, successor);
+    if (index !== 0) return invalidTargetIndex(this.constructor.name, index);
     if (this.kind === "do-while") {
       return new WhileTermOp(
         this.id,

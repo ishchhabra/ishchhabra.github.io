@@ -36,8 +36,8 @@ export {
   type OperationId,
 } from "./Operation";
 export {
-  assertNoSuccessorArgs,
-  invalidSuccessorIndex,
+  assertNoTargetArgs,
+  invalidTargetIndex,
   producedSuccessorArg,
   producedSuccessorValues,
   successorArgValue,
@@ -45,6 +45,9 @@ export {
   TermOp,
   valueSuccessorArg,
   valueSuccessorArgs,
-  type CFGSuccessor,
+  type BlockTarget,
+  type ControlFlowFacts,
+  type Equality,
   type SuccessorArg,
+  type Truthiness,
 } from "./TermOp";

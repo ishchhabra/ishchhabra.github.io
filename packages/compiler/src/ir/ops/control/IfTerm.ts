@@ -3,9 +3,10 @@ import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
 import { type CloneContext, nextId, remapPlace } from "../../core/Operation";
 import {
-  assertNoSuccessorArgs,
-  type CFGSuccessor,
-  invalidSuccessorIndex,
+  assertNoTargetArgs,
+  type ControlFlowFacts,
+  type BlockTarget,
+  invalidTargetIndex,
   TermOp,
 } from "../../core/TermOp";
 
@@ -40,19 +41,30 @@ export class IfTermOp extends TermOp {
     return [this.cond];
   }
 
-  successorCount(): number {
+  targetCount(): number {
     return 3;
   }
 
-  successor(index: number): CFGSuccessor {
+  target(index: number): BlockTarget {
     if (index === 0) return { block: this.thenBlock, args: [] };
     if (index === 1) return { block: this.elseBlock, args: [] };
     if (index === 2) return { block: this.fallthroughBlock, args: [] };
-    return invalidSuccessorIndex(this.constructor.name, index);
+    return invalidTargetIndex(this.constructor.name, index);
   }
 
-  withSuccessor(index: number, successor: CFGSuccessor): IfTermOp {
-    assertNoSuccessorArgs(this.constructor.name, successor);
+  override successorIndices(): readonly number[] {
+    return [0, 1];
+  }
+
+  override takenSuccessorIndices(facts: ControlFlowFacts): readonly number[] {
+    const cond = facts.truthiness(this.cond);
+    if (cond === "pending") return [];
+    if (cond === "unknown") return this.successorIndices();
+    return cond ? [0] : [1];
+  }
+
+  withTarget(index: number, successor: BlockTarget): IfTermOp {
+    assertNoTargetArgs(this.constructor.name, successor);
     if (index === 0) {
       return new IfTermOp(
         this.id,
@@ -74,7 +86,7 @@ export class IfTermOp extends TermOp {
     if (index === 2) {
       return new IfTermOp(this.id, this.cond, this.thenBlock, this.elseBlock, successor.block);
     }
-    return invalidSuccessorIndex(this.constructor.name, index);
+    return invalidTargetIndex(this.constructor.name, index);
   }
 
   rewrite(values: Map<Value, Value>): IfTermOp {

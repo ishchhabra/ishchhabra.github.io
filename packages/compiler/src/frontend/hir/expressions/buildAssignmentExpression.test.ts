@@ -255,8 +255,8 @@ describe("buildAssignmentExpression — logical identifier assignments", () => {
       const elseJump = term.elseBlock.terminal;
       expect(thenJump).toBeInstanceOf(JumpTermOp);
       expect(elseJump).toBeInstanceOf(JumpTermOp);
-      expect((thenJump as JumpTermOp).target).toBe(term.fallthroughBlock);
-      expect((elseJump as JumpTermOp).target).toBe(term.fallthroughBlock);
+      expect((thenJump as JumpTermOp).targetBlock).toBe(term.fallthroughBlock);
+      expect((elseJump as JumpTermOp).targetBlock).toBe(term.fallthroughBlock);
     });
 
     it.each(["||=", "&&=", "??="] as const)(

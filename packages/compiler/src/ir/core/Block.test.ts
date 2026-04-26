@@ -49,9 +49,9 @@ describe("TermOp successors", () => {
     const env = makeEnv();
     const target = env.createBlock();
     const jump = new JumpTermOp(createOperationId(env), target, []);
-    expect(jump.successorCount()).toBe(1);
-    expect(jump.successor(0)).toEqual({ block: target, args: [] });
-    expect(jump.successors().map((successor) => successor.block)).toEqual([target]);
+    expect(jump.targetCount()).toBe(1);
+    expect(jump.target(0)).toEqual({ block: target, args: [] });
+    expect(jump.targets().map((successor) => successor.block)).toEqual([target]);
   });
 
   it("remaps successor slots through block replacement", () => {
@@ -65,7 +65,7 @@ describe("TermOp successors", () => {
     jump.remap(targetA, targetB);
 
     expect(block.terminal).toBeInstanceOf(TermOp);
-    expect((block.terminal as JumpTermOp).target).toBe(targetB);
+    expect((block.terminal as JumpTermOp).targetBlock).toBe(targetB);
     expect(targetA.predecessors().has(block)).toBe(false);
     expect(targetB.predecessors().has(block)).toBe(true);
   });

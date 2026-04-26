@@ -100,7 +100,7 @@ function tryExtractArmYield(block: BasicBlock, fallthrough: BasicBlock): Value |
   if (block.operations.length > 0) return null;
   const terminal = block.terminal;
   if (!(terminal instanceof JumpTermOp)) return null;
-  if (terminal.target !== fallthrough) return null;
+  if (terminal.targetBlock !== fallthrough) return null;
   if (terminal.args.length !== 1) return null;
   return terminal.args[0];
 }
@@ -194,7 +194,7 @@ export function generateWhileTerm(
     if (term.kind === "do-while" && hostBlock !== null && branch.trueTarget !== hostBlock) {
       const split = branch.trueTarget;
       const splitTerm = split.terminal;
-      if (splitTerm instanceof JumpTermOp && splitTerm.target === hostBlock) {
+      if (splitTerm instanceof JumpTermOp && splitTerm.targetBlock === hostBlock) {
         if (!generator.generatedBlocks.has(split.id)) {
           generator.generatedBlocks.add(split.id);
           for (const op of split.operations) {
@@ -810,7 +810,7 @@ function inferFallthrough(a: BasicBlock, b: BasicBlock): BasicBlock | null {
 
 function trailingJumpTarget(block: BasicBlock): BasicBlock | null {
   const term = block.terminal;
-  if (term instanceof JumpTermOp) return term.target;
+  if (term instanceof JumpTermOp) return term.targetBlock;
   return null;
 }
 

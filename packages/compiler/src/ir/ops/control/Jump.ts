@@ -3,8 +3,8 @@ import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
 import { type CloneContext, nextId, remapBlock } from "../../core/Operation";
 import {
-  type CFGSuccessor,
-  invalidSuccessorIndex,
+  type BlockTarget,
+  invalidTargetIndex,
   successorArgValues,
   TermOp,
   valueSuccessorArgs,
@@ -26,7 +26,7 @@ export class JumpTermOp extends TermOp {
 
   constructor(
     id: OperationId,
-    public target: BasicBlock,
+    public targetBlock: BasicBlock,
     args: readonly Value[] = [],
   ) {
     super(id);
@@ -37,17 +37,17 @@ export class JumpTermOp extends TermOp {
     return [...this.args];
   }
 
-  successorCount(): number {
+  targetCount(): number {
     return 1;
   }
 
-  successor(index: number): CFGSuccessor {
-    if (index === 0) return { block: this.target, args: valueSuccessorArgs(this.args) };
-    return invalidSuccessorIndex(this.constructor.name, index);
+  target(index: number): BlockTarget {
+    if (index === 0) return { block: this.targetBlock, args: valueSuccessorArgs(this.args) };
+    return invalidTargetIndex(this.constructor.name, index);
   }
 
-  withSuccessor(index: number, successor: CFGSuccessor): JumpTermOp {
-    if (index !== 0) return invalidSuccessorIndex(this.constructor.name, index);
+  withTarget(index: number, successor: BlockTarget): JumpTermOp {
+    if (index !== 0) return invalidTargetIndex(this.constructor.name, index);
     return new JumpTermOp(this.id, successor.block, successorArgValues(successor.args));
   }
 
@@ -61,17 +61,17 @@ export class JumpTermOp extends TermOp {
       newArgs.push(rewritten);
     }
     if (!changed) return this;
-    return new JumpTermOp(this.id, this.target, newArgs);
+    return new JumpTermOp(this.id, this.targetBlock, newArgs);
   }
 
   clone(ctx: CloneContext): JumpTermOp {
     const newArgs = this.args.map((a) => ctx.valueMap.get(a) ?? a);
-    return new JumpTermOp(nextId(ctx), remapBlock(ctx, this.target), newArgs);
+    return new JumpTermOp(nextId(ctx), remapBlock(ctx, this.targetBlock), newArgs);
   }
 
   public override print(): string {
-    if (this.args.length === 0) return `jump bb${this.target.id}`;
+    if (this.args.length === 0) return `jump bb${this.targetBlock.id}`;
     const argStr = this.args.map((a) => a.print()).join(", ");
-    return `jump bb${this.target.id}(${argStr})`;
+    return `jump bb${this.targetBlock.id}(${argStr})`;
   }
 }
