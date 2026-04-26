@@ -6,7 +6,6 @@ import {
   BindingDeclOp,
   BindingInitOp,
   createOperationId,
-  destructureTargetResults,
   type DestructureTarget,
   ForInTermOp,
   JumpTermOp,
@@ -79,10 +78,6 @@ export function buildForInStatement(
   const exitBlock = environment.createBlock();
   functionBuilder.addBlock(bodyBlock);
   functionBuilder.addBlock(exitBlock);
-
-  for (const p of [iterationValuePlace, ...destructureTargetResults(iterationTarget)]) {
-    if (!bodyBlock.entryBindings.includes(p)) bodyBlock.entryBindings.push(p);
-  }
 
   parentBlock.setTerminal(
     new ForInTermOp(

@@ -3,9 +3,9 @@ import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
 import { type CloneContext, nextId, remapPlace } from "../../core/Operation";
 import {
-  assertNoSuccessorArgs,
   type CFGSuccessor,
   invalidSuccessorIndex,
+  producedSuccessorArg,
   TermOp,
 } from "../../core/TermOp";
 
@@ -19,10 +19,9 @@ import {
  * (when no handler is present). After either arm completes, control
  * reaches `fallthroughBlock`.
  *
- * The handler's catch parameter (`handlerParam`, if present) is
- * bound on entry to `handlerBlock` — modeled as a block entry
- * binding rather than a block param because it's supplied by the
- * JS exception-throw mechanism, not by explicit operand forwarding.
+ * The handler's catch parameter (`handlerParam`, if present) is a
+ * produced successor arg on the handler edge: supplied by the JS
+ * exception-throw mechanism, not by explicit operand forwarding.
  */
 export class TryTermOp extends TermOp {
   constructor(
@@ -46,11 +45,13 @@ export class TryTermOp extends TermOp {
 
   successor(index: number): CFGSuccessor {
     const block = this.successorBlock(index);
+    if (block === this.handlerBlock && this.handlerParam !== null) {
+      return { block, args: [producedSuccessorArg(this.handlerParam)] };
+    }
     return { block, args: [] };
   }
 
   withSuccessor(index: number, successor: CFGSuccessor): TryTermOp {
-    assertNoSuccessorArgs(this.constructor.name, successor);
     this.successorBlock(index);
     let bodyBlock = this.bodyBlock;
     let handlerBlock = this.handlerBlock;

@@ -25,6 +25,7 @@ import {
   Value,
   WhileTermOp,
 } from "../../../ir";
+import { incomingProducedValues } from "../../../ir/cfg";
 import type { BasicBlock } from "../../../ir/core/Block";
 import { FuncOp } from "../../../ir/core/FuncOp";
 import { CodeGenerator } from "../../CodeGenerator";
@@ -153,8 +154,8 @@ export function generateWhileTerm(
       if (!generator.generatedBlocks.has(testBlock.id)) {
         generator.generatedBlocks.add(testBlock.id);
       }
-      for (const binding of testBlock.entryBindings) {
-        if (!generator.values.has(binding.id)) generator.getPlaceIdentifier(binding);
+      for (const value of incomingProducedValues(funcOp, testBlock)) {
+        if (!generator.values.has(value.id)) generator.getPlaceIdentifier(value);
       }
       for (const op of testBlock.operations) {
         testStmts.push(...generateOp(op, funcOp, generator));
@@ -377,8 +378,8 @@ export function generateForTerm(
     if (!generator.generatedBlocks.has(testBlock.id)) {
       generator.generatedBlocks.add(testBlock.id);
     }
-    for (const binding of testBlock.entryBindings) {
-      if (!generator.values.has(binding.id)) generator.getPlaceIdentifier(binding);
+    for (const value of incomingProducedValues(funcOp, testBlock)) {
+      if (!generator.values.has(value.id)) generator.getPlaceIdentifier(value);
     }
     const testStmts: Array<t.Statement> = [];
     for (const op of testBlock.operations) {

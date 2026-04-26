@@ -1,6 +1,7 @@
 import { ValueId } from "../../ir";
 import { BasicBlock } from "../../ir/core/Block";
 import { FuncOp } from "../../ir/core/FuncOp";
+import { successorArgValue } from "../../ir/core/TermOp";
 import type { Value } from "../../ir/core/Value";
 import { incomingEdges, mergeSinks, outgoingEdges } from "../../ir/cfg";
 import { FunctionAnalysis, AnalysisManager } from "./AnalysisManager";
@@ -49,8 +50,9 @@ export class LivenessAnalysis extends FunctionAnalysis<LivenessResult> {
             if (!liveIds.has(params[i].id)) continue;
             const arg = edge.args[i];
             if (arg === undefined) continue;
-            if (!liveIds.has(arg.id)) {
-              liveIds.add(arg.id);
+            const value = successorArgValue(arg);
+            if (!liveIds.has(value.id)) {
+              liveIds.add(value.id);
               changed = true;
             }
           }
@@ -89,7 +91,7 @@ function nonEdgeTerminalOperands(funcOp: FuncOp, block: BasicBlock): Value[] {
   if (terminal === undefined) return [];
   const edgeArgPlaces = new Set<Value>();
   for (const edge of outgoingEdges(funcOp, block)) {
-    for (const arg of edge.args) edgeArgPlaces.add(arg);
+    for (const arg of edge.args) edgeArgPlaces.add(successorArgValue(arg));
   }
   return terminal.operands().filter((p) => !edgeArgPlaces.has(p));
 }

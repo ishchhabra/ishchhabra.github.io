@@ -1,7 +1,12 @@
 import type { BasicBlock } from "../core/Block";
 import type { FuncOp } from "../core/FuncOp";
 import { makeOperationId } from "../core/Operation";
-import { TermOp } from "../core/TermOp";
+import {
+  producedSuccessorValues,
+  successorArgValues,
+  TermOp,
+  type SuccessorArg,
+} from "../core/TermOp";
 import type { Value } from "../core/Value";
 import { BranchTermOp, JumpTermOp } from "../ops/control";
 
@@ -41,7 +46,7 @@ export class Edge {
   }
 
   /** Args bound positionally to `sink.params`. */
-  get args(): readonly Value[] {
+  get args(): readonly SuccessorArg[] {
     return this.terminator.successor(this.index).args;
   }
 
@@ -49,7 +54,7 @@ export class Edge {
    * Rewrite the edge's args. No-op if `newArgs` is identity-equal to
    * the current args array.
    */
-  rewriteArgs(newArgs: readonly Value[]): void {
+  rewriteArgs(newArgs: readonly SuccessorArg[]): void {
     const term = this.terminator;
     const succ = term.successor(this.index);
     if (newArgs === succ.args) return;
@@ -72,7 +77,7 @@ export class Edge {
 
     const splitBlock = env.createBlock();
     splitBlock.setTerminal(
-      new JumpTermOp(makeOperationId(env.nextOperationId++), succ.block, succ.args),
+      new JumpTermOp(makeOperationId(env.nextOperationId++), succ.block, successorArgValues(succ.args)),
     );
     this.funcOp.addBlock(splitBlock);
 
@@ -109,6 +114,21 @@ export function* incomingEdges(funcOp: FuncOp, sink: BasicBlock): Iterable<Edge>
   }
 }
 
+/** Values produced by control-flow semantics when entering `block`. */
+export function incomingProducedValues(funcOp: FuncOp, block: BasicBlock): Value[] {
+  const values: Value[] = [];
+  for (const pred of funcOp.blocks) {
+    const terminal = pred.terminal;
+    if (!(terminal instanceof TermOp)) continue;
+    for (let i = 0; i < terminal.successorCount(); i++) {
+      const successor = terminal.successor(i);
+      if (successor.block !== block) continue;
+      values.push(...producedSuccessorValues(successor.args));
+    }
+  }
+  return values;
+}
+
 /**
  * Every block that is a merge point — has at least one block parameter
  * and is not the function entry. Used by SSA destruction to walk all
@@ -138,8 +158,7 @@ export function getEdgeArgs(
   if (!(terminal instanceof TermOp)) return undefined;
   for (let i = 0; i < terminal.successorCount(); i++) {
     const succ = terminal.successor(i);
-    if (succ.block === succBlock) return succ.args;
+    if (succ.block === succBlock) return successorArgValues(succ.args);
   }
   return undefined;
 }
-

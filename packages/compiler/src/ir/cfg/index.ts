@@ -1,1 +1,8 @@
-export { Edge, getEdgeArgs, incomingEdges, mergeSinks, outgoingEdges } from "./edges";
+export {
+  Edge,
+  getEdgeArgs,
+  incomingEdges,
+  incomingProducedValues,
+  mergeSinks,
+  outgoingEdges,
+} from "./edges";

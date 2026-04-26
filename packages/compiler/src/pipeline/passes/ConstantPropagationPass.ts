@@ -27,7 +27,7 @@ import { BasicBlock } from "../../ir/core/Block";
 import { incomingEdges } from "../../ir/cfg";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { ModuleIR } from "../../ir/core/ModuleIR";
-import { TermOp } from "../../ir/core/TermOp";
+import { successorArgValue, TermOp } from "../../ir/core/TermOp";
 import { TemplateLiteralOp } from "../../ir/ops/prim/TemplateLiteral";
 import { getQualifiedName, type ResolveConstantContext } from "./resolveConstant";
 
@@ -228,7 +228,7 @@ export class ConstantPropagationPass {
       for (const edge of incomingEdges(this.funcOp, block)) {
         const arg = edge.args[i];
         if (arg === undefined) continue;
-        m = meet(m, this.getLattice(arg));
+        m = meet(m, this.getLattice(successorArgValue(arg)));
       }
       this.setLattice(block.params[i], m);
     }

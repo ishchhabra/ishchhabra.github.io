@@ -12,6 +12,7 @@ import { Edge, incomingEdges, mergeSinks } from "../../ir/cfg";
 import { BasicBlock } from "../../ir/core/Block";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { ModuleIR } from "../../ir/core/ModuleIR";
+import { successorArgValue } from "../../ir/core/TermOp";
 import { Value } from "../../ir/core/Value";
 
 /**
@@ -93,7 +94,8 @@ export class SSAEliminator {
       this.#insertParamDeclaration(sink, param);
 
       for (const edge of incomingEdges(this.funcOp, sink)) {
-        const arg = edge.args[index] ?? param;
+        const edgeArg = edge.args[index];
+        const arg = edgeArg === undefined ? param : successorArgValue(edgeArg);
         // Defensive self-store filter: some passes produce trivial
         // `arg = param` edges where args forward unchanged (the two
         // condition edges of a WhileOp share args with their own

@@ -2,9 +2,37 @@ import type { BasicBlock } from "./Block";
 import { Operation } from "./Operation";
 import type { Value } from "./Value";
 
+export type SuccessorArg =
+  | { readonly kind: "value"; readonly value: Value }
+  | { readonly kind: "produced"; readonly value: Value };
+
 export interface CFGSuccessor {
   readonly block: BasicBlock;
-  readonly args: readonly Value[];
+  readonly args: readonly SuccessorArg[];
+}
+
+export function valueSuccessorArg(value: Value): SuccessorArg {
+  return { kind: "value", value };
+}
+
+export function producedSuccessorArg(value: Value): SuccessorArg {
+  return { kind: "produced", value };
+}
+
+export function valueSuccessorArgs(values: readonly Value[]): SuccessorArg[] {
+  return values.map(valueSuccessorArg);
+}
+
+export function successorArgValue(arg: SuccessorArg): Value {
+  return arg.value;
+}
+
+export function successorArgValues(args: readonly SuccessorArg[]): Value[] {
+  return args.map(successorArgValue);
+}
+
+export function producedSuccessorValues(args: readonly SuccessorArg[]): Value[] {
+  return args.flatMap((arg) => (arg.kind === "produced" ? [arg.value] : []));
 }
 
 export abstract class TermOp extends Operation {

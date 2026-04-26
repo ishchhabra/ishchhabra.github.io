@@ -10,6 +10,7 @@ import {
   makeOperationId,
   StoreLocalOp,
 } from "../../ir";
+import { incomingProducedValues } from "../../ir/cfg";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { collectDestructureTargetBindingPlaces } from "../../ir/core/Destructure";
@@ -356,7 +357,9 @@ export class SSABuilder {
   private renameBlock(block: BasicBlock, stacks: Stacks): void {
     const pushed: DeclarationId[] = [];
 
-    for (const binding of block.entryBindings) this.pushScoped(stacks, binding, pushed);
+    for (const value of incomingProducedValues(this.funcOp, block)) {
+      this.pushScoped(stacks, value, pushed);
+    }
     for (const param of block.params) {
       if (param.originalDeclarationId !== undefined) this.pushScoped(stacks, param, pushed);
     }

@@ -17,6 +17,7 @@ import {
   ThrowTermOp,
 } from "../../ir";
 import { outgoingEdges } from "../../ir/cfg";
+import { successorArgValues } from "../../ir/core/TermOp";
 import { StoreStaticPropertyOp } from "../../ir/ops/prop/StoreStaticProperty";
 import { StoreDynamicPropertyOp } from "../../ir/ops/prop/StoreDynamicProperty";
 import { FuncOp } from "../../ir/core/FuncOp";
@@ -286,7 +287,7 @@ function buildIncomingEdgeArgsIndex(funcOp: FuncOp): Map<BlockId, readonly (read
         list = [];
         index.set(succId, list);
       }
-      list.push(edge.args);
+      list.push(successorArgValues(edge.args));
     }
   }
   return index;

@@ -2,7 +2,13 @@ import type { OperationId } from "../../core";
 import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
 import { type CloneContext, nextId, remapBlock } from "../../core/Operation";
-import { type CFGSuccessor, invalidSuccessorIndex, TermOp } from "../../core/TermOp";
+import {
+  type CFGSuccessor,
+  invalidSuccessorIndex,
+  successorArgValues,
+  TermOp,
+  valueSuccessorArgs,
+} from "../../core/TermOp";
 
 /**
  * Unconditional jump to a successor block. Terminator. Replaces
@@ -36,13 +42,13 @@ export class JumpTermOp extends TermOp {
   }
 
   successor(index: number): CFGSuccessor {
-    if (index === 0) return { block: this.target, args: this.args };
+    if (index === 0) return { block: this.target, args: valueSuccessorArgs(this.args) };
     return invalidSuccessorIndex(this.constructor.name, index);
   }
 
   withSuccessor(index: number, successor: CFGSuccessor): JumpTermOp {
     if (index !== 0) return invalidSuccessorIndex(this.constructor.name, index);
-    return new JumpTermOp(this.id, successor.block, successor.args);
+    return new JumpTermOp(this.id, successor.block, successorArgValues(successor.args));
   }
 
   rewrite(values: Map<Value, Value>): JumpTermOp {

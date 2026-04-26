@@ -63,7 +63,6 @@ export function buildTryStatement(
       );
       environment.setDeclarationBinding(identifier.declarationId, identifier);
       handlerParam = identifier;
-      handlerBlock.entryBindings.push(identifier);
     }
 
     buildOwnedBody(catchClause.body, scope, functionBuilder, moduleBuilder, environment);

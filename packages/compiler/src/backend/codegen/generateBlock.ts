@@ -1,5 +1,6 @@
 import * as t from "@babel/types";
 import { BlockId } from "../../ir";
+import { incomingProducedValues } from "../../ir/cfg";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { CodeGenerator } from "../CodeGenerator";
 import { generateOp } from "./ops/generateOp";
@@ -42,16 +43,12 @@ export function generateBasicBlock(
     throw new Error(`Block ${blockId} not found`);
   }
 
-  // Pre-register identifiers for block-entry bindings introduced by
-  // the enclosing op (ForOfOp.iterationValue, ForInOp iter-target
-  // defs, TryOp handler params). These Values live at region entry
-  // but aren't produced by any op in the block, so no op codegen
-  // populates `values` for them. Without this, any op that reads
-  // them as an operand (including mem2reg-aliased loads) would crash
-  // when looking up `values[binding.id]`.
-  for (const binding of block.entryBindings) {
-    if (!generator.values.has(binding.id)) {
-      generator.getPlaceIdentifier(binding);
+  // Pre-register values produced by entering this block through a
+  // structured-control successor, such as for-of iteration values or
+  // catch parameters. No op inside the block defines them.
+  for (const value of incomingProducedValues(funcOp, block)) {
+    if (!generator.values.has(value.id)) {
+      generator.getPlaceIdentifier(value);
     }
   }
 

@@ -42,7 +42,6 @@ function phase1CloneBlock(oldBlock: BasicBlock, moduleIR: ModuleIR): BasicBlock 
     newBlock.appendOp(cloned);
   }
   newBlock.params = [...oldBlock.params];
-  newBlock.entryBindings = [...oldBlock.entryBindings];
   return newBlock;
 }
 
@@ -78,16 +77,6 @@ function phase2RewriteBlock(
       newParams.push(mapped);
     }
     if (changed) block.params = newParams;
-  }
-  if (block.entryBindings.length > 0) {
-    const newEntryBindings: Value[] = [];
-    let changed = false;
-    for (const binding of block.entryBindings) {
-      const mapped = valueMap.get(binding) ?? binding;
-      if (mapped !== binding) changed = true;
-      newEntryBindings.push(mapped);
-    }
-    if (changed) block.entryBindings = newEntryBindings;
   }
 }
 
@@ -371,11 +360,13 @@ export class FuncOp extends Operation {
         newIdentifier.originalDeclarationId = param.originalDeclarationId;
         valueMap.set(param, newIdentifier);
       }
-      for (const binding of oldBlock.entryBindings) {
-        if (valueMap.has(binding)) continue;
-        const newIdentifier = environment.createValue(binding.declarationId);
-        newIdentifier.originalDeclarationId = binding.originalDeclarationId;
-        valueMap.set(binding, newIdentifier);
+      if (oldBlock.terminal !== undefined) {
+        for (const def of oldBlock.terminal.results()) {
+          if (valueMap.has(def)) continue;
+          const newIdentifier = environment.createValue(def.declarationId);
+          newIdentifier.originalDeclarationId = def.originalDeclarationId;
+          valueMap.set(def, newIdentifier);
+        }
       }
     }
 

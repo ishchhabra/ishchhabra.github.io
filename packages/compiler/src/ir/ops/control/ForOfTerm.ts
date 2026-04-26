@@ -3,9 +3,9 @@ import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
 import { type CloneContext, nextId, remapPlace } from "../../core/Operation";
 import {
-  assertNoSuccessorArgs,
   type CFGSuccessor,
   invalidSuccessorIndex,
+  producedSuccessorArg,
   TermOp,
 } from "../../core/TermOp";
 
@@ -55,13 +55,14 @@ export class ForOfTermOp extends TermOp {
   }
 
   successor(index: number): CFGSuccessor {
-    if (index === 0) return { block: this.bodyBlock, args: [] };
+    if (index === 0) {
+      return { block: this.bodyBlock, args: [producedSuccessorArg(this.iterationValue)] };
+    }
     if (index === 1) return { block: this.exitBlock, args: [] };
     return invalidSuccessorIndex(this.constructor.name, index);
   }
 
   withSuccessor(index: number, successor: CFGSuccessor): ForOfTermOp {
-    assertNoSuccessorArgs(this.constructor.name, successor);
     if (index === 0) {
       return new ForOfTermOp(
         this.id,
