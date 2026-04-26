@@ -149,12 +149,16 @@ describe("buildVariableDeclaration — isolated", () => {
       expect((init as BindingInitOp).value).toBe(lit.place);
     });
 
-    it("binding initializer reports initializer side effects", () => {
+    it("binding initializer is structurally DCE-removable when its place is unused", () => {
       const h = buildVarDeclFromSource("let x = 1;");
       const init = h.fnBuilder.currentBlock.operations.find(
         (o): o is BindingInitOp => o instanceof BindingInitOp,
       );
-      expect(init!.hasSideEffects(h.env)).toBe(false);
+      // BindingInit's only effect is writing the local binding; no
+      // throws, no observability, deterministic.
+      expect(init!.mayThrow()).toBe(false);
+      expect(init!.isObservable()).toBe(false);
+      expect(init!.isDeterministic).toBe(true);
     });
   });
 });

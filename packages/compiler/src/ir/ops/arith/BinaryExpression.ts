@@ -63,8 +63,30 @@ export class BinaryExpressionOp extends Operation {
     return [this.left, this.right];
   }
 
-  public override hasSideEffects(): boolean {
+  // Five-axis effects:
+  //  - No memory reads/writes (operands are separate ops).
+  //  - mayThrow: in principle `+`/`-`/`*`/`<`/`instanceof`/`in` can
+  //    trigger ToPrimitive on objects (which calls
+  //    `valueOf`/`Symbol.toPrimitive` — a getter that may throw)
+  //    and `instanceof`/`in` throw on non-object RHS. The existing
+  //    optimizer treats binary ops as non-throwing; we preserve
+  //    that decision per-axis. A tighter answer would need an
+  //    operand-type analysis we don't run yet.
+  //  - mayDiverge=false. isDeterministic=true. isObservable=false.
+  public override mayThrow(): boolean {
     return false;
+  }
+  public override mayDiverge(): boolean {
+    return false;
+  }
+  public override get isDeterministic(): boolean {
+    return true;
+  }
+  public override isObservable(): boolean {
+    return false;
+  }
+  public override getMemoryEffects(): import("../../memory/MemoryLocation").MemoryEffects {
+    return { reads: [], writes: [] };
   }
 
   public override print(): string {

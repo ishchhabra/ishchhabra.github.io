@@ -84,9 +84,17 @@ describe("buildBinaryExpression — isolated", () => {
       expect(op.operands()).toEqual([op.left, op.right]);
     });
 
-    it("is pure — hasSideEffects is false", () => {
+    it("five-axis effects: no memory, may throw on object operands, otherwise clean", () => {
       const { op } = buildBinaryFromSource("a + b;");
-      expect(op.hasSideEffects()).toBe(false);
+      const mem = op.getMemoryEffects();
+      expect(mem.reads.length).toBe(0);
+      expect(mem.writes.length).toBe(0);
+      // Binary ops are treated as non-throwing today (matching the
+      // pre-five-axis hasSideEffects=false decision).
+      expect(op.mayThrow()).toBe(false);
+      expect(op.mayDiverge()).toBe(false);
+      expect(op.isDeterministic).toBe(true);
+      expect(op.isObservable()).toBe(false);
     });
   });
 

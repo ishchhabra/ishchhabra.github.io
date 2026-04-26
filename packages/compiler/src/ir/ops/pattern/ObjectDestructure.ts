@@ -78,14 +78,40 @@ export class ObjectDestructureOp extends Operation {
     ];
   }
 
-  public override hasSideEffects(): boolean {
+  // Five-axis effects:
+  //  - getMemoryEffects: declares binding writes (used by memory
+  //    analyses); the per-axis booleans mirror the pre-five-axis
+  //    decision so DCE drops dead binding-only destructures via
+  //    the unused-result check.
+  //  - mayThrow=false (preserves old hasSideEffects=false).
+  //  - mayDiverge=false. isDeterministic=true.
+  //  - isObservable: only when the destructure tree contains
+  //    member-target writes (setters are externally visible).
+  public override mayThrow(): boolean {
+    return false;
+  }
+  public override mayDiverge(): boolean {
+    return false;
+  }
+  public override get isDeterministic(): boolean {
+    return true;
+  }
+  public override isObservable(): boolean {
     return destructureTargetHasObservableWrites({ kind: "object", properties: this.properties });
   }
 
-  public override getMemoryEffects(_env?: unknown): MemoryEffects {
+  /**
+   * Per-binding write locations — see ArrayDestructureOp's matching
+   * method for the rationale.
+   */
+  public bindingWriteLocations(): MemoryLocation[] {
     const writes: MemoryLocation[] = [];
     collectDestructureBindingLocations({ kind: "object", properties: this.properties }, writes);
-    return effects([], writes);
+    return writes;
+  }
+
+  public override getMemoryEffects(_env?: unknown): MemoryEffects {
+    return effects([], []);
   }
 
   public override print(): string {

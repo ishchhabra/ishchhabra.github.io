@@ -61,6 +61,8 @@ import { generateModuleOp } from "./module/generateModule";
 import { generatePatternOp } from "./pattern/generatePattern";
 import { generateSpreadElementOp } from "./pattern/generateSpreadElement";
 import { generateValueOp } from "./value/generateValue";
+import { isDCERemovable } from "../../../ir/effects/predicates";
+import type { Environment } from "../../../environment";
 
 export function generateOp(
   instruction: Operation,
@@ -185,24 +187,22 @@ export function generateOp(
 
 /**
  * True iff the expression tree rooted at `op` contains at least one
- * op with observable side effects. Used to decide whether an orphan
- * value op (no users) must still be emitted as a standalone
- * expression statement — pure container ops like BinaryExpression
- * don't propagate operand side effects via `hasSideEffects`, so
- * without this check we'd drop `foo() + bar()` entirely when the
- * parent binding was swept.
+ * op that's not safely DCE-removable (writes memory, may throw, or
+ * is externally observable). Used to decide whether an orphan value
+ * op (no users) must still be emitted as a standalone expression
+ * statement — pure container ops like BinaryExpression don't
+ * surface their operands' effects on themselves, so without this
+ * walk we'd drop `foo() + bar()` entirely when the parent binding
+ * was swept.
  */
-function hasTransitiveSideEffects(
-  op: Operation,
-  env: Parameters<Operation["hasSideEffects"]>[0],
-): boolean {
+function hasTransitiveSideEffects(op: Operation, env: Environment | undefined): boolean {
   const seen = new Set<Operation>();
   const stack: Operation[] = [op];
   while (stack.length > 0) {
     const cur = stack.pop()!;
     if (seen.has(cur)) continue;
     seen.add(cur);
-    if (cur.hasSideEffects(env)) return true;
+    if (!isDCERemovable(cur, env)) return true;
     for (const operand of cur.operands()) {
       const def = operand.def;
       if (def instanceof Operation) stack.push(def);

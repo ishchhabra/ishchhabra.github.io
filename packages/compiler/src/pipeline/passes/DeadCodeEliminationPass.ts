@@ -4,6 +4,7 @@ import { AnalysisManager } from "../analysis/AnalysisManager";
 import { LivenessAnalysis, LivenessResult } from "../analysis/LivenessAnalysis";
 import { BaseOptimizationPass, OptimizationResult } from "../late-optimizer/OptimizationPass";
 import { incomingEdges, outgoingEdges } from "../../ir/cfg";
+import { isDCERemovable } from "../../ir/effects/predicates";
 
 /**
  * SSA-phase Dead Code Elimination.
@@ -94,7 +95,7 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
     for (const block of this.funcOp.blocks) {
       for (let i = block.operations.length - 1; i >= 0; i--) {
         const op = block.operations[i];
-        if (op.hasSideEffects(this.environment)) continue;
+        if (!isDCERemovable(op, this.environment)) continue;
         if (op.results().some((p) => liveness.isLive(p.id))) continue;
         block.removeOpAt(i);
         changed = true;

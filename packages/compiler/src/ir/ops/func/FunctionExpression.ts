@@ -1,9 +1,13 @@
 import { OperationId, Value } from "../../core";
 import { FuncOp } from "../../core/FuncOp";
-import { Operation } from "../../core/Operation";
+import { Operation, Trait } from "../../core/Operation";
 import { makeCloneContext, requireModuleIR, type CloneContext } from "../../core/Operation";
 
 export class FunctionExpressionOp extends Operation {
+  // Pure value creation: allocating a function has no observable
+  // side effects.
+  static override readonly traits: ReadonlySet<Trait> = new Set([Trait.Pure]);
+
   constructor(
     id: OperationId,
     public override readonly place: Value,
@@ -57,7 +61,4 @@ export class FunctionExpressionOp extends Operation {
     return [this.place];
   }
 
-  public override hasSideEffects(): boolean {
-    return false;
-  }
 }

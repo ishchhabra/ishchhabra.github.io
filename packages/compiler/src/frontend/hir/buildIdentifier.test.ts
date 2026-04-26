@@ -171,11 +171,14 @@ describe("buildIdentifier — isolated", () => {
       expect(p1).not.toBe(p2);
     });
 
-    it("LoadLocal reports side effects (reading a binding isn't a pure op)", () => {
+    it("LoadLocal exposes the five-axis effects model", () => {
       const { opsAdded } = buildIdentFromSource("let x = 1; x;");
       const load = opsAdded.findLast((o): o is LoadLocalOp => o instanceof LoadLocalOp)!;
-      // LoadLocal reads a mutable binding cell — not pure for DCE.
-      expect(typeof load.hasSideEffects).toBe("function");
+      // LoadLocal reads a binding cell — non-empty reads block
+      // duplication, but it's still DCE-removable.
+      expect(load.getMemoryEffects().reads.length).toBeGreaterThan(0);
+      expect(load.mayThrow()).toBe(false);
+      expect(load.isObservable()).toBe(false);
     });
   });
 });

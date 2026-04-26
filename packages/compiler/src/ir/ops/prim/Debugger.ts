@@ -10,7 +10,22 @@ export class DebuggerStatementOp extends Operation {
     super(id);
   }
 
-  public override hasSideEffects(): boolean {
+  // Five-axis effects: `debugger;` is externally observable (it
+  // pauses execution under a debugger) but otherwise touches no
+  // memory, doesn't throw, doesn't diverge, deterministic.
+  public override getMemoryEffects(): import("../../memory/MemoryLocation").MemoryEffects {
+    return { reads: [], writes: [] };
+  }
+  public override mayThrow(): boolean {
+    return false;
+  }
+  public override mayDiverge(): boolean {
+    return false;
+  }
+  public override get isDeterministic(): boolean {
+    return true;
+  }
+  public override isObservable(): boolean {
     return true;
   }
 

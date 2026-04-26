@@ -68,6 +68,25 @@ export class StoreContextOp extends Operation {
     return [this.place, ...this.bindings];
   }
 
+  // Five-axis effects:
+  //  - writes: the context binding cell (see getMemoryEffects).
+  //  - mayThrow=false. mayDiverge=false.
+  //  - isDeterministic=true. isObservable=false (the write is
+  //    captured as a memory effect; closures observing it are
+  //    modeled as separate LoadContext reads).
+  public override mayThrow(): boolean {
+    return false;
+  }
+  public override mayDiverge(): boolean {
+    return false;
+  }
+  public override get isDeterministic(): boolean {
+    return true;
+  }
+  public override isObservable(): boolean {
+    return false;
+  }
+
   public override getMemoryEffects(_env?: unknown): MemoryEffects {
     return effects([], [contextLocation(this.lval.declarationId)]);
   }

@@ -40,7 +40,22 @@ export class LoadContextOp extends Operation {
     return [this.value];
   }
 
-  public override hasSideEffects(): boolean {
+  // Five-axis effects:
+  //  - reads: the context binding cell (see getMemoryEffects).
+  //  - mayThrow=false. mayDiverge=false.
+  //  - isDeterministic=false: a closure may have mutated the cell
+  //    between two reads at the same syntactic position.
+  //  - isObservable=false.
+  public override mayThrow(): boolean {
+    return false;
+  }
+  public override mayDiverge(): boolean {
+    return false;
+  }
+  public override get isDeterministic(): boolean {
+    return false;
+  }
+  public override isObservable(): boolean {
     return false;
   }
 

@@ -1,7 +1,7 @@
 import { OperationId } from "../../core";
 import { Value } from "../../core";
 
-import { Operation } from "../../core/Operation";
+import { Operation, Trait } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
 /**
  * Represents a JSX closing element in the IR.
@@ -11,6 +11,8 @@ import type { CloneContext } from "../../core/Operation";
  * - `</MyComponent>`
  */
 export class JSXClosingElementOp extends Operation {
+  static override readonly traits: ReadonlySet<Trait> = new Set([Trait.Pure]);
+
   constructor(
     id: OperationId,
     public override readonly place: Value,
@@ -31,9 +33,5 @@ export class JSXClosingElementOp extends Operation {
 
   operands(): Value[] {
     return [this.tagPlace];
-  }
-
-  public override hasSideEffects(): boolean {
-    return false;
   }
 }

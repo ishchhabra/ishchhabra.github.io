@@ -1,6 +1,6 @@
 import type { Environment } from "../../environment";
 import type { MemoryEffects } from "../memory/MemoryLocation";
-import { NoEffects } from "../memory/MemoryLocation";
+import { NoEffects, UnknownLocation } from "../memory/MemoryLocation";
 import type { BasicBlock } from "./Block";
 import type { ModuleIR } from "./ModuleIR";
 import type { Value } from "./Value";
@@ -153,9 +153,9 @@ export function requireModuleIR(ctx: CloneContext): ModuleIR {
  *     in their constructors.
  *   - Static `traits` + `hasTrait(t)` for compile-time categorization.
  *   - Abstract `operands()`, `rewrite()`, `clone(ctx)`.
- *   - Sensible defaults for `results()`, `hasSideEffects()`,
- *     `isDeterministic`, `isPure()`, `remap()`, `print()`,
- *     `toString()`.
+ *   - Sensible defaults for `results()`, the five effects axes
+ *     (`getMemoryEffects`, `mayThrow`, `mayDiverge`, `isDeterministic`,
+ *     `isObservable`), `remap()`, `print()`, `toString()`.
  *
  * Concrete ops override only what they need.
  */
@@ -234,33 +234,66 @@ export abstract class Operation {
   abstract rewrite(values: Map<Value, Value>, options?: object): Operation;
 
   // -----------------------------------------------------------------
-  // Side effects / purity
+  // Effects model — five orthogonal axes
+  //
+  // Defaults are maximally conservative. Every derived predicate
+  // (see `src/ir/effects/predicates.ts`) returns `false` for an
+  // un-overridden op. An op opts *into* optimization by overriding
+  // axes it can prove safe.
+  //
+  // `Trait.Pure` is the all-clean shortcut: an op marked Pure gets
+  // empty memory effects and every boolean flipped to safe-for-
+  // optimization without any per-axis override.
   // -----------------------------------------------------------------
-
-  hasSideEffects(_environment: Environment): boolean {
-    return !this.hasTrait(Trait.Pure);
-  }
-
-  get isDeterministic(): boolean {
-    return true;
-  }
-
-  isPure(environment: Environment): boolean {
-    return !this.hasSideEffects(environment) && this.isDeterministic;
-  }
 
   /**
    * Memory effects this op produces — the alphabet memory-aware
-   * analyses speak (see {@link MemoryStateWalker}). Default: no
-   * effects. Effectful ops (loads, stores, calls) override. Passes
-   * that don't care about memory can ignore this entirely.
+   * analyses speak (see {@link MemoryStateWalker}).
+   *
+   * Conservative default: reads and writes `UnknownLocation`
+   * (aliases everything). `Trait.Pure` ops short-circuit to
+   * {@link NoEffects}. Concrete ops override to declare narrower
+   * footprints.
    *
    * `environment` is passed so ops that need module-scope context
-   * (e.g. `CallExpressionOp` consulting the builtin table for
-   * purity) can resolve it; most overrides ignore it.
+   * (e.g. `CallExpressionOp` consulting the builtin table) can
+   * resolve it; most overrides ignore it.
    */
   getMemoryEffects(_environment?: Environment): MemoryEffects {
-    return NoEffects;
+    if (this.hasTrait(Trait.Pure)) return NoEffects;
+    return { reads: [UnknownLocation], writes: [UnknownLocation] };
+  }
+
+  /**
+   * Can this op raise? TDZ, null deref, ToPrimitive coercion, user
+   * `throw`, opaque call, getter trap, etc.
+   */
+  mayThrow(_environment?: Environment): boolean {
+    return !this.hasTrait(Trait.Pure);
+  }
+
+  /**
+   * Can this op fail to terminate? Loops, opaque calls.
+   */
+  mayDiverge(_environment?: Environment): boolean {
+    return !this.hasTrait(Trait.Pure);
+  }
+
+  /**
+   * Same inputs → same output. False for `Date.now`, `Math.random`,
+   * mutable global loads, opaque calls.
+   */
+  get isDeterministic(): boolean {
+    return this.hasTrait(Trait.Pure);
+  }
+
+  /**
+   * Externally visible beyond heap (`console.*`, DOM, `debugger`,
+   * opaque calls). DCE must not delete observable ops even when
+   * their result is unused.
+   */
+  isObservable(_environment?: Environment): boolean {
+    return !this.hasTrait(Trait.Pure);
   }
 
   remap(_from: BasicBlock, _to: BasicBlock): void {

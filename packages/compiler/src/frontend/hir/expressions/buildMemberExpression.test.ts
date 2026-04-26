@@ -117,14 +117,15 @@ describe("buildMemberExpression — isolated", () => {
       expect(op.operands()).toEqual([dyn.object, dyn.property]);
     });
 
-    it("both static and dynamic loads report side effects", () => {
+    it("both static and dynamic loads may throw (getter / null deref hazard)", () => {
       // Property reads can invoke getters, trigger Proxy traps, or
-      // throw on null/undefined receivers. Shared base keeps the
-      // two variants symmetric.
-      const { harness: staticHarness, op: staticOp } = buildMemberFromSource("o.x;");
-      const { harness: dynHarness, op: dynOp } = buildMemberFromSource("o[k];");
-      expect(staticOp.hasSideEffects(staticHarness.env)).toBe(true);
-      expect(dynOp.hasSideEffects(dynHarness.env)).toBe(true);
+      // throw on null/undefined receivers. `mayThrow=true` is what
+      // prevents `isDuplicable`, resolving the getter-duplication
+      // hazard called out in packages/compiler/CLAUDE.md.
+      const { op: staticOp } = buildMemberFromSource("o.x;");
+      const { op: dynOp } = buildMemberFromSource("o[k];");
+      expect(staticOp.mayThrow()).toBe(true);
+      expect(dynOp.mayThrow()).toBe(true);
     });
   });
 });

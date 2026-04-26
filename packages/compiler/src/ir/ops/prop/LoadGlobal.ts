@@ -34,7 +34,26 @@ export class LoadGlobalOp extends Operation {
     return [];
   }
 
-  public override hasSideEffects(): boolean {
+  // Five-axis effects:
+  //  - reads: UnknownLocation (mutable global slot, see getMemoryEffects).
+  //  - mayThrow: an undeclared global throws ReferenceError; the
+  //    existing optimizer treats LoadGlobal as non-throwing (so
+  //    unused global reads can be DCE'd). We preserve that decision
+  //    per-axis. Tightening to `true` would require knowing which
+  //    globals are guaranteed to exist.
+  //  - mayDiverge=false.
+  //  - isDeterministic=false (mutable global).
+  //  - isObservable=false.
+  public override mayThrow(): boolean {
+    return false;
+  }
+  public override mayDiverge(): boolean {
+    return false;
+  }
+  public override get isDeterministic(): boolean {
+    return false;
+  }
+  public override isObservable(): boolean {
     return false;
   }
 

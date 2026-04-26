@@ -1,7 +1,7 @@
 import { OperationId } from "../../core";
 import { Value } from "../../core";
 
-import { Operation } from "../../core/Operation";
+import { Operation, Trait } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
 /**
  * Represents an object expression.
@@ -10,6 +10,11 @@ import type { CloneContext } from "../../core/Operation";
  * { a: 1, b: 2 }
  */
 export class ObjectExpressionOp extends Operation {
+  // Pure value construction: allocates a fresh object. Property
+  // value computations are separate operations carrying their own
+  // effects.
+  static override readonly traits: ReadonlySet<Trait> = new Set([Trait.Pure]);
+
   constructor(
     id: OperationId,
     public override readonly place: Value,
@@ -34,10 +39,6 @@ export class ObjectExpressionOp extends Operation {
 
   operands(): Value[] {
     return this.properties;
-  }
-
-  public override hasSideEffects(): boolean {
-    return false;
   }
 
   public override print(): string {

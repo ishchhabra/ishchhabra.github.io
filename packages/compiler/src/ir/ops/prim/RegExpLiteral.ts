@@ -1,9 +1,11 @@
 import { OperationId } from "../../core";
 import { Value } from "../../core";
 
-import { Operation } from "../../core/Operation";
+import { Operation, Trait } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
 export class RegExpLiteralOp extends Operation {
+  static override readonly traits: ReadonlySet<Trait> = new Set([Trait.Pure]);
+
   constructor(
     id: OperationId,
     public override readonly place: Value,
@@ -27,7 +29,4 @@ export class RegExpLiteralOp extends Operation {
     return [];
   }
 
-  public override hasSideEffects(): boolean {
-    return false;
-  }
 }

@@ -1,15 +1,21 @@
 import type { Environment } from "../../../environment";
 import { OperationId } from "../../core";
 import { Value } from "../../core";
-import { isPureBuiltin, lookupBuiltin } from "../../builtins";
+import {
+  lookupBuiltin,
+  type BuiltinEffects,
+  type BuiltinRegion,
+  type BuiltinSpec,
+} from "../../builtins";
 
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
 import {
+  computedPropertyLocation,
   effects,
-  NoEffects,
   UnknownLocation,
   type MemoryEffects,
+  type MemoryLocation,
 } from "../../memory/MemoryLocation";
 import { getQualifiedName } from "../../../pipeline/passes/resolveConstant";
 /**
@@ -51,33 +57,73 @@ export class CallExpressionOp extends Operation {
   }
 
   /**
-   * A call is pure when its callee resolves (via static dotted-name
-   * walk) to a module-local builtin spec whose `hasSideEffects` is
-   * `false`. `Math.random()` and `Date.now()` qualify even though
-   * their results aren't foldable — DCE can still drop unused calls.
-   *
-   * Calls through imports or dynamic callees are treated as
-   * side-effecting (conservative default). Arg purity isn't
-   * considered here; this op returns true if it itself is
-   * side-effect-free, even if its args were.
+   * Resolve this call's callee to a builtin effect record, or
+   * `undefined` if the callee can't be statically identified or
+   * isn't in the builtin table. Treated as opaque (full-pessimism)
+   * by all axis getters.
    */
-  public override hasSideEffects(environment: Environment): boolean {
+  private resolveBuiltin(environment?: Environment): BuiltinSpec | undefined {
+    if (environment === undefined) return undefined;
     const calleeOp = this.callee.def as Operation | undefined;
-    if (calleeOp === undefined) return true;
+    if (calleeOp === undefined) return undefined;
     const qualified = getQualifiedName(calleeOp, environment);
-    if (qualified === undefined) return true;
-    return !isPureBuiltin(lookupBuiltin(qualified));
+    if (qualified === undefined) return undefined;
+    return lookupBuiltin(qualified);
   }
 
   /**
-   * A pure builtin call has no memory effects; any other call may
-   * read and write arbitrary memory (treat as `Unknown` on both
-   * sides). This mirrors `hasSideEffects`: both use the same
-   * callee-resolution + builtin-table lookup.
+   * Lower a {@link BuiltinRegion} to concrete {@link MemoryLocation}s.
+   * `"args"` expands to a `computedProperty` location per arg (the
+   * coarsest correct approximation: the call may touch any field of
+   * any arg). `"none"` returns empty. `"unknown"` returns
+   * `UnknownLocation` (full barrier).
    */
-  public override getMemoryEffects(environment: Environment): MemoryEffects {
-    if (!this.hasSideEffects(environment)) return NoEffects;
-    return effects([UnknownLocation], [UnknownLocation]);
+  private lowerRegion(region: BuiltinRegion): MemoryLocation[] {
+    switch (region) {
+      case "none":
+        return [];
+      case "args":
+        return this.args.map((arg) => computedPropertyLocation(arg));
+      case "unknown":
+        return [UnknownLocation];
+    }
+  }
+
+  /**
+   * Five-axis effects. When the callee resolves to a builtin spec,
+   * read each axis from the spec's {@link BuiltinEffects} record;
+   * unknown / dynamic / imported callees are treated opaquely (full
+   * pessimism on every axis).
+   *
+   * The opaque case must remain pessimistic: an opaque callee can
+   * read/write arbitrary memory, throw, hang, return non-determinism,
+   * and emit observable output. This is the alias barrier passes
+   * rely on.
+   */
+  public override getMemoryEffects(environment?: Environment): MemoryEffects {
+    const spec = this.resolveBuiltin(environment);
+    if (spec === undefined) return effects([UnknownLocation], [UnknownLocation]);
+    const e: BuiltinEffects = spec.effects;
+    return effects(this.lowerRegion(e.reads), this.lowerRegion(e.writes));
+  }
+  public override mayThrow(environment?: Environment): boolean {
+    const spec = this.resolveBuiltin(environment);
+    return spec === undefined ? true : spec.effects.mayThrow;
+  }
+  public override mayDiverge(environment?: Environment): boolean {
+    const spec = this.resolveBuiltin(environment);
+    return spec === undefined ? true : spec.effects.mayDiverge;
+  }
+  public override get isDeterministic(): boolean {
+    // Determinism doesn't depend on Environment; CallExpression
+    // can't resolve a callee without one, so default to the
+    // pessimistic answer. Passes that need precision should call
+    // `lookupBuiltin(...)` themselves with an Environment in hand.
+    return false;
+  }
+  public override isObservable(environment?: Environment): boolean {
+    const spec = this.resolveBuiltin(environment);
+    return spec === undefined ? true : spec.effects.isObservable;
   }
 
   public override print(): string {

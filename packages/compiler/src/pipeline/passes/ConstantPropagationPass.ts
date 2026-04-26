@@ -29,6 +29,7 @@ import { FuncOp } from "../../ir/core/FuncOp";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { successorArgValue, TermOp } from "../../ir/core/TermOp";
 import { TemplateLiteralOp } from "../../ir/ops/prim/TemplateLiteral";
+import { isDCERemovable } from "../../ir/effects/predicates";
 import { getQualifiedName, type ResolveConstantContext } from "./resolveConstant";
 
 // ---------------------------------------------------------------------------
@@ -575,7 +576,10 @@ export class ConstantPropagationPass {
     }
     if (op instanceof BinaryExpressionOp) return true;
     if (op instanceof UnaryExpressionOp) {
-      return !op.hasSideEffects(this.moduleIR.environment);
+      // Replacing the unary with a literal effectively deletes the
+      // op; gate on `isDCERemovable` so we don't drop an observable
+      // or potentially-throwing form (`delete o.x`, etc.).
+      return isDCERemovable(op, this.moduleIR.environment);
     }
     if (op instanceof TemplateLiteralOp) return true;
     if (op instanceof LoadLocalOp) return true;

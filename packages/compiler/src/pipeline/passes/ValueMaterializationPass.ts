@@ -31,6 +31,8 @@ import { HoleOp } from "../../ir/ops/prim/Hole";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { Value } from "../../ir/core/Value";
 import { ModuleIR } from "../../ir/core/ModuleIR";
+import { isDCERemovable } from "../../ir/effects/predicates";
+import type { Environment } from "../../environment";
 
 /**
  * Value Materialization: decide which SSA Values need a named
@@ -177,13 +179,15 @@ export class ValueMaterializationPass {
   }
 
   /**
-   * An op is order-sensitive if its evaluation has observable side
-   * effects or reads state that another op may mutate. Conservative
-   * approximation via `hasSideEffects` — CallExpression, property
-   * reads (getters per CLAUDE.md), Await, etc.
+   * An op is order-sensitive if moving its evaluation past an
+   * intervening effectful op would change observable behavior.
+   * Equivalent to "this op is not safely deletable in isolation":
+   * it writes memory, may throw, or is externally observable.
+   * Property reads qualify via `mayThrow=true` (the getter hazard
+   * called out in `packages/compiler/CLAUDE.md`).
    */
   private isOrderSensitive(op: Operation): boolean {
-    return op.hasSideEffects(this.moduleIR.environment);
+    return !isDCERemovable(op, this.moduleIR.environment);
   }
 
   /**
@@ -319,12 +323,9 @@ function flowsTo(op: Operation, target: Operation): boolean {
 
 /**
  * True iff any op in `root`'s operand subtree (excluding `root`
- * itself) has direct side effects.
+ * itself) has direct side effects — i.e. is not DCE-removable.
  */
-function operandSubtreeHasSideEffects(
-  root: Operation,
-  env: Parameters<Operation["hasSideEffects"]>[0],
-): boolean {
+function operandSubtreeHasSideEffects(root: Operation, env: Environment | undefined): boolean {
   const seen = new Set<Operation>();
   const stack: Operation[] = [];
   for (const operand of root.operands()) {
@@ -335,7 +336,7 @@ function operandSubtreeHasSideEffects(
     const cur = stack.pop()!;
     if (seen.has(cur)) continue;
     seen.add(cur);
-    if (cur.hasSideEffects(env)) return true;
+    if (!isDCERemovable(cur, env)) return true;
     for (const operand of cur.operands()) {
       const def = operand.def;
       if (def instanceof Operation) stack.push(def);

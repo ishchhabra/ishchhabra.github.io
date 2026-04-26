@@ -32,15 +32,36 @@ export abstract class LoadPropertyOp extends Operation {
 
   /**
    * Property reads can invoke getters, trigger Proxy traps, or throw
-   * on null/undefined receivers — all observable. We keep the default
-   * `hasSideEffects(): true` so DCE won't silently drop orphan access
-   * chains. Memory-aware passes (LICM, CSE over provably getter-free
-   * bases) use {@link getMemoryEffects} for the finer-grained reads
-   * annotation.
+   * on null/undefined receivers. Memory-aware passes use
+   * {@link getMemoryEffects} for the finer-grained reads annotation;
+   * the five effect axes below capture the rest:
+   *
+   *   - `mayThrow=true` — null/undefined receiver, getter throw,
+   *     Proxy trap throw. This is the axis that prevents
+   *     `isDuplicable` from returning true (the getter-duplication
+   *     hazard called out in `packages/compiler/CLAUDE.md`).
+   *   - `mayDiverge=false` — accessor calls aren't modeled as loops.
+   *   - `isDeterministic=true` — we don't model getter state
+   *     mutations; the access yields the same value at the same
+   *     program point.
+   *   - `isObservable=false` — property reads don't print.
    *
    * V8 / Closure treat property reads as pure for optimization wins
    * at the cost of correctness when getters have observable effects.
    * For an AOT JS-to-JS target we prefer semantic preservation.
    */
   public abstract override getMemoryEffects(env?: unknown): MemoryEffects;
+
+  public override mayThrow(): boolean {
+    return true;
+  }
+  public override mayDiverge(): boolean {
+    return false;
+  }
+  public override get isDeterministic(): boolean {
+    return true;
+  }
+  public override isObservable(): boolean {
+    return false;
+  }
 }

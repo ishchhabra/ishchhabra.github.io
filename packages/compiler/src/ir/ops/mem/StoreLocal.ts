@@ -62,8 +62,22 @@ export class StoreLocalOp extends Operation {
     return [this.place, ...this.bindings];
   }
 
-  public override hasSideEffects(): boolean {
+  // Five-axis effects:
+  //  - writes: the local binding (see getMemoryEffects). Non-empty
+  //    writes is what makes StoreLocal non-DCE-removable by default.
+  //  - mayThrow=false (SSA-form local writes don't trigger TDZ).
+  //  - mayDiverge=false. isDeterministic=true. isObservable=false.
+  public override mayThrow(): boolean {
+    return false;
+  }
+  public override mayDiverge(): boolean {
+    return false;
+  }
+  public override get isDeterministic(): boolean {
     return true;
+  }
+  public override isObservable(): boolean {
+    return false;
   }
 
   public override getMemoryEffects(_env?: unknown): MemoryEffects {

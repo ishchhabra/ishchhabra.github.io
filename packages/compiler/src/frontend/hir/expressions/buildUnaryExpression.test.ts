@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Node, UnaryExpression } from "oxc-parser";
 import { UnaryExpressionOp } from "../../../ir";
-import { ProjectEnvironment } from "../../../ProjectEnvironment";
-import { Environment } from "../../../environment";
 import { buildFn, findAstNode, makeIsolatedHarness, printFn, printOps } from "../__testing__/ir";
 import { buildUnaryExpression } from "./buildUnaryExpression";
 
@@ -97,31 +95,33 @@ describe("buildUnaryExpression — isolated", () => {
     });
   });
 
-  describe("purity", () => {
-    // Need an Environment to call hasSideEffects — the isolated harness
-    // gives us one per test. For the `void` case we construct a fresh
-    // harness with a function-call argument to exercise the recursive
-    // purity check.
-    const env = new Environment(new ProjectEnvironment());
-
-    it.each(["-", "+", "!", "~", "typeof"] as const)("`%s` is pure", (operator) => {
-      const { op } = buildUnaryFromSource(`${operator} a;`);
-      expect(op.hasSideEffects(env)).toBe(false);
+  describe("five-axis effects", () => {
+    // `typeof` and `void` are total: they don't throw on their
+    // operand. Numeric / boolean unaries can throw via ToPrimitive
+    // on object operands. `delete` writes a property slot.
+    it("`typeof` doesn't throw and writes nothing", () => {
+      const { op } = buildUnaryFromSource("typeof a;");
+      expect(op.mayThrow()).toBe(false);
+      expect(op.getMemoryEffects().writes.length).toBe(0);
     });
 
-    it("`delete` has side effects", () => {
-      const { op } = buildUnaryFromSource("delete o.x;");
-      expect(op.hasSideEffects(env)).toBe(true);
-    });
-
-    it("`void` is pure when operand is pure", () => {
+    it("`void` doesn't throw on its own", () => {
       const { op } = buildUnaryFromSource("void 0;");
-      expect(op.hasSideEffects(env)).toBe(false);
+      expect(op.mayThrow()).toBe(false);
+      expect(op.getMemoryEffects().writes.length).toBe(0);
     });
 
-    it("`void` inherits side effects from its operand", () => {
-      const { op } = buildUnaryFromSource("void fetch();");
-      expect(op.hasSideEffects(env)).toBe(true);
+    it("numeric / boolean unaries don't throw (preserves pre-five-axis behavior)", () => {
+      for (const operator of ["-", "+", "!", "~"] as const) {
+        const { op } = buildUnaryFromSource(`${operator} a;`);
+        expect(op.mayThrow()).toBe(false);
+      }
+    });
+
+    it("`delete` writes a property slot and may throw in strict mode", () => {
+      const { op } = buildUnaryFromSource("delete o.x;");
+      expect(op.getMemoryEffects().writes.length).toBeGreaterThan(0);
+      expect(op.mayThrow()).toBe(true);
     });
   });
 });

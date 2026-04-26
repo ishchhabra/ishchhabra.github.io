@@ -1,6 +1,7 @@
 import { Environment } from "../../../environment";
 import { Operation, StoreLocalOp } from "../../../ir";
 import { FuncOp } from "../../../ir/core/FuncOp";
+import { isDCERemovable } from "../../../ir/effects/predicates";
 import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
 
 /**
@@ -32,12 +33,12 @@ export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
     for (const block of this.funcOp.blocks) {
       for (let i = block.operations.length - 1; i >= 0; i--) {
         const instr = block.operations[i];
-        if (instr.hasSideEffects(this.environment)) continue;
+        if (!isDCERemovable(instr, this.environment)) continue;
 
         if (instr instanceof StoreLocalOp) {
           if (instr.results().some((p) => p.users.size > 0)) continue;
           const definer = instr.value.def;
-          if (definer instanceof Operation && !definer.isPure(this.environment)) continue;
+          if (definer instanceof Operation && !isDCERemovable(definer, this.environment)) continue;
         } else {
           if (instr.results().some((p) => p.users.size > 0)) continue;
         }

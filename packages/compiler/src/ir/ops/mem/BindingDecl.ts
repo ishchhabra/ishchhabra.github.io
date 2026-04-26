@@ -2,6 +2,7 @@ import { OperationId } from "../../core";
 import { Value } from "../../core";
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
+import { effects, type MemoryEffects } from "../../memory/MemoryLocation";
 
 export type BindingKind = "var" | "let" | "const";
 export type BindingDeclKind = Exclude<BindingKind, "const">;
@@ -45,8 +46,23 @@ export class BindingDeclOp extends Operation {
     return [this.place];
   }
 
-  public override hasSideEffects(_env?: Parameters<Operation["hasSideEffects"]>[0]): boolean {
+  // Five-axis effects: introduces a binding name; no runtime value
+  // is written by this op (initialization is a separate StoreLocal /
+  // BindingInit). All-clean.
+  public override mayThrow(): boolean {
     return false;
+  }
+  public override mayDiverge(): boolean {
+    return false;
+  }
+  public override get isDeterministic(): boolean {
+    return true;
+  }
+  public override isObservable(): boolean {
+    return false;
+  }
+  public override getMemoryEffects(): MemoryEffects {
+    return { reads: [], writes: [] };
   }
 
   public override print(): string {
@@ -100,9 +116,28 @@ export class BindingInitOp extends Operation {
     return [this.place];
   }
 
-  public override hasSideEffects(env?: Parameters<Operation["hasSideEffects"]>[0]): boolean {
-    if (env === undefined) return true;
-    return this.value.def?.hasSideEffects(env) ?? false;
+  // Five-axis effects: structurally introduces a `const`/`let`/`var`
+  // binding with an initializer. The value computation is a
+  // separate operand op carrying its own effects; the BindingInit
+  // op itself is treated as having no memory writes — DCE relies
+  // on the unused-result check (`results()[i].users.size === 0`)
+  // to decide whether the binding can be dropped, mirroring the
+  // pre-five-axis behavior where BindingInit's effect was "whatever
+  // the value's effect is."
+  public override mayThrow(): boolean {
+    return false;
+  }
+  public override mayDiverge(): boolean {
+    return false;
+  }
+  public override get isDeterministic(): boolean {
+    return true;
+  }
+  public override isObservable(): boolean {
+    return false;
+  }
+  public override getMemoryEffects(): MemoryEffects {
+    return effects([], []);
   }
 
   public override print(): string {

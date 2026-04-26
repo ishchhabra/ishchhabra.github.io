@@ -32,7 +32,25 @@ export class SpreadElementOp extends Operation {
     return [this.argument];
   }
 
-  public override hasSideEffects(): boolean {
+  // Five-axis effects: spread invokes the iterator protocol which
+  // can in principle throw on non-iterable arguments. The existing
+  // optimizer treats spread as non-throwing (a deliberate
+  // optimization decision); we preserve that per-axis. Memory
+  // effects can in principle touch the iterable's state, but we
+  // don't model iterator memory; treat as no static reads/writes.
+  public override getMemoryEffects(): import("../../memory/MemoryLocation").MemoryEffects {
+    return { reads: [], writes: [] };
+  }
+  public override mayThrow(): boolean {
+    return false;
+  }
+  public override mayDiverge(): boolean {
+    return false;
+  }
+  public override get isDeterministic(): boolean {
+    return true;
+  }
+  public override isObservable(): boolean {
     return false;
   }
 }

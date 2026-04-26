@@ -1,8 +1,7 @@
-import { OperationId } from "../../core";
-import { Value } from "../../core";
+import { OperationId, Value } from "../../core";
 
-import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
+import { Operation } from "../../core/Operation";
 import { effects, localLocation, type MemoryEffects } from "../../memory/MemoryLocation";
 /**
  * Represents an instruction that loads a value from one place to another place.
@@ -40,7 +39,19 @@ export class LoadLocalOp extends Operation {
     return [this.value];
   }
 
-  public override hasSideEffects(): boolean {
+  public override mayThrow(): boolean {
+    return false;
+  }
+
+  public override mayDiverge(): boolean {
+    return false;
+  }
+
+  public override get isDeterministic(): boolean {
+    return true;
+  }
+
+  public override isObservable(): boolean {
     return false;
   }
 

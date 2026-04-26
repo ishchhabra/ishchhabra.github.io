@@ -164,26 +164,28 @@ describe("buildAssignmentExpression — isolated", () => {
   });
 
   describe("semantics", () => {
-    it("StoreLocal for assignment reports side effects", () => {
+    it("StoreLocal writes the local binding (DCE-blocking)", () => {
       const { opsAdded } = buildAssignFromSource("let x; x = 1;");
       const store = opsAdded.find((o): o is StoreLocalOp => o instanceof StoreLocalOp)!;
-      expect(store.hasSideEffects()).toBe(true);
+      expect(store.getMemoryEffects().writes.length).toBeGreaterThan(0);
     });
 
-    it("StoreStaticProperty reports side effects", () => {
-      const { harness, opsAdded } = buildAssignFromSource("obj.x = 1;");
+    it("StoreStaticProperty writes a property slot and may throw", () => {
+      const { opsAdded } = buildAssignFromSource("obj.x = 1;");
       const store = opsAdded.find(
         (o): o is StoreStaticPropertyOp => o instanceof StoreStaticPropertyOp,
       )!;
-      expect(store.hasSideEffects(harness.env)).toBe(true);
+      expect(store.getMemoryEffects().writes.length).toBeGreaterThan(0);
+      expect(store.mayThrow()).toBe(true);
     });
 
-    it("StoreDynamicProperty reports side effects", () => {
-      const { harness, opsAdded } = buildAssignFromSource("obj[k] = 1;");
+    it("StoreDynamicProperty writes a property slot and may throw", () => {
+      const { opsAdded } = buildAssignFromSource("obj[k] = 1;");
       const store = opsAdded.find(
         (o): o is StoreDynamicPropertyOp => o instanceof StoreDynamicPropertyOp,
       )!;
-      expect(store.hasSideEffects(harness.env)).toBe(true);
+      expect(store.getMemoryEffects().writes.length).toBeGreaterThan(0);
+      expect(store.mayThrow()).toBe(true);
     });
   });
 });

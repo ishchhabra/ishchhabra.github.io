@@ -12,6 +12,7 @@ import {
   StoreLocalOp,
 } from "../../ir";
 import { isValueOp } from "../../ir/categories";
+import { isDCERemovable } from "../../ir/effects/predicates";
 import { BasicBlock } from "../../ir/core/Block";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { Value } from "../../ir/core/Value";
@@ -184,8 +185,12 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
       // across one risks observing the post-mutation value.
       if (op instanceof StoreContextOp) return true;
 
-      // Zero-use value ops with side effects flush as expression statements.
-      if (isValueOp(op) && op.place.users.size === 0 && op.hasSideEffects(this.environment)) {
+      // Zero-use value ops with side effects flush as expression
+      // statements. `!isDCERemovable` is the precise question: an op
+      // with no users but writes / throws / observability cannot be
+      // dropped, so it survives codegen and reorders past it would
+      // be observable.
+      if (isValueOp(op) && op.place.users.size === 0 && !isDCERemovable(op, this.environment)) {
         return true;
       }
     }

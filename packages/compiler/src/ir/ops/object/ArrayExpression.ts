@@ -1,7 +1,7 @@
 import { OperationId } from "../../core";
 import { Value } from "../../core";
 
-import { Operation } from "../../core/Operation";
+import { Operation, Trait } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
 /**
  * Represents an array expression.
@@ -10,6 +10,12 @@ import type { CloneContext } from "../../core/Operation";
  * [1, 2, 3]
  */
 export class ArrayExpressionOp extends Operation {
+  // Pure value construction: allocates a new Array literal. Element
+  // expressions (including spreads, which iterate) are separate
+  // operations with their own effects; this op itself doesn't read
+  // or write anywhere observable.
+  static override readonly traits: ReadonlySet<Trait> = new Set([Trait.Pure]);
+
   constructor(
     id: OperationId,
     public override readonly place: Value,
@@ -34,10 +40,6 @@ export class ArrayExpressionOp extends Operation {
 
   operands(): Value[] {
     return this.elements;
-  }
-
-  public override hasSideEffects(): boolean {
-    return false;
   }
 
   public override print(): string {

@@ -1,7 +1,7 @@
 import { OperationId } from "../../core";
 import { Value } from "../../core";
 
-import { Operation } from "../../core/Operation";
+import { Operation, Trait } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
 /**
  * Represents a JSX text node in the IR.
@@ -10,6 +10,8 @@ import type { CloneContext } from "../../core/Operation";
  * - `"Hello, world!"`
  */
 export class JSXTextOp extends Operation {
+  static override readonly traits: ReadonlySet<Trait> = new Set([Trait.Pure]);
+
   constructor(
     id: OperationId,
     public override readonly place: Value,
@@ -31,9 +33,5 @@ export class JSXTextOp extends Operation {
 
   operands(): Value[] {
     return [];
-  }
-
-  public override hasSideEffects(): boolean {
-    return false;
   }
 }
