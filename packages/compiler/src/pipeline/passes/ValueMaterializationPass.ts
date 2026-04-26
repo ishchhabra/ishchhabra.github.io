@@ -14,7 +14,9 @@ import {
   RegExpLiteralOp,
   StoreLocalOp,
   ThisExpressionOp,
+  TryTermOp,
 } from "../../ir";
+import type { BasicBlock } from "../../ir/core/Block";
 import { JSXMemberExpressionOp } from "../../ir/ops/jsx/JSXMemberExpression";
 import { JSXOpeningElementOp } from "../../ir/ops/jsx/JSXOpeningElement";
 import { JSXClosingElementOp } from "../../ir/ops/jsx/JSXClosingElement";
@@ -32,12 +34,17 @@ import { FuncOp } from "../../ir/core/FuncOp";
 import { Value } from "../../ir/core/Value";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { isDCERemovable } from "../../ir/effects/predicates";
-import type { Environment } from "../../environment";
+
+type MaterializationDecision =
+  | { readonly kind: "none" }
+  | { readonly kind: "const-binding" }
+  | { readonly kind: "hoisted-let-binding" };
 
 /**
- * Value Materialization: decide which SSA Values need a named
- * `const $tmp = expr;` binding for codegen. Everything else stays
- * inline at its use site.
+ * Value Materialization: decide which SSA Values need a named binding
+ * for codegen. Most spills become `const $tmp = expr`; values defined
+ * inside a protected region and consumed outside become
+ * `let $tmp; ... $tmp = expr` so evaluation still happens in-region.
  *
  * Pipeline position: runs once after the late optimizer, before
  * codegen. The optimizer produces a pure SSA Value graph; codegen
@@ -84,24 +91,29 @@ import type { Environment } from "../../environment";
  * anything that later becomes unsafe to inline.
  */
 export class ValueMaterializationPass {
+  private protectedRegionCache: readonly Set<BasicBlock>[] | undefined;
+
   constructor(
     private readonly funcOp: FuncOp,
     private readonly moduleIR: ModuleIR,
   ) {}
 
   public run(): void {
-    const env = this.moduleIR.environment;
     for (const block of this.funcOp.blocks) {
-      const ops = block.operations;
-      for (let i = 0; i < ops.length; i++) {
-        const op = ops[i];
-        if (!this.needsSpill(op)) continue;
-
-        const lval = env.createValue();
-        const init = env.createOperation(BindingInitOp, lval, "const", op.place!);
-        block.insertOpAt(i + 1, init);
-        this.rewriteUses(op, lval, init);
-        i++; // skip inserted binding init
+      for (let i = 0; i < block.operations.length; ) {
+        const op = block.operations[i];
+        const decision = this.decideMaterialization(op);
+        switch (decision.kind) {
+          case "none":
+            i++;
+            break;
+          case "const-binding":
+            i = this.insertConstBinding(block, i, op);
+            break;
+          case "hoisted-let-binding":
+            i = this.insertHoistedLetBinding(block, i, op);
+            break;
+        }
       }
     }
   }
@@ -110,46 +122,51 @@ export class ValueMaterializationPass {
   // Decision
   // ---------------------------------------------------------------
 
-  private needsSpill(op: Operation): boolean {
-    if (op.place === undefined) return false;
+  private decideMaterialization(op: Operation): MaterializationDecision {
+    if (!this.canMaterialize(op)) return { kind: "none" };
 
-    // A. Already named or emits non-Expression AST.
+    if (!this.needsMaterializedName(op)) {
+      return { kind: "none" };
+    }
+
+    if (this.materializedNameEscapesProtectedRegion(op)) {
+      return { kind: "hoisted-let-binding" };
+    }
+
+    return { kind: "const-binding" };
+  }
+
+  private canMaterialize(op: Operation): boolean {
+    if (op.place === undefined) return false;
     if (op instanceof BindingDeclOp || op instanceof BindingInitOp || op instanceof StoreLocalOp) {
       return false;
     }
-    if (emitsNonExpression(op)) return false;
+    return !emitsNonExpression(op);
+  }
 
-    // B. Trivially duplicable.
+  private needsMaterializedName(op: Operation): boolean {
+    const place = op.place;
+    if (place === undefined) return false;
     if (this.isTriviallyDuplicable(op)) return false;
 
-    const useCount = op.place.users.size;
+    const useCount = place.users.size;
     if (useCount === 0) return false; // DCE leftover or standalone-emitted
 
-    // C. Multi-use.
-    if (useCount > 1) return true;
+    const singleUser = useCount === 1 ? (place.users.values().next().value as Operation) : undefined;
 
-    // Single-use from here.
-    const user = op.place.users.values().next().value as Operation;
-
-    // D. Identifier-required operand.
-    if (requiresIdentifierOperand(user, op.place)) return true;
-
-    // D2. Method-call callee preservation. Spilling `obj.m` into
-    //     `const t = obj.m; t(args)` detaches the `this` binding —
-    //     JS only binds the receiver when the callee is a
-    //     MemberExpression in the call expression itself. Keep the
-    //     property-read inlined at the call site so codegen emits
-    //     `obj.m(args)`. Applies regardless of order-sensitivity.
-    if (isMethodCalleeOf(user, op.place) && isPropertyRead(op)) {
+    // Spilling `obj.m` into `const t = obj.m; t(args)` detaches the
+    // JS receiver. Keep property reads inline when they are a call's
+    // callee so codegen can emit `obj.m(args)`.
+    if (singleUser !== undefined && isMethodCalleeOf(singleUser, place) && isPropertyRead(op)) {
       return false;
     }
 
-    // E. Order-sensitive + intervening effect.
-    if (this.isOrderSensitive(op) && this.inliningWouldReorder(op, user)) {
-      return true;
-    }
+    if (useCount > 1) return true;
 
-    return false;
+    const user = singleUser!;
+    if (requiresIdentifierOperand(user, place)) return true;
+
+    return this.isOrderSensitive(op) && this.inliningWouldReorder(op, user);
   }
 
   // ---------------------------------------------------------------
@@ -200,12 +217,14 @@ export class ValueMaterializationPass {
    * `user`'s expression at codegen, so they evaluate in operand
    * order alongside `definer`; no reorder.
    *
-   * Cross-block is conservatively treated as "no reorder" — codegen
-   * doesn't hoist an expression across a block boundary.
+   * Cross-protected-region uses must spill. Leaving an
+   * order-sensitive definer inline lets codegen emit it at the use
+   * block, which can move a throw/call/getter out of a `try`.
    */
   private inliningWouldReorder(definer: Operation, user: Operation): boolean {
     const block = definer.parentBlock;
-    if (block === null || user.parentBlock !== block) return false;
+    if (block === null) return false;
+    if (user.parentBlock !== block) return this.crossesProtectedRegion(block, user.parentBlock);
     const defIndex = block.operations.indexOf(definer);
     const userIndex = block.operations.indexOf(user);
     if (defIndex < 0 || userIndex < 0) return false;
@@ -221,9 +240,95 @@ export class ValueMaterializationPass {
     return false;
   }
 
+  private materializedNameEscapesProtectedRegion(op: Operation): boolean {
+    const place = op.place;
+    const block = op.parentBlock;
+    if (place === undefined || block === null) return false;
+    for (const user of place.users) {
+      if (this.crossesProtectedRegion(block, user.parentBlock)) return true;
+    }
+    return false;
+  }
+
+  private crossesProtectedRegion(defBlock: BasicBlock, useBlock: BasicBlock | null): boolean {
+    if (useBlock === null) return false;
+    for (const region of this.protectedRegions()) {
+      if (region.has(defBlock) && !region.has(useBlock)) return true;
+    }
+    return false;
+  }
+
+  private protectedRegions(): readonly Set<BasicBlock>[] {
+    if (this.protectedRegionCache !== undefined) return this.protectedRegionCache;
+
+    const regions: Set<BasicBlock>[] = [];
+    for (const block of this.funcOp.blocks) {
+      const terminal = block.terminal;
+      if (terminal instanceof TryTermOp) {
+        regions.push(this.collectTryProtectedRegion(terminal));
+      }
+    }
+    this.protectedRegionCache = regions;
+    return regions;
+  }
+
+  private collectTryProtectedRegion(term: TryTermOp): Set<BasicBlock> {
+    const region = new Set<BasicBlock>();
+    const stack = [term.bodyBlock, term.handlerBlock, term.finallyBlock].filter(
+      (block): block is BasicBlock => block !== null,
+    );
+
+    while (stack.length > 0) {
+      const block = stack.pop()!;
+      if (block === term.fallthroughBlock || region.has(block)) continue;
+      region.add(block);
+
+      const terminal = block.terminal;
+      if (terminal === undefined) continue;
+      for (let index = 0; index < terminal.targetCount(); index++) {
+        stack.push(terminal.target(index).block);
+      }
+    }
+
+    return region;
+  }
+
   // ---------------------------------------------------------------
   // Rewriting
   // ---------------------------------------------------------------
+
+  private insertConstBinding(block: BasicBlock, opIndex: number, op: Operation): number {
+    const env = this.moduleIR.environment;
+    const lval = env.createValue();
+    const init = env.createOperation(BindingInitOp, lval, "const", op.place!);
+
+    block.insertOpAt(opIndex + 1, init);
+    this.rewriteUses(op, lval, init);
+    return opIndex + 2;
+  }
+
+  private insertHoistedLetBinding(block: BasicBlock, opIndex: number, op: Operation): number {
+    const env = this.moduleIR.environment;
+    const lval = env.createValue();
+    const decl = env.createOperation(BindingDeclOp, lval, "let");
+    const storePlace = env.createValue(lval.declarationId);
+    const store = env.createOperation(StoreLocalOp, storePlace, lval, op.place!);
+
+    const declarationBlock = this.funcOp.entryBlock;
+    const declarationIndex = this.hoistedDeclarationIndex(declarationBlock);
+    declarationBlock.insertOpAt(declarationIndex, decl);
+
+    const adjustedOpIndex =
+      declarationBlock === block && declarationIndex <= opIndex ? opIndex + 1 : opIndex;
+    block.insertOpAt(adjustedOpIndex + 1, store);
+    this.rewriteUses(op, lval, store);
+    return adjustedOpIndex + 2;
+  }
+
+  private hoistedDeclarationIndex(block: BasicBlock): number {
+    const index = block.operations.findIndex((op) => !(op instanceof BindingDeclOp));
+    return index < 0 ? block.operations.length : index;
+  }
 
   private rewriteUses(op: Operation, newPlace: Value, spillOp: Operation): void {
     const oldPlace = op.place!;
@@ -288,15 +393,6 @@ function requiresIdentifierOperand(user: Operation, operand: Value): boolean {
 }
 
 /**
- * Ops whose execution at a given position affects observable state
- * that other ops may depend on. If such an op sits between a
- * definer and its single user, inlining would reorder the definer
- * past it.
- *
- * We don't count pure construction (ObjectExpression, ArrowFunction,
- * BinaryExpression) — those don't affect observable state.
- */
-/**
  * True iff `op`'s output flows into `target` — i.e. `op.place` is
  * used (directly or transitively) as an operand of `target`. If so,
  * `op` will codegen-inline into `target`'s expression rather than as
@@ -314,30 +410,6 @@ function flowsTo(op: Operation, target: Operation): boolean {
     seen.add(cur);
     for (const operand of cur.operands()) {
       if (operand === place) return true;
-      const def = operand.def;
-      if (def instanceof Operation) stack.push(def);
-    }
-  }
-  return false;
-}
-
-/**
- * True iff any op in `root`'s operand subtree (excluding `root`
- * itself) has direct side effects — i.e. is not DCE-removable.
- */
-function operandSubtreeHasSideEffects(root: Operation, env: Environment | undefined): boolean {
-  const seen = new Set<Operation>();
-  const stack: Operation[] = [];
-  for (const operand of root.operands()) {
-    const def = operand.def;
-    if (def instanceof Operation) stack.push(def);
-  }
-  while (stack.length > 0) {
-    const cur = stack.pop()!;
-    if (seen.has(cur)) continue;
-    seen.add(cur);
-    if (!isDCERemovable(cur, env)) return true;
-    for (const operand of cur.operands()) {
       const def = operand.def;
       if (def instanceof Operation) stack.push(def);
     }

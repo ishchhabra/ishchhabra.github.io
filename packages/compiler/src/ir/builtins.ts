@@ -87,6 +87,11 @@ const PURE_DET_EFFECTS: BuiltinEffects = {
   isObservable: false,
 };
 
+const PURE_DET_MAY_THROW_EFFECTS: BuiltinEffects = {
+  ...PURE_DET_EFFECTS,
+  mayThrow: true,
+};
+
 /**
  * "Pure but non-deterministic" — `Math.random`, `Date.now`,
  * `performance.now`. Safe to delete when unused (no writes, no
@@ -173,6 +178,10 @@ function pureDet(arity: ArityKind, evaluate: Evaluator): Omit<BuiltinSpec, "name
   return { effects: PURE_DET_EFFECTS, arity, evaluate };
 }
 
+function pureDetMayThrow(arity: ArityKind, evaluate: Evaluator): Omit<BuiltinSpec, "name"> {
+  return { effects: PURE_DET_MAY_THROW_EFFECTS, arity, evaluate };
+}
+
 define(["Boolean"], pureDet(atMost(1), (x) => Boolean(x)));
 define(["Number"], pureDet(atMost(1), (x) => Number(x)));
 define(["String"], pureDet(atMost(1), (x) => String(x)));
@@ -231,7 +240,7 @@ define(["JSON.stringify"], pureDet(variadic({ min: 1, max: 3 }), (...args) => {
       return UNRESOLVED;
   }
 }));
-define(["JSON.parse"], pureDet(exact(1), (x) => JSON.parse(String(x))));
+define(["JSON.parse"], pureDetMayThrow(exact(1), (x) => JSON.parse(String(x))));
 
 define(["Number.isFinite"], pureDet(exact(1), (x) => Number.isFinite(x)));
 define(["Number.isInteger"], pureDet(exact(1), (x) => Number.isInteger(x)));
@@ -329,14 +338,14 @@ export function isPureBuiltin(spec: BuiltinSpec | undefined): boolean {
 
 /**
  * Is this builtin foldable right now given these arg counts? (CP predicate.)
- * Checks effect-purity + determinism + arity match + presence of `evaluate`.
+ * Checks write/observability purity + determinism + arity match + presence of `evaluate`.
  * Doesn't run the evaluator — caller must ensure args are all constants
  * and then call `spec.evaluate(...args)`.
  */
 export function canFoldBuiltin(spec: BuiltinSpec | undefined, argCount: number): boolean {
   if (spec === undefined) return false;
   const e = spec.effects;
-  if (e.writes !== "none" || e.mayThrow || e.isObservable) return false;
+  if (e.writes !== "none" || e.isObservable) return false;
   if (!e.isDeterministic) return false;
   if (spec.evaluate === undefined) return false;
   return matchesArity(spec.arity, argCount);
