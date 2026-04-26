@@ -1,10 +1,6 @@
 function $0() {
   let $2;
-  if (true) {
-    $2 = 1;
-  } else {
-    $2 = 2;
-  }
+  $2 = 1;
   return $2;
 }
 console.log($0());

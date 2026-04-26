@@ -3,8 +3,11 @@ import type { FuncOp } from "../core/FuncOp";
 import { makeOperationId } from "../core/Operation";
 import {
   producedSuccessorValues,
+  successorArgValue,
   successorArgValues,
   TermOp,
+  valueSuccessorArg,
+  type BlockTarget,
   type SuccessorArg,
 } from "../core/TermOp";
 import type { Value } from "../core/Value";
@@ -59,6 +62,12 @@ export class Edge {
     const succ = term.target(this.index);
     if (newArgs === succ.args) return;
     this.pred.replaceOp(term, term.withTarget(this.index, { ...succ, args: newArgs }));
+  }
+
+  /** Retarget this edge, preserving target-index identity. */
+  retarget(target: BlockTarget): void {
+    const term = this.terminator;
+    this.pred.replaceOp(term, term.withTarget(this.index, target));
   }
 
   /**
@@ -117,6 +126,52 @@ export function* incomingEdges(funcOp: FuncOp, sink: BasicBlock): Iterable<Edge>
   }
 }
 
+/**
+ * Compose an incoming edge through an empty block whose terminator is
+ * `jump next(args)`.
+ *
+ * Block params are phi names. If the intermediate jump forwards one
+ * of those params, substitute the incoming edge's corresponding arg;
+ * otherwise preserve the jump's concrete value operand. Returns
+ * `undefined` when the incoming edge cannot satisfy the block params.
+ */
+export function composeJumpThroughBlock(edge: Edge, block: BasicBlock): BlockTarget | undefined {
+  if (edge.sink !== block) return undefined;
+  if (edge.args.length !== block.params.length) return undefined;
+
+  const terminal = block.terminal;
+  if (!(terminal instanceof JumpTermOp)) return undefined;
+
+  const nextArgs: SuccessorArg[] = [];
+  for (const arg of terminal.args) {
+    const paramIndex = block.params.indexOf(arg);
+    nextArgs.push(paramIndex < 0 ? valueSuccessorArg(arg) : edge.args[paramIndex]);
+  }
+
+  return { block: terminal.targetBlock, args: nextArgs };
+}
+
+/** Thread an edge through an empty jump-only block, preserving SSA args. */
+export function threadEdgeThroughEmptyJump(edge: Edge): boolean {
+  const block = edge.sink;
+  if (block.operations.length !== 0) return false;
+  const target = composeJumpThroughBlock(edge, block);
+  if (target === undefined) return false;
+  if (target.block === block) return false;
+  if (target.args.length !== target.block.params.length) return false;
+
+  const current = edge.terminator.target(edge.index);
+  if (
+    current.block === target.block &&
+    argsEqual(current.args.map(successorArgValue), target.args.map(successorArgValue))
+  ) {
+    return false;
+  }
+
+  edge.retarget(target);
+  return true;
+}
+
 /** Values produced by control-flow semantics when entering `block`. */
 export function incomingProducedValues(funcOp: FuncOp, block: BasicBlock): Value[] {
   const values: Value[] = [];
@@ -164,4 +219,10 @@ export function getEdgeArgs(
     if (succ.block === succBlock) return successorArgValues(succ.args);
   }
   return undefined;
+}
+
+function argsEqual(a: readonly Value[], b: readonly Value[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
 }

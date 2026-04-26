@@ -15,6 +15,8 @@ export const CompilerOptionsSchema = z.object({
   enableReassociationPass: z.boolean().default(true),
   /** Whether to enable constant propagation pass */
   enableConstantPropagationPass: z.boolean().default(true),
+  /** Whether to enable CFG simplification pass */
+  enableCFGSimplificationPass: z.boolean().default(true),
   /** Whether to enable the expression inlining pass */
   enableExpressionInliningPass: z.boolean().default(true),
   /** Whether to enable the unused export elimination pass */

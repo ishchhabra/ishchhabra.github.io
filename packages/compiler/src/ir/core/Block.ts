@@ -151,6 +151,26 @@ export class BasicBlock {
     removed.detach();
   }
 
+  /** Remove this block's terminator. */
+  removeTerminal(): void {
+    if (this._terminal === null) {
+      throw new Error(`Block ${this.id} has no terminal to remove`);
+    }
+    this._terminal.detach();
+    this._terminal = null;
+  }
+
+  /** Detach every op owned by this block. */
+  clear(): void {
+    if (this._terminal !== null) {
+      this.removeTerminal();
+    }
+    while (this._ops.length > 0) {
+      this.removeOpAt(this._ops.length - 1);
+    }
+    this.params = [];
+  }
+
   /**
    * Replace `oldOp` with `newOp` by identity. Terminator-ness must
    * match — you can't swap a regular op for a terminator or vice
@@ -251,8 +271,15 @@ export class BasicBlock {
   predecessors(): Set<BasicBlock> {
     const preds = new Set<BasicBlock>();
     for (const user of this.#uses) {
-      const owning = (user as unknown as { parentBlock: BasicBlock | null }).parentBlock;
-      if (owning !== null) preds.add(owning);
+      if (!(user instanceof TermOp)) continue;
+      const owning = user.parentBlock;
+      if (owning === null) continue;
+      for (const index of user.successorIndices()) {
+        if (user.target(index).block === this) {
+          preds.add(owning);
+          break;
+        }
+      }
     }
     return preds;
   }

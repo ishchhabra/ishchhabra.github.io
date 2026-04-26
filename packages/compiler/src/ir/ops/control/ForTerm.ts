@@ -39,25 +39,64 @@ export class ForTermOp extends TermOp {
   }
 
   targetCount(): number {
-    return 1;
+    return 4;
   }
 
   target(index: number): BlockTarget {
     if (index === 0) return { block: this.testBlock, args: [] };
+    if (index === 1) return { block: this.bodyBlock, args: [] };
+    if (index === 2) return { block: this.updateBlock, args: [] };
+    if (index === 3) return { block: this.exitBlock, args: [] };
     return invalidTargetIndex(this.constructor.name, index);
+  }
+
+  override successorIndices(): readonly number[] {
+    return [0];
   }
 
   withTarget(index: number, successor: BlockTarget): ForTermOp {
     assertNoTargetArgs(this.constructor.name, successor);
-    if (index !== 0) return invalidTargetIndex(this.constructor.name, index);
-    return new ForTermOp(
-      this.id,
-      successor.block,
-      this.bodyBlock,
-      this.updateBlock,
-      this.exitBlock,
-      this.label,
-    );
+    if (index === 0) {
+      return new ForTermOp(
+        this.id,
+        successor.block,
+        this.bodyBlock,
+        this.updateBlock,
+        this.exitBlock,
+        this.label,
+      );
+    }
+    if (index === 1) {
+      return new ForTermOp(
+        this.id,
+        this.testBlock,
+        successor.block,
+        this.updateBlock,
+        this.exitBlock,
+        this.label,
+      );
+    }
+    if (index === 2) {
+      return new ForTermOp(
+        this.id,
+        this.testBlock,
+        this.bodyBlock,
+        successor.block,
+        this.exitBlock,
+        this.label,
+      );
+    }
+    if (index === 3) {
+      return new ForTermOp(
+        this.id,
+        this.testBlock,
+        this.bodyBlock,
+        this.updateBlock,
+        successor.block,
+        this.label,
+      );
+    }
+    return invalidTargetIndex(this.constructor.name, index);
   }
 
   rewrite(_values: Map<Value, Value>): ForTermOp {

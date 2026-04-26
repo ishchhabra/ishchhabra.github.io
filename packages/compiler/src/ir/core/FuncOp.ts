@@ -203,6 +203,19 @@ export class FuncOp extends Operation {
     this.#blocks.push(block);
   }
 
+  removeBlock(block: BasicBlock): void {
+    const index = this.#blocks.indexOf(block);
+    if (index < 0) {
+      throw new Error(`Block ${block.id} does not belong to function ${this.id}`);
+    }
+    if (index === 0) {
+      throw new Error(`Cannot remove entry block ${block.id} from function ${this.id}`);
+    }
+    block.clear();
+    block.parent = null;
+    this.#blocks.splice(index, 1);
+  }
+
   replaceParams(params: readonly FunctionParam[]): void {
     this.#params = [...params];
   }

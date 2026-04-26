@@ -1,6 +1,2 @@
 process.env;
-if (true) {
-  console.log("prod");
-} else {
-  console.log("dev");
-}
+console.log("prod");

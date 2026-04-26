@@ -6,6 +6,7 @@ import { FunctionPassManager, funcPass, type FunctionPass } from "../PassManager
 import { ProjectUnit } from "../../frontend/ProjectBuilder";
 import { AlgebraicSimplificationPass } from "../passes/AlgebraicSimplificationPass";
 import { CapturePruningPass } from "../passes/CapturePruningPass";
+import { CFGSimplificationPass } from "../passes/CFGSimplificationPass";
 import { ConstantPropagationPass } from "../passes/ConstantPropagationPass";
 import { DeadCodeEliminationPass } from "../passes/DeadCodeEliminationPass";
 import { ExpressionInliningPass } from "../passes/ExpressionInliningPass";
@@ -56,6 +57,10 @@ export class Optimizer {
       "constant-propagation",
       (f) => new ConstantPropagationPass(f, f.moduleIR, this.projectUnit, this.options),
     );
+    const cfgSimplification = funcPass(
+      "cfg-simplification",
+      (f) => new CFGSimplificationPass(f),
+    );
     const reassociation = funcPass("reassociation", (f) => new ReassociationPass(f));
     const expressionInlining = funcPass(
       "expression-inlining",
@@ -83,12 +88,14 @@ export class Optimizer {
     if (o.enableAlgebraicSimplificationPass) script.push(algebraicSimp);
     if (o.enableReassociationPass) script.push(reassociation);
     if (o.enableConstantPropagationPass) script.push(constantPropagation);
+    if (o.enableCFGSimplificationPass) script.push(cfgSimplification);
     if (o.enableExpressionInliningPass) script.push(expressionInlining);
     if (o.enableDeadCodeEliminationPass) script.push(dce);
     if (o.enableScalarReplacementOfAggregatesPass) script.push(sroa);
     if (o.enableAlgebraicSimplificationPass) script.push(algebraicSimp);
     if (o.enableReassociationPass) script.push(reassociation);
     if (o.enableConstantPropagationPass) script.push(constantPropagation);
+    if (o.enableCFGSimplificationPass) script.push(cfgSimplification);
     if (o.enableExpressionInliningPass) script.push(expressionInlining);
     if (o.enableDeadCodeEliminationPass) script.push(dce);
     if (o.enableAlgebraicSimplificationPass) script.push(algebraicSimp);

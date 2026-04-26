@@ -41,21 +41,33 @@ export class WhileTermOp extends TermOp {
   }
 
   targetCount(): number {
-    return 1;
+    return 3;
   }
 
   target(index: number): BlockTarget {
-    if (index === 0) {
-      const target = this.kind === "do-while" ? this.bodyBlock : this.testBlock;
-      return { block: target, args: [] };
-    }
+    if (index === 0) return { block: this.testBlock, args: [] };
+    if (index === 1) return { block: this.bodyBlock, args: [] };
+    if (index === 2) return { block: this.exitBlock, args: [] };
     return invalidTargetIndex(this.constructor.name, index);
+  }
+
+  override successorIndices(): readonly number[] {
+    return this.kind === "do-while" ? [1] : [0];
   }
 
   withTarget(index: number, successor: BlockTarget): WhileTermOp {
     assertNoTargetArgs(this.constructor.name, successor);
-    if (index !== 0) return invalidTargetIndex(this.constructor.name, index);
-    if (this.kind === "do-while") {
+    if (index === 0) {
+      return new WhileTermOp(
+        this.id,
+        successor.block,
+        this.bodyBlock,
+        this.exitBlock,
+        this.kind,
+        this.label,
+      );
+    }
+    if (index === 1) {
       return new WhileTermOp(
         this.id,
         this.testBlock,
@@ -65,14 +77,17 @@ export class WhileTermOp extends TermOp {
         this.label,
       );
     }
-    return new WhileTermOp(
-      this.id,
-      successor.block,
-      this.bodyBlock,
-      this.exitBlock,
-      this.kind,
-      this.label,
-    );
+    if (index === 2) {
+      return new WhileTermOp(
+        this.id,
+        this.testBlock,
+        this.bodyBlock,
+        successor.block,
+        this.kind,
+        this.label,
+      );
+    }
+    return invalidTargetIndex(this.constructor.name, index);
   }
 
   rewrite(_values: Map<Value, Value>): WhileTermOp {
