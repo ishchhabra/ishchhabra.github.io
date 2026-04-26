@@ -77,7 +77,11 @@ export class Edge {
 
     const splitBlock = env.createBlock();
     splitBlock.setTerminal(
-      new JumpTermOp(makeOperationId(env.nextOperationId++), succ.block, successorArgValues(succ.args)),
+      new JumpTermOp(
+        makeOperationId(env.nextOperationId++),
+        succ.block,
+        successorArgValues(succ.args),
+      ),
     );
     this.funcOp.addBlock(splitBlock);
 

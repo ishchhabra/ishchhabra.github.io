@@ -31,7 +31,6 @@ export {
   remapBlock,
   remapPlace,
   requireModuleIR,
-  Trait,
   VerifyError,
   type CloneContext,
   type OperationId,

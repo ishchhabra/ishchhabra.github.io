@@ -1,7 +1,7 @@
 import { OperationId } from "../../core";
 import { Value } from "../../core";
 
-import { Operation, Trait } from "../../core/Operation";
+import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
 /**
  * Represents a meta property in the IR.
@@ -11,8 +11,6 @@ import type { CloneContext } from "../../core/Operation";
  * - `new.target` (meta="new", property="target")
  */
 export class MetaPropertyOp extends Operation {
-  static override readonly traits: ReadonlySet<Trait> = new Set([Trait.Pure]);
-
   constructor(
     id: OperationId,
     public override readonly place: Value,
@@ -36,4 +34,23 @@ export class MetaPropertyOp extends Operation {
     return [];
   }
 
+  public override getMemoryEffects(): import("../../memory/MemoryLocation").MemoryEffects {
+    return { reads: [], writes: [] };
+  }
+
+  public override mayThrow(): boolean {
+    return false;
+  }
+
+  public override mayDiverge(): boolean {
+    return false;
+  }
+
+  public override get isDeterministic(): boolean {
+    return true;
+  }
+
+  public override isObservable(): boolean {
+    return false;
+  }
 }

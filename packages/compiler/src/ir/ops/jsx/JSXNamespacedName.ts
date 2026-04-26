@@ -1,7 +1,7 @@
 import { OperationId } from "../../core";
 import { Value } from "../../core";
 
-import { Operation, Trait } from "../../core/Operation";
+import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
 /**
  * Represents a JSX namespaced name in the IR.
@@ -11,8 +11,6 @@ import type { CloneContext } from "../../core/Operation";
  * - `xml:space` in `<xml:space>`
  */
 export class JSXNamespacedNameOp extends Operation {
-  static override readonly traits: ReadonlySet<Trait> = new Set([Trait.Pure]);
-
   constructor(
     id: OperationId,
     public override readonly place: Value,
@@ -34,5 +32,24 @@ export class JSXNamespacedNameOp extends Operation {
 
   operands(): Value[] {
     return [];
+  }
+  public override getMemoryEffects(): import("../../memory/MemoryLocation").MemoryEffects {
+    return { reads: [], writes: [] };
+  }
+
+  public override mayThrow(): boolean {
+    return false;
+  }
+
+  public override mayDiverge(): boolean {
+    return false;
+  }
+
+  public override get isDeterministic(): boolean {
+    return true;
+  }
+
+  public override isObservable(): boolean {
+    return false;
   }
 }

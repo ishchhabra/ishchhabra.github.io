@@ -2,7 +2,7 @@ import { OperationId } from "../../core";
 import { FuncOp } from "../../core/FuncOp";
 import { Value } from "../../core/Value";
 
-import { Operation, Trait } from "../../core/Operation";
+import { Operation } from "../../core/Operation";
 import { makeCloneContext, requireModuleIR, type CloneContext } from "../../core/Operation";
 /**
  * Represents an arrow function expression, e.g.
@@ -17,7 +17,6 @@ export class ArrowFunctionExpressionOp extends Operation {
   // Pure value creation: allocating a closure has no observable
   // side effects. Calls into the arrow are separate CallExpression
   // ops with their own (opaque) effects.
-  static override readonly traits: ReadonlySet<Trait> = new Set([Trait.Pure]);
 
   constructor(
     id: OperationId,
@@ -72,4 +71,23 @@ export class ArrowFunctionExpressionOp extends Operation {
     return this.captures;
   }
 
+  public override getMemoryEffects(): import("../../memory/MemoryLocation").MemoryEffects {
+    return { reads: [], writes: [] };
+  }
+
+  public override mayThrow(): boolean {
+    return false;
+  }
+
+  public override mayDiverge(): boolean {
+    return false;
+  }
+
+  public override get isDeterministic(): boolean {
+    return true;
+  }
+
+  public override isObservable(): boolean {
+    return false;
+  }
 }

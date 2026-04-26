@@ -2,7 +2,7 @@ import { OperationId } from "../../core";
 import { Value } from "../../core";
 import { createOperationId } from "../../utils";
 
-import { Operation, Trait } from "../../core/Operation";
+import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
 /**
  * Represents a hole - an empty or missing value in an array.
@@ -11,8 +11,6 @@ import type { CloneContext } from "../../core/Operation";
  * [1, , 3] // Second element is a hole
  */
 export class HoleOp extends Operation {
-  static override readonly traits: ReadonlySet<Trait> = new Set([Trait.Pure]);
-
   constructor(
     id: OperationId,
     public override readonly place: Value,
@@ -36,4 +34,23 @@ export class HoleOp extends Operation {
     return [];
   }
 
+  public override getMemoryEffects(): import("../../memory/MemoryLocation").MemoryEffects {
+    return { reads: [], writes: [] };
+  }
+
+  public override mayThrow(): boolean {
+    return false;
+  }
+
+  public override mayDiverge(): boolean {
+    return false;
+  }
+
+  public override get isDeterministic(): boolean {
+    return true;
+  }
+
+  public override isObservable(): boolean {
+    return false;
+  }
 }

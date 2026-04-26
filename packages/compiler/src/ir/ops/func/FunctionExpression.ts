@@ -1,12 +1,11 @@
 import { OperationId, Value } from "../../core";
 import { FuncOp } from "../../core/FuncOp";
-import { Operation, Trait } from "../../core/Operation";
+import { Operation } from "../../core/Operation";
 import { makeCloneContext, requireModuleIR, type CloneContext } from "../../core/Operation";
 
 export class FunctionExpressionOp extends Operation {
   // Pure value creation: allocating a function has no observable
   // side effects.
-  static override readonly traits: ReadonlySet<Trait> = new Set([Trait.Pure]);
 
   constructor(
     id: OperationId,
@@ -61,4 +60,23 @@ export class FunctionExpressionOp extends Operation {
     return [this.place];
   }
 
+  public override getMemoryEffects(): import("../../memory/MemoryLocation").MemoryEffects {
+    return { reads: [], writes: [] };
+  }
+
+  public override mayThrow(): boolean {
+    return false;
+  }
+
+  public override mayDiverge(): boolean {
+    return false;
+  }
+
+  public override get isDeterministic(): boolean {
+    return true;
+  }
+
+  public override isObservable(): boolean {
+    return false;
+  }
 }

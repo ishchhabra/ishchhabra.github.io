@@ -1,6 +1,6 @@
 import type { Environment } from "../../environment";
 import type { MemoryEffects } from "../memory/MemoryLocation";
-import { NoEffects, UnknownLocation } from "../memory/MemoryLocation";
+import { UnknownLocation } from "../memory/MemoryLocation";
 import type { BasicBlock } from "./Block";
 import type { ModuleIR } from "./ModuleIR";
 import type { Value } from "./Value";
@@ -18,27 +18,6 @@ export type OperationId = number & { [opaqueOperationId]: "OperationId" };
 
 export function makeOperationId(id: number): OperationId {
   return id as OperationId;
-}
-
-// ---------------------------------------------------------------------
-// Traits
-// ---------------------------------------------------------------------
-
-/**
- * Compile-time properties of an {@link Operation} class. Traits
- * replace the old three-way class split that used to exist in this
- * codebase — concrete ops used to be grouped by `extends` into
- * `BaseInstruction` / `BaseTerminal` / `BaseStructure` hierarchies.
- *
- * Now everything extends `Operation` directly, and categorization
- * happens via `static override readonly traits = new Set([Trait.X])`
- * on each class, queried at runtime with {@link Operation.hasTrait}.
- */
-export const enum Trait {
-  /** No observable side effects. */
-  Pure = "Pure",
-  /** Introduces a new lexical scope. */
-  IntroducesScope = "IntroducesScope",
 }
 
 // ---------------------------------------------------------------------
@@ -151,7 +130,6 @@ export function requireModuleIR(ctx: CloneContext): ModuleIR {
  *     value. Terminators and structures leave it undefined;
  *     instructions narrow via `public override readonly place: Value`
  *     in their constructors.
- *   - Static `traits` + `hasTrait(t)` for compile-time categorization.
  *   - Abstract `operands()`, `rewrite()`, `clone(ctx)`.
  *   - Sensible defaults for `results()`, the five effects axes
  *     (`getMemoryEffects`, `mayThrow`, `mayDiverge`, `isDeterministic`,
@@ -179,14 +157,8 @@ export abstract class Operation {
    */
   public parentBlock: BasicBlock | null = null;
 
-  static readonly traits: ReadonlySet<Trait> = new Set();
-
   constructor(id: OperationId) {
     this.id = id;
-  }
-
-  hasTrait(t: Trait): boolean {
-    return (this.constructor as typeof Operation).traits.has(t);
   }
 
   // -----------------------------------------------------------------
@@ -240,10 +212,6 @@ export abstract class Operation {
   // (see `src/ir/effects/predicates.ts`) returns `false` for an
   // un-overridden op. An op opts *into* optimization by overriding
   // axes it can prove safe.
-  //
-  // `Trait.Pure` is the all-clean shortcut: an op marked Pure gets
-  // empty memory effects and every boolean flipped to safe-for-
-  // optimization without any per-axis override.
   // -----------------------------------------------------------------
 
   /**
@@ -251,8 +219,7 @@ export abstract class Operation {
    * analyses speak (see {@link MemoryStateWalker}).
    *
    * Conservative default: reads and writes `UnknownLocation`
-   * (aliases everything). `Trait.Pure` ops short-circuit to
-   * {@link NoEffects}. Concrete ops override to declare narrower
+   * (aliases everything). Concrete ops override to declare narrower
    * footprints.
    *
    * `environment` is passed so ops that need module-scope context
@@ -260,7 +227,6 @@ export abstract class Operation {
    * resolve it; most overrides ignore it.
    */
   getMemoryEffects(_environment?: Environment): MemoryEffects {
-    if (this.hasTrait(Trait.Pure)) return NoEffects;
     return { reads: [UnknownLocation], writes: [UnknownLocation] };
   }
 
@@ -269,14 +235,14 @@ export abstract class Operation {
    * `throw`, opaque call, getter trap, etc.
    */
   mayThrow(_environment?: Environment): boolean {
-    return !this.hasTrait(Trait.Pure);
+    return true;
   }
 
   /**
    * Can this op fail to terminate? Loops, opaque calls.
    */
   mayDiverge(_environment?: Environment): boolean {
-    return !this.hasTrait(Trait.Pure);
+    return true;
   }
 
   /**
@@ -284,7 +250,7 @@ export abstract class Operation {
    * mutable global loads, opaque calls.
    */
   get isDeterministic(): boolean {
-    return this.hasTrait(Trait.Pure);
+    return false;
   }
 
   /**
@@ -293,7 +259,7 @@ export abstract class Operation {
    * their result is unused.
    */
   isObservable(_environment?: Environment): boolean {
-    return !this.hasTrait(Trait.Pure);
+    return true;
   }
 
   remap(_from: BasicBlock, _to: BasicBlock): void {

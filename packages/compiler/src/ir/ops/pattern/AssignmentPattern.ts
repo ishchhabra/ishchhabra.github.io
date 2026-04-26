@@ -1,7 +1,7 @@
 import { OperationId } from "../../core";
 import { Value } from "../../core";
 
-import { Operation, Trait } from "../../core/Operation";
+import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
 /**
  * Represents an assignment pattern with a default value.
@@ -14,7 +14,6 @@ export class AssignmentPatternOp extends Operation {
   // Default-value carrier for parameters / destructure targets. The
   // structural op itself doesn't run the default; the default value
   // is a separate operand op with its own effects.
-  static override readonly traits: ReadonlySet<Trait> = new Set([Trait.Pure]);
 
   constructor(
     id: OperationId,
@@ -50,4 +49,23 @@ export class AssignmentPatternOp extends Operation {
     return [this.place, ...this.bindings];
   }
 
+  public override getMemoryEffects(): import("../../memory/MemoryLocation").MemoryEffects {
+    return { reads: [], writes: [] };
+  }
+
+  public override mayThrow(): boolean {
+    return false;
+  }
+
+  public override mayDiverge(): boolean {
+    return false;
+  }
+
+  public override get isDeterministic(): boolean {
+    return true;
+  }
+
+  public override isObservable(): boolean {
+    return false;
+  }
 }

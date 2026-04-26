@@ -1,7 +1,7 @@
 import { OperationId } from "../../core";
 import { Value } from "../../core";
 
-import { Operation, Trait } from "../../core/Operation";
+import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
 export type TPrimitiveValue = string | number | boolean | null | undefined | bigint | symbol;
 
@@ -14,8 +14,6 @@ export type TPrimitiveValue = string | number | boolean | null | undefined | big
  * true
  */
 export class LiteralOp extends Operation {
-  static override readonly traits: ReadonlySet<Trait> = new Set([Trait.Pure]);
-
   constructor(
     id: OperationId,
     public override readonly place: Value,
@@ -41,5 +39,24 @@ export class LiteralOp extends Operation {
 
   public override print(): string {
     return `${this.place.print()} = ${JSON.stringify(this.value)}`;
+  }
+  public override getMemoryEffects(): import("../../memory/MemoryLocation").MemoryEffects {
+    return { reads: [], writes: [] };
+  }
+
+  public override mayThrow(): boolean {
+    return false;
+  }
+
+  public override mayDiverge(): boolean {
+    return false;
+  }
+
+  public override get isDeterministic(): boolean {
+    return true;
+  }
+
+  public override isObservable(): boolean {
+    return false;
   }
 }
