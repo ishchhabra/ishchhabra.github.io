@@ -1,10 +1,11 @@
 import { Environment } from "../../../environment";
 import {
   BasicBlock,
+  ArrayDestructureOp,
+  ArrayExpressionOp,
   BindingDeclOp,
   BindingInitOp,
-  Value,
-  ValueId,
+  CallExpressionOp,
   LiteralOp,
   LoadDynamicPropertyOp,
   LoadLocalOp,
@@ -14,91 +15,55 @@ import {
   ObjectPropertyOp,
   StoreLocalOp,
   UnaryExpressionOp,
-  makeOperationId,
+  Value,
+  ValueId,
+  type DestructureTarget,
 } from "../../../ir";
 import { FuncOp } from "../../../ir/core/FuncOp";
 import { SpreadElementOp } from "../../../ir/ops/prim/SpreadElement";
 import { StoreDynamicPropertyOp } from "../../../ir/ops/prop/StoreDynamicProperty";
 import { StoreStaticPropertyOp } from "../../../ir/ops/prop/StoreStaticProperty";
 import { AnalysisManager } from "../../analysis/AnalysisManager";
-import { EscapeAnalysis } from "../../analysis/EscapeAnalysis";
+import { EscapeAnalysis, EscapeAnalysisResult } from "../../analysis/EscapeAnalysis";
 import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
 
+type ObjectShape = {
+  readonly object: ObjectExpressionOp;
+  readonly fields: ReadonlyMap<string, Value>;
+};
+
+type ArrayShape = {
+  readonly array: ArrayExpressionOp;
+  readonly elements: readonly Value[];
+};
+
+type AggregateShape =
+  | {
+      readonly kind: "object";
+      readonly fields: ReadonlyMap<string, Value>;
+    }
+  | {
+      readonly kind: "array";
+      readonly elements: readonly Value[];
+    };
+
+type ScalarBinding = {
+  readonly lval: Value;
+  readonly value: Value;
+};
+
+type ScalarizableDestructure = ObjectDestructureOp | ArrayDestructureOp;
+
 /**
- * Scalar Replacement of Aggregates — decomposes object aggregates into
- * individual scalar values.
+ * Replaces provably local aggregate operations with scalar values.
  *
- * ## Destructuring SROA (original)
+ * The pass is intentionally split into small transforms over a shared
+ * aggregate view:
  *
- * Transforms:
- * ```
- *   const { a, b } = { a: 2, b: 3 };
- * ```
- * Into:
- * ```
- *   const a = 2;
- *   const b = 3;
- * ```
- *
- * ## Member-access SROA (escape-analysis–driven)
- *
- * Transforms:
- * ```
- *   const obj = { a: 1, b: 2 };
- *   console.log(obj.a, obj.b);
- * ```
- * Into:
- * ```
- *   const obj_a = 1;
- *   const obj_b = 2;
- *   console.log(obj_a, obj_b);
- * ```
- *
- * The member-access variant requires escape analysis to prove the object
- * never leaves the local scope and is never modified after creation.
- *
- * ## Store-to-load forwarding (intra-block)
- *
- * Transforms:
- * ```
- *   const obj = { a: 1, b: 2 };
- *   obj.a = 10;
- *   console.log(obj.a);
- * ```
- * Into:
- * ```
- *   const obj = { a: 1, b: 2 };
- *   obj.a = 10;
- *   console.log(10);
- * ```
- *
- * Tracks property values through stores within the same basic block.
- * Also eliminates dead property loads (unused reads on non-escaping
- * object literals are provably side-effect-free).
- *
- * **Soundness conditions** for destructuring SROA:
- *
- *   1. The RHS is a syntactic `ObjectExpressionOp` — a literal
- *      `{ ... }` that is guaranteed free of getters and Proxy traps.
- *   2. The object contains no spread elements (`SpreadElementOp`).
- *   3. Every property in both the object and the pattern has a
- *      non-computed, literal key.
- *   4. The pattern contains no rest elements.
- *   5. The pattern contains no default values.
- *   6. Every pattern key has a corresponding key in the object literal
- *      (no implicit `undefined` bindings).
- *
- * **Soundness conditions** for member-access SROA:
- *
- *   1. The object is a syntactic `ObjectExpressionOp`.
- *   2. The object does not escape (EscapeAnalysis reports NoEscape).
- *   3. No `StoreStaticProperty` / `StoreDynamicProperty` writes to the object.
- *   4. The object contains no spread elements and all keys are literal.
- *   5. Every `LoadStaticProperty` accessing the object has a matching key.
- *
- * Pattern and object instructions that become dead after replacement are
- * left for {@link LateDeadCodeEliminationPass} / {@link DeadCodeEliminationPass}
- * to clean up.
+ * - destructuring scalarization for literal object and array patterns,
+ * - field-load forwarding for non-escaping object literals,
+ * - intra-block field store/load forwarding,
+ * - dead property-load removal for local literals.
  */
 export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
   constructor(
@@ -110,84 +75,226 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
   }
 
   protected step(): OptimizationResult {
-    let changed = false;
+    const escape = this.AM.get(EscapeAnalysis, this.funcOp);
+    const aggregates = new AggregateFacts(this.funcOp, escape);
 
-    if (this.stepDestructuring()) changed = true;
-    if (this.stepMemberAccess()) changed = true;
-    if (this.stepStoreToLoadForwarding()) changed = true;
-    if (this.stepDeadPropertyLoadElimination()) changed = true;
+    let changed = false;
+    changed = this.scalarizeObjectDestructures(aggregates) || changed;
+    changed = this.scalarizeArrayDestructures(aggregates) || changed;
+    changed = this.forwardObjectFieldLoads(aggregates) || changed;
+    changed = this.forwardInBlockObjectStores(aggregates) || changed;
+    changed = this.removeDeadPropertyLoads(aggregates) || changed;
 
     return { changed };
   }
 
-  // ---------------------------------------------------------------------------
-  // Destructuring SROA (original implementation)
-  // ---------------------------------------------------------------------------
-
-  private stepDestructuring(): boolean {
+  private scalarizeObjectDestructures(aggregates: AggregateFacts): boolean {
     let changed = false;
 
     for (const block of this.funcOp.blocks) {
       for (let i = 0; i < block.operations.length; i++) {
-        const instr = block.operations[i];
-        let valuePlace: Value;
-        let storeKind: "declaration" | "assignment";
-        let declarationKind: "let" | "const" | "var";
-        let pattern: ObjectDestructureOp | null = null;
+        const op = block.operations[i];
+        if (!(op instanceof ObjectDestructureOp)) continue;
 
-        if (instr instanceof ObjectDestructureOp) {
-          valuePlace = instr.value;
-          storeKind = instr.kind;
-          declarationKind = instr.declarationKind ?? "const";
-          pattern = instr;
-        } else {
-          continue;
-        }
-
-        if (!pattern) continue;
-
-        const objectExpr = valuePlace.def;
-        if (!(objectExpr instanceof ObjectExpressionOp)) continue;
-
-        const objMap = this.buildObjectKeyToValue(objectExpr);
-        if (!objMap) continue;
-
-        const replacements = this.matchDestructureToObject(pattern, objMap);
-        if (!replacements) continue;
+        const shape = aggregates.aggregateShapeFor(op.value);
+        if (shape === null) continue;
+        const replacements = matchDestructureTarget(
+          { kind: "object", properties: op.properties },
+          shape,
+          aggregates,
+        );
+        if (replacements === null) continue;
 
         block.removeOpAt(i);
-
         for (let j = 0; j < replacements.length; j++) {
-          const { lval, value } = replacements[j];
-          if (storeKind === "declaration") {
-            const init = new BindingInitOp(
-              makeOperationId(this.environment.nextOperationId++),
-              lval,
-              declarationKind,
-              value,
-            );
-            block.insertOpAt(i + j, init);
-            continue;
-          }
-          const id = makeOperationId(this.environment.nextOperationId++);
-          const place = this.environment.createValue();
-          const scalar = new StoreLocalOp(
-            id,
-            place,
-            lval,
-            value,
-            [],
-            this.findBindingCell(lval) ?? lval,
-          );
-          block.insertOpAt(i + j, scalar);
+          block.insertOpAt(i + j, this.createScalarBinding(op, replacements[j]));
         }
-
         i += replacements.length - 1;
         changed = true;
       }
     }
 
     return changed;
+  }
+
+  private scalarizeArrayDestructures(aggregates: AggregateFacts): boolean {
+    let changed = false;
+
+    for (const block of this.funcOp.blocks) {
+      for (let i = 0; i < block.operations.length; i++) {
+        const op = block.operations[i];
+        if (!(op instanceof ArrayDestructureOp)) continue;
+
+        const shape = aggregates.aggregateShapeFor(op.value);
+        if (shape === null) continue;
+        const replacements = matchDestructureTarget(
+          { kind: "array", elements: op.elements },
+          shape,
+          aggregates,
+        );
+        if (replacements === null) continue;
+
+        block.removeOpAt(i);
+        for (let j = 0; j < replacements.length; j++) {
+          block.insertOpAt(i + j, this.createScalarBinding(op, replacements[j]));
+        }
+        i += replacements.length - 1;
+        changed = true;
+      }
+    }
+
+    return changed;
+  }
+
+  private forwardObjectFieldLoads(aggregates: AggregateFacts): boolean {
+    const candidates = aggregates.nonEscapingObjectShapes();
+    if (candidates.size === 0) return false;
+
+    this.removeObjectsWithWrites(candidates, aggregates);
+    if (candidates.size === 0) return false;
+
+    const replacement = new ReplacementPlan();
+    for (const block of this.funcOp.blocks) {
+      for (let i = 0; i < block.operations.length; i++) {
+        const op = block.operations[i];
+        if (!(op instanceof LoadStaticPropertyOp)) continue;
+        if (isUsedAsCallCallee(op)) continue;
+
+        const shape = aggregates.objectShapeFor(op.object);
+        if (shape === null || !candidates.has(shape.object.place.id)) continue;
+
+        const value = shape.fields.get(op.property);
+        if (value === undefined) continue;
+        replacement.replaceAndRemove(block, i, op.place, value);
+      }
+    }
+
+    return replacement.apply();
+  }
+
+  private forwardInBlockObjectStores(aggregates: AggregateFacts): boolean {
+    const replacement = new ReplacementPlan();
+
+    for (const block of this.funcOp.blocks) {
+      const state = new Map<ValueId, Map<string, Value>>();
+
+      for (let i = 0; i < block.operations.length; i++) {
+        const op = block.operations[i];
+
+        if (op instanceof ObjectExpressionOp) {
+          const shape = aggregates.objectShapeFor(op.place);
+          if (shape !== null && aggregates.doesNotEscape(op.place)) {
+            state.set(op.place.id, new Map(shape.fields));
+          }
+          continue;
+        }
+
+        if (op instanceof StoreStaticPropertyOp) {
+          const objectId = aggregates.objectIdFor(op.object);
+          const fields = objectId === null ? undefined : state.get(objectId);
+          fields?.set(op.property, op.value);
+          continue;
+        }
+
+        if (op instanceof StoreDynamicPropertyOp) {
+          const objectId = aggregates.objectIdFor(op.object);
+          if (objectId !== null) state.delete(objectId);
+          continue;
+        }
+
+        if (op instanceof UnaryExpressionOp && op.operator === "delete") {
+          this.invalidateDeleteTarget(op, state, aggregates);
+          continue;
+        }
+
+        if (op instanceof LoadStaticPropertyOp) {
+          if (isUsedAsCallCallee(op) || feedsDeleteExpression(op)) continue;
+          const objectId = aggregates.objectIdFor(op.object);
+          const fields = objectId === null ? undefined : state.get(objectId);
+          const value = fields?.get(op.property);
+          if (value !== undefined) {
+            replacement.replaceAndRemove(block, i, op.place, value);
+          }
+        }
+      }
+    }
+
+    return replacement.apply();
+  }
+
+  private removeDeadPropertyLoads(aggregates: AggregateFacts): boolean {
+    const removal = new RemovalPlan();
+
+    for (const block of this.funcOp.blocks) {
+      for (let i = 0; i < block.operations.length; i++) {
+        const op = block.operations[i];
+        if (!(op instanceof LoadStaticPropertyOp) && !(op instanceof LoadDynamicPropertyOp)) {
+          continue;
+        }
+        if (op.place.users.size > 0) continue;
+        if (!aggregates.isNonEscapingObjectLiteral(op.object)) continue;
+        removal.remove(block, i);
+      }
+    }
+
+    return removal.apply();
+  }
+
+  private invalidateDeleteTarget(
+    op: UnaryExpressionOp,
+    state: Map<ValueId, Map<string, Value>>,
+    aggregates: AggregateFacts,
+  ): void {
+    const load = op.argument.def;
+    if (!(load instanceof LoadStaticPropertyOp)) return;
+    const objectId = aggregates.objectIdFor(load.object);
+    const fields = objectId === null ? undefined : state.get(objectId);
+    fields?.delete(load.property);
+  }
+
+  private removeObjectsWithWrites(
+    candidates: Map<ValueId, ObjectShape>,
+    aggregates: AggregateFacts,
+  ): void {
+    for (const block of this.funcOp.blocks) {
+      for (const op of block.operations) {
+        if (op instanceof StoreStaticPropertyOp || op instanceof StoreDynamicPropertyOp) {
+          const objectId = aggregates.objectIdFor(op.object);
+          if (objectId !== null) candidates.delete(objectId);
+          continue;
+        }
+
+        if (op instanceof UnaryExpressionOp && op.operator === "delete") {
+          const load = op.argument.def;
+          if (!(load instanceof LoadStaticPropertyOp)) continue;
+          const objectId = aggregates.objectIdFor(load.object);
+          if (objectId !== null) candidates.delete(objectId);
+        }
+      }
+    }
+  }
+
+  private createScalarBinding(
+    source: ScalarizableDestructure,
+    binding: ScalarBinding,
+  ): BindingInitOp | StoreLocalOp {
+    if (source.kind === "declaration") {
+      return this.environment.createOperation(
+        BindingInitOp,
+        binding.lval,
+        source.declarationKind ?? "const",
+        binding.value,
+      );
+    }
+
+    return this.environment.createOperation(
+      StoreLocalOp,
+      this.environment.createValue(),
+      binding.lval,
+      binding.value,
+      [],
+      this.findBindingCell(binding.lval) ?? binding.lval,
+    );
   }
 
   private findBindingCell(lval: Value): Value | undefined {
@@ -203,397 +310,272 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
 
     return this.environment.getDeclarationBinding(declarationId);
   }
+}
 
-  // ---------------------------------------------------------------------------
-  // Member-access SROA (escape-analysis–driven)
-  // ---------------------------------------------------------------------------
+class AggregateFacts {
+  private readonly objectShapeCache = new Map<ValueId, ObjectShape | null>();
+  private readonly arrayShapeCache = new Map<ValueId, ArrayShape | null>();
 
-  private stepMemberAccess(): boolean {
-    const escapeResult = this.AM.get(EscapeAnalysis, this.funcOp);
+  constructor(
+    private readonly funcOp: FuncOp,
+    private readonly escape: EscapeAnalysisResult,
+  ) {}
 
-    // 1. Find non-escaping, unmodified object literals.
-    const candidates = new Map<
-      ValueId,
-      { objExpr: ObjectExpressionOp; propMap: Map<string, Value> }
-    >();
-
+  nonEscapingObjectShapes(): Map<ValueId, ObjectShape> {
+    const result = new Map<ValueId, ObjectShape>();
     for (const block of this.funcOp.blocks) {
-      for (const instr of block.operations) {
-        if (!(instr instanceof ObjectExpressionOp)) continue;
-        if (!escapeResult.doesNotEscape(instr.place.id)) continue;
-
-        const propMap = this.buildObjectKeyToValue(instr);
-        if (!propMap) continue;
-
-        candidates.set(instr.place.id, { objExpr: instr, propMap });
+      for (const op of block.operations) {
+        if (!(op instanceof ObjectExpressionOp)) continue;
+        if (!this.doesNotEscape(op.place)) continue;
+        const shape = this.objectShapeFor(op.place);
+        if (shape !== null) result.set(op.place.id, shape);
       }
     }
-
-    if (candidates.size === 0) return false;
-
-    // Remove candidates that have property writes.
-    this.removeModifiedObjects(candidates);
-    if (candidates.size === 0) return false;
-
-    // 2. Build a rewrite map: LoadStaticProperty result → property value.
-    //    Also collect the LoadStaticProperty instructions to remove.
-    const rewrites = new Map<Value, Value>();
-    const toRemove = new Map<BasicBlock, number[]>();
-
-    for (const block of this.funcOp.blocks) {
-      for (let i = 0; i < block.operations.length; i++) {
-        const instr = block.operations[i];
-        if (!(instr instanceof LoadStaticPropertyOp)) continue;
-
-        const objExpr = this.resolveToObjectExpression(instr.object);
-        if (!objExpr) continue;
-
-        const candidate = candidates.get(objExpr.place.id);
-        if (!candidate) continue;
-
-        const value = candidate.propMap.get(instr.property);
-        if (value === undefined) continue;
-
-        rewrites.set(instr.place, value);
-
-        let indices = toRemove.get(block);
-        if (!indices) {
-          indices = [];
-          toRemove.set(block, indices);
-        }
-        indices.push(i);
-      }
-    }
-
-    if (rewrites.size === 0) return false;
-
-    // 3. Remove the LoadStaticProperty instructions (descending order per block).
-    for (const [block, indices] of toRemove) {
-      indices.sort((a, b) => b - a);
-      for (const index of indices) {
-        block.removeOpAt(index);
-      }
-    }
-
-    // 4. Rewrite all uses of the removed loads to point to the property
-    //    values. `block.rewriteAll` walks terminators too — including
-    //    their block-args edge operands — so no separate merge-value
-    //    fixup is needed.
-    for (const block of this.funcOp.blocks) {
-      for (const op of [...block.getAllOps()]) {
-        const rewritten = op.rewrite(rewrites);
-        if (rewritten !== op) block.replaceOp(op, rewritten);
-      }
-    }
-    return true;
+    return result;
   }
 
-  /**
-   * Trace an identifier through value-forwarding instructions
-   * (LoadLocal, StoreLocal) back to its origin. Returns the
-   * ObjectExpressionOp if found, null otherwise.
-   */
-  private resolveToObjectExpression(place: Value): ObjectExpressionOp | null {
-    // oxlint-disable-next-line typescript/no-explicit-any
-    let current: any = place.def;
-    for (let depth = 0; depth < 10 && current; depth++) {
-      if (current instanceof ObjectExpressionOp) return current;
-      if (current instanceof LoadLocalOp) {
-        current = current.value.def;
-      } else if (current instanceof StoreLocalOp) {
-        current = current.value.def;
-      } else {
-        break;
-      }
+  doesNotEscape(value: Value): boolean {
+    return this.escape.doesNotEscape(value.id);
+  }
+
+  isNonEscapingObjectLiteral(value: Value): boolean {
+    const shape = this.objectShapeFor(value);
+    return shape !== null && this.doesNotEscape(shape.object.place);
+  }
+
+  objectIdFor(value: Value): ValueId | null {
+    return this.objectShapeFor(value)?.object.place.id ?? null;
+  }
+
+  objectShapeFor(value: Value): ObjectShape | null {
+    const cached = this.objectShapeCache.get(value.id);
+    if (cached !== undefined || this.objectShapeCache.has(value.id)) return cached ?? null;
+
+    const object = this.resolveObjectExpression(value, new Set());
+    const shape = object === null ? null : buildObjectShape(object);
+    this.objectShapeCache.set(value.id, shape);
+    return shape;
+  }
+
+  arrayShapeFor(value: Value): ArrayShape | null {
+    const cached = this.arrayShapeCache.get(value.id);
+    if (cached !== undefined || this.arrayShapeCache.has(value.id)) return cached ?? null;
+
+    const array = this.resolveArrayExpression(value, new Set());
+    const shape = array === null ? null : buildArrayShape(array);
+    this.arrayShapeCache.set(value.id, shape);
+    return shape;
+  }
+
+  aggregateShapeFor(value: Value): AggregateShape | null {
+    const objectShape = this.objectShapeFor(value);
+    if (objectShape !== null) {
+      return { kind: "object", fields: objectShape.fields };
+    }
+
+    const arrayShape = this.arrayShapeFor(value);
+    if (arrayShape !== null) {
+      return { kind: "array", elements: arrayShape.elements };
+    }
+
+    return null;
+  }
+
+  private resolveObjectExpression(value: Value, seen: Set<ValueId>): ObjectExpressionOp | null {
+    if (seen.has(value.id)) return null;
+    seen.add(value.id);
+
+    const def = value.def;
+    if (def instanceof ObjectExpressionOp) return def;
+    if (def instanceof LoadLocalOp || def instanceof StoreLocalOp) {
+      return this.resolveObjectExpression(def.value, seen);
+    }
+    if (def instanceof BindingInitOp) {
+      return this.resolveObjectExpression(def.value, seen);
     }
     return null;
   }
 
-  /**
-   * Remove candidates that are modified anywhere in the function.
-   *
-   * Detects:
-   * - `StoreStaticProperty` / `StoreDynamicProperty` on the object
-   * - `delete obj.prop` — a `UnaryExpression("delete")` whose argument
-   *   is a `LoadStaticProperty` on the object
-   */
-  private removeModifiedObjects(
-    candidates: Map<ValueId, { objExpr: ObjectExpressionOp; propMap: Map<string, Value> }>,
-  ): void {
-    for (const block of this.funcOp.blocks) {
-      for (const instr of block.operations) {
-        // Direct property stores.
-        if (instr instanceof StoreStaticPropertyOp || instr instanceof StoreDynamicPropertyOp) {
-          const objExpr = this.resolveToObjectExpression(instr.object);
-          if (objExpr) {
-            candidates.delete(objExpr.place.id);
-          }
-        }
+  private resolveArrayExpression(value: Value, seen: Set<ValueId>): ArrayExpressionOp | null {
+    if (seen.has(value.id)) return null;
+    seen.add(value.id);
 
-        // `delete obj.prop` — the delete argument is a LoadStaticProperty.
-        if (instr instanceof UnaryExpressionOp && instr.operator === "delete") {
-          const argDefiner = instr.argument.def;
-          if (argDefiner instanceof LoadStaticPropertyOp) {
-            const objExpr = this.resolveToObjectExpression(argDefiner.object);
-            if (objExpr) {
-              candidates.delete(objExpr.place.id);
-            }
-          }
-        }
-      }
+    const def = value.def;
+    if (def instanceof ArrayExpressionOp) return def;
+    if (def instanceof LoadLocalOp || def instanceof StoreLocalOp) {
+      return this.resolveArrayExpression(def.value, seen);
     }
+    if (def instanceof BindingInitOp) {
+      return this.resolveArrayExpression(def.value, seen);
+    }
+    return null;
+  }
+}
+
+class ReplacementPlan {
+  private readonly replacements = new Map<Value, Value>();
+  private readonly removals = new RemovalPlan();
+
+  replaceAndRemove(block: BasicBlock, index: number, from: Value, to: Value): void {
+    this.replacements.set(from, to);
+    this.removals.remove(block, index);
   }
 
-  // ---------------------------------------------------------------------------
-  // Store-to-load forwarding (intra-block)
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Intra-block store-to-load forwarding for non-escaping object literals.
-   *
-   * Walks each basic block forward, maintaining a "virtual object" state
-   * that tracks the current value of each property. When a
-   * `LoadStaticProperty` is encountered, the tracked value is forwarded
-   * and the load is eliminated.
-   *
-   * This handles objects WITH property writes (which `stepMemberAccess`
-   * cannot). It is limited to intra-block: the virtual state is not
-   * carried across control-flow edges.
-   */
-  private stepStoreToLoadForwarding(): boolean {
-    const escapeResult = this.AM.get(EscapeAnalysis, this.funcOp);
-    const rewrites = new Map<Value, Value>();
-    const toRemove = new Map<BasicBlock, number[]>();
-
-    for (const block of this.funcOp.blocks) {
-      // Virtual state: objectId → (propertyKey → current value Value)
-      const virtualState = new Map<ValueId, Map<string, Value>>();
-
-      for (let i = 0; i < block.operations.length; i++) {
-        const instr = block.operations[i];
-
-        // Initialize virtual state when we see a non-escaping object literal.
-        if (instr instanceof ObjectExpressionOp) {
-          if (!escapeResult.doesNotEscape(instr.place.id)) continue;
-          const propMap = this.buildObjectKeyToValue(instr);
-          if (propMap) {
-            virtualState.set(instr.place.id, new Map(propMap));
-          }
-          continue;
-        }
-
-        // Static property store → update the tracked value.
-        if (instr instanceof StoreStaticPropertyOp) {
-          const objId = this.resolveToObjectId(instr.object);
-          if (objId !== null) {
-            const state = virtualState.get(objId);
-            if (state) {
-              state.set(instr.property, instr.value);
-            }
-          }
-          continue;
-        }
-
-        // Dynamic property store → invalidate all tracked properties
-        // (we don't know which key was written).
-        if (instr instanceof StoreDynamicPropertyOp) {
-          const objId = this.resolveToObjectId(instr.object);
-          if (objId !== null) {
-            virtualState.delete(objId);
-          }
-          continue;
-        }
-
-        // `delete obj.prop` → invalidate the specific property.
-        if (instr instanceof UnaryExpressionOp && instr.operator === "delete") {
-          const argDefiner = instr.argument.def;
-          if (argDefiner instanceof LoadStaticPropertyOp) {
-            const objId = this.resolveToObjectId(argDefiner.object);
-            if (objId !== null) {
-              const state = virtualState.get(objId);
-              if (state) {
-                state.delete(argDefiner.property);
-              }
-            }
-          }
-          continue;
-        }
-
-        // Static property load → forward if we have a tracked value.
-        if (instr instanceof LoadStaticPropertyOp) {
-          const objId = this.resolveToObjectId(instr.object);
-          if (objId === null) continue;
-          const state = virtualState.get(objId);
-          if (!state) continue;
-          const value = state.get(instr.property);
-          if (value === undefined) continue;
-
-          // Don't forward if the load feeds a `delete` expression —
-          // `delete` needs the actual property reference, not the value.
-          if (this.feedsDeleteExpression(instr)) continue;
-
-          rewrites.set(instr.place, value);
-
-          let indices = toRemove.get(block);
-          if (!indices) {
-            indices = [];
-            toRemove.set(block, indices);
-          }
-          indices.push(i);
-          continue;
-        }
-      }
+  apply(): boolean {
+    if (this.replacements.size === 0) return false;
+    for (const [from, to] of this.replacements) {
+      from.replaceAllUsesWith(to);
     }
+    this.removals.apply();
+    return true;
+  }
+}
 
-    if (rewrites.size === 0) return false;
+class RemovalPlan {
+  private readonly removals = new Map<BasicBlock, number[]>();
 
-    // Remove forwarded LoadStaticProperty instructions (descending per block).
-    for (const [block, indices] of toRemove) {
+  remove(block: BasicBlock, index: number): void {
+    let indices = this.removals.get(block);
+    if (indices === undefined) {
+      indices = [];
+      this.removals.set(block, indices);
+    }
+    indices.push(index);
+  }
+
+  apply(): boolean {
+    if (this.removals.size === 0) return false;
+    for (const [block, indices] of this.removals) {
       indices.sort((a, b) => b - a);
       for (const index of indices) {
         block.removeOpAt(index);
       }
     }
-
-    // Rewrite all uses of forwarded loads to the property values.
-    // `block.rewriteAll` walks terminators too, so the block-args
-    // edge operands are rewritten in the same sweep; we just rebuild
-    // phis from the updated block args afterward.
-    for (const block of this.funcOp.blocks) {
-      for (const op of [...block.getAllOps()]) {
-        const rewritten = op.rewrite(rewrites);
-        if (rewritten !== op) block.replaceOp(op, rewritten);
-      }
-    }
     return true;
   }
+}
 
-  // ---------------------------------------------------------------------------
-  // Dead property load elimination
-  // ---------------------------------------------------------------------------
+function buildObjectShape(object: ObjectExpressionOp): ObjectShape | null {
+  const fields = new Map<string, Value>();
 
-  /**
-   * Removes unused property loads on non-escaping object literals.
-   *
-   * A `LoadStaticProperty` / `LoadDynamicProperty` on an object that is:
-   *   1. Defined by an `ObjectExpressionOp` (no getters), AND
-   *   2. `NoEscape` (no external code could have installed a getter)
-   *
-   * is guaranteed side-effect-free. If its result is unused, the load
-   * can be safely removed.
-   */
-  private stepDeadPropertyLoadElimination(): boolean {
-    const escapeResult = this.AM.get(EscapeAnalysis, this.funcOp);
-    const toRemove = new Map<BasicBlock, number[]>();
+  for (const propertyValue of object.properties) {
+    const property = propertyValue.def;
+    if (property instanceof SpreadElementOp) return null;
+    if (!(property instanceof ObjectPropertyOp)) return null;
+    if (property.computed) return null;
 
-    for (const block of this.funcOp.blocks) {
-      for (let i = 0; i < block.operations.length; i++) {
-        const instr = block.operations[i];
-
-        if (!(instr instanceof LoadStaticPropertyOp) && !(instr instanceof LoadDynamicPropertyOp)) {
-          continue;
-        }
-
-        // Result must be unused.
-        if (instr.place.users.size > 0) continue;
-
-        // Object must be a NoEscape literal.
-        const objExpr = this.resolveToObjectExpression(instr.object);
-        if (!objExpr) continue;
-        if (!escapeResult.doesNotEscape(objExpr.place.id)) continue;
-
-        let indices = toRemove.get(block);
-        if (!indices) {
-          indices = [];
-          toRemove.set(block, indices);
-        }
-        indices.push(i);
-      }
-    }
-
-    if (toRemove.size === 0) return false;
-
-    for (const [block, indices] of toRemove) {
-      indices.sort((a, b) => b - a);
-      for (const index of indices) {
-        block.removeOpAt(index);
-      }
-    }
-
-    return true;
+    const key = literalPropertyKey(property.key);
+    if (key === null) return null;
+    fields.set(key, property.value);
   }
 
-  /**
-   * Returns true if the instruction's result is used as the argument
-   * to a `delete` UnaryExpression.
-   */
-  private feedsDeleteExpression(instr: LoadStaticPropertyOp): boolean {
-    for (const user of instr.place.users) {
-      if (user instanceof UnaryExpressionOp && user.operator === "delete") {
-        return true;
-      }
+  return { object, fields };
+}
+
+function buildArrayShape(array: ArrayExpressionOp): ArrayShape | null {
+  for (const element of array.elements) {
+    if (element.def instanceof SpreadElementOp) return null;
+  }
+  return { array, elements: array.elements };
+}
+
+function literalPropertyKey(value: Value): string | null {
+  const def = value.def;
+  if (!(def instanceof LiteralOp)) return null;
+  if (typeof def.value !== "string" && typeof def.value !== "number") return null;
+  return String(def.value);
+}
+
+function matchDestructureTarget(
+  target: DestructureTarget,
+  shape: AggregateShape,
+  aggregates: AggregateFacts,
+): ScalarBinding[] | null {
+  switch (target.kind) {
+    case "object":
+      return matchObjectTarget(target.properties, shape, aggregates);
+    case "array":
+      return matchArrayTarget(target.elements, shape, aggregates);
+    case "binding":
+    case "assignment":
+    case "rest":
+    case "static-member":
+    case "dynamic-member":
+      return null;
+  }
+}
+
+function matchObjectTarget(
+  properties: ObjectDestructureOp["properties"],
+  shape: AggregateShape,
+  aggregates: AggregateFacts,
+): ScalarBinding[] | null {
+  if (shape.kind !== "object") return null;
+
+  const replacements: ScalarBinding[] = [];
+  for (const property of properties) {
+    if (property.computed || typeof property.key !== "string") return null;
+
+    const value = shape.fields.get(property.key);
+    if (value === undefined) return null;
+    const nested = matchTargetValue(property.value, value, aggregates);
+    if (nested === null) return null;
+    replacements.push(...nested);
+  }
+
+  return replacements;
+}
+
+function matchArrayTarget(
+  elements: ArrayDestructureOp["elements"],
+  shape: AggregateShape,
+  aggregates: AggregateFacts,
+): ScalarBinding[] | null {
+  if (shape.kind !== "array") return null;
+
+  const replacements: ScalarBinding[] = [];
+  for (let i = 0; i < elements.length; i++) {
+    const target = elements[i];
+    if (target === null) continue;
+
+    const value = shape.elements[i];
+    if (value === undefined) return null;
+    const nested = matchTargetValue(target, value, aggregates);
+    if (nested === null) return null;
+    replacements.push(...nested);
+  }
+
+  return replacements;
+}
+
+function matchTargetValue(
+  target: DestructureTarget,
+  value: Value,
+  aggregates: AggregateFacts,
+): ScalarBinding[] | null {
+  if (target.kind === "binding") {
+    return target.storage === "local" ? [{ lval: target.place, value }] : null;
+  }
+
+  const shape = aggregates.aggregateShapeFor(value);
+  if (shape === null) return null;
+  return matchDestructureTarget(target, shape, aggregates);
+}
+
+function isUsedAsCallCallee(load: LoadStaticPropertyOp): boolean {
+  for (const user of load.place.users) {
+    if (user instanceof CallExpressionOp && user.callee === load.place) {
+      return true;
     }
-    return false;
   }
+  return false;
+}
 
-  /**
-   * Resolve a place to the ValueId of its defining ObjectExpression,
-   * or null if it doesn't trace back to one.
-   */
-  private resolveToObjectId(place: Value): ValueId | null {
-    const objExpr = this.resolveToObjectExpression(place);
-    return objExpr ? objExpr.place.id : null;
-  }
-
-  // ---------------------------------------------------------------------------
-  // Shared helpers
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Build a map from property key (as string) → value {@link Value} for
-   * every property in an object literal.
-   *
-   * Returns `null` if any property is a spread element, has a computed
-   * key, or has a non-literal key.
-   */
-  private buildObjectKeyToValue(objectExpr: ObjectExpressionOp): Map<string, Value> | null {
-    const map = new Map<string, Value>();
-
-    for (const propPlace of objectExpr.properties) {
-      const prop = propPlace.def;
-
-      if (prop instanceof SpreadElementOp) return null;
-      if (!(prop instanceof ObjectPropertyOp)) return null;
-
-      if (prop.computed) return null;
-
-      const keyDefiner = prop.key.def;
-      if (!(keyDefiner instanceof LiteralOp)) return null;
-      if (typeof keyDefiner.value !== "string" && typeof keyDefiner.value !== "number") return null;
-
-      map.set(String(keyDefiner.value), prop.value);
+function feedsDeleteExpression(load: LoadStaticPropertyOp): boolean {
+  for (const user of load.place.users) {
+    if (user instanceof UnaryExpressionOp && user.operator === "delete") {
+      return true;
     }
-
-    return map;
   }
-
-  private matchDestructureToObject(
-    pattern: ObjectDestructureOp,
-    objMap: Map<string, Value>,
-  ): Array<{ lval: Value; value: Value }> | null {
-    const replacements: Array<{ lval: Value; value: Value }> = [];
-
-    for (const property of pattern.properties) {
-      if (property.value.kind === "rest") return null;
-      if (property.value.kind === "assignment") return null;
-      if (property.computed || typeof property.key !== "string") return null;
-      if (property.value.kind !== "binding" || property.value.storage !== "local") return null;
-
-      const objValue = objMap.get(property.key);
-      if (objValue === undefined) return null;
-      replacements.push({ lval: property.value.place, value: objValue });
-    }
-
-    return replacements;
-  }
+  return false;
 }
