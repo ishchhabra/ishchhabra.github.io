@@ -1,7 +1,11 @@
 function $0($1) {
-  for (const $6 of $1) {
-    0 + $6;
+  const $16 = $1;
+  let $13;
+  $13 = 0;
+  for (const $6 of $16) {
+    const $17 = $13 + $6;
+    $13 = $17;
     continue;
   }
-  return 0;
+  return $13;
 }

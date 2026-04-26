@@ -2,11 +2,17 @@ function $0({ x: $2, ...$3 }) {
   return $3;
 }
 function $1($6) {
-  const $28 = $6;
+  let $27;
+  let $28;
+  $28 = $6;
   for (const $13 of [1, 2]) {
     if ($13) {
-      $0($28);
+      const $33 = $0($28);
+      $27 = $33;
+    } else {
+      $27 = $6;
     }
+    $28 = $27;
     continue;
   }
   return $28;

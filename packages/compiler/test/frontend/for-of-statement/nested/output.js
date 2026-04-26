@@ -1,5 +1,6 @@
 for (const $1 of matrix) {
-  for (const $3 of $1) {
+  const $9 = $1;
+  for (const $3 of $9) {
     console.log($3);
     continue;
   }

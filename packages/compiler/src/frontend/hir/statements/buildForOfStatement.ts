@@ -81,12 +81,16 @@ export function buildForOfStatement(
     iterationBindingKind = iterationTarget.kind === "binding" ? null : "const";
   }
 
+  const hostBlock = environment.createBlock();
   const bodyBlock = environment.createBlock();
   const exitBlock = environment.createBlock();
+  functionBuilder.addBlock(hostBlock);
   functionBuilder.addBlock(bodyBlock);
   functionBuilder.addBlock(exitBlock);
 
-  parentBlock.setTerminal(
+  parentBlock.setTerminal(new JumpTermOp(createOperationId(environment), hostBlock, []));
+
+  hostBlock.setTerminal(
     new ForOfTermOp(
       createOperationId(environment),
       iterablePlace,
@@ -121,14 +125,14 @@ export function buildForOfStatement(
     kind: "loop",
     label,
     breakTarget: exitBlock.id,
-    continueTarget: parentBlock.id,
+    continueTarget: hostBlock.id,
     structured: false,
   });
   buildOwnedBody(node.body, forScope, functionBuilder, moduleBuilder, environment);
   functionBuilder.controlStack.pop();
   if (functionBuilder.currentBlock.terminal === undefined) {
     functionBuilder.currentBlock.setTerminal(
-      new JumpTermOp(createOperationId(environment), parentBlock, []),
+      new JumpTermOp(createOperationId(environment), hostBlock, []),
     );
   }
 
