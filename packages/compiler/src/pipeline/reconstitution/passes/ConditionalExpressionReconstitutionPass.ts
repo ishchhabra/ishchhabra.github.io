@@ -2,6 +2,7 @@ import {
   ConditionalExpressionOp,
   IfTermOp,
   JumpTermOp,
+  LoadLocalOp,
   Operation,
   Value,
 } from "../../../ir";
@@ -51,8 +52,8 @@ export class ConditionalExpressionReconstitutionPass extends FunctionPassBase {
     const resultParam = fallthrough.params[0];
     if (resultParam.users.size === 0) return false;
 
-    const thenArm = this.extractArm(term.thenBlock, fallthrough);
-    const elseArm = this.extractArm(term.elseBlock, fallthrough);
+    const thenArm = this.extractArm(term.target(0).block, fallthrough);
+    const elseArm = this.extractArm(term.target(1).block, fallthrough);
     if (thenArm === undefined || elseArm === undefined) return false;
     if (!this.canInlineConditionalOperands(term.cond, thenArm, elseArm)) return false;
 
@@ -90,7 +91,7 @@ export class ConditionalExpressionReconstitutionPass extends FunctionPassBase {
     const operationSet = new Set<Operation>(operations);
     for (const op of operations) {
       if (op.place === undefined) return undefined;
-      if (!isDuplicable(op, this.funcOp.moduleIR.environment)) return undefined;
+      if (!this.canMoveArmOperation(op)) return undefined;
       for (const operand of op.operands()) {
         const def = operand.def;
         if (def instanceof Operation && def.parentBlock === block && !operationSet.has(def)) {
@@ -126,6 +127,16 @@ export class ConditionalExpressionReconstitutionPass extends FunctionPassBase {
       insertionIndex++;
     }
     return insertionIndex;
+  }
+
+  private canMoveArmOperation(op: Operation): boolean {
+    if (op instanceof LoadLocalOp && op.value === op.place) return true;
+    if (op instanceof LoadLocalOp && this.isFunctionParam(op.value)) return true;
+    return isDuplicable(op, this.funcOp.moduleIR.environment);
+  }
+
+  private isFunctionParam(value: Value): boolean {
+    return this.funcOp.params.some((param) => param.kind === "arg" && param.value === value);
   }
 
   private canInlineConditionalOperands(

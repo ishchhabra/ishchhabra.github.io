@@ -1,17 +1,11 @@
 function $0($1) {
   let $14;
-  let $23;
   let $35;
   if ($1 !== undefined) {
-    if ($1.startsWith("/")) {
-      $23 = $1;
-    } else {
-      $23 = $1;
-    }
     $14 = [
       {
         rel: "canonical",
-        href: `/${$23}`,
+        href: `/${$1.startsWith("/") ? $1 : $1}`,
       },
     ];
   } else {

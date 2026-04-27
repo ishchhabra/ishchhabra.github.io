@@ -2,6 +2,7 @@ import {
   BranchTermOp,
   BindingDeclOp,
   BindingInitOp,
+  IfTermOp,
   JumpTermOp,
   LoadContextOp,
   LoadLocalOp,
@@ -171,6 +172,19 @@ export class SSAEliminator {
             terminal.cond,
             terminal.trueTarget,
             terminal.falseTarget,
+          ),
+        );
+      } else if (
+        terminal instanceof IfTermOp &&
+        (terminal.thenTarget.args.length > 0 || terminal.elseTarget.args.length > 0)
+      ) {
+        block.replaceTerminal(
+          new IfTermOp(
+            terminal.id,
+            terminal.cond,
+            { block: terminal.thenBlock, args: [] },
+            { block: terminal.elseBlock, args: [] },
+            terminal.fallthroughBlock,
           ),
         );
       }

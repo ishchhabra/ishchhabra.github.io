@@ -11,7 +11,7 @@ import {
   type SuccessorArg,
 } from "../core/TermOp";
 import type { Value } from "../core/Value";
-import { BranchTermOp, JumpTermOp } from "../ops/control";
+import { BranchTermOp, IfTermOp, JumpTermOp } from "../ops/control";
 
 /**
  * A live view onto one positional CFG edge — the `index`-th target
@@ -101,16 +101,21 @@ export class Edge {
 
 /**
  * Yield every flat-CFG outgoing edge of `block` in target-index
- * order. Only `JumpTermOp` and `BranchTermOp` carry positional args
- * along their successor edges; structured terminators (ForOf, ForIn,
- * For, While, If, Try, Switch, Labeled) route control without
- * forwarding args, so their successor slots aren't surfaced as edges
- * here. Code that needs to walk structured-control successors should
+ * order. Structured terminators that only name child/fallthrough
+ * regions are intentionally omitted; structured conditionals expose
+ * their executable arm edges because those edges can carry block args.
+ * Code that needs to walk all structured-control targets should
  * iterate `terminal.targets()` directly.
  */
 export function* outgoingEdges(funcOp: FuncOp, block: BasicBlock): Iterable<Edge> {
   const terminal = block.terminal;
-  if (!(terminal instanceof JumpTermOp) && !(terminal instanceof BranchTermOp)) return;
+  if (
+    !(terminal instanceof JumpTermOp) &&
+    !(terminal instanceof BranchTermOp) &&
+    !(terminal instanceof IfTermOp)
+  ) {
+    return;
+  }
   for (const i of terminal.successorIndices()) {
     yield new Edge(block, i, funcOp);
   }

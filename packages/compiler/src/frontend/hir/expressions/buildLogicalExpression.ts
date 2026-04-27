@@ -56,7 +56,13 @@ export function buildLogicalExpression(
   functionBuilder.addBlock(joinBlock);
 
   parentBlock.setTerminal(
-    new IfTermOp(createOperationId(environment), testPlace, truthyBlock, falsyBlock, joinBlock),
+    new IfTermOp(
+      createOperationId(environment),
+      testPlace,
+      { block: truthyBlock, args: [] },
+      { block: falsyBlock, args: [] },
+      joinBlock,
+    ),
   );
 
   // Arm semantics per operator

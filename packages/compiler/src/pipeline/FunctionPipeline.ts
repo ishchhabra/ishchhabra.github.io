@@ -176,6 +176,9 @@ function buildSyntaxReconstitutionPasses(options: CompilerOptions): FunctionPass
       ),
     );
   }
+  if (options.enableCFGSimplificationPass) {
+    passes.push(funcPass("cfg-simplification", (funcOp) => new CFGSimplificationPass(funcOp)));
+  }
   if (options.enableConditionalExpressionReconstitutionPass) {
     passes.push(
       funcPass(

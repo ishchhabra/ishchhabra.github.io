@@ -6,6 +6,7 @@ import {
   assertNoTargetArgs,
   type ControlFlowFacts,
   type BlockTarget,
+  type SuccessorArg,
   invalidTargetIndex,
   TermOp,
 } from "../../core/TermOp";
@@ -30,15 +31,27 @@ export class IfTermOp extends TermOp {
   constructor(
     id: OperationId,
     public readonly cond: Value,
-    public thenBlock: BasicBlock,
-    public elseBlock: BasicBlock,
+    public readonly thenTarget: BlockTarget,
+    public readonly elseTarget: BlockTarget,
     public fallthroughBlock: BasicBlock,
   ) {
     super(id);
   }
 
+  get thenBlock(): BasicBlock {
+    return this.thenTarget.block;
+  }
+
+  get elseBlock(): BasicBlock {
+    return this.elseTarget.block;
+  }
+
   operands(): Value[] {
-    return [this.cond];
+    return [
+      this.cond,
+      ...this.thenTarget.args.map((arg) => arg.value),
+      ...this.elseTarget.args.map((arg) => arg.value),
+    ];
   }
 
   targetCount(): number {
@@ -46,8 +59,8 @@ export class IfTermOp extends TermOp {
   }
 
   target(index: number): BlockTarget {
-    if (index === 0) return { block: this.thenBlock, args: [] };
-    if (index === 1) return { block: this.elseBlock, args: [] };
+    if (index === 0) return this.thenTarget;
+    if (index === 1) return this.elseTarget;
     if (index === 2) return { block: this.fallthroughBlock, args: [] };
     return invalidTargetIndex(this.constructor.name, index);
   }
@@ -64,43 +77,60 @@ export class IfTermOp extends TermOp {
   }
 
   withTarget(index: number, successor: BlockTarget): IfTermOp {
-    assertNoTargetArgs(this.constructor.name, successor);
     if (index === 0) {
-      return new IfTermOp(
-        this.id,
-        this.cond,
-        successor.block,
-        this.elseBlock,
-        this.fallthroughBlock,
-      );
+      return new IfTermOp(this.id, this.cond, successor, this.elseTarget, this.fallthroughBlock);
     }
     if (index === 1) {
+      return new IfTermOp(this.id, this.cond, this.thenTarget, successor, this.fallthroughBlock);
+    }
+    if (index === 2) {
+      assertNoTargetArgs(this.constructor.name, successor);
       return new IfTermOp(
         this.id,
         this.cond,
-        this.thenBlock,
+        this.thenTarget,
+        this.elseTarget,
         successor.block,
-        this.fallthroughBlock,
       );
-    }
-    if (index === 2) {
-      return new IfTermOp(this.id, this.cond, this.thenBlock, this.elseBlock, successor.block);
     }
     return invalidTargetIndex(this.constructor.name, index);
   }
 
   rewrite(values: Map<Value, Value>): IfTermOp {
     const newCond = values.get(this.cond) ?? this.cond;
-    if (newCond === this.cond) return this;
-    return new IfTermOp(this.id, newCond, this.thenBlock, this.elseBlock, this.fallthroughBlock);
+    let changed = newCond !== this.cond;
+    const rewriteArgs = (args: readonly SuccessorArg[]): SuccessorArg[] =>
+      args.map((arg) => {
+        const rewritten = values.get(arg.value) ?? arg.value;
+        if (rewritten === arg.value) return arg;
+        changed = true;
+        return { ...arg, value: rewritten };
+      });
+    const newThen = rewriteArgs(this.thenTarget.args);
+    const newElse = rewriteArgs(this.elseTarget.args);
+    if (!changed) return this;
+    return new IfTermOp(
+      this.id,
+      newCond,
+      { block: this.thenBlock, args: newThen },
+      { block: this.elseBlock, args: newElse },
+      this.fallthroughBlock,
+    );
   }
 
   clone(ctx: CloneContext): IfTermOp {
+    const cloneTarget = (target: BlockTarget): BlockTarget => ({
+      block: ctx.blockMap.get(target.block) ?? target.block,
+      args: target.args.map((arg) => ({
+        ...arg,
+        value: ctx.valueMap.get(arg.value) ?? arg.value,
+      })),
+    });
     return new IfTermOp(
       nextId(ctx),
       remapPlace(ctx, this.cond),
-      ctx.blockMap.get(this.thenBlock) ?? this.thenBlock,
-      ctx.blockMap.get(this.elseBlock) ?? this.elseBlock,
+      cloneTarget(this.thenTarget),
+      cloneTarget(this.elseTarget),
       ctx.blockMap.get(this.fallthroughBlock) ?? this.fallthroughBlock,
     );
   }

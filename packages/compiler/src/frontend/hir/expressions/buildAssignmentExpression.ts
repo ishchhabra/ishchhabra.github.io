@@ -256,7 +256,13 @@ function buildLogicalIdentifierAssignment(
   functionBuilder.addBlock(joinBlock);
 
   parentBlock.setTerminal(
-    new IfTermOp(createOperationId(environment), conditionPlace, consBlock, altBlock, joinBlock),
+    new IfTermOp(
+      createOperationId(environment),
+      conditionPlace,
+      { block: consBlock, args: [] },
+      { block: altBlock, args: [] },
+      joinBlock,
+    ),
   );
 
   functionBuilder.currentBlock = consBlock;
@@ -398,7 +404,13 @@ function buildLogicalMemberAssignment(
   functionBuilder.addBlock(joinBlock);
 
   parentBlock.setTerminal(
-    new IfTermOp(createOperationId(environment), conditionPlace, consBlock, altBlock, joinBlock),
+    new IfTermOp(
+      createOperationId(environment),
+      conditionPlace,
+      { block: consBlock, args: [] },
+      { block: altBlock, args: [] },
+      joinBlock,
+    ),
   );
 
   functionBuilder.currentBlock = consBlock;

@@ -1,4 +1,4 @@
-if (true) {
-  console.log("first");
-}
-console.log(true ? 20 : 10);
+let $16;
+console.log("first");
+$16 = 20;
+console.log($16);

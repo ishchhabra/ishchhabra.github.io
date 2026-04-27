@@ -22,7 +22,8 @@ import { ArrayDestructureOp } from "../../ir/ops/pattern/ArrayDestructure";
 import { ObjectDestructureOp } from "../../ir/ops/pattern/ObjectDestructure";
 import { ExportSpecifierOp } from "../../ir/ops/module/ExportSpecifier";
 import { ExportDefaultDeclarationOp } from "../../ir/ops/module/ExportDefaultDeclaration";
-import { BranchTermOp, JumpTermOp } from "../../ir/ops/control";
+import { BranchTermOp, IfTermOp, JumpTermOp } from "../../ir/ops/control";
+import { successorArgValues, valueSuccessorArgs } from "../../ir/core/TermOp";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { DominatorTreeAnalysis, type DominatorTree } from "../analysis/DominatorTreeAnalysis";
 import type { PassResult } from "../PassManager";
@@ -380,6 +381,8 @@ export class SSABuilder {
         this.fillJumpArgs(block, block.terminal, stacks);
       } else if (block.terminal instanceof BranchTermOp) {
         this.fillBranchArgs(block, block.terminal, stacks);
+      } else if (block.terminal instanceof IfTermOp) {
+        this.fillIfArgs(block, block.terminal, stacks);
       }
     }
 
@@ -673,6 +676,47 @@ export class SSABuilder {
         terminal.falseTarget,
         nextTrue,
         nextFalse,
+      ),
+    );
+  }
+
+  private fillIfArgs(block: BasicBlock, terminal: IfTermOp, stacks: Stacks): void {
+    const fill = (params: readonly Value[], existing: readonly Value[]): Value[] => {
+      let frontendArgIdx = 0;
+      return params.map((param) => {
+        const decl = param.originalDeclarationId;
+        if (decl === undefined) {
+          return existing[frontendArgIdx++] ?? this.undefSeed;
+        }
+        const stack = stacks.get(decl);
+        if (stack !== undefined && stack.length > 0) return stack[stack.length - 1];
+        return this.undefSeed;
+      });
+    };
+
+    const nextThen =
+      terminal.thenBlock.params.length === 0
+        ? successorArgValues(terminal.thenTarget.args)
+        : fill(terminal.thenBlock.params, successorArgValues(terminal.thenTarget.args));
+    const nextElse =
+      terminal.elseBlock.params.length === 0
+        ? successorArgValues(terminal.elseTarget.args)
+        : fill(terminal.elseBlock.params, successorArgValues(terminal.elseTarget.args));
+
+    if (
+      argsEqual(successorArgValues(terminal.thenTarget.args), nextThen) &&
+      argsEqual(successorArgValues(terminal.elseTarget.args), nextElse)
+    ) {
+      return;
+    }
+    block.replaceOp(
+      terminal,
+      new IfTermOp(
+        terminal.id,
+        terminal.cond,
+        { block: terminal.thenBlock, args: valueSuccessorArgs(nextThen) },
+        { block: terminal.elseBlock, args: valueSuccessorArgs(nextElse) },
+        terminal.fallthroughBlock,
       ),
     );
   }

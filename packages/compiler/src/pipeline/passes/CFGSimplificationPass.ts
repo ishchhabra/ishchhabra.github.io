@@ -143,11 +143,13 @@ export class CFGSimplificationPass extends FunctionPassBase {
     let changed = false;
     for (const block of this.funcOp.blocks) {
       const terminal = block.terminal;
-      if (!(terminal instanceof JumpTermOp)) continue;
-      const targetBlock = terminal.targetBlock;
-      if (!this.isThreadableEmptyJumpBlock(targetBlock)) continue;
-      if (!threadEdgeThroughEmptyJump(new Edge(block, 0, this.funcOp))) continue;
-      changed = true;
+      if (terminal === undefined) continue;
+      for (const index of terminal.successorIndices()) {
+        const targetBlock = terminal.target(index).block;
+        if (!this.isThreadableEmptyJumpBlock(targetBlock)) continue;
+        if (!threadEdgeThroughEmptyJump(new Edge(block, index, this.funcOp))) continue;
+        changed = true;
+      }
     }
     return changed;
   }

@@ -49,8 +49,8 @@ export function buildIfStatement(
     new IfTermOp(
       createOperationId(environment),
       testPlace,
-      consequentBlock,
-      alternateBlock,
+      { block: consequentBlock, args: [] },
+      { block: alternateBlock, args: [] },
       fallthroughBlock,
     ),
   );

@@ -38,7 +38,13 @@ export function buildConditionalExpression(
   functionBuilder.addBlock(joinBlock);
 
   parentBlock.setTerminal(
-    new IfTermOp(createOperationId(environment), testPlace, consBlock, altBlock, joinBlock),
+    new IfTermOp(
+      createOperationId(environment),
+      testPlace,
+      { block: consBlock, args: [] },
+      { block: altBlock, args: [] },
+      joinBlock,
+    ),
   );
 
   functionBuilder.currentBlock = consBlock;
