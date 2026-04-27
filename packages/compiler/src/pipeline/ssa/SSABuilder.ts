@@ -4,6 +4,7 @@ import {
   BlockId,
   DeclarationId,
   Value,
+  BindingDeclOp,
   BindingInitOp,
   LiteralOp,
   LoadLocalOp,
@@ -421,6 +422,12 @@ export class SSABuilder {
         return;
       }
       this.renameNonPromotableStore(current, stacks, pushed);
+      return;
+    }
+
+    if (current instanceof BindingDeclOp) {
+      const decl = current.place.declarationId;
+      this.pushScopedForDecl(stacks, decl, current.place, pushed);
       return;
     }
 
