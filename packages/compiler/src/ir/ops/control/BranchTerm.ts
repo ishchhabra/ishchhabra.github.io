@@ -6,9 +6,9 @@ import {
   type ControlFlowFacts,
   type BlockTarget,
   invalidTargetIndex,
-  successorArgValues,
+  type SuccessorArg,
+  successorArgValue,
   TermOp,
-  valueSuccessorArgs,
 } from "../../core/TermOp";
 
 /**
@@ -27,20 +27,34 @@ import {
  * the classical Cytron algorithm would have placed phi operands at.
  */
 export class BranchTermOp extends TermOp {
-  public readonly trueArgs: readonly Value[];
-  public readonly falseArgs: readonly Value[];
+  public readonly trueBranchTarget: BlockTarget;
+  public readonly falseBranchTarget: BlockTarget;
 
   constructor(
     id: OperationId,
     public readonly cond: Value,
-    public trueTarget: BasicBlock,
-    public falseTarget: BasicBlock,
-    trueArgs: readonly Value[] = [],
-    falseArgs: readonly Value[] = [],
+    trueTarget: BlockTarget,
+    falseTarget: BlockTarget,
   ) {
     super(id);
-    this.trueArgs = trueArgs;
-    this.falseArgs = falseArgs;
+    this.trueBranchTarget = trueTarget;
+    this.falseBranchTarget = falseTarget;
+  }
+
+  get trueTarget(): BasicBlock {
+    return this.trueBranchTarget.block;
+  }
+
+  get falseTarget(): BasicBlock {
+    return this.falseBranchTarget.block;
+  }
+
+  get trueArgs(): readonly Value[] {
+    return this.trueBranchTarget.args.map(successorArgValue);
+  }
+
+  get falseArgs(): readonly Value[] {
+    return this.falseBranchTarget.args.map(successorArgValue);
   }
 
   operands(): Value[] {
@@ -52,8 +66,8 @@ export class BranchTermOp extends TermOp {
   }
 
   target(index: number): BlockTarget {
-    if (index === 0) return { block: this.trueTarget, args: valueSuccessorArgs(this.trueArgs) };
-    if (index === 1) return { block: this.falseTarget, args: valueSuccessorArgs(this.falseArgs) };
+    if (index === 0) return this.trueBranchTarget;
+    if (index === 1) return this.falseBranchTarget;
     return invalidTargetIndex(this.constructor.name, index);
   }
 
@@ -66,24 +80,10 @@ export class BranchTermOp extends TermOp {
 
   withTarget(index: number, successor: BlockTarget): BranchTermOp {
     if (index === 0) {
-      return new BranchTermOp(
-        this.id,
-        this.cond,
-        successor.block,
-        this.falseTarget,
-        successorArgValues(successor.args),
-        this.falseArgs,
-      );
+      return new BranchTermOp(this.id, this.cond, successor, this.falseBranchTarget);
     }
     if (index === 1) {
-      return new BranchTermOp(
-        this.id,
-        this.cond,
-        this.trueTarget,
-        successor.block,
-        this.trueArgs,
-        successorArgValues(successor.args),
-      );
+      return new BranchTermOp(this.id, this.cond, this.trueBranchTarget, successor);
     }
     return invalidTargetIndex(this.constructor.name, index);
   }
@@ -91,28 +91,27 @@ export class BranchTermOp extends TermOp {
   rewrite(values: Map<Value, Value>): BranchTermOp {
     const newCond = values.get(this.cond) ?? this.cond;
     let changed = newCond !== this.cond;
-    const newTrue = this.trueArgs.map((a) => {
-      const r = values.get(a) ?? a;
-      if (r !== a) changed = true;
-      return r;
+    const newTrue = rewriteSuccessorArgs(this.trueBranchTarget.args, values, () => {
+      changed = true;
     });
-    const newFalse = this.falseArgs.map((a) => {
-      const r = values.get(a) ?? a;
-      if (r !== a) changed = true;
-      return r;
+    const newFalse = rewriteSuccessorArgs(this.falseBranchTarget.args, values, () => {
+      changed = true;
     });
     if (!changed) return this;
-    return new BranchTermOp(this.id, newCond, this.trueTarget, this.falseTarget, newTrue, newFalse);
+    return new BranchTermOp(
+      this.id,
+      newCond,
+      { block: this.trueTarget, args: newTrue },
+      { block: this.falseTarget, args: newFalse },
+    );
   }
 
   clone(ctx: CloneContext): BranchTermOp {
     return new BranchTermOp(
       nextId(ctx),
       remapPlace(ctx, this.cond),
-      ctx.blockMap.get(this.trueTarget) ?? this.trueTarget,
-      ctx.blockMap.get(this.falseTarget) ?? this.falseTarget,
-      this.trueArgs.map((a) => ctx.valueMap.get(a) ?? a),
-      this.falseArgs.map((a) => ctx.valueMap.get(a) ?? a),
+      cloneTarget(ctx, this.trueBranchTarget),
+      cloneTarget(ctx, this.falseBranchTarget),
     );
   }
 
@@ -121,4 +120,27 @@ export class BranchTermOp extends TermOp {
       args.length === 0 ? "" : `(${args.map((a) => a.print()).join(", ")})`;
     return `branch ${this.cond.print()} ? bb${this.trueTarget.id}${fmtArgs(this.trueArgs)} : bb${this.falseTarget.id}${fmtArgs(this.falseArgs)}`;
   }
+}
+
+function rewriteSuccessorArgs(
+  args: readonly SuccessorArg[],
+  values: Map<Value, Value>,
+  onChanged: () => void,
+): SuccessorArg[] {
+  return args.map((arg) => {
+    const rewritten = values.get(arg.value) ?? arg.value;
+    if (rewritten === arg.value) return arg;
+    onChanged();
+    return { ...arg, value: rewritten };
+  });
+}
+
+function cloneTarget(ctx: CloneContext, target: BlockTarget): BlockTarget {
+  return {
+    block: ctx.blockMap.get(target.block) ?? target.block,
+    args: target.args.map((arg) => ({
+      ...arg,
+      value: ctx.valueMap.get(arg.value) ?? arg.value,
+    })),
+  };
 }

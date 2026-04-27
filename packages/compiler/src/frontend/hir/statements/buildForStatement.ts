@@ -1,6 +1,13 @@
 import type { Expression, ForStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { BranchTermOp, createOperationId, ForTermOp, JumpTermOp, LiteralOp } from "../../../ir";
+import {
+  BranchTermOp,
+  createOperationId,
+  ForTermOp,
+  JumpTermOp,
+  LiteralOp,
+  valueBlockTarget,
+} from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { instantiateScopeBindings } from "../bindings";
 import { buildNode } from "../buildNode";
@@ -60,7 +67,9 @@ export function buildForStatement(
   // currentBlock to a logical-expression join block.
   const parentBlock = functionBuilder.currentBlock;
   if (parentBlock.terminal === undefined) {
-    parentBlock.setTerminal(new JumpTermOp(createOperationId(environment), hostBlock, []));
+    parentBlock.setTerminal(
+      new JumpTermOp(createOperationId(environment), valueBlockTarget(hostBlock)),
+    );
   }
 
   hostBlock.setTerminal(
@@ -88,7 +97,12 @@ export function buildForStatement(
     throw new Error("For statement test place must be a single place");
   }
   functionBuilder.currentBlock.setTerminal(
-    new BranchTermOp(createOperationId(environment), testPlace, bodyBlock, exitBlock),
+    new BranchTermOp(
+      createOperationId(environment),
+      testPlace,
+      valueBlockTarget(bodyBlock),
+      valueBlockTarget(exitBlock),
+    ),
   );
 
   // Body
@@ -104,7 +118,7 @@ export function buildForStatement(
   functionBuilder.controlStack.pop();
   if (functionBuilder.currentBlock.terminal === undefined) {
     functionBuilder.currentBlock.setTerminal(
-      new JumpTermOp(createOperationId(environment), updateBlock, []),
+      new JumpTermOp(createOperationId(environment), valueBlockTarget(updateBlock)),
     );
   }
 
@@ -115,7 +129,7 @@ export function buildForStatement(
   }
   if (functionBuilder.currentBlock.terminal === undefined) {
     functionBuilder.currentBlock.setTerminal(
-      new JumpTermOp(createOperationId(environment), hostBlock, []),
+      new JumpTermOp(createOperationId(environment), valueBlockTarget(hostBlock)),
     );
   }
 

@@ -1,6 +1,12 @@
 import type { WhileStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { BranchTermOp, createOperationId, JumpTermOp, WhileTermOp } from "../../../ir";
+import {
+  BranchTermOp,
+  createOperationId,
+  JumpTermOp,
+  valueBlockTarget,
+  WhileTermOp,
+} from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FuncOpBuilder } from "../FuncOpBuilder";
@@ -37,7 +43,9 @@ export function buildWhileStatement(
   functionBuilder.addBlock(bodyBlock);
   functionBuilder.addBlock(exitBlock);
 
-  parentBlock.setTerminal(new JumpTermOp(createOperationId(environment), hostBlock, []));
+  parentBlock.setTerminal(
+    new JumpTermOp(createOperationId(environment), valueBlockTarget(hostBlock)),
+  );
 
   hostBlock.setTerminal(
     new WhileTermOp(
@@ -57,7 +65,12 @@ export function buildWhileStatement(
     throw new Error("While statement test must be a single place");
   }
   functionBuilder.currentBlock.setTerminal(
-    new BranchTermOp(createOperationId(environment), testPlace, bodyBlock, exitBlock),
+    new BranchTermOp(
+      createOperationId(environment),
+      testPlace,
+      valueBlockTarget(bodyBlock),
+      valueBlockTarget(exitBlock),
+    ),
   );
 
   // Body
@@ -73,7 +86,7 @@ export function buildWhileStatement(
   functionBuilder.controlStack.pop();
   if (functionBuilder.currentBlock.terminal === undefined) {
     functionBuilder.currentBlock.setTerminal(
-      new JumpTermOp(createOperationId(environment), hostBlock, []),
+      new JumpTermOp(createOperationId(environment), valueBlockTarget(hostBlock)),
     );
   }
 

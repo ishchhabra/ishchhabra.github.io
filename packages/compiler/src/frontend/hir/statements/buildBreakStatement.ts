@@ -1,6 +1,6 @@
 import type { BreakStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { createOperationId, JumpTermOp } from "../../../ir";
+import { createOperationId, JumpTermOp, valueBlockTarget } from "../../../ir";
 import { FuncOpBuilder } from "../FuncOpBuilder";
 
 export function buildBreakStatement(
@@ -32,7 +32,7 @@ export function buildBreakStatement(
     throw new Error(`Break target block ${targetBlockId} not found`);
   }
   functionBuilder.currentBlock.setTerminal(
-    new JumpTermOp(createOperationId(environment), targetBlock, []),
+    new JumpTermOp(createOperationId(environment), valueBlockTarget(targetBlock)),
   );
   return undefined;
 }

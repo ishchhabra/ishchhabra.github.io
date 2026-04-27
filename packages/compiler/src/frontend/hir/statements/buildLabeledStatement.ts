@@ -1,6 +1,6 @@
 import type { LabeledStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { createOperationId, JumpTermOp, LabeledTermOp } from "../../../ir";
+import { createOperationId, JumpTermOp, LabeledTermOp, valueBlockTarget } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -64,7 +64,7 @@ export function buildLabeledStatement(
 
   if (functionBuilder.currentBlock.terminal === undefined) {
     functionBuilder.currentBlock.setTerminal(
-      new JumpTermOp(createOperationId(environment), fallthroughBlock, []),
+      new JumpTermOp(createOperationId(environment), valueBlockTarget(fallthroughBlock)),
     );
   }
 

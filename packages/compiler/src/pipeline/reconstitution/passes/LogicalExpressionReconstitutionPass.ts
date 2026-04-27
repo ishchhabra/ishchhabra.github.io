@@ -7,6 +7,7 @@ import {
   type LogicalOperator,
   Operation,
   Value,
+  valueBlockTarget,
 } from "../../../ir";
 import type { BasicBlock } from "../../../ir/core/Block";
 import { isDuplicable } from "../../../ir/effects/predicates";
@@ -68,7 +69,7 @@ export class LogicalExpressionReconstitutionPass extends FunctionPassBase {
 
     resultParam.replaceAllUsesWith(result);
     fallthrough.params = [];
-    block.replaceTerminal(new JumpTermOp(term.id, fallthrough));
+    block.replaceTerminal(new JumpTermOp(term.id, valueBlockTarget(fallthrough)));
     if (match.operator === "??") {
       this.removeDeadNullishTest(term.cond, block);
     }

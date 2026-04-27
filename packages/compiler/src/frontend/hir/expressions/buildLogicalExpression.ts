@@ -8,6 +8,7 @@ import {
   JumpTermOp,
   LiteralOp,
   Value,
+  valueBlockTarget,
 } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
@@ -153,7 +154,7 @@ function buildRhsArm(
   // Only emit our join-jump when the RHS didn't already end the arm.
   if (functionBuilder.currentBlock.terminal === undefined) {
     functionBuilder.currentBlock.setTerminal(
-      new JumpTermOp(createOperationId(environment), joinBlock, [place]),
+      new JumpTermOp(createOperationId(environment), valueBlockTarget(joinBlock, [place])),
     );
   }
 }
@@ -170,5 +171,7 @@ function buildPassthroughArm(
   // emitted into it — terminator must not already be set. The
   // `setTerminal` helper asserts this, catching any future refactor
   // that changes the construction order.
-  armBlock.setTerminal(new JumpTermOp(createOperationId(environment), joinBlock, [leftPlace]));
+  armBlock.setTerminal(
+    new JumpTermOp(createOperationId(environment), valueBlockTarget(joinBlock, [leftPlace])),
+  );
 }

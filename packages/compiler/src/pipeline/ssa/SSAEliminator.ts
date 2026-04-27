@@ -15,7 +15,7 @@ import { incomingEdges, mergeSinks } from "../../ir/cfg";
 import { BasicBlock } from "../../ir/core/Block";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { ModuleIR } from "../../ir/core/ModuleIR";
-import { successorArgValue } from "../../ir/core/TermOp";
+import { successorArgValue, valueBlockTarget } from "../../ir/core/TermOp";
 import { Value } from "../../ir/core/Value";
 import { DominatorTree } from "../analysis/DominatorTreeAnalysis";
 import type { PassResult } from "../PassManager";
@@ -56,11 +56,7 @@ export class SSAEliminator {
 
   public run(): PassResult {
     this.#domTree = DominatorTree.compute(this.funcOp);
-    this.#edgeCopyScheduler = new EdgeCopyScheduler(
-      this.funcOp,
-      this.moduleIR,
-      this.#domTree,
-    );
+    this.#edgeCopyScheduler = new EdgeCopyScheduler(this.funcOp, this.moduleIR, this.#domTree);
     try {
       this.#eliminatePhis();
       this.#edgeCopyScheduler.emit();
@@ -161,7 +157,7 @@ export class SSAEliminator {
     for (const block of this.funcOp.blocks) {
       const terminal = block.terminal;
       if (terminal instanceof JumpTermOp && terminal.args.length > 0) {
-        block.replaceTerminal(new JumpTermOp(terminal.id, terminal.targetBlock));
+        block.replaceTerminal(new JumpTermOp(terminal.id, valueBlockTarget(terminal.targetBlock)));
       } else if (
         terminal instanceof BranchTermOp &&
         (terminal.trueArgs.length > 0 || terminal.falseArgs.length > 0)
@@ -170,8 +166,8 @@ export class SSAEliminator {
           new BranchTermOp(
             terminal.id,
             terminal.cond,
-            terminal.trueTarget,
-            terminal.falseTarget,
+            valueBlockTarget(terminal.trueTarget),
+            valueBlockTarget(terminal.falseTarget),
           ),
         );
       } else if (

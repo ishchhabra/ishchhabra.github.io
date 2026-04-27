@@ -43,6 +43,7 @@ export {
   successorArgValue,
   successorArgValues,
   TermOp,
+  valueBlockTarget,
   valueSuccessorArg,
   valueSuccessorArgs,
   type BlockTarget,

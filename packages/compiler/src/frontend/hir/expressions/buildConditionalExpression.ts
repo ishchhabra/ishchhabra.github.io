@@ -1,6 +1,13 @@
 import type { ConditionalExpression, Expression } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { BasicBlock, createOperationId, IfTermOp, JumpTermOp, Value } from "../../../ir";
+import {
+  BasicBlock,
+  createOperationId,
+  IfTermOp,
+  JumpTermOp,
+  Value,
+  valueBlockTarget,
+} from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -71,7 +78,7 @@ function buildArm(
   }
   if (functionBuilder.currentBlock.terminal === undefined) {
     functionBuilder.currentBlock.setTerminal(
-      new JumpTermOp(createOperationId(environment), joinBlock, [place]),
+      new JumpTermOp(createOperationId(environment), valueBlockTarget(joinBlock, [place])),
     );
   }
 }

@@ -5,6 +5,7 @@ import {
   LoadLocalOp,
   Operation,
   Value,
+  valueBlockTarget,
 } from "../../../ir";
 import type { BasicBlock } from "../../../ir/core/Block";
 import { isDuplicable } from "../../../ir/effects/predicates";
@@ -74,7 +75,7 @@ export class ConditionalExpressionReconstitutionPass extends FunctionPassBase {
 
     resultParam.replaceAllUsesWith(result);
     fallthrough.params = [];
-    block.replaceTerminal(new JumpTermOp(term.id, fallthrough));
+    block.replaceTerminal(new JumpTermOp(term.id, valueBlockTarget(fallthrough)));
     this.funcOp.removeBlock(thenArm.block);
     this.funcOp.removeBlock(elseArm.block);
     return true;
@@ -119,7 +120,11 @@ export class ConditionalExpressionReconstitutionPass extends FunctionPassBase {
     return { block, terminal, operations, value };
   }
 
-  private moveArmOperations(arm: ConditionalArm, target: BasicBlock, insertionIndex: number): number {
+  private moveArmOperations(
+    arm: ConditionalArm,
+    target: BasicBlock,
+    insertionIndex: number,
+  ): number {
     while (arm.block.operations.length > 0) {
       const op = arm.block.operations[0];
       arm.block.removeOpAt(0);

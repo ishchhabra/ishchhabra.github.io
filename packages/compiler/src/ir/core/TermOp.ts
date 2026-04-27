@@ -31,6 +31,10 @@ export function valueSuccessorArgs(values: readonly Value[]): SuccessorArg[] {
   return values.map(valueSuccessorArg);
 }
 
+export function valueBlockTarget(block: BasicBlock, values: readonly Value[] = []): BlockTarget {
+  return { block, args: valueSuccessorArgs(values) };
+}
+
 export function successorArgValue(arg: SuccessorArg): Value {
   return arg.value;
 }

@@ -3,6 +3,7 @@ import { Environment } from "../../environment";
 import { ProjectEnvironment } from "../../ProjectEnvironment";
 import { FuncOp, makeFuncOpId } from "../core/FuncOp";
 import { ModuleIR } from "../core/ModuleIR";
+import { valueBlockTarget } from "../core/TermOp";
 import { JumpTermOp } from "../ops/control";
 import { Edge, threadEdgeThroughEmptyJump } from "./edges";
 
@@ -21,8 +22,8 @@ describe("threadEdgeThroughEmptyJump", () => {
     middle.params = [middleParam];
     dest.params = [destParam];
 
-    pred.setTerminal(env.createOperation(JumpTermOp, middle, [incoming]));
-    middle.setTerminal(env.createOperation(JumpTermOp, dest, [middleParam]));
+    pred.setTerminal(env.createOperation(JumpTermOp, valueBlockTarget(middle, [incoming])));
+    middle.setTerminal(env.createOperation(JumpTermOp, valueBlockTarget(dest, [middleParam])));
 
     const funcOp = new FuncOp(moduleIR, makeFuncOpId(env.nextOperationId++), [], false, false, [
       pred,

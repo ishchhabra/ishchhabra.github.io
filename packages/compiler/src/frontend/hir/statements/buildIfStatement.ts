@@ -1,6 +1,6 @@
 import type { IfStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { createOperationId, IfTermOp, JumpTermOp } from "../../../ir";
+import { createOperationId, IfTermOp, JumpTermOp, valueBlockTarget } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FuncOpBuilder } from "../FuncOpBuilder";
@@ -60,7 +60,7 @@ export function buildIfStatement(
   buildOwnedBody(node.consequent, scope, functionBuilder, moduleBuilder, environment);
   if (functionBuilder.currentBlock.terminal === undefined) {
     functionBuilder.currentBlock.setTerminal(
-      new JumpTermOp(createOperationId(environment), fallthroughBlock, []),
+      new JumpTermOp(createOperationId(environment), valueBlockTarget(fallthroughBlock)),
     );
   }
 
@@ -71,7 +71,7 @@ export function buildIfStatement(
   }
   if (functionBuilder.currentBlock.terminal === undefined) {
     functionBuilder.currentBlock.setTerminal(
-      new JumpTermOp(createOperationId(environment), fallthroughBlock, []),
+      new JumpTermOp(createOperationId(environment), valueBlockTarget(fallthroughBlock)),
     );
   }
 

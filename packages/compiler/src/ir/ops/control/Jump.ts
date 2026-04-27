@@ -1,13 +1,13 @@
 import type { OperationId } from "../../core";
 import type { BasicBlock } from "../../core/Block";
 import type { Value } from "../../core/Value";
-import { type CloneContext, nextId, remapBlock } from "../../core/Operation";
+import { type CloneContext, nextId } from "../../core/Operation";
 import {
   type BlockTarget,
   invalidTargetIndex,
-  successorArgValues,
+  type SuccessorArg,
+  successorArgValue,
   TermOp,
-  valueSuccessorArgs,
 } from "../../core/TermOp";
 
 /**
@@ -22,15 +22,19 @@ import {
  * copies before the jump.
  */
 export class JumpTermOp extends TermOp {
-  public readonly args: readonly Value[];
+  public readonly jumpTarget: BlockTarget;
 
-  constructor(
-    id: OperationId,
-    public targetBlock: BasicBlock,
-    args: readonly Value[] = [],
-  ) {
+  constructor(id: OperationId, target: BlockTarget) {
     super(id);
-    this.args = args;
+    this.jumpTarget = target;
+  }
+
+  get targetBlock(): BasicBlock {
+    return this.jumpTarget.block;
+  }
+
+  get args(): readonly Value[] {
+    return this.jumpTarget.args.map(successorArgValue);
   }
 
   operands(): Value[] {
@@ -42,31 +46,27 @@ export class JumpTermOp extends TermOp {
   }
 
   target(index: number): BlockTarget {
-    if (index === 0) return { block: this.targetBlock, args: valueSuccessorArgs(this.args) };
+    if (index === 0) return this.jumpTarget;
     return invalidTargetIndex(this.constructor.name, index);
   }
 
   withTarget(index: number, successor: BlockTarget): JumpTermOp {
     if (index !== 0) return invalidTargetIndex(this.constructor.name, index);
-    return new JumpTermOp(this.id, successor.block, successorArgValues(successor.args));
+    return new JumpTermOp(this.id, successor);
   }
 
   rewrite(values: Map<Value, Value>): JumpTermOp {
-    if (this.args.length === 0) return this;
+    if (this.jumpTarget.args.length === 0) return this;
     let changed = false;
-    const newArgs: Value[] = [];
-    for (const arg of this.args) {
-      const rewritten = values.get(arg) ?? arg;
-      if (rewritten !== arg) changed = true;
-      newArgs.push(rewritten);
-    }
+    const newArgs = rewriteSuccessorArgs(this.jumpTarget.args, values, () => {
+      changed = true;
+    });
     if (!changed) return this;
-    return new JumpTermOp(this.id, this.targetBlock, newArgs);
+    return new JumpTermOp(this.id, { block: this.targetBlock, args: newArgs });
   }
 
   clone(ctx: CloneContext): JumpTermOp {
-    const newArgs = this.args.map((a) => ctx.valueMap.get(a) ?? a);
-    return new JumpTermOp(nextId(ctx), remapBlock(ctx, this.targetBlock), newArgs);
+    return new JumpTermOp(nextId(ctx), cloneTarget(ctx, this.jumpTarget));
   }
 
   public override print(): string {
@@ -74,4 +74,27 @@ export class JumpTermOp extends TermOp {
     const argStr = this.args.map((a) => a.print()).join(", ");
     return `jump bb${this.targetBlock.id}(${argStr})`;
   }
+}
+
+function rewriteSuccessorArgs(
+  args: readonly SuccessorArg[],
+  values: Map<Value, Value>,
+  onChanged: () => void,
+): SuccessorArg[] {
+  return args.map((arg) => {
+    const rewritten = values.get(arg.value) ?? arg.value;
+    if (rewritten === arg.value) return arg;
+    onChanged();
+    return { ...arg, value: rewritten };
+  });
+}
+
+function cloneTarget(ctx: CloneContext, target: BlockTarget): BlockTarget {
+  return {
+    block: ctx.blockMap.get(target.block) ?? target.block,
+    args: target.args.map((arg) => ({
+      ...arg,
+      value: ctx.valueMap.get(arg.value) ?? arg.value,
+    })),
+  };
 }

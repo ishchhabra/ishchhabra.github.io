@@ -6,6 +6,7 @@ import {
   type SwitchCase as SwitchTermCase,
   SwitchTermOp,
   Value,
+  valueBlockTarget,
 } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { instantiateScopeBindings } from "../bindings";
@@ -86,7 +87,7 @@ export function buildSwitchStatement(
       // Fall-through to next case or fallthroughBlock if last
       const nextTarget = i + 1 < caseBlocks.length ? caseBlocks[i + 1] : fallthroughBlock;
       functionBuilder.currentBlock.setTerminal(
-        new JumpTermOp(createOperationId(environment), nextTarget, []),
+        new JumpTermOp(createOperationId(environment), valueBlockTarget(nextTarget)),
       );
     }
   }

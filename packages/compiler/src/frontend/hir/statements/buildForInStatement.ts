@@ -13,6 +13,7 @@ import {
   Value,
   StoreContextOp,
   StoreLocalOp,
+  valueBlockTarget,
 } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FuncOpBuilder } from "../FuncOpBuilder";
@@ -81,7 +82,9 @@ export function buildForInStatement(
   functionBuilder.addBlock(bodyBlock);
   functionBuilder.addBlock(exitBlock);
 
-  parentBlock.setTerminal(new JumpTermOp(createOperationId(environment), hostBlock, []));
+  parentBlock.setTerminal(
+    new JumpTermOp(createOperationId(environment), valueBlockTarget(hostBlock)),
+  );
 
   hostBlock.setTerminal(
     new ForInTermOp(
@@ -117,7 +120,7 @@ export function buildForInStatement(
   functionBuilder.controlStack.pop();
   if (functionBuilder.currentBlock.terminal === undefined) {
     functionBuilder.currentBlock.setTerminal(
-      new JumpTermOp(createOperationId(environment), hostBlock, []),
+      new JumpTermOp(createOperationId(environment), valueBlockTarget(hostBlock)),
     );
   }
 

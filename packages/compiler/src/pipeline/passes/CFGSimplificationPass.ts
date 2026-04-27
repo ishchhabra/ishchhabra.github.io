@@ -14,6 +14,7 @@ import type { FuncOp } from "../../ir/core/FuncOp";
 import {
   successorArgValues,
   TermOp,
+  valueBlockTarget,
   type ControlFlowFacts,
   type Equality,
   type Truthiness,
@@ -112,20 +113,24 @@ export class CFGSimplificationPass extends FunctionPassBase {
       first.params.length === 0 &&
       runtimeSuccessors.every((index) => term.target(index).block === first)
     ) {
-      return new JumpTermOp(term.id, first, []);
+      return new JumpTermOp(term.id, valueBlockTarget(first));
     }
     return undefined;
   }
 
   private simplifyFor(term: ForTermOp): JumpTermOp | undefined {
     const branch = this.removableFalseLoopBranch(term.testBlock, term.exitBlock);
-    return branch === undefined ? undefined : new JumpTermOp(term.id, term.exitBlock, branch.falseArgs);
+    return branch === undefined
+      ? undefined
+      : new JumpTermOp(term.id, valueBlockTarget(term.exitBlock, branch.falseArgs));
   }
 
   private simplifyWhile(term: WhileTermOp): JumpTermOp | undefined {
     if (term.kind !== "while") return undefined;
     const branch = this.removableFalseLoopBranch(term.testBlock, term.exitBlock);
-    return branch === undefined ? undefined : new JumpTermOp(term.id, term.exitBlock, branch.falseArgs);
+    return branch === undefined
+      ? undefined
+      : new JumpTermOp(term.id, valueBlockTarget(term.exitBlock, branch.falseArgs));
   }
 
   private jumpTo(term: TermOp, targetIndex: number): JumpTermOp {
@@ -136,7 +141,7 @@ export class CFGSimplificationPass extends FunctionPassBase {
           `bb${target.block.id}(${target.block.params.length} params)`,
       );
     }
-    return new JumpTermOp(term.id, target.block, successorArgValues(target.args));
+    return new JumpTermOp(term.id, valueBlockTarget(target.block, successorArgValues(target.args)));
   }
 
   private threadEmptyJumpBlocks(): boolean {

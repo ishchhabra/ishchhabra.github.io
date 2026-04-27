@@ -13,6 +13,7 @@ import {
   StoreContextOp,
   StoreLocalOp,
   UnaryExpressionOp,
+  valueBlockTarget,
 } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildLVal } from "../buildLVal";
@@ -303,10 +304,15 @@ function buildLogicalIdentifierAssignment(
         ),
   );
   functionBuilder.currentBlock.setTerminal(
-    new JumpTermOp(createOperationId(environment), joinBlock, [stabilizedRightPlace]),
+    new JumpTermOp(
+      createOperationId(environment),
+      valueBlockTarget(joinBlock, [stabilizedRightPlace]),
+    ),
   );
 
-  altBlock.setTerminal(new JumpTermOp(createOperationId(environment), joinBlock, [oldValuePlace]));
+  altBlock.setTerminal(
+    new JumpTermOp(createOperationId(environment), valueBlockTarget(joinBlock, [oldValuePlace])),
+  );
 
   functionBuilder.currentBlock = joinBlock;
   return resultPlace;
@@ -428,10 +434,15 @@ function buildLogicalMemberAssignment(
     ),
   );
   functionBuilder.currentBlock.setTerminal(
-    new JumpTermOp(createOperationId(environment), joinBlock, [stabilizedRightPlace]),
+    new JumpTermOp(
+      createOperationId(environment),
+      valueBlockTarget(joinBlock, [stabilizedRightPlace]),
+    ),
   );
 
-  altBlock.setTerminal(new JumpTermOp(createOperationId(environment), joinBlock, [cachedPlace]));
+  altBlock.setTerminal(
+    new JumpTermOp(createOperationId(environment), valueBlockTarget(joinBlock, [cachedPlace])),
+  );
 
   functionBuilder.currentBlock = joinBlock;
   return resultPlace;

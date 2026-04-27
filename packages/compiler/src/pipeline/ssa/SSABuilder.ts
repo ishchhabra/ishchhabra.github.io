@@ -22,8 +22,12 @@ import { ArrayDestructureOp } from "../../ir/ops/pattern/ArrayDestructure";
 import { ObjectDestructureOp } from "../../ir/ops/pattern/ObjectDestructure";
 import { ExportSpecifierOp } from "../../ir/ops/module/ExportSpecifier";
 import { ExportDefaultDeclarationOp } from "../../ir/ops/module/ExportDefaultDeclaration";
-import { BranchTermOp, IfTermOp, JumpTermOp } from "../../ir/ops/control";
-import { successorArgValues, valueSuccessorArgs } from "../../ir/core/TermOp";
+import {
+  successorArgValue,
+  valueSuccessorArg,
+  type SuccessorArg,
+  type TermOp,
+} from "../../ir/core/TermOp";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { DominatorTreeAnalysis, type DominatorTree } from "../analysis/DominatorTreeAnalysis";
 import type { PassResult } from "../PassManager";
@@ -377,13 +381,7 @@ export class SSABuilder {
 
     if (block.terminal !== undefined) {
       this.renameOpOperands(block.terminal, stacks);
-      if (block.terminal instanceof JumpTermOp) {
-        this.fillJumpArgs(block, block.terminal, stacks);
-      } else if (block.terminal instanceof BranchTermOp) {
-        this.fillBranchArgs(block, block.terminal, stacks);
-      } else if (block.terminal instanceof IfTermOp) {
-        this.fillIfArgs(block, block.terminal, stacks);
-      }
+      this.fillTerminalArgs(block, block.terminal, stacks);
     }
 
     for (const childId of this.domTreeChildren.get(block.id) ?? []) {
@@ -605,120 +603,47 @@ export class SSABuilder {
   }
 
   // ===========================================================================
-  // Jump-edge args — fill each JumpTermOp from the rename stacks
+  // Successor-edge args — fill each exposed CFG edge from the rename stacks
   // ===========================================================================
 
   /**
-   * Fill the edge args of a `JumpTermOp` from the current rename
-   * stacks, binding each successor-block param positionally to its
-   * reaching definition. See the class-doc "Two block-param flavors"
-   * section for how SSA-rename vs frontend-semantic params are split.
+   * Fill executable successor edge args from the current rename stacks,
+   * binding each successor-block param positionally to its reaching
+   * definition. See the class-doc "Two block-param flavors" section for
+   * how SSA-rename vs frontend-semantic params are split.
    */
-  private fillJumpArgs(block: BasicBlock, terminal: JumpTermOp, stacks: Stacks): void {
-    const succ = terminal.targetBlock;
-    if (succ.params.length === 0) return;
+  private fillTerminalArgs(block: BasicBlock, terminal: TermOp, stacks: Stacks): void {
+    let rewritten: TermOp = terminal;
+    let changed = false;
 
-    const existing = terminal.args;
+    for (const index of terminal.successorIndices()) {
+      const currentTarget = rewritten.target(index);
+      if (currentTarget.block.params.length === 0) continue;
+      const nextArgs = this.fillTargetArgs(currentTarget.block.params, currentTarget.args, stacks);
+      if (successorArgsEqual(currentTarget.args, nextArgs)) continue;
+      rewritten = rewritten.withTarget(index, { ...currentTarget, args: nextArgs });
+      changed = true;
+    }
+
+    if (changed) block.replaceOp(terminal, rewritten);
+  }
+
+  private fillTargetArgs(
+    params: readonly Value[],
+    existing: readonly SuccessorArg[],
+    stacks: Stacks,
+  ): SuccessorArg[] {
     let frontendArgIdx = 0;
-    const args: Value[] = succ.params.map((param) => {
+    return params.map((param) => {
       const decl = param.originalDeclarationId;
       if (decl === undefined) {
-        // Frontend-semantic param — preserve the existing positional arg.
-        return existing[frontendArgIdx++] ?? this.undefSeed;
+        return existing[frontendArgIdx++] ?? valueSuccessorArg(this.undefSeed);
       }
       const stack = stacks.get(decl);
-      if (stack !== undefined && stack.length > 0) return stack[stack.length - 1];
-      return this.undefSeed;
+      if (stack !== undefined && stack.length > 0)
+        return valueSuccessorArg(stack[stack.length - 1]);
+      return valueSuccessorArg(this.undefSeed);
     });
-
-    if (argsEqual(existing, args)) return;
-    block.replaceOp(terminal, new JumpTermOp(terminal.id, terminal.targetBlock, args));
-  }
-
-  /**
-   * Fill both arms of a `BranchTermOp` from the current rename stacks,
-   * binding each arm's target block params positionally to their
-   * reaching definitions. Same logic as {@link fillJumpArgs} but applied
-   * to both successors.
-   */
-  private fillBranchArgs(block: BasicBlock, terminal: BranchTermOp, stacks: Stacks): void {
-    const fill = (params: readonly Value[], existing: readonly Value[]): Value[] => {
-      let frontendArgIdx = 0;
-      return params.map((param) => {
-        const decl = param.originalDeclarationId;
-        if (decl === undefined) {
-          return existing[frontendArgIdx++] ?? this.undefSeed;
-        }
-        const stack = stacks.get(decl);
-        if (stack !== undefined && stack.length > 0) return stack[stack.length - 1];
-        return this.undefSeed;
-      });
-    };
-
-    const nextTrue =
-      terminal.trueTarget.params.length === 0
-        ? terminal.trueArgs
-        : fill(terminal.trueTarget.params, terminal.trueArgs);
-    const nextFalse =
-      terminal.falseTarget.params.length === 0
-        ? terminal.falseArgs
-        : fill(terminal.falseTarget.params, terminal.falseArgs);
-
-    if (argsEqual(terminal.trueArgs, nextTrue) && argsEqual(terminal.falseArgs, nextFalse)) {
-      return;
-    }
-    block.replaceOp(
-      terminal,
-      new BranchTermOp(
-        terminal.id,
-        terminal.cond,
-        terminal.trueTarget,
-        terminal.falseTarget,
-        nextTrue,
-        nextFalse,
-      ),
-    );
-  }
-
-  private fillIfArgs(block: BasicBlock, terminal: IfTermOp, stacks: Stacks): void {
-    const fill = (params: readonly Value[], existing: readonly Value[]): Value[] => {
-      let frontendArgIdx = 0;
-      return params.map((param) => {
-        const decl = param.originalDeclarationId;
-        if (decl === undefined) {
-          return existing[frontendArgIdx++] ?? this.undefSeed;
-        }
-        const stack = stacks.get(decl);
-        if (stack !== undefined && stack.length > 0) return stack[stack.length - 1];
-        return this.undefSeed;
-      });
-    };
-
-    const nextThen =
-      terminal.thenBlock.params.length === 0
-        ? successorArgValues(terminal.thenTarget.args)
-        : fill(terminal.thenBlock.params, successorArgValues(terminal.thenTarget.args));
-    const nextElse =
-      terminal.elseBlock.params.length === 0
-        ? successorArgValues(terminal.elseTarget.args)
-        : fill(terminal.elseBlock.params, successorArgValues(terminal.elseTarget.args));
-
-    if (
-      argsEqual(successorArgValues(terminal.thenTarget.args), nextThen) &&
-      argsEqual(successorArgValues(terminal.elseTarget.args), nextElse)
-    ) {
-      return;
-    }
-    block.replaceOp(
-      terminal,
-      new IfTermOp(
-        terminal.id,
-        terminal.cond,
-        { block: terminal.thenBlock, args: valueSuccessorArgs(nextThen) },
-        { block: terminal.elseBlock, args: valueSuccessorArgs(nextElse) },
-        terminal.fallthroughBlock,
-      ),
-    );
   }
 
   // ===========================================================================
@@ -801,9 +726,13 @@ export class SSABuilder {
   }
 }
 
-function argsEqual(a: readonly Value[], b: readonly Value[]): boolean {
+function successorArgsEqual(a: readonly SuccessorArg[], b: readonly SuccessorArg[]): boolean {
   if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i].kind !== b[i].kind || successorArgValue(a[i]) !== successorArgValue(b[i])) {
+      return false;
+    }
+  }
   return true;
 }
 

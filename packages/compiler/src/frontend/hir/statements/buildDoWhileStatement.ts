@@ -1,6 +1,12 @@
 import type { DoWhileStatement } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { BranchTermOp, createOperationId, JumpTermOp, WhileTermOp } from "../../../ir";
+import {
+  BranchTermOp,
+  createOperationId,
+  JumpTermOp,
+  valueBlockTarget,
+  WhileTermOp,
+} from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { buildNode } from "../buildNode";
 import { FuncOpBuilder } from "../FuncOpBuilder";
@@ -42,7 +48,9 @@ export function buildDoWhileStatement(
   functionBuilder.addBlock(testBlock);
   functionBuilder.addBlock(exitBlock);
 
-  parentBlock.setTerminal(new JumpTermOp(createOperationId(environment), hostBlock, []));
+  parentBlock.setTerminal(
+    new JumpTermOp(createOperationId(environment), valueBlockTarget(hostBlock)),
+  );
 
   hostBlock.setTerminal(
     new WhileTermOp(
@@ -68,7 +76,7 @@ export function buildDoWhileStatement(
   functionBuilder.controlStack.pop();
   if (functionBuilder.currentBlock.terminal === undefined) {
     functionBuilder.currentBlock.setTerminal(
-      new JumpTermOp(createOperationId(environment), testBlock, []),
+      new JumpTermOp(createOperationId(environment), valueBlockTarget(testBlock)),
     );
   }
 
@@ -79,7 +87,12 @@ export function buildDoWhileStatement(
     throw new Error("Do-while statement test must be a single place");
   }
   functionBuilder.currentBlock.setTerminal(
-    new BranchTermOp(createOperationId(environment), testPlace, hostBlock, exitBlock),
+    new BranchTermOp(
+      createOperationId(environment),
+      testPlace,
+      valueBlockTarget(hostBlock),
+      valueBlockTarget(exitBlock),
+    ),
   );
 
   functionBuilder.currentBlock = exitBlock;

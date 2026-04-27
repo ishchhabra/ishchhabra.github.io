@@ -5,6 +5,7 @@ import { BindingInitOp, LiteralOp, ReturnTermOp, StoreLocalOp } from "../../ir";
 import { Edge } from "../../ir/cfg";
 import { FuncOp, makeFuncOpId } from "../../ir/core/FuncOp";
 import { ModuleIR } from "../../ir/core/ModuleIR";
+import { valueBlockTarget } from "../../ir/core/TermOp";
 import { BranchTermOp, JumpTermOp } from "../../ir/ops/control";
 import { DominatorTree } from "../analysis/DominatorTreeAnalysis";
 import { EdgeCopyScheduler } from "./EdgeCopyScheduler";
@@ -26,7 +27,14 @@ describe("EdgeCopyScheduler", () => {
     entry.appendOp(env.createOperation(LiteralOp, cond, true));
     entry.appendOp(env.createOperation(LiteralOp, a, 1));
     entry.appendOp(env.createOperation(LiteralOp, b, 2));
-    entry.setTerminal(env.createOperation(BranchTermOp, cond, join, other, [a, b], []));
+    entry.setTerminal(
+      env.createOperation(
+        BranchTermOp,
+        cond,
+        valueBlockTarget(join, [a, b]),
+        valueBlockTarget(other),
+      ),
+    );
     join.params = [x, y];
     join.setTerminal(env.createOperation(ReturnTermOp, x));
     other.setTerminal(env.createOperation(ReturnTermOp, b));
@@ -60,7 +68,7 @@ describe("EdgeCopyScheduler", () => {
 
     const x = env.createValue();
     const y = env.createValue();
-    entry.setTerminal(env.createOperation(JumpTermOp, join, [y, x]));
+    entry.setTerminal(env.createOperation(JumpTermOp, valueBlockTarget(join, [y, x])));
     join.params = [x, y];
     join.setTerminal(env.createOperation(ReturnTermOp, x));
 
@@ -95,7 +103,7 @@ describe("EdgeCopyScheduler", () => {
     const x = env.createValue();
     const y = env.createValue();
     const z = env.createValue();
-    entry.setTerminal(env.createOperation(JumpTermOp, join, [y, z]));
+    entry.setTerminal(env.createOperation(JumpTermOp, valueBlockTarget(join, [y, z])));
     join.params = [x, y];
     join.setTerminal(env.createOperation(ReturnTermOp, x));
 

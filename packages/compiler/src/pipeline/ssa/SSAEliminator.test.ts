@@ -4,6 +4,7 @@ import { ProjectEnvironment } from "../../ProjectEnvironment";
 import { BasicBlock, LiteralOp, ReturnTermOp, StoreLocalOp } from "../../ir";
 import { FuncOp, makeFuncOpId } from "../../ir/core/FuncOp";
 import { ModuleIR } from "../../ir/core/ModuleIR";
+import { valueBlockTarget } from "../../ir/core/TermOp";
 import { BranchTermOp, JumpTermOp } from "../../ir/ops/control";
 import { SSAEliminator } from "./SSAEliminator";
 
@@ -26,7 +27,14 @@ function buildBranchEdgePhiFixture(): {
   entry.appendOp(env.createOperation(LiteralOp, cond, true));
   entry.appendOp(env.createOperation(LiteralOp, trueValue, 1));
   entry.appendOp(env.createOperation(LiteralOp, falseValue, 2));
-  entry.setTerminal(env.createOperation(BranchTermOp, cond, join, join, [trueValue], [falseValue]));
+  entry.setTerminal(
+    env.createOperation(
+      BranchTermOp,
+      cond,
+      valueBlockTarget(join, [trueValue]),
+      valueBlockTarget(join, [falseValue]),
+    ),
+  );
 
   phi.originalDeclarationId = trueValue.declarationId;
   join.params = [phi];
