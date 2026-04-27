@@ -51,7 +51,6 @@ if (includeNodeModules) {
   const DENY_LIST = [
     "shiki",
     "@shikijs/",
-    "zod",
     "better-call",
     "micromark-core-commonmark",
     // duplicate-identifier codegen bug
