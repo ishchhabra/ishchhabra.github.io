@@ -22,7 +22,6 @@ import {
   LabeledTermOp,
   SwitchTermOp,
   TryTermOp,
-  Value,
   WhileTermOp,
 } from "../../../ir";
 import { incomingProducedValues } from "../../../ir/cfg";
@@ -48,61 +47,13 @@ export function generateIfTerm(
   }
   t.assertExpression(testNode);
 
-  const fallthrough = term.fallthroughBlock;
-  const ternary = tryEmitTernary(term, testNode, fallthrough, generator);
-  if (ternary !== null) {
-    return withFallthrough(fallthrough, funcOp, generator, () => ternary);
-  }
-
-  return withFallthrough(fallthrough, funcOp, generator, () => {
+  return withFallthrough(term.fallthroughBlock, funcOp, generator, () => {
     const thenStatements = emitArm(term.thenBlock, funcOp, generator);
     const elseStatements = emitArm(term.elseBlock, funcOp, generator);
 
     const elseNode = elseStatements.length > 0 ? t.blockStatement(elseStatements) : null;
     return [t.ifStatement(testNode, t.blockStatement(thenStatements), elseNode)];
   });
-}
-
-/**
- * If both arms are `jump fallthrough(X)` with fallthrough's single
- * block param used as a value downstream, emit a ternary and bind
- * to that param.
- */
-function tryEmitTernary(
-  term: IfTermOp,
-  testNode: t.Expression,
-  fallthrough: BasicBlock | null,
-  generator: CodeGenerator,
-): Array<t.Statement> | null {
-  if (fallthrough === null) return null;
-  if (fallthrough.params.length !== 1) return null;
-  const thenArm = tryExtractArmYield(term.thenBlock, fallthrough);
-  const elseArm = tryExtractArmYield(term.elseBlock, fallthrough);
-  if (thenArm === null || elseArm === null) return null;
-  const resultPlace = fallthrough.params[0];
-  if (resultPlace.users.size === 0) return null;
-
-  const thenValueNode = generator.values.get(thenArm.id);
-  const elseValueNode = generator.values.get(elseArm.id);
-  if (thenValueNode === undefined || elseValueNode === undefined) return null;
-  t.assertExpression(thenValueNode);
-  t.assertExpression(elseValueNode);
-
-  generator.generatedBlocks.add(term.thenBlock.id);
-  generator.generatedBlocks.add(term.elseBlock.id);
-
-  const ternary = t.conditionalExpression(testNode, thenValueNode, elseValueNode);
-  generator.values.set(resultPlace.id, ternary);
-  return [];
-}
-
-function tryExtractArmYield(block: BasicBlock, fallthrough: BasicBlock): Value | null {
-  if (block.operations.length > 0) return null;
-  const terminal = block.terminal;
-  if (!(terminal instanceof JumpTermOp)) return null;
-  if (terminal.targetBlock !== fallthrough) return null;
-  if (terminal.args.length !== 1) return null;
-  return terminal.args[0];
 }
 
 // ---------------------------------------------------------------------

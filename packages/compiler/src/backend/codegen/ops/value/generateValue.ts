@@ -5,6 +5,7 @@ import {
   CallExpressionOp,
   ClassMethodOp,
   ClassPropertyOp,
+  ConditionalExpressionOp,
   HoleOp,
   LiteralOp,
   NewExpressionOp,
@@ -35,6 +36,7 @@ import { generateAwaitExpressionOp } from "./generateAwaitExpression";
 import { generateArrowFunctionExpressionOp } from "./generateArrowFunctionExpression";
 import { generateBinaryExpressionOp } from "./generateBinaryExpression";
 import { generateCallExpression } from "./generateCallExpression";
+import { generateConditionalExpressionOp } from "./generateConditionalExpression";
 import { generateFunctionExpressionOp } from "./generateFunctionExpression";
 import { generateHoleOp } from "./generateHole";
 import { generateImportExpressionOp } from "./generateImportExpression";
@@ -68,6 +70,8 @@ export function generateValueOp(
     return generateClassMethodOp(instruction, generator);
   } else if (instruction instanceof ClassPropertyOp) {
     return generateClassPropertyOp(instruction, generator);
+  } else if (instruction instanceof ConditionalExpressionOp) {
+    return generateConditionalExpressionOp(instruction, generator);
   } else if (instruction instanceof ArrayExpressionOp) {
     return generateArrayExpressionOp(instruction, generator);
   } else if (instruction instanceof AwaitExpressionOp) {

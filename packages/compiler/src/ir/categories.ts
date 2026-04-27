@@ -58,6 +58,7 @@ import { CallExpressionOp } from "./ops/call/CallExpression";
 import { ClassExpressionOp } from "./ops/class/ClassExpression";
 import { ClassMethodOp } from "./ops/class/ClassMethod";
 import { ClassPropertyOp } from "./ops/class/ClassProperty";
+import { ConditionalExpressionOp } from "./ops/arith/ConditionalExpression";
 import { FunctionExpressionOp } from "./ops/func/FunctionExpression";
 import { HoleOp } from "./ops/prim/Hole";
 import { ImportExpressionOp } from "./ops/call/ImportExpression";
@@ -92,6 +93,7 @@ export type ValueOp =
   | ClassExpressionOp
   | ClassMethodOp
   | ClassPropertyOp
+  | ConditionalExpressionOp
   | FunctionExpressionOp
   | HoleOp
   | ImportExpressionOp
@@ -168,6 +170,7 @@ const VALUE_CTORS = new Set<Function>([
   ClassExpressionOp,
   ClassMethodOp,
   ClassPropertyOp,
+  ConditionalExpressionOp,
   FunctionExpressionOp,
   HoleOp,
   ImportExpressionOp,

@@ -56,6 +56,7 @@ export {
 
 // arith
 export { BinaryExpressionOp, type BinaryOperator } from "./arith/BinaryExpression";
+export { ConditionalExpressionOp } from "./arith/ConditionalExpression";
 export { UnaryExpressionOp, type UnaryOperator } from "./arith/UnaryExpression";
 export { SequenceExpressionOp } from "./arith/SequenceExpression";
 

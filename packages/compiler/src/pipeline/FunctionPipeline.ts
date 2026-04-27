@@ -1,7 +1,6 @@
 import type { CompilerOptions } from "../compile";
 import { CommonJSExportCollectorPass } from "../frontend/passes/CommonJSExportCollectorPass";
 import type { ProjectUnit } from "../frontend/ProjectBuilder";
-import { ExportDeclarationMergingPass } from "./late-optimizer/passes/ExportDeclarationMergingPass";
 import { LateCopyPropagationPass } from "./late-optimizer/passes/LateCopyPropagationPass";
 import { LateDeadCodeEliminationPass } from "./late-optimizer/passes/LateDeadCodeEliminationPass";
 import { ScalarReplacementOfAggregatesPass } from "./late-optimizer/passes/ScalarReplacementOfAggregatesPass";
@@ -15,6 +14,8 @@ import { DeadCodeEliminationPass } from "./passes/DeadCodeEliminationPass";
 import { ExpressionInliningPass } from "./passes/ExpressionInliningPass";
 import { ReassociationPass } from "./passes/ReassociationPass";
 import { ValueMaterializationPass } from "./passes/ValueMaterializationPass";
+import { ConditionalExpressionReconstitutionPass } from "./reconstitution/passes/ConditionalExpressionReconstitutionPass";
+import { ExportDeclarationMergingPass } from "./reconstitution/passes/ExportDeclarationMergingPass";
 import { SSABuilder } from "./ssa/SSABuilder";
 import { SSAEliminator } from "./ssa/SSAEliminator";
 
@@ -49,6 +50,10 @@ export function buildFunctionPipeline(
       name: "ssa-optimization",
       stage: "optimized",
       passes: options.enableOptimizer ? buildSSAOptimizationPasses(projectUnit, options) : [],
+    },
+    {
+      name: "syntax-reconstitution",
+      passes: buildSyntaxReconstitutionPasses(options),
     },
     {
       name: "out-of-ssa",
@@ -157,5 +162,18 @@ function buildPostSSACleanupPasses(options: CompilerOptions): FunctionPass[] {
   if (options.enableLateDeadCodeEliminationPass) passes.push(dce);
   if (options.enableLateCopyPropagationPass) passes.push(copyProp);
   if (options.enableLateDeadCodeEliminationPass) passes.push(dce);
+  return passes;
+}
+
+function buildSyntaxReconstitutionPasses(options: CompilerOptions): FunctionPass[] {
+  const passes: FunctionPass[] = [];
+  if (options.enableConditionalExpressionReconstitutionPass) {
+    passes.push(
+      funcPass(
+        "conditional-expression-reconstitution",
+        (funcOp) => new ConditionalExpressionReconstitutionPass(funcOp),
+      ),
+    );
+  }
   return passes;
 }

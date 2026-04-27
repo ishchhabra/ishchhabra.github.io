@@ -8,13 +8,7 @@ function $0($2, $3, $4) {
   return $2.substring(0, $11);
 }
 function $1($15, $16) {
-  let $22;
-  if ($16 > 0) {
-    $22 = "a";
-  } else {
-    $22 = "b";
-  }
-  return $15.method($22);
+  return $15.method($16 > 0 ? "a" : "b");
 }
 export { $0 as substringWithTernary };
 export { $1 as methodCallWithConditional };

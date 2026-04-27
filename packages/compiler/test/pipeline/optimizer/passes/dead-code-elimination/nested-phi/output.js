@@ -1,12 +1,7 @@
 let $17;
-let $18;
 if (globalThis.a) {
-  if (globalThis.b) {
-    $18 = 1;
-  } else {
-    $18 = 2;
-  }
-  $17 = $18;
+  const $22 = globalThis.b ? 1 : 2;
+  $17 = $22;
 } else {
   $17 = 3;
 }

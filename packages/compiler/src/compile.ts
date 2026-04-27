@@ -25,6 +25,8 @@ export const CompilerOptionsSchema = z.object({
   enableCapturePruningPass: z.boolean().default(true),
   /** Whether to enable the dead code elimination pass */
   enableDeadCodeEliminationPass: z.boolean().default(true),
+  /** Whether to reconstitute SSA diamonds into JS conditional expressions */
+  enableConditionalExpressionReconstitutionPass: z.boolean().default(true),
 
   /** Whether to enable the late optimizer */
   enableLateOptimizer: z.boolean().default(true),

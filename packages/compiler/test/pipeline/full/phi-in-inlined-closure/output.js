@@ -6,15 +6,9 @@ function $1() {
   const $9 = globalThis.getB();
   return globalThis.useMemo(() => {
     let $24;
-    let $29;
     if ($8) {
-      const $45 = $9;
-      if ($45 != null) {
-        $29 = $45;
-      } else {
-        $29 = "default";
-      }
-      $24 = $29;
+      const $44 = $9 != null ? $9 : "default";
+      $24 = $44;
     } else {
       $24 = "fallback";
     }
