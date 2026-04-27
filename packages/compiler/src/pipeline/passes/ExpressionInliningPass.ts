@@ -20,7 +20,8 @@ import { TermOp } from "../../ir/core/TermOp";
 import { isDeclarationExported } from "../../ir/exportClaim";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { MutabilityAnalysis, MutabilityInfo } from "../analysis/MutabilityAnalysis";
-import { BaseOptimizationPass, OptimizationResult } from "../late-optimizer/OptimizationPass";
+import { FunctionPassBase } from "../FunctionPassBase";
+import type { PassResult } from "../PassManager";
 
 type SsaBindingWrite = BindingInitOp | StoreLocalOp;
 
@@ -43,7 +44,7 @@ type SsaBindingWrite = BindingInitOp | StoreLocalOp;
  * collapse before outer ones, exposing new candidates within the same
  * fixpoint iteration.
  */
-export class ExpressionInliningPass extends BaseOptimizationPass {
+export class ExpressionInliningPass extends FunctionPassBase {
   /** Cached for the current {@link step}; refreshed on each iteration. */
   private mutability: MutabilityInfo = new MutabilityInfo(new Map());
 
@@ -55,7 +56,7 @@ export class ExpressionInliningPass extends BaseOptimizationPass {
     super(funcOp);
   }
 
-  protected step(): OptimizationResult {
+  protected step(): PassResult {
     this.mutability = this.AM.get(MutabilityAnalysis, this.funcOp);
 
     let changed = false;

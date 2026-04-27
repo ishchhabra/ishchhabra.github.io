@@ -8,7 +8,8 @@ import {
   Value,
 } from "../../../ir";
 import { ExportSpecifierOp } from "../../../ir/ops/module/ExportSpecifier";
-import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
+import { FunctionPassBase } from "../../FunctionPassBase";
+import type { PassResult } from "../../PassManager";
 
 /**
  * A pass that merges separate variable declarations and export specifiers
@@ -51,8 +52,8 @@ import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
  * export wrapper via the embedded use chain and suppresses the
  * standalone statement automatically — no `emit` flag is required.
  */
-export class ExportDeclarationMergingPass extends BaseOptimizationPass {
-  protected step(): OptimizationResult {
+export class ExportDeclarationMergingPass extends FunctionPassBase {
+  protected step(): PassResult {
     let changed = false;
 
     for (const block of this.funcOp.blocks) {

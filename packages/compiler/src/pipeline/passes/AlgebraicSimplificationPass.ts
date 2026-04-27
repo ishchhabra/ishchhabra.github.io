@@ -12,7 +12,7 @@ import { FuncOp } from "../../ir/core/FuncOp";
 import { Value } from "../../ir/core/Value";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { MutabilityAnalysis, MutabilityInfo } from "../analysis/MutabilityAnalysis";
-import { BaseOptimizationPass } from "../late-optimizer/OptimizationPass";
+import { FunctionPassBase } from "../FunctionPassBase";
 
 /**
  * A pass that simplifies algebraic expressions where one operand is a known
@@ -35,7 +35,7 @@ import { BaseOptimizationPass } from "../late-optimizer/OptimizationPass";
  * - Strength reduction (e.g. `x ** 2` → `x * x`) — separate concern
  * - Unary constant folding (e.g. `!true`) — handled by ConstantPropagationPass
  */
-export class AlgebraicSimplificationPass extends BaseOptimizationPass {
+export class AlgebraicSimplificationPass extends FunctionPassBase {
   /**
    * Maps identifier ids to their known literal values.
    * Tracks values through LiteralOp, LoadLocal, and StoreLocal chains.

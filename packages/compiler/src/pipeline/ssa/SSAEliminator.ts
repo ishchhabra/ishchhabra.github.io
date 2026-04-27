@@ -15,6 +15,7 @@ import { ModuleIR } from "../../ir/core/ModuleIR";
 import { successorArgValue } from "../../ir/core/TermOp";
 import { Value } from "../../ir/core/Value";
 import { DominatorTree } from "../analysis/DominatorTreeAnalysis";
+import type { PassResult } from "../PassManager";
 import { EdgeCopyScheduler } from "./EdgeCopyScheduler";
 
 /**
@@ -50,7 +51,7 @@ export class SSAEliminator {
     private readonly moduleIR: ModuleIR,
   ) {}
 
-  public eliminate(): void {
+  public run(): PassResult {
     this.#domTree = DominatorTree.compute(this.funcOp);
     this.#edgeCopyScheduler = new EdgeCopyScheduler(
       this.funcOp,
@@ -65,6 +66,11 @@ export class SSAEliminator {
       this.#domTree = undefined;
       this.#edgeCopyScheduler = undefined;
     }
+    return { changed: true };
+  }
+
+  public eliminate(): void {
+    this.run();
   }
 
   // ---------------------------------------------------------------------

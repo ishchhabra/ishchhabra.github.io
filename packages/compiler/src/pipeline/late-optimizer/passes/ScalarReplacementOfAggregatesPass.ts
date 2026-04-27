@@ -25,7 +25,8 @@ import { StoreDynamicPropertyOp } from "../../../ir/ops/prop/StoreDynamicPropert
 import { StoreStaticPropertyOp } from "../../../ir/ops/prop/StoreStaticProperty";
 import { AnalysisManager } from "../../analysis/AnalysisManager";
 import { EscapeAnalysis, EscapeAnalysisResult } from "../../analysis/EscapeAnalysis";
-import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
+import { FunctionPassBase } from "../../FunctionPassBase";
+import type { PassResult } from "../../PassManager";
 
 type ObjectShape = {
   readonly object: ObjectExpressionOp;
@@ -65,7 +66,7 @@ type ScalarizableDestructure = ObjectDestructureOp | ArrayDestructureOp;
  * - intra-block field store/load forwarding,
  * - dead property-load removal for local literals.
  */
-export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
+export class ScalarReplacementOfAggregatesPass extends FunctionPassBase {
   constructor(
     protected readonly funcOp: FuncOp,
     private readonly environment: Environment,
@@ -74,7 +75,7 @@ export class ScalarReplacementOfAggregatesPass extends BaseOptimizationPass {
     super(funcOp);
   }
 
-  protected step(): OptimizationResult {
+  protected step(): PassResult {
     const escape = this.AM.get(EscapeAnalysis, this.funcOp);
     const aggregates = new AggregateFacts(this.funcOp, escape);
 

@@ -5,6 +5,7 @@ import { ReturnTermOp, ThrowTermOp } from "../../ir/ops/control";
 import { StoreStaticPropertyOp } from "../../ir/ops/prop/StoreStaticProperty";
 import { AnalysisManager } from "../../pipeline/analysis/AnalysisManager";
 import { DominatorTreeAnalysis } from "../../pipeline/analysis/DominatorTreeAnalysis";
+import type { PassResult } from "../../pipeline/PassManager";
 
 const EXPORTS_PROPERTY_NAME = "exports";
 
@@ -30,7 +31,8 @@ export class CommonJSExportCollectorPass {
     private readonly AM: AnalysisManager,
   ) {}
 
-  public run() {
+  public run(): PassResult {
+    let changed = false;
     for (const block of this.funcOp.blocks) {
       const blockId = block.id;
       if (!this.isAlwaysExecutedBlock(blockId)) {
@@ -46,8 +48,10 @@ export class CommonJSExportCollectorPass {
           instruction,
           declaration: instruction.value.def as Operation,
         });
+        changed = true;
       }
     }
+    return { changed };
   }
 
   private isModuleExportInstruction(instruction: Operation): instruction is StoreStaticPropertyOp {

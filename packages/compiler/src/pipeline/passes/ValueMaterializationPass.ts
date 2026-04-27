@@ -34,6 +34,7 @@ import { FuncOp } from "../../ir/core/FuncOp";
 import { Value } from "../../ir/core/Value";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { isDCERemovable } from "../../ir/effects/predicates";
+import type { PassResult } from "../PassManager";
 
 type MaterializationDecision =
   | { readonly kind: "none" }
@@ -98,7 +99,8 @@ export class ValueMaterializationPass {
     private readonly moduleIR: ModuleIR,
   ) {}
 
-  public run(): void {
+  public run(): PassResult {
+    let changed = false;
     for (const block of this.funcOp.blocks) {
       for (let i = 0; i < block.operations.length; ) {
         const op = block.operations[i];
@@ -109,13 +111,16 @@ export class ValueMaterializationPass {
             break;
           case "const-binding":
             i = this.insertConstBinding(block, i, op);
+            changed = true;
             break;
           case "hoisted-let-binding":
             i = this.insertHoistedLetBinding(block, i, op);
+            changed = true;
             break;
         }
       }
     }
+    return { changed };
   }
 
   // ---------------------------------------------------------------

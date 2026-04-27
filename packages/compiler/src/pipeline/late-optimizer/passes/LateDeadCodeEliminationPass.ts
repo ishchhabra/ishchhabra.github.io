@@ -2,7 +2,8 @@ import { Environment } from "../../../environment";
 import { Operation, StoreLocalOp } from "../../../ir";
 import { FuncOp } from "../../../ir/core/FuncOp";
 import { isDCERemovable } from "../../../ir/effects/predicates";
-import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
+import { FunctionPassBase } from "../../FunctionPassBase";
+import type { PassResult } from "../../PassManager";
 
 /**
  * Late Dead Code Elimination — cleanup pass after SSA elimination.
@@ -19,7 +20,7 @@ import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
  * Dead Store Elimination lands, stores can drop to side-effect-free
  * and a unified liveness walk will handle both shapes uniformly.
  */
-export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
+export class LateDeadCodeEliminationPass extends FunctionPassBase {
   constructor(
     protected readonly funcOp: FuncOp,
     private readonly environment: Environment,
@@ -27,7 +28,7 @@ export class LateDeadCodeEliminationPass extends BaseOptimizationPass {
     super(funcOp);
   }
 
-  protected step(): OptimizationResult {
+  protected step(): PassResult {
     let changed = false;
 
     for (const block of this.funcOp.blocks) {

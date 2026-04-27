@@ -25,6 +25,7 @@ import { ExportDefaultDeclarationOp } from "../../ir/ops/module/ExportDefaultDec
 import { BranchTermOp, JumpTermOp } from "../../ir/ops/control";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { DominatorTreeAnalysis, type DominatorTree } from "../analysis/DominatorTreeAnalysis";
+import type { PassResult } from "../PassManager";
 
 type Stacks = Map<DeclarationId, Value[]>;
 
@@ -224,7 +225,7 @@ export class SSABuilder {
     this.AM = AM;
   }
 
-  public build(): void {
+  public run(): PassResult {
     const stacks: Stacks = new Map();
     this.undefSeed = this.materializeUndefSeed();
     this.nonPromotable = analyzePromotability(this.funcOp, this.moduleIR);
@@ -236,6 +237,11 @@ export class SSABuilder {
     this.computeDomTreeChildren();
 
     this.renameBlock(this.funcOp.entryBlock, stacks);
+    return { changed: true };
+  }
+
+  public build(): void {
+    this.run();
   }
 
   private isPromotable(decl: DeclarationId): boolean {

@@ -4,7 +4,8 @@ import { Value } from "../../ir/core/Value";
 import { FunctionDeclarationOp } from "../../ir/ops/func/FunctionDeclaration";
 import { ArrowFunctionExpressionOp } from "../../ir/ops/func/ArrowFunctionExpression";
 import { FunctionExpressionOp } from "../../ir/ops/func/FunctionExpression";
-import { BaseOptimizationPass, OptimizationResult } from "../late-optimizer/OptimizationPass";
+import { FunctionPassBase } from "../FunctionPassBase";
+import type { PassResult } from "../PassManager";
 
 type FunctionBearingInstruction =
   | FunctionDeclarationOp
@@ -70,12 +71,12 @@ function rebuildWithCaptures(instr: FunctionBearingInstruction, newCaptures: Val
  * body (via the embedded {@link Value.users} chain), and removes capture/captureParam
  * pairs that are dead.
  */
-export class CapturePruningPass extends BaseOptimizationPass {
+export class CapturePruningPass extends FunctionPassBase {
   constructor(protected readonly funcOp: FuncOp) {
     super(funcOp);
   }
 
-  protected step(): OptimizationResult {
+  protected step(): PassResult {
     let changed = false;
 
     for (const block of this.funcOp.blocks) {

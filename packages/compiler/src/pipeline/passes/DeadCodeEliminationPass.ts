@@ -2,7 +2,8 @@ import { Environment } from "../../environment";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { AnalysisManager } from "../analysis/AnalysisManager";
 import { LivenessAnalysis, LivenessResult } from "../analysis/LivenessAnalysis";
-import { BaseOptimizationPass, OptimizationResult } from "../late-optimizer/OptimizationPass";
+import { FunctionPassBase } from "../FunctionPassBase";
+import type { PassResult } from "../PassManager";
 import { incomingEdges, outgoingEdges } from "../../ir/cfg";
 import { isDCERemovable } from "../../ir/effects/predicates";
 
@@ -25,7 +26,7 @@ import { isDCERemovable } from "../../ir/effects/predicates";
  * shrink is an op-canonicalization concern, not a generic-DCE one —
  * MLIR draws the same line.
  */
-export class DeadCodeEliminationPass extends BaseOptimizationPass {
+export class DeadCodeEliminationPass extends FunctionPassBase {
   constructor(
     protected readonly funcOp: FuncOp,
     private readonly environment: Environment,
@@ -34,7 +35,7 @@ export class DeadCodeEliminationPass extends BaseOptimizationPass {
     super(funcOp);
   }
 
-  protected step(): OptimizationResult {
+  protected step(): PassResult {
     const liveness = this.AM.get(LivenessAnalysis, this.funcOp);
 
     const removedParams = this.removeDeadBlockParams(liveness);

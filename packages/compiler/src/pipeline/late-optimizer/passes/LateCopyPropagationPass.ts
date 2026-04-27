@@ -1,7 +1,8 @@
 import { BlockId, DeclarationId, LoadLocalOp, Value, StoreLocalOp } from "../../../ir";
 import { FuncOp } from "../../../ir/core/FuncOp";
 import type { Operation } from "../../../ir/core/Operation";
-import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
+import { FunctionPassBase } from "../../FunctionPassBase";
+import type { PassResult } from "../../PassManager";
 
 /**
  * Forward Copy Propagation.
@@ -19,7 +20,7 @@ import { BaseOptimizationPass, OptimizationResult } from "../OptimizationPass";
  *   x = y
  *   z = y
  */
-export class LateCopyPropagationPass extends BaseOptimizationPass {
+export class LateCopyPropagationPass extends FunctionPassBase {
   constructor(protected readonly funcOp: FuncOp) {
     super(funcOp);
   }
@@ -30,7 +31,7 @@ export class LateCopyPropagationPass extends BaseOptimizationPass {
    * The outer optimization framework repeatedly invokes `step()` until
    * a fixpoint is reached (no further rewrites occur).
    */
-  protected step(): OptimizationResult {
+  protected step(): PassResult {
     /** Map from block → copy state leaving that block. */
     const outState = new Map<BlockId, CopyState>();
 

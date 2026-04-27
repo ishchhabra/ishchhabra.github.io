@@ -20,7 +20,8 @@ import {
 } from "../../ir/core/TermOp";
 import type { Value } from "../../ir/core/Value";
 import { isDCERemovable } from "../../ir/effects/predicates";
-import { BaseOptimizationPass, type OptimizationResult } from "../late-optimizer/OptimizationPass";
+import { FunctionPassBase } from "../FunctionPassBase";
+import type { PassResult } from "../PassManager";
 
 /**
  * Simplifies control-flow structure after value optimizations have made
@@ -72,8 +73,8 @@ import { BaseOptimizationPass, type OptimizationResult } from "../late-optimizer
  * @see {@link ConstantPropagationPass} for discovering constant branch conditions.
  * @see {@link threadEdgeThroughEmptyJump} for SSA-aware jump threading.
  */
-export class CFGSimplificationPass extends BaseOptimizationPass {
-  protected step(): OptimizationResult {
+export class CFGSimplificationPass extends FunctionPassBase {
+  protected step(): PassResult {
     const folded = this.foldTerminators();
     const threaded = this.threadEmptyJumpBlocks();
     const removed = this.removeUnreachableBlocks();

@@ -24,19 +24,18 @@ export type PipelineStage =
  * Event order for one function:
  *
  * ```
+ * onPassStart("commonjs-export-collector", …)
+ * onPassEnd("commonjs-export-collector", …, { changed: true })
+ * onPassStart("ssa-builder", …)
+ * onPassEnd("ssa-builder", …, { changed: true })
  * onStage("ssa-built", …)
- *   onPassStart("algebraic-simplification", …)
- *   onPassEnd("algebraic-simplification", …, { changed: true })
- *   onPassStart("expression-inlining", …)
- *   onPassEnd("expression-inlining", …, { changed: false })
- *   ...
+ * onPassStart("algebraic-simplification", …)
+ * ...
  * onStage("optimized", …)
+ * onPassStart("ssa-eliminator", …)
+ * onPassEnd("ssa-eliminator", …, { changed: true })
  * onStage("ssa-eliminated", …)
- *   onPassStart("late-constant-propagation", …)
- *   ...
- * onStage("late-optimized", …)
- * onStage("materialized", …)
- * onStage("exports-merged", …)
+ * ...
  * ```
  */
 export interface PipelineObserver {
