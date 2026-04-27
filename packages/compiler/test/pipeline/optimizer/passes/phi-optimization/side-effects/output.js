@@ -2,8 +2,7 @@ const $23 = globalThis.project;
 let $1;
 let $20;
 if (!$23.external) {
-  const $24 = `lab-${$23.slug}-title`;
-  $20 = $24;
+  $20 = `lab-${$23.slug}-title`;
 } else {
   $20 = undefined;
 }

@@ -1,6 +1,8 @@
 import {
+  BranchTermOp,
   BindingDeclOp,
   BindingInitOp,
+  JumpTermOp,
   LoadContextOp,
   LoadLocalOp,
   makeOperationId,
@@ -61,6 +63,7 @@ export class SSAEliminator {
     try {
       this.#eliminatePhis();
       this.#edgeCopyScheduler.emit();
+      this.#clearLoweredBlockArguments();
       this.#preserveInterferingLoads();
     } finally {
       this.#domTree = undefined;
@@ -151,6 +154,31 @@ export class SSAEliminator {
     // All sinks are blocks in the flat CFG. Declarations land at the
     // function entry block — any merge point is dominated by it.
     return { kind: "append", block: this.funcOp.entryBlock };
+  }
+
+  #clearLoweredBlockArguments(): void {
+    for (const block of this.funcOp.blocks) {
+      const terminal = block.terminal;
+      if (terminal instanceof JumpTermOp && terminal.args.length > 0) {
+        block.replaceTerminal(new JumpTermOp(terminal.id, terminal.targetBlock));
+      } else if (
+        terminal instanceof BranchTermOp &&
+        (terminal.trueArgs.length > 0 || terminal.falseArgs.length > 0)
+      ) {
+        block.replaceTerminal(
+          new BranchTermOp(
+            terminal.id,
+            terminal.cond,
+            terminal.trueTarget,
+            terminal.falseTarget,
+          ),
+        );
+      }
+
+      if (block.params.length > 0) {
+        block.params = [];
+      }
+    }
   }
 
   // ---------------------------------------------------------------------

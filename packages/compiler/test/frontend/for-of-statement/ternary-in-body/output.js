@@ -6,8 +6,7 @@ function $0($1) {
       if ($7) {
         $15 = "";
       } else {
-        const $26 = String($7);
-        $15 = $26;
+        $15 = String($7);
       }
       g($15);
     }

@@ -1,8 +1,7 @@
 let $12;
 for (let $1 of items) {
   if (condition) {
-    const $16 = $1 + 1;
-    $12 = $16;
+    $12 = $1 + 1;
   } else {
     $12 = $1;
   }

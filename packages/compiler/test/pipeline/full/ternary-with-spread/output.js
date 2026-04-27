@@ -8,21 +8,19 @@ function $0($1) {
     } else {
       $23 = $1;
     }
-    const $55 = [
+    $14 = [
       {
         rel: "canonical",
         href: `/${$23}`,
       },
     ];
-    $14 = $55;
   } else {
     $14 = undefined;
   }
   if ($14) {
-    const $56 = {
+    $35 = {
       links: $14,
     };
-    $35 = $56;
   } else {
     $35 = $14;
   }

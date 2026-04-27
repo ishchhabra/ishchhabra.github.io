@@ -70,5 +70,16 @@ describe("SSAEliminator", () => {
       );
     });
     expect(entryAssignmentCopies).toHaveLength(0);
+    expect(join.params).toHaveLength(0);
+  });
+
+  it("removes lowered block args from use-lists", () => {
+    const { entry, join, funcOp, moduleIR } = buildBranchEdgePhiFixture();
+    const trueValue = (entry.terminal as BranchTermOp).trueArgs[0];
+
+    new SSAEliminator(funcOp, moduleIR).eliminate();
+
+    expect(join.params).toHaveLength(0);
+    expect(trueValue.users).not.toContain(entry.terminal);
   });
 });

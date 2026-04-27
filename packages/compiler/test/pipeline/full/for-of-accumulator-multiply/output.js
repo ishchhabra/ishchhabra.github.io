@@ -3,8 +3,7 @@ function $0($1) {
   let $19;
   $19 = 1;
   for (const $6 of $22) {
-    const $23 = $6 * $19;
-    $19 = $23;
+    $19 = $6 * $19;
     continue;
   }
   return $19;

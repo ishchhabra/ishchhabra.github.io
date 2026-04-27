@@ -15,8 +15,7 @@ while ($56 < $65.length) {
     $57 = $23;
   }
   $66.push($33);
-  const $68 = $56 + 1;
-  $56 = $68;
+  $56 = $56 + 1;
   continue;
 }
 $66.join("/") === ["writing", "ssr-theming"].join("/");

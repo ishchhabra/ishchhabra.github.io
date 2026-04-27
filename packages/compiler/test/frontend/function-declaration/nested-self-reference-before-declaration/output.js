@@ -9,54 +9,47 @@ function $0($1) {
     let $53;
     let $59;
     if ($82) {
-      const $83 = $3.position;
-      $7 = $83;
+      $7 = $3.position;
     } else {
       $7 = $82;
     }
     if ($7) {
-      const $84 = $3.position[$1];
-      $10 = $84;
+      $10 = $3.position[$1];
     } else {
       $10 = $7;
     }
-    const $85 = $10 ? $10 : {};
-    const $86 = typeof $85.line === "number";
-    if ($86) {
-      const $87 = $85.line > 0;
-      $23 = $87;
+    const $83 = $10 ? $10 : {};
+    const $84 = typeof $83.line === "number";
+    if ($84) {
+      $23 = $83.line > 0;
     } else {
-      $23 = $86;
+      $23 = $84;
     }
     if ($23) {
-      const $88 = typeof $85.column === "number";
-      $28 = $88;
+      $28 = typeof $83.column === "number";
     } else {
       $28 = $23;
     }
     if ($28) {
-      const $89 = $85.column > 0;
-      $34 = $89;
+      $34 = $83.column > 0;
     } else {
       $34 = $28;
     }
     if ($34) {
-      const $90 = typeof $85.offset === "number";
-      if ($90) {
-        const $91 = $85.offset > -1;
-        $53 = $91;
+      const $85 = typeof $83.offset === "number";
+      if ($85) {
+        $53 = $83.offset > -1;
       } else {
-        $53 = $90;
+        $53 = $85;
       }
       if ($53) {
-        const $92 = $85.offset;
-        $59 = $92;
+        $59 = $83.offset;
       } else {
         $59 = undefined;
       }
       return {
-        line: $85.line,
-        column: $85.column,
+        line: $83.line,
+        column: $83.column,
         offset: $59,
       };
     }

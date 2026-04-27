@@ -5,8 +5,7 @@ function $0($1) {
   $17 = "";
   for (const $6 of $22) {
     if ($6.id) {
-      const $23 = $6.id;
-      $16 = $23;
+      $16 = $6.id;
     } else {
       $16 = $17;
     }

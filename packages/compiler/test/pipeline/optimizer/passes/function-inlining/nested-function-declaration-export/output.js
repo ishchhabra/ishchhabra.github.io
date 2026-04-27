@@ -4,14 +4,12 @@ function $0($3) {
     let $7;
     let $10;
     if ($34) {
-      const $35 = $5.position;
-      $7 = $35;
+      $7 = $5.position;
     } else {
       $7 = $34;
     }
     if ($7) {
-      const $36 = $5.position[$3];
-      $10 = $36;
+      $10 = $5.position[$3];
     } else {
       $10 = $7;
     }

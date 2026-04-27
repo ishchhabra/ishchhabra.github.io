@@ -19,12 +19,11 @@ function $0($1) {
       if ($96 !== undefined) {
         const $97 = $96.nextSub;
         if ($97 !== undefined) {
-          const $98 = {
+          $68 = $97;
+          $73 = {
             value: $66,
             prev: $72,
           };
-          $68 = $97;
-          $73 = $98;
         } else {
           $68 = $66;
           $73 = $72;
@@ -36,24 +35,24 @@ function $0($1) {
       }
     }
     if ($66 !== undefined) {
-      const $99 = $66.nextSub;
+      const $98 = $66.nextSub;
       $61 = $66;
-      $65 = $99;
+      $65 = $98;
       $69 = $72;
       continue;
     }
     $70 = $72;
     while ($70 !== undefined) {
-      const $100 = $70.value;
-      const $101 = $70.prev;
-      if ($100 !== undefined) {
-        const $102 = $100.nextSub;
-        $61 = $100;
-        $65 = $102;
-        $69 = $101;
+      const $99 = $70.value;
+      const $100 = $70.prev;
+      if ($99 !== undefined) {
+        const $101 = $99.nextSub;
+        $61 = $99;
+        $65 = $101;
+        $69 = $100;
         continue top;
       }
-      $70 = $101;
+      $70 = $100;
       continue;
     }
     break;
