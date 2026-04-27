@@ -8,6 +8,7 @@ import {
   ConditionalExpressionOp,
   HoleOp,
   LiteralOp,
+  LogicalExpressionOp,
   NewExpressionOp,
   ObjectExpressionOp,
   ObjectMethodOp,
@@ -41,6 +42,7 @@ import { generateFunctionExpressionOp } from "./generateFunctionExpression";
 import { generateHoleOp } from "./generateHole";
 import { generateImportExpressionOp } from "./generateImportExpression";
 import { generateLiteralOp } from "./generateLiteral";
+import { generateLogicalExpressionOp } from "./generateLogicalExpression";
 import { generateMetaPropertyOp } from "./generateMetaProperty";
 import { generateNewExpressionOp } from "./generateNewExpression";
 import { generateObjectExpressionOp } from "./generateObjectExpression";
@@ -90,6 +92,8 @@ export function generateValueOp(
     return generateImportExpressionOp(instruction, generator);
   } else if (instruction instanceof LiteralOp) {
     return generateLiteralOp(instruction, generator);
+  } else if (instruction instanceof LogicalExpressionOp) {
+    return generateLogicalExpressionOp(instruction, generator);
   } else if (instruction instanceof MetaPropertyOp) {
     return generateMetaPropertyOp(instruction, generator);
   } else if (instruction instanceof NewExpressionOp) {

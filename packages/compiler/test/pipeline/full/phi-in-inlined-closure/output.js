@@ -7,7 +7,7 @@ function $1() {
   return globalThis.useMemo(() => {
     let $24;
     if ($8) {
-      $24 = $9 != null ? $9 : "default";
+      $24 = $9 ?? "default";
     } else {
       $24 = "fallback";
     }

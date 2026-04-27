@@ -18,7 +18,7 @@ function $0($1) {
     } else {
       $10 = $7;
     }
-    const $83 = $10 ? $10 : {};
+    const $83 = $10 || {};
     const $84 = typeof $83.line === "number";
     if ($84) {
       $23 = $83.line > 0;

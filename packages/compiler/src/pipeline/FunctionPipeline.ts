@@ -16,6 +16,7 @@ import { ReassociationPass } from "./passes/ReassociationPass";
 import { ValueMaterializationPass } from "./passes/ValueMaterializationPass";
 import { ConditionalExpressionReconstitutionPass } from "./reconstitution/passes/ConditionalExpressionReconstitutionPass";
 import { ExportDeclarationMergingPass } from "./reconstitution/passes/ExportDeclarationMergingPass";
+import { LogicalExpressionReconstitutionPass } from "./reconstitution/passes/LogicalExpressionReconstitutionPass";
 import { SSABuilder } from "./ssa/SSABuilder";
 import { SSAEliminator } from "./ssa/SSAEliminator";
 
@@ -167,6 +168,14 @@ function buildPostSSACleanupPasses(options: CompilerOptions): FunctionPass[] {
 
 function buildSyntaxReconstitutionPasses(options: CompilerOptions): FunctionPass[] {
   const passes: FunctionPass[] = [];
+  if (options.enableLogicalExpressionReconstitutionPass) {
+    passes.push(
+      funcPass(
+        "logical-expression-reconstitution",
+        (funcOp) => new LogicalExpressionReconstitutionPass(funcOp),
+      ),
+    );
+  }
   if (options.enableConditionalExpressionReconstitutionPass) {
     passes.push(
       funcPass(

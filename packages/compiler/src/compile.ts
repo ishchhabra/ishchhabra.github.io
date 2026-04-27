@@ -27,6 +27,8 @@ export const CompilerOptionsSchema = z.object({
   enableDeadCodeEliminationPass: z.boolean().default(true),
   /** Whether to reconstitute SSA diamonds into JS conditional expressions */
   enableConditionalExpressionReconstitutionPass: z.boolean().default(true),
+  /** Whether to reconstitute SSA diamonds into JS logical expressions */
+  enableLogicalExpressionReconstitutionPass: z.boolean().default(true),
 
   /** Whether to enable the late optimizer */
   enableLateOptimizer: z.boolean().default(true),
