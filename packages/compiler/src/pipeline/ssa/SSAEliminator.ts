@@ -8,12 +8,14 @@ import {
   StoreContextOp,
   StoreLocalOp,
 } from "../../ir";
-import { Edge, incomingEdges, mergeSinks } from "../../ir/cfg";
+import { incomingEdges, mergeSinks } from "../../ir/cfg";
 import { BasicBlock } from "../../ir/core/Block";
 import { FuncOp } from "../../ir/core/FuncOp";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { successorArgValue } from "../../ir/core/TermOp";
 import { Value } from "../../ir/core/Value";
+import { DominatorTree } from "../analysis/DominatorTreeAnalysis";
+import { EdgeCopyScheduler } from "./EdgeCopyScheduler";
 
 /**
  * Out-of-SSA lowering.
@@ -21,20 +23,15 @@ import { Value } from "../../ir/core/Value";
  * Two independent steps:
  *
  * 1. **Phi destruction** (Sreedhar Method I). Uniform over every
- *    SSA merge sink — regular block params *and* structured-op
- *    `resultPlaces` — via {@link mergeSinks} +
- *    {@link incomingEdges}. For each sink param declare a
- *    backing `let` at function entry, then at each predecessor edge
- *    emit a `param = arg` copy store right before that predecessor's
- *    terminator. Placing stores before the terminator works without
- *    splitting critical edges because along any path the *last*
- *    store wins.
+ *    SSA merge block via {@link mergeSinks} + {@link incomingEdges}.
+ *    For each sink param declare a backing `let` at function entry,
+ *    then at each predecessor edge emit a `param = arg` copy store.
  *
- *    Works identically for flat-CFG `JumpTermOp` edges, `WhileOp` iter-
- *    arg ports (op-entry / condition-true / yield-back /
- *    condition-false), and `IfOp` arm yields. No op-specific
- *    handling — the edge walker abstracts the structured-op port
- *    wiring away.
+ *    Structured loop iter args are still canonical CFG block params.
+ *    The loop-carried helper classifies incoming loop edges as
+ *    initial args vs yield args, so the JS `for` lowering boundary
+ *    can place copies without making every optimizer learn a second
+ *    SSA form.
  *
  * 2. **Intra-block interference preservation**. When an SSA value
  *    loaded from a source variable X is used after a later
@@ -45,18 +42,33 @@ import { Value } from "../../ir/core/Value";
  *    the LoadLocal to read from the snapshot.
  */
 export class SSAEliminator {
+  #domTree: DominatorTree | undefined;
+  #edgeCopyScheduler: EdgeCopyScheduler | undefined;
+
   constructor(
     private readonly funcOp: FuncOp,
     private readonly moduleIR: ModuleIR,
   ) {}
 
   public eliminate(): void {
-    this.#eliminatePhis();
-    this.#preserveInterferingLoads();
+    this.#domTree = DominatorTree.compute(this.funcOp);
+    this.#edgeCopyScheduler = new EdgeCopyScheduler(
+      this.funcOp,
+      this.moduleIR,
+      this.#domTree,
+    );
+    try {
+      this.#eliminatePhis();
+      this.#edgeCopyScheduler.emit();
+      this.#preserveInterferingLoads();
+    } finally {
+      this.#domTree = undefined;
+      this.#edgeCopyScheduler = undefined;
+    }
   }
 
   // ---------------------------------------------------------------------
-  // Phi destruction (uniform over block params + op-results sinks)
+  // Phi destruction (uniform over block params)
   // ---------------------------------------------------------------------
 
   #eliminatePhis(): void {
@@ -66,15 +78,7 @@ export class SSAEliminator {
     // order deterministic regardless of block iteration.
     //
     // Every merge param needs a backing `let` declaration and per-
-    // edge copy stores. That includes both SSABuilder-synthesized
-    // params (with `originalDeclarationId`, e.g. IDF-placed block
-    // params and IfOp/WhileOp iter-arg lifts) AND frontend-created
-    // result places with no source-level binding (e.g. IfOp result
-    // for a `cond ? a : b` ternary or a `x ??= y` logical
-    // assignment). Codegen's ternary fast-path will bypass the
-    // emitted copy stores when both arms qualify; non-ternary paths
-    // rely on the declaration to back downstream references to the
-    // result place.
+    // edge copy stores.
     type SinkSite = { sink: BasicBlock; param: Value; index: number };
     const sites: SinkSite[] = [];
     for (const sink of mergeSinks(this.funcOp)) {
@@ -101,7 +105,7 @@ export class SSAEliminator {
         // condition edges of a WhileOp share args with their own
         // beforeRegion params when the loop body doesn't mutate).
         if (arg.id === param.id) continue;
-        this.#insertCopyStore(edge, param, arg);
+        this.#edgeCopyScheduler?.add(edge, param, arg);
       }
     }
   }
@@ -110,28 +114,14 @@ export class SSAEliminator {
    * Declare the backing `let $param;` for an SSA merge sink at the
    * dominator of all uses.
    *
-   *   - For a block-params sink, that's the **function entry block**
-   *     — the classical Cytron/Sreedhar convention. Block params can
-   *     be referenced from arbitrarily many blocks post-merge, and
-   *     the function entry dominates every block. Appended via
-   *     `appendOp` (before the terminator) so they sit at the end
-   *     of the prologue.
-   *
-   *   - For an op-results sink, that's the **parent block of the
-   *     owning op**, inserted immediately before the op. The op's
-   *     results are only visible to ops that follow the op in its
-   *     parent block; declaring inline keeps the backing `let` at
-   *     the natural source position (the same place generators used
-   *     to emit it before SSA uniformity moved the job to
-   *     SSAEliminator) and avoids ordering conflicts with any
-   *     user-source declarations at the top of the entry block.
+   * That's the **function entry block** — the classical Cytron/
+   * Sreedhar convention. Block params can be referenced from
+   * arbitrarily many blocks post-merge, and the function entry
+   * dominates every block. Appending before the terminator keeps
+   * declarations in a single prologue-style band.
    */
   #insertParamDeclaration(sink: BasicBlock, param: Value): void {
     // Declaration metadata is keyed by the param's own declarationId.
-    // Frontend-created result places (e.g. ??= / ternary) have no
-    // `originalDeclarationId` — they're SSA-internal merge points —
-    // but they still need a backing `let` so downstream references
-    // resolve at runtime.
     this.moduleIR.environment.ensureSyntheticDeclarationMetadata(param.declarationId, "let", param);
 
     const env = this.moduleIR.environment;
@@ -147,34 +137,6 @@ export class SSAEliminator {
     }
   }
 
-  /**
-   * Resolve where the backing `let $param;` declaration for `sink`
-   * should physically live so that it precedes every use in source
-   * order AND sits at the source variable's natural scope point:
-   *
-   *   - **Op-results sink** (IfOp/WhileOp `resultPlaces`): the
-   *     declaration goes in the enclosing structured op's *parent*
-   *     block, immediately before the op itself. The op's results
-   *     are visible only after the op; inlining the `let` at this
-   *     position gives the natural "declare just above the
-   *     statement that produces it" pattern.
-   *
-   *   - **Block sink for a structured-op region entry** (iter-arg
-   *     block params on WhileOp's before/body-region entries):
-   *     same as op-results — declaration goes in the structured
-   *     op's parent block before the op. Iter-arg block params
-   *     receive values on the op-entry edge and via the body's
-   *     yield back-edge; both reach the param through the
-   *     enclosing op, and the param has to be declared *before*
-   *     the op's uses (e.g. a `while (...)` test that reads it).
-   *
-   *   - **Block sink for a flat-CFG merge block** (IDF-placed
-   *     block params at dominance frontiers): declaration at the
-   *     function entry block, appended before the terminator.
-   *     Those merges live in a multi-block CFG whose dominator is
-   *     the function entry; appending before the terminator keeps
-   *     declarations in a single prologue-style band.
-   */
   #resolveDeclarationInsertion(
     _sink: BasicBlock,
   ):
@@ -183,23 +145,6 @@ export class SSAEliminator {
     // All sinks are blocks in the flat CFG. Declarations land at the
     // function entry block — any merge point is dominated by it.
     return { kind: "append", block: this.funcOp.entryBlock };
-  }
-
-  #insertCopyStore(edge: Edge, param: Value, arg: Value): void {
-    const storeId = makeOperationId(this.moduleIR.environment.nextOperationId++);
-    const storePlace = this.moduleIR.environment.createValue(param.declarationId);
-    const storeInstr = new StoreLocalOp(storeId, storePlace, param, arg);
-
-    // Single-successor predecessor (JumpTermOp): copy can sit in the
-    // predecessor itself before the terminator — the path from
-    // predecessor entry to sink is uncontended. Multi-successor
-    // (BranchTermOp): the edge is critical; split it so the copy
-    // executes only on this arm.
-    if (edge.terminator.successorIndices().length === 1) {
-      edge.pred.appendOp(storeInstr);
-    } else {
-      edge.split().appendOp(storeInstr);
-    }
   }
 
   // ---------------------------------------------------------------------

@@ -2,16 +2,16 @@ function $0($1) {
   const $95 = $1.nextSub;
   let $61;
   let $64;
-  $64 = $1;
   let $65;
   let $66;
-  $66 = $95;
   let $68;
   let $69;
   let $70;
   let $72;
-  $72 = undefined;
   let $73;
+  $64 = $1;
+  $66 = $95;
+  $72 = undefined;
   top: do {
     if ($64.flags & 1) {
       const $96 = $64.sub;

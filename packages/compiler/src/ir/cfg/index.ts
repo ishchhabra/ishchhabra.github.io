@@ -8,3 +8,13 @@ export {
   outgoingEdges,
   threadEdgeThroughEmptyJump,
 } from "./edges";
+export {
+  isStructuredLoopTermOp,
+  structuredLoopCarriedEdge,
+  structuredLoopIterArgs,
+  structuredLoopYieldCopyPlacement,
+  type DominanceQuery,
+  type StructuredLoopCarriedEdge,
+  type StructuredLoopIterArgs,
+  type StructuredLoopTermOp,
+} from "./loopCarried";
