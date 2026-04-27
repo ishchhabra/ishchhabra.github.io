@@ -51,7 +51,6 @@ if (includeNodeModules) {
   const DENY_LIST = [
     "shiki",
     "@shikijs/",
-    "clsx",
     "zod",
     "better-call",
     "micromark-core-commonmark",
