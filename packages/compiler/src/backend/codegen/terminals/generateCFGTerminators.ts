@@ -658,7 +658,7 @@ export function generateSwitchTerm(
         throw new Error(`Value ${c.test.id} not found for SwitchTermOp case`);
       }
       t.assertExpression(testNode);
-      const stmts = emitArm(c.block, funcOp, generator);
+      const stmts = emitArm(c.target.block, funcOp, generator);
       cases.push(t.switchCase(testNode, stmts));
     }
     if (term.defaultBlock !== term.fallthroughBlock) {

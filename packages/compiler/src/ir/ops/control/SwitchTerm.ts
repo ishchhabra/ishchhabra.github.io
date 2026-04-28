@@ -7,12 +7,13 @@ import {
   type ControlFlowFacts,
   type BlockTarget,
   invalidTargetIndex,
+  type SuccessorArg,
   TermOp,
 } from "../../core/TermOp";
 
 export interface SwitchCase {
   readonly test: Value;
-  readonly block: BasicBlock;
+  readonly target: BlockTarget;
 }
 
 export class SwitchTermOp extends TermOp {
@@ -20,11 +21,15 @@ export class SwitchTermOp extends TermOp {
     id: OperationId,
     public readonly discriminant: Value,
     public cases: readonly SwitchCase[],
-    public defaultBlock: BasicBlock,
+    public defaultTarget: BlockTarget,
     public fallthroughBlock: BasicBlock,
     public readonly label?: string,
   ) {
     super(id);
+  }
+
+  get defaultBlock(): BasicBlock {
+    return this.defaultTarget.block;
   }
 
   operands(): Value[] {
@@ -36,9 +41,8 @@ export class SwitchTermOp extends TermOp {
   }
 
   target(index: number): BlockTarget {
-    if (index >= 0 && index < this.cases.length)
-      return { block: this.cases[index].block, args: [] };
-    if (index === this.cases.length) return { block: this.defaultBlock, args: [] };
+    if (index >= 0 && index < this.cases.length) return this.cases[index].target;
+    if (index === this.cases.length) return this.defaultTarget;
     if (index === this.cases.length + 1) return { block: this.fallthroughBlock, args: [] };
     return invalidTargetIndex(this.constructor.name, index);
   }
@@ -58,16 +62,15 @@ export class SwitchTermOp extends TermOp {
   }
 
   withTarget(index: number, successor: BlockTarget): SwitchTermOp {
-    assertNoTargetArgs(this.constructor.name, successor);
     if (index >= 0 && index < this.cases.length) {
       const cases = this.cases.map((switchCase, caseIndex) =>
-        caseIndex === index ? { ...switchCase, block: successor.block } : switchCase,
+        caseIndex === index ? { ...switchCase, target: successor } : switchCase,
       );
       return new SwitchTermOp(
         this.id,
         this.discriminant,
         cases,
-        this.defaultBlock,
+        this.defaultTarget,
         this.fallthroughBlock,
         this.label,
       );
@@ -77,17 +80,18 @@ export class SwitchTermOp extends TermOp {
         this.id,
         this.discriminant,
         this.cases,
-        successor.block,
+        successor,
         this.fallthroughBlock,
         this.label,
       );
     }
     if (index === this.cases.length + 1) {
+      assertNoTargetArgs(this.constructor.name, successor);
       return new SwitchTermOp(
         this.id,
         this.discriminant,
         this.cases,
-        this.defaultBlock,
+        this.defaultTarget,
         successor.block,
         this.label,
       );
@@ -101,14 +105,20 @@ export class SwitchTermOp extends TermOp {
     const newCases = this.cases.map((c) => {
       const newTest = values.get(c.test) ?? c.test;
       if (newTest !== c.test) changed = true;
-      return { test: newTest, block: c.block };
+      const newArgs = rewriteSuccessorArgs(c.target.args, values, () => {
+        changed = true;
+      });
+      return { test: newTest, target: { block: c.target.block, args: newArgs } };
+    });
+    const newDefaultArgs = rewriteSuccessorArgs(this.defaultTarget.args, values, () => {
+      changed = true;
     });
     if (!changed) return this;
     return new SwitchTermOp(
       this.id,
       newDisc,
       newCases,
-      this.defaultBlock,
+      { block: this.defaultBlock, args: newDefaultArgs },
       this.fallthroughBlock,
       this.label,
     );
@@ -120,11 +130,34 @@ export class SwitchTermOp extends TermOp {
       remapPlace(ctx, this.discriminant),
       this.cases.map((c) => ({
         test: remapPlace(ctx, c.test),
-        block: ctx.blockMap.get(c.block) ?? c.block,
+        target: cloneTarget(ctx, c.target),
       })),
-      ctx.blockMap.get(this.defaultBlock) ?? this.defaultBlock,
+      cloneTarget(ctx, this.defaultTarget),
       ctx.blockMap.get(this.fallthroughBlock) ?? this.fallthroughBlock,
       this.label,
     );
   }
+}
+
+function rewriteSuccessorArgs(
+  args: readonly SuccessorArg[],
+  values: Map<Value, Value>,
+  onChanged: () => void,
+): SuccessorArg[] {
+  return args.map((arg) => {
+    const rewritten = values.get(arg.value) ?? arg.value;
+    if (rewritten === arg.value) return arg;
+    onChanged();
+    return { ...arg, value: rewritten };
+  });
+}
+
+function cloneTarget(ctx: CloneContext, target: BlockTarget): BlockTarget {
+  return {
+    block: ctx.blockMap.get(target.block) ?? target.block,
+    args: target.args.map((arg) => ({
+      ...arg,
+      value: ctx.valueMap.get(arg.value) ?? arg.value,
+    })),
+  };
 }

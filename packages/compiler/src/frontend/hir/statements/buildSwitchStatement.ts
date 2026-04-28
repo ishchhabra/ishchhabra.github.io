@@ -101,7 +101,7 @@ export function buildSwitchStatement(
     if (test === null) {
       defaultBlock = block;
     } else {
-      termCases.push({ test, block });
+      termCases.push({ test, target: valueBlockTarget(block) });
     }
   }
   if (defaultBlock === null) {
@@ -113,7 +113,7 @@ export function buildSwitchStatement(
       createOperationId(environment),
       discriminantPlace,
       termCases,
-      defaultBlock,
+      valueBlockTarget(defaultBlock),
       fallthroughBlock,
       label,
     ),
