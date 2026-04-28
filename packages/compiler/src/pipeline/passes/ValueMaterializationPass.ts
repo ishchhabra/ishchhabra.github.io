@@ -34,6 +34,7 @@ import { FuncOp } from "../../ir/core/FuncOp";
 import { Value } from "../../ir/core/Value";
 import { ModuleIR } from "../../ir/core/ModuleIR";
 import { isDCERemovable } from "../../ir/effects/predicates";
+import { AliasOracle } from "../../ir/memory/AliasOracle";
 import type { PassResult } from "../PassManager";
 
 type MaterializationDecision =
@@ -93,11 +94,14 @@ type MaterializationDecision =
  */
 export class ValueMaterializationPass {
   private protectedRegionCache: readonly Set<BasicBlock>[] | undefined;
+  private readonly aliasOracle: AliasOracle;
 
   constructor(
     private readonly funcOp: FuncOp,
     private readonly moduleIR: ModuleIR,
-  ) {}
+  ) {
+    this.aliasOracle = new AliasOracle(moduleIR.environment);
+  }
 
   public run(): PassResult {
     let changed = false;
@@ -157,7 +161,8 @@ export class ValueMaterializationPass {
     const useCount = place.users.size;
     if (useCount === 0) return false; // DCE leftover or standalone-emitted
 
-    const singleUser = useCount === 1 ? (place.users.values().next().value as Operation) : undefined;
+    const singleUser =
+      useCount === 1 ? (place.users.values().next().value as Operation) : undefined;
 
     // Spilling `obj.m` into `const t = obj.m; t(args)` detaches the
     // JS receiver. Keep property reads inline when they are a call's
@@ -235,7 +240,7 @@ export class ValueMaterializationPass {
     if (defIndex < 0 || userIndex < 0) return false;
     for (let i = defIndex + 1; i < userIndex; i++) {
       const op = block.operations[i];
-      if (!isReorderingHazard(op)) continue;
+      if (!this.isReorderingHazard(op)) continue;
       // Will this hazard inline into `user`? If yes, it's an operand
       // evaluated during `user`'s expression eval — no reorder
       // relative to `definer`. If no, it's a standalone statement
@@ -243,6 +248,11 @@ export class ValueMaterializationPass {
       if (!flowsTo(op, user)) return true;
     }
     return false;
+  }
+
+  private isReorderingHazard(op: Operation): boolean {
+    const effects = op.getMemoryEffects(this.moduleIR.environment);
+    return effects.writes.length > 0 || this.aliasOracle.isControlBarrier(op);
   }
 
   private materializedNameEscapesProtectedRegion(op: Operation): boolean {
@@ -441,24 +451,4 @@ function isMethodCalleeOf(user: Operation, operand: Value): boolean {
   if (user instanceof CallExpressionOp) return user.callee === operand;
   if (user instanceof NewExpressionOp) return user.callee === operand;
   return false;
-}
-
-function isReorderingHazard(op: Operation): boolean {
-  const name = op.constructor.name;
-  return (
-    name === "StoreLocalOp" ||
-    name === "StoreContextOp" ||
-    name === "StoreStaticPropertyOp" ||
-    name === "StoreDynamicPropertyOp" ||
-    name === "DeleteStaticPropertyOp" ||
-    name === "DeleteDynamicPropertyOp" ||
-    name === "UpdateExpressionOp" ||
-    name === "CallExpressionOp" ||
-    name === "NewExpressionOp" ||
-    name === "SuperCallOp" ||
-    name === "TaggedTemplateExpressionOp" ||
-    name === "AwaitExpressionOp" ||
-    name === "YieldExpressionOp" ||
-    name === "ImportExpressionOp"
-  );
 }

@@ -2,6 +2,7 @@ function $0($3, $4) {
   return $3 + $4;
 }
 function $1({ code: $8, lang: $9 }) {
+  const $56 = $0($8, $9);
   return (
     <pre>
       <code
@@ -9,7 +10,7 @@ function $1({ code: $8, lang: $9 }) {
           fontFamily: "mono",
         }}
         dangerouslySetInnerHTML={{
-          __html: $0($8, $9),
+          __html: $56,
         }}
       />
     </pre>

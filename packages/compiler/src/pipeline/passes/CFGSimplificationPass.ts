@@ -77,9 +77,10 @@ import type { PassResult } from "../PassManager";
 export class CFGSimplificationPass extends FunctionPassBase {
   protected step(): PassResult {
     const folded = this.foldTerminators();
+    const merged = this.mergeSinglePredecessorJumpBlocks();
     const threaded = this.threadEmptyJumpBlocks();
     const removed = this.removeUnreachableBlocks();
-    return { changed: folded || threaded || removed };
+    return { changed: folded || merged || threaded || removed };
   }
 
   private foldTerminators(): boolean {
@@ -155,6 +156,38 @@ export class CFGSimplificationPass extends FunctionPassBase {
         if (!threadEdgeThroughEmptyJump(new Edge(block, index, this.funcOp))) continue;
         changed = true;
       }
+    }
+    return changed;
+  }
+
+  private mergeSinglePredecessorJumpBlocks(): boolean {
+    let changed = false;
+    for (const block of [...this.funcOp.blocks]) {
+      if (block === this.funcOp.entryBlock) continue;
+      if (block.params.length !== 0) continue;
+      if (this.hasStructuredTargetUse(block)) continue;
+
+      const preds = [...block.predecessors()];
+      if (preds.length !== 1) continue;
+
+      const pred = preds[0];
+      if (pred === block) continue;
+      const predTerm = pred.terminal;
+      if (!(predTerm instanceof JumpTermOp)) continue;
+      if (predTerm.targetBlock !== block) continue;
+      if (predTerm.args.length !== 0) continue;
+
+      const terminal = block.terminal;
+      if (!(terminal instanceof JumpTermOp)) continue;
+      if (terminal.targetBlock === block) continue;
+
+      while (block.operations.length > 0) {
+        const op = block.operations[0];
+        block.removeOpAt(0);
+        pred.appendOp(op);
+      }
+      pred.replaceTerminal(new JumpTermOp(predTerm.id, terminal.jumpTarget));
+      changed = true;
     }
     return changed;
   }

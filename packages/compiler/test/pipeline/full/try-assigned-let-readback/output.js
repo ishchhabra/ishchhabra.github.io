@@ -1,11 +1,11 @@
 function $0($1) {
-  let $26;
+  let $28;
   try {
-    $26 = JSON.parse(sessionStorage.getItem("k") || "{}");
+    $28 = JSON.parse(sessionStorage.getItem("k") || "{}");
   } catch ($14) {
     console.error($14);
     return;
   }
-  return $26[$1];
+  return $28[$1];
 }
 export { $0 as restore };

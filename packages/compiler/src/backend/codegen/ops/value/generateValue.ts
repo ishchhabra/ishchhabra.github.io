@@ -1,6 +1,7 @@
 import * as t from "@babel/types";
 import {
   ArrayExpressionOp,
+  AssignmentExpressionOp,
   BinaryExpressionOp,
   CallExpressionOp,
   ClassMethodOp,
@@ -30,6 +31,7 @@ import { ThisExpressionOp } from "../../../../ir/ops/prop/ThisExpression";
 import { ClassExpressionOp } from "../../../../ir/ops/class/ClassExpression";
 import { CodeGenerator } from "../../../CodeGenerator";
 import { generateArrayExpressionOp } from "./generateArrayExpression";
+import { generateAssignmentExpressionOp } from "./generateAssignmentExpression";
 import { generateClassExpressionOp } from "./generateClassExpression";
 import { generateClassMethodOp } from "./generateClassMethod";
 import { generateClassPropertyOp } from "./generateClassProperty";
@@ -68,6 +70,8 @@ export function generateValueOp(
 ): t.Expression | t.ObjectMethod | t.ObjectProperty | t.ClassMethod | t.ClassProperty | null {
   if (instruction instanceof ClassExpressionOp) {
     return generateClassExpressionOp(instruction, generator);
+  } else if (instruction instanceof AssignmentExpressionOp) {
+    return generateAssignmentExpressionOp(instruction, generator);
   } else if (instruction instanceof ClassMethodOp) {
     return generateClassMethodOp(instruction, generator);
   } else if (instruction instanceof ClassPropertyOp) {

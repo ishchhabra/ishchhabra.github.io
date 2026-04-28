@@ -49,6 +49,7 @@ import { ExportSpecifierOp } from "./ops/module/ExportSpecifier";
 import { ImportDeclarationOp } from "./ops/module/ImportDeclaration";
 import { ImportSpecifierOp } from "./ops/module/ImportSpecifier";
 import { AssignmentPatternOp } from "./ops/pattern/AssignmentPattern";
+import { AssignmentExpressionOp } from "./ops/arith/AssignmentExpression";
 import { ArrayExpressionOp } from "./ops/object/ArrayExpression";
 import { ArrowFunctionExpressionOp } from "./ops/func/ArrowFunctionExpression";
 import { AwaitExpressionOp } from "./ops/call/AwaitExpression";
@@ -86,6 +87,7 @@ import { YieldExpressionOp } from "./ops/call/YieldExpression";
 // ---------------------------------------------------------------------
 
 export type ValueOp =
+  | AssignmentExpressionOp
   | ArrayExpressionOp
   | ArrowFunctionExpressionOp
   | AwaitExpressionOp
@@ -164,6 +166,7 @@ export type PatternOp = AssignmentPatternOp;
 // ---------------------------------------------------------------------
 
 const VALUE_CTORS = new Set<Function>([
+  AssignmentExpressionOp,
   ArrayExpressionOp,
   ArrowFunctionExpressionOp,
   AwaitExpressionOp,

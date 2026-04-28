@@ -1,6 +1,7 @@
 import type { CompilerOptions } from "../compile";
 import { CommonJSExportCollectorPass } from "../frontend/passes/CommonJSExportCollectorPass";
 import type { ProjectUnit } from "../frontend/ProjectBuilder";
+import { CaptureBlockParamFlowSnapshotPass } from "./analysis/BlockParamFlowSnapshot";
 import { LateCopyPropagationPass } from "./late-optimizer/passes/LateCopyPropagationPass";
 import { LateDeadCodeEliminationPass } from "./late-optimizer/passes/LateDeadCodeEliminationPass";
 import { ScalarReplacementOfAggregatesPass } from "./late-optimizer/passes/ScalarReplacementOfAggregatesPass";
@@ -14,6 +15,7 @@ import { DeadCodeEliminationPass } from "./passes/DeadCodeEliminationPass";
 import { ExpressionInliningPass } from "./passes/ExpressionInliningPass";
 import { ReassociationPass } from "./passes/ReassociationPass";
 import { ValueMaterializationPass } from "./passes/ValueMaterializationPass";
+import { AssignmentExpressionReconstitutionPass } from "./reconstitution/passes/AssignmentExpressionReconstitutionPass";
 import { ConditionalExpressionReconstitutionPass } from "./reconstitution/passes/ConditionalExpressionReconstitutionPass";
 import { ExportDeclarationMergingPass } from "./reconstitution/passes/ExportDeclarationMergingPass";
 import { LogicalExpressionReconstitutionPass } from "./reconstitution/passes/LogicalExpressionReconstitutionPass";
@@ -23,6 +25,7 @@ import { SSAEliminator } from "./ssa/SSAEliminator";
 export interface FunctionPhase {
   readonly name: string;
   readonly stage?: PipelineStage;
+  readonly fixpoint?: boolean;
   readonly passes: readonly FunctionPass[];
 }
 
@@ -53,8 +56,13 @@ export function buildFunctionPipeline(
       passes: options.enableOptimizer ? buildSSAOptimizationPasses(projectUnit, options) : [],
     },
     {
-      name: "syntax-reconstitution",
-      passes: buildSyntaxReconstitutionPasses(options),
+      name: "block-param-flow-snapshot",
+      passes: [
+        funcPass(
+          "capture-block-param-flow-snapshot",
+          (funcOp, AM) => new CaptureBlockParamFlowSnapshotPass(funcOp, AM),
+        ),
+      ],
     },
     {
       name: "out-of-ssa",
@@ -66,6 +74,15 @@ export function buildFunctionPipeline(
     {
       name: "post-ssa-cleanup",
       stage: "late-optimized",
+      passes: options.enableLateOptimizer ? buildPostSSACleanupPasses(options) : [],
+    },
+    {
+      name: "syntax-reconstitution",
+      fixpoint: true,
+      passes: buildSyntaxReconstitutionPasses(options),
+    },
+    {
+      name: "post-reconstitution-cleanup",
       passes: options.enableLateOptimizer ? buildPostSSACleanupPasses(options) : [],
     },
     {
@@ -168,6 +185,14 @@ function buildPostSSACleanupPasses(options: CompilerOptions): FunctionPass[] {
 
 function buildSyntaxReconstitutionPasses(options: CompilerOptions): FunctionPass[] {
   const passes: FunctionPass[] = [];
+  if (options.enableAssignmentExpressionReconstitutionPass) {
+    passes.push(
+      funcPass(
+        "assignment-expression-reconstitution",
+        (funcOp) => new AssignmentExpressionReconstitutionPass(funcOp),
+      ),
+    );
+  }
   if (options.enableLogicalExpressionReconstitutionPass) {
     passes.push(
       funcPass(
@@ -186,6 +211,9 @@ function buildSyntaxReconstitutionPasses(options: CompilerOptions): FunctionPass
         (funcOp) => new ConditionalExpressionReconstitutionPass(funcOp),
       ),
     );
+  }
+  if (options.enableCFGSimplificationPass) {
+    passes.push(funcPass("cfg-simplification", (funcOp) => new CFGSimplificationPass(funcOp)));
   }
   return passes;
 }

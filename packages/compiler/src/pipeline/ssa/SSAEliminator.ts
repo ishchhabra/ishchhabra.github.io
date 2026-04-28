@@ -20,6 +20,7 @@ import { Value } from "../../ir/core/Value";
 import { DominatorTree } from "../analysis/DominatorTreeAnalysis";
 import type { PassResult } from "../PassManager";
 import { EdgeCopyScheduler } from "./EdgeCopyScheduler";
+import { recordPhiLowering } from "./PhiLoweringResult";
 
 /**
  * Out-of-SSA lowering.
@@ -134,6 +135,7 @@ export class SSAEliminator {
 
     const declId = makeOperationId(env.nextOperationId++);
     const declInstr = new BindingDeclOp(declId, param, "let");
+    recordPhiLowering(this.funcOp, param, param.declarationId);
 
     const insertion = this.#resolveDeclarationInsertion(sink);
     if (insertion.kind === "append") {

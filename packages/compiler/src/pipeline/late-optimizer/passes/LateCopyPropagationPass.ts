@@ -1,4 +1,13 @@
-import { BlockId, DeclarationId, LoadLocalOp, Value, StoreLocalOp } from "../../../ir";
+import {
+  BindingDeclOp,
+  BindingInitOp,
+  BlockId,
+  DeclarationId,
+  LoadContextOp,
+  LoadLocalOp,
+  Value,
+  StoreLocalOp,
+} from "../../../ir";
 import { FuncOp } from "../../../ir/core/FuncOp";
 import type { Operation } from "../../../ir/core/Operation";
 import { FunctionPassBase } from "../../FunctionPassBase";
@@ -118,26 +127,43 @@ export class LateCopyPropagationPass extends FunctionPassBase {
     // SSA value that x now aliases.
     // ------------------------------------------------------------
 
-    if (instr instanceof StoreLocalOp) {
-      const x = instr.lval.declarationId;
-      this.kill(state, x);
-
-      // Only record a copy when the value is a direct variable load
-      // (const x = y). Propagating through computed values (e.g.
-      // AwaitExpression, CallExpression) would cause codegen to re-emit
-      // the defining expression at every use site, duplicating side
-      // effects and computation.
-      const definer = instr.value.def;
-      if (!(definer instanceof LoadLocalOp)) {
-        return;
-      }
-
-      const resolved = this.resolve(state, instr.value.declarationId) ?? instr.value;
-      if (resolved.declarationId !== x) {
-        state.set(x, resolved);
-      }
+    if (instr instanceof BindingDeclOp) {
+      this.kill(state, instr.place.declarationId);
       return;
     }
+
+    if (instr instanceof BindingInitOp) {
+      this.recordCopy(state, instr.place, instr.value);
+      return;
+    }
+
+    if (instr instanceof StoreLocalOp) {
+      this.recordCopy(state, instr.lval, instr.value);
+      return;
+    }
+  }
+
+  private recordCopy(state: CopyState, target: Value, value: Value): void {
+    const x = target.declarationId;
+    this.kill(state, x);
+
+    if (!this.isDirectBindingValue(value)) return;
+
+    const resolved = this.resolve(state, value.declarationId) ?? value;
+    if (resolved.declarationId !== x) {
+      state.set(x, resolved);
+    }
+  }
+
+  private isDirectBindingValue(value: Value): boolean {
+    const definer = value.def;
+    return (
+      definer === undefined ||
+      definer instanceof BindingDeclOp ||
+      definer instanceof BindingInitOp ||
+      definer instanceof LoadLocalOp ||
+      definer instanceof LoadContextOp
+    );
   }
 
   /**

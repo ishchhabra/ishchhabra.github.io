@@ -55,6 +55,11 @@ export {
 } from "./control";
 
 // arith
+export {
+  AssignmentExpressionOp,
+  type AssignmentOperator,
+  type AssignmentTarget,
+} from "./arith/AssignmentExpression";
 export { BinaryExpressionOp, type BinaryOperator } from "./arith/BinaryExpression";
 export { ConditionalExpressionOp } from "./arith/ConditionalExpression";
 export { LogicalExpressionOp, type LogicalOperator } from "./arith/LogicalExpression";

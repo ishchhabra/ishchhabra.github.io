@@ -1,6 +1,6 @@
 function $0() {
   function $1() {
-    $3 = $3 + 1;
+    $3 += 1;
   }
   function $2() {
     return $3;

@@ -43,7 +43,11 @@ export class Pipeline {
 
       for (const funcOp of processingOrder) {
         for (const phase of functionPipeline) {
-          functionPassManager.runOnce(funcOp, phase.passes);
+          if (phase.fixpoint === true) {
+            functionPassManager.runToFixpoint(funcOp, phase.passes);
+          } else {
+            functionPassManager.runOnce(funcOp, phase.passes);
+          }
           if (phase.stage !== undefined) {
             this.observer?.onStage?.(phase.stage, moduleIR, funcOp);
           }
