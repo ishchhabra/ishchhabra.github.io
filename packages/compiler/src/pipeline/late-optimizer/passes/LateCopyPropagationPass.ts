@@ -3,8 +3,8 @@ import {
   BindingInitOp,
   BlockId,
   DeclarationId,
-  LoadContextOp,
   LoadLocalOp,
+  StoreContextOp,
   Value,
   StoreLocalOp,
 } from "../../../ir";
@@ -14,10 +14,11 @@ import { FunctionPassBase } from "../../FunctionPassBase";
 import type { PassResult } from "../../PassManager";
 
 /**
- * Forward Copy Propagation.
+ * Late local copy cleanup.
  *
- * Removes redundant variable copies by rewriting loasd
- * to use the original source variable whenever it is safe to do so.
+ * Removes redundant local variable copies left behind by SSA
+ * elimination by rewriting local loads to read the original source
+ * binding when every processed predecessor agrees on that copy fact.
  *
  * Example:
  *
@@ -93,7 +94,7 @@ export class LateCopyPropagationPass extends FunctionPassBase {
 
     for (const pred of preds) {
       const predState = outState.get(pred.id);
-      if (!predState) continue;
+      if (!predState) return new Map();
 
       if (!result) {
         result = new Map(predState);
@@ -118,15 +119,6 @@ export class LateCopyPropagationPass extends FunctionPassBase {
    * Updates the current copy state according to kill/gen rules.
    */
   private transfer(instr: Operation, state: CopyState): void {
-    // ------------------------------------------------------------
-    // General assignment
-    //
-    //   x = expr
-    //
-    // Kill any previous relationship for x, then remember the current
-    // SSA value that x now aliases.
-    // ------------------------------------------------------------
-
     if (instr instanceof BindingDeclOp) {
       this.kill(state, instr.place.declarationId);
       return;
@@ -141,12 +133,18 @@ export class LateCopyPropagationPass extends FunctionPassBase {
       this.recordCopy(state, instr.lval, instr.value);
       return;
     }
+
+    if (instr instanceof StoreContextOp) {
+      this.kill(state, instr.lval.declarationId);
+      return;
+    }
   }
 
   private recordCopy(state: CopyState, target: Value, value: Value): void {
     const x = target.declarationId;
     this.kill(state, x);
 
+    if (this.isContextDeclaration(x)) return;
     if (!this.isDirectBindingValue(value)) return;
 
     const resolved = this.resolve(state, value.declarationId) ?? value;
@@ -156,14 +154,19 @@ export class LateCopyPropagationPass extends FunctionPassBase {
   }
 
   private isDirectBindingValue(value: Value): boolean {
+    if (this.isContextDeclaration(value.declarationId)) return false;
+
     const definer = value.def;
     return (
       definer === undefined ||
       definer instanceof BindingDeclOp ||
       definer instanceof BindingInitOp ||
-      definer instanceof LoadLocalOp ||
-      definer instanceof LoadContextOp
+      definer instanceof LoadLocalOp
     );
+  }
+
+  private isContextDeclaration(declarationId: DeclarationId): boolean {
+    return this.funcOp.moduleIR.environment.contextDeclarationIds.has(declarationId);
   }
 
   /**
