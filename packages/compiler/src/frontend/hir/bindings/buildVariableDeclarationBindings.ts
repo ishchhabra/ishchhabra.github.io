@@ -1,7 +1,7 @@
 import type * as AST from "../../estree";
 import type { Node, VariableDeclaration } from "oxc-parser";
 import { Environment } from "../../../environment";
-import { BindingDeclOp, type DeclarationKind, LiteralOp, StoreLocalOp } from "../../../ir";
+import { BindingDeclOp, type DeclarationKind } from "../../../ir";
 import { type Scope } from "../../scope/Scope";
 import { FuncOpBuilder } from "../FuncOpBuilder";
 import { isBindingOwnedByScope } from "./isBindingOwnedByScope";
@@ -89,17 +89,8 @@ function buildIdentifierBindings(
   environment.registerDeclaration(identifier.declarationId, functionBuilder.currentBlock.id, place);
   environment.setDeclarationBinding(identifier.declarationId, place);
 
-  // Preserve `var`'s hoisted-and-initialized semantics in the emitted JS.
-  // Reifying this as `let` would introduce TDZ behavior and break both
-  // source-level hoisting and ES module circular import semantics.
   if (declarationKind === "var") {
-    const undefPlace = environment.createValue();
-    functionBuilder.addOp(environment.createOperation(LiteralOp, undefPlace, undefined));
     functionBuilder.addOp(environment.createOperation(BindingDeclOp, place, "var"));
-    const storePlace = environment.createValue();
-    functionBuilder.addOp(
-      environment.createOperation(StoreLocalOp, storePlace, place, undefPlace, []),
-    );
   }
 }
 

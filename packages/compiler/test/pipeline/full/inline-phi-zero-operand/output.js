@@ -1,27 +1,27 @@
 function $0($1, $2, $3) {
-  let $15;
-  let $17;
-  let $43;
-  let $45;
+  let $11;
+  let $13;
+  let $39;
+  let $41;
   if ($1) {
     if ($2) {
-      $17 = $2;
-      $43 = $2;
-      $45 = undefined;
+      $13 = $2;
+      $39 = $2;
+      $41 = undefined;
     } else {
-      $17 = $3;
-      $43 = undefined;
-      $45 = $3;
+      $13 = $3;
+      $39 = undefined;
+      $41 = $3;
     }
-    $15 =
-      ($17,
+    $11 =
+      ($13,
       {
-        x: $43,
-        y: $45,
+        x: $39,
+        y: $41,
       });
   } else {
-    $15 = {};
+    $11 = {};
   }
-  return $15;
+  return $11;
 }
 console.log($0(globalThis.c, globalThis.a, globalThis.b));

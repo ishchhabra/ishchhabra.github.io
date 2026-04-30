@@ -1,2 +1,2 @@
 var $0;
-console.log(undefined);
+console.log($0);

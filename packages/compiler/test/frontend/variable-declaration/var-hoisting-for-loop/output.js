@@ -1,8 +1,8 @@
 function $0() {
   var $1;
-  var $4;
-  let $21;
-  $21 = 0;
-  for (; $21 < 3; $21 += 1) {}
-  return undefined;
+  var $2;
+  let $17;
+  $17 = 0;
+  for (; $17 < 3; $17++) {}
+  return $2;
 }

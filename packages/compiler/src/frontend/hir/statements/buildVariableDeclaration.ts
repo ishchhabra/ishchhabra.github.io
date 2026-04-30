@@ -1,4 +1,3 @@
-import type * as AST from "../../estree";
 import type { VariableDeclaration, VariableDeclarator } from "oxc-parser";
 import { Environment } from "../../../environment";
 import {
@@ -7,10 +6,11 @@ import {
   BindingInitOp,
   LiteralOp,
   ObjectDestructureOp,
-  Value,
   StoreContextOp,
   StoreLocalOp,
+  Value,
 } from "../../../ir";
+import type * as AST from "../../estree";
 import { type Scope } from "../../scope/Scope";
 import { FuncOpBuilder } from "../FuncOpBuilder";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -44,10 +44,15 @@ export function buildVariableDeclaration(
     );
     const place = environment.createValue();
 
-    if (init == null && target.kind === "binding" && kind !== "var" && target.storage === "local") {
+    if (init == null && target.kind === "binding" && target.storage === "local") {
       if (kind === "const") {
         throw new Error("Missing initializer in const declaration");
       }
+
+      if (kind === "var") {
+        return target.place;
+      }
+
       const instruction = environment.createOperation(BindingDeclOp, target.place, kind);
       functionBuilder.addOp(instruction);
       return instruction.place;
