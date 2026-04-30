@@ -92,6 +92,11 @@ export function buildVariableDeclaration(
               kind === "var" ? "assignment" : "declaration",
             )
           : environment.createOperation(StoreLocalOp, place, target.place, valuePlace);
+      environment.registerDeclaration(
+        target.place.declarationId,
+        functionBuilder.currentBlock.id,
+        target.place,
+      );
       functionBuilder.addOp(instruction);
       return place;
     }
