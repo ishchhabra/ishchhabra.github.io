@@ -2,6 +2,7 @@ import type { CompilerOptions } from "../compile";
 import { CommonJSExportCollectorPass } from "../frontend/passes/CommonJSExportCollectorPass";
 import type { ProjectUnit } from "../frontend/ProjectBuilder";
 import { CaptureBlockParamFlowSnapshotPass } from "./analysis/BlockParamFlowSnapshot";
+import { LateCopyCoalescingPass } from "./late-optimizer/passes/LateCopyCoalescingPass";
 import { LateCopyPropagationPass } from "./late-optimizer/passes/LateCopyPropagationPass";
 import { LateDeadCodeEliminationPass } from "./late-optimizer/passes/LateDeadCodeEliminationPass";
 import { ScalarReplacementOfAggregatesPass } from "./late-optimizer/passes/ScalarReplacementOfAggregatesPass";
@@ -67,9 +68,7 @@ export function buildFunctionPipeline(
     {
       name: "out-of-ssa",
       stage: "ssa-eliminated",
-      passes: [
-        funcPass("ssa-eliminator", (funcOp) => new SSAEliminator(funcOp, funcOp.moduleIR)),
-      ],
+      passes: [funcPass("ssa-eliminator", (funcOp) => new SSAEliminator(funcOp, funcOp.moduleIR))],
     },
     {
       name: "post-ssa-cleanup",
@@ -136,13 +135,9 @@ function buildSSAOptimizationPasses(
   );
   const sroa = funcPass(
     "scalar-replacement-of-aggregates",
-    (funcOp, AM) =>
-      new ScalarReplacementOfAggregatesPass(funcOp, funcOp.moduleIR.environment, AM),
+    (funcOp, AM) => new ScalarReplacementOfAggregatesPass(funcOp, funcOp.moduleIR.environment, AM),
   );
-  const capturePruning = funcPass(
-    "capture-pruning",
-    (funcOp) => new CapturePruningPass(funcOp),
-  );
+  const capturePruning = funcPass("capture-pruning", (funcOp) => new CapturePruningPass(funcOp));
 
   const passes: FunctionPass[] = [];
   if (options.enableAlgebraicSimplificationPass) passes.push(algebraicSimp);
@@ -166,6 +161,10 @@ function buildSSAOptimizationPasses(
 }
 
 function buildPostSSACleanupPasses(options: CompilerOptions): FunctionPass[] {
+  const copyCoalescing = funcPass(
+    "late-copy-coalescing",
+    (funcOp) => new LateCopyCoalescingPass(funcOp),
+  );
   const copyProp = funcPass(
     "late-copy-propagation",
     (funcOp) => new LateCopyPropagationPass(funcOp),
@@ -176,8 +175,10 @@ function buildPostSSACleanupPasses(options: CompilerOptions): FunctionPass[] {
   );
 
   const passes: FunctionPass[] = [];
+  if (options.enableLateCopyCoalescingPass) passes.push(copyCoalescing);
   if (options.enableLateCopyPropagationPass) passes.push(copyProp);
   if (options.enableLateDeadCodeEliminationPass) passes.push(dce);
+  if (options.enableLateCopyCoalescingPass) passes.push(copyCoalescing);
   if (options.enableLateCopyPropagationPass) passes.push(copyProp);
   if (options.enableLateDeadCodeEliminationPass) passes.push(dce);
   return passes;
@@ -189,7 +190,7 @@ function buildSyntaxReconstitutionPasses(options: CompilerOptions): FunctionPass
     passes.push(
       funcPass(
         "assignment-expression-reconstitution",
-        (funcOp) => new AssignmentExpressionReconstitutionPass(funcOp),
+        (funcOp, AM) => new AssignmentExpressionReconstitutionPass(funcOp, AM),
       ),
     );
   }

@@ -1,5 +1,4 @@
 import { Environment } from "../../../environment";
-import { Operation, StoreLocalOp } from "../../../ir";
 import { FuncOp } from "../../../ir/core/FuncOp";
 import { isDCERemovable } from "../../../ir/effects/predicates";
 import { FunctionPassBase } from "../../FunctionPassBase";
@@ -35,14 +34,7 @@ export class LateDeadCodeEliminationPass extends FunctionPassBase {
       for (let i = block.operations.length - 1; i >= 0; i--) {
         const instr = block.operations[i];
         if (!isDCERemovable(instr, this.environment)) continue;
-
-        if (instr instanceof StoreLocalOp) {
-          if (instr.results().some((p) => p.users.size > 0)) continue;
-          const definer = instr.value.def;
-          if (definer instanceof Operation && !isDCERemovable(definer, this.environment)) continue;
-        } else {
-          if (instr.results().some((p) => p.users.size > 0)) continue;
-        }
+        if (instr.results().some((p) => p.users.size > 0)) continue;
 
         block.removeOpAt(i);
         changed = true;

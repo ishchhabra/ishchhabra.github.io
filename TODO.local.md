@@ -1,0 +1,1 @@
+- LateCopyPropagationPass: if we ever make it aggressive instead of post-SSA cleanup only, evaluate context-aware copy propagation with LoadContext/StoreContext, closure-call barriers, memory effects, and AliasOracle-backed mod/ref checks. Do not record StoreContext copies in the current cleanup pass.

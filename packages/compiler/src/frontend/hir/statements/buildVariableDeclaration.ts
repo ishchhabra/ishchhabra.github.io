@@ -48,11 +48,9 @@ export function buildVariableDeclaration(
       if (kind === "const") {
         throw new Error("Missing initializer in const declaration");
       }
-
       if (kind === "var") {
         return target.place;
       }
-
       const instruction = environment.createOperation(BindingDeclOp, target.place, kind);
       functionBuilder.addOp(instruction);
       return instruction.place;

@@ -18,7 +18,10 @@ export function generateAssignmentExpressionOp(
   return node;
 }
 
-function generateAssignmentTarget(target: AssignmentTarget, generator: CodeGenerator): t.LVal {
+export function generateAssignmentTarget(
+  target: AssignmentTarget,
+  generator: CodeGenerator,
+): t.LVal {
   switch (target.kind) {
     case "local":
     case "context": {

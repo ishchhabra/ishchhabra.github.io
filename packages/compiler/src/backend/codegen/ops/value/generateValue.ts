@@ -17,6 +17,7 @@ import {
   SequenceExpressionOp,
   TemplateLiteralOp,
   UnaryExpressionOp,
+  UpdateExpressionOp,
 } from "../../../../ir";
 import type { ValueOp } from "../../../../ir/categories";
 import { ImportExpressionOp } from "../../../../ir/ops/call/ImportExpression";
@@ -56,6 +57,7 @@ import { generateTemplateLiteralOp } from "./generateTemplateLiteral";
 import { generateThisExpressionOp } from "./generateThisExpression";
 import { generateTaggedTemplateExpressionOp } from "./generateTaggedTemplateExpression";
 import { generateUnaryExpressionOp } from "./generateUnaryExpression";
+import { generateUpdateExpressionOp } from "./generateUpdateExpression";
 import { SuperCallOp } from "../../../../ir/ops/call/SuperCall";
 import { SuperPropertyOp } from "../../../../ir/ops/prop/SuperProperty";
 import { YieldExpressionOp } from "../../../../ir/ops/call/YieldExpression";
@@ -120,6 +122,8 @@ export function generateValueOp(
     return generateTaggedTemplateExpressionOp(instruction, generator);
   } else if (instruction instanceof UnaryExpressionOp) {
     return generateUnaryExpressionOp(instruction, generator);
+  } else if (instruction instanceof UpdateExpressionOp) {
+    return generateUpdateExpressionOp(instruction, generator);
   } else if (instruction instanceof SuperCallOp) {
     return generateSuperCallOp(instruction, generator);
   } else if (instruction instanceof SuperPropertyOp) {

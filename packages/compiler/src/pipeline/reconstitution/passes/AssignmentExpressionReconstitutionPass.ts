@@ -13,9 +13,12 @@ import {
   StoreDynamicPropertyOp,
   StoreLocalOp,
   StoreStaticPropertyOp,
+  UpdateExpressionOp,
+  type UpdateOperator,
   type Value,
 } from "../../../ir";
 import type { BasicBlock } from "../../../ir/core/Block";
+import type { FuncOp } from "../../../ir/core/FuncOp";
 import { AliasOracle } from "../../../ir/memory/AliasOracle";
 import {
   computedPropertyLocation,
@@ -24,6 +27,9 @@ import {
   staticPropertyLocation,
   type MemoryLocation,
 } from "../../../ir/memory/MemoryLocation";
+import type { AnalysisManager } from "../../analysis/AnalysisManager";
+import type { ValueFacts } from "../../analysis/ValueFactsAnalysis";
+import { ValueFactsAnalysis } from "../../analysis/ValueFactsAnalysis";
 import { FunctionPassBase } from "../../FunctionPassBase";
 import type { PassResult } from "../../PassManager";
 
@@ -44,6 +50,23 @@ interface CompoundAssignmentMatch {
 
 export class AssignmentExpressionReconstitutionPass extends FunctionPassBase {
   private readonly aliasOracle = new AliasOracle(this.funcOp.moduleIR.environment);
+  private facts: ValueFacts | undefined;
+
+  constructor(
+    funcOp: FuncOp,
+    private readonly AM: AnalysisManager,
+  ) {
+    super(funcOp);
+  }
+
+  public override run(): PassResult {
+    this.facts = this.AM.get(ValueFactsAnalysis, this.funcOp);
+    try {
+      return this.step();
+    } finally {
+      this.facts = undefined;
+    }
+  }
 
   protected step(): PassResult {
     for (const block of this.funcOp.blocks) {
@@ -90,13 +113,15 @@ export class AssignmentExpressionReconstitutionPass extends FunctionPassBase {
     store: AssignmentStore,
     match: CompoundAssignmentMatch,
   ): void {
-    const assignment = this.funcOp.moduleIR.environment.createOperation(
-      AssignmentExpressionOp,
-      match.binary.place,
-      match.operator,
-      match.target,
-      match.rhs,
-    );
+    const assignment =
+      this.matchUpdateExpression(match) ??
+      this.funcOp.moduleIR.environment.createOperation(
+        AssignmentExpressionOp,
+        match.binary.place,
+        match.operator,
+        match.target,
+        match.rhs,
+      );
 
     block.replaceOp(store, assignment);
 
@@ -106,6 +131,25 @@ export class AssignmentExpressionReconstitutionPass extends FunctionPassBase {
     }
 
     this.removeDeadTargetRead(block, match.oldValue);
+  }
+
+  private matchUpdateExpression(match: CompoundAssignmentMatch): UpdateExpressionOp | undefined {
+    const operator = updateOperatorFor(match.binary.operator);
+    if (operator === undefined) return undefined;
+
+    const facts = this.facts;
+    if (facts === undefined) return undefined;
+    if (!facts.mustBeNumberBefore(match.binary, match.oldValue)) return undefined;
+    if (!facts.mustBeNumber(match.rhs) || facts.constant(match.rhs) !== 1) return undefined;
+
+    const usesNewValue = [...match.binary.place.users].some((user) => user !== match.store);
+    return this.funcOp.moduleIR.environment.createOperation(
+      UpdateExpressionOp,
+      usesNewValue ? match.binary.place : match.store.place,
+      operator,
+      match.target,
+      usesNewValue,
+    );
   }
 
   private matchesTargetRead(value: Value, target: AssignmentTarget): boolean {
@@ -240,6 +284,17 @@ function assignmentOperatorFor(operator: BinaryOperator): AssignmentOperator | u
     case "^":
     case "&":
       return `${operator}=`;
+    default:
+      return undefined;
+  }
+}
+
+function updateOperatorFor(operator: BinaryOperator): UpdateOperator | undefined {
+  switch (operator) {
+    case "+":
+      return "++";
+    case "-":
+      return "--";
     default:
       return undefined;
   }

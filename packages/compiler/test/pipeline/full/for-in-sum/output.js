@@ -1,8 +1,8 @@
 function $0($1) {
-  let $19;
-  $19 = 0;
+  const $22 = $1;
+  let $19 = 0;
   for (const $6 in $1) {
-    $19 += 1;
+    $19++;
     continue;
   }
   return $19;

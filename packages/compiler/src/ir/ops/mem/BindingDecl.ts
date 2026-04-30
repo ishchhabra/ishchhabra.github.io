@@ -2,7 +2,7 @@ import { OperationId } from "../../core";
 import { Value } from "../../core";
 import { Operation } from "../../core/Operation";
 import type { CloneContext } from "../../core/Operation";
-import { effects, type MemoryEffects } from "../../memory/MemoryLocation";
+import { effects, localLocation, type MemoryEffects } from "../../memory/MemoryLocation";
 
 export type BindingKind = "var" | "let" | "const";
 export type BindingDeclKind = Exclude<BindingKind, "const">;
@@ -137,7 +137,7 @@ export class BindingInitOp extends Operation {
     return false;
   }
   public override getMemoryEffects(): MemoryEffects {
-    return effects([], []);
+    return effects([], [localLocation(this.place.declarationId)]);
   }
 
   public override print(): string {

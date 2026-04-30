@@ -1,9 +1,8 @@
 const $65 = ["", "writing", "ssr-theming"];
 const $66 = [];
 let $33;
-let $56;
+let $56 = 1;
 let $57;
-$56 = 1;
 while ($56 < $65.length) {
   let $23;
   if ($23 == null) {
@@ -15,7 +14,7 @@ while ($56 < $65.length) {
     $57 = $23;
   }
   $66.push($33);
-  $56 += 1;
+  $56++;
   continue;
 }
 $66.join("/") === ["writing", "ssr-theming"].join("/");

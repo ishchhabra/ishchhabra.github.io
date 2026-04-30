@@ -2,7 +2,7 @@ function $0($1) {
   const $95 = $1.nextSub;
   let $3;
   let $61;
-  let $64;
+  let $64 = $1;
   let $65;
   let $66;
   let $68;
@@ -10,7 +10,6 @@ function $0($1) {
   let $70;
   let $72;
   let $73;
-  $64 = $1;
   $66 = $95;
   $72 = $3;
   top: do {

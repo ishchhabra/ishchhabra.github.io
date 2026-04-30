@@ -78,6 +78,7 @@ import { TaggedTemplateExpressionOp } from "./ops/call/TaggedTemplateExpression"
 import { TemplateLiteralOp } from "./ops/prim/TemplateLiteral";
 import { ThisExpressionOp } from "./ops/prop/ThisExpression";
 import { UnaryExpressionOp } from "./ops/arith/UnaryExpression";
+import { UpdateExpressionOp } from "./ops/arith/UpdateExpression";
 import { YieldExpressionOp } from "./ops/call/YieldExpression";
 
 // ---------------------------------------------------------------------
@@ -115,6 +116,7 @@ export type ValueOp =
   | TemplateLiteralOp
   | ThisExpressionOp
   | UnaryExpressionOp
+  | UpdateExpressionOp
   | YieldExpressionOp;
 
 export type MemoryOp =
@@ -194,6 +196,7 @@ const VALUE_CTORS = new Set<Function>([
   TemplateLiteralOp,
   ThisExpressionOp,
   UnaryExpressionOp,
+  UpdateExpressionOp,
   YieldExpressionOp,
 ]);
 
