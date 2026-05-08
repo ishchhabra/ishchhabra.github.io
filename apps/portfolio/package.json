@@ -28,6 +28,7 @@
     "@fontsource/noto-sans": "^5.2.10",
     "@fontsource/noto-sans-mono": "^5.2.10",
     "@i2-labs/compiler": "workspace:*",
+    "@i2-labs/compiler-plugin-ecmascript": "workspace:*",
     "@iframe-resizer/child": "^5.5.9",
     "@iframe-resizer/react": "^5.5.9",
     "@ish/design-overlay": "workspace:*",
@@ -88,6 +89,9 @@
   },
   "dependenciesMeta": {
     "@i2-labs/compiler": {
+      "injected": true
+    },
+    "@i2-labs/compiler-plugin-ecmascript": {
       "injected": true
     },
     "@ish/design-overlay": {
