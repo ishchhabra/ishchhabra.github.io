@@ -21,12 +21,15 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json --emitDeclarationOnly && rolldown -c",
+    "postbuild": "pnpm-sync copy && echo 'Build complete'",
+    "prepare": "pnpm sync:prepare:portfolio && pnpm build",
     "format": "oxfmt",
     "format-check": "oxfmt --check",
     "lint": "oxlint src --ignore-pattern '**/*.test.ts' --ignore-pattern '**/testing.ts' --max-warnings=0 --type-aware --type-check",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest watch"
+    "test:watch": "vitest watch",
+    "sync:prepare:portfolio": "pnpm-sync prepare -l ../../apps/portfolio/pnpm-lock.yaml -s ../../apps/portfolio/node_modules/.pnpm"
   },
   "dependencies": {
     "esrap": "^2.2.5",
@@ -37,6 +40,7 @@
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "oxlint-tsgolint": "catalog:",
+    "pnpm-sync": "^0.3.3",
     "rolldown": "1.0.0-rc.18",
     "typescript": "catalog:",
     "vite": "^7.3.2",
