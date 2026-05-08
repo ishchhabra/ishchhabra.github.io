@@ -1,4 +1,0 @@
-const obj = { a: 1, b: 2 };
-obj.a;
-obj.b;
-console.log("done");

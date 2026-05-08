@@ -24,6 +24,7 @@ lerna-debug.log*
 
 # Local package artifacts
 *.tgz
+.worktrees/
 
 # Editor
 .vscode/*

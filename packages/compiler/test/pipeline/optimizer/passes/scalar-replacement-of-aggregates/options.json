@@ -1,4 +1,0 @@
-{
-  "enableScalarReplacementOfAggregatesPass": true,
-  "enableDeadCodeEliminationPass": true
-}

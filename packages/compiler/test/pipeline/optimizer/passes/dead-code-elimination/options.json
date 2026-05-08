@@ -1,4 +1,0 @@
-{
-  "enableDeadCodeEliminationPass": true,
-  "enableAlgebraicSimplificationPass": false
-}

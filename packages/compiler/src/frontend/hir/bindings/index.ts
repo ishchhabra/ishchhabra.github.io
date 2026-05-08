@@ -1,1 +1,0 @@
-export { instantiateScopeBindings } from "./instantiateScopeBindings";

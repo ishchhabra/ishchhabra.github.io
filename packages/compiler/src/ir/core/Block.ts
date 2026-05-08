@@ -1,299 +1,269 @@
+import { FunctionIR } from "./FunctionIR";
+import { Operation } from "./Operation";
+import { TerminatorOp } from "./TerminatorOp";
 import { Value } from "./Value";
-import { Operation, Trait } from "./Operation";
-import type { Region } from "./Region";
-import { Terminal } from "../ops/control";
-import { registerUses, unregisterUses, type User } from "./Use";
+
+declare const opaqueBlockId: unique symbol;
 
 /**
- * Simulated opaque type for BlockId to prevent using normal numbers
- * as ids accidentally.
+ * Stable identity of a basic block within an IR graph.
+ *
+ * Block ids are for diagnostics, maps, and serialization. They are not
+ * ordering keys; block order is defined by the owning function or region.
  */
-const opaqueBlockId = Symbol();
-export type BlockId = number & { [opaqueBlockId]: "BlockId" };
+export type BlockId = number & {
+  readonly [opaqueBlockId]: "BlockId";
+};
 
 export function makeBlockId(id: number): BlockId {
   return id as BlockId;
 }
 
-function attach(op: Operation, block: BasicBlock): void {
-  op.parentBlock = block;
-}
-
-function detach(op: Operation): void {
-  op.parentBlock = null;
-}
-
-// ---------------------------------------------------------------------------
-// BasicBlock
-// ---------------------------------------------------------------------------
-
 /**
- * A textbook MLIR basic block: an ordered list of non-terminator
- * operations plus a terminator. Matches `mlir::Block`: non-terminator
- * ops live in one list, the terminator sits in its own slot. No
- * "terminator must be last in the array" invariant, no slice math.
+ * Basic block in a function control-flow graph.
  *
- * Structured ops (IfOp, WhileOp, ForOfOp, …) are ordinary non-terminator
- * ops — they live in `_ops` alongside regular instructions and can
- * appear at any position.
+ * A block is a linear sequence of operations with one control-flow exit.
+ * Non-terminator operations execute in order. The optional terminator
+ * describes how control leaves the block.
+ *
+ * Block parameters model SSA values supplied by predecessor edges. They are
+ * the block-argument form of phi nodes.
  */
 export class BasicBlock {
-  private _ops: Operation[] = [];
-  private _terminal: Terminal | null = null;
+  readonly #operations: Operation[] = [];
+  readonly #params: Value[] = [];
+  readonly #uses = new Set<TerminatorOp>();
 
   /**
-   * MLIR-style region ownership back-pointer: the {@link Region}
-   * this block belongs to.
-   */
-  public parent: Region | null = null;
-
-  /**
-   * MLIR / Cranelift-style block parameters. Populated by the SSA
-   * builder when the block is a merge point in a multi-block region.
-   */
-  public params: Value[] = [];
-
-  /**
-   * Op-introduced entry bindings — values bound at this block's
-   * entry by the enclosing structured op, distinct from SSA merge
-   * params.
+   * Function that currently owns this block.
    *
-   * Contains values like:
-   *   - `ForOfOp.iterationValue` / destructured iter-target defs on
-   *     the body region's entry block.
-   *   - `TryOp.handlerParam` on the handler region's entry block.
+   * Null means the block is detached or still being assembled.
+   */
+  public ownerFunction: FunctionIR | null = null;
+
+  constructor(public readonly id: BlockId) {}
+
+  /**
+   * Operations in program order.
+   */
+  public get operations(): readonly Operation[] {
+    return this.#operations;
+  }
+
+  /**
+   * Values bound when control enters this block.
+   */
+  public get params(): readonly Value[] {
+    return this.#params;
+  }
+
+  /**
+   * Terminator operation, if the block has one.
+   */
+  public get terminator(): TerminatorOp | null {
+    const last = this.#operations[this.#operations.length - 1];
+    return last instanceof TerminatorOp ? last : null;
+  }
+
+  /**
+   * Whether this block has a terminator.
+   */
+  public get isTerminated(): boolean {
+    return this.terminator !== null;
+  }
+
+  /**
+   * Appends a block parameter.
+   */
+  public appendParam(param: Value): void {
+    this.#params.push(param);
+  }
+
+  /**
+   * Replaces this block's parameters.
    *
-   * Treated differently from {@link params}:
-   *   - Pushed onto the rename stack at block entry (like params).
-   *   - **Not** counted as SSA-merge sinks by `SSAEliminator`.
-   *   - **Not** wired through the edge infrastructure
-   *     (`blockArgs.ts`) — their value is supplied by the runtime
-   *     (iterator protocol / exception-throw mechanism), not via
-   *     explicit operand forwarding from predecessor terminators.
-   *   - Codegen doesn't emit a prelude `let = undefined` for them;
-   *     the enclosing statement syntax (`for (let x of arr)`,
-   *     `catch (e)`) declares them.
-   *
-   * This corresponds to MLIR's notion of block arguments that are
-   * bound by the parent op itself. MLIR blurs the line between these
-   * and SSA-merge block args because MLIR emits SSA-level code (LLVM
-   * IR) where no prelude decls exist. Our JS target requires the
-   * split.
+   * Use intent-specific APIs such as `appendParam`, `removeParam`, and
+   * `clearParams` when updating an existing CFG.
    */
-  public entryBindings: Value[] = [];
-
-  /**
-   * Intrusive use-list of ops whose `getBlockRefs()` includes this
-   * block. Maintained automatically by `registerUses`/`unregisterUses`
-   * on every mutation. Reading this set is equivalent to "which
-   * terminators refer to this block?" — i.e. the CFG predecessor
-   * edges, always current, never stale.
-   */
-  readonly #uses: Set<User> = new Set();
-
-  constructor(
-    public readonly id: BlockId,
-    initialOps: Operation[] = [],
-    terminal: Terminal | undefined = undefined,
-  ) {
-    for (const op of initialOps) {
-      if (op.hasTrait(Trait.Terminator)) {
-        throw new Error(
-          `BasicBlock constructor: initialOps must not contain a terminator — pass it via the terminal parameter`,
-        );
-      }
-      this._ops.push(op);
-      registerUses(op);
-      attach(op, this);
-    }
-    if (terminal !== undefined) {
-      this._terminal = terminal;
-      registerUses(terminal);
-      attach(terminal, this);
-    }
-  }
-
-  // -----------------------------------------------------------------------
-  // Accessors
-  // -----------------------------------------------------------------------
-
-  /** Non-terminator ops in program order. */
-  get operations(): readonly Operation[] {
-    return this._ops;
-  }
-
-  get terminal(): Terminal | undefined {
-    return this._terminal ?? undefined;
-  }
-
-  set terminal(newTerminal: Terminal | undefined) {
-    if (newTerminal !== undefined && !newTerminal.hasTrait(Trait.Terminator)) {
-      throw new Error(
-        `BasicBlock.terminal setter: op ${newTerminal.constructor.name} lacks Trait.Terminator`,
-      );
-    }
-    if (this._terminal !== null) {
-      detach(this._terminal);
-      unregisterUses(this._terminal);
-    }
-    this._terminal = newTerminal ?? null;
-    if (this._terminal !== null) {
-      registerUses(this._terminal);
-      attach(this._terminal, this);
-    }
-  }
-
-  /** The last op in the block — terminator if present, else last non-terminator. */
-  get lastOp(): Operation | undefined {
-    return this._terminal ?? this._ops[this._ops.length - 1];
-  }
-
-  // -----------------------------------------------------------------------
-  // Mutation
-  // -----------------------------------------------------------------------
-
-  /** Append a non-terminator op. The terminator (if any) stays in place. */
-  appendOp(op: Operation): void {
-    if (op.hasTrait(Trait.Terminator)) {
-      throw new Error(
-        `BasicBlock.appendOp: use the terminal setter for terminators (got ${op.constructor.name})`,
-      );
-    }
-    registerUses(op);
-    attach(op, this);
-    this._ops.push(op);
-  }
-
-  /** Insert a non-terminator op at `index` in the non-terminator list. */
-  insertOpAt(index: number, op: Operation): void {
-    if (index < 0 || index > this._ops.length) {
-      throw new Error(
-        `BasicBlock.insertOpAt: index ${index} is out of range [0, ${this._ops.length}]`,
-      );
-    }
-    if (op.hasTrait(Trait.Terminator)) {
-      throw new Error(
-        `BasicBlock.insertOpAt: cannot insert a terminator — use the terminal setter`,
-      );
-    }
-    registerUses(op);
-    attach(op, this);
-    this._ops.splice(index, 0, op);
-  }
-
-  /** Remove the non-terminator op at `index`. */
-  removeOpAt(index: number): void {
-    if (index < 0 || index >= this._ops.length) {
-      throw new Error(
-        `BasicBlock.removeOpAt: index ${index} is out of range [0, ${this._ops.length})`,
-      );
-    }
-    const [removed] = this._ops.splice(index, 1);
-    detach(removed);
-    unregisterUses(removed);
+  public setParams(params: readonly Value[]): void {
+    this.#params.length = 0;
+    this.#params.push(...params);
   }
 
   /**
-   * Replace `oldOp` with `newOp` by identity. Terminator-ness must
-   * match — you can't swap a regular op for a terminator or vice
-   * versa.
+   * Removes one block parameter by index.
    */
-  replaceOp(oldOp: Operation, newOp: Operation): void {
-    if (oldOp === newOp) return;
-    const oldIsTerm = oldOp.hasTrait(Trait.Terminator);
-    const newIsTerm = newOp.hasTrait(Trait.Terminator);
-    if (oldIsTerm !== newIsTerm) {
-      throw new Error(
-        `BasicBlock.replaceOp: terminator-ness mismatch (old=${oldOp.constructor.name} term=${oldIsTerm}, new=${newOp.constructor.name} term=${newIsTerm})`,
-      );
+  public removeParam(index: number): Value {
+    if (index < 0 || index >= this.#params.length) {
+      throw new Error(`Block bb${this.id} has no parameter at index ${index}`);
     }
-    if (oldIsTerm) {
-      if (this._terminal !== oldOp) {
-        throw new Error(
-          `BasicBlock.replaceOp: terminator ${oldOp.constructor.name} is not this block's terminal`,
-        );
-      }
-      detach(oldOp);
-      unregisterUses(oldOp);
-      registerUses(newOp);
-      attach(newOp, this);
-      this._terminal = newOp as Terminal;
-      return;
-    }
-    const index = this._ops.indexOf(oldOp);
-    if (index < 0) {
-      throw new Error(
-        `BasicBlock.replaceOp: op ${oldOp.constructor.name} not found in bb${this.id}`,
-      );
-    }
-    detach(oldOp);
-    unregisterUses(oldOp);
-    registerUses(newOp);
-    attach(newOp, this);
-    this._ops[index] = newOp;
-  }
 
-  /**
-   * Remove and return non-terminator ops from `start` to the end of
-   * the list. Ops are moved; caller inherits use-chain registrations
-   * (nothing is unregistered).
-   */
-  spliceInstructions(start: number): Operation[] {
-    if (start >= this._ops.length) return [];
-    const removed = this._ops.splice(start);
-    for (const op of removed) detach(op);
+    const [removed] = this.#params.splice(index, 1);
     return removed;
   }
 
-  // -----------------------------------------------------------------------
-  // Walkers
-  // -----------------------------------------------------------------------
-
-  /** Yield every op in this block in program order, terminator last. */
-  *getAllOps(): IterableIterator<Operation> {
-    for (const op of this._ops) yield op;
-    if (this._terminal !== null) yield this._terminal;
-  }
-
-  // -----------------------------------------------------------------------
-  // CFG use-list — predecessors, always current
-  // -----------------------------------------------------------------------
-
-  /** @internal */
-  _addUse(user: User): void {
-    this.#uses.add(user);
-  }
-
-  /** @internal */
-  _removeUse(user: User): void {
-    this.#uses.delete(user);
+  /**
+   * Removes all block parameters.
+   */
+  public clearParams(): void {
+    this.#params.length = 0;
   }
 
   /**
-   * Read-only view of every op whose `getBlockRefs()` includes this
-   * block — i.e. the raw CFG in-edges. Use {@link predecessors} for
-   * the set of predecessor blocks.
+   * Appends a non-terminator operation.
    */
-  get uses(): ReadonlySet<User> {
+  public appendOp(op: Operation): void {
+    if (op instanceof TerminatorOp) {
+      throw new Error(`Use setTerminator to attach ${op.constructor.name}#${op.id}`);
+    }
+
+    if (this.isTerminated) {
+      throw new Error(`Cannot append operation after terminator in bb${this.id}`);
+    }
+
+    op.attach(this);
+    this.#operations.push(op);
+  }
+
+  /**
+   * Inserts a non-terminator operation at a program-order index.
+   */
+  public insertOp(index: number, op: Operation): void {
+    if (op instanceof TerminatorOp) {
+      throw new Error(`Use setTerminator to attach ${op.constructor.name}#${op.id}`);
+    }
+
+    const maxIndex = this.isTerminated ? this.#operations.length - 1 : this.#operations.length;
+    if (index < 0 || index > maxIndex) {
+      throw new Error(`Cannot insert operation at index ${index}; expected 0..${maxIndex}`);
+    }
+
+    op.attach(this);
+    this.#operations.splice(index, 0, op);
+  }
+
+  /**
+   * Installs this block's terminator as the final operation.
+   */
+  public setTerminator(terminator: TerminatorOp): void {
+    if (this.isTerminated) {
+      throw new Error(`Block bb${this.id} already has a terminator`);
+    }
+
+    terminator.attach(this);
+    this.#operations.push(terminator);
+  }
+
+  /**
+   * Replaces an operation owned by this block.
+   *
+   * The replacement must preserve whether the operation is a terminator.
+   */
+  public replaceOp(oldOp: Operation, newOp: Operation): void {
+    if (oldOp === newOp) return;
+
+    const index = this.#operations.indexOf(oldOp);
+    if (index === -1) {
+      throw new Error(`${oldOp.constructor.name}#${oldOp.id} is not owned by bb${this.id}`);
+    }
+
+    const oldIsTerminator = oldOp instanceof TerminatorOp;
+    const newIsTerminator = newOp instanceof TerminatorOp;
+
+    if (oldIsTerminator !== newIsTerminator) {
+      throw new Error("Cannot replace a terminator with a non-terminator or vice versa");
+    }
+
+    if (newIsTerminator && index !== this.#operations.length - 1) {
+      throw new Error("Terminator must be the final operation in a block");
+    }
+
+    oldOp.detach();
+    newOp.attach(this);
+    this.#operations[index] = newOp;
+  }
+
+  /**
+   * Removes an operation owned by this block.
+   */
+  public removeOp(op: Operation): Operation {
+    const index = this.#operations.indexOf(op);
+    if (index === -1) {
+      throw new Error(`${op.constructor.name}#${op.id} is not owned by bb${this.id}`);
+    }
+
+    this.#operations.splice(index, 1);
+    op.detach();
+    return op;
+  }
+
+  /**
+   * Detaches all operations and clears block parameters.
+   */
+  public clear(): void {
+    for (const op of [...this.#operations].reverse()) {
+      this.removeOp(op);
+    }
+
+    this.clearParams();
+  }
+
+  /**
+   * Terminators whose successor lists reference this block.
+   */
+  public get uses(): ReadonlySet<TerminatorOp> {
     return this.#uses;
   }
 
   /**
-   * The set of blocks that can transfer control to this block via a
-   * terminator with a direct block reference (currently: `JumpOp`).
-   *
-   * Computed from the use-list, so always reflects the current IR —
-   * there is no separate analysis to invalidate. Structured control
-   * flow (IfOp arm yields, WhileOp iter-arg ports, …) is not
-   * surfaced here because those edges are implicit in the region
-   * structure, not in explicit block refs.
+   * Blocks that can transfer control to this block through explicit successor
+   * edges.
    */
-  predecessors(): Set<BasicBlock> {
-    const preds = new Set<BasicBlock>();
+  public predecessors(): Set<BasicBlock> {
+    const predecessors = new Set<BasicBlock>();
+
     for (const user of this.#uses) {
-      const owning = (user as unknown as { parentBlock: BasicBlock | null }).parentBlock;
-      if (owning !== null) preds.add(owning);
+      const owner = user.ownerBlock;
+      if (owner === null) continue;
+
+      for (const index of user.successorIndices()) {
+        if (user.target(index).block === this) {
+          predecessors.add(owner);
+          break;
+        }
+      }
     }
-    return preds;
+
+    return predecessors;
+  }
+
+  /**
+   * Registers a terminator that references this block.
+   *
+   * @internal
+   */
+  public _addUse(user: TerminatorOp): void {
+    if (this.#uses.has(user)) {
+      throw new Error(
+        `Block bb${this.id} already has a use of ${user.constructor.name}#${user.id}`,
+      );
+    }
+
+    this.#uses.add(user);
+  }
+
+  /**
+   * Removes a terminator from this block's use-list.
+   *
+   * @internal
+   */
+  public _removeUse(user: TerminatorOp): void {
+    if (!this.#uses.has(user)) {
+      throw new Error(
+        `Block bb${this.id} does not have a use of ${user.constructor.name}#${user.id}`,
+      );
+    }
+
+    this.#uses.delete(user);
   }
 }

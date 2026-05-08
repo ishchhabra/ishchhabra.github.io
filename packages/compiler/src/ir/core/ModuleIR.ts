@@ -1,87 +1,143 @@
-import { Environment } from "../../environment";
-import { FuncOp, FuncOpId } from "./FuncOp";
-import { Operation } from "./Operation";
-import type { Value } from "./Value";
-import { emptyModuleSummary, type ModuleSummary } from "./ModuleSummary";
-import { ExportSpecifierOp } from "../ops/module/ExportSpecifier";
-import { StoreLocalOp } from "../ops/mem/StoreLocal";
+import { FunctionIR } from "./FunctionIR";
+import type { ModuleExport } from "./ModuleExport";
+import type { ModuleImport } from "./ModuleImport";
 
-export type ModuleGlobal =
-  | {
-      kind: "import";
-      source: string;
-      name: string;
-    }
-  | {
-      kind: "builtin";
-    };
-
-export interface ModuleExport {
-  /** The ExportDeclarationOp for the export */
-  instruction: Operation;
-
-  /** The instruction that declares the exported variable (undefined for anonymous export default) */
-  declaration?: Operation;
-}
+declare const opaqueModuleId: unique symbol;
 
 /**
- * The binding place (SSA Value) this export references, or undefined
- * for anonymous-expression exports (`export default 5`). Normalizes
- * over the two shapes: `ExportSpecifier` carries a `localPlace`; a
- * declaration-form export (`export const X = …`) carries the
- * declaration store whose `lval` is the binding.
+ * Stable identity of an IR module.
  *
- * Consumers reasoning about the exported binding (memory analyses,
- * cross-module folding) should use this rather than branching on
- * the export's shape.
+ * Module ids are for diagnostics, maps, and serialization. They do not imply
+ * filesystem identity or module loading order.
  */
-export function getExportBindingPlace(exp: ModuleExport): Value | undefined {
-  if (exp.instruction instanceof ExportSpecifierOp) return exp.instruction.localPlace;
-  const decl = exp.declaration;
-  if (decl instanceof StoreLocalOp) return decl.lval;
-  return decl?.place;
+export type ModuleId = number & {
+  readonly [opaqueModuleId]: "ModuleId";
+};
+
+export function makeModuleId(id: number): ModuleId {
+  return id as ModuleId;
 }
 
 /**
  * The compilation unit for a single source file.
- *
- * `functions` is the registry of every {@link FuncOp} that belongs to
- * this module — both top-level declarations and nested closures (arrow
- * expressions, function expressions, function declarations). Cross-module
- * inlining clones a function from another module into this one; the clone
- * is registered here. The pipeline iterates this map.
- *
- * Note: every {@link FuncOp} carries a `moduleIR` back-pointer to its
- * owning `ModuleIR`, so the registry-and-back-pointer pair is the source
- * of truth for "which functions belong to which module". Code that asks
- * "what module does this function belong to?" should read `fn.moduleIR`
- * directly rather than searching this map.
  */
 export class ModuleIR {
-  public readonly functions: Map<FuncOpId, FuncOp> = new Map();
-  public readonly globals: Map<string, ModuleGlobal> = new Map();
-  public readonly exports: Map<string, ModuleExport> = new Map();
+  readonly #functions: FunctionIR[] = [];
+  readonly #imports: ModuleImport[] = [];
+  readonly #exports: ModuleExport[] = [];
+  #entryFunction: FunctionIR | null = null;
+
+  constructor(public readonly id: ModuleId) {}
 
   /**
-   * The module's top-level function — the implicit `function () { <module body> }`
-   * the frontend emits around every module. Set on the first {@link FuncOp}
-   * registration; never reassigned.
+   * Functions owned by this module.
+   */
+  public get functions(): readonly FunctionIR[] {
+    return this.#functions;
+  }
+
+  /**
+   * Static imports declared by this module.
    *
-   * Codegen walks out from here; pipeline passes iterate {@link functions}
-   * for all functions (entry + nested) without caring which is which.
+   * These records are consumed by codegen and future linking. Runtime dynamic
+   * imports are represented separately by `ImportExpressionOp`.
    */
-  public entryFuncOp: FuncOp | undefined = undefined;
+  public get imports(): readonly ModuleImport[] {
+    return this.#imports;
+  }
 
   /**
-   * Cross-module facts about this module. Populated by the module's
-   * own passes (currently {@link ConstantPropagationPass}); consumed
-   * by analyses running on downstream modules that import from this
-   * one. Mirrors LLVM ThinLTO module summaries.
+   * Static exports declared by this module.
+   *
+   * Local exports point at declarations owned by this module. Re-exports point
+   * at source modules and are resolved by the linker.
    */
-  public readonly summary: ModuleSummary = emptyModuleSummary();
+  public get exports(): readonly ModuleExport[] {
+    return this.#exports;
+  }
 
-  constructor(
-    public readonly path: string,
-    public readonly environment: Environment,
-  ) {}
+  /**
+   * Function that executes this module's top-level code.
+   *
+   * Null means the module is still being assembled.
+   */
+  public get entryFunction(): FunctionIR | null {
+    return this.#entryFunction;
+  }
+
+  /**
+   * Adds a function to this module and records module ownership.
+   *
+   * Throws if the function already belongs to another module.
+   */
+  public addFunction(fn: FunctionIR): void {
+    if (fn.ownerModule !== null && fn.ownerModule !== this) {
+      throw new Error(`Function#${fn.id} already belongs to another module`);
+    }
+
+    if (this.functions.includes(fn)) {
+      throw new Error(`Function#${fn.id} already belongs to this module`);
+    }
+
+    if (this.#functions.some((owned) => owned.id === fn.id)) {
+      throw new Error(`Function#${fn.id} already exists in Module#${this.id}`);
+    }
+
+    fn.ownerModule = this;
+    this.#functions.push(fn);
+  }
+
+  /**
+   * Adds a static import record.
+   */
+  public addImport(record: ModuleImport): void {
+    this.#imports.push(record);
+  }
+
+  /**
+   * Adds a static export record.
+   */
+  public addExport(record: ModuleExport): void {
+    this.#exports.push(record);
+  }
+
+  /**
+   * Removes a non-entry function from this module.
+   */
+  public removeFunction(fn: FunctionIR): void {
+    if (this.entryFunction === fn) {
+      throw new Error(`Cannot remove entry Function#${fn.id} from Module#${this.id}`);
+    }
+
+    const index = this.#functions.indexOf(fn);
+    if (index === -1) {
+      throw new Error(`Function#${fn.id} does not belong to Module#${this.id}`);
+    }
+
+    fn.ownerModule = null;
+    this.#functions.splice(index, 1);
+  }
+
+  /**
+   * Looks up an owned function by id.
+   */
+  public getFunction(id: FunctionIR["id"]): FunctionIR {
+    const fn = this.#functions.find((candidate) => candidate.id === id);
+    if (fn === undefined) {
+      throw new Error(`Function#${id} does not belong to Module#${this.id}`);
+    }
+
+    return fn;
+  }
+
+  /**
+   * Marks an owned function as this module's top-level entry point.
+   */
+  public setEntryFunction(fn: FunctionIR): void {
+    if (!this.#functions.includes(fn)) {
+      throw new Error(`Function#${fn.id} is not owned by Module#${this.id}`);
+    }
+
+    this.#entryFunction = fn;
+  }
 }

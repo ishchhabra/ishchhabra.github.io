@@ -5,11 +5,9 @@
   "type": "module",
   "scripts": {
     "generate:og-diagrams": "tsx scripts/generate-og-diagrams.tsx",
-    "aot:compile": "node scripts/aot-prebuild.mjs",
     "dev": "pnpm generate:og-diagrams && vite dev",
     "build": "pnpm generate:og-diagrams && vite build",
-    "build:aot": "pnpm aot:compile && ENABLE_AOT=1 pnpm build",
-    "build:aot-nm": "AOT_NODE_MODULES=1 pnpm aot:compile && ENABLE_AOT=1 pnpm build",
+    "build:aot": "ENABLE_COMPILER_AOT=1 pnpm build",
     "build:vercel": "bash scripts/vercel-build.sh",
     "preview": "vite preview",
     "compare-build-sizes": "node scripts/compare-build-sizes.mjs",

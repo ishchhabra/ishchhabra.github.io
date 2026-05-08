@@ -1,9 +1,0 @@
-{
-  "enableOptimizer": true,
-  "enableAlgebraicSimplificationPass": false,
-  "enableExpressionInliningPass": true,
-  "enableCapturePruningPass": false,
-  "enableDeadCodeEliminationPass": false,
-  "enableScalarReplacementOfAggregatesPass": false,
-  "enableLateOptimizer": false
-}

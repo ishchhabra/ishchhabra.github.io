@@ -1,3 +1,0 @@
-function $0($1 = $1) {
-  return $1;
-}

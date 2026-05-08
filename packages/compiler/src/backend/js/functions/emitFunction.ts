@@ -1,0 +1,1295 @@
+import type { BasicBlock } from "../../../ir/core/Block";
+import type { FunctionIR } from "../../../ir/core/FunctionIR";
+import {
+  successorValues,
+  type BlockTarget,
+} from "../../../ir/core/TerminatorOp";
+import type { Value } from "../../../ir/core/Value";
+import { BranchTerminatorOp } from "../../../ir/ops/control/BranchTerminatorOp";
+import { ForInTerminatorOp } from "../../../ir/ops/control/ForInTerminatorOp";
+import { ForOfTerminatorOp } from "../../../ir/ops/control/ForOfTerminatorOp";
+import { ForTerminatorOp } from "../../../ir/ops/control/ForTerminatorOp";
+import { IfTerminatorOp } from "../../../ir/ops/control/IfTerminatorOp";
+import { JumpTerminatorOp } from "../../../ir/ops/control/JumpTerminatorOp";
+import { SwitchTerminatorOp } from "../../../ir/ops/control/SwitchTerminatorOp";
+import { TryTerminatorOp } from "../../../ir/ops/control/TryTerminatorOp";
+import { WhileTerminatorOp } from "../../../ir/ops/control/WhileTerminatorOp";
+import { CopyValueOp } from "../../../ir/ops/values/CopyValueOp";
+import {
+  assignmentExpression,
+  blockStatement,
+  breakStatement,
+  catchClause,
+  conditionalExpression,
+  continueStatement,
+  doWhileStatement,
+  expressionStatement,
+  forInStatement,
+  forOfStatement,
+  forStatement,
+  identifier,
+  functionExpression,
+  ifStatement,
+  labeledStatement,
+  literal,
+  switchCase as switchCaseNode,
+  switchStatement,
+  tryStatement,
+  variableDeclaration,
+  whileStatement,
+  restElement,
+  type ESTreePattern,
+  type ESTreeExpression,
+  type ESTreeStatement,
+  sequenceExpression,
+} from "../ast";
+import type { CodegenContext } from "../CodegenContext";
+import { emitOperation } from "../ops/emitOperation";
+import {
+  bindingPatternDeclarationIds,
+  emitBindingPatternTarget,
+} from "../ops/patterns/emitDestructurePattern";
+
+interface EmitControlContext {
+  readonly label: string | null;
+  readonly breakTarget: BasicBlock;
+  readonly continueTarget: BasicBlock | null;
+}
+
+/**
+ * Emits a structured JavaScript function body from lowered CFG blocks.
+ *
+ * This emitter supports straight-line blocks and structured if/else diamonds.
+ * Arbitrary CFG shapes should be handled by structured-control recovery or a
+ * lower-level backend.
+ */
+export function emitFunctionBody(
+  context: CodegenContext,
+  fn: FunctionIR,
+): ESTreeStatement[] {
+  const emitted = new Set<BasicBlock>();
+  const statements: ESTreeStatement[] = [];
+
+  statements.push(...declareCopyTargets(context, fn));
+  statements.push(...declareBlockParams(context, fn));
+  statements.push(...emitBlock(context, fn.entryBlock, emitted, []));
+
+  return statements;
+}
+
+/**
+ * Emits source-level function parameters.
+ */
+export function emitFunctionParams(
+  context: CodegenContext,
+  fn: FunctionIR,
+): ESTreePattern[] {
+  return fn.params
+    .filter((param) => param.kind === "argument" || param.kind === "rest")
+    .map((param) => {
+      for (const id of bindingPatternDeclarationIds(param.target)) {
+        context.declaredDeclarations.add(id);
+      }
+
+      const pattern = emitBindingPatternTarget(context, param.target);
+      if (patternCanBeExpression(pattern)) {
+        context.values.set(param.value, pattern);
+      }
+
+      return param.kind === "rest" ? restElement(pattern) : pattern;
+    });
+}
+
+function patternCanBeExpression(
+  pattern: ESTreePattern,
+): pattern is ESTreePattern & ESTreeExpression {
+  return pattern.type === "Identifier" || pattern.type === "MemberExpression";
+}
+
+/**
+ * Emits a nested function as a JavaScript function expression.
+ */
+export function emitFunctionExpression(
+  context: CodegenContext,
+  fn: FunctionIR,
+): ESTreeExpression {
+  const body = emitFunctionBody(context, fn);
+  const params = emitFunctionParams(context, fn);
+
+  return functionExpression(params, body, {
+    id: fn.name === null ? null : identifier(fn.name),
+    async: fn.isAsync,
+    generator: fn.isGenerator,
+  });
+}
+
+function declareCopyTargets(
+  context: CodegenContext,
+  fn: FunctionIR,
+): ESTreeStatement[] {
+  const blockParams = new Set<Value>();
+  const copyTargets = new Set<Value>();
+
+  for (const block of fn.blocks) {
+    for (const param of block.params) {
+      blockParams.add(param);
+    }
+
+    for (const op of block.operations) {
+      if (op instanceof CopyValueOp) {
+        copyTargets.add(op.target);
+      }
+    }
+  }
+
+  return [...copyTargets]
+    .filter((target) => !blockParams.has(target))
+    .map((target) =>
+      variableDeclaration(
+        "let",
+        identifier(context.names.valueName(target)),
+        null,
+      ),
+    );
+}
+
+function declareBlockParams(
+  context: CodegenContext,
+  fn: FunctionIR,
+): ESTreeStatement[] {
+  const declarations: ESTreeStatement[] = [];
+  const headerParams = structuredHeaderParams(fn);
+
+  for (const block of fn.blocks) {
+    for (const param of block.params) {
+      if (headerParams.has(param)) continue;
+
+      declarations.push(
+        variableDeclaration(
+          "let",
+          identifier(context.names.valueName(param)),
+          null,
+        ),
+      );
+    }
+  }
+
+  return declarations;
+}
+
+function structuredHeaderParams(fn: FunctionIR): Set<Value> {
+  const params = new Set<Value>();
+
+  for (const block of fn.blocks) {
+    const terminator = block.terminator;
+    if (
+      !(terminator instanceof ForInTerminatorOp) &&
+      !(terminator instanceof ForOfTerminatorOp)
+    ) {
+      continue;
+    }
+
+    for (const value of terminator.bodyTarget.operands.produced) {
+      params.add(value);
+    }
+  }
+
+  for (const block of fn.blocks) {
+    const terminator = block.terminator;
+    if (!(terminator instanceof TryTerminatorOp)) continue;
+    if (terminator.catchTarget === null) continue;
+
+    for (const value of terminator.catchTarget.operands.produced) {
+      params.add(value);
+    }
+  }
+
+  return params;
+}
+
+function emitBlock(
+  context: CodegenContext,
+  block: BasicBlock,
+  emitted: Set<BasicBlock>,
+  controls: readonly EmitControlContext[],
+): ESTreeStatement[] {
+  if (emitted.has(block)) return [];
+  emitted.add(block);
+
+  const statements: ESTreeStatement[] = [];
+  const terminator = block.terminator;
+
+  for (const op of block.operations) {
+    if (op === terminator) continue;
+    statements.push(...emitOperation(context, op));
+  }
+
+  if (terminator === null) return statements;
+
+  if (terminator instanceof JumpTerminatorOp) {
+    statements.push(...emitJump(context, terminator, emitted, controls));
+    return statements;
+  }
+
+  if (terminator instanceof IfTerminatorOp) {
+    statements.push(...emitIf(context, terminator, emitted, controls));
+    return statements;
+  }
+
+  if (terminator instanceof BranchTerminatorOp) {
+    statements.push(...emitBranch(context, terminator, emitted, controls));
+    return statements;
+  }
+
+  if (terminator instanceof SwitchTerminatorOp) {
+    statements.push(...emitSwitch(context, terminator, emitted, controls));
+    return statements;
+  }
+
+  if (terminator instanceof TryTerminatorOp) {
+    statements.push(...emitTry(context, terminator, emitted, controls));
+    return statements;
+  }
+
+  if (terminator instanceof WhileTerminatorOp) {
+    statements.push(...emitWhile(context, terminator, emitted, controls));
+    return statements;
+  }
+
+  if (terminator instanceof ForInTerminatorOp) {
+    statements.push(...emitForIn(context, terminator, emitted, controls));
+    return statements;
+  }
+
+  if (terminator instanceof ForOfTerminatorOp) {
+    statements.push(...emitForOf(context, terminator, emitted, controls));
+    return statements;
+  }
+
+  if (terminator instanceof ForTerminatorOp) {
+    statements.push(...emitFor(context, terminator, emitted, controls));
+    return statements;
+  }
+
+  statements.push(...emitOperation(context, terminator));
+  return statements;
+}
+
+function emitForIn(
+  context: CodegenContext,
+  loop: ForInTerminatorOp,
+  emitted: Set<BasicBlock>,
+  controls: readonly EmitControlContext[],
+  continuation: BasicBlock | null = null,
+): ESTreeStatement[] {
+  const loopBlock = loop.ownerBlock;
+  if (loopBlock === null) {
+    throw new Error(`ForInTerminatorOp#${loop.id} is detached`);
+  }
+
+  const propertyKeys = loop.bodyTarget.operands.produced;
+  if (propertyKeys.length !== 1) {
+    throw new Error(
+      `ForInTerminatorOp#${loop.id} expected one produced property key`,
+    );
+  }
+
+  const propertyKey = propertyKeys[0];
+  const loopControl = {
+    label: loop.label,
+    breakTarget: loop.exitBlock,
+    continueTarget: loopBlock,
+  };
+  const body = emitBranchArm(context, loop.bodyBlock, loopBlock, emitted, [
+    ...controls,
+    loopControl,
+  ]);
+
+  return [
+    withOptionalLabel(
+      loop.label,
+      forInStatement(
+        variableDeclaration(
+          "let",
+          identifier(context.names.valueName(propertyKey)),
+          null,
+        ),
+        context.expressionForValue(loop.object),
+        blockStatement(body),
+      ),
+    ),
+    ...emitContinuation(
+      context,
+      loop.exitBlock,
+      continuation,
+      emitted,
+      controls,
+    ),
+  ];
+}
+
+function emitSwitch(
+  context: CodegenContext,
+  op: SwitchTerminatorOp,
+  emitted: Set<BasicBlock>,
+  controls: readonly EmitControlContext[],
+  continuation: BasicBlock | null = null,
+): ESTreeStatement[] {
+  const switchControl = {
+    label: op.label,
+    breakTarget: op.exitBlock,
+    continueTarget: null,
+  };
+  const switchControls = [...controls, switchControl];
+
+  return [
+    withOptionalLabel(
+      op.label,
+      switchStatement(
+        context.expressionForValue(op.discriminant),
+        op.cases.map((switchCase, index) => {
+          const continuation =
+            index + 1 < op.cases.length
+              ? op.cases[index + 1].target.block
+              : op.exitBlock;
+
+          return switchCaseNode(
+            switchCase.test === null
+              ? null
+              : context.expressionForValue(switchCase.test),
+            emitBranchArm(
+              context,
+              switchCase.target.block,
+              continuation,
+              emitted,
+              switchControls,
+            ),
+          );
+        }),
+      ),
+    ),
+    ...emitContinuation(context, op.exitBlock, continuation, emitted, controls),
+  ];
+}
+
+function emitTry(
+  context: CodegenContext,
+  op: TryTerminatorOp,
+  emitted: Set<BasicBlock>,
+  controls: readonly EmitControlContext[],
+  continuation: BasicBlock | null = null,
+): ESTreeStatement[] {
+  const innerContinuation = op.finallyBlock ?? op.exitBlock;
+  const body = emitBranchArm(
+    context,
+    op.tryBlock,
+    innerContinuation,
+    emitted,
+    controls,
+  );
+
+  const handler =
+    op.catchTarget === null
+      ? null
+      : catchClause(
+          catchParam(context, op),
+          emitBranchArm(
+            context,
+            op.catchTarget.block,
+            innerContinuation,
+            emitted,
+            controls,
+          ),
+        );
+
+  const finalizer =
+    op.finallyBlock === null
+      ? null
+      : emitBranchArm(
+          context,
+          op.finallyBlock,
+          op.exitBlock,
+          emitted,
+          controls,
+        );
+
+  return [
+    tryStatement(body, handler, finalizer),
+    ...(continuation === null
+      ? emitBlock(context, op.exitBlock, emitted, controls)
+      : emitBranchArm(context, op.exitBlock, continuation, emitted, controls)),
+  ];
+}
+
+function catchParam(
+  context: CodegenContext,
+  op: TryTerminatorOp,
+): ESTreePattern | null {
+  if (op.catchTarget === null) return null;
+
+  const params = op.catchTarget.operands.produced;
+  if (params.length === 0) return null;
+  if (params.length !== 1) {
+    throw new Error(`TryTerminatorOp#${op.id} expected one catch parameter`);
+  }
+
+  const param = params[0];
+  context.values.set(param, identifier(context.names.valueName(param)));
+  return identifier(context.names.valueName(param));
+}
+
+function emitForOf(
+  context: CodegenContext,
+  loop: ForOfTerminatorOp,
+  emitted: Set<BasicBlock>,
+  controls: readonly EmitControlContext[],
+  continuation: BasicBlock | null = null,
+): ESTreeStatement[] {
+  const loopBlock = loop.ownerBlock;
+  if (loopBlock === null) {
+    throw new Error(`ForOfTerminatorOp#${loop.id} is detached`);
+  }
+
+  const iterationValues = loop.bodyTarget.operands.produced;
+  if (iterationValues.length !== 1) {
+    throw new Error(
+      `ForOfTerminatorOp#${loop.id} expected one produced iteration value`,
+    );
+  }
+
+  const iterationValue = iterationValues[0];
+  const loopControl = {
+    label: loop.label,
+    breakTarget: loop.exitBlock,
+    continueTarget: loopBlock,
+  };
+  const body = emitBranchArm(context, loop.bodyBlock, loopBlock, emitted, [
+    ...controls,
+    loopControl,
+  ]);
+
+  return [
+    withOptionalLabel(
+      loop.label,
+      forOfStatement(
+        variableDeclaration(
+          "let",
+          identifier(context.names.valueName(iterationValue)),
+          null,
+        ),
+        context.expressionForValue(loop.iterable),
+        blockStatement(body),
+        loop.isAwait,
+      ),
+    ),
+    ...emitContinuation(
+      context,
+      loop.exitBlock,
+      continuation,
+      emitted,
+      controls,
+    ),
+  ];
+}
+
+function emitFor(
+  context: CodegenContext,
+  loop: ForTerminatorOp,
+  emitted: Set<BasicBlock>,
+  controls: readonly EmitControlContext[],
+  continuation: BasicBlock | null = null,
+): ESTreeStatement[] {
+  const loopBlock = loop.ownerBlock;
+  if (loopBlock === null) {
+    throw new Error(`ForTerminatorOp#${loop.id} is detached`);
+  }
+
+  const testBranch = loop.testBlock.terminator;
+  if (!(testBranch instanceof BranchTerminatorOp)) {
+    throw new Error(
+      `ForTerminatorOp#${loop.id} test block must end with BranchTerminatorOp`,
+    );
+  }
+
+  validateLoopTestEdge(
+    testBranch.trueBlock,
+    loop.bodyBlock,
+    `ForTerminatorOp#${loop.id} true edge`,
+  );
+
+  validateLoopTestEdge(
+    testBranch.falseBlock,
+    loop.exitBlock,
+    `ForTerminatorOp#${loop.id} false edge`,
+  );
+
+  const testExpression = emitLoopTestExpression(
+    context,
+    loop.testBlock,
+    testBranch,
+    loop.bodyBlock,
+    loop.exitBlock,
+    emitted,
+  );
+
+  const loopControl = {
+    label: loop.label,
+    breakTarget: loop.exitBlock,
+    continueTarget: loop.updateBlock,
+  };
+  const loopControls = [...controls, loopControl];
+  const update = emitForUpdate(
+    context,
+    loop.updateBlock,
+    loopBlock,
+    emitted,
+    loopControls,
+  );
+  const body = emitBranchArm(
+    context,
+    loop.bodyBlock,
+    loop.updateBlock,
+    emitted,
+    loopControls,
+  );
+
+  return [
+    withOptionalLabel(
+      loop.label,
+      forStatement(testExpression, update, blockStatement(body)),
+    ),
+    ...emitContinuation(
+      context,
+      loop.exitBlock,
+      continuation,
+      emitted,
+      controls,
+    ),
+  ];
+}
+
+function emitForUpdate(
+  context: CodegenContext,
+  block: BasicBlock,
+  continuation: BasicBlock,
+  emitted: Set<BasicBlock>,
+  controls: readonly EmitControlContext[],
+) {
+  const statements = emitBranchArm(
+    context,
+    block,
+    continuation,
+    emitted,
+    controls,
+  );
+  if (statements.length === 0) return null;
+
+  const expressions = statements.map(expressionFromStatement);
+  if (expressions.length === 1) return expressions[0];
+
+  return sequenceExpression(expressions);
+}
+
+function emitWhile(
+  context: CodegenContext,
+  loop: WhileTerminatorOp,
+  emitted: Set<BasicBlock>,
+  controls: readonly EmitControlContext[],
+  continuation: BasicBlock | null = null,
+): ESTreeStatement[] {
+  const loopBlock = loop.ownerBlock;
+  if (loopBlock === null) {
+    throw new Error(`WhileTerminatorOp#${loop.id} is detached`);
+  }
+
+  const testBranch = loop.testBlock.terminator;
+  if (!(testBranch instanceof BranchTerminatorOp)) {
+    throw new Error(
+      `WhileTerminatorOp#${loop.id} test block must end with BranchTerminatorOp`,
+    );
+  }
+
+  const expectedTrueBlock =
+    loop.kind === "do-while" ? loopBlock : loop.bodyBlock;
+  validateLoopTestEdge(
+    testBranch.trueBlock,
+    expectedTrueBlock,
+    `WhileTerminatorOp#${loop.id} true edge`,
+  );
+
+  validateLoopTestEdge(
+    testBranch.falseBlock,
+    loop.exitBlock,
+    `WhileTerminatorOp#${loop.id} false edge`,
+  );
+
+  if (loop.kind === "do-while") {
+    return emitDoWhile(
+      context,
+      loop,
+      testBranch,
+      emitted,
+      controls,
+      continuation,
+    );
+  }
+
+  const testExpression = emitLoopTestExpression(
+    context,
+    loop.testBlock,
+    testBranch,
+    loop.bodyBlock,
+    loop.exitBlock,
+    emitted,
+  );
+
+  const loopControl = {
+    label: loop.label,
+    breakTarget: loop.exitBlock,
+    continueTarget: loopBlock,
+  };
+  const body = emitBranchArm(context, loop.bodyBlock, loopBlock, emitted, [
+    ...controls,
+    loopControl,
+  ]);
+
+  return [
+    withOptionalLabel(
+      loop.label,
+      whileStatement(testExpression, blockStatement(body)),
+    ),
+    ...emitContinuation(
+      context,
+      loop.exitBlock,
+      continuation,
+      emitted,
+      controls,
+    ),
+  ];
+}
+
+function emitDoWhile(
+  context: CodegenContext,
+  loop: WhileTerminatorOp,
+  testBranch: BranchTerminatorOp,
+  emitted: Set<BasicBlock>,
+  controls: readonly EmitControlContext[],
+  continuation: BasicBlock | null = null,
+): ESTreeStatement[] {
+  const loopBlock = loop.ownerBlock;
+  if (loopBlock === null) {
+    throw new Error(`WhileTerminatorOp#${loop.id} is detached`);
+  }
+
+  const loopControl = {
+    label: loop.label,
+    breakTarget: loop.exitBlock,
+    continueTarget: loop.testBlock,
+  };
+  const body = emitBranchArm(context, loop.bodyBlock, loop.testBlock, emitted, [
+    ...controls,
+    loopControl,
+  ]);
+  const testExpression = emitLoopTestExpression(
+    context,
+    loop.testBlock,
+    testBranch,
+    loopBlock,
+    loop.exitBlock,
+    emitted,
+  );
+
+  return [
+    withOptionalLabel(
+      loop.label,
+      doWhileStatement(blockStatement(body), testExpression),
+    ),
+    ...emitContinuation(
+      context,
+      loop.exitBlock,
+      continuation,
+      emitted,
+      controls,
+    ),
+  ];
+}
+
+function emitLoopTestExpression(
+  context: CodegenContext,
+  block: BasicBlock,
+  branch: BranchTerminatorOp,
+  trueContinuation: BasicBlock,
+  falseContinuation: BasicBlock,
+  emitted: Set<BasicBlock>,
+): ESTreeExpression {
+  const statements = emitLoopTest(context, block, emitted);
+  const trueStatements = emitLoopTestEdge(
+    context,
+    branch.trueBlock,
+    trueContinuation,
+    emitted,
+  );
+  const falseStatements = emitLoopTestEdge(
+    context,
+    branch.falseBlock,
+    falseContinuation,
+    emitted,
+  );
+  const condition = context.expressionForValue(branch.condition);
+  const test =
+    trueStatements.length === 0 && falseStatements.length === 0
+      ? condition
+      : conditionalExpression(
+          condition,
+          edgeResultExpression(trueStatements, true),
+          edgeResultExpression(falseStatements, false),
+        );
+
+  if (statements.length === 0) return test;
+
+  return sequenceExpression([
+    ...statements.map(expressionFromStatement),
+    test,
+  ]);
+}
+
+function edgeResultExpression(
+  statements: readonly ESTreeStatement[],
+  result: boolean,
+): ESTreeExpression {
+  if (statements.length === 0) return literal(result);
+
+  return sequenceExpression([
+    ...statements.map(expressionFromStatement),
+    literal(result),
+  ]);
+}
+
+function validateLoopTestEdge(
+  block: BasicBlock,
+  expected: BasicBlock,
+  label: string,
+): void {
+  if (block === expected) return;
+
+  const terminator = block.terminator;
+  if (terminator instanceof JumpTerminatorOp && terminator.targetBlock === expected) {
+    return;
+  }
+
+  throw new Error(`${label} must target bb${expected.id}`);
+}
+
+function emitLoopTestEdge(
+  context: CodegenContext,
+  block: BasicBlock,
+  continuation: BasicBlock,
+  emitted: Set<BasicBlock>,
+): ESTreeStatement[] {
+  if (block === continuation) return [];
+
+  const terminator = block.terminator;
+  if (!(terminator instanceof JumpTerminatorOp) || terminator.targetBlock !== continuation) {
+    throw new Error(
+      `Loop test edge must target bb${continuation.id} directly or through an edge-copy block`,
+    );
+  }
+
+  const statements: ESTreeStatement[] = [];
+  for (const op of block.operations) {
+    if (op === terminator) continue;
+
+    if (!(op instanceof CopyValueOp)) {
+      throw new Error(
+        `Loop test edge-copy block may only contain CopyValueOp, got ${op.constructor.name}`,
+      );
+    }
+
+    statements.push(...emitOperation(context, op));
+  }
+
+  emitted.add(block);
+  return statements;
+}
+
+function expressionFromStatement(statement: ESTreeStatement): ESTreeExpression {
+  if (statement.type !== "ExpressionStatement") {
+    throw new Error(
+      `Loop test normalization only supports expression statements, got ${statement.type}`,
+    );
+  }
+
+  return statement.expression;
+}
+
+function emitLoopTest(
+  context: CodegenContext,
+  block: BasicBlock,
+  emitted: Set<BasicBlock>,
+): ESTreeStatement[] {
+  if (emitted.has(block)) return [];
+  emitted.add(block);
+
+  const statements: ESTreeStatement[] = [];
+  const terminator = block.terminator;
+
+  for (const op of block.operations) {
+    if (op === terminator) continue;
+    statements.push(...emitOperation(context, op));
+  }
+
+  return statements;
+}
+
+function emitBranch(
+  context: CodegenContext,
+  branch: BranchTerminatorOp,
+  emitted: Set<BasicBlock>,
+  controls: readonly EmitControlContext[],
+): ESTreeStatement[] {
+  const trueExit = jumpExit(branch.trueBlock);
+  const falseExit = jumpExit(branch.falseBlock);
+  const continuation = commonContinuation(branch, trueExit, falseExit);
+
+  const consequent =
+    branch.trueBlock === continuation
+      ? []
+      : emitBranchArm(
+          context,
+          branch.trueBlock,
+          continuation,
+          emitted,
+          controls,
+        );
+  const alternate =
+    branch.falseBlock === continuation
+      ? []
+      : emitBranchArm(
+          context,
+          branch.falseBlock,
+          continuation,
+          emitted,
+          controls,
+        );
+
+  const statements: ESTreeStatement[] = [
+    ifStatement(
+      context.expressionForValue(branch.condition),
+      blockStatement(consequent),
+      alternate.length === 0 ? null : blockStatement(alternate),
+    ),
+  ];
+
+  if (continuation !== null) {
+    statements.push(...emitBlock(context, continuation, emitted, controls));
+  }
+
+  return statements;
+}
+
+function emitIf(
+  context: CodegenContext,
+  op: IfTerminatorOp,
+  emitted: Set<BasicBlock>,
+  controls: readonly EmitControlContext[],
+  continuation: BasicBlock | null = null,
+): ESTreeStatement[] {
+  return withFallthrough(
+    context,
+    op.exitBlock,
+    emitted,
+    controls,
+    continuation,
+    () => {
+      const consequent = emitTargetArm(
+        context,
+        op.thenTarget,
+        emitted,
+        controls,
+      );
+      const alternate = emitTargetArm(
+        context,
+        op.elseTarget,
+        emitted,
+        controls,
+      );
+
+      return [
+        ifStatement(
+          context.expressionForValue(op.condition),
+          blockStatement(consequent),
+          alternate.length === 0 ? null : blockStatement(alternate),
+        ),
+      ];
+    },
+  );
+}
+
+function emitTargetArm(
+  context: CodegenContext,
+  target: BlockTarget,
+  emitted: Set<BasicBlock>,
+  controls: readonly EmitControlContext[],
+): ESTreeStatement[] {
+  const assignments = assignTargetParams(context, target);
+
+  if (context.isFallthrough(target.block)) {
+    return assignments;
+  }
+
+  return [
+    ...assignments,
+    ...emitBlock(context, target.block, emitted, controls),
+  ];
+}
+
+function emitBranchArm(
+  context: CodegenContext,
+  block: BasicBlock,
+  continuation: BasicBlock | null,
+  emitted: Set<BasicBlock>,
+  controls: readonly EmitControlContext[],
+): ESTreeStatement[] {
+  if (emitted.has(block)) return [];
+  emitted.add(block);
+
+  const statements: ESTreeStatement[] = [];
+  const terminator = block.terminator;
+
+  for (const op of block.operations) {
+    if (op === terminator) continue;
+    statements.push(...emitOperation(context, op));
+  }
+
+  if (terminator === null) return statements;
+
+  if (terminator instanceof JumpTerminatorOp) {
+    const controlJump = emitControlJump(terminator.targetBlock, controls);
+
+    if (terminator.targetBlock === continuation) {
+      if (controlJump !== null) return statements;
+      statements.push(...assignBlockParams(context, terminator));
+      return statements;
+    }
+
+    if (controlJump !== null) {
+      statements.push(controlJump);
+      return statements;
+    }
+
+    if (context.isFallthrough(terminator.targetBlock)) {
+      statements.push(...assignBlockParams(context, terminator));
+      return statements;
+    }
+
+    if (!emitted.has(terminator.targetBlock)) {
+      statements.push(...assignBlockParams(context, terminator));
+      statements.push(
+        ...emitContinuation(
+          context,
+          terminator.targetBlock,
+          continuation,
+          emitted,
+          controls,
+        ),
+      );
+      return statements;
+    }
+
+    throw new Error(
+      `Cannot emit jump from bb${block.id} to bb${terminator.targetBlock.id}; expected structured continuation`,
+    );
+  }
+
+  if (terminator instanceof TryTerminatorOp) {
+    statements.push(
+      ...emitTry(context, terminator, emitted, controls, continuation),
+    );
+    return statements;
+  }
+
+  if (terminator instanceof IfTerminatorOp) {
+    statements.push(
+      ...emitIf(context, terminator, emitted, controls, continuation),
+    );
+    return statements;
+  }
+
+  if (terminator instanceof BranchTerminatorOp) {
+    statements.push(...emitBranch(context, terminator, emitted, controls));
+    return statements;
+  }
+
+  if (terminator instanceof SwitchTerminatorOp) {
+    statements.push(
+      ...emitSwitch(context, terminator, emitted, controls, continuation),
+    );
+    return statements;
+  }
+
+  if (terminator instanceof WhileTerminatorOp) {
+    statements.push(
+      ...emitWhile(context, terminator, emitted, controls, continuation),
+    );
+    return statements;
+  }
+
+  if (terminator instanceof ForInTerminatorOp) {
+    statements.push(
+      ...emitForIn(context, terminator, emitted, controls, continuation),
+    );
+    return statements;
+  }
+
+  if (terminator instanceof ForOfTerminatorOp) {
+    statements.push(
+      ...emitForOf(context, terminator, emitted, controls, continuation),
+    );
+    return statements;
+  }
+
+  if (terminator instanceof ForTerminatorOp) {
+    statements.push(
+      ...emitFor(context, terminator, emitted, controls, continuation),
+    );
+    return statements;
+  }
+
+  statements.push(...emitOperation(context, terminator));
+  return statements;
+}
+
+function emitJump(
+  context: CodegenContext,
+  jump: JumpTerminatorOp,
+  emitted: Set<BasicBlock>,
+  controls: readonly EmitControlContext[],
+): ESTreeStatement[] {
+  const controlJump = emitControlJump(jump.targetBlock, controls);
+  if (controlJump !== null) {
+    return [...assignBlockParams(context, jump), controlJump];
+  }
+
+  if (context.isFallthrough(jump.targetBlock)) {
+    return assignBlockParams(context, jump);
+  }
+
+  if (emitted.has(jump.targetBlock)) {
+    return [];
+  }
+
+  return [
+    ...assignBlockParams(context, jump),
+    ...emitBlock(context, jump.targetBlock, emitted, controls),
+  ];
+}
+
+function emitContinuation(
+  context: CodegenContext,
+  block: BasicBlock,
+  continuation: BasicBlock | null,
+  emitted: Set<BasicBlock>,
+  controls: readonly EmitControlContext[],
+): ESTreeStatement[] {
+  return continuation === null
+    ? emitBlock(context, block, emitted, controls)
+    : emitBranchArm(context, block, continuation, emitted, controls);
+}
+
+function withFallthrough(
+  context: CodegenContext,
+  fallthroughBlock: BasicBlock,
+  emitted: Set<BasicBlock>,
+  controls: readonly EmitControlContext[],
+  continuation: BasicBlock | null,
+  emitRegion: () => ESTreeStatement[],
+): ESTreeStatement[] {
+  context.pushFallthrough(fallthroughBlock);
+
+  let statements: ESTreeStatement[];
+  try {
+    statements = emitRegion();
+  } finally {
+    context.popFallthrough(fallthroughBlock);
+  }
+
+  if (!emitted.has(fallthroughBlock)) {
+    statements.push(
+      ...emitContinuation(
+        context,
+        fallthroughBlock,
+        continuation,
+        emitted,
+        controls,
+      ),
+    );
+  }
+
+  return statements;
+}
+
+function emitControlJump(
+  target: BasicBlock,
+  controls: readonly EmitControlContext[],
+): ESTreeStatement | null {
+  for (let index = controls.length - 1; index >= 0; index--) {
+    const control = controls[index];
+    const needsLabel = index !== controls.length - 1;
+    const label =
+      needsLabel && control.label !== null ? identifier(control.label) : null;
+
+    if (target === control.continueTarget) {
+      return continueStatement(label);
+    }
+
+    if (target === control.breakTarget) {
+      return breakStatement(label);
+    }
+  }
+
+  return null;
+}
+
+function withOptionalLabel(
+  label: string | null,
+  statement: ESTreeStatement,
+): ESTreeStatement {
+  return label === null
+    ? statement
+    : labeledStatement(identifier(label), statement);
+}
+
+function assignBlockParams(
+  context: CodegenContext,
+  jump: JumpTerminatorOp,
+): ESTreeStatement[] {
+  return assignTargetParams(context, jump.jumpTarget);
+}
+
+function assignTargetParams(
+  context: CodegenContext,
+  target: BlockTarget,
+): ESTreeStatement[] {
+  const params = target.block.params;
+  const args = successorValues(target);
+
+  if (params.length !== args.length) {
+    throw new Error(
+      `Branch to bb${target.block.id} passes ${args.length} values for ${params.length} block params`,
+    );
+  }
+
+  return params.map((param, index) =>
+    expressionStatement(
+      assignmentExpression(
+        identifier(context.names.valueName(param)),
+        context.expressionForValue(args[index]),
+      ),
+    ),
+  );
+}
+
+function jumpExit(block: BasicBlock): JumpTerminatorOp | null {
+  const terminator = block.terminator;
+  return terminator instanceof JumpTerminatorOp ? terminator : null;
+}
+
+function commonContinuation(
+  branch: BranchTerminatorOp,
+  trueExit: JumpTerminatorOp | null,
+  falseExit: JumpTerminatorOp | null,
+): BasicBlock | null {
+  if (trueExit !== null && falseExit !== null) {
+    if (trueExit.targetBlock !== falseExit.targetBlock) {
+      if (
+        jumpExit(trueExit.targetBlock)?.targetBlock === falseExit.targetBlock
+      ) {
+        return trueExit.targetBlock;
+      }
+
+      if (
+        jumpExit(falseExit.targetBlock)?.targetBlock === trueExit.targetBlock
+      ) {
+        return falseExit.targetBlock;
+      }
+
+      throw new Error(
+        `Branch bb${branch.ownerBlock?.id} has non-joining successors`,
+      );
+    }
+
+    return trueExit.targetBlock;
+  }
+
+  if (trueExit !== null && branch.falseBlock === trueExit.targetBlock) {
+    return branch.falseBlock;
+  }
+
+  if (falseExit !== null && branch.trueBlock === falseExit.targetBlock) {
+    return branch.trueBlock;
+  }
+
+  if (trueExit !== null) return trueExit.targetBlock;
+  if (falseExit !== null) return falseExit.targetBlock;
+
+  const trueStructuredExit = structuredExit(branch.trueBlock);
+  const falseStructuredExit = structuredExit(branch.falseBlock);
+
+  if (trueStructuredExit !== null && falseStructuredExit !== null) {
+    if (trueStructuredExit !== falseStructuredExit) {
+      throw new Error(
+        `Branch bb${branch.ownerBlock?.id} has non-joining successors`,
+      );
+    }
+
+    return trueStructuredExit;
+  }
+
+  if (trueStructuredExit !== null && branch.falseBlock === trueStructuredExit) {
+    return branch.falseBlock;
+  }
+
+  if (
+    falseStructuredExit !== null &&
+    branch.trueBlock === falseStructuredExit
+  ) {
+    return branch.trueBlock;
+  }
+
+  if (
+    trueStructuredExit !== null &&
+    jumpExit(trueStructuredExit)?.targetBlock === branch.falseBlock
+  ) {
+    return branch.falseBlock;
+  }
+
+  if (
+    falseStructuredExit !== null &&
+    jumpExit(falseStructuredExit)?.targetBlock === branch.trueBlock
+  ) {
+    return branch.trueBlock;
+  }
+
+  if (trueStructuredExit !== null) return trueStructuredExit;
+  if (falseStructuredExit !== null) return falseStructuredExit;
+
+  return null;
+}
+
+function structuredExit(block: BasicBlock): BasicBlock | null {
+  const terminator = block.terminator;
+
+  if (
+    terminator instanceof SwitchTerminatorOp ||
+    terminator instanceof IfTerminatorOp ||
+    terminator instanceof TryTerminatorOp ||
+    terminator instanceof WhileTerminatorOp ||
+    terminator instanceof ForInTerminatorOp ||
+    terminator instanceof ForOfTerminatorOp ||
+    terminator instanceof ForTerminatorOp
+  ) {
+    return terminator.exitBlock;
+  }
+
+  return null;
+}

@@ -1,6 +1,0 @@
-{
-  "enableOptimizer": false,
-  "enableLateOptimizer": true,
-  "enableLateDeadStoreEliminationPass": false,
-  "enableLateDeadCodeEliminationPass": false
-}

@@ -1,0 +1,220 @@
+import type {
+  AssignmentPatternTarget,
+  BindingPatternTarget,
+  ObjectAssignmentProperty,
+  ObjectBindingProperty,
+} from "../../../../ir/core/DestructurePattern";
+import type { DeclarationId } from "../../../../ir/core/Value";
+import type { PropertyKey } from "../../../../ir/ops/properties/PropertyKey";
+import {
+  arrayPattern,
+  assignmentPattern,
+  identifier,
+  literal,
+  memberExpression,
+  objectPattern,
+  objectPatternProperty,
+  restElement,
+  type ESTreeExpression,
+  type ESTreePattern,
+  type VariableDeclarationKind,
+} from "../../ast";
+import type { CodegenContext } from "../../CodegenContext";
+
+export function emitBindingPatternTarget(
+  context: CodegenContext,
+  target: BindingPatternTarget,
+): ESTreePattern {
+  switch (target.kind) {
+    case "binding":
+      return identifier(context.names.declarationName(target.declarationId));
+
+    case "array":
+      return arrayPattern(
+        target.elements.map((element) =>
+          element === null ? null : emitBindingPatternTarget(context, element),
+        ),
+      );
+
+    case "object":
+      return objectPattern(
+        target.properties.map((property) => emitObjectBindingProperty(context, property)),
+      );
+
+    case "rest":
+      return restElement(emitBindingPatternTarget(context, target.target));
+
+    case "default":
+      return assignmentPattern(
+        emitBindingPatternTarget(context, target.target),
+        context.expressionForValue(target.value),
+      );
+  }
+}
+
+export function emitAssignmentPatternTarget(
+  context: CodegenContext,
+  target: AssignmentPatternTarget,
+): ESTreePattern {
+  switch (target.kind) {
+    case "binding":
+      return identifier(context.names.declarationName(target.declarationId));
+
+    case "static-property":
+      return memberExpression(
+        context.expressionForValue(target.object),
+        identifier(target.key),
+        false,
+      );
+
+    case "dynamic-property":
+      return memberExpression(
+        context.expressionForValue(target.object),
+        context.expressionForValue(target.key),
+        true,
+      );
+
+    case "array":
+      return arrayPattern(
+        target.elements.map((element) =>
+          element === null ? null : emitAssignmentPatternTarget(context, element),
+        ),
+      );
+
+    case "object":
+      return objectPattern(
+        target.properties.map((property) => emitObjectAssignmentProperty(context, property)),
+      );
+
+    case "rest":
+      return restElement(emitAssignmentPatternTarget(context, target.target));
+
+    case "default":
+      return assignmentPattern(
+        emitAssignmentPatternTarget(context, target.target),
+        context.expressionForValue(target.value),
+      );
+  }
+}
+
+export function bindingPatternDeclarationIds(target: BindingPatternTarget): DeclarationId[] {
+  switch (target.kind) {
+    case "binding":
+      return [target.declarationId];
+
+    case "array":
+      return target.elements.flatMap((element) =>
+        element === null ? [] : bindingPatternDeclarationIds(element),
+      );
+
+    case "object":
+      return target.properties.flatMap((property) => bindingPatternDeclarationIds(property.target));
+
+    case "rest":
+      return bindingPatternDeclarationIds(target.target);
+
+    case "default":
+      return bindingPatternDeclarationIds(target.target);
+  }
+}
+
+export function bindingPatternDeclarationKind(
+  context: CodegenContext,
+  target: BindingPatternTarget,
+): VariableDeclarationKind {
+  const ids = bindingPatternDeclarationIds(target);
+  if (ids.length === 0) {
+    throw new Error("Binding pattern has no declarations");
+  }
+
+  const kind = declarationVariableKind(context, ids[0]);
+  for (const id of ids.slice(1)) {
+    const nextKind = declarationVariableKind(context, id);
+    if (nextKind !== kind) {
+      throw new Error("Binding pattern contains mixed declaration kinds");
+    }
+  }
+
+  return kind;
+}
+
+function emitObjectBindingProperty(context: CodegenContext, property: ObjectBindingProperty) {
+  if (property.kind === "rest") {
+    return restElement(emitBindingPatternTarget(context, property.target));
+  }
+
+  const key = emitPropertyKey(context, property.key);
+  const value = emitBindingPatternTarget(context, property.target);
+
+  return objectPatternProperty(
+    key.expression,
+    value,
+    key.computed,
+    isShorthandProperty(key.expression, value, key.computed),
+  );
+}
+
+function emitObjectAssignmentProperty(context: CodegenContext, property: ObjectAssignmentProperty) {
+  if (property.kind === "rest") {
+    return restElement(emitAssignmentPatternTarget(context, property.target));
+  }
+
+  const key = emitPropertyKey(context, property.key);
+  const value = emitAssignmentPatternTarget(context, property.target);
+
+  return objectPatternProperty(
+    key.expression,
+    value,
+    key.computed,
+    isShorthandProperty(key.expression, value, key.computed),
+  );
+}
+
+function emitPropertyKey(
+  context: CodegenContext,
+  key: PropertyKey,
+): { readonly expression: ESTreeExpression; readonly computed: boolean } {
+  if (key.kind === "computed") {
+    return {
+      expression: context.expressionForValue(key.value),
+      computed: true,
+    };
+  }
+
+  return {
+    expression: isIdentifierName(key.name) ? identifier(key.name) : literal(key.name),
+    computed: false,
+  };
+}
+
+function declarationVariableKind(
+  context: CodegenContext,
+  id: DeclarationId,
+): VariableDeclarationKind {
+  const declaration = context.declaration(id);
+  if (declaration.kind === "var") return "var";
+
+  if (declaration.kind === "lexical") {
+    return declaration.mode === "const" ? "const" : "let";
+  }
+
+  if (declaration.kind === "catch-parameter" || declaration.kind === "parameter") {
+    return "let";
+  }
+
+  throw new Error(`Cannot emit declaration pattern for ${declaration.kind} declaration`);
+}
+
+function isShorthandProperty(
+  key: ESTreeExpression,
+  value: ESTreePattern,
+  computed: boolean,
+): boolean {
+  return (
+    !computed && key.type === "Identifier" && value.type === "Identifier" && key.name === value.name
+  );
+}
+
+function isIdentifierName(name: string): boolean {
+  return /^[$_\p{ID_Start}][$\u200c\u200d\p{ID_Continue}]*$/u.test(name);
+}

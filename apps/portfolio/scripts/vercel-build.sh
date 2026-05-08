@@ -12,9 +12,8 @@ trap cleanup EXIT
 pnpm exec auth migrate --yes
 pnpm db:migrate
 
-if [ "${ENABLE_AOT:-}" = "1" ]; then
+if [ "${ENABLE_COMPILER_AOT:-}" = "1" ]; then
   pnpm --filter @i2-labs/compiler build
-  pnpm aot:compile
 fi
 
 # Pass 1: node-server preset — crawlable, produces prerendered HTML + sitemap.

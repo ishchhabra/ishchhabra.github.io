@@ -1,118 +1,19 @@
 import { findWorkspacePackagesNoCheck } from "@pnpm/find-workspace-packages";
+import { compilerVitePlugin } from "@i2-labs/compiler/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
 import type { Nitro } from "nitro/types";
 import { nitro } from "nitro/vite";
-import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { type Plugin, type UserConfig, defineConfig } from "vite";
+import { type UserConfig, defineConfig } from "vite";
 import tsConfigPaths from "vite-tsconfig-paths";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = path.resolve(__dirname, "../..");
-const portfolioAot = process.env["ENABLE_AOT"] === "1";
-const effectiveSrcDir = portfolioAot ? ".aot-src" : "src";
-
-interface MirrorEntry {
-  packageRoot: string;
-  mirrorRoot: string;
-}
-
-function loadNodeModuleMirrors(): MirrorEntry[] {
-  const manifestPath = path.resolve(__dirname, ".aot-node-modules-manifest.json");
-  if (!existsSync(manifestPath)) {
-    return [];
-  }
-  try {
-    const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
-    return manifest.mirrors ?? [];
-  } catch {
-    return [];
-  }
-}
-
-/**
- * Vite plugin that redirects resolved node_module paths to their AOT-compiled
- * mirror copies. Works by first letting Vite resolve imports normally, then
- * checking if the resolved path falls within a compiled package root.
- */
-function aotNodeModulesPlugin(mirrors: MirrorEntry[]): Plugin {
-  if (mirrors.length === 0) {
-    return { name: "aot-node-modules" };
-  }
-
-  // Sort longest-first so nested packages match before parents.
-  const sorted = mirrors.slice().sort((a, b) => b.packageRoot.length - a.packageRoot.length);
-
-  // Build reverse map: mirrorRoot → packageRoot (for fixing imports from mirrors)
-  const reverseSorted = mirrors.slice().sort((a, b) => b.mirrorRoot.length - a.mirrorRoot.length);
-
-  function findOriginalImporter(importer: string): string | undefined {
-    for (const { packageRoot, mirrorRoot } of reverseSorted) {
-      if (importer.startsWith(mirrorRoot + "/") || importer === mirrorRoot) {
-        return packageRoot + importer.slice(mirrorRoot.length);
-      }
-    }
-    return undefined;
-  }
-
-  const resolving = new Set<string>();
-
-  return {
-    name: "aot-node-modules",
-    enforce: "pre",
-    applyToEnvironment(environment) {
-      return environment.name === "client";
-    },
-    async resolveId(source, importer, options) {
-      // Prevent infinite recursion: skip if we're already resolving this pair.
-      const key = `${source}\0${importer ?? ""}`;
-      if (resolving.has(key)) return null;
-
-      // If the importer is inside a mirror directory and the source is a bare
-      // specifier, resolve as if importing from the original package location
-      // so that node_modules resolution works correctly.
-      let effectiveImporter = importer;
-      if (importer) {
-        const original = findOriginalImporter(importer);
-        if (original) {
-          effectiveImporter = original;
-        }
-      }
-
-      resolving.add(key);
-      let resolved;
-      try {
-        resolved = await this.resolve(source, effectiveImporter, options);
-      } finally {
-        resolving.delete(key);
-      }
-      if (!resolved || resolved.external) return null;
-
-      const id = resolved.id;
-      for (const { packageRoot, mirrorRoot } of sorted) {
-        if (id.startsWith(packageRoot + "/") || id === packageRoot) {
-          const mirrored = mirrorRoot + id.slice(packageRoot.length);
-          if (existsSync(mirrored)) {
-            return { id: mirrored, moduleSideEffects: resolved.moduleSideEffects };
-          }
-        }
-      }
-
-      // If the importer was remapped from a mirror, we must return the
-      // resolved id explicitly so Rollup doesn't try to resolve from
-      // the mirror directory (where node_modules doesn't exist).
-      if (importer && findOriginalImporter(importer)) {
-        return { id: resolved.id, moduleSideEffects: resolved.moduleSideEffects };
-      }
-
-      return null;
-    },
-  };
-}
+const compilerAot = process.env["ENABLE_COMPILER_AOT"] === "1";
 
 // https://vite.dev/config/
 export default defineConfig(async (): Promise<UserConfig> => {
@@ -123,22 +24,12 @@ export default defineConfig(async (): Promise<UserConfig> => {
     .map((p) => p.manifest.name)
     .filter((name): name is string => typeof name === "string");
 
-  const mirrors = portfolioAot ? loadNodeModuleMirrors() : [];
-
   return {
     resolve: {
       // use-sync-external-store/shim is CJS (default export only); deps use named import.
       // React 18+ has useSyncExternalStore. Alias only the base shim (exact match) so
       // use-sync-external-store/shim/with-selector.js still resolves to the real package.
       alias: [
-        ...(portfolioAot
-          ? [
-              {
-                find: path.resolve(__dirname, "src"),
-                replacement: path.resolve(__dirname, ".aot-src"),
-              },
-            ]
-          : []),
         {
           find: /^use-sync-external-store\/shim$/,
           replacement: "react",
@@ -147,9 +38,16 @@ export default defineConfig(async (): Promise<UserConfig> => {
     },
     plugins: [
       tsConfigPaths(),
-      ...(mirrors.length > 0 ? [aotNodeModulesPlugin(mirrors)] : []),
+      ...(compilerAot
+        ? [
+            compilerVitePlugin({
+              rootDir: __dirname,
+              include: ["src"],
+            }),
+          ]
+        : []),
       tanstackStart({
-        srcDirectory: effectiveSrcDir,
+        srcDirectory: "src",
         prerender: { enabled: process.env["NITRO_PRESET"] !== "vercel" },
         sitemap: {
           enabled: process.env["NITRO_PRESET"] !== "vercel",

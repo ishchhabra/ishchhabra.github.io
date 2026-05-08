@@ -1,4 +1,0 @@
-function f({ a = 1 }) {
-  return a;
-}
-console.log(f({}));

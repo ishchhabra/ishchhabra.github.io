@@ -1,1 +1,0 @@
-Variable accessed before declaration: x

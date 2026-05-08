@@ -1,147 +1,133 @@
-import type { User } from "./Use";
+import type { FunctionIR } from "./FunctionIR";
+import type { Operation } from "./Operation";
+
+declare const opaqueValueId: unique symbol;
 
 /**
- * Simulated opaque type for ValueId to prevent using normal numbers as
- * ids accidentally.
+ * Stable identity of an SSA value within an IR graph.
+ *
+ * Value ids are for diagnostics, maps, and serialization. They are not
+ * source variable ids and do not imply program order.
  */
-const opaqueValueId = Symbol();
-export type ValueId = number & { [opaqueValueId]: "ValueId" };
+export type ValueId = number & {
+  readonly [opaqueValueId]: "ValueId";
+};
 
 export function makeValueId(id: number): ValueId {
   return id as ValueId;
 }
 
+declare const opaqueDeclarationId: unique symbol;
+
 /**
- * Simulated opaque type for DeclarationId.
+ * Stable identity of a source-level declaration.
+ *
+ * Multiple SSA values may share one declaration id when they represent
+ * different versions of the same source binding.
  */
-const opaqueDeclarationId = Symbol();
-export type DeclarationId = number & { [opaqueDeclarationId]: "DeclarationId" };
+export type DeclarationId = number & {
+  readonly [opaqueDeclarationId]: "DeclarationId";
+};
 
 export function makeDeclarationId(id: number): DeclarationId {
   return id as DeclarationId;
 }
 
+export type ValueUser = Operation | FunctionIR;
+
 /**
- * SSA value — MLIR's `Value` analogue. The single unit of SSA identity
- * in this compiler. Every operand, op result, and block parameter is a
- * `Value`.
+ * SSA value used by operation operands, operation results, and block parameters.
  *
- * Owns:
- *
- *   - `id` — stable project-wide id, used as map-key identity.
- *   - `declarationId` — source-level binding this value represents.
- *     Multiple Values share a `declarationId` when a source variable
- *     is reassigned across SSA versions (each version is its own
- *     Value; they all carry the same `declarationId`).
- *   - `name` — the string codegen emits. Default `$<declId>_<version>`
- *     is set by `Environment.createValue`; a handful of passes
- *     reassign it when they need a specific source-level name
- *     (e.g. export renaming).
- *   - `originalDeclarationId` — for SSA block-param Values only: the
- *     declaration the param merges values of. The param has its own
- *     fresh `declarationId`; this back-pointer lets out-of-SSA
- *     lowering reach the source variable.
- *   - `#definer` / `#uses` — encapsulated def-use state. Private JS
- *     fields; external code reads via `definer` / `uses`. Mutation
- *     is possible only through the `_*` methods, which are reserved
- *     for `BasicBlock`'s use-chain helpers and
- *     `Environment.createOperation`.
+ * A value is the unit of data dependency in the IR. Operation results have a
+ * defining operation; block parameters do not. Users are IR objects that read
+ * the value as an operand.
  */
 export class Value {
-  public name: string;
-
-  #definer: User | undefined = undefined;
-  readonly #uses: Set<User> = new Set();
-
-  public originalDeclarationId: DeclarationId | undefined;
+  #definer: Operation | undefined = undefined;
+  #users: Set<ValueUser> = new Set();
 
   constructor(
     public readonly id: ValueId,
-    public readonly declarationId: DeclarationId,
-  ) {
-    this.name = `$${this.id}`;
-  }
+    public readonly declarationId: DeclarationId | null = null,
+  ) {}
 
-  // -------------------------------------------------------------------
-  // Def-use accessors — MLIR-style
-  // -------------------------------------------------------------------
-
-  /** The unique op that defines this value, or `undefined` for block params / unattached. */
-  get definer(): User | undefined {
+  /**
+   * Operation that defines this value, if any.
+   *
+   * Block parameters and detached values have no operation definer.
+   */
+  public get definer(): Operation | undefined {
     return this.#definer;
   }
 
   /**
-   * Read-only view of every op that uses this value. Backed by the
-   * internal `Set<User>`, so `.size` / `.has(op)` / iteration are all
-   * O(1) — but the `ReadonlySet` type prevents `.add` / `.delete` at
-   * the type level so external code can't corrupt the use list.
+   * IR objects that read this value.
+   *
+   * This is a set of users, not operand slots. If one user reads the same value
+   * more than once, it appears once.
    */
-  get uses(): ReadonlySet<User> {
-    return this.#uses;
+  public get users(): ReadonlySet<ValueUser> {
+    return this.#users;
   }
 
   /**
-   * MLIR's `replaceAllUsesWith`. Rewrites every user of `this` to read
-   * `other` instead by going through each user's owning block via the
-   * sanctioned `BasicBlock.replaceOp` path. Keeps the def-use chain
-   * consistent.
+   * Registers an IR object as a user of this value.
+   *
+   * @internal
    */
-  replaceAllUsesWith(other: Value): void {
-    if (other === this) return;
-    const users = Array.from(this.#uses);
-    const map = new Map<Value, Value>([[this, other]]);
-    for (const user of users) {
-      const op = user as unknown as {
-        parentBlock: { replaceOp(a: unknown, b: unknown): void } | null;
-        rewrite(values: Map<Value, Value>): unknown;
-      };
-      const rewritten = op.rewrite(map);
-      if (rewritten !== op && op.parentBlock !== null) {
-        op.parentBlock.replaceOp(op, rewritten);
-      }
+  public _addUser(user: ValueUser): void {
+    this.#users.add(user);
+  }
+
+  /**
+   * Removes an IR object from this value's use-list.
+   *
+   * @internal
+   */
+  public _removeUser(user: ValueUser): void {
+    this.#users.delete(user);
+  }
+
+  /**
+   * Records the operation that defines this value.
+   *
+   * A value may have at most one definer. Reassigning the same definer is
+   * idempotent; assigning a different definer is an IR invariant violation.
+   *
+   * @internal
+   */
+  public _setDefiner(definer: Operation): void {
+    if (this.#definer !== undefined && this.#definer !== definer) {
+      throw new Error(`Value#${this.id} already has a definer: ${this.#definer.id}`);
     }
+
+    this.#definer = definer;
   }
 
-  rewrite(values: Map<Value, Value>): Value {
-    return values.get(this) ?? this;
-  }
-
-  print(): string {
-    return this.name;
-  }
-
-  // -------------------------------------------------------------------
-  // Internal mutation API — IR infrastructure only.
-  //
-  // Callers:
-  //   - BasicBlock use-chain helpers (registerUses / unregisterUses)
-  //   - Environment.createOperation (sets definer once at op creation)
-  //
-  // Not for use from passes. Passes mutate the IR through
-  // BasicBlock.{appendOp,replaceOp,insertOpAt,removeOpAt,...} and
-  // Value.replaceAllUsesWith — those call through to these.
-  // -------------------------------------------------------------------
-
-  /** @internal */
-  _addUse(user: User): void {
-    this.#uses.add(user);
-  }
-
-  /** @internal */
-  _removeUse(user: User): void {
-    this.#uses.delete(user);
-  }
-
-  /** @internal */
-  _setDefiner(user: User): void {
-    this.#definer = user;
-  }
-
-  /** @internal */
-  _clearDefinerIf(user: User): void {
-    if (this.#definer === user) {
-      this.#definer = undefined;
+  /**
+   * Clears this value's defining operation.
+   *
+   * The caller must pass the current definer. Passing any other operation is an
+   * IR invariant violation.
+   *
+   * @internal
+   */
+  public _clearDefiner(definer: Operation): void {
+    if (this.#definer !== definer) {
+      throw new Error(
+        `Cannot clear definer for Value#${this.id}; it is not defined by this operation`,
+      );
     }
+
+    this.#definer = undefined;
   }
+}
+
+/**
+ * Converts a value to a JavaScript variable name.
+ *
+ * This is used by code generation to print variable names.
+ */
+export function valueToJsName(value: Value): string {
+  return `$${value.id}`;
 }

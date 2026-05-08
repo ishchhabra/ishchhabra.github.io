@@ -1,0 +1,39 @@
+import { describe, expect, it } from "vitest";
+import { IRIdAllocator } from "../../ir/core/IRIdAllocator";
+import { ForOfTerminatorOp } from "../../ir/ops/control/ForOfTerminatorOp";
+import { JumpTerminatorOp } from "../../ir/ops/control/JumpTerminatorOp";
+import { ModuleIRBuilder } from "../ModuleIRBuilder";
+import { parseModule } from "../parse/parseModule";
+
+describe("lowerForOfStatement", () => {
+  it("lowers for-of to structured iteration CFG", () => {
+    const { moduleIR } = new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
+      parseModule("test.js", "for (const x of xs) foo(x); bar();"),
+    );
+    const fn = moduleIR.entryFunction;
+    if (fn === null) throw new Error("Expected entry function");
+
+    const entryJump = fn.entryBlock.terminator as JumpTerminatorOp;
+    const loop = entryJump.targetBlock.terminator as ForOfTerminatorOp;
+    const bodyJump = loop.bodyBlock.terminator as JumpTerminatorOp;
+
+    expect(entryJump).toBeInstanceOf(JumpTerminatorOp);
+    expect(loop).toBeInstanceOf(ForOfTerminatorOp);
+    expect(loop.bodyBlock.params).toHaveLength(1);
+    expect(loop.bodyTarget.operands.produced).toEqual(loop.bodyBlock.params);
+    expect(loop.bodyTarget.operands.forwarded).toEqual([]);
+    expect(bodyJump).toBeInstanceOf(JumpTerminatorOp);
+    expect(bodyJump.targetBlock).toBe(entryJump.targetBlock);
+    expect(loop.bodyBlock.operations.map((op) => op.constructor.name)).toEqual([
+      "InitializeBindingOp",
+      "LoadGlobalOp",
+      "LoadBindingOp",
+      "CallOp",
+      "JumpTerminatorOp",
+    ]);
+    expect(loop.exitBlock.operations.map((op) => op.constructor.name)).toEqual([
+      "LoadGlobalOp",
+      "CallOp",
+    ]);
+  });
+});

@@ -1,6 +1,0 @@
-const list = (
-  <>
-    <li>one</li>
-    <li>two</li>
-  </>
-);
