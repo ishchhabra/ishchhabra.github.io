@@ -58,7 +58,7 @@ Monorepo (`pnpm` workspaces). Key packages:
 
 | Package | Purpose |
 |---------|---------|
-| `packages/compiler` | AOT JavaScript compiler — see `packages/compiler/AGENTS.md` |
+| `packages/compiler-core` | AOT JavaScript compiler |
 | `apps/portfolio` | Next.js 15 portfolio site (React 19, Tailwind, Vercel) |
 | `packages/sandbox` | Code execution environment |
 | `packages/design-overlay` | Shared UI components |

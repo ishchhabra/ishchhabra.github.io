@@ -67,7 +67,7 @@ importers:
         version: 5.2.10
       '@i2-labs/compiler':
         specifier: workspace:*
-        version: file:../../packages/compiler(@emnapi/core@1.8.1)(@emnapi/runtime@1.8.1)(vite@7.3.1(@types/node@22.19.17)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
+        version: file:../../packages/compiler-core(@emnapi/core@1.8.1)(@emnapi/runtime@1.8.1)(vite@7.3.1(@types/node@22.19.17)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
       '@iframe-resizer/child':
         specifier: ^5.5.9
         version: 5.5.9
@@ -1105,8 +1105,8 @@ packages:
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
 
-  '@i2-labs/compiler@file:../../packages/compiler':
-    resolution: {directory: ../../packages/compiler, type: directory}
+  '@i2-labs/compiler@file:../../packages/compiler-core':
+    resolution: {directory: ../../packages/compiler-core, type: directory}
     peerDependencies:
       vite: ^7.0.0 || ^8.0.0
 
@@ -7114,7 +7114,7 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
-  '@i2-labs/compiler@file:../../packages/compiler(@emnapi/core@1.8.1)(@emnapi/runtime@1.8.1)(vite@7.3.1(@types/node@22.19.17)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))':
+  '@i2-labs/compiler@file:../../packages/compiler-core(@emnapi/core@1.8.1)(@emnapi/runtime@1.8.1)(vite@7.3.1(@types/node@22.19.17)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))':
     dependencies:
       esrap: 2.2.6
       oxc-parser: 0.123.0(@emnapi/core@1.8.1)(@emnapi/runtime@1.8.1)

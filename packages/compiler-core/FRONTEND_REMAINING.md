@@ -1,6 +1,6 @@
 # Compiler Frontend Remaining Work
 
-Compared against the old POC frontend at the commit recorded in `docs/old-poc-compiler-commit.txt` and the current `packages/compiler/src/frontend` implementation.
+Compared against the old POC frontend at the commit recorded in `docs/old-poc-compiler-commit.txt` and the current `packages/compiler-core/src/frontend` implementation.
 
 ## Current Compiler Coverage
 
@@ -26,7 +26,7 @@ Compared against the old POC frontend at the commit recorded in `docs/old-poc-co
 
 ## Frontend Infrastructure
 
-- [ ] Add a frontend fixture test runner equivalent to `packages/compiler/test/frontend`.
+- [ ] Add a frontend fixture test runner equivalent to the old POC frontend fixtures.
 - [ ] Add compiler frontend fixtures for every syntax node as support is added.
 - [ ] Add an IR snapshot printer or structured test serializer for frontend output.
 - [ ] Add source locations to declarations, values, operations, and diagnostics.

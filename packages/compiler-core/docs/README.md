@@ -8,8 +8,8 @@ Source material:
 
 - The local Codex rollout transcript at
   `/Users/ishchhabra/.codex/sessions/2026/05/03/rollout-2026-05-03T00-27-52-019dea0d-e6a5-73b1-a832-0ba0ff4d13b3.jsonl`
-- The current `packages/compiler/src` implementation
-- Comparison points from the POC compiler in `packages/compiler`
+- The current `packages/compiler-core/src` implementation
+- Comparison points from the POC compiler recorded in `docs/old-poc-compiler-commit.txt`
 
 ## Docs
 

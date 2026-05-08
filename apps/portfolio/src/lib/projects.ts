@@ -48,7 +48,7 @@ export const LAB_PROJECTS: LabProject[] = [
       { label: "Live demo", href: "https://aot.ishchhabra.com", live: true },
       {
         label: "GitHub",
-        href: "https://github.com/ishchhabra/ishchhabra.github.io/tree/main/packages/compiler",
+        href: "https://github.com/ishchhabra/ishchhabra.github.io/tree/main/packages/compiler-core",
       },
     ],
   },
