@@ -1,6 +1,7 @@
 import { AnalysisManager, PreservedAnalyses } from "../analysis";
 import { FunctionIR, Operation } from "../core";
 import { TerminatorOp } from "../core/TerminatorOp";
+import { canDropOperationEffects } from "../effects";
 import { FunctionPass, PassResult } from "./Pass";
 
 /**
@@ -39,7 +40,7 @@ class DeadCodeEliminationPass {
       changed = false;
 
       for (const block of this.fn.blocks) {
-        for (const op of [...block.operations]) {
+        for (const op of Array.from(block.operations)) {
           if (!isDead(op)) continue;
 
           block.removeOp(op);
@@ -67,13 +68,5 @@ function hasNoUsedResults(op: Operation): boolean {
 }
 
 function hasNoRequiredEffects(op: Operation): boolean {
-  const effects = op.effects();
-
-  return (
-    effects.memory.reads.length === 0 &&
-    effects.memory.writes.length === 0 &&
-    !effects.mayThrow &&
-    !effects.mayDiverge &&
-    !effects.isObservable
-  );
+  return canDropOperationEffects(op.effects());
 }

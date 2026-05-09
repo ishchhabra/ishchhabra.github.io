@@ -2,6 +2,7 @@ import { ModuleIRBuildResult } from "../frontend/ModuleIRBuilder";
 import { AnalysisManager } from "../ir/analysis";
 import { PromotableBindingsAnalysis } from "../ir/analysis/PromotableBinding";
 import { IRIdAllocator } from "../ir/core/IRIdAllocator";
+import { createConstantPropagationPass } from "../ir/passes/ConstantPropagationPass";
 import { createCopyPropagationPass } from "../ir/passes/CopyPropagationPass";
 import { createDeadCodeEliminationPass } from "../ir/passes/DeadCodeEliminationPass";
 import { FunctionPassManager } from "../ir/passes/PassManager";
@@ -12,10 +13,7 @@ import { createValueMaterializationPass } from "../ir/passes/ValueMaterializatio
 /**
  * Runs IR-to-IR compiler passes after frontend lowering.
  */
-export function runCompilerPasses(
-  buildResult: ModuleIRBuildResult,
-  ids: IRIdAllocator,
-) {
+export function runCompilerPasses(buildResult: ModuleIRBuildResult, ids: IRIdAllocator) {
   const analyses = new AnalysisManager();
   const functions = [...buildResult.moduleIR.functions];
 
@@ -24,6 +22,7 @@ export function runCompilerPasses(
 
     new FunctionPassManager(analyses).run(fn, [
       createSSAConstructionPass({ ids }),
+      createConstantPropagationPass({ ids }),
       createSSAEliminationPass({
         ids,
         declarations: [...promotable.declarations],

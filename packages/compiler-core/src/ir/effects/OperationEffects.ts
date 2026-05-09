@@ -82,3 +82,17 @@ export function writeEffects(
     isObservable: true,
   };
 }
+
+/**
+ * Returns whether an operation with these effects can be replaced or removed
+ * when its result values are no longer needed.
+ */
+export function canDropOperationEffects(effects: OperationEffects): boolean {
+  return (
+    effects.memory.reads.length === 0 &&
+    effects.memory.writes.length === 0 &&
+    !effects.mayThrow &&
+    !effects.mayDiverge &&
+    !effects.isObservable
+  );
+}
