@@ -1,11 +1,15 @@
 import { ModuleIRBuildResult } from "../frontend/ModuleIRBuilder";
 import { AnalysisManager } from "../ir/analysis";
 import { PromotableBindingsAnalysis } from "../ir/analysis/PromotableBinding";
+import type { FunctionIR } from "../ir/core/FunctionIR";
 import { IRIdAllocator } from "../ir/core/IRIdAllocator";
+import type { ModuleIR } from "../ir/core/ModuleIR";
 import { createConstantPropagationPass } from "../ir/passes/ConstantPropagationPass";
 import { createCopyPropagationPass } from "../ir/passes/CopyPropagationPass";
 import { createDeadCodeEliminationPass } from "../ir/passes/DeadCodeEliminationPass";
-import { FunctionPassManager } from "../ir/passes/PassManager";
+import { createDeadDeclarationEliminationPass } from "../ir/passes/DeadDeclarationEliminationPass";
+import type { FunctionPass } from "../ir/passes/Pass";
+import { FunctionPassManager, ModulePassManager } from "../ir/passes/PassManager";
 import { createSSAConstructionPass } from "../ir/passes/ssa/SSAConstructionPass";
 import { createSSAEliminationPass } from "../ir/passes/ssa/SSAEliminationPass";
 import { createValueMaterializationPass } from "../ir/passes/ValueMaterializationPass";
@@ -15,14 +19,21 @@ import { createValueMaterializationPass } from "../ir/passes/ValueMaterializatio
  */
 export function runCompilerPasses(buildResult: ModuleIRBuildResult, ids: IRIdAllocator) {
   const analyses = new AnalysisManager();
-  const functions = [...buildResult.moduleIR.functions];
+  const moduleIR = buildResult.moduleIR;
 
-  for (const fn of functions) {
+  runFunctionPipeline(moduleIR, analyses, () => [
+    createSSAConstructionPass({ ids }),
+    createConstantPropagationPass({ ids }),
+  ]);
+
+  new ModulePassManager(analyses).run(moduleIR, [
+    createDeadDeclarationEliminationPass(),
+  ]);
+
+  runFunctionPipeline(moduleIR, analyses, (fn) => {
     const promotable = analyses.getFunction(PromotableBindingsAnalysis, fn);
 
-    new FunctionPassManager(analyses).run(fn, [
-      createSSAConstructionPass({ ids }),
-      createConstantPropagationPass({ ids }),
+    return [
       createSSAEliminationPass({
         ids,
         declarations: [...promotable.declarations],
@@ -30,8 +41,18 @@ export function runCompilerPasses(buildResult: ModuleIRBuildResult, ids: IRIdAll
       createValueMaterializationPass({ ids }),
       createCopyPropagationPass(),
       createDeadCodeEliminationPass(),
-    ]);
-  }
+    ];
+  });
 
   return buildResult;
+}
+
+function runFunctionPipeline(
+  moduleIR: ModuleIR,
+  analyses: AnalysisManager,
+  passesFor: (fn: FunctionIR) => readonly FunctionPass[],
+): void {
+  for (const fn of [...moduleIR.functions]) {
+    new FunctionPassManager(analyses).run(fn, passesFor(fn));
+  }
 }
