@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { IRIdAllocator } from "../../core/IRIdAllocator";
 import { makeOperationId } from "../../core/Operation";
 import { block, value } from "../../core/testing";
-import { UnknownMemoryLocation } from "../../effects";
+import { globalMemoryLocation, UnknownMemoryLocation } from "../../effects";
 import { LoadGlobalOp } from "./LoadGlobalOp";
 
 describe("LoadGlobalOp", () => {
@@ -24,17 +24,17 @@ describe("LoadGlobalOp", () => {
     expect(result.definer).toBe(op);
   });
 
-  it("reads unknown memory and may throw", () => {
+  it("models global access as opaque JavaScript memory", () => {
     const op = new LoadGlobalOp(makeOperationId(1), "foo", value(1));
 
     expect(op.effects()).toEqual({
       memory: {
-        reads: [UnknownMemoryLocation],
-        writes: [],
+        reads: [UnknownMemoryLocation, globalMemoryLocation("foo")],
+        writes: [UnknownMemoryLocation],
       },
       mayThrow: true,
-      mayDiverge: false,
-      isObservable: false,
+      mayDiverge: true,
+      isObservable: true,
     });
   });
 

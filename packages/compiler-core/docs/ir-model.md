@@ -115,9 +115,12 @@ semantics are opaque.
 | --- | --- |
 | `binding` | Declaration-backed binding storage. |
 | `global` | Host/global object lookup. |
-| `property` | Object property storage with named, symbol, or unknown key. |
-| `value` | Materialized local storage for an IR value after SSA elimination. |
-| `unknown` | Conservative fallback that aliases everything. |
+| `heap-property` | Object property storage keyed by an ECMAScript property-key set. |
+| `heap-shape` | Object structural state such as property existence and enumeration. |
+| `prototype` | Prototype-chain lookup state for a property key. |
+| `iterator` | Iterator state derived from an object. |
+| `compiler-slot` | Compiler-created storage for materialized SSA values. |
+| `unknown` | Conservative fallback for JavaScript-observable memory. |
 
 ## Op Grouping
 

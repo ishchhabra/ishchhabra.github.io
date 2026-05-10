@@ -1,11 +1,7 @@
 import { Operation, type OperationId } from "../../core/Operation";
 import type { OperationCloneContext } from "../../core/OperationCloneContext";
 import type { Value } from "../../core/Value";
-import {
-  type OperationEffects,
-  valueMemoryLocation,
-  writeEffects,
-} from "../../effects";
+import { compilerSlotMemoryLocation, type OperationEffects, writeEffects } from "../../effects";
 
 /**
  * Assigns one SSA value into a materialized JavaScript local value slot.
@@ -38,14 +34,12 @@ export class CopyValueOp extends Operation {
   }
 
   public override effects(): OperationEffects {
-    return writeEffects([valueMemoryLocation(this.target.id)]);
+    return writeEffects([compilerSlotMemoryLocation(this.target.id)]);
   }
 
   public override withOperands(operands: readonly Value[]): CopyValueOp {
     if (operands.length !== 1) {
-      throw new Error(
-        `CopyValueOp#${this.id} expected 1 operand, got ${operands.length}`,
-      );
+      throw new Error(`CopyValueOp#${this.id} expected 1 operand, got ${operands.length}`);
     }
 
     const [source] = operands;

@@ -2,8 +2,9 @@ import { Operation, OperationId } from "../../core/Operation";
 import { OperationCloneContext } from "../../core/OperationCloneContext";
 import { Value } from "../../core/Value";
 import {
-  namedPropertyMemoryLocation,
   OperationEffects,
+  stringPropertyMemoryLocation,
+  UnknownMemoryLocation,
   unknownPropertyMemoryLocation,
 } from "../../effects";
 import { PropertyKey } from "./PropertyKey";
@@ -30,18 +31,19 @@ export class LoadPropertyOp extends Operation {
   }
 
   public override effects(): OperationEffects {
+    const property =
+      this.key.kind === "static"
+        ? stringPropertyMemoryLocation(this.object.id, this.key.name)
+        : unknownPropertyMemoryLocation(this.object.id);
+
     return {
       memory: {
-        reads: [
-          this.key.kind === "static"
-            ? namedPropertyMemoryLocation(this.object.id, this.key.name)
-            : unknownPropertyMemoryLocation(this.object.id),
-        ],
-        writes: [],
+        reads: [UnknownMemoryLocation, property],
+        writes: [UnknownMemoryLocation],
       },
       mayThrow: true,
-      mayDiverge: false,
-      isObservable: false,
+      mayDiverge: true,
+      isObservable: true,
     };
   }
 

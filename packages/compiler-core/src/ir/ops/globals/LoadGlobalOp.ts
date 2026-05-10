@@ -1,7 +1,7 @@
 import { Operation, type OperationId } from "../../core/Operation";
 import type { OperationCloneContext } from "../../core/OperationCloneContext";
 import type { Value } from "../../core/Value";
-import { UnknownMemoryLocation, type OperationEffects } from "../../effects";
+import { globalMemoryLocation, UnknownMemoryLocation, type OperationEffects } from "../../effects";
 
 /**
  * Reads a host/global binding by name.
@@ -26,12 +26,12 @@ export class LoadGlobalOp extends Operation {
   public override effects(): OperationEffects {
     return {
       memory: {
-        reads: [UnknownMemoryLocation],
-        writes: [],
+        reads: [UnknownMemoryLocation, globalMemoryLocation(this.name)],
+        writes: [UnknownMemoryLocation],
       },
       mayThrow: true,
-      mayDiverge: false,
-      isObservable: false,
+      mayDiverge: true,
+      isObservable: true,
     };
   }
 
