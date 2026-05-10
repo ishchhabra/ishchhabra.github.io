@@ -47,7 +47,7 @@ export class AwaitExpressionOp extends Operation {
     return new AwaitExpressionOp(
       context.ids.operationId(),
       context.value(this.argument),
-      context.value(this.result),
+      context.result(this.result),
     );
   }
 }

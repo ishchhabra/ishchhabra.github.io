@@ -43,6 +43,6 @@ export class MetaPropertyOp extends Operation {
   }
 
   public override clone(context: OperationCloneContext): MetaPropertyOp {
-    return new MetaPropertyOp(context.ids.operationId(), this.kind, context.value(this.result));
+    return new MetaPropertyOp(context.ids.operationId(), this.kind, context.result(this.result));
   }
 }

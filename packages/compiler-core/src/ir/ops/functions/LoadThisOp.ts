@@ -29,6 +29,6 @@ export class LoadThisOp extends Operation {
   }
 
   public override clone(context: OperationCloneContext): LoadThisOp {
-    return new LoadThisOp(context.ids.operationId(), context.value(this.result));
+    return new LoadThisOp(context.ids.operationId(), context.result(this.result));
   }
 }

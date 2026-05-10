@@ -38,7 +38,7 @@ export class RegExpLiteralOp extends Operation {
       context.ids.operationId(),
       this.pattern,
       this.flags,
-      context.value(this.result),
+      context.result(this.result),
     );
   }
 }

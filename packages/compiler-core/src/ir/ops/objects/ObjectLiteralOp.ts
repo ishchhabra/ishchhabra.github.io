@@ -194,7 +194,7 @@ export class ObjectLiteralOp extends Operation {
             };
         }
       }),
-      context.value(this.result),
+      context.result(this.result),
     );
   }
 }

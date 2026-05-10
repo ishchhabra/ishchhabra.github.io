@@ -123,7 +123,7 @@ export class DeleteOp extends Operation {
     return new DeleteOp(
       context.ids.operationId(),
       cloneDeleteTarget(context, this.target),
-      context.value(this.result),
+      context.result(this.result),
     );
   }
 }

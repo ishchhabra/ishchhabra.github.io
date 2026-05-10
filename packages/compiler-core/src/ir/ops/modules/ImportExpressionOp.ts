@@ -55,7 +55,7 @@ export class ImportExpressionOp extends Operation {
       context.ids.operationId(),
       context.value(this.source),
       this.options === null ? null : context.value(this.options),
-      context.value(this.result),
+      context.result(this.result),
     );
   }
 }

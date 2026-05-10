@@ -8,6 +8,7 @@ import { createConstantPropagationPass } from "../ir/passes/ConstantPropagationP
 import { createCopyPropagationPass } from "../ir/passes/CopyPropagationPass";
 import { createDeadCodeEliminationPass } from "../ir/passes/DeadCodeEliminationPass";
 import { createDeadDeclarationEliminationPass } from "../ir/passes/DeadDeclarationEliminationPass";
+import { createFunctionInliningPass } from "../ir/passes/FunctionInliningPass";
 import type { FunctionPass } from "../ir/passes/Pass";
 import { FunctionPassManager, ModulePassManager } from "../ir/passes/PassManager";
 import { createSSAConstructionPass } from "../ir/passes/ssa/SSAConstructionPass";
@@ -27,6 +28,7 @@ export function runCompilerPasses(buildResult: ModuleIRBuildResult, ids: IRIdAll
   ]);
 
   new ModulePassManager(analyses).run(moduleIR, [
+    createFunctionInliningPass({ ids }),
     createDeadDeclarationEliminationPass(),
   ]);
 

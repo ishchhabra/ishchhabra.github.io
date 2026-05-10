@@ -67,7 +67,7 @@ export class DestructureAssignmentOp extends Operation {
       context.ids.operationId(),
       cloneAssignmentPatternTarget(context, this.target),
       context.value(this.source),
-      context.value(this.result),
+      context.result(this.result),
     );
   }
 }

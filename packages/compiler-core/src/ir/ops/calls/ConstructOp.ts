@@ -64,7 +64,7 @@ export class ConstructOp extends Operation {
           value: context.value(arg.value),
         }),
       ),
-      context.value(this.result),
+      context.result(this.result),
     );
   }
 }

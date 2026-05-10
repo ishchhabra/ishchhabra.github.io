@@ -57,7 +57,7 @@ export class YieldExpressionOp extends Operation {
       context.ids.operationId(),
       this.argument === null ? null : context.value(this.argument),
       this.delegate,
-      context.value(this.result),
+      context.result(this.result),
     );
   }
 }

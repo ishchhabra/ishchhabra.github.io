@@ -56,7 +56,7 @@ export class JSXFragmentOp extends Operation {
     return new JSXFragmentOp(
       context.ids.operationId(),
       this.children.map((child) => cloneChild(context, child)),
-      context.value(this.result),
+      context.result(this.result),
     );
   }
 }

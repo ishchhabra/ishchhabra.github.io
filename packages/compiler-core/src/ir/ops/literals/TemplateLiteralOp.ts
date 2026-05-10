@@ -58,7 +58,7 @@ export class TemplateLiteralOp extends Operation {
       context.ids.operationId(),
       this.quasis,
       this.expressions.map((value) => context.value(value)),
-      context.value(this.result),
+      context.result(this.result),
     );
   }
 }

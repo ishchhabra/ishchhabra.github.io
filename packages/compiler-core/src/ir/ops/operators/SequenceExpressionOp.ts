@@ -50,7 +50,7 @@ export class SequenceExpressionOp extends Operation {
     return new SequenceExpressionOp(
       context.ids.operationId(),
       this.expressions.map((expression) => context.value(expression)),
-      context.value(this.result),
+      context.result(this.result),
     );
   }
 }

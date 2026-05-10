@@ -202,7 +202,7 @@ export class JSXElementOp extends Operation {
       cloneJSXName(context, this.name),
       this.attributes.map((attribute) => cloneAttribute(context, attribute)),
       this.children.map((child) => cloneChild(context, child)),
-      context.value(this.result),
+      context.result(this.result),
     );
   }
 }

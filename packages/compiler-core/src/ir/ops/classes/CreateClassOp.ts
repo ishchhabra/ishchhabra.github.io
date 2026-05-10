@@ -165,7 +165,7 @@ export class CreateClassOp extends Operation {
             };
         }
       }),
-      context.value(this.result),
+      context.result(this.result),
     );
   }
 }

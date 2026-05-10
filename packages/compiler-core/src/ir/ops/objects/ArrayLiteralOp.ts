@@ -77,7 +77,7 @@ export class ArrayLiteralOp extends Operation {
           value: context.value(element.value),
         };
       }),
-      context.value(this.result),
+      context.result(this.result),
     );
   }
 }
