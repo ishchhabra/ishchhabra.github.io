@@ -19,6 +19,7 @@ import type {
   Statement,
 } from "oxc-parser";
 import type { ScopeReferenceNode } from "../ast/types";
+import type { Declaration } from "./Declaration";
 import type { Scope } from "./Scope";
 import type { ScopeGraph } from "./ScopeGraph";
 
@@ -720,7 +721,40 @@ export class ReferenceResolver {
     }
 
     this.graph.bindReference(identifier, declaration);
+    this.recordCrossFunctionCaptures(scope, declaration);
   }
+
+  private recordCrossFunctionCaptures(
+    referenceScope: Scope,
+    declaration: Declaration,
+  ): void {
+    const declarationScope = declarationScopeFor(referenceScope, declaration);
+    const declarationFunctionScope = nearestFunctionScope(declarationScope);
+
+    for (
+      let functionScope = nearestFunctionScope(referenceScope);
+      functionScope !== null && functionScope !== declarationFunctionScope;
+      functionScope = nearestFunctionScope(functionScope.parent)
+    ) {
+      this.graph.recordCapture(functionScope, declaration);
+    }
+  }
+}
+
+function declarationScopeFor(scope: Scope, declaration: Declaration): Scope {
+  for (let current: Scope | null = scope; current !== null; current = current.parent) {
+    if (current.declarations.includes(declaration)) return current;
+  }
+
+  throw new Error(`Declaration ${declaration.name} is not visible from reference scope`);
+}
+
+function nearestFunctionScope(scope: Scope | null): Scope | null {
+  for (let current = scope; current !== null; current = current.parent) {
+    if (current.kind === "function") return current;
+  }
+
+  return null;
 }
 
 function isIntrinsicJSXName(name: string): boolean {

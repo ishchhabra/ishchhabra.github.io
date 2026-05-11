@@ -19,8 +19,10 @@ export function lowerFunctionParameters(
   builder: FunctionIRBuilder,
   functionNode: OxcFunction | ArrowFunctionExpression,
 ): void {
-  builder.setParams(
-    functionNode.params.map((param): FunctionParam => {
+  const captures = builder.params.filter((param) => param.kind === "capture");
+
+  builder.setParams([
+    ...functionNode.params.map((param): FunctionParam => {
       if (param.type === "TSParameterProperty") {
         throw new Error("Parameter properties are not valid JavaScript");
       }
@@ -41,7 +43,8 @@ export function lowerFunctionParameters(
         value,
       };
     }),
-  );
+    ...captures,
+  ]);
 }
 
 function lowerParameterTarget(

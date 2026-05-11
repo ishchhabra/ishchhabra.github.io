@@ -75,11 +75,13 @@ function lowerObjectLiteralFunction(builder: FunctionIRBuilder, value: Expressio
   }
 
   const functionNode = value as OxcFunction;
+  const captures = builder.capturesForOwner(functionNode);
   const nested = builder.createNestedFunctionIR({
     kind: "method",
     name: functionNode.id?.name ?? null,
     isAsync: functionNode.async,
     isGenerator: functionNode.generator,
+    captures,
   });
 
   lowerFunctionBody(nested.builder, functionNode);

@@ -1,7 +1,7 @@
 import { BasicBlock } from "./Block";
 import { bindingPatternOperands, type BindingPatternTarget } from "./DestructurePattern";
 import { ModuleIR } from "./ModuleIR";
-import { Value } from "./Value";
+import { type DeclarationId, Value } from "./Value";
 
 declare const opaqueFunctionId: unique symbol;
 
@@ -58,13 +58,19 @@ export type FunctionParam =
     }
   | {
       /**
-       * Value captured from an enclosing function.
+       * Source binding captured from an enclosing lexical environment.
        *
-       * Captures are not source parameters and are not emitted in the
-       * JavaScript parameter list.
+       * @example
+       * ```js
+       * function outer(x) {
+       *   return function inner() {
+       *     return x;
+       *   };
+       * }
+       * ```
        */
       readonly kind: "capture";
-      readonly value: Value;
+      readonly declarationId: DeclarationId;
     };
 
 export type FunctionIRKind =
@@ -90,7 +96,7 @@ export interface FunctionIROptions {
  *
  * A function owns an ordered list of basic blocks. The first block is the entry
  * block. Function parameters are SSA values available at function entry;
- * captures model values imported from an enclosing lexical scope.
+ * captures model source declarations imported from an enclosing lexical scope.
  */
 export class FunctionIR {
   readonly #params: FunctionParam[];
@@ -181,7 +187,7 @@ export class FunctionIR {
           return bindingPatternOperands(param.target);
 
         case "capture":
-          return [param.value];
+          return [];
       }
     });
   }

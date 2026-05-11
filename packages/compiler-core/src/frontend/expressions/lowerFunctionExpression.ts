@@ -11,16 +11,20 @@ export function lowerFunctionExpression(
   builder: FunctionIRBuilder,
   expression: OxcFunction,
 ): Value {
+  const captures = builder.capturesForOwner(expression);
   const nested = builder.createNestedFunctionIR({
     kind: "function",
     name: expression.id?.name ?? null,
     isAsync: expression.async,
     isGenerator: expression.generator,
+    captures,
   });
   const result = builder.createValue();
 
   lowerFunctionBody(nested.builder, expression);
-  builder.emit(new CreateFunctionOp(builder.operationId(), nested.functionIR, [], result));
+  builder.emit(
+    new CreateFunctionOp(builder.operationId(), nested.functionIR, result),
+  );
 
   return result;
 }
@@ -32,15 +36,19 @@ export function lowerArrowFunctionExpression(
   builder: FunctionIRBuilder,
   expression: ArrowFunctionExpression,
 ): Value {
+  const captures = builder.capturesForOwner(expression);
   const nested = builder.createNestedFunctionIR({
     kind: "arrow",
     isAsync: expression.async,
     isGenerator: false,
+    captures,
   });
   const result = builder.createValue();
 
   lowerArrowFunctionBody(nested.builder, expression);
-  builder.emit(new CreateFunctionOp(builder.operationId(), nested.functionIR, [], result));
+  builder.emit(
+    new CreateFunctionOp(builder.operationId(), nested.functionIR, result),
+  );
 
   return result;
 }

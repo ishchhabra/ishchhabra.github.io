@@ -41,7 +41,7 @@ export function lowerDeclarationInstantiation(
     const value = builder.createValue();
 
     builder.emit(
-      new CreateFunctionOp(builder.operationId(), functionIR, [], value),
+      new CreateFunctionOp(builder.operationId(), functionIR, value),
     );
     builder.emit(
       new InitializeBindingOp(

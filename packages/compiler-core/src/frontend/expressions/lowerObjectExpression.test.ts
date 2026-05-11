@@ -89,4 +89,30 @@ describe("lowerObjectExpression", () => {
       functionIR: { isAsync: false, isGenerator: true },
     });
   });
+
+  it("records declaration captures on object methods", () => {
+    const { moduleIR, declarations } = new ModuleIRBuilder({
+      ids: new IRIdAllocator(),
+    }).build(
+      parseModule("test.js", "function outer(x) { return { method() { return x; } }; }"),
+    );
+    const outer = moduleIR.functions[1];
+    const literal = outer?.entryBlock.operations.find(
+      (op): op is ObjectLiteralOp => op instanceof ObjectLiteralOp,
+    );
+
+    if (literal === undefined) {
+      throw new Error("Expected object literal");
+    }
+
+    const method = literal.properties[0];
+    if (method.kind !== "method") {
+      throw new Error("Expected object method");
+    }
+
+    const capture = method.functionIR.params.find((param) => param.kind === "capture");
+
+    expect(capture?.kind).toBe("capture");
+    expect(capture === undefined ? null : declarations.get(capture.declarationId).name).toBe("x");
+  });
 });

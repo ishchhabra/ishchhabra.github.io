@@ -10,8 +10,10 @@ import { LoadBindingOp } from "../ops/bindings/LoadBindingOp";
 import { StoreBindingOp } from "../ops/bindings/StoreBindingOp";
 import { ArgumentListElement } from "../ops/calls/ArgumentListElement";
 import { CallOp } from "../ops/calls/CallOp";
+import { CreateClassOp } from "../ops/classes/CreateClassOp";
 import { ReturnTerminatorOp } from "../ops/control/ReturnTerminatorOp";
 import { CreateFunctionOp } from "../ops/functions/CreateFunctionOp";
+import { ObjectLiteralOp } from "../ops/objects/ObjectLiteralOp";
 import { DeleteOp } from "../ops/operators/DeleteOp";
 import { ModulePass, PassResult } from "./Pass";
 
@@ -303,12 +305,39 @@ function hasCloneableBodyOps(
       return bindingSubstitutions.has(op.declarationId);
     }
 
+    if (createsCapturingFunction(op)) return false;
     if (op instanceof InitializeBindingOp) return false;
     if (op instanceof StoreBindingOp) return false;
     if (op instanceof DeleteOp && op.target.kind === "binding") return false;
 
     return true;
   });
+}
+
+function createsCapturingFunction(op: Operation): boolean {
+  if (op instanceof CreateFunctionOp) {
+    return op.captures.length > 0 || hasCaptureParams(op.functionIR);
+  }
+
+  if (op instanceof ObjectLiteralOp) {
+    return op.properties.some((property) => {
+      if (property.kind !== "method" && property.kind !== "accessor") return false;
+      return hasCaptureParams(property.functionIR);
+    });
+  }
+
+  if (op instanceof CreateClassOp) {
+    return op.elements.some((element) => {
+      if (element.kind === "method") return hasCaptureParams(element.functionIR);
+      return element.initializer !== null && hasCaptureParams(element.initializer);
+    });
+  }
+
+  return false;
+}
+
+function hasCaptureParams(fn: FunctionIR): boolean {
+  return fn.params.some((param) => param.kind === "capture");
 }
 
 /**

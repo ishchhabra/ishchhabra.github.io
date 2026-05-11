@@ -86,6 +86,7 @@ class SSAConstructionPass {
    */
   private collectDefinitionBlocks(): void {
     for (const param of this.fn.params) {
+      if (param.kind === "capture") continue;
       if (param.value.declarationId !== null) {
         this.addDefinition(param.value.declarationId, this.fn.entryBlock);
       }
@@ -178,6 +179,7 @@ class SSAConstructionPass {
 
     if (block === this.fn.entryBlock) {
       for (const param of this.fn.params) {
+        if (param.kind === "capture") continue;
         if (param.value.declarationId === null) continue;
         this.push(stacks, param.value.declarationId, param.value);
         pushed.push(param.value.declarationId);

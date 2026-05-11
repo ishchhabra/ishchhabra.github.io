@@ -1,5 +1,9 @@
 import { AnalysisManager, PreservedAnalyses } from "../analysis";
 import { FunctionIR, Operation, Value } from "../core";
+import {
+  bindingPatternOperands,
+  rewriteBindingPatternOperands,
+} from "../core/DestructurePattern";
 import { IRIdAllocator } from "../core/IRIdAllocator";
 import { InitializeBindingOp } from "../ops/bindings/InitializeBindingOp";
 import { ConstantOp } from "../ops/constants/ConstantOp";
@@ -139,8 +143,18 @@ class ValueMaterializationPass {
   private replaceFunctionUse(fn: FunctionIR, from: Value, to: Value): void {
     fn.setParams(
       fn.params.map((param) => {
-        if (param.kind !== "capture" || param.value !== from) return param;
-        return { ...param, value: to };
+        if (param.kind === "capture") return param;
+
+        const operands = bindingPatternOperands(param.target);
+        if (!operands.includes(from)) return param;
+
+        return {
+          ...param,
+          target: rewriteBindingPatternOperands(
+            param.target,
+            operands.map((operand) => (operand === from ? to : operand)),
+          ),
+        };
       }),
     );
   }

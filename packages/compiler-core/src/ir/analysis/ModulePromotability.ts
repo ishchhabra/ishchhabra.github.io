@@ -39,6 +39,14 @@ export const ModulePromotabilityAnalysis: ModuleAnalysis<ModulePromotability> =
         }
       }
 
+      for (const fn of moduleIR.functions) {
+        for (const param of fn.params) {
+          if (param.kind === "capture") {
+            nonPromotableDeclarations.add(param.declarationId);
+          }
+        }
+      }
+
       return { nonPromotableDeclarations };
     },
   };

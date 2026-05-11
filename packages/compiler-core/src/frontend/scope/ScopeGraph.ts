@@ -17,6 +17,7 @@ export class ScopeGraph {
   readonly #declarationsByReference: WeakMap<ScopeReferenceNode, Declaration> = new WeakMap();
   readonly #globalReferences: WeakSet<ScopeReferenceNode> = new WeakSet();
   readonly #privateNames: WeakMap<PrivateIdentifier, PrivateName> = new WeakMap();
+  readonly #capturesByScope: WeakMap<Scope, Declaration[]> = new WeakMap();
 
   constructor(public readonly programScope: Scope) {}
 
@@ -89,6 +90,35 @@ export class ScopeGraph {
     }
 
     return declaration;
+  }
+
+  /**
+   * Records a declaration captured by a function scope.
+   */
+  public recordCapture(functionScope: Scope, declaration: Declaration): void {
+    let captures = this.#capturesByScope.get(functionScope);
+    if (captures === undefined) {
+      captures = [];
+      this.#capturesByScope.set(functionScope, captures);
+    }
+
+    if (!captures.includes(declaration)) {
+      captures.push(declaration);
+    }
+  }
+
+  /**
+   * Returns declarations captured by a function scope.
+   */
+  public capturesForScope(scope: Scope): readonly Declaration[] {
+    return this.#capturesByScope.get(scope) ?? [];
+  }
+
+  /**
+   * Returns declarations captured by the function scope associated with an AST owner.
+   */
+  public capturesForOwner(owner: ScopeOwnerNode): readonly Declaration[] {
+    return this.capturesForScope(this.scopeForOwner(owner));
   }
 
   /**

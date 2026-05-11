@@ -1,7 +1,7 @@
 import type { FunctionIR } from "../../core/FunctionIR";
 import { Operation, type OperationId } from "../../core/Operation";
 import type { OperationCloneContext } from "../../core/OperationCloneContext";
-import type { Value } from "../../core/Value";
+import type { DeclarationId, Value } from "../../core/Value";
 import { type OperationEffects, PureOperationEffects } from "../../effects";
 
 /**
@@ -15,17 +15,22 @@ export class CreateFunctionOp extends Operation {
   constructor(
     id: OperationId,
     public readonly functionIR: FunctionIR,
-    public readonly captures: readonly Value[],
     result: Value,
   ) {
     super(id, [result]);
   }
 
   /**
-   * Runtime values captured by the created function object.
+   * Source declarations captured by the created function object.
    */
+  public get captures(): readonly DeclarationId[] {
+    return this.functionIR.params.flatMap((param) =>
+      param.kind === "capture" ? [param.declarationId] : [],
+    );
+  }
+
   public override operands(): readonly Value[] {
-    return this.captures;
+    return [];
   }
 
   public override effects(): OperationEffects {
@@ -33,24 +38,19 @@ export class CreateFunctionOp extends Operation {
   }
 
   public override withOperands(operands: readonly Value[]): CreateFunctionOp {
-    if (operands.length !== this.captures.length) {
+    if (operands.length !== 0) {
       throw new Error(
-        `CreateFunctionOp#${this.id} expected ${this.captures.length} operands, got ${operands.length}`,
+        `CreateFunctionOp#${this.id} expected 0 operands, got ${operands.length}`,
       );
     }
 
-    if (operands.every((operand, index) => operand === this.captures[index])) {
-      return this;
-    }
-
-    return new CreateFunctionOp(this.id, this.functionIR, operands, this.result);
+    return this;
   }
 
   public override clone(context: OperationCloneContext): CreateFunctionOp {
     return new CreateFunctionOp(
       context.ids.operationId(),
       this.functionIR,
-      this.captures.map((capture) => context.value(capture)),
       context.result(this.result),
     );
   }

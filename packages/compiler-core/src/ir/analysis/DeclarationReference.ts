@@ -158,6 +158,15 @@ export const DeclarationReferenceAnalysis = {
 
     for (const fn of moduleIR.functions) {
       for (const param of fn.params) {
+        if (param.kind === "capture") {
+          append(usesByDeclaration, param.declarationId, {
+            declarationId: param.declarationId,
+            kind: "capture",
+            source: fn,
+          });
+          continue;
+        }
+
         if (param.value.declarationId === null) continue;
 
         append(defsByDeclaration, param.value.declarationId, {

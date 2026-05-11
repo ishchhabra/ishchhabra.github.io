@@ -148,6 +148,7 @@ class ConstantPropagationPass {
 
   private initializeBoundaryValues(state: AnalysisState): void {
     for (const param of this.fn.params) {
+      if (param.kind === "capture") continue;
       this.updateValue(state, param.value, Top);
       state.semanticValues.set(param.value, UnknownFact);
     }

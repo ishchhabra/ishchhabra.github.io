@@ -16,7 +16,7 @@ import { lowerStatement } from "./statements/lowerStatement";
 import { Operation, OperationId } from "../ir/core/Operation";
 import { DeclarationId, Value } from "../ir/core/Value";
 import { Declaration } from "./scope/Declaration";
-import { BindingIdentifierNode, ScopeReferenceNode } from "./ast/types";
+import { BindingIdentifierNode, ScopeOwnerNode, ScopeReferenceNode } from "./ast/types";
 import { Scope } from "./scope/Scope";
 import { ScopeDeclarationInstantiation } from "./scope/DeclarationInstantiationPlan";
 import { lowerDeclarationInstantiation } from "./declarations/lowerDeclarationInstantiation";
@@ -28,6 +28,7 @@ export interface CreateFunctionIROptions {
   readonly kind?: FunctionIR["kind"];
   readonly name?: string | null;
   readonly params?: readonly FunctionParam[];
+  readonly captures?: readonly Declaration[];
   readonly isAsync?: boolean;
   readonly isGenerator?: boolean;
 }
@@ -82,6 +83,13 @@ export class FunctionIRBuilder {
    */
   public get currentBlock(): BasicBlock {
     return this.#currentBlock;
+  }
+
+  /**
+   * Current function boundary params.
+   */
+  public get params(): readonly FunctionParam[] {
+    return this.functionIR.params;
   }
 
   /**
@@ -182,7 +190,15 @@ export class FunctionIRBuilder {
   public createNestedFunctionIR(options: CreateFunctionIROptions = {}): CreatedFunctionIR {
     const entryBlock = new BasicBlock(this.context.ids.blockId());
     const functionIR = new FunctionIR(this.context.ids.functionId(), {
-      params: options.params ?? [],
+      params: [
+        ...(options.params ?? []),
+        ...(options.captures ?? []).map(
+          (capture): FunctionParam => ({
+            kind: "capture",
+            declarationId: capture.id,
+          }),
+        ),
+      ],
       blocks: [entryBlock],
       kind: options.kind,
       name: options.name,
@@ -254,6 +270,13 @@ export class FunctionIRBuilder {
       | SwitchStatement,
   ): Scope {
     return this.context.scopes.scopeForOwner(owner);
+  }
+
+  /**
+   * Returns declarations captured by the function scope associated with an AST owner.
+   */
+  public capturesForOwner(owner: ScopeOwnerNode): readonly Declaration[] {
+    return this.context.scopes.capturesForOwner(owner);
   }
 
   /**

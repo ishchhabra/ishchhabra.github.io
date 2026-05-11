@@ -39,6 +39,11 @@ export const PromotableBindingsAnalysis = {
     );
 
     for (const param of fn.params) {
+      if (param.kind === "capture") {
+        rejected.add(param.declarationId);
+        continue;
+      }
+
       if (param.value.declarationId !== null) {
         rejected.add(param.value.declarationId);
       }
@@ -73,10 +78,8 @@ function rejectNonPromotableOperation(
   rejected: Set<DeclarationId>,
 ): void {
   if (op instanceof CreateFunctionOp) {
-    for (const capture of op.captures) {
-      if (capture.declarationId !== null) {
-        rejected.add(capture.declarationId);
-      }
+    for (const declarationId of op.captures) {
+      rejected.add(declarationId);
     }
   }
 

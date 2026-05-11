@@ -90,11 +90,13 @@ function lowerClassElementFunction(
   value: OxcFunction,
   kind: "constructor" | "method" | "get" | "set",
 ): FunctionIR {
+  const captures = builder.capturesForOwner(value);
   const nested = builder.createNestedFunctionIR({
     kind: kind === "constructor" ? "class-constructor" : "class-method",
     name: value.id?.name ?? null,
     isAsync: value.async,
     isGenerator: value.generator,
+    captures,
   });
 
   lowerFunctionBody(nested.builder, value);

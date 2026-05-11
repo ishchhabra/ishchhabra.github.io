@@ -41,4 +41,29 @@ describe("lowerFunctionExpression", () => {
     expect(create.functionIR.isAsync).toBe(true);
     expect(create.functionIR.isGenerator).toBe(true);
   });
+
+  it("records declaration captures for function expressions", () => {
+    const { moduleIR, declarations } = new ModuleIRBuilder({
+      ids: new IRIdAllocator(),
+    }).build(
+      parseModule(
+        "test.js",
+        "function outer(x) { return function inner() { return x; }; }",
+      ),
+    );
+    const outer = moduleIR.functions[1];
+    const create = outer?.entryBlock.operations.find(
+      (op): op is CreateFunctionOp => op instanceof CreateFunctionOp,
+    );
+
+    if (create === undefined) {
+      throw new Error("Expected nested function creation");
+    }
+
+    expect(create.captures.map((id) => declarations.get(id).name)).toEqual(["x"]);
+    expect(create.functionIR.params).toContainEqual({
+      kind: "capture",
+      declarationId: create.captures[0],
+    });
+  });
 });

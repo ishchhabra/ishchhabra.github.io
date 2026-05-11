@@ -177,6 +177,7 @@ class BindingPromotionPass {
     };
 
     for (const param of this.fn.params) {
+      if (param.kind === "capture") continue;
       if (param.value.declarationId !== null) {
         add(param.value.declarationId, this.fn.entryBlock);
       }

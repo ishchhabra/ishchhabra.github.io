@@ -7,6 +7,7 @@ export function lowerFunctionDeclarationBody(
   builder: FunctionIRBuilder,
   declaration: FunctionDeclaration,
 ): FunctionIR {
+  const captures = builder.capturesForOwner(declaration.node);
   const nested = builder.createNestedFunctionIR({
     kind: "function",
     isAsync:
@@ -14,6 +15,7 @@ export function lowerFunctionDeclarationBody(
       declaration.functionKind === "async-generator",
     isGenerator:
       declaration.functionKind === "generator" || declaration.functionKind === "async-generator",
+    captures,
   });
 
   lowerFunctionBody(nested.builder, declaration.node);

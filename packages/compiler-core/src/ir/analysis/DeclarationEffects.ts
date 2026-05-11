@@ -83,16 +83,10 @@ export function declarationEffects(op: Operation): DeclarationEffects {
     return {
       defs: [],
       uses: uniqueUses([
-        ...op.captures.flatMap((capture) =>
-          capture.declarationId === null
-            ? []
-            : [
-                {
-                  kind: "capture" as const,
-                  declarationId: capture.declarationId,
-                },
-              ],
-        ),
+        ...op.captures.map((declarationId) => ({
+          kind: "capture" as const,
+          declarationId,
+        })),
         ...valueUses,
       ]),
     };

@@ -97,6 +97,59 @@ describe("analyzeScopes", () => {
     expect(graph.declarationForReference(identifierExpression(statement.expression))).toBe(param);
   });
 
+  it("records captures for nested function references", () => {
+    const { graph, program } = analyzeSource(
+      "function outer(x) { return function inner() { return x; }; }",
+    );
+    const outer = functionDeclarationAt(program, 0);
+    const outerScope = graph.scopeForOwner(outer);
+    const x = declarationByName(outerScope, "x");
+    const statement = outer.body?.body[0];
+
+    if (statement?.type !== "ReturnStatement") {
+      throw new Error("Expected return statement");
+    }
+
+    const inner = statement.argument;
+    if (inner?.type !== "FunctionExpression") {
+      throw new Error("Expected returned function expression");
+    }
+
+    expect(graph.capturesForOwner(inner)).toEqual([x]);
+    expect(graph.capturesForOwner(outer)).toEqual([]);
+  });
+
+  it("records transitive captures through intermediate functions", () => {
+    const { graph, program } = analyzeSource(
+      "function outer(x) { return function middle() { return function inner() { return x; }; }; }",
+    );
+    const outer = functionDeclarationAt(program, 0);
+    const x = declarationByName(graph.scopeForOwner(outer), "x");
+    const outerReturn = outer.body?.body[0];
+
+    if (outerReturn?.type !== "ReturnStatement") {
+      throw new Error("Expected outer return statement");
+    }
+
+    const middle = outerReturn.argument;
+    if (middle?.type !== "FunctionExpression") {
+      throw new Error("Expected middle function expression");
+    }
+
+    const middleReturn = middle.body?.body[0];
+    if (middleReturn?.type !== "ReturnStatement") {
+      throw new Error("Expected middle return statement");
+    }
+
+    const inner = middleReturn.argument;
+    if (inner?.type !== "FunctionExpression") {
+      throw new Error("Expected inner function expression");
+    }
+
+    expect(graph.capturesForOwner(middle)).toEqual([x]);
+    expect(graph.capturesForOwner(inner)).toEqual([x]);
+  });
+
   it("records import bindings and resolves references to them", () => {
     const { graph, program } = analyzeSource('import { x as y } from "m"; y;');
     const declaration = declarationByName(graph.programScope, "y");
