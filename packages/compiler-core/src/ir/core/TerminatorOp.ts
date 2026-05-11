@@ -196,6 +196,10 @@ export abstract class TerminatorOp extends Operation {
     );
   }
 
+  public override clone(context: OperationCloneContext): TerminatorOp {
+    throw new Error(`${this.constructor.name}#${this.id} does not support cloning`);
+  }
+
   /**
    * Attaches this terminator and registers successor block uses.
    */

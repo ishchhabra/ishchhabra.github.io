@@ -1,6 +1,8 @@
 import { BasicBlock } from "./Block";
 import { bindingPatternOperands, type BindingPatternTarget } from "./DestructurePattern";
+import { IRIdAllocator } from "./IRIdAllocator";
 import { ModuleIR } from "./ModuleIR";
+import { Operation } from "./Operation";
 import { type DeclarationId, Value } from "./Value";
 
 declare const opaqueFunctionId: unique symbol;
@@ -89,6 +91,10 @@ export interface FunctionIROptions {
   readonly isAsync?: boolean;
   readonly isGenerator?: boolean;
   readonly parentFunction?: FunctionIR | null;
+}
+
+export interface SplitBlockAtOptions {
+  readonly ids: IRIdAllocator;
 }
 
 /**
@@ -251,5 +257,55 @@ export class FunctionIR {
     }
 
     return block;
+  }
+
+  /**
+   * Splits a block before `operation`.
+   *
+   * Operations before `operation` stay in `before`. `operation`, all following
+   * operations, and the original terminator move to `after`. The original block is
+   * left unterminated so callers can wire the new control-flow edge explicitly.
+   *
+   * @returns The new block after the split.
+   */
+  public splitBlockAt(
+    block: BasicBlock,
+    operation: Operation,
+    options: SplitBlockAtOptions,
+  ): BasicBlock {
+    if (block.ownerFunction !== this) {
+      throw new Error(`Block bb${block.id} does not belong to Function#${this.id}`);
+    }
+
+    if (operation.ownerBlock !== block) {
+      throw new Error(
+        `${operation.constructor.name}#${operation.id} is not owned by bb${block.id}`,
+      );
+    }
+
+    const operationIndex = block.operations.indexOf(operation);
+    if (operationIndex === -1) {
+      throw new Error(`${operation.constructor.name}#${operation.id} is not in bb${block.id}`);
+    }
+
+    const after = new BasicBlock(options.ids.blockId());
+
+    const terminator = block.terminator;
+    const movedOperations = block.operations
+      .slice(operationIndex)
+      .filter((op) => op !== terminator);
+    for (const moved of movedOperations) {
+      block.removeOp(moved);
+      after.appendOp(moved);
+    }
+
+    if (terminator !== null) {
+      block.removeOp(terminator);
+      after.setTerminator(terminator);
+    }
+
+    this.addBlock(after);
+
+    return after;
   }
 }

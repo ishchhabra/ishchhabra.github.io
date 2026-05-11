@@ -11,8 +11,12 @@ import { StoreBindingOp } from "../ops/bindings/StoreBindingOp";
 import { ArgumentListElement } from "../ops/calls/ArgumentListElement";
 import { CallOp } from "../ops/calls/CallOp";
 import { CreateClassOp } from "../ops/classes/CreateClassOp";
+import { ConstantOp } from "../ops/constants/ConstantOp";
+import { JumpTerminatorOp } from "../ops/control/JumpTerminatorOp";
 import { ReturnTerminatorOp } from "../ops/control/ReturnTerminatorOp";
 import { CreateFunctionOp } from "../ops/functions/CreateFunctionOp";
+import { LoadThisOp } from "../ops/functions/LoadThisOp";
+import { MetaPropertyOp } from "../ops/functions/MetaPropertyOp";
 import { ObjectLiteralOp } from "../ops/objects/ObjectLiteralOp";
 import { DeleteOp } from "../ops/operators/DeleteOp";
 import { ModulePass, PassResult } from "./Pass";
@@ -126,7 +130,13 @@ class FunctionInliningPass {
         const plan = this.planInline(op);
         if (plan === null) continue;
 
-        this.inlineCall(block, op, plan);
+        if (plan.callee.blocks.length === 1) {
+          this.inlineCall(block, op, plan);
+        } else {
+          this.inlineMultiBlockCall(block, op, plan);
+          changed = true;
+          break;
+        }
         changed = true;
       }
     }
@@ -142,22 +152,24 @@ class FunctionInliningPass {
     if (create === null) return null;
 
     const callee = create.functionIR;
-    if (!isSimpleInlineCandidate(callee)) return null;
+    if (!isInlineCandidate(callee)) return null;
     const bindingSubstitutions = simpleParameterBindingSubstitutions(callee, call.args);
     if (bindingSubstitutions === null) return null;
 
-    const terminator = callee.entryBlock.terminator;
-    if (!(terminator instanceof ReturnTerminatorOp)) return null;
-
-    const bodyOps = callee.entryBlock.operations.filter((op) => op !== terminator);
+    const bodyOps = callee.blocks.flatMap((block) =>
+      block.operations.filter((op) => op !== block.terminator),
+    );
     if (bodyOps.length > MAX_BODY_OPS) return null;
     if (!hasCloneableBodyOps(bodyOps, bindingSubstitutions)) return null;
+
+    const terminator = callee.entryBlock.terminator;
+    const returnValue = terminator instanceof ReturnTerminatorOp ? terminator.value : null;
 
     return {
       callee,
       args: call.args.map((arg) => arg.value),
       bindingSubstitutions,
-      returnValue: terminator.value,
+      returnValue,
       bodyOps,
     };
   }
@@ -232,13 +244,159 @@ class FunctionInliningPass {
 
     if (plan.returnValue === null) {
       if (call.result.users.size > 0) {
-        throw new Error(`Cannot inline void return into used CallOp#${call.id}`);
+        const undefinedValue = new Value(ids.valueId(), call.result.declarationId);
+        block.insertOp(index, new ConstantOp(ids.operationId(), undefined, undefinedValue));
+        replaceUses(call.result, undefinedValue);
       }
     } else {
       replaceUses(call.result, context.value(plan.returnValue));
     }
 
     block.removeOp(call);
+  }
+
+  private inlineMultiBlockCall(block: BasicBlock, call: CallOp, plan: InlinePlan): void {
+    const ids = this.options.ids;
+    const caller = block.ownerFunction;
+    if (caller === null) {
+      throw new Error(`bb${block.id} is detached`);
+    }
+
+    const needsContinuationValue = call.result.users.size > 0;
+    const after = caller.splitBlockAt(block, call, { ids });
+    after.removeOp(call);
+
+    const values: Map<Value, Value> = new Map();
+    const blocks: Map<BasicBlock, BasicBlock> = new Map();
+    const returns: { block: BasicBlock; value: Value | null }[] = [];
+
+    for (let i = 0; i < plan.callee.params.length; i++) {
+      const param = plan.callee.params[i];
+      if (param.kind !== "argument" || param.target.kind !== "binding") {
+        throw new Error("Inline plan contains unsupported parameter");
+      }
+
+      values.set(param.value, plan.args[i]);
+    }
+
+    const continuationValue = needsContinuationValue
+      ? new Value(ids.valueId(), call.result.declarationId)
+      : null;
+    if (continuationValue !== null) {
+      after.appendParam(continuationValue);
+      replaceUsesInBlock(after, call.result, continuationValue);
+    }
+
+    const context: OperationCloneContext = {
+      ids,
+
+      value(value: Value): Value {
+        const replacement = values.get(value);
+        if (replacement === undefined) {
+          throw new Error(`No inline value for Value#${value.id}`);
+        }
+
+        return replacement;
+      },
+
+      result(value: Value): Value {
+        let replacement = values.get(value);
+        if (replacement === undefined) {
+          replacement = new Value(ids.valueId(), value.declarationId);
+          values.set(value, replacement);
+        }
+
+        return replacement;
+      },
+
+      block(block: BasicBlock): BasicBlock {
+        const replacement = blocks.get(block);
+        if (replacement === undefined) {
+          throw new Error(`No inline block for bb${block.id}`);
+        }
+
+        return replacement;
+      },
+    };
+
+    for (const sourceBlock of plan.callee.blocks) {
+      const clonedBlock = new BasicBlock(ids.blockId());
+      blocks.set(sourceBlock, clonedBlock);
+      caller.addBlock(clonedBlock);
+
+      for (const param of sourceBlock.params) {
+        const clonedParam = new Value(ids.valueId(), param.declarationId);
+        values.set(param, clonedParam);
+        clonedBlock.appendParam(clonedParam);
+      }
+    }
+
+    for (const sourceBlock of plan.callee.blocks) {
+      const clonedBlock = blocks.get(sourceBlock);
+      if (clonedBlock === undefined) {
+        throw new Error(`No inline block for bb${sourceBlock.id}`);
+      }
+
+      for (const sourceOp of sourceBlock.operations.filter((op) => op !== sourceBlock.terminator)) {
+        const substitutedValue = resolveInlineBindingLoad(sourceOp, plan.bindingSubstitutions);
+        if (substitutedValue !== null) {
+          values.set(sourceOp.result, substitutedValue);
+          continue;
+        }
+
+        const cloned = sourceOp.clone(context);
+        clonedBlock.appendOp(cloned);
+      }
+
+      const terminator = sourceBlock.terminator;
+      if (terminator === null) {
+        throw new Error(`Cannot inline unterminated bb${sourceBlock.id}`);
+      }
+
+      if (terminator instanceof ReturnTerminatorOp) {
+        returns.push({
+          block: clonedBlock,
+          value: terminator.value === null ? null : context.value(terminator.value),
+        });
+        continue;
+      }
+
+      clonedBlock.setTerminator(terminator.clone(context));
+    }
+
+    const entry = blocks.get(plan.callee.entryBlock);
+    if (entry === undefined) {
+      throw new Error(`No inline entry block for Function#${plan.callee.id}`);
+    }
+
+    block.setTerminator(
+      new JumpTerminatorOp(ids.operationId(), {
+        block: entry,
+        operands: { produced: [], forwarded: [] },
+      }),
+    );
+
+    for (const ret of returns) {
+      let forwardedValue = ret.value;
+      if (continuationValue !== null && forwardedValue === null) {
+        forwardedValue = new Value(ids.valueId(), call.result.declarationId);
+        ret.block.appendOp(new ConstantOp(ids.operationId(), undefined, forwardedValue));
+      }
+
+      ret.block.setTerminator(
+        new JumpTerminatorOp(ids.operationId(), {
+          block: after,
+          operands: {
+            produced: [],
+            forwarded: continuationValue === null ? [] : [forwardedValue!],
+          },
+        }),
+      );
+    }
+
+    if (call.result.users.size > 0) {
+      throw new Error(`CallOp#${call.id} still has users after inlining`);
+    }
   }
 }
 
@@ -250,10 +408,21 @@ class FunctionInliningPass {
  * callees require splitting the caller block and redirecting return terminators
  * to a continuation block.
  */
-function isSimpleInlineCandidate(fn: FunctionIR): boolean {
+function isInlineCandidate(fn: FunctionIR): boolean {
   if (fn.isAsync || fn.isGenerator) return false;
-  if (fn.blocks.length !== 1) return false;
-  return fn.entryBlock.terminator instanceof ReturnTerminatorOp;
+  if (fn.blocks.length === 1) return isSimpleInlineCandidate(fn);
+  return isSimpleMultiBlockInlineCandidate(fn);
+}
+
+function isSimpleInlineCandidate(fn: FunctionIR): boolean {
+  return fn.blocks.length === 1 && fn.entryBlock.terminator instanceof ReturnTerminatorOp;
+}
+
+function isSimpleMultiBlockInlineCandidate(fn: FunctionIR): boolean {
+  return fn.blocks.every((block) => {
+    const terminator = block.terminator;
+    return terminator instanceof JumpTerminatorOp || terminator instanceof ReturnTerminatorOp;
+  });
 }
 
 /**
@@ -309,6 +478,8 @@ function hasCloneableBodyOps(
     if (op instanceof InitializeBindingOp) return false;
     if (op instanceof StoreBindingOp) return false;
     if (op instanceof DeleteOp && op.target.kind === "binding") return false;
+    if (op instanceof LoadThisOp) return false;
+    if (op instanceof MetaPropertyOp) return false;
 
     return true;
   });
@@ -422,4 +593,24 @@ function replaceUses(from: Value, to: Value): void {
 
     owner.replaceOp(user, user.withOperands(rewritten));
   }
+}
+
+function replaceUsesInBlock(block: BasicBlock, from: Value, to: Value): void {
+  for (const op of [...block.operations]) {
+    replaceUseInOperation(block, op, from, to);
+  }
+
+  const terminator = block.terminator;
+  if (terminator !== null) {
+    replaceUseInOperation(block, terminator, from, to);
+  }
+}
+
+function replaceUseInOperation(block: BasicBlock, op: Operation, from: Value, to: Value): void {
+  const operands = op.operands();
+  const rewritten = operands.map((operand) => (operand === from ? to : operand));
+
+  if (sameValueList(operands, rewritten)) return;
+
+  block.replaceOp(op, op.withOperands(rewritten));
 }
