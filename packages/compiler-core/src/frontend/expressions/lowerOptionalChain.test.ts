@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { IRIdAllocator } from "../../ir/core/IRIdAllocator";
 import { IfTerminatorOp } from "../../ir/ops/control/IfTerminatorOp";
 import { CallOp } from "../../ir/ops/calls/CallOp";
+import { LoadPrivatePropertyOp } from "../../ir/ops/properties/LoadPrivatePropertyOp";
 import { LoadPropertyOp } from "../../ir/ops/properties/LoadPropertyOp";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { parseModule } from "../parse/parseModule";
@@ -48,14 +49,16 @@ describe("lowerOptionalChain", () => {
     const fn = moduleIR.entryFunction;
     if (fn === null) throw new Error("Expected entry function");
 
-    const branch = fn.entryBlock.terminator as IfTerminatorOp;
-    const continuation = branch.elseBlock;
-    const call = continuation.operations[0] as CallOp;
+    const operations = fn.blocks.flatMap((block) => block.operations);
+    const load = operations.find((op) => op instanceof LoadPropertyOp);
+    const call = operations.find((op) => op instanceof CallOp);
+    if (!(load instanceof LoadPropertyOp)) throw new Error("Expected property load");
+    if (!(call instanceof CallOp)) throw new Error("Expected call");
 
     expect(call.target).toEqual({
-      kind: "property",
-      object: fn.entryBlock.operations[1].result,
-      key: { kind: "static", name: "method" },
+      kind: "value-with-receiver",
+      callee: load.result,
+      receiver: fn.entryBlock.operations[1].result,
     });
   });
 
@@ -72,5 +75,35 @@ describe("lowerOptionalChain", () => {
 
     expect(firstContinuation.operations[0]).toBeInstanceOf(LoadPropertyOp);
     expect(secondBranch).toBeInstanceOf(IfTerminatorOp);
+  });
+
+  it("lowers optional private member access", () => {
+    const { moduleIR } = new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
+      parseModule("test.js", "class C { #x = 1; m() { return this?.#x; } }"),
+    );
+    const method = moduleIR.functions.find((fn) => fn.kind === "class-method");
+    if (method === undefined) throw new Error("Expected class method");
+
+    const branch = method.entryBlock.terminator as IfTerminatorOp;
+    const continuation = branch.elseBlock;
+
+    expect(branch).toBeInstanceOf(IfTerminatorOp);
+    expect(continuation.operations[0]).toBeInstanceOf(LoadPrivatePropertyOp);
+  });
+
+  it("short-circuits optional private member calls", () => {
+    const { moduleIR } = new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
+      parseModule("test.js", "class C { #m() { return this; } run() { return this.#m?.(); } }"),
+    );
+    const run = moduleIR.functions.filter((fn) => fn.kind === "class-method").at(-1);
+    if (run === undefined) throw new Error("Expected class method");
+
+    const operations = run.blocks.flatMap((block) => block.operations);
+    const call = operations.find((op) => op instanceof CallOp);
+    if (!(call instanceof CallOp)) throw new Error("Expected private call");
+
+    expect(operations.some((op) => op instanceof LoadPrivatePropertyOp)).toBe(true);
+    expect(run.blocks.some((block) => block.terminator instanceof IfTerminatorOp)).toBe(true);
+    expect(call.target.kind).toBe("value-with-receiver");
   });
 });

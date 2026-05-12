@@ -274,6 +274,16 @@ class ConstantPropagationPass {
       case "value":
         return semanticValueOf(state, target.callee);
 
+      case "value-with-receiver": {
+        const callee = semanticValueOf(state, target.callee);
+        const receiver = semanticValueOf(state, target.receiver);
+        if (callee.kind === "pending" || receiver.kind === "pending") {
+          return PendingFact;
+        }
+
+        return callee;
+      }
+
       case "property": {
         const object = semanticValueOf(state, target.object);
         if (object.kind === "pending") return PendingFact;

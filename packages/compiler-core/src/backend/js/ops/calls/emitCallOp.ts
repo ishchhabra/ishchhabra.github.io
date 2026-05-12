@@ -22,6 +22,28 @@ import type { CodegenContext } from "../../CodegenContext";
  * calls are observable effect barriers unless proven otherwise.
  */
 export function emitCallOp(context: CodegenContext, op: CallOp): ESTreeStatement[] {
+  if (op.target.kind === "value-with-receiver") {
+    const expression = callExpression(
+      memberExpression(
+        context.expressionForValue(op.target.callee),
+        identifier("call"),
+        false,
+      ),
+      [
+        context.expressionForValue(op.target.receiver),
+        ...op.args.map((arg) => emitCallArgument(context, arg)),
+      ],
+    );
+
+    context.values.set(op.result, expression);
+
+    if (op.result.users.size === 0) {
+      return [expressionStatement(expression)];
+    }
+
+    return [];
+  }
+
   const expression = callExpression(
     expressionForCallTarget(context, op),
     op.args.map((arg) => emitCallArgument(context, arg)),
@@ -47,6 +69,14 @@ function emitCallArgument(
 function expressionForCallTarget(context: CodegenContext, op: CallOp): ESTreeExpression {
   if (op.target.kind === "value") {
     return context.expressionForValue(op.target.callee);
+  }
+
+  if (op.target.kind === "value-with-receiver") {
+    return memberExpression(
+      context.expressionForValue(op.target.callee),
+      identifier("call"),
+      false,
+    );
   }
 
   if (op.target.kind === "super-property") {

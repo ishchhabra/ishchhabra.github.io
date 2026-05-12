@@ -6,6 +6,7 @@ import { generateJavaScript } from "./generateJavaScript";
 import { FunctionPassManager } from "../../ir/passes/PassManager";
 import { AnalysisManager } from "../../ir/analysis";
 import { createValueMaterializationPass } from "../../ir/passes/ValueMaterializationPass";
+import { createCopyPropagationPass } from "../../ir/passes/CopyPropagationPass";
 
 describe("generateJavaScript", () => {
   it("emits a minimal module from lowered IR", () => {
@@ -204,6 +205,24 @@ describe("generateJavaScript", () => {
 
     expect(generateJavaScript(input)).toBe(
       "let $0;\n\nif (fn == null) {\n  $0 = undefined;\n} else {\n  $0 = fn(arg);\n}\n\nlet value = $0;",
+    );
+  });
+
+  it("emits optional member calls without rereading the loaded callee", () => {
+    const ids = new IRIdAllocator();
+    const input = new ModuleIRBuilder({ ids }).build(
+      parseModule("test.js", "let value = obj.method?.(arg);"),
+    );
+    const fn = input.moduleIR.entryFunction;
+    if (fn === null) throw new Error("Expected entry function");
+
+    new FunctionPassManager(new AnalysisManager()).run(fn, [
+      createValueMaterializationPass({ ids }),
+      createCopyPropagationPass(),
+    ]);
+
+    expect(generateJavaScript(input)).toBe(
+      "let $9;\nlet $10;\nlet $0;\n\n$9 = obj;\n$10 = $9.method;\n\nif ($10 == null) {\n  $0 = undefined;\n} else {\n  $0 = $10.call($9, arg);\n}\n\nlet value = $0;",
     );
   });
 

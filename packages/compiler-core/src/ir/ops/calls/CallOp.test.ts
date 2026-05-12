@@ -37,6 +37,21 @@ describe("CallOp", () => {
     expect(op.operands()).toEqual([object, arg]);
   });
 
+  it("stores value-with-receiver targets in operand order", () => {
+    const callee = value(1);
+    const receiver = value(2);
+    const arg = value(3);
+    const result = value(4);
+    const op = new CallOp(
+      makeOperationId(1),
+      { kind: "value-with-receiver", callee, receiver },
+      [{ kind: "value", value: arg }],
+      result,
+    );
+
+    expect(op.operands()).toEqual([callee, receiver, arg]);
+  });
+
   it("includes computed property keys in operand order", () => {
     const object = value(1);
     const key = value(2);
@@ -106,6 +121,32 @@ describe("CallOp", () => {
     expect(replacement.target).toEqual({
       kind: "value",
       callee: nextCallee,
+    });
+    expect(replacement.args).toEqual([{ kind: "value", value: nextArg }]);
+    expect(replacement.result).toBe(result);
+  });
+
+  it("replaces value-with-receiver target operands", () => {
+    const result = value(4);
+    const op = new CallOp(
+      makeOperationId(1),
+      {
+        kind: "value-with-receiver",
+        callee: value(1),
+        receiver: value(2),
+      },
+      [{ kind: "value", value: value(3) }],
+      result,
+    );
+    const nextCallee = value(5);
+    const nextReceiver = value(6);
+    const nextArg = value(7);
+    const replacement = op.withOperands([nextCallee, nextReceiver, nextArg]);
+
+    expect(replacement.target).toEqual({
+      kind: "value-with-receiver",
+      callee: nextCallee,
+      receiver: nextReceiver,
     });
     expect(replacement.args).toEqual([{ kind: "value", value: nextArg }]);
     expect(replacement.result).toBe(result);

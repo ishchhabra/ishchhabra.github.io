@@ -13,6 +13,11 @@ import {
 export type CallTarget =
   | { readonly kind: "value"; readonly callee: Value }
   | {
+      readonly kind: "value-with-receiver";
+      readonly callee: Value;
+      readonly receiver: Value;
+    }
+  | {
       readonly kind: "property";
       readonly object: Value;
       readonly key: PropertyKey;
@@ -27,11 +32,13 @@ export type CallTarget =
 /**
  * Calls a JavaScript target with positional arguments.
  *
- * Value targets model calls such as `fn()`. Property targets model calls such
- * as `obj.method()` and preserve the receiver semantics of JavaScript method
- * calls without materializing the method as a detached value first. Super
- * property targets model calls such as `super.method()`, where `super` is
- * supplied by the enclosing method context rather than an SSA value.
+ * Value targets model calls such as `fn()`. Value-with-receiver targets model
+ * calls where a method value was already loaded but must still receive a
+ * JavaScript `this` value. Property targets model calls such as `obj.method()`
+ * and preserve receiver semantics without materializing the method as a
+ * detached value first. Super property targets model calls such as
+ * `super.method()`, where `super` is supplied by the enclosing method context
+ * rather than an SSA value.
  *
  * Unknown JavaScript calls are opaque effect barriers: they may read or write
  * arbitrary memory, throw, diverge, and perform observable work.
@@ -92,6 +99,9 @@ export class CallOp extends Operation {
 
 function callTargetOperands(target: CallTarget): readonly Value[] {
   if (target.kind === "value") return [target.callee];
+  if (target.kind === "value-with-receiver") {
+    return [target.callee, target.receiver];
+  }
   if (target.kind === "super-property") {
     return target.key.kind === "computed" ? [target.key.value] : [];
   }
@@ -103,6 +113,14 @@ function callTargetOperands(target: CallTarget): readonly Value[] {
 function callTargetWithOperands(target: CallTarget, operands: readonly Value[]): CallTarget {
   if (target.kind === "value") {
     return { kind: "value", callee: operands[0] };
+  }
+
+  if (target.kind === "value-with-receiver") {
+    return {
+      kind: "value-with-receiver",
+      callee: operands[0],
+      receiver: operands[1],
+    };
   }
 
   if (target.kind === "super-property") {
@@ -137,6 +155,10 @@ function sameCallTarget(left: CallTarget, right: CallTarget): boolean {
     return left.callee === right.callee;
   }
 
+  if (left.kind === "value-with-receiver" && right.kind === "value-with-receiver") {
+    return left.callee === right.callee && left.receiver === right.receiver;
+  }
+
   if (left.kind === "property" && right.kind === "property") {
     if (left.object !== right.object || left.key.kind !== right.key.kind) {
       return false;
@@ -169,6 +191,14 @@ function sameCallTarget(left: CallTarget, right: CallTarget): boolean {
 function cloneCallTarget(context: OperationCloneContext, target: CallTarget): CallTarget {
   if (target.kind === "value") {
     return { kind: "value", callee: context.value(target.callee) };
+  }
+
+  if (target.kind === "value-with-receiver") {
+    return {
+      kind: "value-with-receiver",
+      callee: context.value(target.callee),
+      receiver: context.value(target.receiver),
+    };
   }
 
   if (target.kind === "super-property") {

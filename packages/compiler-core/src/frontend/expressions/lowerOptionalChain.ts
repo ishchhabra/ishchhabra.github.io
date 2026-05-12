@@ -16,6 +16,7 @@ import { IfTerminatorOp } from "../../ir/ops/control/IfTerminatorOp";
 import { JumpTerminatorOp } from "../../ir/ops/control/JumpTerminatorOp";
 import { ConstantOp } from "../../ir/ops/constants/ConstantOp";
 import { BinaryOp } from "../../ir/ops/operators/BinaryOp";
+import { LoadPrivatePropertyOp } from "../../ir/ops/properties/LoadPrivatePropertyOp";
 import { LoadPropertyOp } from "../../ir/ops/properties/LoadPropertyOp";
 import type { PropertyKey } from "../../ir/ops/properties/PropertyKey";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -88,6 +89,21 @@ function lowerChainMember(
     branchIfNullish(builder, object, context);
   }
 
+  if (expression.property.type === "PrivateIdentifier") {
+    const result = builder.createValue();
+
+    builder.emit(
+      new LoadPrivatePropertyOp(
+        builder.operationId(),
+        object,
+        builder.privateNameFor(expression.property),
+        result,
+      ),
+    );
+
+    return result;
+  }
+
   const key = lowerOptionalChainPropertyKey(builder, expression);
   const result = builder.createValue();
 
@@ -105,7 +121,10 @@ function lowerChainCall(
   }
 
   const target = lowerOptionalChainCallTarget(builder, expression, context);
-  const nullishValue = target.kind === "property" ? target.calleeValue : target.callee;
+  const nullishValue =
+    target.kind === "property" || target.kind === "private-property"
+      ? target.calleeValue
+      : target.callee;
 
   if (expression.optional) {
     branchIfNullish(builder, nullishValue, context);
@@ -127,6 +146,12 @@ type OptionalChainCallTarget =
       readonly object: Value;
       readonly key: PropertyKey;
       readonly calleeValue: Value;
+    }
+  | {
+      readonly kind: "private-property";
+      readonly object: Value;
+      readonly name: ReturnType<FunctionIRBuilder["privateNameFor"]>;
+      readonly calleeValue: Value;
     };
 
 function lowerOptionalChainCallTarget(
@@ -147,6 +172,27 @@ function lowerOptionalChainCallTarget(
     branchIfNullish(builder, object, context);
   }
 
+  if (expression.callee.property.type === "PrivateIdentifier") {
+    const name = builder.privateNameFor(expression.callee.property);
+    const calleeValue = builder.createValue();
+
+    builder.emit(
+      new LoadPrivatePropertyOp(
+        builder.operationId(),
+        object,
+        name,
+        calleeValue,
+      ),
+    );
+
+    return {
+      kind: "private-property",
+      object,
+      name,
+      calleeValue,
+    };
+  }
+
   const key = lowerOptionalChainPropertyKey(builder, expression.callee);
   const calleeValue = builder.createValue();
 
@@ -165,10 +211,18 @@ function callTarget(target: OptionalChainCallTarget): CallTarget {
     return { kind: "value", callee: target.callee };
   }
 
+  if (target.kind === "private-property") {
+    return {
+      kind: "value-with-receiver",
+      callee: target.calleeValue,
+      receiver: target.object,
+    };
+  }
+
   return {
-    kind: "property",
-    object: target.object,
-    key: target.key,
+    kind: "value-with-receiver",
+    callee: target.calleeValue,
+    receiver: target.object,
   };
 }
 

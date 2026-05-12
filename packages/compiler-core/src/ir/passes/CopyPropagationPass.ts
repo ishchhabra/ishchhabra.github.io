@@ -1,6 +1,7 @@
 import { AnalysisManager, PreservedAnalyses } from "../analysis";
 import { FunctionIR, Operation, Value } from "../core";
 import { BasicBlock } from "../core/Block";
+import { canDropOperationEffects } from "../effects";
 import { CopyValueOp } from "../ops/values/CopyValueOp";
 import { FunctionPass, PassResult } from "./Pass";
 
@@ -119,7 +120,12 @@ class CopyPropagationPass {
 
     for (const op of block.operations) {
       if (op instanceof CopyValueOp) {
-        aliases.set(op.target, canonicalValue(op.source, aliases));
+        const source = canonicalValue(op.source, aliases);
+        if (canPropagateCopySource(source)) {
+          aliases.set(op.target, source);
+        } else {
+          aliases.delete(op.target);
+        }
       }
     }
 
@@ -142,7 +148,11 @@ class CopyPropagationPass {
           continue;
         }
 
-        aliases.set(current.target, source);
+        if (canPropagateCopySource(source)) {
+          aliases.set(current.target, source);
+        } else {
+          aliases.delete(current.target);
+        }
       }
     }
   }
@@ -183,6 +193,13 @@ function canonicalValue(value: Value, aliases: AliasMap): Value {
   }
 
   return current;
+}
+
+function canPropagateCopySource(source: Value): boolean {
+  const definer = source.definer;
+  if (definer === undefined) return true;
+
+  return canDropOperationEffects(definer.effects());
 }
 
 function sameAliases(left: AliasMap, right: AliasMap): boolean {
