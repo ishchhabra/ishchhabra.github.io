@@ -44,6 +44,7 @@ export type ExpressionNode =
   | JSXElementNode
   | JSXFragmentNode
   | LiteralNode
+  | LogicalExpressionNode
   | MemberExpressionNode
   | MetaPropertyNode
   | NewExpressionNode
@@ -95,6 +96,8 @@ export type BinaryOperator =
   | "in"
   | "instanceof"
   | "**";
+
+export type LogicalOperator = "&&" | "||" | "??";
 
 export type UnaryOperator = "-" | "+" | "!" | "~" | "typeof" | "void" | "delete";
 
@@ -324,6 +327,13 @@ export interface ConditionalExpressionNode extends BaseNode {
   readonly test: ExpressionNode;
   readonly consequent: ExpressionNode;
   readonly alternate: ExpressionNode;
+}
+
+export interface LogicalExpressionNode extends BaseNode {
+  readonly type: "LogicalExpression";
+  readonly operator: LogicalOperator;
+  readonly left: ExpressionNode;
+  readonly right: ExpressionNode;
 }
 
 export interface AwaitExpressionNode extends BaseNode {
@@ -1276,6 +1286,19 @@ export function conditionalExpression(
     test,
     consequent,
     alternate,
+  };
+}
+
+export function logicalExpression(
+  operator: LogicalOperator,
+  left: ExpressionNode,
+  right: ExpressionNode,
+): LogicalExpressionNode {
+  return {
+    type: "LogicalExpression",
+    operator,
+    left,
+    right,
   };
 }
 

@@ -1,10 +1,10 @@
 import type { ConditionalExpression } from "oxc-parser";
 import { blockTarget } from "../../ir/core/TerminatorOp";
 import type { Value } from "../../ir/core/Value";
+import { ConditionalTerminatorOp } from "../../ir/ops/control/ConditionalTerminatorOp";
 import { JumpTerminatorOp } from "../../ir/ops/control/JumpTerminatorOp";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { lowerExpression } from "./lowerExpression";
-import { IfTerminatorOp } from "../../ir/ops/control/IfTerminatorOp";
 
 /**
  * Lowers an ECMAScript conditional expression.
@@ -31,7 +31,7 @@ export function lowerConditionalExpression(
   joinBlock.appendParam(result);
 
   builder.terminate(
-    new IfTerminatorOp(
+    new ConditionalTerminatorOp(
       builder.operationId(),
       test,
       blockTarget(consequentBlock),
@@ -44,10 +44,7 @@ export function lowerConditionalExpression(
   const consequent = lowerExpression(builder, expression.consequent);
   if (!builder.currentBlock.isTerminated) {
     builder.terminate(
-      new JumpTerminatorOp(
-        builder.operationId(),
-        blockTarget(joinBlock, [consequent]),
-      ),
+      new JumpTerminatorOp(builder.operationId(), blockTarget(joinBlock, [consequent])),
     );
   }
 
@@ -55,10 +52,7 @@ export function lowerConditionalExpression(
   const alternate = lowerExpression(builder, expression.alternate);
   if (!builder.currentBlock.isTerminated) {
     builder.terminate(
-      new JumpTerminatorOp(
-        builder.operationId(),
-        blockTarget(joinBlock, [alternate]),
-      ),
+      new JumpTerminatorOp(builder.operationId(), blockTarget(joinBlock, [alternate])),
     );
   }
 

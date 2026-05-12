@@ -568,7 +568,10 @@ describe("generateJavaScript", () => {
 
   it("emits nested for-of loops", () => {
     const input = new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
-      parseModule("test.js", "for (const outer of outers) { for (const inner of inners) visit(outer, inner); }"),
+      parseModule(
+        "test.js",
+        "for (const outer of outers) { for (const inner of inners) visit(outer, inner); }",
+      ),
     );
 
     expect(generateJavaScript(input)).toBe(
@@ -653,6 +656,38 @@ describe("generateJavaScript", () => {
     expect(generateJavaScript(input)).toBe(
       "let x = undefined;\n\nwhile (a) {\n  x = 1;\n}\n\nx = 2;",
     );
+  });
+
+  it("emits while loops with short-circuit tests", () => {
+    const input = new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
+      parseModule("test.js", "while (a && b) { foo(); }"),
+    );
+
+    expect(generateJavaScript(input)).toBe("while (a && b) {\n  foo();\n}");
+  });
+
+  it("emits while loops with nested short-circuit tests", () => {
+    const input = new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
+      parseModule("test.js", "while (a && (b || c)) { foo(); }"),
+    );
+
+    expect(generateJavaScript(input)).toBe("while (a && (b || c)) {\n  foo();\n}");
+  });
+
+  it("emits while loops with conditional tests", () => {
+    const input = new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
+      parseModule("test.js", "while (a ? b : c) { foo(); }"),
+    );
+
+    expect(generateJavaScript(input)).toBe("while (a ? b : c) {\n  foo();\n}");
+  });
+
+  it("emits while loops with nested value-region tests", () => {
+    const input = new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
+      parseModule("test.js", "while (a && (b ? c : d)) { foo(); }"),
+    );
+
+    expect(generateJavaScript(input)).toBe("while (a && (b ? c : d)) {\n  foo();\n}");
   });
 
   it("emits break statements", () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { IRIdAllocator } from "../../ir/core/IRIdAllocator";
-import { IfTerminatorOp } from "../../ir/ops/control/IfTerminatorOp";
+import { ConditionalTerminatorOp } from "../../ir/ops/control/ConditionalTerminatorOp";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { parseModule } from "../parse/parseModule";
 
@@ -14,16 +14,16 @@ describe("lowerConditionalExpression", () => {
     if (fn === null) throw new Error("Expected entry function");
 
     const entry = fn.entryBlock;
-    expect(entry.terminator).toBeInstanceOf(IfTerminatorOp);
+    expect(entry.terminator).toBeInstanceOf(ConditionalTerminatorOp);
 
-    const branch = entry.terminator as IfTerminatorOp;
+    const branch = entry.terminator as ConditionalTerminatorOp;
     const join = branch.exitBlock;
 
-    expect(branch.thenBlock.operations.map((op) => op.constructor.name)).toEqual([
+    expect(branch.consequentBlock.operations.map((op) => op.constructor.name)).toEqual([
       "LoadGlobalOp",
       "JumpTerminatorOp",
     ]);
-    expect(branch.elseBlock.operations.map((op) => op.constructor.name)).toEqual([
+    expect(branch.alternateBlock.operations.map((op) => op.constructor.name)).toEqual([
       "LoadGlobalOp",
       "JumpTerminatorOp",
     ]);
