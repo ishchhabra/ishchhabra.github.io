@@ -9,6 +9,7 @@ import { ForOfTerminatorOp } from "../../../ir/ops/control/ForOfTerminatorOp";
 import { ForTerminatorOp } from "../../../ir/ops/control/ForTerminatorOp";
 import { IfTerminatorOp } from "../../../ir/ops/control/IfTerminatorOp";
 import { JumpTerminatorOp } from "../../../ir/ops/control/JumpTerminatorOp";
+import { LabeledTerminatorOp } from "../../../ir/ops/control/LabeledTerminatorOp";
 import { NullishGuardTerminatorOp } from "../../../ir/ops/control/NullishGuardTerminatorOp";
 import { ShortCircuitTerminatorOp } from "../../../ir/ops/control/ShortCircuitTerminatorOp";
 import { SwitchTerminatorOp } from "../../../ir/ops/control/SwitchTerminatorOp";
@@ -63,6 +64,7 @@ interface EmitControlContext {
   readonly label: string | null;
   readonly breakTarget: BasicBlock;
   readonly continueTarget: BasicBlock | null;
+  readonly requireLabel?: boolean;
 }
 
 /**
@@ -295,6 +297,11 @@ function emitBlock(
     return statements;
   }
 
+  if (terminator instanceof LabeledTerminatorOp) {
+    statements.push(...emitLabeled(context, terminator, emitted, controls));
+    return statements;
+  }
+
   if (terminator instanceof TryTerminatorOp) {
     statements.push(...emitTry(context, terminator, emitted, controls));
     return statements;
@@ -397,6 +404,30 @@ function emitSwitch(
     ),
     ...emitContinuation(context, op.exitBlock, continuation, emitted, controls),
   ];
+}
+
+function emitLabeled(
+  context: CodegenContext,
+  op: LabeledTerminatorOp,
+  emitted: Set<BasicBlock>,
+  controls: readonly EmitControlContext[],
+  continuation: BasicBlock | null = null,
+): ESTreeStatement[] {
+  const labelControl = {
+    label: op.label,
+    breakTarget: op.exitBlock,
+    continueTarget: null,
+    requireLabel: true,
+  };
+
+  return withFallthrough(context, op.exitBlock, emitted, controls, continuation, () => {
+    const body = emitBranchArm(context, op.bodyBlock, op.exitBlock, emitted, [
+      ...controls,
+      labelControl,
+    ]);
+
+    return [labeledStatement(identifier(op.label), blockStatement(body))];
+  });
 }
 
 function emitTry(
@@ -1122,6 +1153,10 @@ function emitTargetArm(
   controls: readonly EmitControlContext[],
 ): ESTreeStatement[] {
   const assignments = assignTargetParams(context, target);
+  const controlBreak = emitControlBreak(target.block, controls);
+  if (controlBreak !== null) {
+    return [...assignments, controlBreak];
+  }
 
   if (context.isFallthrough(target.block)) {
     return assignments;
@@ -1151,14 +1186,18 @@ function emitBranchArm(
   if (terminator === null) return statements;
 
   if (terminator instanceof JumpTerminatorOp) {
-    const controlJump = emitControlJump(terminator.targetBlock, controls);
+    const controlBreak = emitControlBreak(terminator.targetBlock, controls);
+    if (controlBreak !== null) {
+      statements.push(controlBreak);
+      return statements;
+    }
 
     if (terminator.targetBlock === continuation) {
-      if (controlJump !== null) return statements;
       statements.push(...assignBlockParams(context, terminator));
       return statements;
     }
 
+    const controlJump = emitControlJump(terminator.targetBlock, controls);
     if (controlJump !== null) {
       statements.push(controlJump);
       return statements;
@@ -1217,6 +1256,11 @@ function emitBranchArm(
     return statements;
   }
 
+  if (terminator instanceof LabeledTerminatorOp) {
+    statements.push(...emitLabeled(context, terminator, emitted, controls, continuation));
+    return statements;
+  }
+
   if (terminator instanceof WhileTerminatorOp) {
     statements.push(...emitWhile(context, terminator, emitted, controls, continuation));
     return statements;
@@ -1247,6 +1291,11 @@ function emitJump(
   emitted: Set<BasicBlock>,
   controls: readonly EmitControlContext[],
 ): ESTreeStatement[] {
+  const controlBreak = emitControlBreak(jump.targetBlock, controls);
+  if (controlBreak !== null) {
+    return [...assignBlockParams(context, jump), controlBreak];
+  }
+
   const controlJump = emitControlJump(jump.targetBlock, controls);
   if (controlJump !== null) {
     return [...assignBlockParams(context, jump), controlJump];
@@ -1304,13 +1353,37 @@ function withFallthrough(
   return statements;
 }
 
+function emitControlBreak(
+  target: BasicBlock,
+  controls: readonly EmitControlContext[],
+): ESTreeStatement | null {
+  const topControl = controls[controls.length - 1];
+  if (topControl !== undefined && target === topControl.breakTarget) {
+    const label =
+      topControl.requireLabel === true && topControl.label !== null
+        ? identifier(topControl.label)
+        : null;
+    return breakStatement(label);
+  }
+
+  for (let index = controls.length - 1; index >= 0; index--) {
+    const control = controls[index];
+    if (control.label === null) continue;
+    if (target === control.breakTarget) {
+      return breakStatement(identifier(control.label));
+    }
+  }
+
+  return null;
+}
+
 function emitControlJump(
   target: BasicBlock,
   controls: readonly EmitControlContext[],
 ): ESTreeStatement | null {
   for (let index = controls.length - 1; index >= 0; index--) {
     const control = controls[index];
-    const needsLabel = index !== controls.length - 1;
+    const needsLabel = control.requireLabel === true || index !== controls.length - 1;
     if (needsLabel && control.label === null) continue;
 
     const label = needsLabel && control.label !== null ? identifier(control.label) : null;
@@ -1448,6 +1521,7 @@ function structuredExit(block: BasicBlock): BasicBlock | null {
 
   if (
     terminator instanceof SwitchTerminatorOp ||
+    terminator instanceof LabeledTerminatorOp ||
     terminator instanceof IfTerminatorOp ||
     terminator instanceof TryTerminatorOp ||
     terminator instanceof WhileTerminatorOp ||

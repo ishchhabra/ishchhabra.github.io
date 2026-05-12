@@ -519,7 +519,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "switch (x) {\n  case 1:\n    foo();\n    break;\n\n  case 2:\n    bar();\n\n  default:\n    baz();\n}\n\nqux();",
+      "switch (x) {\n  case 1:\n    foo();\n    break;\n\n  case 2:\n    bar();\n\n  default:\n    baz();\n    break;\n}\n\nqux();",
     );
   });
 
@@ -704,6 +704,42 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe("outer: while (a) {\n  break;\n}\n\nfoo();");
+  });
+
+  it("emits labeled block breaks", () => {
+    const input = new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
+      parseModule("test.js", "outer: { if (done) break outer; foo(); } bar();"),
+    );
+
+    expect(generateJavaScript(input)).toBe(
+      "outer: {\n  if (done) {\n    break outer;\n  }\n\n  foo();\n\n  break outer;\n}\n\nbar();",
+    );
+  });
+
+  it("emits labeled block breaks inside loop bodies", () => {
+    const input = new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
+      parseModule(
+        "test.js",
+        "let i = 0; const log = []; for (; i < 3; i++) { inner: { if (i === 1) break inner; log.push(i); } }",
+      ),
+    );
+
+    expect(generateJavaScript(input)).toBe(
+      "let i = 0;\nconst log = [];\n\nfor (; i < 3; i = i + 1) {\n  inner: {\n    if (i === 1) {\n      break inner;\n    }\n\n    log.push(i);\n\n    break inner;\n  }\n}",
+    );
+  });
+
+  it("emits labeled switch breaks from nested controls", () => {
+    const input = new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
+      parseModule(
+        "test.js",
+        "labelSwitch: switch (i) { case 1: for (const x of xs) { if (x === 2) break labelSwitch; foo(x); } bar(); } baz();",
+      ),
+    );
+
+    expect(generateJavaScript(input)).toBe(
+      "labelSwitch: {\n  switch (i) {\n    case 1:\n      for (let $3 of xs) {\n        const x = $3;\n\n        if (x === 2) {\n          break labelSwitch;\n        }\n\n        foo(x);\n      }\n      bar();\n\n    default:\n      break;\n  }\n}\n\nbaz();",
+    );
   });
 
   it("emits do while loops", () => {
