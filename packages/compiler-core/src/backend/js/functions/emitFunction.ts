@@ -11,12 +11,14 @@ import { ForOfTerminatorOp } from "../../../ir/ops/control/ForOfTerminatorOp";
 import { ForTerminatorOp } from "../../../ir/ops/control/ForTerminatorOp";
 import { IfTerminatorOp } from "../../../ir/ops/control/IfTerminatorOp";
 import { JumpTerminatorOp } from "../../../ir/ops/control/JumpTerminatorOp";
+import { ShortCircuitTerminatorOp } from "../../../ir/ops/control/ShortCircuitTerminatorOp";
 import { SwitchTerminatorOp } from "../../../ir/ops/control/SwitchTerminatorOp";
 import { TryTerminatorOp } from "../../../ir/ops/control/TryTerminatorOp";
 import { WhileTerminatorOp } from "../../../ir/ops/control/WhileTerminatorOp";
 import { CopyValueOp } from "../../../ir/ops/values/CopyValueOp";
 import {
   assignmentExpression,
+  binaryExpression,
   blockStatement,
   breakStatement,
   catchClause,
@@ -42,6 +44,7 @@ import {
   type ESTreeExpression,
   type ESTreeStatement,
   sequenceExpression,
+  unaryExpression,
 } from "../ast";
 import type { CodegenContext } from "../CodegenContext";
 import { emitOperation } from "../ops/emitOperation";
@@ -233,6 +236,11 @@ function emitBlock(
 
   if (terminator instanceof IfTerminatorOp) {
     statements.push(...emitIf(context, terminator, emitted, controls));
+    return statements;
+  }
+
+  if (terminator instanceof ShortCircuitTerminatorOp) {
+    statements.push(...emitShortCircuit(context, terminator, emitted, controls));
     return statements;
   }
 
@@ -925,6 +933,50 @@ function emitIf(
   );
 }
 
+function emitShortCircuit(
+  context: CodegenContext,
+  op: ShortCircuitTerminatorOp,
+  emitted: Set<BasicBlock>,
+  controls: readonly EmitControlContext[],
+  continuation: BasicBlock | null = null,
+): ESTreeStatement[] {
+  return withFallthrough(
+    context,
+    op.exitBlock,
+    emitted,
+    controls,
+    continuation,
+    () => {
+      const body = emitTargetArm(context, op.bodyTarget, emitted, controls);
+      const exit = emitTargetArm(context, op.exitTarget, emitted, controls);
+
+      return [
+        ifStatement(
+          shortCircuitBodyCondition(context, op),
+          blockStatement(body),
+          exit.length === 0 ? null : blockStatement(exit),
+        ),
+      ];
+    },
+  );
+}
+
+function shortCircuitBodyCondition(
+  context: CodegenContext,
+  op: ShortCircuitTerminatorOp,
+): ESTreeExpression {
+  const test = context.expressionForValue(op.test);
+
+  switch (op.operator) {
+    case "&&":
+      return test;
+    case "||":
+      return unaryExpression("!", test);
+    case "??":
+      return binaryExpression("==", test, literal(null));
+  }
+}
+
 function emitTargetArm(
   context: CodegenContext,
   target: BlockTarget,
@@ -1011,6 +1063,13 @@ function emitBranchArm(
   if (terminator instanceof IfTerminatorOp) {
     statements.push(
       ...emitIf(context, terminator, emitted, controls, continuation),
+    );
+    return statements;
+  }
+
+  if (terminator instanceof ShortCircuitTerminatorOp) {
+    statements.push(
+      ...emitShortCircuit(context, terminator, emitted, controls, continuation),
     );
     return statements;
   }

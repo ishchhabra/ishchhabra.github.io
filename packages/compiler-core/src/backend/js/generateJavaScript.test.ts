@@ -641,7 +641,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "function g(isLoading, resolvedLocation, location) {\n  let $4;\n  let $8;\n\n  if (isLoading) {\n    if (resolvedLocation != null) {\n      $8 = resolvedLocation;\n    } else {\n      $8 = location;\n    }\n\n    $4 = $8;\n  } else {\n    $4 = location;\n  }\n\n  const currentLocation = $4;\n\n  return { pathname: currentLocation };\n}",
+      "function g(isLoading, resolvedLocation, location) {\n  let $4;\n  let $6;\n\n  if (isLoading) {\n    if (resolvedLocation == null) {\n      $6 = location;\n    } else {\n      $6 = resolvedLocation;\n    }\n\n    $4 = $6;\n  } else {\n    $4 = location;\n  }\n\n  const currentLocation = $4;\n\n  return { pathname: currentLocation };\n}",
     );
   });
 
