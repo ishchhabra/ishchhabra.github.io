@@ -19,16 +19,16 @@ import { OperationEffects, PureOperationEffects } from "../../effects";
  * through JavaScript codegen so JS runtime semantics resume `break`,
  * `continue`, `return`, and `throw` through `finally`.
  *
- * Only the try body is an immediate CFG successor. The catch, finally, and exit
- * blocks are structural region targets used by lowering, verification, cloning,
- * and codegen.
+ * The try body, catch handler, and finally handler are executable CFG
+ * successors. The exit block is a structural continuation reached by explicit
+ * jumps from those regions.
  */
 export class TryTerminatorOp extends TerminatorOp {
   constructor(
     id: OperationId,
     public readonly tryTarget: BlockTarget,
     public readonly catchTarget: BlockTarget | null,
-    public readonly finallyBlock: BasicBlock | null,
+    public readonly finallyTarget: BlockTarget | null,
     public readonly exitBlock: BasicBlock,
   ) {
     super(id);
@@ -38,8 +38,16 @@ export class TryTerminatorOp extends TerminatorOp {
     return this.tryTarget.block;
   }
 
+  public get finallyBlock(): BasicBlock | null {
+    return this.finallyTarget?.block ?? null;
+  }
+
   public override operands(): readonly Value[] {
-    return this.tryTarget.operands.forwarded;
+    return [
+      ...this.tryTarget.operands.forwarded,
+      ...(this.catchTarget?.operands.forwarded ?? []),
+      ...(this.finallyTarget?.operands.forwarded ?? []),
+    ];
   }
 
   public override effects(): OperationEffects {
@@ -50,16 +58,17 @@ export class TryTerminatorOp extends TerminatorOp {
     return new TryTerminatorOp(
       context.ids.operationId(),
       cloneBlockTarget(context, this.tryTarget),
-      this.catchTarget === null
-        ? null
-        : cloneBlockTarget(context, this.catchTarget),
-      this.finallyBlock === null ? null : context.block(this.finallyBlock),
+      this.catchTarget === null ? null : cloneBlockTarget(context, this.catchTarget),
+      this.finallyTarget === null ? null : cloneBlockTarget(context, this.finallyTarget),
       context.block(this.exitBlock),
     );
   }
 
   public override withOperands(operands: readonly Value[]): TryTerminatorOp {
-    const expected = this.tryTarget.operands.forwarded.length;
+    const tryCount = this.tryTarget.operands.forwarded.length;
+    const catchCount = this.catchTarget?.operands.forwarded.length ?? 0;
+    const finallyCount = this.finallyTarget?.operands.forwarded.length ?? 0;
+    const expected = tryCount + catchCount + finallyCount;
 
     if (operands.length !== expected) {
       throw new Error(
@@ -67,24 +76,32 @@ export class TryTerminatorOp extends TerminatorOp {
       );
     }
 
-    const tryTarget = replaceForwardedOperands(this.tryTarget, operands);
-    if (tryTarget === this.tryTarget) return this;
+    const tryTarget = replaceForwardedOperands(this.tryTarget, operands.slice(0, tryCount));
+    const catchTarget =
+      this.catchTarget === null
+        ? null
+        : replaceForwardedOperands(
+            this.catchTarget,
+            operands.slice(tryCount, tryCount + catchCount),
+          );
+    const finallyTarget =
+      this.finallyTarget === null
+        ? null
+        : replaceForwardedOperands(this.finallyTarget, operands.slice(tryCount + catchCount));
 
-    return new TryTerminatorOp(
-      this.id,
-      tryTarget,
-      this.catchTarget,
-      this.finallyBlock,
-      this.exitBlock,
-    );
+    if (
+      tryTarget === this.tryTarget &&
+      catchTarget === this.catchTarget &&
+      finallyTarget === this.finallyTarget
+    ) {
+      return this;
+    }
+
+    return new TryTerminatorOp(this.id, tryTarget, catchTarget, finallyTarget, this.exitBlock);
   }
 
   public override targetCount(): number {
-    return (
-      2 +
-      (this.catchTarget === null ? 0 : 1) +
-      (this.finallyBlock === null ? 0 : 1)
-    );
+    return 2 + (this.catchTarget === null ? 0 : 1) + (this.finallyTarget === null ? 0 : 1);
   }
 
   public override target(index: number): BlockTarget {
@@ -96,8 +113,8 @@ export class TryTerminatorOp extends TerminatorOp {
       if (index === nextIndex++) return this.catchTarget;
     }
 
-    if (this.finallyBlock !== null) {
-      if (index === nextIndex++) return blockTarget(this.finallyBlock);
+    if (this.finallyTarget !== null) {
+      if (index === nextIndex++) return this.finallyTarget;
     }
 
     if (index === nextIndex) return blockTarget(this.exitBlock);
@@ -105,16 +122,13 @@ export class TryTerminatorOp extends TerminatorOp {
     throw new Error(`TryTerminatorOp#${this.id} has no target ${index}`);
   }
 
-  public override withTarget(
-    index: number,
-    target: BlockTarget,
-  ): TryTerminatorOp {
+  public override withTarget(index: number, target: BlockTarget): TryTerminatorOp {
     if (index === 0) {
       return new TryTerminatorOp(
         this.id,
         target,
         this.catchTarget,
-        this.finallyBlock,
+        this.finallyTarget,
         this.exitBlock,
       );
     }
@@ -127,20 +141,20 @@ export class TryTerminatorOp extends TerminatorOp {
           this.id,
           this.tryTarget,
           target,
-          this.finallyBlock,
+          this.finallyTarget,
           this.exitBlock,
         );
       }
       nextIndex++;
     }
 
-    if (this.finallyBlock !== null) {
+    if (this.finallyTarget !== null) {
       if (index === nextIndex) {
         return new TryTerminatorOp(
           this.id,
           this.tryTarget,
           this.catchTarget,
-          target.block,
+          target,
           this.exitBlock,
         );
       }
@@ -152,7 +166,7 @@ export class TryTerminatorOp extends TerminatorOp {
         this.id,
         this.tryTarget,
         this.catchTarget,
-        this.finallyBlock,
+        this.finallyTarget,
         target.block,
       );
     }
@@ -161,6 +175,6 @@ export class TryTerminatorOp extends TerminatorOp {
   }
 
   public override successorIndices(): readonly number[] {
-    return [0];
+    return Array.from({ length: this.targetCount() - 1 }, (_, index) => index);
   }
 }

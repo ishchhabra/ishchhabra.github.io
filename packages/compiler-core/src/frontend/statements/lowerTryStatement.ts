@@ -14,18 +14,14 @@ import { lowerBindingPatternTarget } from "../patterns/lowerBindingPatternTarget
 /**
  * Lowers `try` statements to structured protected, catch, finally, and exit blocks.
  */
-export function lowerTryStatement(
-  builder: FunctionIRBuilder,
-  statement: TryStatement,
-): void {
+export function lowerTryStatement(builder: FunctionIRBuilder, statement: TryStatement): void {
   if (statement.handler === null && statement.finalizer === null) {
     throw new Error("TryStatement requires catch or finally");
   }
 
   const tryBlock = builder.createBlock();
   const catchBlock = statement.handler === null ? null : builder.createBlock();
-  const finallyBlock =
-    statement.finalizer === null ? null : builder.createBlock();
+  const finallyBlock = statement.finalizer === null ? null : builder.createBlock();
   const exitBlock = builder.createBlock();
 
   const exceptionValue = catchBlock === null ? null : builder.createValue();
@@ -44,7 +40,7 @@ export function lowerTryStatement(
             block: catchBlock,
             operands: producedOperands([exceptionValue!]),
           },
-      finallyBlock,
+      finallyBlock === null ? null : blockTarget(finallyBlock),
       exitBlock,
     ),
   );
@@ -115,8 +111,6 @@ function jumpIfOpen(
   target: ReturnType<FunctionIRBuilder["createBlock"]>,
 ): void {
   if (!builder.currentBlock.isTerminated) {
-    builder.terminate(
-      new JumpTerminatorOp(builder.operationId(), blockTarget(target)),
-    );
+    builder.terminate(new JumpTerminatorOp(builder.operationId(), blockTarget(target)));
   }
 }
