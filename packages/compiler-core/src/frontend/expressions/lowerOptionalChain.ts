@@ -12,10 +12,9 @@ import { blockTarget } from "../../ir/core/TerminatorOp";
 import type { Value } from "../../ir/core/Value";
 import type { ArgumentListElement } from "../../ir/ops/calls/ArgumentListElement";
 import { CallOp, type CallTarget } from "../../ir/ops/calls/CallOp";
-import { IfTerminatorOp } from "../../ir/ops/control/IfTerminatorOp";
 import { JumpTerminatorOp } from "../../ir/ops/control/JumpTerminatorOp";
+import { NullishGuardTerminatorOp } from "../../ir/ops/control/NullishGuardTerminatorOp";
 import { ConstantOp } from "../../ir/ops/constants/ConstantOp";
-import { BinaryOp } from "../../ir/ops/operators/BinaryOp";
 import { LoadPrivatePropertyOp } from "../../ir/ops/properties/LoadPrivatePropertyOp";
 import { LoadPropertyOp } from "../../ir/ops/properties/LoadPropertyOp";
 import type { PropertyKey } from "../../ir/ops/properties/PropertyKey";
@@ -176,14 +175,7 @@ function lowerOptionalChainCallTarget(
     const name = builder.privateNameFor(expression.callee.property);
     const calleeValue = builder.createValue();
 
-    builder.emit(
-      new LoadPrivatePropertyOp(
-        builder.operationId(),
-        object,
-        name,
-        calleeValue,
-      ),
-    );
+    builder.emit(new LoadPrivatePropertyOp(builder.operationId(), object, name, calleeValue));
 
     return {
       kind: "private-property",
@@ -231,24 +223,18 @@ function branchIfNullish(
   value: Value,
   context: OptionalChainContext,
 ): void {
-  const continuation = builder.createBlock();
-  const nullValue = builder.createValue();
-  const condition = builder.createValue();
-
-  builder.emit(new ConstantOp(builder.operationId(), null, nullValue));
-  builder.emit(new BinaryOp(builder.operationId(), "==", value, nullValue, condition));
+  const bodyBlock = builder.createBlock();
 
   builder.terminate(
-    new IfTerminatorOp(
+    new NullishGuardTerminatorOp(
       builder.operationId(),
-      condition,
+      value,
+      blockTarget(bodyBlock),
       blockTarget(context.joinBlock, [context.undefinedValue]),
-      blockTarget(continuation),
-      context.joinBlock,
     ),
   );
 
-  builder.setCurrentBlock(continuation);
+  builder.setCurrentBlock(bodyBlock);
 }
 
 function lowerOptionalChainPropertyKey(

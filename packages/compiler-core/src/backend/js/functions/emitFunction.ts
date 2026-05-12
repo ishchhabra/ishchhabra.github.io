@@ -9,6 +9,7 @@ import { ForOfTerminatorOp } from "../../../ir/ops/control/ForOfTerminatorOp";
 import { ForTerminatorOp } from "../../../ir/ops/control/ForTerminatorOp";
 import { IfTerminatorOp } from "../../../ir/ops/control/IfTerminatorOp";
 import { JumpTerminatorOp } from "../../../ir/ops/control/JumpTerminatorOp";
+import { NullishGuardTerminatorOp } from "../../../ir/ops/control/NullishGuardTerminatorOp";
 import { ShortCircuitTerminatorOp } from "../../../ir/ops/control/ShortCircuitTerminatorOp";
 import { SwitchTerminatorOp } from "../../../ir/ops/control/SwitchTerminatorOp";
 import { TryTerminatorOp } from "../../../ir/ops/control/TryTerminatorOp";
@@ -52,7 +53,10 @@ import {
   emitBindingPatternTarget,
 } from "../ops/patterns/emitDestructurePattern";
 
-type ValueRegionTerminator = ConditionalTerminatorOp | ShortCircuitTerminatorOp;
+type ValueRegionTerminator =
+  | ConditionalTerminatorOp
+  | NullishGuardTerminatorOp
+  | ShortCircuitTerminatorOp;
 type LoopTestTerminator = BranchTerminatorOp | ValueRegionTerminator;
 
 interface EmitControlContext {
@@ -231,7 +235,9 @@ function collectValueRegionParams(
 
 function isValueRegionTerminator(terminator: unknown): terminator is ValueRegionTerminator {
   return (
-    terminator instanceof ConditionalTerminatorOp || terminator instanceof ShortCircuitTerminatorOp
+    terminator instanceof ConditionalTerminatorOp ||
+    terminator instanceof NullishGuardTerminatorOp ||
+    terminator instanceof ShortCircuitTerminatorOp
   );
 }
 
@@ -271,6 +277,11 @@ function emitBlock(
 
   if (terminator instanceof ShortCircuitTerminatorOp) {
     statements.push(...emitShortCircuit(context, terminator, emitted, controls));
+    return statements;
+  }
+
+  if (terminator instanceof NullishGuardTerminatorOp) {
+    statements.push(...emitNullishGuard(context, terminator, emitted, controls));
     return statements;
   }
 
@@ -808,6 +819,29 @@ function emitValueBlockExpression(
     return emitValueBlockExpression(context, terminator.exitBlock, continuation, emitted);
   }
 
+  if (terminator instanceof NullishGuardTerminatorOp) {
+    const bodyExpression = emitValueBlockExpression(
+      context,
+      terminator.bodyBlock,
+      terminator.exitBlock,
+      emitted,
+    );
+    const expression = expressionWithStatements(
+      statements,
+      conditionalExpression(
+        binaryExpression("==", context.expressionForValue(terminator.guard), literal(null)),
+        valueRegionExitExpression(context, terminator),
+        bodyExpression,
+      ),
+    );
+    const result = valueRegionResultParam(terminator);
+    context.values.set(result, expression);
+
+    if (terminator.exitBlock === continuation) return expression;
+
+    return emitValueBlockExpression(context, terminator.exitBlock, continuation, emitted);
+  }
+
   throw new Error(
     `Value block bb${block.id} must end with JumpTerminatorOp or value-region terminator`,
   );
@@ -850,6 +884,20 @@ function valueRegionResultParam(terminator: ValueRegionTerminator): Value {
   }
 
   return terminator.exitBlock.params[0];
+}
+
+function valueRegionExitExpression(
+  context: CodegenContext,
+  terminator: NullishGuardTerminatorOp,
+): ESTreeExpression {
+  const args = successorValues(terminator.exitTarget);
+  if (args.length !== 1) {
+    throw new Error(
+      `NullishGuardTerminatorOp#${terminator.id} exit target expected one result, got ${args.length}`,
+    );
+  }
+
+  return context.expressionForValue(args[0]);
 }
 
 function edgeResultExpression(
@@ -1030,6 +1078,27 @@ function emitShortCircuit(
   });
 }
 
+function emitNullishGuard(
+  context: CodegenContext,
+  op: NullishGuardTerminatorOp,
+  emitted: Set<BasicBlock>,
+  controls: readonly EmitControlContext[],
+  continuation: BasicBlock | null = null,
+): ESTreeStatement[] {
+  return withFallthrough(context, op.exitBlock, emitted, controls, continuation, () => {
+    const body = emitTargetArm(context, op.bodyTarget, emitted, controls);
+    const exit = emitTargetArm(context, op.exitTarget, emitted, controls);
+
+    return [
+      ifStatement(
+        binaryExpression("==", context.expressionForValue(op.guard), literal(null)),
+        blockStatement(exit),
+        body.length === 0 ? null : blockStatement(body),
+      ),
+    ];
+  });
+}
+
 function shortCircuitBodyCondition(
   context: CodegenContext,
   op: ShortCircuitTerminatorOp,
@@ -1130,6 +1199,11 @@ function emitBranchArm(
 
   if (terminator instanceof ShortCircuitTerminatorOp) {
     statements.push(...emitShortCircuit(context, terminator, emitted, controls, continuation));
+    return statements;
+  }
+
+  if (terminator instanceof NullishGuardTerminatorOp) {
+    statements.push(...emitNullishGuard(context, terminator, emitted, controls, continuation));
     return statements;
   }
 

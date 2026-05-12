@@ -222,7 +222,7 @@ describe("generateJavaScript", () => {
     ]);
 
     expect(generateJavaScript(input)).toBe(
-      "let $9;\nlet $10;\nlet $0;\n\n$9 = obj;\n$10 = $9.method;\n\nif ($10 == null) {\n  $0 = undefined;\n} else {\n  $0 = $10.call($9, arg);\n}\n\nlet value = $0;",
+      "let $7;\nlet $8;\nlet $0;\n\n$7 = obj;\n$8 = $7.method;\n\nif ($8 == null) {\n  $0 = undefined;\n} else {\n  $0 = $8.call($7, arg);\n}\n\nlet value = $0;",
     );
   });
 

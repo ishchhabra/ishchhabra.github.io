@@ -72,9 +72,7 @@ describe("lowerMemberExpression", () => {
     expect(entry?.operations.map((op) => op.constructor.name)).toEqual([
       "ConstantOp",
       "LoadGlobalOp",
-      "ConstantOp",
-      "BinaryOp",
-      "IfTerminatorOp",
+      "NullishGuardTerminatorOp",
     ]);
   });
 

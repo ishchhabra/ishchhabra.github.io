@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { IRIdAllocator } from "../../ir/core/IRIdAllocator";
-import { IfTerminatorOp } from "../../ir/ops/control/IfTerminatorOp";
 import { CallOp } from "../../ir/ops/calls/CallOp";
+import { NullishGuardTerminatorOp } from "../../ir/ops/control/NullishGuardTerminatorOp";
 import { LoadPrivatePropertyOp } from "../../ir/ops/properties/LoadPrivatePropertyOp";
 import { LoadPropertyOp } from "../../ir/ops/properties/LoadPropertyOp";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -15,12 +15,12 @@ describe("lowerOptionalChain", () => {
     const fn = moduleIR.entryFunction;
     if (fn === null) throw new Error("Expected entry function");
 
-    const branch = fn.entryBlock.terminator as IfTerminatorOp;
-    const continuation = branch.elseBlock;
+    const branch = fn.entryBlock.terminator as NullishGuardTerminatorOp;
+    const continuation = branch.bodyBlock;
 
-    expect(branch).toBeInstanceOf(IfTerminatorOp);
-    expect(branch.thenBlock).toBe(branch.exitBlock);
-    expect(branch.thenTarget.operands.forwarded).toEqual([fn.entryBlock.operations[0].result]);
+    expect(branch).toBeInstanceOf(NullishGuardTerminatorOp);
+    expect(branch.exitTarget.block).toBe(branch.exitBlock);
+    expect(branch.exitTarget.operands.forwarded).toEqual([fn.entryBlock.operations[0].result]);
     expect(continuation.operations[0]).toBeInstanceOf(LoadPropertyOp);
   });
 
@@ -31,8 +31,8 @@ describe("lowerOptionalChain", () => {
     const fn = moduleIR.entryFunction;
     if (fn === null) throw new Error("Expected entry function");
 
-    const branch = fn.entryBlock.terminator as IfTerminatorOp;
-    const continuation = branch.elseBlock;
+    const branch = fn.entryBlock.terminator as NullishGuardTerminatorOp;
+    const continuation = branch.bodyBlock;
 
     expect(continuation.operations.map((op) => op.constructor.name)).toEqual([
       "LoadGlobalOp",
@@ -69,12 +69,12 @@ describe("lowerOptionalChain", () => {
     const fn = moduleIR.entryFunction;
     if (fn === null) throw new Error("Expected entry function");
 
-    const firstBranch = fn.entryBlock.terminator as IfTerminatorOp;
-    const firstContinuation = firstBranch.elseBlock;
-    const secondBranch = firstContinuation.terminator as IfTerminatorOp;
+    const firstBranch = fn.entryBlock.terminator as NullishGuardTerminatorOp;
+    const firstContinuation = firstBranch.bodyBlock;
+    const secondBranch = firstContinuation.terminator as NullishGuardTerminatorOp;
 
     expect(firstContinuation.operations[0]).toBeInstanceOf(LoadPropertyOp);
-    expect(secondBranch).toBeInstanceOf(IfTerminatorOp);
+    expect(secondBranch).toBeInstanceOf(NullishGuardTerminatorOp);
   });
 
   it("lowers optional private member access", () => {
@@ -84,10 +84,10 @@ describe("lowerOptionalChain", () => {
     const method = moduleIR.functions.find((fn) => fn.kind === "class-method");
     if (method === undefined) throw new Error("Expected class method");
 
-    const branch = method.entryBlock.terminator as IfTerminatorOp;
-    const continuation = branch.elseBlock;
+    const branch = method.entryBlock.terminator as NullishGuardTerminatorOp;
+    const continuation = branch.bodyBlock;
 
-    expect(branch).toBeInstanceOf(IfTerminatorOp);
+    expect(branch).toBeInstanceOf(NullishGuardTerminatorOp);
     expect(continuation.operations[0]).toBeInstanceOf(LoadPrivatePropertyOp);
   });
 
@@ -103,7 +103,9 @@ describe("lowerOptionalChain", () => {
     if (!(call instanceof CallOp)) throw new Error("Expected private call");
 
     expect(operations.some((op) => op instanceof LoadPrivatePropertyOp)).toBe(true);
-    expect(run.blocks.some((block) => block.terminator instanceof IfTerminatorOp)).toBe(true);
+    expect(run.blocks.some((block) => block.terminator instanceof NullishGuardTerminatorOp)).toBe(
+      true,
+    );
     expect(call.target.kind).toBe("value-with-receiver");
   });
 });
