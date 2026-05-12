@@ -344,7 +344,7 @@ function emitForIn(
   const propertyKey = propertyKeys[0];
   const loopControl = {
     label: loop.label,
-    breakTarget: loop.exitBlock,
+    breakTarget: controlExitTarget(loop.exitBlock),
     continueTarget: loopBlock,
   };
   const body = emitBranchArm(context, loop.bodyBlock, loopBlock, emitted, [
@@ -374,7 +374,7 @@ function emitSwitch(
 ): ESTreeStatement[] {
   const switchControl = {
     label: op.label,
-    breakTarget: op.exitBlock,
+    breakTarget: controlExitTarget(op.exitBlock),
     continueTarget: null,
   };
   const switchControls = [...controls, switchControl];
@@ -464,7 +464,7 @@ function emitForOf(
   const iterationValue = iterationValues[0];
   const loopControl = {
     label: loop.label,
-    breakTarget: loop.exitBlock,
+    breakTarget: controlExitTarget(loop.exitBlock),
     continueTarget: loopBlock,
   };
   const body = emitBranchArm(context, loop.bodyBlock, loopBlock, emitted, [
@@ -526,7 +526,7 @@ function emitFor(
 
   const loopControl = {
     label: loop.label,
-    breakTarget: loop.exitBlock,
+    breakTarget: controlExitTarget(loop.exitBlock),
     continueTarget: loop.updateBlock,
   };
   const loopControls = [...controls, loopControl];
@@ -598,7 +598,7 @@ function emitWhile(
 
   const loopControl = {
     label: loop.label,
-    breakTarget: loop.exitBlock,
+    breakTarget: controlExitTarget(loop.exitBlock),
     continueTarget: loopBlock,
   };
   const body = emitBranchArm(context, loop.bodyBlock, loopBlock, emitted, [
@@ -627,7 +627,7 @@ function emitDoWhile(
 
   const loopControl = {
     label: loop.label,
-    breakTarget: loop.exitBlock,
+    breakTarget: controlExitTarget(loop.exitBlock),
     continueTarget: loop.testBlock,
   };
   const body = emitBranchArm(context, loop.bodyBlock, loop.testBlock, emitted, [
@@ -1311,6 +1311,8 @@ function emitControlJump(
   for (let index = controls.length - 1; index >= 0; index--) {
     const control = controls[index];
     const needsLabel = index !== controls.length - 1;
+    if (needsLabel && control.label === null) continue;
+
     const label = needsLabel && control.label !== null ? identifier(control.label) : null;
 
     if (target === control.continueTarget) {
@@ -1323,6 +1325,18 @@ function emitControlJump(
   }
 
   return null;
+}
+
+function controlExitTarget(block: BasicBlock): BasicBlock {
+  const terminator = block.terminator;
+  if (!(terminator instanceof JumpTerminatorOp)) return block;
+
+  for (const op of block.operations) {
+    if (op === terminator) continue;
+    if (!(op instanceof CopyValueOp)) return block;
+  }
+
+  return terminator.targetBlock;
 }
 
 function withOptionalLabel(label: string | null, statement: ESTreeStatement): ESTreeStatement {
