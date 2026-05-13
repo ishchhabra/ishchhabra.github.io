@@ -67,6 +67,10 @@ interface EmitControlContext {
   readonly requireLabel?: boolean;
 }
 
+interface EmitBranchArmOptions {
+  readonly implicitJumpTarget?: BasicBlock | null;
+}
+
 /**
  * Emits a structured JavaScript function body from lowered CFG blocks.
  *
@@ -397,7 +401,9 @@ function emitSwitch(
 
           return switchCaseNode(
             switchCase.test === null ? null : context.expressionForValue(switchCase.test),
-            emitBranchArm(context, switchCase.target.block, continuation, emitted, switchControls),
+            emitBranchArm(context, switchCase.target.block, continuation, emitted, switchControls, {
+              implicitJumpTarget: continuation,
+            }),
           );
         }),
       ),
@@ -1171,7 +1177,11 @@ function emitBranchArm(
   continuation: BasicBlock | null,
   emitted: Set<BasicBlock>,
   controls: readonly EmitControlContext[],
+  options: EmitBranchArmOptions = {},
 ): ESTreeStatement[] {
+  const implicitJumpTarget =
+    options.implicitJumpTarget === undefined ? continuation : options.implicitJumpTarget;
+
   if (emitted.has(block)) return [];
   emitted.add(block);
 
@@ -1192,7 +1202,7 @@ function emitBranchArm(
       return statements;
     }
 
-    if (terminator.targetBlock === continuation) {
+    if (terminator.targetBlock === implicitJumpTarget) {
       statements.push(...assignBlockParams(context, terminator));
       return statements;
     }
@@ -1381,6 +1391,9 @@ function emitControlJump(
   target: BasicBlock,
   controls: readonly EmitControlContext[],
 ): ESTreeStatement | null {
+  const controlContinue = emitControlContinue(target, controls);
+  if (controlContinue !== null) return controlContinue;
+
   for (let index = controls.length - 1; index >= 0; index--) {
     const control = controls[index];
     const needsLabel = control.requireLabel === true || index !== controls.length - 1;
@@ -1394,6 +1407,28 @@ function emitControlJump(
 
     if (target === control.breakTarget) {
       return breakStatement(label);
+    }
+  }
+
+  return null;
+}
+
+function emitControlContinue(
+  target: BasicBlock,
+  controls: readonly EmitControlContext[],
+): ESTreeStatement | null {
+  let hasInnerLoop = false;
+
+  for (let index = controls.length - 1; index >= 0; index--) {
+    const control = controls[index];
+    if (target === control.continueTarget) {
+      if (!hasInnerLoop) return continueStatement(null);
+      if (control.label !== null) return continueStatement(identifier(control.label));
+      return null;
+    }
+
+    if (control.continueTarget !== null) {
+      hasInnerLoop = true;
     }
   }
 
