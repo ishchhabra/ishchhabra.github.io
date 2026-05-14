@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
+
 import { IRIdAllocator } from "../../core/IRIdAllocator";
 import { makeOperationId } from "../../core/Operation";
-import { makeDeclarationId } from "../../core/Value";
 import { block, value } from "../../core/testing";
+import { makeDeclarationId } from "../../core/Value";
 import { bindingMemoryLocation } from "../../effects";
 import { InitializeBindingOp } from "./InitializeBindingOp";
 
@@ -78,12 +79,7 @@ describe("InitializeBindingOp", () => {
   it("returns a same-declaration copy with a replacement initializer", () => {
     const declarationId = makeDeclarationId(1);
     const bindingValue = value(2, declarationId);
-    const op = new InitializeBindingOp(
-      makeOperationId(1),
-      declarationId,
-      value(1),
-      bindingValue,
-    );
+    const op = new InitializeBindingOp(makeOperationId(1), declarationId, value(1), bindingValue);
     const nextInitializer = value(2);
     const replacement = op.withOperands([nextInitializer]);
 

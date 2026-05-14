@@ -3,6 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "format": "oxfmt -c oxfmt.config.mjs",
+    "format-check": "oxfmt --check -c oxfmt.config.mjs",
     "studio": "remotion studio src/index.ts",
     "render": "remotion render src/index.ts CmdClickBefore ../../apps/portfolio/public/videos/cmd-click-before.mp4 --codec h264 --concurrency 1 && remotion render src/index.ts CmdClickAfter ../../apps/portfolio/public/videos/cmd-click-after.mp4 --codec h264 --concurrency 1"
   },
@@ -16,6 +18,7 @@
     "remotion": "^4.0.0"
   },
   "devDependencies": {
+    "oxfmt": "catalog:",
     "typescript": "catalog:"
   }
 }

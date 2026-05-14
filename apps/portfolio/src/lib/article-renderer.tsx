@@ -1,9 +1,10 @@
 import type { ComponentType } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { RenderModeProvider } from "./render-mode";
-import { StaticThemeProvider } from "./theme";
+
 import { PnpmMonorepoArticle } from "../pages/writing/PnpmMonorepoArticle";
 import { SsrThemingArticle } from "../pages/writing/SsrThemingArticle";
+import { RenderModeProvider } from "./render-mode";
+import { StaticThemeProvider } from "./theme";
 
 export const ARTICLE_COMPONENTS: Record<string, ComponentType> = {
   "pnpm-monorepo": PnpmMonorepoArticle,

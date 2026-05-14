@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+
 import { getProjectBySlug } from "../../lib/projects";
 import { BackLink } from "../core/BackLink";
 import { Page } from "../Page";

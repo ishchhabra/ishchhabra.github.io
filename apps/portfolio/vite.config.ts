@@ -1,13 +1,14 @@
-import { findWorkspacePackagesNoCheck } from "@pnpm/find-workspace-packages";
+import { createRequire } from "node:module";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { compilerVitePlugin } from "@i2-labs/compiler/vite";
+import { findWorkspacePackagesNoCheck } from "@pnpm/find-workspace-packages";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
 import type { Nitro } from "nitro/types";
 import { nitro } from "nitro/vite";
-import { createRequire } from "node:module";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { type UserConfig, defineConfig } from "vite";
 import tsConfigPaths from "vite-tsconfig-paths";
 

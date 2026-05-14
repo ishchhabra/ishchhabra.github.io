@@ -1,4 +1,5 @@
 import type { DebuggerStatement } from "oxc-parser";
+
 import { DebuggerOp } from "../../ir/ops/debugger/DebuggerOp";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";
 

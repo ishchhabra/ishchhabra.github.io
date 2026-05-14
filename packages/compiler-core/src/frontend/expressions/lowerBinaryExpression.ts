@@ -1,6 +1,7 @@
 import type { BinaryExpression, PrivateIdentifier } from "oxc-parser";
-import { BinaryOp, type BinaryOperator } from "../../ir/ops/operators/BinaryOp";
+
 import type { Value } from "../../ir/core/Value";
+import { BinaryOp, type BinaryOperator } from "../../ir/ops/operators/BinaryOp";
 import { HasPrivateNameOp } from "../../ir/ops/properties/HasPrivateNameOp";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { lowerExpression } from "./lowerExpression";

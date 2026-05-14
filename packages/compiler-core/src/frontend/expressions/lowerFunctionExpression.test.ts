@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { IRIdAllocator } from "../../ir/core/IRIdAllocator";
 import { CreateFunctionOp } from "../../ir/ops/functions/CreateFunctionOp";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -46,10 +47,7 @@ describe("lowerFunctionExpression", () => {
     const { moduleIR, declarations } = new ModuleIRBuilder({
       ids: new IRIdAllocator(),
     }).build(
-      parseModule(
-        "test.js",
-        "function outer(x) { return function inner() { return x; }; }",
-      ),
+      parseModule("test.js", "function outer(x) { return function inner() { return x; }; }"),
     );
     const outer = moduleIR.functions[1];
     const create = outer?.entryBlock.operations.find(

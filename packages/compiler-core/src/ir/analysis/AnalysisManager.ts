@@ -51,10 +51,7 @@ export class PreservedAnalyses {
    * Returns whether an analysis cache may be reused.
    */
   public preserves(analysis: AnalysisKey): boolean {
-    return (
-      !this.#invalidated.has(analysis) &&
-      (this.#preserved.has(analysis) || this.#all)
-    );
+    return !this.#invalidated.has(analysis) && (this.#preserved.has(analysis) || this.#all);
   }
 
   /**
@@ -78,9 +75,7 @@ export class PreservedAnalyses {
    *
    * Use this when a pass has a narrow, well-understood invalidation effect.
    */
-  public static allExcept(
-    ...analyses: readonly AnalysisKey[]
-  ): PreservedAnalyses {
+  public static allExcept(...analyses: readonly AnalysisKey[]): PreservedAnalyses {
     const preserved = PreservedAnalyses.all();
 
     for (const analysis of analyses) {
@@ -99,14 +94,10 @@ export class PreservedAnalyses {
  * invalidating cached results after mutation.
  */
 export class AnalysisManager {
-  readonly #functionCaches: Map<FunctionIR, Map<AnalysisKey, unknown>> =
-    new Map();
+  readonly #functionCaches: Map<FunctionIR, Map<AnalysisKey, unknown>> = new Map();
   readonly #moduleCaches: Map<ModuleIR, Map<AnalysisKey, unknown>> = new Map();
 
-  public getFunction<Result>(
-    analysis: FunctionAnalysisKey<Result>,
-    fn: FunctionIR,
-  ): Result {
+  public getFunction<Result>(analysis: FunctionAnalysisKey<Result>, fn: FunctionIR): Result {
     let cache = this.#functionCaches.get(fn);
     if (cache === undefined) {
       cache = new Map();
@@ -120,10 +111,7 @@ export class AnalysisManager {
     return cache.get(analysis) as Result;
   }
 
-  public getModule<Result>(
-    analysis: ModuleAnalysisKey<Result>,
-    module: ModuleIR,
-  ): Result {
+  public getModule<Result>(analysis: ModuleAnalysisKey<Result>, module: ModuleIR): Result {
     let cache = this.#moduleCaches.get(module);
     if (cache === undefined) {
       cache = new Map();

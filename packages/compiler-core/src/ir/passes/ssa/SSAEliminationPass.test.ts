@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { AnalysisManager } from "../../analysis";
 import { BasicBlock, makeBlockId } from "../../core/Block";
 import { FunctionIR, makeFunctionId } from "../../core/FunctionIR";
@@ -21,24 +22,17 @@ describe("SSAEliminationPass", () => {
     const param = value(ids, declaration);
 
     join.appendParam(param);
-    entry.setTerminator(
-      new JumpTerminatorOp(ids.operationId(), blockTarget(join, [source])),
-    );
+    entry.setTerminator(new JumpTerminatorOp(ids.operationId(), blockTarget(join, [source])));
     join.setTerminator(new ReturnTerminatorOp(ids.operationId(), param));
 
     const fn = functionIR(entry, join);
 
-    createSSAEliminationPass({ ids, declarations: [declaration] }).run(
-      fn,
-      new AnalysisManager(),
-    );
+    createSSAEliminationPass({ ids, declarations: [declaration] }).run(fn, new AnalysisManager());
 
     expect(entry.operations[0]).toBeInstanceOf(CopyValueOp);
     expect((entry.operations[0] as CopyValueOp).target).toBe(param);
     expect((entry.operations[0] as CopyValueOp).source).toBe(source);
-    expect(
-      (entry.terminator as JumpTerminatorOp).jumpTarget.operands.forwarded,
-    ).toEqual([]);
+    expect((entry.terminator as JumpTerminatorOp).jumpTarget.operands.forwarded).toEqual([]);
     expect(join.params).toEqual([]);
   });
 
@@ -64,19 +58,12 @@ describe("SSAEliminationPass", () => {
         blockTarget(elseBlock, [falseSource]),
       ),
     );
-    thenBlock.setTerminator(
-      new ReturnTerminatorOp(ids.operationId(), trueParam),
-    );
-    elseBlock.setTerminator(
-      new ReturnTerminatorOp(ids.operationId(), falseParam),
-    );
+    thenBlock.setTerminator(new ReturnTerminatorOp(ids.operationId(), trueParam));
+    elseBlock.setTerminator(new ReturnTerminatorOp(ids.operationId(), falseParam));
 
     const fn = functionIR(entry, thenBlock, elseBlock);
 
-    createSSAEliminationPass({ ids, declarations: [declaration] }).run(
-      fn,
-      new AnalysisManager(),
-    );
+    createSSAEliminationPass({ ids, declarations: [declaration] }).run(fn, new AnalysisManager());
 
     const branch = entry.terminator as BranchTerminatorOp;
     const trueEdge = branch.trueBlock;
@@ -88,12 +75,8 @@ describe("SSAEliminationPass", () => {
     expect(falseEdge.operations[0]).toBeInstanceOf(CopyValueOp);
     expect((trueEdge.operations[0] as CopyValueOp).source).toBe(trueSource);
     expect((falseEdge.operations[0] as CopyValueOp).source).toBe(falseSource);
-    expect((trueEdge.terminator as JumpTerminatorOp).targetBlock).toBe(
-      thenBlock,
-    );
-    expect((falseEdge.terminator as JumpTerminatorOp).targetBlock).toBe(
-      elseBlock,
-    );
+    expect((trueEdge.terminator as JumpTerminatorOp).targetBlock).toBe(thenBlock);
+    expect((falseEdge.terminator as JumpTerminatorOp).targetBlock).toBe(elseBlock);
     expect(thenBlock.params).toEqual([]);
     expect(elseBlock.params).toEqual([]);
   });
@@ -120,16 +103,11 @@ describe("SSAEliminationPass", () => {
         },
       }),
     );
-    join.setTerminator(
-      new ReturnTerminatorOp(ids.operationId(), forwardedParam),
-    );
+    join.setTerminator(new ReturnTerminatorOp(ids.operationId(), forwardedParam));
 
     const fn = functionIR(entry, join);
 
-    createSSAEliminationPass({ ids, declarations: [declaration] }).run(
-      fn,
-      new AnalysisManager(),
-    );
+    createSSAEliminationPass({ ids, declarations: [declaration] }).run(fn, new AnalysisManager());
 
     const jumpTarget = (entry.terminator as JumpTerminatorOp).jumpTarget;
 
@@ -150,9 +128,6 @@ function functionIR(entry: BasicBlock, ...blocks: BasicBlock[]): FunctionIR {
   });
 }
 
-function value(
-  ids: IRIdAllocator,
-  declarationId: DeclarationId | null = null,
-): Value {
+function value(ids: IRIdAllocator, declarationId: DeclarationId | null = null): Value {
   return new Value(ids.valueId(), declarationId);
 }

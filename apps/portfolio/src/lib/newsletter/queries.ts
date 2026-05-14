@@ -1,4 +1,5 @@
 import { mutationOptions } from "@tanstack/react-query";
+
 import { subscribe } from "./api";
 
 export function getSubscribeMutationOptions() {

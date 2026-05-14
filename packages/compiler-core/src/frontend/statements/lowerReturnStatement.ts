@@ -1,7 +1,8 @@
 import type { ReturnStatement } from "oxc-parser";
+
 import { ReturnTerminatorOp } from "../../ir/ops/control/ReturnTerminatorOp";
-import type { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { lowerExpression } from "../expressions/lowerExpression";
+import type { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 /**
  * Lowers a function return.

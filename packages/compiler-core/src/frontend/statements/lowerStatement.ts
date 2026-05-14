@@ -1,26 +1,27 @@
 import type { Statement } from "oxc-parser";
+
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";
-import { lowerEmptyStatement } from "./lowerEmptyStatement";
-import { lowerBlockStatement } from "./lowerBlockStatement";
-import { lowerVariableDeclaration } from "./lowerVariableDeclaration";
-import { lowerReturnStatement } from "./lowerReturnStatement";
-import { lowerThrowStatement } from "./lowerThrowStatement";
-import { lowerIfStatement } from "./lowerIfStatement";
-import { lowerWhileStatement } from "./lowerWhileStatement";
-import { lowerDoWhileStatement } from "./lowerDoWhileStatement";
-import { lowerExpressionStatement } from "./lowerExpressionStatement";
-import { lowerBreakStatement } from "./lowerBreakStatement";
-import { lowerContinueStatement } from "./lowerContinueStatement";
-import { lowerForInStatement } from "./lowerForInStatement";
-import { lowerForStatement } from "./lowerForStatement";
-import { lowerForOfStatement } from "./lowerForOfStatement";
-import { lowerLabeledStatement } from "./lowerLabeledStatement";
-import { lowerSwitchStatement } from "./lowerSwitchStatement";
-import { lowerTryStatement } from "./lowerTryStatement";
-import { lowerDebuggerStatement } from "./lowerDebuggerStatement";
-import { lowerClassDeclaration } from "./lowerClassDeclaration";
-import type { StatementLoweringOptions } from "./loweringOptions";
 import { lowerDefaultExport } from "../modules/lowerDefaultExport";
+import { lowerBlockStatement } from "./lowerBlockStatement";
+import { lowerBreakStatement } from "./lowerBreakStatement";
+import { lowerClassDeclaration } from "./lowerClassDeclaration";
+import { lowerContinueStatement } from "./lowerContinueStatement";
+import { lowerDebuggerStatement } from "./lowerDebuggerStatement";
+import { lowerDoWhileStatement } from "./lowerDoWhileStatement";
+import { lowerEmptyStatement } from "./lowerEmptyStatement";
+import { lowerExpressionStatement } from "./lowerExpressionStatement";
+import { lowerForInStatement } from "./lowerForInStatement";
+import { lowerForOfStatement } from "./lowerForOfStatement";
+import { lowerForStatement } from "./lowerForStatement";
+import { lowerIfStatement } from "./lowerIfStatement";
+import type { StatementLoweringOptions } from "./loweringOptions";
+import { lowerLabeledStatement } from "./lowerLabeledStatement";
+import { lowerReturnStatement } from "./lowerReturnStatement";
+import { lowerSwitchStatement } from "./lowerSwitchStatement";
+import { lowerThrowStatement } from "./lowerThrowStatement";
+import { lowerTryStatement } from "./lowerTryStatement";
+import { lowerVariableDeclaration } from "./lowerVariableDeclaration";
+import { lowerWhileStatement } from "./lowerWhileStatement";
 
 /**
  * Dispatches statement lowering by syntax kind.

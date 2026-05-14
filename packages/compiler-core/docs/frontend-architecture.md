@@ -19,13 +19,13 @@ then emits operations for runtime behavior.
 
 ## Scope Analysis Responsibilities
 
-| Component | Responsibility |
-| --- | --- |
-| `DeclarationCollector` | Creates scopes, collects declarations, records binding nodes, records module-level declarations, and builds declaration-instantiation order. |
-| `ReferenceResolver` | Answers "which binding does this identifier use?" after scopes and declarations are known. |
-| `ScopeGraph` | Stores scope ownership, binding-to-declaration mappings, reference resolution, global references, and private names. |
-| `DeclarationTable` | Owns declaration records by id. |
-| `DeclarationInstantiationPlan` | Records the work each scope performs before executing its body. |
+| Component                      | Responsibility                                                                                                                               |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DeclarationCollector`         | Creates scopes, collects declarations, records binding nodes, records module-level declarations, and builds declaration-instantiation order. |
+| `ReferenceResolver`            | Answers "which binding does this identifier use?" after scopes and declarations are known.                                                   |
+| `ScopeGraph`                   | Stores scope ownership, binding-to-declaration mappings, reference resolution, global references, and private names.                         |
+| `DeclarationTable`             | Owns declaration records by id.                                                                                                              |
+| `DeclarationInstantiationPlan` | Records the work each scope performs before executing its body.                                                                              |
 
 Keep collection and resolution separate. Declaration collection answers "what
 bindings exist here?" Reference resolution answers "which binding does this
@@ -83,20 +83,20 @@ The function body is created and assigned during declaration instantiation.
 
 Use binding ops for simple declaration-backed storage:
 
-| Op | Meaning |
-| --- | --- |
-| `InitializeBindingOp` | Initialize a source binding that exists but has not received its runtime value. |
-| `StoreBindingOp` | Write an already-initialized mutable binding. May produce the assignment completion value. |
-| `LoadBindingOp` | Read a source binding. |
+| Op                    | Meaning                                                                                    |
+| --------------------- | ------------------------------------------------------------------------------------------ |
+| `InitializeBindingOp` | Initialize a source binding that exists but has not received its runtime value.            |
+| `StoreBindingOp`      | Write an already-initialized mutable binding. May produce the assignment completion value. |
+| `LoadBindingOp`       | Read a source binding.                                                                     |
 
 For destructuring, use pattern-level ops instead of lowering immediately into
 iterator/property micro-ops. This preserves source-level codegen while still
 giving later passes a clear semantic boundary.
 
-| Op | Meaning |
-| --- | --- |
-| `DestructureBindingOp` | Initialize or store a binding pattern from a source value. |
-| `DestructureAssignmentOp` | Assign an assignment target pattern from a source value. |
+| Op                        | Meaning                                                    |
+| ------------------------- | ---------------------------------------------------------- |
+| `DestructureBindingOp`    | Initialize or store a binding pattern from a source value. |
+| `DestructureAssignmentOp` | Assign an assignment target pattern from a source value.   |
 
 ## Expressions
 
@@ -107,7 +107,7 @@ value must be preserved as completion value or can be discarded.
 Call expressions must preserve receiver semantics:
 
 ```js
-obj.method()
+obj.method();
 ```
 
 The call target is not just `obj.method`; it also carries `obj` as the receiver
@@ -122,13 +122,13 @@ values. Direct edge operands are preferred over empty pass-through blocks.
 Source-level control constructs keep structure when that helps JavaScript
 codegen:
 
-| Source construct | Preferred IR |
-| --- | --- |
-| `if` statements and conditional expressions | `IfTerminatorOp` |
-| loop tests inside loops | `BranchTerminatorOp` |
+| Source construct                               | Preferred IR                |
+| ---------------------------------------------- | --------------------------- |
+| `if` statements and conditional expressions    | `IfTerminatorOp`            |
+| loop tests inside loops                        | `BranchTerminatorOp`        |
 | `while`, `do while`, `for`, `for-in`, `for-of` | structured loop terminators |
-| `switch` | `SwitchTerminatorOp` |
-| `try/catch/finally` | `TryTerminatorOp` |
+| `switch`                                       | `SwitchTerminatorOp`        |
+| `try/catch/finally`                            | `TryTerminatorOp`           |
 
 Raw CFG branches still exist for internal control decisions and future
 optimizer-produced CFG.

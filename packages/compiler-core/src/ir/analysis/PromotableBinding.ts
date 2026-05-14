@@ -28,15 +28,10 @@ export const PromotableBindingsAnalysis = {
       throw new Error(`Function#${fn.id} is not attached to a module`);
     }
 
-    const modulePromotability = analyses.getModule(
-      ModulePromotabilityAnalysis,
-      fn.ownerModule,
-    );
+    const modulePromotability = analyses.getModule(ModulePromotabilityAnalysis, fn.ownerModule);
 
     const candidates = new Set<DeclarationId>();
-    const rejected = new Set<DeclarationId>(
-      modulePromotability.nonPromotableDeclarations,
-    );
+    const rejected = new Set<DeclarationId>(modulePromotability.nonPromotableDeclarations);
 
     for (const param of fn.params) {
       if (param.kind === "capture") {
@@ -64,19 +59,13 @@ export const PromotableBindingsAnalysis = {
   },
 };
 
-function collectBindingCandidate(
-  op: Operation,
-  candidates: Set<DeclarationId>,
-): void {
+function collectBindingCandidate(op: Operation, candidates: Set<DeclarationId>): void {
   if (op instanceof InitializeBindingOp || op instanceof StoreBindingOp) {
     candidates.add(op.declarationId);
   }
 }
 
-function rejectNonPromotableOperation(
-  op: Operation,
-  rejected: Set<DeclarationId>,
-): void {
+function rejectNonPromotableOperation(op: Operation, rejected: Set<DeclarationId>): void {
   if (op instanceof CreateFunctionOp) {
     for (const declarationId of op.captures) {
       rejected.add(declarationId);
@@ -100,10 +89,7 @@ function rejectNonPromotableOperation(
   }
 }
 
-function rejectJSXNameDeclarations(
-  name: JSXName,
-  rejected: Set<DeclarationId>,
-): void {
+function rejectJSXNameDeclarations(name: JSXName, rejected: Set<DeclarationId>): void {
   switch (name.kind) {
     case "intrinsic":
     case "namespace":
@@ -121,10 +107,7 @@ function rejectJSXNameDeclarations(
   }
 }
 
-function rejectPatternDeclarations(
-  op: DestructureBindingOp,
-  rejected: Set<DeclarationId>,
-): void {
+function rejectPatternDeclarations(op: DestructureBindingOp, rejected: Set<DeclarationId>): void {
   for (const result of op.results) {
     if (result.declarationId !== null) {
       rejected.add(result.declarationId);

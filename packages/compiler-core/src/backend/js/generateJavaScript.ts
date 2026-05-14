@@ -1,7 +1,8 @@
 import { print } from "esrap";
+
 import type { ModuleIRBuildResult } from "../../frontend/ModuleIRBuilder";
-import { CodegenContext } from "./CodegenContext";
 import { program } from "./ast";
+import { CodegenContext } from "./CodegenContext";
 import { emitFunctionBody } from "./functions/emitFunction";
 import { javascriptLanguage } from "./language";
 import { emitModuleExports, emitModuleImports } from "./modules/emitModuleRecords";

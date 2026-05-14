@@ -1,25 +1,22 @@
+import type { ForOfStatement, ForStatementLeft, VariableDeclaration } from "oxc-parser";
+
 import { blockTarget, producedOperands } from "../../ir/core/TerminatorOp";
-import { ForOfTerminatorOp } from "../../ir/ops/control/ForOfTerminatorOp";
-import { lowerExpression } from "../expressions/lowerExpression";
-import type { FunctionIRBuilder } from "../FunctionIRBuilder";
-import type {
-  ForOfStatement,
-  ForStatementLeft,
-  VariableDeclaration,
-} from "oxc-parser";
-import { lowerStatement } from "./lowerStatement";
-import { JumpTerminatorOp } from "../../ir/ops/control/JumpTerminatorOp";
 import type { Value } from "../../ir/core/Value";
-import { StoreBindingOp } from "../../ir/ops/bindings/StoreBindingOp";
-import { lowerMemberReference } from "../expressions/lowerMemberExpression";
-import { StorePropertyOp } from "../../ir/ops/properties/StorePropertyOp";
 import { InitializeBindingOp } from "../../ir/ops/bindings/InitializeBindingOp";
-import { lowerDeclarationInstantiation } from "../declarations/lowerDeclarationInstantiation";
-import { StatementLoweringOptions } from "./loweringOptions";
+import { StoreBindingOp } from "../../ir/ops/bindings/StoreBindingOp";
+import { ForOfTerminatorOp } from "../../ir/ops/control/ForOfTerminatorOp";
+import { JumpTerminatorOp } from "../../ir/ops/control/JumpTerminatorOp";
 import { DestructureAssignmentOp } from "../../ir/ops/patterns/DestructureAssignmentOp";
 import { DestructureBindingOp } from "../../ir/ops/patterns/DestructureBindingOp";
+import { StorePropertyOp } from "../../ir/ops/properties/StorePropertyOp";
+import { lowerDeclarationInstantiation } from "../declarations/lowerDeclarationInstantiation";
+import { lowerExpression } from "../expressions/lowerExpression";
+import { lowerMemberReference } from "../expressions/lowerMemberExpression";
+import type { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { lowerAssignmentPatternTarget } from "../patterns/lowerAssignmentPatternTarget";
 import { lowerBindingPatternTarget } from "../patterns/lowerBindingPatternTarget";
+import { StatementLoweringOptions } from "./loweringOptions";
+import { lowerStatement } from "./lowerStatement";
 
 /**
  * Lowers `for...of` to structured iteration control flow.
@@ -54,9 +51,7 @@ export function lowerForOfStatement(
   const iterationValue = builder.createValue();
   bodyBlock.appendParam(iterationValue);
 
-  builder.terminate(
-    new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock)),
-  );
+  builder.terminate(new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock)));
 
   builder.setCurrentBlock(loopBlock);
   builder.terminate(
@@ -84,9 +79,7 @@ export function lowerForOfStatement(
   }
 
   if (!builder.currentBlock.isTerminated) {
-    builder.terminate(
-      new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock)),
-    );
+    builder.terminate(new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock)));
   }
 
   builder.setCurrentBlock(completionBlock);
@@ -118,12 +111,7 @@ function lowerForOfLeft(
   if (left.type === "MemberExpression") {
     const reference = lowerMemberReference(builder, left);
     builder.emit(
-      new StorePropertyOp(
-        builder.operationId(),
-        reference.object,
-        reference.key,
-        iterationValue,
-      ),
+      new StorePropertyOp(builder.operationId(), reference.object, reference.key, iterationValue),
     );
     return;
   }

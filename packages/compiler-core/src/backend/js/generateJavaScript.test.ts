@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { IRIdAllocator } from "../../ir/core/IRIdAllocator";
+
 import { ModuleIRBuilder } from "../../frontend/ModuleIRBuilder";
 import { parseModule } from "../../frontend/parse/parseModule";
-import { generateJavaScript } from "./generateJavaScript";
-import { FunctionPassManager } from "../../ir/passes/PassManager";
 import { AnalysisManager } from "../../ir/analysis";
-import { createValueMaterializationPass } from "../../ir/passes/ValueMaterializationPass";
+import { IRIdAllocator } from "../../ir/core/IRIdAllocator";
 import { createCopyPropagationPass } from "../../ir/passes/CopyPropagationPass";
+import { FunctionPassManager } from "../../ir/passes/PassManager";
+import { createValueMaterializationPass } from "../../ir/passes/ValueMaterializationPass";
+import { generateJavaScript } from "./generateJavaScript";
 
 describe("generateJavaScript", () => {
   it("emits a minimal module from lowered IR", () => {

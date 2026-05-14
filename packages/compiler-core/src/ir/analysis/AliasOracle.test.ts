@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { makeValueId } from "../core/Value";
 import {
   arrayIndexPropertyMemoryLocation,

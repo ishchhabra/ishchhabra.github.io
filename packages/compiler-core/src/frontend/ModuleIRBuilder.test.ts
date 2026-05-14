@@ -1,5 +1,6 @@
 import { parseSync } from "oxc-parser";
 import { describe, expect, it } from "vitest";
+
 import { IRIdAllocator } from "../ir/core/IRIdAllocator";
 import { ModuleIRBuilder } from "./ModuleIRBuilder";
 

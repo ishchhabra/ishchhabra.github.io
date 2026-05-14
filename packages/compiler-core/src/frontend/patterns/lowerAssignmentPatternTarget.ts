@@ -6,6 +6,7 @@ import type {
   PrivateIdentifier,
   PropertyKey as OxcPropertyKey,
 } from "oxc-parser";
+
 import type { AssignmentPatternTarget } from "../../ir/core/DestructurePattern";
 import type { PropertyKey } from "../../ir/ops/properties/PropertyKey";
 import { lowerExpression } from "../expressions/lowerExpression";

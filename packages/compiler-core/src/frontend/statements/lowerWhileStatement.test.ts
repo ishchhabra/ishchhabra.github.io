@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { IRIdAllocator } from "../../ir/core/IRIdAllocator";
 import { BranchTerminatorOp } from "../../ir/ops/control/BranchTerminatorOp";
 import { JumpTerminatorOp } from "../../ir/ops/control/JumpTerminatorOp";

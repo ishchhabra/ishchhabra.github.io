@@ -1,7 +1,7 @@
-import type { ModuleAttribute, ModuleExportName } from "../../../ir/core/ModuleName";
 import type { ModuleExport } from "../../../ir/core/ModuleExport";
 import type { ModuleImport } from "../../../ir/core/ModuleImport";
 import type { ModuleIR } from "../../../ir/core/ModuleIR";
+import type { ModuleAttribute, ModuleExportName } from "../../../ir/core/ModuleName";
 import {
   exportAllDeclaration,
   exportNamedDeclaration,

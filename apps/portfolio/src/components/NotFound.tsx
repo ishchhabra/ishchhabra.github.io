@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+
 import { Page } from "./Page";
 
 export function NotFound() {

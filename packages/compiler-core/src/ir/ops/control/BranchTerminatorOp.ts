@@ -1,4 +1,4 @@
-import { type OperationEffects, PureOperationEffects } from "../../effects";
+import { BasicBlock } from "../../core/Block";
 import { type OperationId } from "../../core/Operation";
 import type { OperationCloneContext } from "../../core/OperationCloneContext";
 import {
@@ -9,7 +9,7 @@ import {
   TerminatorOp,
 } from "../../core/TerminatorOp";
 import type { Value } from "../../core/Value";
-import { BasicBlock } from "../../core/Block";
+import { type OperationEffects, PureOperationEffects } from "../../effects";
 
 /**
  * Transfers control to one of two successor blocks based on a condition value.
@@ -99,26 +99,13 @@ export class BranchTerminatorOp extends TerminatorOp {
     throw new Error(`BranchTerminatorOp#${this.id} has no target ${index}`);
   }
 
-  public override withTarget(
-    index: number,
-    target: BlockTarget,
-  ): BranchTerminatorOp {
+  public override withTarget(index: number, target: BlockTarget): BranchTerminatorOp {
     if (index === 0) {
-      return new BranchTerminatorOp(
-        this.id,
-        this.condition,
-        target,
-        this.falseTarget,
-      );
+      return new BranchTerminatorOp(this.id, this.condition, target, this.falseTarget);
     }
 
     if (index === 1) {
-      return new BranchTerminatorOp(
-        this.id,
-        this.condition,
-        this.trueTarget,
-        target,
-      );
+      return new BranchTerminatorOp(this.id, this.condition, this.trueTarget, target);
     }
 
     throw new Error(`BranchTerminatorOp#${this.id} has no target ${index}`);

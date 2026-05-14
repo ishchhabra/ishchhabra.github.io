@@ -1,7 +1,8 @@
 import type { BlockStatement } from "oxc-parser";
+
+import { lowerDeclarationInstantiation } from "../declarations/lowerDeclarationInstantiation";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { lowerStatement } from "./lowerStatement";
-import { lowerDeclarationInstantiation } from "../declarations/lowerDeclarationInstantiation";
 
 /**
  * Lowers a block statement body in source order.

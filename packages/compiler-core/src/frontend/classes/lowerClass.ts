@@ -7,6 +7,7 @@ import type {
   PropertyDefinition,
   PropertyKey as OxcPropertyKey,
 } from "oxc-parser";
+
 import type { FunctionIR } from "../../ir/core/FunctionIR";
 import type { Value } from "../../ir/core/Value";
 import {
@@ -15,8 +16,8 @@ import {
   type ClassElementKey,
 } from "../../ir/ops/classes/CreateClassOp";
 import type { PropertyKey } from "../../ir/ops/properties/PropertyKey";
-import type { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { lowerExpression } from "../expressions/lowerExpression";
+import type { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { lowerDeferredExpression } from "../functions/lowerDeferredExpression";
 import { lowerFunctionBody } from "../functions/lowerFunctionBody";
 

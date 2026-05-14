@@ -2,14 +2,14 @@
 
 ## Core Graph
 
-| Object | Role |
-| --- | --- |
-| `ModuleIR` | Compilation unit for one source module. Owns functions plus static import/export records. |
-| `FunctionIR` | Function body container. Owns params and ordered basic blocks. |
-| `BasicBlock` | Linear operation sequence with zero or one final terminator. Owns block params and predecessor use-list. |
-| `Operation` | Executable IR node. Reads operands, produces results, has effects, and may be owned by a block. |
-| `TerminatorOp` | Operation that ends a block and owns successor edges. |
-| `Value` | SSA data dependency. Used by operands, results, block params, and some function-level structure. |
+| Object         | Role                                                                                                     |
+| -------------- | -------------------------------------------------------------------------------------------------------- |
+| `ModuleIR`     | Compilation unit for one source module. Owns functions plus static import/export records.                |
+| `FunctionIR`   | Function body container. Owns params and ordered basic blocks.                                           |
+| `BasicBlock`   | Linear operation sequence with zero or one final terminator. Owns block params and predecessor use-list. |
+| `Operation`    | Executable IR node. Reads operands, produces results, has effects, and may be owned by a block.          |
+| `TerminatorOp` | Operation that ends a block and owns successor edges.                                                    |
+| `Value`        | SSA data dependency. Used by operands, results, block params, and some function-level structure.         |
 
 Ownership is by reference. Detached objects use `null` owner fields. Mutation
 should go through owner APIs so def-use links, block use-lists, and ownership
@@ -78,10 +78,10 @@ This is represented as a block param `x`, not a `PhiOp` inside `join`.
 
 Successor operands are split into `produced` and `forwarded`.
 
-| Kind | Meaning | Examples |
-| --- | --- | --- |
-| `forwarded` | Existing SSA values passed from the predecessor block. | `jump join(x)`, conditional expression pass-through values. |
-| `produced` | Values supplied by the terminator's own runtime semantics. | for-of iteration value, for-in key, catch exception. |
+| Kind        | Meaning                                                    | Examples                                                    |
+| ----------- | ---------------------------------------------------------- | ----------------------------------------------------------- |
+| `forwarded` | Existing SSA values passed from the predecessor block.     | `jump join(x)`, conditional expression pass-through values. |
+| `produced`  | Values supplied by the terminator's own runtime semantics. | for-of iteration value, for-in key, catch exception.        |
 
 The target block receives `produced` values first, then `forwarded` values.
 Passes that eliminate block params must not blindly demote produced params,
@@ -90,14 +90,14 @@ ordinary predecessor operation.
 
 ## Structured And Raw Control
 
-| Terminator | Use |
-| --- | --- |
-| `BranchTerminatorOp` | Raw CFG condition with true/false successors. Useful for loop tests and optimizer-created CFG. |
-| `IfTerminatorOp` | Source-level or expression-level structured if with an explicit exit block. |
-| Loop terminators | Source-level loops that preserve body/test/update/exit structure for JS codegen. |
-| `TryTerminatorOp` | Structured `try/catch/finally` region delegated to JS codegen. |
-| `JumpTerminatorOp` | Unconditional edge with optional forwarded values. |
-| `ReturnTerminatorOp` and `ThrowTerminatorOp` | Abrupt function or exception exits. |
+| Terminator                                   | Use                                                                                            |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `BranchTerminatorOp`                         | Raw CFG condition with true/false successors. Useful for loop tests and optimizer-created CFG. |
+| `IfTerminatorOp`                             | Source-level or expression-level structured if with an explicit exit block.                    |
+| Loop terminators                             | Source-level loops that preserve body/test/update/exit structure for JS codegen.               |
+| `TryTerminatorOp`                            | Structured `try/catch/finally` region delegated to JS codegen.                                 |
+| `JumpTerminatorOp`                           | Unconditional edge with optional forwarded values.                                             |
+| `ReturnTerminatorOp` and `ThrowTerminatorOp` | Abrupt function or exception exits.                                                            |
 
 `targetCount()` and `target(index)` describe all structural target slots.
 `successorIndices()` describes executable CFG successors for analyses.
@@ -111,36 +111,36 @@ memory writes, throwing, divergence, and observability.
 specific locations when known and `UnknownMemoryLocation` when JavaScript
 semantics are opaque.
 
-| Location | Use |
-| --- | --- |
-| `binding` | Declaration-backed binding storage. |
-| `global` | Host/global object lookup. |
-| `heap-property` | Object property storage keyed by an ECMAScript property-key set. |
-| `heap-shape` | Object structural state such as property existence and enumeration. |
-| `prototype` | Prototype-chain lookup state for a property key. |
-| `iterator` | Iterator state derived from an object. |
-| `compiler-slot` | Compiler-created storage for materialized SSA values. |
-| `unknown` | Conservative fallback for JavaScript-observable memory. |
+| Location        | Use                                                                 |
+| --------------- | ------------------------------------------------------------------- |
+| `binding`       | Declaration-backed binding storage.                                 |
+| `global`        | Host/global object lookup.                                          |
+| `heap-property` | Object property storage keyed by an ECMAScript property-key set.    |
+| `heap-shape`    | Object structural state such as property existence and enumeration. |
+| `prototype`     | Prototype-chain lookup state for a property key.                    |
+| `iterator`      | Iterator state derived from an object.                              |
+| `compiler-slot` | Compiler-created storage for materialized SSA values.               |
+| `unknown`       | Conservative fallback for JavaScript-observable memory.             |
 
 ## Op Grouping
 
 Concrete ops belong under `src/ir/ops` by semantic runtime domain:
 
-| Directory | Examples |
-| --- | --- |
-| `async` | `AwaitExpressionOp` |
-| `bindings` | `LoadBindingOp`, `InitializeBindingOp`, `StoreBindingOp` |
-| `calls` | `CallOp`, `ConstructOp`, `SuperCallOp` |
-| `classes` | `CreateClassOp` |
-| `constants` | `ConstantOp` |
-| `control` | terminators |
-| `functions` | `CreateFunctionOp`, `LoadThisOp`, `MetaPropertyOp` |
-| `globals` | `LoadGlobalOp` |
-| `jsx` | JSX element and fragment ops |
-| `literals` | RegExp and template literals |
-| `modules` | Runtime module ops such as dynamic import or default value export |
-| `objects` | Object and array literal creation |
-| `operators` | Unary, binary, delete, update, sequence |
-| `patterns` | Destructuring binding and assignment |
-| `properties` | Property load/store/private/super ops |
-| `values` | IR value materialization helpers such as copies |
+| Directory    | Examples                                                          |
+| ------------ | ----------------------------------------------------------------- |
+| `async`      | `AwaitExpressionOp`                                               |
+| `bindings`   | `LoadBindingOp`, `InitializeBindingOp`, `StoreBindingOp`          |
+| `calls`      | `CallOp`, `ConstructOp`, `SuperCallOp`                            |
+| `classes`    | `CreateClassOp`                                                   |
+| `constants`  | `ConstantOp`                                                      |
+| `control`    | terminators                                                       |
+| `functions`  | `CreateFunctionOp`, `LoadThisOp`, `MetaPropertyOp`                |
+| `globals`    | `LoadGlobalOp`                                                    |
+| `jsx`        | JSX element and fragment ops                                      |
+| `literals`   | RegExp and template literals                                      |
+| `modules`    | Runtime module ops such as dynamic import or default value export |
+| `objects`    | Object and array literal creation                                 |
+| `operators`  | Unary, binary, delete, update, sequence                           |
+| `patterns`   | Destructuring binding and assignment                              |
+| `properties` | Property load/store/private/super ops                             |
+| `values`     | IR value materialization helpers such as copies                   |

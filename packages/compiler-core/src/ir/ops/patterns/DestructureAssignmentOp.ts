@@ -1,11 +1,11 @@
-import { Operation, type OperationId } from "../../core/Operation";
-import type { OperationCloneContext } from "../../core/OperationCloneContext";
 import {
   assignmentPatternOperands,
   cloneAssignmentPatternTarget,
   rewriteAssignmentPatternOperands,
   type AssignmentPatternTarget,
 } from "../../core/DestructurePattern";
+import { Operation, type OperationId } from "../../core/Operation";
+import type { OperationCloneContext } from "../../core/OperationCloneContext";
 import type { Value } from "../../core/Value";
 import { type OperationEffects, UnknownOperationEffects } from "../../effects";
 

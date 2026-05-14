@@ -1,6 +1,7 @@
 import type { Expression } from "oxc-parser";
-import type { FunctionIRBuilder } from "../FunctionIRBuilder";
+
 import { lowerExpression } from "../expressions/lowerExpression";
+import type { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 /**
  * Lowers an expression in statement position.

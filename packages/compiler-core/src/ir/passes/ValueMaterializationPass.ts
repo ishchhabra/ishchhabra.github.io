@@ -1,9 +1,6 @@
 import { AnalysisManager, PreservedAnalyses } from "../analysis";
 import { FunctionIR, Operation, Value } from "../core";
-import {
-  bindingPatternOperands,
-  rewriteBindingPatternOperands,
-} from "../core/DestructurePattern";
+import { bindingPatternOperands, rewriteBindingPatternOperands } from "../core/DestructurePattern";
 import { IRIdAllocator } from "../core/IRIdAllocator";
 import { InitializeBindingOp } from "../ops/bindings/InitializeBindingOp";
 import { ConstantOp } from "../ops/constants/ConstantOp";
@@ -75,11 +72,7 @@ class ValueMaterializationPass {
         if (this.canRemainExpression(op, result)) continue;
 
         const local = new Value(this.options.ids.valueId());
-        const copy = new CopyValueOp(
-          this.options.ids.operationId(),
-          local,
-          result,
-        );
+        const copy = new CopyValueOp(this.options.ids.operationId(), local, result);
 
         block.insertOp(i + 1, copy);
         this.replaceUses(result, local, copy);
@@ -161,11 +154,7 @@ class ValueMaterializationPass {
 }
 
 function isSafelyDuplicable(op: Operation): boolean {
-  return (
-    op instanceof ConstantOp ||
-    op instanceof LoadThisOp ||
-    op instanceof MetaPropertyOp
-  );
+  return op instanceof ConstantOp || op instanceof LoadThisOp || op instanceof MetaPropertyOp;
 }
 
 function inliningWouldReorder(definer: Operation, user: Operation): boolean {
@@ -203,11 +192,7 @@ function flowsTo(candidate: Operation, user: Operation): boolean {
   return candidate.results.some((result) => reachesUser(result, user, new Set()));
 }
 
-function reachesUser(
-  value: Value,
-  user: Operation,
-  visited: Set<Value>,
-): boolean {
+function reachesUser(value: Value, user: Operation, visited: Set<Value>): boolean {
   if (visited.has(value)) return false;
   visited.add(value);
 

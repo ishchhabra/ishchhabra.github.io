@@ -1,5 +1,7 @@
 import path from "node:path";
+
 import type { Plugin } from "vite";
+
 import { compileSource } from "../compile/compileSource";
 
 /**
@@ -44,8 +46,7 @@ export function compilerVitePlugin(options: CompilerVitePluginOptions): Plugin {
 
     transform(source, id) {
       const filePath = normalizeModuleId(id);
-      if (filePath === null || !shouldCompile(filePath, includeDirs))
-        return null;
+      if (filePath === null || !shouldCompile(filePath, includeDirs)) return null;
 
       const result = compileSource(source, {
         sourceName: path.relative(rootDir, filePath),
@@ -54,9 +55,7 @@ export function compilerVitePlugin(options: CompilerVitePluginOptions): Plugin {
         },
       });
 
-      const error = result.diagnostics.find(
-        (diagnostic) => diagnostic.severity === "error",
-      );
+      const error = result.diagnostics.find((diagnostic) => diagnostic.severity === "error");
 
       if (error !== undefined) {
         this.error({
@@ -83,10 +82,7 @@ function normalizeModuleId(id: string): string | null {
   return filePath;
 }
 
-function shouldCompile(
-  filePath: string,
-  includeDirs: readonly string[],
-): boolean {
+function shouldCompile(filePath: string, includeDirs: readonly string[]): boolean {
   if (filePath.endsWith(".d.ts") || filePath.endsWith(".d.tsx")) return false;
   if (!COMPILABLE_EXTENSIONS.has(path.extname(filePath))) return false;
 
@@ -95,8 +91,5 @@ function shouldCompile(
 
 function isInside(filePath: string, dir: string): boolean {
   const relative = path.relative(dir, filePath);
-  return (
-    relative === "" ||
-    (!relative.startsWith("..") && !path.isAbsolute(relative))
-  );
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
 }

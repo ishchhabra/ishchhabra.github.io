@@ -1,7 +1,8 @@
 import { Program } from "oxc-parser";
+
 import { IRIdAllocator } from "../../ir/core/IRIdAllocator";
-import { DeclarationCollector } from "./DeclarationCollector";
 import { DeclarationTable } from "../declarations/DeclarationTable";
+import { DeclarationCollector } from "./DeclarationCollector";
 import { DeclarationInstantiationPlan } from "./DeclarationInstantiationPlan";
 import { ReferenceResolver } from "./ReferenceResolver";
 import { ScopeGraph } from "./ScopeGraph";

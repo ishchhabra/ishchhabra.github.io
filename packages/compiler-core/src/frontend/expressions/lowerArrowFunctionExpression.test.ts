@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { IRIdAllocator } from "../../ir/core/IRIdAllocator";
 import { ReturnTerminatorOp } from "../../ir/ops/control/ReturnTerminatorOp";
 import { CreateFunctionOp } from "../../ir/ops/functions/CreateFunctionOp";

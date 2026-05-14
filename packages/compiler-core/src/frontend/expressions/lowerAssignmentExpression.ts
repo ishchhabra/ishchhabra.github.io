@@ -1,32 +1,33 @@
-import type { Value } from "../../ir/core/Value";
-import type { FunctionIRBuilder } from "../FunctionIRBuilder";
 import type {
   AssignmentExpression,
   AssignmentOperator,
   IdentifierReference,
   MemberExpression,
 } from "oxc-parser";
-import { lowerExpression } from "./lowerExpression";
+
+import { blockTarget } from "../../ir/core/TerminatorOp";
+import type { Value } from "../../ir/core/Value";
 import { StoreBindingOp } from "../../ir/ops/bindings/StoreBindingOp";
 import { ConstantOp } from "../../ir/ops/constants/ConstantOp";
-import { lowerIdentifier } from "./lowerIdentifier";
+import { IfTerminatorOp } from "../../ir/ops/control/IfTerminatorOp";
+import { JumpTerminatorOp } from "../../ir/ops/control/JumpTerminatorOp";
 import { BinaryOp, type BinaryOperator } from "../../ir/ops/operators/BinaryOp";
-import { StorePropertyOp } from "../../ir/ops/properties/StorePropertyOp";
+import { DestructureAssignmentOp } from "../../ir/ops/patterns/DestructureAssignmentOp";
+import { LoadPrivatePropertyOp } from "../../ir/ops/properties/LoadPrivatePropertyOp";
 import { LoadPropertyOp } from "../../ir/ops/properties/LoadPropertyOp";
+import { StorePrivatePropertyOp } from "../../ir/ops/properties/StorePrivatePropertyOp";
+import { StorePropertyOp } from "../../ir/ops/properties/StorePropertyOp";
+import { StoreSuperPropertyOp } from "../../ir/ops/properties/StoreSuperPropertyOp";
+import { SuperPropertyOp } from "../../ir/ops/properties/SuperPropertyOp";
+import type { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { lowerAssignmentPatternTarget } from "../patterns/lowerAssignmentPatternTarget";
+import { lowerExpression } from "./lowerExpression";
+import { lowerIdentifier } from "./lowerIdentifier";
 import {
   lowerMemberPropertyKey,
   lowerPrivateMemberReference,
   lowerMemberReference,
 } from "./lowerMemberExpression";
-import { LoadPrivatePropertyOp } from "../../ir/ops/properties/LoadPrivatePropertyOp";
-import { StorePrivatePropertyOp } from "../../ir/ops/properties/StorePrivatePropertyOp";
-import { SuperPropertyOp } from "../../ir/ops/properties/SuperPropertyOp";
-import { StoreSuperPropertyOp } from "../../ir/ops/properties/StoreSuperPropertyOp";
-import { DestructureAssignmentOp } from "../../ir/ops/patterns/DestructureAssignmentOp";
-import { lowerAssignmentPatternTarget } from "../patterns/lowerAssignmentPatternTarget";
-import { blockTarget } from "../../ir/core/TerminatorOp";
-import { IfTerminatorOp } from "../../ir/ops/control/IfTerminatorOp";
-import { JumpTerminatorOp } from "../../ir/ops/control/JumpTerminatorOp";
 
 /**
  * Lowers an ECMAScript assignment expression and returns its completion value.
@@ -43,10 +44,7 @@ export function lowerAssignmentExpression(
   builder: FunctionIRBuilder,
   expression: AssignmentExpression,
 ): Value {
-  if (
-    expression.left.type === "ArrayPattern" ||
-    expression.left.type === "ObjectPattern"
-  ) {
+  if (expression.left.type === "ArrayPattern" || expression.left.type === "ObjectPattern") {
     return lowerDestructuringAssignment(builder, expression);
   }
 
@@ -55,17 +53,11 @@ export function lowerAssignmentExpression(
   }
 
   if (expression.left.type === "MemberExpression") {
-    return lowerMemberAssignment(
-      builder,
-      expression,
-      expression.left as MemberExpression,
-    );
+    return lowerMemberAssignment(builder, expression, expression.left as MemberExpression);
   }
 
   if (expression.left.type !== "Identifier") {
-    throw new Error(
-      "Assignment targets other than identifiers and properties are not supported",
-    );
+    throw new Error("Assignment targets other than identifiers and properties are not supported");
   }
 
   return lowerIdentifierAssignment(builder, expression, expression.left);
@@ -90,24 +82,14 @@ function lowerLogicalAssignmentExpression(
   expression: AssignmentExpression,
 ): Value {
   if (expression.left.type === "Identifier") {
-    return lowerIdentifierLogicalAssignment(
-      builder,
-      expression,
-      expression.left,
-    );
+    return lowerIdentifierLogicalAssignment(builder, expression, expression.left);
   }
 
   if (expression.left.type === "MemberExpression") {
-    return lowerMemberLogicalAssignment(
-      builder,
-      expression,
-      expression.left as MemberExpression,
-    );
+    return lowerMemberLogicalAssignment(builder, expression, expression.left as MemberExpression);
   }
 
-  throw new Error(
-    `Logical assignment target is not supported: ${expression.left.type}`,
-  );
+  throw new Error(`Logical assignment target is not supported: ${expression.left.type}`);
 }
 
 function lowerIdentifierLogicalAssignment(
@@ -148,26 +130,13 @@ function lowerMemberLogicalAssignment(
   const reference = lowerMemberReference(builder, target);
   const current = builder.createValue();
 
-  builder.emit(
-    new LoadPropertyOp(
-      builder.operationId(),
-      reference.object,
-      reference.key,
-      current,
-    ),
-  );
+  builder.emit(new LoadPropertyOp(builder.operationId(), reference.object, reference.key, current));
 
   return lowerLogicalAssignmentControlFlow(builder, expression, current, () => {
     const value = lowerExpression(builder, expression.right);
     const result = builder.createValue();
     builder.emit(
-      new StorePropertyOp(
-        builder.operationId(),
-        reference.object,
-        reference.key,
-        value,
-        result,
-      ),
+      new StorePropertyOp(builder.operationId(), reference.object, reference.key, value, result),
     );
     return result;
   });
@@ -182,12 +151,7 @@ function lowerPrivatePropertyLogicalAssignment(
   const current = builder.createValue();
 
   builder.emit(
-    new LoadPrivatePropertyOp(
-      builder.operationId(),
-      reference.object,
-      reference.name,
-      current,
-    ),
+    new LoadPrivatePropertyOp(builder.operationId(), reference.object, reference.name, current),
   );
 
   return lowerLogicalAssignmentControlFlow(builder, expression, current, () => {
@@ -222,9 +186,7 @@ function lowerSuperPropertyLogicalAssignment(
     const value = lowerExpression(builder, expression.right);
     const result = builder.createValue();
 
-    builder.emit(
-      new StoreSuperPropertyOp(builder.operationId(), key, value, result),
-    );
+    builder.emit(new StoreSuperPropertyOp(builder.operationId(), key, value, result));
 
     return result;
   });
@@ -236,11 +198,7 @@ function lowerLogicalAssignmentControlFlow(
   current: Value,
   lowerAssignmentPath: () => Value,
 ): Value {
-  const condition = logicalAssignmentCondition(
-    builder,
-    expression.operator,
-    current,
-  );
+  const condition = logicalAssignmentCondition(builder, expression.operator, current);
 
   const assignBlock = builder.createBlock();
   const joinBlock = builder.createBlock();
@@ -252,30 +210,15 @@ function lowerLogicalAssignmentControlFlow(
 
   builder.terminate(
     expression.operator === "&&="
-      ? new IfTerminatorOp(
-          builder.operationId(),
-          condition,
-          assignTarget,
-          passTarget,
-          joinBlock,
-        )
-      : new IfTerminatorOp(
-          builder.operationId(),
-          condition,
-          passTarget,
-          assignTarget,
-          joinBlock,
-        ),
+      ? new IfTerminatorOp(builder.operationId(), condition, assignTarget, passTarget, joinBlock)
+      : new IfTerminatorOp(builder.operationId(), condition, passTarget, assignTarget, joinBlock),
   );
 
   builder.setCurrentBlock(assignBlock);
   const assigned = lowerAssignmentPath();
   if (!builder.currentBlock.isTerminated) {
     builder.terminate(
-      new JumpTerminatorOp(
-        builder.operationId(),
-        blockTarget(joinBlock, [assigned]),
-      ),
+      new JumpTerminatorOp(builder.operationId(), blockTarget(joinBlock, [assigned])),
     );
   }
 
@@ -294,9 +237,7 @@ function logicalAssignmentCondition(
   builder.emit(new ConstantOp(builder.operationId(), null, nullValue));
 
   const condition = builder.createValue();
-  builder.emit(
-    new BinaryOp(builder.operationId(), "!=", current, nullValue, condition),
-  );
+  builder.emit(new BinaryOp(builder.operationId(), "!=", current, nullValue, condition));
 
   return condition;
 }
@@ -306,9 +247,7 @@ function lowerDestructuringAssignment(
   expression: AssignmentExpression,
 ): Value {
   if (expression.operator !== "=") {
-    throw new Error(
-      `Destructuring assignment does not support operator ${expression.operator}`,
-    );
+    throw new Error(`Destructuring assignment does not support operator ${expression.operator}`);
   }
 
   const source = lowerExpression(builder, expression.right);
@@ -353,13 +292,7 @@ function lowerMemberAssignment(
     const value = lowerExpression(builder, expression.right);
     const result = builder.createValue();
     builder.emit(
-      new StorePropertyOp(
-        builder.operationId(),
-        reference.object,
-        reference.key,
-        value,
-        result,
-      ),
+      new StorePropertyOp(builder.operationId(), reference.object, reference.key, value, result),
     );
     return result;
   }
@@ -367,30 +300,15 @@ function lowerMemberAssignment(
   const operator = binaryOperatorForAssignment(expression.operator);
   const current = builder.createValue();
 
-  builder.emit(
-    new LoadPropertyOp(
-      builder.operationId(),
-      reference.object,
-      reference.key,
-      current,
-    ),
-  );
+  builder.emit(new LoadPropertyOp(builder.operationId(), reference.object, reference.key, current));
 
   const right = lowerExpression(builder, expression.right);
   const computed = builder.createValue();
 
-  builder.emit(
-    new BinaryOp(builder.operationId(), operator, current, right, computed),
-  );
+  builder.emit(new BinaryOp(builder.operationId(), operator, current, right, computed));
   const result = builder.createValue();
   builder.emit(
-    new StorePropertyOp(
-      builder.operationId(),
-      reference.object,
-      reference.key,
-      computed,
-      result,
-    ),
+    new StorePropertyOp(builder.operationId(), reference.object, reference.key, computed, result),
   );
 
   return result;
@@ -424,20 +342,13 @@ function lowerPrivatePropertyAssignment(
   const current = builder.createValue();
 
   builder.emit(
-    new LoadPrivatePropertyOp(
-      builder.operationId(),
-      reference.object,
-      reference.name,
-      current,
-    ),
+    new LoadPrivatePropertyOp(builder.operationId(), reference.object, reference.name, current),
   );
 
   const right = lowerExpression(builder, expression.right);
   const computed = builder.createValue();
 
-  builder.emit(
-    new BinaryOp(builder.operationId(), operator, current, right, computed),
-  );
+  builder.emit(new BinaryOp(builder.operationId(), operator, current, right, computed));
 
   const result = builder.createValue();
   builder.emit(
@@ -464,9 +375,7 @@ function lowerSuperPropertyAssignment(
     const value = lowerExpression(builder, expression.right);
     const result = builder.createValue();
 
-    builder.emit(
-      new StoreSuperPropertyOp(builder.operationId(), key, value, result),
-    );
+    builder.emit(new StoreSuperPropertyOp(builder.operationId(), key, value, result));
 
     return result;
   }
@@ -479,14 +388,10 @@ function lowerSuperPropertyAssignment(
   const right = lowerExpression(builder, expression.right);
   const computed = builder.createValue();
 
-  builder.emit(
-    new BinaryOp(builder.operationId(), operator, current, right, computed),
-  );
+  builder.emit(new BinaryOp(builder.operationId(), operator, current, right, computed));
 
   const result = builder.createValue();
-  builder.emit(
-    new StoreSuperPropertyOp(builder.operationId(), key, computed, result),
-  );
+  builder.emit(new StoreSuperPropertyOp(builder.operationId(), key, computed, result));
 
   return result;
 }
@@ -523,9 +428,7 @@ function lowerIdentifierAssignment(
   const right = lowerExpression(builder, expression.right);
   const computed = builder.createValue();
 
-  builder.emit(
-    new BinaryOp(builder.operationId(), operator, left, right, computed),
-  );
+  builder.emit(new BinaryOp(builder.operationId(), operator, left, right, computed));
   builder.emit(
     new StoreBindingOp(
       builder.operationId(),
@@ -541,9 +444,7 @@ function lowerIdentifierAssignment(
 /**
  * Returns the binary operator used by a compound assignment operator.
  */
-function binaryOperatorForAssignment(
-  operator: AssignmentOperator,
-): BinaryOperator {
+function binaryOperatorForAssignment(operator: AssignmentOperator): BinaryOperator {
   switch (operator) {
     case "+=":
       return "+";

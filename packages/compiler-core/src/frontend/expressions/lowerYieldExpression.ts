@@ -1,4 +1,5 @@
 import type { YieldExpression } from "oxc-parser";
+
 import type { Value } from "../../ir/core/Value";
 import { YieldExpressionOp } from "../../ir/ops/generators/YieldExpressionOp";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";

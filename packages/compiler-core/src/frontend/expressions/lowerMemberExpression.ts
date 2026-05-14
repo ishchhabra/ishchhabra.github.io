@@ -1,12 +1,13 @@
-import { Value } from "../../ir/core/Value";
-import type { PrivateName } from "../../ir/core/PrivateName";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { MemberExpression, PrivateIdentifier, PropertyKey } from "oxc-parser";
-import { lowerExpression } from "./lowerExpression";
+
+import type { PrivateName } from "../../ir/core/PrivateName";
+import { Value } from "../../ir/core/Value";
+import { LoadPrivatePropertyOp } from "../../ir/ops/properties/LoadPrivatePropertyOp";
 import { LoadPropertyOp } from "../../ir/ops/properties/LoadPropertyOp";
 import type { PropertyKey as IRPropertyKey } from "../../ir/ops/properties/PropertyKey";
-import { LoadPrivatePropertyOp } from "../../ir/ops/properties/LoadPrivatePropertyOp";
 import { SuperPropertyOp } from "../../ir/ops/properties/SuperPropertyOp";
+import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { lowerExpression } from "./lowerExpression";
 
 export interface LoweredMemberReference {
   readonly object: Value;

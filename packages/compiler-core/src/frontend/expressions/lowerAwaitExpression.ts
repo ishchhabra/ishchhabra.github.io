@@ -1,4 +1,5 @@
 import type { AwaitExpression } from "oxc-parser";
+
 import type { Value } from "../../ir/core/Value";
 import { AwaitExpressionOp } from "../../ir/ops/async/AwaitExpressionOp";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";

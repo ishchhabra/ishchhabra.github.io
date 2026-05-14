@@ -2,6 +2,7 @@
 
 import { betterAuth } from "better-auth";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
+
 import { getPool } from "./db/index";
 
 export const auth = betterAuth({

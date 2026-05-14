@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { IRIdAllocator } from "../../ir/core/IRIdAllocator";
 import { TemplateLiteralOp } from "../../ir/ops/literals/TemplateLiteralOp";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";

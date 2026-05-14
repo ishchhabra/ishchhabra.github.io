@@ -1,12 +1,13 @@
 import type { VariableDeclaration, VariableDeclarator } from "oxc-parser";
-import type { FunctionIRBuilder } from "../FunctionIRBuilder";
-import { StoreBindingOp } from "../../ir/ops/bindings/StoreBindingOp";
-import { InitializeBindingOp } from "../../ir/ops/bindings/InitializeBindingOp";
-import { lowerExpression } from "../expressions/lowerExpression";
+
 import type { Value } from "../../ir/core/Value";
+import { InitializeBindingOp } from "../../ir/ops/bindings/InitializeBindingOp";
+import { StoreBindingOp } from "../../ir/ops/bindings/StoreBindingOp";
 import { ConstantOp } from "../../ir/ops/constants/ConstantOp";
-import type { BindingIdentifierNode } from "../ast/types";
 import { DestructureBindingOp } from "../../ir/ops/patterns/DestructureBindingOp";
+import type { BindingIdentifierNode } from "../ast/types";
+import { lowerExpression } from "../expressions/lowerExpression";
+import type { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { lowerBindingPatternTarget } from "../patterns/lowerBindingPatternTarget";
 
 /**
@@ -83,9 +84,7 @@ function initializerValue(
   }
 
   if (declaration.kind === "const") {
-    throw new Error(
-      `Const declaration ${declaratorName(declarator)} requires an initializer`,
-    );
+    throw new Error(`Const declaration ${declaratorName(declarator)} requires an initializer`);
   }
 
   if (declaration.kind !== "let") {
@@ -106,7 +105,5 @@ function bindingName(binding: BindingIdentifierNode): string {
 }
 
 function declaratorName(declarator: VariableDeclarator): string {
-  return declarator.id.type === "Identifier"
-    ? bindingName(declarator.id)
-    : "pattern";
+  return declarator.id.type === "Identifier" ? bindingName(declarator.id) : "pattern";
 }

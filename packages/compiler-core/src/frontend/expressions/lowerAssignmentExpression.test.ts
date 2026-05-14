@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
+
 import { IRIdAllocator } from "../../ir/core/IRIdAllocator";
 import { StoreBindingOp } from "../../ir/ops/bindings/StoreBindingOp";
 import { CreateClassOp } from "../../ir/ops/classes/CreateClassOp";
 import { IfTerminatorOp } from "../../ir/ops/control/IfTerminatorOp";
 import { BinaryOp } from "../../ir/ops/operators/BinaryOp";
 import { DestructureAssignmentOp } from "../../ir/ops/patterns/DestructureAssignmentOp";
-import { StorePropertyOp } from "../../ir/ops/properties/StorePropertyOp";
 import { StorePrivatePropertyOp } from "../../ir/ops/properties/StorePrivatePropertyOp";
+import { StorePropertyOp } from "../../ir/ops/properties/StorePropertyOp";
 import { StoreSuperPropertyOp } from "../../ir/ops/properties/StoreSuperPropertyOp";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { parseModule } from "../parse/parseModule";

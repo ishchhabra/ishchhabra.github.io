@@ -1,15 +1,16 @@
-import { blockTarget, producedOperands } from "../../ir/core/TerminatorOp";
-import { TryTerminatorOp } from "../../ir/ops/control/TryTerminatorOp";
-import { lowerDeclarationInstantiation } from "../declarations/lowerDeclarationInstantiation";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { CatchClause, TryStatement } from "oxc-parser";
-import { lowerStatement } from "./lowerStatement";
+
 import { BasicBlock } from "../../ir/core/Block";
+import { blockTarget, producedOperands } from "../../ir/core/TerminatorOp";
 import { Value } from "../../ir/core/Value";
 import { InitializeBindingOp } from "../../ir/ops/bindings/InitializeBindingOp";
 import { JumpTerminatorOp } from "../../ir/ops/control/JumpTerminatorOp";
+import { TryTerminatorOp } from "../../ir/ops/control/TryTerminatorOp";
 import { DestructureBindingOp } from "../../ir/ops/patterns/DestructureBindingOp";
+import { lowerDeclarationInstantiation } from "../declarations/lowerDeclarationInstantiation";
+import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { lowerBindingPatternTarget } from "../patterns/lowerBindingPatternTarget";
+import { lowerStatement } from "./lowerStatement";
 
 /**
  * Lowers `try` statements to structured protected, catch, finally, and exit blocks.

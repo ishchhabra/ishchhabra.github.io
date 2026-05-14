@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
+
 import { UnknownOperationEffects } from "../effects";
-import { block, testOp, value } from "./testing";
 import { IRIdAllocator } from "./IRIdAllocator";
 import type { OperationCloneContext } from "./OperationCloneContext";
+import { block, testOp, value } from "./testing";
 
 describe("Operation", () => {
   it("attaches to a block and updates def-use links", () => {

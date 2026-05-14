@@ -97,7 +97,13 @@ export class TryTerminatorOp extends TerminatorOp {
       return this;
     }
 
-    return new TryTerminatorOp(this.id, tryTarget, catchTarget, finallyTarget, this.completionBlock);
+    return new TryTerminatorOp(
+      this.id,
+      tryTarget,
+      catchTarget,
+      finallyTarget,
+      this.completionBlock,
+    );
   }
 
   public override targetCount(): number {

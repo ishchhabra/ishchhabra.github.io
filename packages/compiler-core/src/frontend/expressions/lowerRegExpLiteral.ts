@@ -1,4 +1,5 @@
 import type { RegExpLiteral } from "oxc-parser";
+
 import type { Value } from "../../ir/core/Value";
 import { RegExpLiteralOp } from "../../ir/ops/literals/RegExpLiteralOp";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";

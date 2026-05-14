@@ -30,19 +30,11 @@ export class CFG {
     private readonly entry: BasicBlock,
     private readonly reachableBlocksInOrder: readonly BasicBlock[],
     private readonly unreachableBlocksInOrder: readonly BasicBlock[],
-    private readonly successorEdgesByBlock: ReadonlyMap<
-      BasicBlock,
-      readonly CFGEdge[]
-    >,
-    private readonly predecessorEdgesByBlock: ReadonlyMap<
-      BasicBlock,
-      readonly CFGEdge[]
-    >,
+    private readonly successorEdgesByBlock: ReadonlyMap<BasicBlock, readonly CFGEdge[]>,
+    private readonly predecessorEdgesByBlock: ReadonlyMap<BasicBlock, readonly CFGEdge[]>,
   ) {
     this.#reachableSet = new Set(reachableBlocksInOrder);
-    this.#edgesInOrder = reachableBlocksInOrder.flatMap((block) =>
-      this.successorEdges(block),
-    );
+    this.#edgesInOrder = reachableBlocksInOrder.flatMap((block) => this.successorEdges(block));
   }
 
   /**
@@ -117,9 +109,7 @@ export class CFG {
     );
 
     if (edge === undefined) {
-      throw new Error(
-        `Block bb${block.id} has no executable successor edge ${successorIndex}`,
-      );
+      throw new Error(`Block bb${block.id} has no executable successor edge ${successorIndex}`);
     }
 
     return edge;
@@ -161,13 +151,7 @@ export class CFG {
       }
     }
 
-    return new CFG(
-      fn.entryBlock,
-      reachable,
-      unreachable,
-      successorEdges,
-      predecessorEdges,
-    );
+    return new CFG(fn.entryBlock, reachable, unreachable, successorEdges, predecessorEdges);
   }
 }
 
@@ -192,9 +176,7 @@ function computeReachableBlocks(fn: FunctionIR): readonly BasicBlock[] {
     if (block === undefined || reachable.has(block)) continue;
 
     if (!functionBlocks.has(block)) {
-      throw new Error(
-        `CFG edge reaches block bb${block.id} outside Function#${fn.id}`,
-      );
+      throw new Error(`CFG edge reaches block bb${block.id} outside Function#${fn.id}`);
     }
 
     reachable.add(block);

@@ -6,6 +6,8 @@
  */
 
 import type { ReactElement, ReactNode } from "react";
+
+import { diagramPalette } from "../components/writing/pnpm-monorepo/diagramColors";
 import {
   InjectedDiagram,
   NodeResolutionDiagram,
@@ -14,7 +16,6 @@ import {
   SyncBeforeAfterDiagram,
   SyncLifecycleDiagram,
 } from "../components/writing/pnpm-monorepo/SyncLifecycleDiagram";
-import { diagramPalette } from "../components/writing/pnpm-monorepo/diagramColors";
 
 /* ------------------------------------------------------------------ */
 /*  ResolutionPathDiagram — Satori version (CSS borders, no Unicode)  */

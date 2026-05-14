@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+
 import { createPageMeta, DEFAULT_DESCRIPTION, SITE_TITLE } from "../lib/seo";
 import { Home } from "../pages/Home";
 

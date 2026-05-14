@@ -1,4 +1,5 @@
 import type { IdentifierReference, UnaryExpression } from "oxc-parser";
+
 import type { Value } from "../../ir/core/Value";
 import { DeleteOp, type DeleteTarget } from "../../ir/ops/operators/DeleteOp";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";

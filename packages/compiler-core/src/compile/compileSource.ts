@@ -1,12 +1,8 @@
-import {
-  filterDiagnostics,
-  type CompilerDiagnostic,
-  type DiagnosticOptions,
-} from "./diagnostics";
-import { parseModule } from "../frontend/parse/parseModule";
-import { ModuleIRBuilder } from "../frontend/ModuleIRBuilder";
-import { IRIdAllocator } from "../ir/core/IRIdAllocator";
 import { generateJavaScript } from "../backend/js/generateJavaScript";
+import { ModuleIRBuilder } from "../frontend/ModuleIRBuilder";
+import { parseModule } from "../frontend/parse/parseModule";
+import { IRIdAllocator } from "../ir/core/IRIdAllocator";
+import { filterDiagnostics, type CompilerDiagnostic, type DiagnosticOptions } from "./diagnostics";
 import { runCompilerPasses } from "./runCompilerPasses";
 
 /**

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+
 import { createPageMeta, SITE_BASE_URL } from "../../lib/seo";
 import { getArticleBySlug } from "../../pages/Writing";
 import { SsrThemingArticle } from "../../pages/writing/SsrThemingArticle";

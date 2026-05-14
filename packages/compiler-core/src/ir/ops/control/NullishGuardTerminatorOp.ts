@@ -33,7 +33,6 @@ export class NullishGuardTerminatorOp extends TerminatorOp {
     return this.bodyTarget.block;
   }
 
-
   public override operands(): readonly Value[] {
     return [this.guard, ...successorValues(this.bodyTarget), ...successorValues(this.exitTarget)];
   }
@@ -67,7 +66,13 @@ export class NullishGuardTerminatorOp extends TerminatorOp {
       return this;
     }
 
-    return new NullishGuardTerminatorOp(this.id, guard, bodyTarget, exitTarget, this.completionBlock);
+    return new NullishGuardTerminatorOp(
+      this.id,
+      guard,
+      bodyTarget,
+      exitTarget,
+      this.completionBlock,
+    );
   }
 
   public override clone(context: OperationCloneContext): NullishGuardTerminatorOp {
@@ -93,11 +98,23 @@ export class NullishGuardTerminatorOp extends TerminatorOp {
 
   public override withTarget(index: number, target: BlockTarget): NullishGuardTerminatorOp {
     if (index === 0) {
-      return new NullishGuardTerminatorOp(this.id, this.guard, target, this.exitTarget, this.completionBlock);
+      return new NullishGuardTerminatorOp(
+        this.id,
+        this.guard,
+        target,
+        this.exitTarget,
+        this.completionBlock,
+      );
     }
 
     if (index === 1) {
-      return new NullishGuardTerminatorOp(this.id, this.guard, this.bodyTarget, target, this.completionBlock);
+      return new NullishGuardTerminatorOp(
+        this.id,
+        this.guard,
+        this.bodyTarget,
+        target,
+        this.completionBlock,
+      );
     }
 
     throw new Error(`NullishGuardTerminatorOp#${this.id} has no target ${index}`);

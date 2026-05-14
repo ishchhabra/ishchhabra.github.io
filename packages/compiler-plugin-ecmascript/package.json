@@ -1,7 +1,11 @@
 {
   "name": "@i2-labs/compiler-plugin-ecmascript",
-  "description": "ECMAScript semantic plugin for the I2 Labs compiler",
   "private": true,
+  "description": "ECMAScript semantic plugin for the I2 Labs compiler",
+  "files": [
+    "dist",
+    "src"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -11,17 +15,13 @@
       "default": "./dist/index.js"
     }
   },
-  "files": [
-    "dist",
-    "src"
-  ],
   "scripts": {
     "build": "tsc -p tsconfig.json --sourceRoot \"$(pwd)/src\" && tsc-alias -p tsconfig.json",
     "build:watch": "tsc-watch -p tsconfig.json --sourceRoot \"$(pwd)/src\" --onSuccess \"pnpm postbuild\"",
     "postbuild": "tsc-alias -p tsconfig.json && pnpm-sync copy && echo 'Build complete'",
     "prepare": "pnpm sync:prepare:portfolio && pnpm build",
-    "format": "oxfmt",
-    "format-check": "oxfmt --check",
+    "format": "oxfmt -c oxfmt.config.mjs",
+    "format-check": "oxfmt --check -c oxfmt.config.mjs",
     "lint": "oxlint src --max-warnings=0 --type-aware --type-check",
     "type-check": "tsc --noEmit",
     "sync:prepare:portfolio": "pnpm-sync prepare -l ../../apps/portfolio/pnpm-lock.yaml -s ../../apps/portfolio/node_modules/.pnpm"

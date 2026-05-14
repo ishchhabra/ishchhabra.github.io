@@ -1,9 +1,11 @@
+import { Send, Sparkles, Undo2 } from "lucide-react";
+import { useCallback, useRef, useState } from "react";
+
 import { useEditEngine } from "@/hooks/useEditEngine";
 import { runLocalChat, type LocalMessage } from "@/lib/ai-client";
 import type { InsertPosition } from "@/lib/edit-types";
 import { serializeElements, serializePageContext } from "@/lib/edit-types";
-import { Send, Sparkles, Undo2 } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+
 import type { LocalAIConfig } from "./SettingsModal";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";

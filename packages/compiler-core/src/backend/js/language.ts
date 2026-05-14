@@ -1,5 +1,6 @@
-import tsx from "esrap/languages/tsx";
 import type { Context, Visitors } from "esrap";
+import tsx from "esrap/languages/tsx";
+
 import type {
   ExportAllDeclarationNode,
   ExportNamedDeclarationNode,

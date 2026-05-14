@@ -1,8 +1,5 @@
-import type {
-  ForInStatement,
-  ForStatementLeft,
-  VariableDeclaration,
-} from "oxc-parser";
+import type { ForInStatement, ForStatementLeft, VariableDeclaration } from "oxc-parser";
+
 import { blockTarget, producedOperands } from "../../ir/core/TerminatorOp";
 import type { Value } from "../../ir/core/Value";
 import { InitializeBindingOp } from "../../ir/ops/bindings/InitializeBindingOp";
@@ -18,8 +15,8 @@ import { lowerMemberReference } from "../expressions/lowerMemberExpression";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { lowerAssignmentPatternTarget } from "../patterns/lowerAssignmentPatternTarget";
 import { lowerBindingPatternTarget } from "../patterns/lowerBindingPatternTarget";
-import { lowerStatement } from "./lowerStatement";
 import { StatementLoweringOptions } from "./loweringOptions";
+import { lowerStatement } from "./lowerStatement";
 
 /**
  * Lowers `for...in` to structured property-enumeration control flow.
@@ -50,9 +47,7 @@ export function lowerForInStatement(
   const propertyKey = builder.createValue();
   bodyBlock.appendParam(propertyKey);
 
-  builder.terminate(
-    new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock)),
-  );
+  builder.terminate(new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock)));
 
   builder.setCurrentBlock(loopBlock);
   builder.terminate(
@@ -79,9 +74,7 @@ export function lowerForInStatement(
   }
 
   if (!builder.currentBlock.isTerminated) {
-    builder.terminate(
-      new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock)),
-    );
+    builder.terminate(new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock)));
   }
 
   builder.setCurrentBlock(completionBlock);
@@ -113,12 +106,7 @@ function lowerForInLeft(
   if (left.type === "MemberExpression") {
     const reference = lowerMemberReference(builder, left);
     builder.emit(
-      new StorePropertyOp(
-        builder.operationId(),
-        reference.object,
-        reference.key,
-        propertyKey,
-      ),
+      new StorePropertyOp(builder.operationId(), reference.object, reference.key, propertyKey),
     );
     return;
   }

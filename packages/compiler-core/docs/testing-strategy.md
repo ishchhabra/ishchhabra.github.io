@@ -7,24 +7,24 @@ works well for colocated tests without adding Jest/SWC configuration.
 
 ## What To Test
 
-| Area | Test |
-| --- | --- |
-| Core IR | Ownership, duplicate insertion rejection, detach/attach behavior, def-use updates, block params, terminator use-lists. |
-| Ops | Operands, results, effects, cloning, `withOperands`, and operation-specific invariants. |
-| Scope analysis | Declaration collection, reference resolution, globals, private names, hoisting, and scope ownership. |
-| Lowering | The IR shape for each supported AST construct. |
-| Backend | Generated JavaScript for representative IR and compile-source examples. |
-| Passes | IR mutation effects, analysis invalidation, edge rewrites, dominance-sensitive cases, and copy scheduling. |
-| Compiler API | `compileSource`, `compileProject`, diagnostics, and Vite plugin integration boundaries. |
+| Area           | Test                                                                                                                   |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Core IR        | Ownership, duplicate insertion rejection, detach/attach behavior, def-use updates, block params, terminator use-lists. |
+| Ops            | Operands, results, effects, cloning, `withOperands`, and operation-specific invariants.                                |
+| Scope analysis | Declaration collection, reference resolution, globals, private names, hoisting, and scope ownership.                   |
+| Lowering       | The IR shape for each supported AST construct.                                                                         |
+| Backend        | Generated JavaScript for representative IR and compile-source examples.                                                |
+| Passes         | IR mutation effects, analysis invalidation, edge rewrites, dominance-sensitive cases, and copy scheduling.             |
+| Compiler API   | `compileSource`, `compileProject`, diagnostics, and Vite plugin integration boundaries.                                |
 
 ## What Not To Test Directly
 
-| Target | Reason |
-| --- | --- |
-| Trivial private helpers | They should be covered through public behavior. |
-| TypeScript-only shape | The compiler already type-checks it. |
+| Target                                                  | Reason                                                          |
+| ------------------------------------------------------- | --------------------------------------------------------------- |
+| Trivial private helpers                                 | They should be covered through public behavior.                 |
+| TypeScript-only shape                                   | The compiler already type-checks it.                            |
 | Exact object identity where semantics do not require it | Prefer semantic assertions over brittle implementation details. |
-| Unsupported syntax as success cases | Unsupported nodes should throw clear errors until implemented. |
+| Unsupported syntax as success cases                     | Unsupported nodes should throw clear errors until implemented.  |
 
 Complex private algorithms are an exception. A helper such as
 `ParallelCopyScheduler` deserves direct tests because correctness is subtle and
@@ -58,11 +58,11 @@ object dumps include owner links and sets that make snapshots noisy and brittle.
 
 Colocate tests with the unit under test:
 
-| Source | Test |
-| --- | --- |
-| `src/ir/core/Block.ts` | `src/ir/core/Block.test.ts` |
-| `src/ir/ops/operators/BinaryOp.ts` | `src/ir/ops/operators/BinaryOp.test.ts` |
+| Source                                            | Test                                                   |
+| ------------------------------------------------- | ------------------------------------------------------ |
+| `src/ir/core/Block.ts`                            | `src/ir/core/Block.test.ts`                            |
+| `src/ir/ops/operators/BinaryOp.ts`                | `src/ir/ops/operators/BinaryOp.test.ts`                |
 | `src/frontend/expressions/lowerCallExpression.ts` | `src/frontend/expressions/lowerCallExpression.test.ts` |
-| `src/backend/js/generateJavaScript.ts` | `src/backend/js/generateJavaScript.test.ts` |
+| `src/backend/js/generateJavaScript.ts`            | `src/backend/js/generateJavaScript.test.ts`            |
 
 This keeps compiler tests close to the semantics they protect.

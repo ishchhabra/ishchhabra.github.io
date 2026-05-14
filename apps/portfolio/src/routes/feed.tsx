@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Feed } from "feed";
-import { ARTICLES } from "../lib/articles";
+
 import { renderArticleToHtml } from "../lib/article-renderer";
+import { ARTICLES } from "../lib/articles";
 import { DEFAULT_DESCRIPTION, SITE_BASE_URL, SITE_TITLE } from "../lib/seo";
 
 function generateFeed(): string {

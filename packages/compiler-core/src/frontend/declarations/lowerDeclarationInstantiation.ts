@@ -1,8 +1,3 @@
-import { InitializeBindingOp } from "../../ir/ops/bindings/InitializeBindingOp";
-import { ConstantOp } from "../../ir/ops/constants/ConstantOp";
-import { CreateFunctionOp } from "../../ir/ops/functions/CreateFunctionOp";
-import { lowerFunctionDeclarationBody } from "../functions/lowerFunctionDeclaration";
-import type { FunctionIRBuilder } from "../FunctionIRBuilder";
 import type {
   BlockStatement,
   ArrowFunctionExpression,
@@ -12,6 +7,12 @@ import type {
   ForInStatement,
   SwitchStatement,
 } from "oxc-parser";
+
+import { InitializeBindingOp } from "../../ir/ops/bindings/InitializeBindingOp";
+import { ConstantOp } from "../../ir/ops/constants/ConstantOp";
+import { CreateFunctionOp } from "../../ir/ops/functions/CreateFunctionOp";
+import type { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { lowerFunctionDeclarationBody } from "../functions/lowerFunctionDeclaration";
 
 /**
  * Emits ECMAScript declaration-instantiation work before a scope body runs.
@@ -32,17 +33,13 @@ export function lowerDeclarationInstantiation(
 
   for (const declaration of declarations.functions) {
     if (declaration.kind !== "function") {
-      throw new Error(
-        `Expected function declaration instantiation for ${declaration.name}`,
-      );
+      throw new Error(`Expected function declaration instantiation for ${declaration.name}`);
     }
 
     const functionIR = lowerFunctionDeclarationBody(builder, declaration);
     const value = builder.createValue();
 
-    builder.emit(
-      new CreateFunctionOp(builder.operationId(), functionIR, value),
-    );
+    builder.emit(new CreateFunctionOp(builder.operationId(), functionIR, value));
     builder.emit(
       new InitializeBindingOp(
         builder.operationId(),
@@ -70,8 +67,6 @@ export function lowerDeclarationInstantiation(
     if (declaration.kind === "import") continue;
     if (declaration.kind === "lexical") continue;
 
-    throw new Error(
-      `Unsupported lexical declaration instantiation: ${declaration.name}`,
-    );
+    throw new Error(`Unsupported lexical declaration instantiation: ${declaration.name}`);
   }
 }

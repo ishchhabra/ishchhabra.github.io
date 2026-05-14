@@ -1,4 +1,5 @@
 import type { Argument, NewExpression } from "oxc-parser";
+
 import type { Value } from "../../ir/core/Value";
 import type { ArgumentListElement } from "../../ir/ops/calls/ArgumentListElement";
 import { ConstructOp } from "../../ir/ops/calls/ConstructOp";

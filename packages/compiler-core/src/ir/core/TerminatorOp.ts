@@ -29,9 +29,7 @@ export interface BlockTarget {
 /**
  * Creates successor operands from existing SSA values.
  */
-export function forwardedOperands(
-  values: readonly Value[] = [],
-): SuccessorOperands {
+export function forwardedOperands(values: readonly Value[] = []): SuccessorOperands {
   return {
     produced: [],
     forwarded: values,
@@ -51,10 +49,7 @@ export function producedOperands(values: readonly Value[]): SuccessorOperands {
 /**
  * Creates a successor target that forwards existing SSA values.
  */
-export function blockTarget(
-  block: BasicBlock,
-  values: readonly Value[] = [],
-): BlockTarget {
+export function blockTarget(block: BasicBlock, values: readonly Value[] = []): BlockTarget {
   return {
     block,
     operands: forwardedOperands(values),
@@ -74,18 +69,13 @@ export function successorValues(target: BlockTarget): readonly Value[] {
  * `values` uses the same positional layout as `successorValues`: procuded
  * operands first, followed by forwarded operands.
  */
-export function replaceSuccessorValues(
-  target: BlockTarget,
-  values: readonly Value[],
-): BlockTarget {
+export function replaceSuccessorValues(target: BlockTarget, values: readonly Value[]): BlockTarget {
   const producedCount = target.operands.produced.length;
   const forwardedCount = target.operands.forwarded.length;
   const expected = producedCount + forwardedCount;
 
   if (values.length !== expected) {
-    throw new Error(
-      `Expected ${expected} successor values, got ${values.length}`,
-    );
+    throw new Error(`Expected ${expected} successor values, got ${values.length}`);
   }
 
   const produced = values.slice(0, producedCount);
@@ -126,23 +116,14 @@ export function replaceForwardedOperands(
 /**
  * Returns whether two value lists contain the same value objects in order.
  */
-export function sameValueList(
-  left: readonly Value[],
-  right: readonly Value[],
-): boolean {
-  return (
-    left.length === right.length &&
-    left.every((value, index) => value === right[index])
-  );
+export function sameValueList(left: readonly Value[], right: readonly Value[]): boolean {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
 /**
  * Clones a successor edge through an operation clone context.
  */
-export function cloneBlockTarget(
-  context: OperationCloneContext,
-  target: BlockTarget,
-): BlockTarget {
+export function cloneBlockTarget(context: OperationCloneContext, target: BlockTarget): BlockTarget {
   return {
     block: context.block(target.block),
     operands: {
@@ -191,9 +172,7 @@ export abstract class TerminatorOp extends Operation {
    * Successor edges in stable edge-index order.
    */
   targets(): readonly BlockTarget[] {
-    return Array.from({ length: this.targetCount() }, (_, index) =>
-      this.target(index),
-    );
+    return Array.from({ length: this.targetCount() }, (_, index) => this.target(index));
   }
 
   public override clone(context: OperationCloneContext): TerminatorOp {

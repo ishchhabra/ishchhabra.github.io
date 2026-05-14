@@ -7,14 +7,15 @@ import type {
   PrivateIdentifier,
   PropertyKey as OxcPropertyKey,
 } from "oxc-parser";
+
 import type { BasicBlock } from "../../ir/core/Block";
 import { blockTarget } from "../../ir/core/TerminatorOp";
 import type { Value } from "../../ir/core/Value";
 import type { ArgumentListElement } from "../../ir/ops/calls/ArgumentListElement";
 import { CallOp, type CallTarget } from "../../ir/ops/calls/CallOp";
+import { ConstantOp } from "../../ir/ops/constants/ConstantOp";
 import { JumpTerminatorOp } from "../../ir/ops/control/JumpTerminatorOp";
 import { NullishGuardTerminatorOp } from "../../ir/ops/control/NullishGuardTerminatorOp";
-import { ConstantOp } from "../../ir/ops/constants/ConstantOp";
 import { LoadPrivatePropertyOp } from "../../ir/ops/properties/LoadPrivatePropertyOp";
 import { LoadPropertyOp } from "../../ir/ops/properties/LoadPropertyOp";
 import type { PropertyKey } from "../../ir/ops/properties/PropertyKey";

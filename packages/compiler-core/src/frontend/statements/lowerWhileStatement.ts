@@ -1,12 +1,13 @@
 import type { WhileStatement } from "oxc-parser";
+
 import { blockTarget } from "../../ir/core/TerminatorOp";
 import { BranchTerminatorOp } from "../../ir/ops/control/BranchTerminatorOp";
 import { JumpTerminatorOp } from "../../ir/ops/control/JumpTerminatorOp";
 import { WhileTerminatorOp } from "../../ir/ops/control/WhileTerminatorOp";
-import type { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { lowerExpression } from "../expressions/lowerExpression";
-import { lowerStatement } from "./lowerStatement";
+import type { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { StatementLoweringOptions } from "./loweringOptions";
+import { lowerStatement } from "./lowerStatement";
 
 /**
  * Lowers a while loop to explicit control flow with a structured loop owner.
@@ -25,9 +26,7 @@ export function lowerWhileStatement(
   const bodyBlock = builder.createBlock();
   const completionBlock = builder.createBlock();
 
-  builder.terminate(
-    new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock)),
-  );
+  builder.terminate(new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock)));
 
   const control = {
     kind: "loop" as const,
@@ -68,9 +67,7 @@ export function lowerWhileStatement(
   }
 
   if (!builder.currentBlock.isTerminated) {
-    builder.terminate(
-      new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock)),
-    );
+    builder.terminate(new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock)));
   }
 
   builder.setCurrentBlock(completionBlock);

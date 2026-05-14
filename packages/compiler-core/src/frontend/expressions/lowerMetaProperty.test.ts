@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { IRIdAllocator } from "../../ir/core/IRIdAllocator";
 import { MetaPropertyOp } from "../../ir/ops/functions/MetaPropertyOp";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";

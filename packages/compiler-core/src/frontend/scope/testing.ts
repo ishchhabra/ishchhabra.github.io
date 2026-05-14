@@ -1,10 +1,11 @@
 import type { Expression, Function, Program } from "oxc-parser";
+
 import { IRIdAllocator } from "../../ir/core/IRIdAllocator";
+import type { IdentifierReferenceNode } from "../ast/types";
 import { DeclarationTable } from "../declarations/DeclarationTable";
 import { parseModule } from "../parse/parseModule";
-import { analyzeScopes } from "./analyzeScopes";
 import type { ScopeAnalysisResult } from "./analyzeScopes";
-import type { IdentifierReferenceNode } from "../ast/types";
+import { analyzeScopes } from "./analyzeScopes";
 import type { Declaration } from "./Declaration";
 import type { Scope } from "./Scope";
 

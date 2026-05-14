@@ -2,6 +2,7 @@
 
 import type { ComponentType } from "react";
 import { useEffect, useState } from "react";
+
 import { Preview } from "./Preview";
 import RenderToStringWorker from "./renderToString.worker?worker";
 

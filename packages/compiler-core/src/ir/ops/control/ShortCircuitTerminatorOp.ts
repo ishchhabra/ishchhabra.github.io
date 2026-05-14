@@ -50,7 +50,6 @@ export class ShortCircuitTerminatorOp extends TerminatorOp {
     return this.bodyTarget.block;
   }
 
-
   public override operands(): readonly Value[] {
     return [this.test, ...successorValues(this.bodyTarget), ...successorValues(this.exitTarget)];
   }
@@ -84,7 +83,14 @@ export class ShortCircuitTerminatorOp extends TerminatorOp {
       return this;
     }
 
-    return new ShortCircuitTerminatorOp(this.id, this.operator, test, bodyTarget, exitTarget, this.completionBlock);
+    return new ShortCircuitTerminatorOp(
+      this.id,
+      this.operator,
+      test,
+      bodyTarget,
+      exitTarget,
+      this.completionBlock,
+    );
   }
 
   public override clone(context: OperationCloneContext): ShortCircuitTerminatorOp {

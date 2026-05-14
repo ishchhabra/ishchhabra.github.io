@@ -1,4 +1,5 @@
 import type { LogicalExpression } from "oxc-parser";
+
 import { blockTarget } from "../../ir/core/TerminatorOp";
 import type { Value } from "../../ir/core/Value";
 import { JumpTerminatorOp } from "../../ir/ops/control/JumpTerminatorOp";

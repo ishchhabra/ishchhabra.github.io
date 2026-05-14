@@ -4,6 +4,7 @@ import type { ModuleImport } from "../core/ModuleImport";
 import type { ModuleIR } from "../core/ModuleIR";
 import type { Operation } from "../core/Operation";
 import type { DeclarationId, Value } from "../core/Value";
+import type { AnalysisManager, ModuleAnalysis } from "./AnalysisManager";
 import {
   declarationEffects,
   type DeclarationDef,
@@ -11,7 +12,6 @@ import {
   type DeclarationUse,
   type DeclarationUseKind,
 } from "./DeclarationEffects";
-import type { AnalysisManager, ModuleAnalysis } from "./AnalysisManager";
 
 export type DeclarationReferenceSource = FunctionIR | ModuleExport | ModuleImport | Operation;
 

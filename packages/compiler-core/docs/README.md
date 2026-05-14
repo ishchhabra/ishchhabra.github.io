@@ -13,17 +13,17 @@ Source material:
 
 ## Docs
 
-| Doc | Purpose |
-| --- | --- |
-| [Architecture Decisions](./architecture-decisions.md) | Cross-cutting decisions that should stay stable unless intentionally revisited. |
-| [Comment Style](./comment-style.md) | JSDoc/TSDoc rules for public APIs, invariants, examples, and internal comments. |
-| [IR Model](./ir-model.md) | Core IR object model, ownership, block params, terminators, effects, and op grouping. |
-| [Frontend Architecture](./frontend-architecture.md) | Scope analysis, declaration instantiation, builders, lowering, and ECMAScript semantics. |
-| [Backend And Codegen](./backend-and-codegen.md) | JavaScript backend design, structured emission, ESTree/esrap usage, and Vite integration. |
-| [Passes And SSA](./passes-and-ssa.md) | Analysis manager, transform passes, binding promotion, SSA elimination, and copy scheduling. |
-| [Testing Strategy](./testing-strategy.md) | What to unit test, what to snapshot, and where test utilities belong. |
-| [Finally Completion Semantics](./finally-completion-semantics.md) | Current `try/finally` strategy and when explicit completion records become necessary. |
-| [Value Operands](./value-operands.md) | Current handling of function-level value operands and the future shared protocol. |
+| Doc                                                               | Purpose                                                                                      |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| [Architecture Decisions](./architecture-decisions.md)             | Cross-cutting decisions that should stay stable unless intentionally revisited.              |
+| [Comment Style](./comment-style.md)                               | JSDoc/TSDoc rules for public APIs, invariants, examples, and internal comments.              |
+| [IR Model](./ir-model.md)                                         | Core IR object model, ownership, block params, terminators, effects, and op grouping.        |
+| [Frontend Architecture](./frontend-architecture.md)               | Scope analysis, declaration instantiation, builders, lowering, and ECMAScript semantics.     |
+| [Backend And Codegen](./backend-and-codegen.md)                   | JavaScript backend design, structured emission, ESTree/esrap usage, and Vite integration.    |
+| [Passes And SSA](./passes-and-ssa.md)                             | Analysis manager, transform passes, binding promotion, SSA elimination, and copy scheduling. |
+| [Testing Strategy](./testing-strategy.md)                         | What to unit test, what to snapshot, and where test utilities belong.                        |
+| [Finally Completion Semantics](./finally-completion-semantics.md) | Current `try/finally` strategy and when explicit completion records become necessary.        |
+| [Value Operands](./value-operands.md)                             | Current handling of function-level value operands and the future shared protocol.            |
 
 ## Documentation Policy
 

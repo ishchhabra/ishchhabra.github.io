@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { buildSrcdoc } from "./srcdoc";
+
 import { CapabilityBroker } from "./broker";
 import { PermissionPrompt } from "./PermissionPrompt";
+import { buildSrcdoc } from "./srcdoc";
 import type { CapabilityConfig, CapabilityRequest, PendingRequest } from "./types";
 
 export interface SandboxProps {

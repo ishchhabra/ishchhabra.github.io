@@ -88,10 +88,7 @@ export class ForTerminatorOp extends TerminatorOp {
     throw new Error(`ForTerminatorOp#${this.id} has no target ${index}`);
   }
 
-  public override withTarget(
-    index: number,
-    target: BlockTarget,
-  ): ForTerminatorOp {
+  public override withTarget(index: number, target: BlockTarget): ForTerminatorOp {
     if (index === 0) {
       return new ForTerminatorOp(
         this.id,

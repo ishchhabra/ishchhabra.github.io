@@ -1,8 +1,8 @@
-import { type OperationEffects, PureOperationEffects } from "../../effects";
 import type { OperationId } from "../../core/Operation";
 import type { OperationCloneContext } from "../../core/OperationCloneContext";
 import { type BlockTarget, TerminatorOp } from "../../core/TerminatorOp";
 import type { Value } from "../../core/Value";
+import { type OperationEffects, PureOperationEffects } from "../../effects";
 
 /**
  * Returns from the current function.

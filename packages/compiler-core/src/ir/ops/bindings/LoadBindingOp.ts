@@ -53,20 +53,13 @@ export class LoadBindingOp extends Operation {
     }
 
     if (operands.length !== 1) {
-      throw new Error(
-        `LoadBindingOp#${this.id} expected 1 operand, got ${operands.length}`,
-      );
+      throw new Error(`LoadBindingOp#${this.id} expected 1 operand, got ${operands.length}`);
     }
 
     const [bindingValue] = operands;
     if (bindingValue === this.bindingValue) return this;
 
-    return new LoadBindingOp(
-      this.id,
-      this.declarationId,
-      this.result,
-      bindingValue,
-    );
+    return new LoadBindingOp(this.id, this.declarationId, this.result, bindingValue);
   }
 
   public override clone(context: OperationCloneContext): LoadBindingOp {

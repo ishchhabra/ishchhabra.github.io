@@ -39,9 +39,7 @@ export class CreateFunctionOp extends Operation {
 
   public override withOperands(operands: readonly Value[]): CreateFunctionOp {
     if (operands.length !== 0) {
-      throw new Error(
-        `CreateFunctionOp#${this.id} expected 0 operands, got ${operands.length}`,
-      );
+      throw new Error(`CreateFunctionOp#${this.id} expected 0 operands, got ${operands.length}`);
     }
 
     return this;

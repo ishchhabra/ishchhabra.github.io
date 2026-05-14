@@ -42,10 +42,7 @@ export class WhileTerminatorOp extends TerminatorOp {
   }
 
   public override operands(): readonly Value[] {
-    return [
-      ...this.testTarget.operands.forwarded,
-      ...this.bodyTarget.operands.forwarded,
-    ];
+    return [...this.testTarget.operands.forwarded, ...this.bodyTarget.operands.forwarded];
   }
 
   public override effects(): OperationEffects {
@@ -63,14 +60,8 @@ export class WhileTerminatorOp extends TerminatorOp {
       );
     }
 
-    const testTarget = replaceForwardedOperands(
-      this.testTarget,
-      operands.slice(0, testCount),
-    );
-    const bodyTarget = replaceForwardedOperands(
-      this.bodyTarget,
-      operands.slice(testCount),
-    );
+    const testTarget = replaceForwardedOperands(this.testTarget, operands.slice(0, testCount));
+    const bodyTarget = replaceForwardedOperands(this.bodyTarget, operands.slice(testCount));
 
     if (testTarget === this.testTarget && bodyTarget === this.bodyTarget) {
       return this;
@@ -114,10 +105,7 @@ export class WhileTerminatorOp extends TerminatorOp {
     throw new Error(`WhileTerminatorOp#${this.id} has no target ${index}`);
   }
 
-  public override withTarget(
-    index: number,
-    target: BlockTarget,
-  ): WhileTerminatorOp {
+  public override withTarget(index: number, target: BlockTarget): WhileTerminatorOp {
     if (index === 0) {
       return new WhileTerminatorOp(
         this.id,

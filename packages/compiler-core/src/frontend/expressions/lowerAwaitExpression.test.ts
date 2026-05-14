@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { IRIdAllocator } from "../../ir/core/IRIdAllocator";
 import { AwaitExpressionOp } from "../../ir/ops/async/AwaitExpressionOp";
 import { ConstantOp } from "../../ir/ops/constants/ConstantOp";

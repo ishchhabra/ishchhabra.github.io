@@ -1,11 +1,6 @@
-import {
-  copyFileSync,
-  mkdirSync,
-  readFileSync,
-  readdirSync,
-  writeFileSync,
-} from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, extname, join, relative, resolve } from "node:path";
+
 import { compileSource } from "./compileSource";
 import { filterDiagnostics, type CompilerDiagnostic, type DiagnosticOptions } from "./diagnostics";
 

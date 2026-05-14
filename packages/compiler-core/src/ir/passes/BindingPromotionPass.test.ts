@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { AnalysisManager } from "../analysis";
 import { BasicBlock, makeBlockId } from "../core/Block";
 import { FunctionIR, makeFunctionId } from "../core/FunctionIR";
@@ -22,26 +23,16 @@ describe("BindingPromotionPass", () => {
     const loaded = value(ids);
 
     entry.appendOp(
-      new InitializeBindingOp(
-        ids.operationId(),
-        declaration,
-        initial,
-        value(ids, declaration),
-      ),
+      new InitializeBindingOp(ids.operationId(), declaration, initial, value(ids, declaration)),
     );
     entry.appendOp(new LoadBindingOp(ids.operationId(), declaration, loaded));
     entry.setTerminator(new ReturnTerminatorOp(ids.operationId(), loaded));
 
     const fn = functionIR(entry);
 
-    createBindingPromotionPass({ ids, declarations: [declaration] }).run(
-      fn,
-      new AnalysisManager(),
-    );
+    createBindingPromotionPass({ ids, declarations: [declaration] }).run(fn, new AnalysisManager());
 
-    expect(entry.operations.map((op) => op.constructor.name)).toEqual([
-      "ReturnTerminatorOp",
-    ]);
+    expect(entry.operations.map((op) => op.constructor.name)).toEqual(["ReturnTerminatorOp"]);
     expect((entry.terminator as ReturnTerminatorOp).value).toBe(initial);
   });
 
@@ -59,12 +50,7 @@ describe("BindingPromotionPass", () => {
     const loaded = value(ids);
 
     entry.appendOp(
-      new InitializeBindingOp(
-        ids.operationId(),
-        declaration,
-        initial,
-        value(ids, declaration),
-      ),
+      new InitializeBindingOp(ids.operationId(), declaration, initial, value(ids, declaration)),
     );
     entry.setTerminator(
       new BranchTerminatorOp(
@@ -76,22 +62,12 @@ describe("BindingPromotionPass", () => {
     );
 
     thenBlock.appendOp(
-      new StoreBindingOp(
-        ids.operationId(),
-        declaration,
-        thenValue,
-        value(ids, declaration),
-      ),
+      new StoreBindingOp(ids.operationId(), declaration, thenValue, value(ids, declaration)),
     );
     thenBlock.setTerminator(new JumpTerminatorOp(ids.operationId(), blockTarget(joinBlock)));
 
     elseBlock.appendOp(
-      new StoreBindingOp(
-        ids.operationId(),
-        declaration,
-        elseValue,
-        value(ids, declaration),
-      ),
+      new StoreBindingOp(ids.operationId(), declaration, elseValue, value(ids, declaration)),
     );
     elseBlock.setTerminator(new JumpTerminatorOp(ids.operationId(), blockTarget(joinBlock)));
 
@@ -100,10 +76,7 @@ describe("BindingPromotionPass", () => {
 
     const fn = functionIR(entry, thenBlock, elseBlock, joinBlock);
 
-    createBindingPromotionPass({ ids, declarations: [declaration] }).run(
-      fn,
-      new AnalysisManager(),
-    );
+    createBindingPromotionPass({ ids, declarations: [declaration] }).run(fn, new AnalysisManager());
 
     expect(joinBlock.params).toHaveLength(1);
     expect(joinBlock.params[0].declarationId).toBe(declaration);

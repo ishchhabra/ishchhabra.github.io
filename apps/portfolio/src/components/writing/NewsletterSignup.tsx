@@ -1,5 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { useRef } from "react";
+
 import { getSubscribeMutationOptions } from "../../lib/newsletter/queries";
 
 export function NewsletterSignup({ variant = "card" }: { variant?: "card" | "inline" }) {

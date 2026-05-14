@@ -12,9 +12,9 @@ import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import type { ReactNode } from "react";
 import { useEffect } from "react";
+
 import { Footer } from "../components/Footer";
 import { Header } from "../components/Header";
-import appCss from "../index.css?url";
 import { PostHogProvider } from "../lib/posthog";
 import {
   createPageMeta,
@@ -23,6 +23,8 @@ import {
   SITE_TITLE,
 } from "../lib/seo";
 import { getThemeForClientNav, getThemeServerFn, ThemeProvider, useTheme } from "../lib/theme";
+
+import appCss from "../index.css?url";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   beforeLoad: async () => {

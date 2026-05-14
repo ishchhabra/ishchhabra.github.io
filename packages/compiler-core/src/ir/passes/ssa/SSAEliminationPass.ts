@@ -55,9 +55,7 @@ export interface SSAEliminationPassOptions {
  *   ReturnTerminatorOp(x)
  * ```
  */
-export function createSSAEliminationPass(
-  options: SSAEliminationPassOptions,
-): FunctionPass {
+export function createSSAEliminationPass(options: SSAEliminationPassOptions): FunctionPass {
   return {
     name: "ssa-elimination",
 
@@ -112,10 +110,7 @@ class SSAElimination {
     };
   }
 
-  private eliminateSuccessorEdges(
-    block: BasicBlock,
-    terminator: TerminatorOp,
-  ): void {
+  private eliminateSuccessorEdges(block: BasicBlock, terminator: TerminatorOp): void {
     let current: TerminatorOp = terminator;
     const successorIndices = [...terminator.successorIndices()];
 
@@ -171,10 +166,7 @@ class SSAElimination {
     for (let i = 0; i < produced.length; i++) {
       const param = params[i];
 
-      if (
-        param.declarationId !== null &&
-        this.#eliminatedDeclarations.has(param.declarationId)
-      ) {
+      if (param.declarationId !== null && this.#eliminatedDeclarations.has(param.declarationId)) {
         throw new Error(
           `SSAEliminationPass cannot eliminate produced param value#${param.id} on edge to bb${target.block.id}`,
         );
@@ -188,10 +180,7 @@ class SSAElimination {
       const param = params[produced.length + i];
       const arg = forwarded[i];
 
-      if (
-        param.declarationId !== null &&
-        this.#eliminatedDeclarations.has(param.declarationId)
-      ) {
+      if (param.declarationId !== null && this.#eliminatedDeclarations.has(param.declarationId)) {
         copies.push({ target: param, source: arg });
         continue;
       }
@@ -212,10 +201,7 @@ class SSAElimination {
     };
   }
 
-  private insertCopiesBeforeTerminator(
-    block: BasicBlock,
-    copies: readonly ParallelCopy[],
-  ): void {
+  private insertCopiesBeforeTerminator(block: BasicBlock, copies: readonly ParallelCopy[]): void {
     let index = block.operations.length - 1;
 
     for (const copy of scheduleParallelCopies(copies, this.options)) {
@@ -260,10 +246,7 @@ class SSAElimination {
     for (let index = block.params.length - 1; index >= 0; index--) {
       const param = block.params[index];
 
-      if (
-        param.declarationId !== null &&
-        this.#eliminatedDeclarations.has(param.declarationId)
-      ) {
+      if (param.declarationId !== null && this.#eliminatedDeclarations.has(param.declarationId)) {
         block.removeParam(index);
         this.#changed = true;
       }

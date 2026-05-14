@@ -87,13 +87,7 @@ export class IfTerminatorOp extends TerminatorOp {
       return this;
     }
 
-    return new IfTerminatorOp(
-      this.id,
-      condition,
-      thenTarget,
-      elseTarget,
-      this.completionBlock,
-    );
+    return new IfTerminatorOp(this.id, condition, thenTarget, elseTarget, this.completionBlock);
   }
 
   public override clone(context: OperationCloneContext): IfTerminatorOp {
@@ -117,10 +111,7 @@ export class IfTerminatorOp extends TerminatorOp {
     throw new Error(`IfTerminatorOp#${this.id} has no target ${index}`);
   }
 
-  public override withTarget(
-    index: number,
-    target: BlockTarget,
-  ): IfTerminatorOp {
+  public override withTarget(index: number, target: BlockTarget): IfTerminatorOp {
     if (index === 0) {
       return new IfTerminatorOp(
         this.id,

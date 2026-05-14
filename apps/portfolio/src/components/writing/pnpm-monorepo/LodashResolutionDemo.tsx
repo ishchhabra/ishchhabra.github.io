@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+
 import { highlightCode } from "../../../lib/shiki";
 import { useTheme } from "../../../lib/theme";
 

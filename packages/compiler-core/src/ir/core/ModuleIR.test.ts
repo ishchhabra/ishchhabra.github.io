@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { functionIR, moduleIR } from "./testing";
+
 import { makeFunctionId } from "./FunctionIR";
+import { functionIR, moduleIR } from "./testing";
 
 describe("ModuleIR", () => {
   it("adds a function and records module ownership", () => {

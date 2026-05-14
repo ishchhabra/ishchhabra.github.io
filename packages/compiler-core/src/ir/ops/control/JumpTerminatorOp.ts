@@ -40,22 +40,15 @@ export class JumpTerminatorOp extends TerminatorOp {
   }
 
   public override withOperands(operands: readonly Value[]): JumpTerminatorOp {
-    return new JumpTerminatorOp(
-      this.id,
-      replaceSuccessorValues(this.jumpTarget, operands),
-    );
+    return new JumpTerminatorOp(this.id, replaceSuccessorValues(this.jumpTarget, operands));
   }
 
   public override clone(context: OperationCloneContext): JumpTerminatorOp {
     return new JumpTerminatorOp(context.ids.operationId(), {
       block: context.block(this.jumpTarget.block),
       operands: {
-        produced: this.jumpTarget.operands.produced.map((value) =>
-          context.value(value),
-        ),
-        forwarded: this.jumpTarget.operands.forwarded.map((value) =>
-          context.value(value),
-        ),
+        produced: this.jumpTarget.operands.produced.map((value) => context.value(value)),
+        forwarded: this.jumpTarget.operands.forwarded.map((value) => context.value(value)),
       },
     });
   }
@@ -72,10 +65,7 @@ export class JumpTerminatorOp extends TerminatorOp {
     return this.jumpTarget;
   }
 
-  public override withTarget(
-    index: number,
-    target: BlockTarget,
-  ): JumpTerminatorOp {
+  public override withTarget(index: number, target: BlockTarget): JumpTerminatorOp {
     if (index !== 0) {
       throw new Error(`JumpTerminatorOp#${this.id} has no target ${index}`);
     }

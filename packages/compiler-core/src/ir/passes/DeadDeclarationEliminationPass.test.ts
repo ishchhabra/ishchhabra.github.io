@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { ModuleIRBuilder } from "../../frontend/ModuleIRBuilder";
 import { parseModule } from "../../frontend/parse/parseModule";
 import { AnalysisManager } from "../analysis";

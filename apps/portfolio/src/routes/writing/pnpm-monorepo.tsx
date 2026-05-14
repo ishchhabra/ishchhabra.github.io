@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getArticleBySlug } from "../../pages/Writing";
+
 import { createPageMeta, SITE_BASE_URL } from "../../lib/seo";
+import { getArticleBySlug } from "../../pages/Writing";
 import { PnpmMonorepoArticle } from "../../pages/writing/PnpmMonorepoArticle";
 
 const slug = "pnpm-monorepo";

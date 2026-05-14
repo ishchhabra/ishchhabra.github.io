@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { IRIdAllocator } from "../../ir/core/IRIdAllocator";
 import { ThrowTerminatorOp } from "../../ir/ops/control/ThrowTerminatorOp";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";

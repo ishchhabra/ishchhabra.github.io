@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
+
 import { IRIdAllocator } from "../../ir/core/IRIdAllocator";
-import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { ConstantOp } from "../../ir/ops/constants/ConstantOp";
 import { RegExpLiteralOp } from "../../ir/ops/literals/RegExpLiteralOp";
+import { ModuleIRBuilder } from "../ModuleIRBuilder";
 import { parseModule } from "../parse/parseModule";
 
 describe("lowerLiteral", () => {

@@ -1,4 +1,5 @@
 import { MousePointerClick, Settings2, Trash2 } from "lucide-react";
+
 import { AIEditPrompt } from "./AIEditPrompt";
 import type { LocalAIConfig } from "./SettingsModal";
 

@@ -1,8 +1,5 @@
-import type {
-  IdentifierReference,
-  MemberExpression,
-  UpdateExpression,
-} from "oxc-parser";
+import type { IdentifierReference, MemberExpression, UpdateExpression } from "oxc-parser";
+
 import type { Value } from "../../ir/core/Value";
 import { StoreBindingOp } from "../../ir/ops/bindings/StoreBindingOp";
 import { ConstantOp } from "../../ir/ops/constants/ConstantOp";
@@ -11,8 +8,8 @@ import { LoadPrivatePropertyOp } from "../../ir/ops/properties/LoadPrivateProper
 import { LoadPropertyOp } from "../../ir/ops/properties/LoadPropertyOp";
 import { StorePrivatePropertyOp } from "../../ir/ops/properties/StorePrivatePropertyOp";
 import { StorePropertyOp } from "../../ir/ops/properties/StorePropertyOp";
-import { SuperPropertyOp } from "../../ir/ops/properties/SuperPropertyOp";
 import { StoreSuperPropertyOp } from "../../ir/ops/properties/StoreSuperPropertyOp";
+import { SuperPropertyOp } from "../../ir/ops/properties/SuperPropertyOp";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { lowerIdentifier } from "./lowerIdentifier";
 import {
@@ -87,23 +84,13 @@ function lowerMemberUpdate(
   const oldValue = builder.createValue();
 
   builder.emit(
-    new LoadPropertyOp(
-      builder.operationId(),
-      reference.object,
-      reference.key,
-      oldValue,
-    ),
+    new LoadPropertyOp(builder.operationId(), reference.object, reference.key, oldValue),
   );
 
   const newValue = emitUpdatedValue(builder, expression.operator, oldValue);
 
   builder.emit(
-    new StorePropertyOp(
-      builder.operationId(),
-      reference.object,
-      reference.key,
-      newValue,
-    ),
+    new StorePropertyOp(builder.operationId(), reference.object, reference.key, newValue),
   );
 
   return expression.prefix ? newValue : oldValue;
@@ -118,23 +105,13 @@ function lowerPrivatePropertyUpdate(
   const oldValue = builder.createValue();
 
   builder.emit(
-    new LoadPrivatePropertyOp(
-      builder.operationId(),
-      reference.object,
-      reference.name,
-      oldValue,
-    ),
+    new LoadPrivatePropertyOp(builder.operationId(), reference.object, reference.name, oldValue),
   );
 
   const newValue = emitUpdatedValue(builder, expression.operator, oldValue);
 
   builder.emit(
-    new StorePrivatePropertyOp(
-      builder.operationId(),
-      reference.object,
-      reference.name,
-      newValue,
-    ),
+    new StorePrivatePropertyOp(builder.operationId(), reference.object, reference.name, newValue),
   );
 
   return expression.prefix ? newValue : oldValue;
@@ -167,21 +144,13 @@ function emitUpdatedValue(
 
   const result = builder.createValue();
   builder.emit(
-    new BinaryOp(
-      builder.operationId(),
-      binaryOperatorForUpdate(operator),
-      oldValue,
-      one,
-      result,
-    ),
+    new BinaryOp(builder.operationId(), binaryOperatorForUpdate(operator), oldValue, one, result),
   );
 
   return result;
 }
 
-function binaryOperatorForUpdate(
-  operator: UpdateExpression["operator"],
-): BinaryOperator {
+function binaryOperatorForUpdate(operator: UpdateExpression["operator"]): BinaryOperator {
   switch (operator) {
     case "++":
       return "+";

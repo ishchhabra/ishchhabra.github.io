@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
+
 import { IRIdAllocator } from "../../core/IRIdAllocator";
 import { makeOperationId } from "../../core/Operation";
-import { makeDeclarationId } from "../../core/Value";
 import { block, value } from "../../core/testing";
+import { makeDeclarationId } from "../../core/Value";
 import { bindingMemoryLocation } from "../../effects";
 import { LoadBindingOp } from "./LoadBindingOp";
 
@@ -23,12 +24,7 @@ describe("LoadBindingOp", () => {
     const declarationId = makeDeclarationId(1);
     const result = value(1);
     const bindingValue = value(2, declarationId);
-    const op = new LoadBindingOp(
-      makeOperationId(1),
-      declarationId,
-      result,
-      bindingValue,
-    );
+    const op = new LoadBindingOp(makeOperationId(1), declarationId, result, bindingValue);
 
     expect(op.bindingValue).toBe(bindingValue);
     expect(op.isResolved).toBe(true);
@@ -64,12 +60,7 @@ describe("LoadBindingOp", () => {
     const result = value(1);
     const bindingValue = value(2, declarationId);
     const nextBindingValue = value(3, declarationId);
-    const op = new LoadBindingOp(
-      makeOperationId(1),
-      declarationId,
-      result,
-      bindingValue,
-    );
+    const op = new LoadBindingOp(makeOperationId(1), declarationId, result, bindingValue);
 
     const replacement = op.withOperands([nextBindingValue]);
 
@@ -79,11 +70,7 @@ describe("LoadBindingOp", () => {
   });
 
   it("rejects replacement operands before SSA resolution", () => {
-    const op = new LoadBindingOp(
-      makeOperationId(1),
-      makeDeclarationId(1),
-      value(1),
-    );
+    const op = new LoadBindingOp(makeOperationId(1), makeDeclarationId(1), value(1));
 
     expect(() => op.withOperands([value(2)])).toThrow("is not SSA-resolved");
   });
@@ -94,12 +81,7 @@ describe("LoadBindingOp", () => {
     const clonedResult = value(2);
     const bindingValue = value(3, declarationId);
     const clonedBindingValue = value(4, declarationId);
-    const op = new LoadBindingOp(
-      makeOperationId(1),
-      declarationId,
-      result,
-      bindingValue,
-    );
+    const op = new LoadBindingOp(makeOperationId(1), declarationId, result, bindingValue);
 
     const clone = op.clone({
       ids: new IRIdAllocator(),

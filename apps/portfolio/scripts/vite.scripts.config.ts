@@ -1,5 +1,5 @@
-import tsConfigPaths from "vite-tsconfig-paths";
 import { defineConfig } from "vite";
+import tsConfigPaths from "vite-tsconfig-paths";
 
 // Modules that crash when imported in Node outside the full Vite bundler.
 const STUB_MODULES = ["@scelar/nodepod"];

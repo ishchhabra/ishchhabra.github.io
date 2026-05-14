@@ -1,4 +1,3 @@
-import { Operation, OperationId } from "../../core/Operation";
 import {
   bindingPatternOperands,
   BindingPatternTarget,
@@ -6,9 +5,10 @@ import {
   cloneBindingPatternTarget,
   rewriteBindingPatternOperands,
 } from "../../core/DestructurePattern";
+import { Operation, OperationId } from "../../core/Operation";
+import { OperationCloneContext } from "../../core/OperationCloneContext";
 import { Value } from "../../core/Value";
 import { OperationEffects, UnknownOperationEffects } from "../../effects";
-import { OperationCloneContext } from "../../core/OperationCloneContext";
 
 /**
  * Runs ECMAScript binding-pattern destructuring from a source value.

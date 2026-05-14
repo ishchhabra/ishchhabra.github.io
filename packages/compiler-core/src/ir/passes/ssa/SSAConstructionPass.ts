@@ -9,11 +9,7 @@ import { DeclarationId, Value } from "../../core";
 import { BasicBlock } from "../../core/Block";
 import { FunctionIR } from "../../core/FunctionIR";
 import { IRIdAllocator } from "../../core/IRIdAllocator";
-import {
-  BlockTarget,
-  sameValueList,
-  TerminatorOp,
-} from "../../core/TerminatorOp";
+import { BlockTarget, sameValueList, TerminatorOp } from "../../core/TerminatorOp";
 import { InitializeBindingOp } from "../../ops/bindings/InitializeBindingOp";
 import { LoadBindingOp } from "../../ops/bindings/LoadBindingOp";
 import { StoreBindingOp } from "../../ops/bindings/StoreBindingOp";
@@ -30,9 +26,7 @@ export interface SSAConstructionPassOptions {
 /**
  * Creates the pass that constructs binding SSA for one function.
  */
-export function createSSAConstructionPass(
-  options: SSAConstructionPassOptions,
-): FunctionPass {
+export function createSSAConstructionPass(options: SSAConstructionPassOptions): FunctionPass {
   return {
     name: "ssa-construction",
 
@@ -66,10 +60,7 @@ class SSAConstructionPass {
       return { changed: false };
     }
 
-    const dominators = this.analyses.getFunction(
-      DominatorTreeAnalysis,
-      this.fn,
-    );
+    const dominators = this.analyses.getFunction(DominatorTreeAnalysis, this.fn);
 
     this.computeDominatorChildren(dominators.getImmediateDominators());
     this.placeBlockParams(dominators);
@@ -148,10 +139,7 @@ class SSAConstructionPass {
     }
   }
 
-  private appendBlockParam(
-    block: BasicBlock,
-    declaration: DeclarationId,
-  ): Value {
+  private appendBlockParam(block: BasicBlock, declaration: DeclarationId): Value {
     let params = this.#insertedBlockParams.get(block);
     if (params === undefined) {
       params = new Map();
@@ -217,20 +205,13 @@ class SSAConstructionPass {
     }
   }
 
-  private resolveLoad(
-    block: BasicBlock,
-    op: LoadBindingOp,
-    stacks: RenameStacks,
-  ): void {
+  private resolveLoad(block: BasicBlock, op: LoadBindingOp, stacks: RenameStacks): void {
     if (!this.#definitionBlocks.has(op.declarationId)) return;
 
     const bindingValue = this.peek(stacks, op.declarationId);
     if (op.bindingValue === bindingValue) return;
 
-    block.replaceOp(
-      op,
-      new LoadBindingOp(op.id, op.declarationId, op.result, bindingValue),
-    );
+    block.replaceOp(op, new LoadBindingOp(op.id, op.declarationId, op.result, bindingValue));
 
     this.#changed = true;
   }
@@ -242,10 +223,7 @@ class SSAConstructionPass {
    * the current reaching values to the edge so those params are bound when
    * control enters the successor.
    */
-  private rewriteSuccessorArguments(
-    block: BasicBlock,
-    stacks: RenameStacks,
-  ): void {
+  private rewriteSuccessorArguments(block: BasicBlock, stacks: RenameStacks): void {
     let terminator: TerminatorOp | null = block.terminator;
     if (terminator === null) return;
 
@@ -269,10 +247,7 @@ class SSAConstructionPass {
    * rewritten through the replacement map. Then, values for newly inserted block
    * are appended in parameter order.
    */
-  private rewriteTarget(
-    target: BlockTarget,
-    stacks: RenameStacks,
-  ): BlockTarget {
+  private rewriteTarget(target: BlockTarget, stacks: RenameStacks): BlockTarget {
     const inserted = this.#insertedBlockParams.get(target.block);
     if (inserted === undefined) return target;
 
@@ -308,11 +283,7 @@ class SSAConstructionPass {
   /**
    * Records a new reaching value for a binding.
    */
-  private push(
-    stacks: RenameStacks,
-    declaration: DeclarationId,
-    value: Value,
-  ): void {
+  private push(stacks: RenameStacks, declaration: DeclarationId, value: Value): void {
     let stack = stacks.get(declaration);
     if (stack === undefined) {
       stack = [];

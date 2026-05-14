@@ -1,12 +1,13 @@
+import { DoWhileStatement } from "oxc-parser";
+
 import { blockTarget } from "../../ir/core/TerminatorOp";
+import { BranchTerminatorOp } from "../../ir/ops/control/BranchTerminatorOp";
 import { JumpTerminatorOp } from "../../ir/ops/control/JumpTerminatorOp";
 import { WhileTerminatorOp } from "../../ir/ops/control/WhileTerminatorOp";
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
-import { DoWhileStatement } from "oxc-parser";
-import { lowerStatement } from "./lowerStatement";
 import { lowerExpression } from "../expressions/lowerExpression";
-import { BranchTerminatorOp } from "../../ir/ops/control/BranchTerminatorOp";
+import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { StatementLoweringOptions } from "./loweringOptions";
+import { lowerStatement } from "./lowerStatement";
 
 /**
  * Lowers a do-while loop to explicit control flow with a structured loop owner.
@@ -31,9 +32,7 @@ export function lowerDoWhileStatement(
     continueTarget: testBlock,
   };
 
-  builder.terminate(
-    new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock)),
-  );
+  builder.terminate(new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock)));
 
   builder.setCurrentBlock(loopBlock);
   builder.terminate(
@@ -56,9 +55,7 @@ export function lowerDoWhileStatement(
   }
 
   if (!builder.currentBlock.isTerminated) {
-    builder.terminate(
-      new JumpTerminatorOp(builder.operationId(), blockTarget(testBlock)),
-    );
+    builder.terminate(new JumpTerminatorOp(builder.operationId(), blockTarget(testBlock)));
   }
 
   builder.setCurrentBlock(testBlock);

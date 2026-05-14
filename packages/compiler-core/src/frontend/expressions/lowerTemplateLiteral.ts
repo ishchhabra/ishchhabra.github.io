@@ -1,4 +1,5 @@
 import type { TemplateLiteral } from "oxc-parser";
+
 import type { Value } from "../../ir/core/Value";
 import { TemplateLiteralOp, type TemplateElement } from "../../ir/ops/literals/TemplateLiteralOp";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";

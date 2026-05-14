@@ -1,4 +1,5 @@
 import { Composition } from "remotion";
+
 import { CmdClickBefore, CmdClickAfter } from "./CmdClick";
 
 export function RemotionRoot() {

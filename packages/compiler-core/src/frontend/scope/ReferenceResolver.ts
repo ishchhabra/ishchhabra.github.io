@@ -18,6 +18,7 @@ import type {
   Program,
   Statement,
 } from "oxc-parser";
+
 import type { ScopeReferenceNode } from "../ast/types";
 import type { Declaration } from "./Declaration";
 import type { Scope } from "./Scope";
@@ -724,10 +725,7 @@ export class ReferenceResolver {
     this.recordCrossFunctionCaptures(scope, declaration);
   }
 
-  private recordCrossFunctionCaptures(
-    referenceScope: Scope,
-    declaration: Declaration,
-  ): void {
+  private recordCrossFunctionCaptures(referenceScope: Scope, declaration: Declaration): void {
     const declarationScope = declarationScopeFor(referenceScope, declaration);
     const declarationFunctionScope = nearestFunctionScope(declarationScope);
 

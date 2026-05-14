@@ -1,23 +1,24 @@
 import { describe, expect, it } from "vitest";
+
+import {
+  constantFact,
+  intrinsicFact,
+  type SemanticFactsProvider,
+} from "../../semantics/SemanticFacts";
 import { AnalysisManager } from "../analysis";
 import { BasicBlock, makeBlockId } from "../core/Block";
 import { FunctionIR, makeFunctionId } from "../core/FunctionIR";
 import { IRIdAllocator } from "../core/IRIdAllocator";
 import { blockTarget } from "../core/TerminatorOp";
 import { Value } from "../core/Value";
+import { PureOperationEffects } from "../effects";
+import { CallOp } from "../ops/calls/CallOp";
 import { ConstantOp } from "../ops/constants/ConstantOp";
 import { BranchTerminatorOp } from "../ops/control/BranchTerminatorOp";
 import { JumpTerminatorOp } from "../ops/control/JumpTerminatorOp";
 import { ReturnTerminatorOp } from "../ops/control/ReturnTerminatorOp";
 import { LoadGlobalOp } from "../ops/globals/LoadGlobalOp";
 import { BinaryOp } from "../ops/operators/BinaryOp";
-import { CallOp } from "../ops/calls/CallOp";
-import { PureOperationEffects } from "../effects";
-import {
-  constantFact,
-  intrinsicFact,
-  type SemanticFactsProvider,
-} from "../../semantics/SemanticFacts";
 import { createConstantPropagationPass } from "./ConstantPropagationPass";
 
 describe("ConstantPropagationPass", () => {

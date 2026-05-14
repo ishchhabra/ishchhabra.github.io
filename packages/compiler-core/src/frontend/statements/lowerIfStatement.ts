@@ -1,10 +1,11 @@
+import type { IfStatement } from "oxc-parser";
+
 import { blockTarget } from "../../ir/core/TerminatorOp";
+import { IfTerminatorOp } from "../../ir/ops/control/IfTerminatorOp";
+import { JumpTerminatorOp } from "../../ir/ops/control/JumpTerminatorOp";
 import { lowerExpression } from "../expressions/lowerExpression";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";
-import type { IfStatement } from "oxc-parser";
 import { lowerStatement } from "./lowerStatement";
-import { JumpTerminatorOp } from "../../ir/ops/control/JumpTerminatorOp";
-import { IfTerminatorOp } from "../../ir/ops/control/IfTerminatorOp";
 
 /**
  * Lowers conditional statement control flow.
@@ -13,15 +14,11 @@ import { IfTerminatorOp } from "../../ir/ops/control/IfTerminatorOp";
  * the consequent or alternate body, and any non-terminating body flows into a
  * shared continuation flow.
  */
-export function lowerIfStatement(
-  builder: FunctionIRBuilder,
-  statement: IfStatement,
-): void {
+export function lowerIfStatement(builder: FunctionIRBuilder, statement: IfStatement): void {
   const test = lowerExpression(builder, statement.test);
 
   const consequentBlock = builder.createBlock();
-  const alternateBlock =
-    statement.alternate === null ? null : builder.createBlock();
+  const alternateBlock = statement.alternate === null ? null : builder.createBlock();
   const continuationBlock = builder.createBlock();
 
   builder.terminate(
@@ -37,12 +34,7 @@ export function lowerIfStatement(
   builder.setCurrentBlock(consequentBlock);
   lowerStatement(builder, statement.consequent);
   if (!builder.currentBlock.isTerminated) {
-    builder.terminate(
-      new JumpTerminatorOp(
-        builder.operationId(),
-        blockTarget(continuationBlock),
-      ),
-    );
+    builder.terminate(new JumpTerminatorOp(builder.operationId(), blockTarget(continuationBlock)));
   }
 
   if (statement.alternate !== null && alternateBlock !== null) {
@@ -50,10 +42,7 @@ export function lowerIfStatement(
     lowerStatement(builder, statement.alternate);
     if (!builder.currentBlock.isTerminated) {
       builder.terminate(
-        new JumpTerminatorOp(
-          builder.operationId(),
-          blockTarget(continuationBlock),
-        ),
+        new JumpTerminatorOp(builder.operationId(), blockTarget(continuationBlock)),
       );
     }
   }

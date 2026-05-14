@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { IRIdAllocator } from "../../ir/core/IRIdAllocator";
 import { ConstantOp } from "../../ir/ops/constants/ConstantOp";
 import { DeleteOp } from "../../ir/ops/operators/DeleteOp";

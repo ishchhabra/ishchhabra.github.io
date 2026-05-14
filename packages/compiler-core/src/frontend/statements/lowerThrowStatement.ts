@@ -1,4 +1,5 @@
 import type { ThrowStatement } from "oxc-parser";
+
 import { ThrowTerminatorOp } from "../../ir/ops/control/ThrowTerminatorOp";
 import { lowerExpression } from "../expressions/lowerExpression";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";

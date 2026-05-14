@@ -24,11 +24,7 @@ import type { CodegenContext } from "../../CodegenContext";
 export function emitCallOp(context: CodegenContext, op: CallOp): ESTreeStatement[] {
   if (op.target.kind === "value-with-receiver") {
     const expression = callExpression(
-      memberExpression(
-        context.expressionForValue(op.target.callee),
-        identifier("call"),
-        false,
-      ),
+      memberExpression(context.expressionForValue(op.target.callee), identifier("call"), false),
       [
         context.expressionForValue(op.target.receiver),
         ...op.args.map((arg) => emitCallArgument(context, arg)),

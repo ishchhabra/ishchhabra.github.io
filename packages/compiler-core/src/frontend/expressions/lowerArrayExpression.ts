@@ -1,4 +1,5 @@
 import type { ArrayExpression } from "oxc-parser";
+
 import type { Value } from "../../ir/core/Value";
 import { ArrayLiteralOp, type ArrayLiteralElement } from "../../ir/ops/objects/ArrayLiteralOp";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";

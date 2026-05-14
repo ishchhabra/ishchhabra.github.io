@@ -21,11 +21,12 @@ import type {
   JSXAttributeItem,
   JSXChild,
 } from "oxc-parser";
+
 import type { ScopeAnalysisContext } from "./analyzeScopes";
+import type { Declaration } from "./Declaration";
 import { DeclarationInstantiationPlan } from "./DeclarationInstantiationPlan";
 import { Scope } from "./Scope";
 import { ScopeGraph } from "./ScopeGraph";
-import type { Declaration } from "./Declaration";
 
 type DeclarationInput =
   | Omit<Extract<Declaration, { kind: "var" }>, "id">

@@ -1,9 +1,10 @@
 import type { ExportDefaultDeclaration } from "oxc-parser";
+
 import { ExportDefaultValueOp } from "../../ir/ops/modules/ExportDefaultValueOp";
 import { lowerClass } from "../classes/lowerClass";
-import type { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { lowerExpression } from "../expressions/lowerExpression";
 import { lowerFunctionExpression } from "../expressions/lowerFunctionExpression";
+import type { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { lowerClassDeclaration } from "../statements/lowerClassDeclaration";
 
 /**

@@ -16,10 +16,7 @@ export class FunctionPassManager {
   /**
    * Runs each pass once, in order.
    */
-  public run(
-    fn: FunctionIR,
-    passes: readonly FunctionPass[],
-  ): { changed: boolean } {
+  public run(fn: FunctionIR, passes: readonly FunctionPass[]): { changed: boolean } {
     let anyChanged = false;
 
     for (const pass of passes) {
@@ -28,10 +25,7 @@ export class FunctionPassManager {
       if (!result.changed) continue;
 
       anyChanged = true;
-      this.analyses.invalidateFunction(
-        fn,
-        result.preserved ?? PreservedAnalyses.none(),
-      );
+      this.analyses.invalidateFunction(fn, result.preserved ?? PreservedAnalyses.none());
     }
 
     return { changed: anyChanged };
@@ -51,10 +45,7 @@ export class ModulePassManager {
   /**
    * Runs each pass once, in order.
    */
-  public run(
-    moduleIR: ModuleIR,
-    passes: readonly ModulePass[],
-  ): { changed: boolean } {
+  public run(moduleIR: ModuleIR, passes: readonly ModulePass[]): { changed: boolean } {
     let anyChanged = false;
 
     for (const pass of passes) {
@@ -63,10 +54,7 @@ export class ModulePassManager {
       if (!result.changed) continue;
 
       anyChanged = true;
-      this.analyses.invalidateModule(
-        moduleIR,
-        result.preserved ?? PreservedAnalyses.none(),
-      );
+      this.analyses.invalidateModule(moduleIR, result.preserved ?? PreservedAnalyses.none());
     }
 
     return { changed: anyChanged };

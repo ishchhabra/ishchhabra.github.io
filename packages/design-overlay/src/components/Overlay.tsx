@@ -1,5 +1,7 @@
-import { useElementSelection } from "@/hooks/useElementSelection";
 import { useState } from "react";
+
+import { useElementSelection } from "@/hooks/useElementSelection";
+
 import { HoverOutline } from "./HoverOutline";
 import { SelectionOutlines } from "./SelectionOutlines";
 import { SettingsModal, type LocalAIConfig } from "./SettingsModal";

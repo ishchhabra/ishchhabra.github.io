@@ -1,9 +1,10 @@
 import type { UnaryExpression } from "oxc-parser";
+
 import type { Value } from "../../ir/core/Value";
 import { UnaryOp, type UnaryOperator } from "../../ir/ops/operators/UnaryOp";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";
-import { lowerExpression } from "./lowerExpression";
 import { lowerDeleteExpression } from "./lowerDeleteExpression";
+import { lowerExpression } from "./lowerExpression";
 
 /**
  * Lowers a non-mutating ECMAScript unary expression.

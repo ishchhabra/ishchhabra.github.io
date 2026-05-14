@@ -1,7 +1,7 @@
-import type { ScopeReferenceNode } from "../ast/types";
 import type { Value } from "../../ir/core/Value";
 import { LoadBindingOp } from "../../ir/ops/bindings/LoadBindingOp";
 import { LoadGlobalOp } from "../../ir/ops/globals/LoadGlobalOp";
+import type { ScopeReferenceNode } from "../ast/types";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 /**

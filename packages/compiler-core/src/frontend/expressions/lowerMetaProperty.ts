@@ -1,4 +1,5 @@
 import type { MetaProperty } from "oxc-parser";
+
 import type { Value } from "../../ir/core/Value";
 import { MetaPropertyOp, type MetaPropertyKind } from "../../ir/ops/functions/MetaPropertyOp";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";

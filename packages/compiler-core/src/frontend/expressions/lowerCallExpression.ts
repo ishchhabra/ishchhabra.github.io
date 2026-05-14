@@ -1,4 +1,5 @@
 import type { Argument, CallExpression } from "oxc-parser";
+
 import type { Value } from "../../ir/core/Value";
 import type { ArgumentListElement } from "../../ir/ops/calls/ArgumentListElement";
 import { CallOp, type CallTarget } from "../../ir/ops/calls/CallOp";

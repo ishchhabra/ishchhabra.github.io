@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { blockTarget, forwardedOperands, producedOperands, successorValues } from "./TerminatorOp";
 import { block, testTerminatorOp, value } from "./testing";
 

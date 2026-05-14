@@ -1,4 +1,5 @@
 import type { ThisExpression } from "oxc-parser";
+
 import type { Value } from "../../ir/core/Value";
 import { LoadThisOp } from "../../ir/ops/functions/LoadThisOp";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";

@@ -1,4 +1,5 @@
 import type { ContinueStatement } from "oxc-parser";
+
 import { blockTarget } from "../../ir/core/TerminatorOp";
 import { JumpTerminatorOp } from "../../ir/ops/control/JumpTerminatorOp";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";

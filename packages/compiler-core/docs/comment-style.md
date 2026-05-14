@@ -6,24 +6,24 @@ compiler contracts.
 
 ## What Gets JSDoc
 
-| Target | Rule |
-| --- | --- |
-| Exported opaque id types | Explain the identity domain and what ordering it does not imply. |
-| Exported classes and interfaces | Explain the semantic role and ownership boundary. |
-| Public mutation methods | Explain ownership, def-use, CFG, or analysis invalidation effects. |
-| Public query methods with compiler meaning | Explain what is computed and whether it is authoritative or derived. |
-| Complex exported unions | Explain each semantic variant, preferably with small JavaScript examples. |
-| Internal underscore APIs | Use `@internal` and explain who maintains the invariant. |
-| Complex private algorithms | Use short comments when the algorithm would otherwise require compiler background. |
+| Target                                     | Rule                                                                               |
+| ------------------------------------------ | ---------------------------------------------------------------------------------- |
+| Exported opaque id types                   | Explain the identity domain and what ordering it does not imply.                   |
+| Exported classes and interfaces            | Explain the semantic role and ownership boundary.                                  |
+| Public mutation methods                    | Explain ownership, def-use, CFG, or analysis invalidation effects.                 |
+| Public query methods with compiler meaning | Explain what is computed and whether it is authoritative or derived.               |
+| Complex exported unions                    | Explain each semantic variant, preferably with small JavaScript examples.          |
+| Internal underscore APIs                   | Use `@internal` and explain who maintains the invariant.                           |
+| Complex private algorithms                 | Use short comments when the algorithm would otherwise require compiler background. |
 
 ## What Does Not Get JSDoc
 
-| Target | Rule |
-| --- | --- |
-| Private brand symbols | The exported opaque type owns the documentation. |
-| Obvious getters | Skip comments that only restate the name or TypeScript type. |
-| Simple constructors | Skip unless construction enforces ownership or graph invariants. |
-| Implementation history | Put durable rationale in docs, not in source comments. |
+| Target                         | Rule                                                                                   |
+| ------------------------------ | -------------------------------------------------------------------------------------- |
+| Private brand symbols          | The exported opaque type owns the documentation.                                       |
+| Obvious getters                | Skip comments that only restate the name or TypeScript type.                           |
+| Simple constructors            | Skip unless construction enforces ownership or graph invariants.                       |
+| Implementation history         | Put durable rationale in docs, not in source comments.                                 |
 | Temporary unsupported behavior | Prefer clear thrown errors; do not write "currently unsupported" JSDoc for final APIs. |
 
 ## Opaque Id Template
@@ -82,7 +82,7 @@ the prose before the example.
 
 Good:
 
-```ts
+````ts
 /**
  * Object binding property whose source key and binding target may differ.
  *
@@ -92,7 +92,7 @@ Good:
  * ```
  */
 export interface ObjectBindingProperty {}
-```
+````
 
 Avoid a single complex example that demonstrates every feature at once. Prefer
 several simple examples when the syntax has independent cases, such as shorthand

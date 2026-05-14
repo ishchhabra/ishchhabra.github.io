@@ -157,15 +157,9 @@ class CopyPropagationPass {
     }
   }
 
-  private rewriteOperation(
-    block: BasicBlock,
-    op: Operation,
-    aliases: AliasMap,
-  ): Operation {
+  private rewriteOperation(block: BasicBlock, op: Operation, aliases: AliasMap): Operation {
     const operands = op.operands();
-    const rewritten = operands.map((operand) =>
-      canonicalValue(operand, aliases),
-    );
+    const rewritten = operands.map((operand) => canonicalValue(operand, aliases));
 
     if (sameValues(operands, rewritten)) {
       return op;
@@ -183,9 +177,7 @@ function canonicalValue(value: Value, aliases: AliasMap): Value {
 
   while (aliases.has(current)) {
     if (seen.has(current)) {
-      throw new Error(
-        `Copy propagation found an alias cycle at Value#${current.id}`,
-      );
+      throw new Error(`Copy propagation found an alias cycle at Value#${current.id}`);
     }
 
     seen.add(current);
@@ -213,8 +205,5 @@ function sameAliases(left: AliasMap, right: AliasMap): boolean {
 }
 
 function sameValues(left: readonly Value[], right: Value[]): boolean {
-  return (
-    left.length === right.length &&
-    left.every((value, index) => value === right[index])
-  );
+  return left.length === right.length && left.every((value, index) => value === right[index]);
 }

@@ -57,20 +57,13 @@ export class StoreBindingOp extends Operation {
 
   public override withOperands(operands: readonly Value[]): StoreBindingOp {
     if (operands.length !== 1) {
-      throw new Error(
-        `StoreBindingOp#${this.id} expected 1 operand, got ${operands.length}`,
-      );
+      throw new Error(`StoreBindingOp#${this.id} expected 1 operand, got ${operands.length}`);
     }
 
     const [value] = operands;
     if (value === this.value) return this;
 
-    return new StoreBindingOp(
-      this.id,
-      this.declarationId,
-      value,
-      this.bindingValue,
-    );
+    return new StoreBindingOp(this.id, this.declarationId, value, this.bindingValue);
   }
 
   public override clone(context: OperationCloneContext): StoreBindingOp {

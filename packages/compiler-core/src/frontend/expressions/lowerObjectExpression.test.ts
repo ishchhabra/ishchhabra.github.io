@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { IRIdAllocator } from "../../ir/core/IRIdAllocator";
 import { ObjectLiteralOp } from "../../ir/ops/objects/ObjectLiteralOp";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";
@@ -93,9 +94,7 @@ describe("lowerObjectExpression", () => {
   it("records declaration captures on object methods", () => {
     const { moduleIR, declarations } = new ModuleIRBuilder({
       ids: new IRIdAllocator(),
-    }).build(
-      parseModule("test.js", "function outer(x) { return { method() { return x; } }; }"),
-    );
+    }).build(parseModule("test.js", "function outer(x) { return { method() { return x; } }; }"));
     const outer = moduleIR.functions[1];
     const literal = outer?.entryBlock.operations.find(
       (op): op is ObjectLiteralOp => op instanceof ObjectLiteralOp,

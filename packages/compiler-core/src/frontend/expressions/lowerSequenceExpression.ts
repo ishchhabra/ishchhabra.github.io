@@ -1,4 +1,5 @@
 import type { SequenceExpression } from "oxc-parser";
+
 import type { Value } from "../../ir/core/Value";
 import { SequenceExpressionOp } from "../../ir/ops/operators/SequenceExpressionOp";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";

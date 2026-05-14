@@ -1,8 +1,9 @@
 import type { ArrowFunctionExpression, Function as OxcFunction } from "oxc-parser";
-import type { FunctionIRBuilder } from "../FunctionIRBuilder";
+
 import { ReturnTerminatorOp } from "../../ir/ops/control/ReturnTerminatorOp";
 import { lowerDeclarationInstantiation } from "../declarations/lowerDeclarationInstantiation";
 import { lowerExpression } from "../expressions/lowerExpression";
+import type { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { lowerStatement } from "../statements/lowerStatement";
 import { lowerFunctionParameters } from "./lowerFunctionParameters";
 

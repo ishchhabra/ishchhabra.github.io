@@ -77,9 +77,7 @@ export interface BindingPromotionPassOptions {
  *   ReturnTerminatorOp(x)
  * ```
  */
-export function createBindingPromotionPass(
-  options: BindingPromotionPassOptions,
-): FunctionPass {
+export function createBindingPromotionPass(options: BindingPromotionPassOptions): FunctionPass {
   return {
     name: "binding-promotion",
 
@@ -113,10 +111,7 @@ class BindingPromotionPass {
       return { changed: false };
     }
 
-    const dominators = this.analyses.getFunction(
-      DominatorTreeAnalysis,
-      this.fn,
-    );
+    const dominators = this.analyses.getFunction(DominatorTreeAnalysis, this.fn);
 
     this.computeDominatorChildren(dominators.getImmediateDominators());
     this.placeBlockParams(dominators);
@@ -194,10 +189,7 @@ class BindingPromotionPass {
     return definitions;
   }
 
-  private appendBlockParam(
-    block: BasicBlock,
-    declaration: DeclarationId,
-  ): Value {
+  private appendBlockParam(block: BasicBlock, declaration: DeclarationId): Value {
     let params = this.#insertedBlockParams.get(block);
     if (params === undefined) {
       params = new Map();
@@ -223,8 +215,7 @@ class BindingPromotionPass {
   private renameBlock(block: BasicBlock, stacks: RenameStacks): void {
     const pushed: DeclarationId[] = [];
 
-    for (const [declaration, param] of this.#insertedBlockParams.get(block) ??
-      []) {
+    for (const [declaration, param] of this.#insertedBlockParams.get(block) ?? []) {
       this.push(stacks, declaration, param);
       pushed.push(declaration);
     }
@@ -234,27 +225,18 @@ class BindingPromotionPass {
 
       const rewritten = this.rewriteOperands(op);
 
-      if (
-        rewritten instanceof LoadBindingOp &&
-        this.#promoted.has(rewritten.declarationId)
-      ) {
+      if (rewritten instanceof LoadBindingOp && this.#promoted.has(rewritten.declarationId)) {
         this.replaceLoad(block, rewritten, stacks);
         continue;
       }
 
-      if (
-        rewritten instanceof InitializeBindingOp &&
-        this.#promoted.has(rewritten.declarationId)
-      ) {
+      if (rewritten instanceof InitializeBindingOp && this.#promoted.has(rewritten.declarationId)) {
         this.replaceWrite(block, rewritten, rewritten.value, stacks);
         pushed.push(rewritten.declarationId);
         continue;
       }
 
-      if (
-        rewritten instanceof StoreBindingOp &&
-        this.#promoted.has(rewritten.declarationId)
-      ) {
+      if (rewritten instanceof StoreBindingOp && this.#promoted.has(rewritten.declarationId)) {
         this.replaceWrite(block, rewritten, rewritten.value, stacks);
         pushed.push(rewritten.declarationId);
         continue;
@@ -272,11 +254,7 @@ class BindingPromotionPass {
     }
   }
 
-  private replaceLoad(
-    block: BasicBlock,
-    op: LoadBindingOp,
-    stacks: RenameStacks,
-  ): void {
+  private replaceLoad(block: BasicBlock, op: LoadBindingOp, stacks: RenameStacks): void {
     this.#replacements.set(op.result, this.peek(stacks, op.declarationId));
     block.removeOp(op);
     this.#changed = true;
@@ -300,9 +278,7 @@ class BindingPromotionPass {
 
   private rewriteOperands(op: Operation): Operation {
     const operands = op.operands();
-    const rewritten = operands.map((operand) =>
-      this.resolveReplacement(operand),
-    );
+    const rewritten = operands.map((operand) => this.resolveReplacement(operand));
 
     if (sameArray(operands, rewritten)) {
       return op;
@@ -326,10 +302,7 @@ class BindingPromotionPass {
    * the current reaching values to the edge so those params are bound when
    * control enters the successor.
    */
-  private rewriteSuccessorArguments(
-    block: BasicBlock,
-    stacks: RenameStacks,
-  ): void {
+  private rewriteSuccessorArguments(block: BasicBlock, stacks: RenameStacks): void {
     let terminator: TerminatorOp | null = block.terminator;
     if (terminator === null) return;
 
@@ -353,19 +326,11 @@ class BindingPromotionPass {
    * rewritten through the replacement map. Then, values for newly inserted block
    * are appended in parameter order.
    */
-  private rewriteTarget(
-    target: BlockTarget,
-    stacks: RenameStacks,
-  ): BlockTarget {
-    const produced = target.operands.produced.map((value) =>
-      this.resolveReplacement(value),
-    );
-    const forwarded = target.operands.forwarded.map((value) =>
-      this.resolveReplacement(value),
-    );
+  private rewriteTarget(target: BlockTarget, stacks: RenameStacks): BlockTarget {
+    const produced = target.operands.produced.map((value) => this.resolveReplacement(value));
+    const forwarded = target.operands.forwarded.map((value) => this.resolveReplacement(value));
 
-    for (const [declaration] of this.#insertedBlockParams.get(target.block) ??
-      []) {
+    for (const [declaration] of this.#insertedBlockParams.get(target.block) ?? []) {
       forwarded.push(this.peek(stacks, declaration));
     }
 
@@ -393,11 +358,7 @@ class BindingPromotionPass {
   }
 
   /** Records a new reaching value for a promoted declaration. */
-  private push(
-    stacks: RenameStacks,
-    declaration: DeclarationId,
-    value: Value,
-  ): void {
+  private push(stacks: RenameStacks, declaration: DeclarationId, value: Value): void {
     let stack = stacks.get(declaration);
     if (stack === undefined) {
       stack = [];
@@ -439,8 +400,5 @@ class BindingPromotionPass {
 }
 
 function sameArray<T>(left: readonly T[], right: readonly T[]): boolean {
-  return (
-    left.length === right.length &&
-    left.every((value, index) => value === right[index])
-  );
+  return left.length === right.length && left.every((value, index) => value === right[index]);
 }

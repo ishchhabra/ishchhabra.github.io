@@ -1,4 +1,5 @@
 import { EmptyStatement } from "oxc-parser";
+
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 /**

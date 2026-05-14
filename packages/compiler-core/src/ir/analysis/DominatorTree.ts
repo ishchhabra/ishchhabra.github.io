@@ -11,18 +11,9 @@ import { FunctionAnalysis } from "./AnalysisManager";
 export class DominatorTree {
   private constructor(
     private readonly root: BasicBlock,
-    private readonly dominators: ReadonlyMap<
-      BasicBlock,
-      ReadonlySet<BasicBlock>
-    >,
-    private readonly immediateDominators: ReadonlyMap<
-      BasicBlock,
-      BasicBlock | null
-    >,
-    private readonly frontiers: ReadonlyMap<
-      BasicBlock,
-      ReadonlySet<BasicBlock>
-    >,
+    private readonly dominators: ReadonlyMap<BasicBlock, ReadonlySet<BasicBlock>>,
+    private readonly immediateDominators: ReadonlyMap<BasicBlock, BasicBlock | null>,
+    private readonly frontiers: ReadonlyMap<BasicBlock, ReadonlySet<BasicBlock>>,
   ) {}
 
   /**
@@ -86,23 +77,10 @@ export class DominatorTree {
     const blocks = reachableBlocks(fn);
     const predecessors = computePredecessors(blocks);
     const dominators = computeDominators(fn.entryBlock, blocks, predecessors);
-    const immediateDominators = computeImmediateDominators(
-      fn.entryBlock,
-      blocks,
-      dominators,
-    );
-    const frontiers = computeDominanceFrontiers(
-      blocks,
-      predecessors,
-      immediateDominators,
-    );
+    const immediateDominators = computeImmediateDominators(fn.entryBlock, blocks, dominators);
+    const frontiers = computeDominanceFrontiers(blocks, predecessors, immediateDominators);
 
-    return new DominatorTree(
-      fn.entryBlock,
-      dominators,
-      immediateDominators,
-      frontiers,
-    );
+    return new DominatorTree(fn.entryBlock, dominators, immediateDominators, frontiers);
   }
 }
 
@@ -172,10 +150,7 @@ function computeDominators(
   const dominators: Map<BasicBlock, Set<BasicBlock>> = new Map();
 
   for (const block of blocks) {
-    dominators.set(
-      block,
-      block === entry ? new Set([entry]) : new Set(allBlocks),
-    );
+    dominators.set(block, block === entry ? new Set([entry]) : new Set(allBlocks));
   }
 
   let changed = true;
@@ -186,10 +161,7 @@ function computeDominators(
       if (block === entry) continue;
 
       const preds = [...(predecessors.get(block) ?? [])];
-      const next =
-        preds.length === 0
-          ? new Set<BasicBlock>()
-          : new Set(dominators.get(preds[0]));
+      const next = preds.length === 0 ? new Set<BasicBlock>() : new Set(dominators.get(preds[0]));
 
       for (const pred of preds.slice(1)) {
         for (const candidate of Array.from(next)) {
@@ -224,9 +196,7 @@ function computeImmediateDominators(
       continue;
     }
 
-    const strictDominators = [...dominators.get(block)!].filter(
-      (candidate) => candidate !== block,
-    );
+    const strictDominators = [...dominators.get(block)!].filter((candidate) => candidate !== block);
     const immediate = strictDominators.find((candidate) =>
       strictDominators.every(
         (other) => other === candidate || dominators.get(candidate)!.has(other),

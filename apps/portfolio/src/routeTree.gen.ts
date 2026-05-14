@@ -8,474 +8,470 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as FeedRouteImport } from './routes/feed'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as WritingIndexRouteImport } from './routes/writing/index'
-import { Route as LabIndexRouteImport } from './routes/lab/index'
-import { Route as WritingSsrThemingRouteImport } from './routes/writing/ssr-theming'
-import { Route as WritingPnpmMonorepoRouteImport } from './routes/writing/pnpm-monorepo'
-import { Route as LabSandboxRouteImport } from './routes/lab/sandbox'
-import { Route as LabJsAotTranspilerRouteImport } from './routes/lab/js-aot-transpiler'
-import { Route as LabDesignOverlayRouteImport } from './routes/lab/design-overlay'
-import { Route as DebugFeedRouteImport } from './routes/debug/feed'
-import { Route as ApiSubscribeRouteImport } from './routes/api.subscribe'
-import { Route as DemosSsrThemingSimpleLocalStorageRouteImport } from './routes/demos/ssr-theming/simple-local-storage'
-import { Route as DemosSsrThemingSimpleCookieRouteImport } from './routes/demos/ssr-theming/simple-cookie'
-import { Route as ApiAuthSplatRouteImport } from './routes/api.auth.$'
-import { Route as DemosSsrThemingCookieOptimisticClientCacheRouteRouteImport } from './routes/demos/ssr-theming/cookie-optimistic-client-cache/route'
-import { Route as DemosSsrThemingCookieOptimisticRouteRouteImport } from './routes/demos/ssr-theming/cookie-optimistic/route'
-import { Route as DemosSsrThemingCookieOptimisticIndexRouteImport } from './routes/demos/ssr-theming/cookie-optimistic/index'
-import { Route as DemosSsrThemingCookieOptimisticClientCacheIndexRouteImport } from './routes/demos/ssr-theming/cookie-optimistic-client-cache/index'
-import { Route as DemosSsrThemingCookieOptimisticAboutRouteImport } from './routes/demos/ssr-theming/cookie-optimistic/about'
-import { Route as DemosSsrThemingCookieOptimisticClientCacheAboutRouteImport } from './routes/demos/ssr-theming/cookie-optimistic-client-cache/about'
+import { Route as rootRouteImport } from "./routes/__root";
+import { Route as LoginRouteImport } from "./routes/login";
+import { Route as FeedRouteImport } from "./routes/feed";
+import { Route as IndexRouteImport } from "./routes/index";
+import { Route as WritingIndexRouteImport } from "./routes/writing/index";
+import { Route as LabIndexRouteImport } from "./routes/lab/index";
+import { Route as WritingSsrThemingRouteImport } from "./routes/writing/ssr-theming";
+import { Route as WritingPnpmMonorepoRouteImport } from "./routes/writing/pnpm-monorepo";
+import { Route as LabSandboxRouteImport } from "./routes/lab/sandbox";
+import { Route as LabJsAotTranspilerRouteImport } from "./routes/lab/js-aot-transpiler";
+import { Route as LabDesignOverlayRouteImport } from "./routes/lab/design-overlay";
+import { Route as DebugFeedRouteImport } from "./routes/debug/feed";
+import { Route as ApiSubscribeRouteImport } from "./routes/api.subscribe";
+import { Route as DemosSsrThemingSimpleLocalStorageRouteImport } from "./routes/demos/ssr-theming/simple-local-storage";
+import { Route as DemosSsrThemingSimpleCookieRouteImport } from "./routes/demos/ssr-theming/simple-cookie";
+import { Route as ApiAuthSplatRouteImport } from "./routes/api.auth.$";
+import { Route as DemosSsrThemingCookieOptimisticClientCacheRouteRouteImport } from "./routes/demos/ssr-theming/cookie-optimistic-client-cache/route";
+import { Route as DemosSsrThemingCookieOptimisticRouteRouteImport } from "./routes/demos/ssr-theming/cookie-optimistic/route";
+import { Route as DemosSsrThemingCookieOptimisticIndexRouteImport } from "./routes/demos/ssr-theming/cookie-optimistic/index";
+import { Route as DemosSsrThemingCookieOptimisticClientCacheIndexRouteImport } from "./routes/demos/ssr-theming/cookie-optimistic-client-cache/index";
+import { Route as DemosSsrThemingCookieOptimisticAboutRouteImport } from "./routes/demos/ssr-theming/cookie-optimistic/about";
+import { Route as DemosSsrThemingCookieOptimisticClientCacheAboutRouteImport } from "./routes/demos/ssr-theming/cookie-optimistic-client-cache/about";
 
 const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+  id: "/login",
+  path: "/login",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const FeedRoute = FeedRouteImport.update({
-  id: '/feed',
-  path: '/feed',
+  id: "/feed",
+  path: "/feed",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const WritingIndexRoute = WritingIndexRouteImport.update({
-  id: '/writing/',
-  path: '/writing/',
+  id: "/writing/",
+  path: "/writing/",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const LabIndexRoute = LabIndexRouteImport.update({
-  id: '/lab/',
-  path: '/lab/',
+  id: "/lab/",
+  path: "/lab/",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const WritingSsrThemingRoute = WritingSsrThemingRouteImport.update({
-  id: '/writing/ssr-theming',
-  path: '/writing/ssr-theming',
+  id: "/writing/ssr-theming",
+  path: "/writing/ssr-theming",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const WritingPnpmMonorepoRoute = WritingPnpmMonorepoRouteImport.update({
-  id: '/writing/pnpm-monorepo',
-  path: '/writing/pnpm-monorepo',
+  id: "/writing/pnpm-monorepo",
+  path: "/writing/pnpm-monorepo",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const LabSandboxRoute = LabSandboxRouteImport.update({
-  id: '/lab/sandbox',
-  path: '/lab/sandbox',
+  id: "/lab/sandbox",
+  path: "/lab/sandbox",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const LabJsAotTranspilerRoute = LabJsAotTranspilerRouteImport.update({
-  id: '/lab/js-aot-transpiler',
-  path: '/lab/js-aot-transpiler',
+  id: "/lab/js-aot-transpiler",
+  path: "/lab/js-aot-transpiler",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const LabDesignOverlayRoute = LabDesignOverlayRouteImport.update({
-  id: '/lab/design-overlay',
-  path: '/lab/design-overlay',
+  id: "/lab/design-overlay",
+  path: "/lab/design-overlay",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const DebugFeedRoute = DebugFeedRouteImport.update({
-  id: '/debug/feed',
-  path: '/debug/feed',
+  id: "/debug/feed",
+  path: "/debug/feed",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ApiSubscribeRoute = ApiSubscribeRouteImport.update({
-  id: '/api/subscribe',
-  path: '/api/subscribe',
+  id: "/api/subscribe",
+  path: "/api/subscribe",
   getParentRoute: () => rootRouteImport,
-} as any)
-const DemosSsrThemingSimpleLocalStorageRoute =
-  DemosSsrThemingSimpleLocalStorageRouteImport.update({
-    id: '/demos/ssr-theming/simple-local-storage',
-    path: '/demos/ssr-theming/simple-local-storage',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const DemosSsrThemingSimpleCookieRoute =
-  DemosSsrThemingSimpleCookieRouteImport.update({
-    id: '/demos/ssr-theming/simple-cookie',
-    path: '/demos/ssr-theming/simple-cookie',
-    getParentRoute: () => rootRouteImport,
-  } as any)
+} as any);
+const DemosSsrThemingSimpleLocalStorageRoute = DemosSsrThemingSimpleLocalStorageRouteImport.update({
+  id: "/demos/ssr-theming/simple-local-storage",
+  path: "/demos/ssr-theming/simple-local-storage",
+  getParentRoute: () => rootRouteImport,
+} as any);
+const DemosSsrThemingSimpleCookieRoute = DemosSsrThemingSimpleCookieRouteImport.update({
+  id: "/demos/ssr-theming/simple-cookie",
+  path: "/demos/ssr-theming/simple-cookie",
+  getParentRoute: () => rootRouteImport,
+} as any);
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
-  id: '/api/auth/$',
-  path: '/api/auth/$',
+  id: "/api/auth/$",
+  path: "/api/auth/$",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const DemosSsrThemingCookieOptimisticClientCacheRouteRoute =
   DemosSsrThemingCookieOptimisticClientCacheRouteRouteImport.update({
-    id: '/demos/ssr-theming/cookie-optimistic-client-cache',
-    path: '/demos/ssr-theming/cookie-optimistic-client-cache',
+    id: "/demos/ssr-theming/cookie-optimistic-client-cache",
+    path: "/demos/ssr-theming/cookie-optimistic-client-cache",
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any);
 const DemosSsrThemingCookieOptimisticRouteRoute =
   DemosSsrThemingCookieOptimisticRouteRouteImport.update({
-    id: '/demos/ssr-theming/cookie-optimistic',
-    path: '/demos/ssr-theming/cookie-optimistic',
+    id: "/demos/ssr-theming/cookie-optimistic",
+    path: "/demos/ssr-theming/cookie-optimistic",
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any);
 const DemosSsrThemingCookieOptimisticIndexRoute =
   DemosSsrThemingCookieOptimisticIndexRouteImport.update({
-    id: '/',
-    path: '/',
+    id: "/",
+    path: "/",
     getParentRoute: () => DemosSsrThemingCookieOptimisticRouteRoute,
-  } as any)
+  } as any);
 const DemosSsrThemingCookieOptimisticClientCacheIndexRoute =
   DemosSsrThemingCookieOptimisticClientCacheIndexRouteImport.update({
-    id: '/',
-    path: '/',
+    id: "/",
+    path: "/",
     getParentRoute: () => DemosSsrThemingCookieOptimisticClientCacheRouteRoute,
-  } as any)
+  } as any);
 const DemosSsrThemingCookieOptimisticAboutRoute =
   DemosSsrThemingCookieOptimisticAboutRouteImport.update({
-    id: '/about',
-    path: '/about',
+    id: "/about",
+    path: "/about",
     getParentRoute: () => DemosSsrThemingCookieOptimisticRouteRoute,
-  } as any)
+  } as any);
 const DemosSsrThemingCookieOptimisticClientCacheAboutRoute =
   DemosSsrThemingCookieOptimisticClientCacheAboutRouteImport.update({
-    id: '/about',
-    path: '/about',
+    id: "/about",
+    path: "/about",
     getParentRoute: () => DemosSsrThemingCookieOptimisticClientCacheRouteRoute,
-  } as any)
+  } as any);
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/feed': typeof FeedRoute
-  '/login': typeof LoginRoute
-  '/api/subscribe': typeof ApiSubscribeRoute
-  '/debug/feed': typeof DebugFeedRoute
-  '/lab/design-overlay': typeof LabDesignOverlayRoute
-  '/lab/js-aot-transpiler': typeof LabJsAotTranspilerRoute
-  '/lab/sandbox': typeof LabSandboxRoute
-  '/writing/pnpm-monorepo': typeof WritingPnpmMonorepoRoute
-  '/writing/ssr-theming': typeof WritingSsrThemingRoute
-  '/lab/': typeof LabIndexRoute
-  '/writing/': typeof WritingIndexRoute
-  '/demos/ssr-theming/cookie-optimistic': typeof DemosSsrThemingCookieOptimisticRouteRouteWithChildren
-  '/demos/ssr-theming/cookie-optimistic-client-cache': typeof DemosSsrThemingCookieOptimisticClientCacheRouteRouteWithChildren
-  '/api/auth/$': typeof ApiAuthSplatRoute
-  '/demos/ssr-theming/simple-cookie': typeof DemosSsrThemingSimpleCookieRoute
-  '/demos/ssr-theming/simple-local-storage': typeof DemosSsrThemingSimpleLocalStorageRoute
-  '/demos/ssr-theming/cookie-optimistic-client-cache/about': typeof DemosSsrThemingCookieOptimisticClientCacheAboutRoute
-  '/demos/ssr-theming/cookie-optimistic/about': typeof DemosSsrThemingCookieOptimisticAboutRoute
-  '/demos/ssr-theming/cookie-optimistic-client-cache/': typeof DemosSsrThemingCookieOptimisticClientCacheIndexRoute
-  '/demos/ssr-theming/cookie-optimistic/': typeof DemosSsrThemingCookieOptimisticIndexRoute
+  "/": typeof IndexRoute;
+  "/feed": typeof FeedRoute;
+  "/login": typeof LoginRoute;
+  "/api/subscribe": typeof ApiSubscribeRoute;
+  "/debug/feed": typeof DebugFeedRoute;
+  "/lab/design-overlay": typeof LabDesignOverlayRoute;
+  "/lab/js-aot-transpiler": typeof LabJsAotTranspilerRoute;
+  "/lab/sandbox": typeof LabSandboxRoute;
+  "/writing/pnpm-monorepo": typeof WritingPnpmMonorepoRoute;
+  "/writing/ssr-theming": typeof WritingSsrThemingRoute;
+  "/lab/": typeof LabIndexRoute;
+  "/writing/": typeof WritingIndexRoute;
+  "/demos/ssr-theming/cookie-optimistic": typeof DemosSsrThemingCookieOptimisticRouteRouteWithChildren;
+  "/demos/ssr-theming/cookie-optimistic-client-cache": typeof DemosSsrThemingCookieOptimisticClientCacheRouteRouteWithChildren;
+  "/api/auth/$": typeof ApiAuthSplatRoute;
+  "/demos/ssr-theming/simple-cookie": typeof DemosSsrThemingSimpleCookieRoute;
+  "/demos/ssr-theming/simple-local-storage": typeof DemosSsrThemingSimpleLocalStorageRoute;
+  "/demos/ssr-theming/cookie-optimistic-client-cache/about": typeof DemosSsrThemingCookieOptimisticClientCacheAboutRoute;
+  "/demos/ssr-theming/cookie-optimistic/about": typeof DemosSsrThemingCookieOptimisticAboutRoute;
+  "/demos/ssr-theming/cookie-optimistic-client-cache/": typeof DemosSsrThemingCookieOptimisticClientCacheIndexRoute;
+  "/demos/ssr-theming/cookie-optimistic/": typeof DemosSsrThemingCookieOptimisticIndexRoute;
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/feed': typeof FeedRoute
-  '/login': typeof LoginRoute
-  '/api/subscribe': typeof ApiSubscribeRoute
-  '/debug/feed': typeof DebugFeedRoute
-  '/lab/design-overlay': typeof LabDesignOverlayRoute
-  '/lab/js-aot-transpiler': typeof LabJsAotTranspilerRoute
-  '/lab/sandbox': typeof LabSandboxRoute
-  '/writing/pnpm-monorepo': typeof WritingPnpmMonorepoRoute
-  '/writing/ssr-theming': typeof WritingSsrThemingRoute
-  '/lab': typeof LabIndexRoute
-  '/writing': typeof WritingIndexRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
-  '/demos/ssr-theming/simple-cookie': typeof DemosSsrThemingSimpleCookieRoute
-  '/demos/ssr-theming/simple-local-storage': typeof DemosSsrThemingSimpleLocalStorageRoute
-  '/demos/ssr-theming/cookie-optimistic-client-cache/about': typeof DemosSsrThemingCookieOptimisticClientCacheAboutRoute
-  '/demos/ssr-theming/cookie-optimistic/about': typeof DemosSsrThemingCookieOptimisticAboutRoute
-  '/demos/ssr-theming/cookie-optimistic-client-cache': typeof DemosSsrThemingCookieOptimisticClientCacheIndexRoute
-  '/demos/ssr-theming/cookie-optimistic': typeof DemosSsrThemingCookieOptimisticIndexRoute
+  "/": typeof IndexRoute;
+  "/feed": typeof FeedRoute;
+  "/login": typeof LoginRoute;
+  "/api/subscribe": typeof ApiSubscribeRoute;
+  "/debug/feed": typeof DebugFeedRoute;
+  "/lab/design-overlay": typeof LabDesignOverlayRoute;
+  "/lab/js-aot-transpiler": typeof LabJsAotTranspilerRoute;
+  "/lab/sandbox": typeof LabSandboxRoute;
+  "/writing/pnpm-monorepo": typeof WritingPnpmMonorepoRoute;
+  "/writing/ssr-theming": typeof WritingSsrThemingRoute;
+  "/lab": typeof LabIndexRoute;
+  "/writing": typeof WritingIndexRoute;
+  "/api/auth/$": typeof ApiAuthSplatRoute;
+  "/demos/ssr-theming/simple-cookie": typeof DemosSsrThemingSimpleCookieRoute;
+  "/demos/ssr-theming/simple-local-storage": typeof DemosSsrThemingSimpleLocalStorageRoute;
+  "/demos/ssr-theming/cookie-optimistic-client-cache/about": typeof DemosSsrThemingCookieOptimisticClientCacheAboutRoute;
+  "/demos/ssr-theming/cookie-optimistic/about": typeof DemosSsrThemingCookieOptimisticAboutRoute;
+  "/demos/ssr-theming/cookie-optimistic-client-cache": typeof DemosSsrThemingCookieOptimisticClientCacheIndexRoute;
+  "/demos/ssr-theming/cookie-optimistic": typeof DemosSsrThemingCookieOptimisticIndexRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/feed': typeof FeedRoute
-  '/login': typeof LoginRoute
-  '/api/subscribe': typeof ApiSubscribeRoute
-  '/debug/feed': typeof DebugFeedRoute
-  '/lab/design-overlay': typeof LabDesignOverlayRoute
-  '/lab/js-aot-transpiler': typeof LabJsAotTranspilerRoute
-  '/lab/sandbox': typeof LabSandboxRoute
-  '/writing/pnpm-monorepo': typeof WritingPnpmMonorepoRoute
-  '/writing/ssr-theming': typeof WritingSsrThemingRoute
-  '/lab/': typeof LabIndexRoute
-  '/writing/': typeof WritingIndexRoute
-  '/demos/ssr-theming/cookie-optimistic': typeof DemosSsrThemingCookieOptimisticRouteRouteWithChildren
-  '/demos/ssr-theming/cookie-optimistic-client-cache': typeof DemosSsrThemingCookieOptimisticClientCacheRouteRouteWithChildren
-  '/api/auth/$': typeof ApiAuthSplatRoute
-  '/demos/ssr-theming/simple-cookie': typeof DemosSsrThemingSimpleCookieRoute
-  '/demos/ssr-theming/simple-local-storage': typeof DemosSsrThemingSimpleLocalStorageRoute
-  '/demos/ssr-theming/cookie-optimistic-client-cache/about': typeof DemosSsrThemingCookieOptimisticClientCacheAboutRoute
-  '/demos/ssr-theming/cookie-optimistic/about': typeof DemosSsrThemingCookieOptimisticAboutRoute
-  '/demos/ssr-theming/cookie-optimistic-client-cache/': typeof DemosSsrThemingCookieOptimisticClientCacheIndexRoute
-  '/demos/ssr-theming/cookie-optimistic/': typeof DemosSsrThemingCookieOptimisticIndexRoute
+  __root__: typeof rootRouteImport;
+  "/": typeof IndexRoute;
+  "/feed": typeof FeedRoute;
+  "/login": typeof LoginRoute;
+  "/api/subscribe": typeof ApiSubscribeRoute;
+  "/debug/feed": typeof DebugFeedRoute;
+  "/lab/design-overlay": typeof LabDesignOverlayRoute;
+  "/lab/js-aot-transpiler": typeof LabJsAotTranspilerRoute;
+  "/lab/sandbox": typeof LabSandboxRoute;
+  "/writing/pnpm-monorepo": typeof WritingPnpmMonorepoRoute;
+  "/writing/ssr-theming": typeof WritingSsrThemingRoute;
+  "/lab/": typeof LabIndexRoute;
+  "/writing/": typeof WritingIndexRoute;
+  "/demos/ssr-theming/cookie-optimistic": typeof DemosSsrThemingCookieOptimisticRouteRouteWithChildren;
+  "/demos/ssr-theming/cookie-optimistic-client-cache": typeof DemosSsrThemingCookieOptimisticClientCacheRouteRouteWithChildren;
+  "/api/auth/$": typeof ApiAuthSplatRoute;
+  "/demos/ssr-theming/simple-cookie": typeof DemosSsrThemingSimpleCookieRoute;
+  "/demos/ssr-theming/simple-local-storage": typeof DemosSsrThemingSimpleLocalStorageRoute;
+  "/demos/ssr-theming/cookie-optimistic-client-cache/about": typeof DemosSsrThemingCookieOptimisticClientCacheAboutRoute;
+  "/demos/ssr-theming/cookie-optimistic/about": typeof DemosSsrThemingCookieOptimisticAboutRoute;
+  "/demos/ssr-theming/cookie-optimistic-client-cache/": typeof DemosSsrThemingCookieOptimisticClientCacheIndexRoute;
+  "/demos/ssr-theming/cookie-optimistic/": typeof DemosSsrThemingCookieOptimisticIndexRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
+  fileRoutesByFullPath: FileRoutesByFullPath;
   fullPaths:
-    | '/'
-    | '/feed'
-    | '/login'
-    | '/api/subscribe'
-    | '/debug/feed'
-    | '/lab/design-overlay'
-    | '/lab/js-aot-transpiler'
-    | '/lab/sandbox'
-    | '/writing/pnpm-monorepo'
-    | '/writing/ssr-theming'
-    | '/lab/'
-    | '/writing/'
-    | '/demos/ssr-theming/cookie-optimistic'
-    | '/demos/ssr-theming/cookie-optimistic-client-cache'
-    | '/api/auth/$'
-    | '/demos/ssr-theming/simple-cookie'
-    | '/demos/ssr-theming/simple-local-storage'
-    | '/demos/ssr-theming/cookie-optimistic-client-cache/about'
-    | '/demos/ssr-theming/cookie-optimistic/about'
-    | '/demos/ssr-theming/cookie-optimistic-client-cache/'
-    | '/demos/ssr-theming/cookie-optimistic/'
-  fileRoutesByTo: FileRoutesByTo
+    | "/"
+    | "/feed"
+    | "/login"
+    | "/api/subscribe"
+    | "/debug/feed"
+    | "/lab/design-overlay"
+    | "/lab/js-aot-transpiler"
+    | "/lab/sandbox"
+    | "/writing/pnpm-monorepo"
+    | "/writing/ssr-theming"
+    | "/lab/"
+    | "/writing/"
+    | "/demos/ssr-theming/cookie-optimistic"
+    | "/demos/ssr-theming/cookie-optimistic-client-cache"
+    | "/api/auth/$"
+    | "/demos/ssr-theming/simple-cookie"
+    | "/demos/ssr-theming/simple-local-storage"
+    | "/demos/ssr-theming/cookie-optimistic-client-cache/about"
+    | "/demos/ssr-theming/cookie-optimistic/about"
+    | "/demos/ssr-theming/cookie-optimistic-client-cache/"
+    | "/demos/ssr-theming/cookie-optimistic/";
+  fileRoutesByTo: FileRoutesByTo;
   to:
-    | '/'
-    | '/feed'
-    | '/login'
-    | '/api/subscribe'
-    | '/debug/feed'
-    | '/lab/design-overlay'
-    | '/lab/js-aot-transpiler'
-    | '/lab/sandbox'
-    | '/writing/pnpm-monorepo'
-    | '/writing/ssr-theming'
-    | '/lab'
-    | '/writing'
-    | '/api/auth/$'
-    | '/demos/ssr-theming/simple-cookie'
-    | '/demos/ssr-theming/simple-local-storage'
-    | '/demos/ssr-theming/cookie-optimistic-client-cache/about'
-    | '/demos/ssr-theming/cookie-optimistic/about'
-    | '/demos/ssr-theming/cookie-optimistic-client-cache'
-    | '/demos/ssr-theming/cookie-optimistic'
+    | "/"
+    | "/feed"
+    | "/login"
+    | "/api/subscribe"
+    | "/debug/feed"
+    | "/lab/design-overlay"
+    | "/lab/js-aot-transpiler"
+    | "/lab/sandbox"
+    | "/writing/pnpm-monorepo"
+    | "/writing/ssr-theming"
+    | "/lab"
+    | "/writing"
+    | "/api/auth/$"
+    | "/demos/ssr-theming/simple-cookie"
+    | "/demos/ssr-theming/simple-local-storage"
+    | "/demos/ssr-theming/cookie-optimistic-client-cache/about"
+    | "/demos/ssr-theming/cookie-optimistic/about"
+    | "/demos/ssr-theming/cookie-optimistic-client-cache"
+    | "/demos/ssr-theming/cookie-optimistic";
   id:
-    | '__root__'
-    | '/'
-    | '/feed'
-    | '/login'
-    | '/api/subscribe'
-    | '/debug/feed'
-    | '/lab/design-overlay'
-    | '/lab/js-aot-transpiler'
-    | '/lab/sandbox'
-    | '/writing/pnpm-monorepo'
-    | '/writing/ssr-theming'
-    | '/lab/'
-    | '/writing/'
-    | '/demos/ssr-theming/cookie-optimistic'
-    | '/demos/ssr-theming/cookie-optimistic-client-cache'
-    | '/api/auth/$'
-    | '/demos/ssr-theming/simple-cookie'
-    | '/demos/ssr-theming/simple-local-storage'
-    | '/demos/ssr-theming/cookie-optimistic-client-cache/about'
-    | '/demos/ssr-theming/cookie-optimistic/about'
-    | '/demos/ssr-theming/cookie-optimistic-client-cache/'
-    | '/demos/ssr-theming/cookie-optimistic/'
-  fileRoutesById: FileRoutesById
+    | "__root__"
+    | "/"
+    | "/feed"
+    | "/login"
+    | "/api/subscribe"
+    | "/debug/feed"
+    | "/lab/design-overlay"
+    | "/lab/js-aot-transpiler"
+    | "/lab/sandbox"
+    | "/writing/pnpm-monorepo"
+    | "/writing/ssr-theming"
+    | "/lab/"
+    | "/writing/"
+    | "/demos/ssr-theming/cookie-optimistic"
+    | "/demos/ssr-theming/cookie-optimistic-client-cache"
+    | "/api/auth/$"
+    | "/demos/ssr-theming/simple-cookie"
+    | "/demos/ssr-theming/simple-local-storage"
+    | "/demos/ssr-theming/cookie-optimistic-client-cache/about"
+    | "/demos/ssr-theming/cookie-optimistic/about"
+    | "/demos/ssr-theming/cookie-optimistic-client-cache/"
+    | "/demos/ssr-theming/cookie-optimistic/";
+  fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  FeedRoute: typeof FeedRoute
-  LoginRoute: typeof LoginRoute
-  ApiSubscribeRoute: typeof ApiSubscribeRoute
-  DebugFeedRoute: typeof DebugFeedRoute
-  LabDesignOverlayRoute: typeof LabDesignOverlayRoute
-  LabJsAotTranspilerRoute: typeof LabJsAotTranspilerRoute
-  LabSandboxRoute: typeof LabSandboxRoute
-  WritingPnpmMonorepoRoute: typeof WritingPnpmMonorepoRoute
-  WritingSsrThemingRoute: typeof WritingSsrThemingRoute
-  LabIndexRoute: typeof LabIndexRoute
-  WritingIndexRoute: typeof WritingIndexRoute
-  DemosSsrThemingCookieOptimisticRouteRoute: typeof DemosSsrThemingCookieOptimisticRouteRouteWithChildren
-  DemosSsrThemingCookieOptimisticClientCacheRouteRoute: typeof DemosSsrThemingCookieOptimisticClientCacheRouteRouteWithChildren
-  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
-  DemosSsrThemingSimpleCookieRoute: typeof DemosSsrThemingSimpleCookieRoute
-  DemosSsrThemingSimpleLocalStorageRoute: typeof DemosSsrThemingSimpleLocalStorageRoute
+  IndexRoute: typeof IndexRoute;
+  FeedRoute: typeof FeedRoute;
+  LoginRoute: typeof LoginRoute;
+  ApiSubscribeRoute: typeof ApiSubscribeRoute;
+  DebugFeedRoute: typeof DebugFeedRoute;
+  LabDesignOverlayRoute: typeof LabDesignOverlayRoute;
+  LabJsAotTranspilerRoute: typeof LabJsAotTranspilerRoute;
+  LabSandboxRoute: typeof LabSandboxRoute;
+  WritingPnpmMonorepoRoute: typeof WritingPnpmMonorepoRoute;
+  WritingSsrThemingRoute: typeof WritingSsrThemingRoute;
+  LabIndexRoute: typeof LabIndexRoute;
+  WritingIndexRoute: typeof WritingIndexRoute;
+  DemosSsrThemingCookieOptimisticRouteRoute: typeof DemosSsrThemingCookieOptimisticRouteRouteWithChildren;
+  DemosSsrThemingCookieOptimisticClientCacheRouteRoute: typeof DemosSsrThemingCookieOptimisticClientCacheRouteRouteWithChildren;
+  ApiAuthSplatRoute: typeof ApiAuthSplatRoute;
+  DemosSsrThemingSimpleCookieRoute: typeof DemosSsrThemingSimpleCookieRoute;
+  DemosSsrThemingSimpleLocalStorageRoute: typeof DemosSsrThemingSimpleLocalStorageRoute;
 }
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/feed': {
-      id: '/feed'
-      path: '/feed'
-      fullPath: '/feed'
-      preLoaderRoute: typeof FeedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/writing/': {
-      id: '/writing/'
-      path: '/writing'
-      fullPath: '/writing/'
-      preLoaderRoute: typeof WritingIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lab/': {
-      id: '/lab/'
-      path: '/lab'
-      fullPath: '/lab/'
-      preLoaderRoute: typeof LabIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/writing/ssr-theming': {
-      id: '/writing/ssr-theming'
-      path: '/writing/ssr-theming'
-      fullPath: '/writing/ssr-theming'
-      preLoaderRoute: typeof WritingSsrThemingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/writing/pnpm-monorepo': {
-      id: '/writing/pnpm-monorepo'
-      path: '/writing/pnpm-monorepo'
-      fullPath: '/writing/pnpm-monorepo'
-      preLoaderRoute: typeof WritingPnpmMonorepoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lab/sandbox': {
-      id: '/lab/sandbox'
-      path: '/lab/sandbox'
-      fullPath: '/lab/sandbox'
-      preLoaderRoute: typeof LabSandboxRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lab/js-aot-transpiler': {
-      id: '/lab/js-aot-transpiler'
-      path: '/lab/js-aot-transpiler'
-      fullPath: '/lab/js-aot-transpiler'
-      preLoaderRoute: typeof LabJsAotTranspilerRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lab/design-overlay': {
-      id: '/lab/design-overlay'
-      path: '/lab/design-overlay'
-      fullPath: '/lab/design-overlay'
-      preLoaderRoute: typeof LabDesignOverlayRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/debug/feed': {
-      id: '/debug/feed'
-      path: '/debug/feed'
-      fullPath: '/debug/feed'
-      preLoaderRoute: typeof DebugFeedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/subscribe': {
-      id: '/api/subscribe'
-      path: '/api/subscribe'
-      fullPath: '/api/subscribe'
-      preLoaderRoute: typeof ApiSubscribeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demos/ssr-theming/simple-local-storage': {
-      id: '/demos/ssr-theming/simple-local-storage'
-      path: '/demos/ssr-theming/simple-local-storage'
-      fullPath: '/demos/ssr-theming/simple-local-storage'
-      preLoaderRoute: typeof DemosSsrThemingSimpleLocalStorageRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demos/ssr-theming/simple-cookie': {
-      id: '/demos/ssr-theming/simple-cookie'
-      path: '/demos/ssr-theming/simple-cookie'
-      fullPath: '/demos/ssr-theming/simple-cookie'
-      preLoaderRoute: typeof DemosSsrThemingSimpleCookieRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/auth/$': {
-      id: '/api/auth/$'
-      path: '/api/auth/$'
-      fullPath: '/api/auth/$'
-      preLoaderRoute: typeof ApiAuthSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demos/ssr-theming/cookie-optimistic-client-cache': {
-      id: '/demos/ssr-theming/cookie-optimistic-client-cache'
-      path: '/demos/ssr-theming/cookie-optimistic-client-cache'
-      fullPath: '/demos/ssr-theming/cookie-optimistic-client-cache'
-      preLoaderRoute: typeof DemosSsrThemingCookieOptimisticClientCacheRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demos/ssr-theming/cookie-optimistic': {
-      id: '/demos/ssr-theming/cookie-optimistic'
-      path: '/demos/ssr-theming/cookie-optimistic'
-      fullPath: '/demos/ssr-theming/cookie-optimistic'
-      preLoaderRoute: typeof DemosSsrThemingCookieOptimisticRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demos/ssr-theming/cookie-optimistic/': {
-      id: '/demos/ssr-theming/cookie-optimistic/'
-      path: '/'
-      fullPath: '/demos/ssr-theming/cookie-optimistic/'
-      preLoaderRoute: typeof DemosSsrThemingCookieOptimisticIndexRouteImport
-      parentRoute: typeof DemosSsrThemingCookieOptimisticRouteRoute
-    }
-    '/demos/ssr-theming/cookie-optimistic-client-cache/': {
-      id: '/demos/ssr-theming/cookie-optimistic-client-cache/'
-      path: '/'
-      fullPath: '/demos/ssr-theming/cookie-optimistic-client-cache/'
-      preLoaderRoute: typeof DemosSsrThemingCookieOptimisticClientCacheIndexRouteImport
-      parentRoute: typeof DemosSsrThemingCookieOptimisticClientCacheRouteRoute
-    }
-    '/demos/ssr-theming/cookie-optimistic/about': {
-      id: '/demos/ssr-theming/cookie-optimistic/about'
-      path: '/about'
-      fullPath: '/demos/ssr-theming/cookie-optimistic/about'
-      preLoaderRoute: typeof DemosSsrThemingCookieOptimisticAboutRouteImport
-      parentRoute: typeof DemosSsrThemingCookieOptimisticRouteRoute
-    }
-    '/demos/ssr-theming/cookie-optimistic-client-cache/about': {
-      id: '/demos/ssr-theming/cookie-optimistic-client-cache/about'
-      path: '/about'
-      fullPath: '/demos/ssr-theming/cookie-optimistic-client-cache/about'
-      preLoaderRoute: typeof DemosSsrThemingCookieOptimisticClientCacheAboutRouteImport
-      parentRoute: typeof DemosSsrThemingCookieOptimisticClientCacheRouteRoute
-    }
+    "/login": {
+      id: "/login";
+      path: "/login";
+      fullPath: "/login";
+      preLoaderRoute: typeof LoginRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/feed": {
+      id: "/feed";
+      path: "/feed";
+      fullPath: "/feed";
+      preLoaderRoute: typeof FeedRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/": {
+      id: "/";
+      path: "/";
+      fullPath: "/";
+      preLoaderRoute: typeof IndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/writing/": {
+      id: "/writing/";
+      path: "/writing";
+      fullPath: "/writing/";
+      preLoaderRoute: typeof WritingIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/lab/": {
+      id: "/lab/";
+      path: "/lab";
+      fullPath: "/lab/";
+      preLoaderRoute: typeof LabIndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/writing/ssr-theming": {
+      id: "/writing/ssr-theming";
+      path: "/writing/ssr-theming";
+      fullPath: "/writing/ssr-theming";
+      preLoaderRoute: typeof WritingSsrThemingRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/writing/pnpm-monorepo": {
+      id: "/writing/pnpm-monorepo";
+      path: "/writing/pnpm-monorepo";
+      fullPath: "/writing/pnpm-monorepo";
+      preLoaderRoute: typeof WritingPnpmMonorepoRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/lab/sandbox": {
+      id: "/lab/sandbox";
+      path: "/lab/sandbox";
+      fullPath: "/lab/sandbox";
+      preLoaderRoute: typeof LabSandboxRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/lab/js-aot-transpiler": {
+      id: "/lab/js-aot-transpiler";
+      path: "/lab/js-aot-transpiler";
+      fullPath: "/lab/js-aot-transpiler";
+      preLoaderRoute: typeof LabJsAotTranspilerRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/lab/design-overlay": {
+      id: "/lab/design-overlay";
+      path: "/lab/design-overlay";
+      fullPath: "/lab/design-overlay";
+      preLoaderRoute: typeof LabDesignOverlayRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/debug/feed": {
+      id: "/debug/feed";
+      path: "/debug/feed";
+      fullPath: "/debug/feed";
+      preLoaderRoute: typeof DebugFeedRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/api/subscribe": {
+      id: "/api/subscribe";
+      path: "/api/subscribe";
+      fullPath: "/api/subscribe";
+      preLoaderRoute: typeof ApiSubscribeRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/demos/ssr-theming/simple-local-storage": {
+      id: "/demos/ssr-theming/simple-local-storage";
+      path: "/demos/ssr-theming/simple-local-storage";
+      fullPath: "/demos/ssr-theming/simple-local-storage";
+      preLoaderRoute: typeof DemosSsrThemingSimpleLocalStorageRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/demos/ssr-theming/simple-cookie": {
+      id: "/demos/ssr-theming/simple-cookie";
+      path: "/demos/ssr-theming/simple-cookie";
+      fullPath: "/demos/ssr-theming/simple-cookie";
+      preLoaderRoute: typeof DemosSsrThemingSimpleCookieRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/api/auth/$": {
+      id: "/api/auth/$";
+      path: "/api/auth/$";
+      fullPath: "/api/auth/$";
+      preLoaderRoute: typeof ApiAuthSplatRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/demos/ssr-theming/cookie-optimistic-client-cache": {
+      id: "/demos/ssr-theming/cookie-optimistic-client-cache";
+      path: "/demos/ssr-theming/cookie-optimistic-client-cache";
+      fullPath: "/demos/ssr-theming/cookie-optimistic-client-cache";
+      preLoaderRoute: typeof DemosSsrThemingCookieOptimisticClientCacheRouteRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/demos/ssr-theming/cookie-optimistic": {
+      id: "/demos/ssr-theming/cookie-optimistic";
+      path: "/demos/ssr-theming/cookie-optimistic";
+      fullPath: "/demos/ssr-theming/cookie-optimistic";
+      preLoaderRoute: typeof DemosSsrThemingCookieOptimisticRouteRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/demos/ssr-theming/cookie-optimistic/": {
+      id: "/demos/ssr-theming/cookie-optimistic/";
+      path: "/";
+      fullPath: "/demos/ssr-theming/cookie-optimistic/";
+      preLoaderRoute: typeof DemosSsrThemingCookieOptimisticIndexRouteImport;
+      parentRoute: typeof DemosSsrThemingCookieOptimisticRouteRoute;
+    };
+    "/demos/ssr-theming/cookie-optimistic-client-cache/": {
+      id: "/demos/ssr-theming/cookie-optimistic-client-cache/";
+      path: "/";
+      fullPath: "/demos/ssr-theming/cookie-optimistic-client-cache/";
+      preLoaderRoute: typeof DemosSsrThemingCookieOptimisticClientCacheIndexRouteImport;
+      parentRoute: typeof DemosSsrThemingCookieOptimisticClientCacheRouteRoute;
+    };
+    "/demos/ssr-theming/cookie-optimistic/about": {
+      id: "/demos/ssr-theming/cookie-optimistic/about";
+      path: "/about";
+      fullPath: "/demos/ssr-theming/cookie-optimistic/about";
+      preLoaderRoute: typeof DemosSsrThemingCookieOptimisticAboutRouteImport;
+      parentRoute: typeof DemosSsrThemingCookieOptimisticRouteRoute;
+    };
+    "/demos/ssr-theming/cookie-optimistic-client-cache/about": {
+      id: "/demos/ssr-theming/cookie-optimistic-client-cache/about";
+      path: "/about";
+      fullPath: "/demos/ssr-theming/cookie-optimistic-client-cache/about";
+      preLoaderRoute: typeof DemosSsrThemingCookieOptimisticClientCacheAboutRouteImport;
+      parentRoute: typeof DemosSsrThemingCookieOptimisticClientCacheRouteRoute;
+    };
   }
 }
 
 interface DemosSsrThemingCookieOptimisticRouteRouteChildren {
-  DemosSsrThemingCookieOptimisticAboutRoute: typeof DemosSsrThemingCookieOptimisticAboutRoute
-  DemosSsrThemingCookieOptimisticIndexRoute: typeof DemosSsrThemingCookieOptimisticIndexRoute
+  DemosSsrThemingCookieOptimisticAboutRoute: typeof DemosSsrThemingCookieOptimisticAboutRoute;
+  DemosSsrThemingCookieOptimisticIndexRoute: typeof DemosSsrThemingCookieOptimisticIndexRoute;
 }
 
 const DemosSsrThemingCookieOptimisticRouteRouteChildren: DemosSsrThemingCookieOptimisticRouteRouteChildren =
   {
-    DemosSsrThemingCookieOptimisticAboutRoute:
-      DemosSsrThemingCookieOptimisticAboutRoute,
-    DemosSsrThemingCookieOptimisticIndexRoute:
-      DemosSsrThemingCookieOptimisticIndexRoute,
-  }
+    DemosSsrThemingCookieOptimisticAboutRoute: DemosSsrThemingCookieOptimisticAboutRoute,
+    DemosSsrThemingCookieOptimisticIndexRoute: DemosSsrThemingCookieOptimisticIndexRoute,
+  };
 
 const DemosSsrThemingCookieOptimisticRouteRouteWithChildren =
   DemosSsrThemingCookieOptimisticRouteRoute._addFileChildren(
     DemosSsrThemingCookieOptimisticRouteRouteChildren,
-  )
+  );
 
 interface DemosSsrThemingCookieOptimisticClientCacheRouteRouteChildren {
-  DemosSsrThemingCookieOptimisticClientCacheAboutRoute: typeof DemosSsrThemingCookieOptimisticClientCacheAboutRoute
-  DemosSsrThemingCookieOptimisticClientCacheIndexRoute: typeof DemosSsrThemingCookieOptimisticClientCacheIndexRoute
+  DemosSsrThemingCookieOptimisticClientCacheAboutRoute: typeof DemosSsrThemingCookieOptimisticClientCacheAboutRoute;
+  DemosSsrThemingCookieOptimisticClientCacheIndexRoute: typeof DemosSsrThemingCookieOptimisticClientCacheIndexRoute;
 }
 
 const DemosSsrThemingCookieOptimisticClientCacheRouteRouteChildren: DemosSsrThemingCookieOptimisticClientCacheRouteRouteChildren =
@@ -484,12 +480,12 @@ const DemosSsrThemingCookieOptimisticClientCacheRouteRouteChildren: DemosSsrThem
       DemosSsrThemingCookieOptimisticClientCacheAboutRoute,
     DemosSsrThemingCookieOptimisticClientCacheIndexRoute:
       DemosSsrThemingCookieOptimisticClientCacheIndexRoute,
-  }
+  };
 
 const DemosSsrThemingCookieOptimisticClientCacheRouteRouteWithChildren =
   DemosSsrThemingCookieOptimisticClientCacheRouteRoute._addFileChildren(
     DemosSsrThemingCookieOptimisticClientCacheRouteRouteChildren,
-  )
+  );
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -504,24 +500,22 @@ const rootRouteChildren: RootRouteChildren = {
   WritingSsrThemingRoute: WritingSsrThemingRoute,
   LabIndexRoute: LabIndexRoute,
   WritingIndexRoute: WritingIndexRoute,
-  DemosSsrThemingCookieOptimisticRouteRoute:
-    DemosSsrThemingCookieOptimisticRouteRouteWithChildren,
+  DemosSsrThemingCookieOptimisticRouteRoute: DemosSsrThemingCookieOptimisticRouteRouteWithChildren,
   DemosSsrThemingCookieOptimisticClientCacheRouteRoute:
     DemosSsrThemingCookieOptimisticClientCacheRouteRouteWithChildren,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   DemosSsrThemingSimpleCookieRoute: DemosSsrThemingSimpleCookieRoute,
-  DemosSsrThemingSimpleLocalStorageRoute:
-    DemosSsrThemingSimpleLocalStorageRoute,
-}
+  DemosSsrThemingSimpleLocalStorageRoute: DemosSsrThemingSimpleLocalStorageRoute,
+};
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+  ._addFileTypes<FileRouteTypes>();
 
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
+import type { getRouter } from "./router.tsx";
+import type { createStart } from "@tanstack/react-start";
+declare module "@tanstack/react-start" {
   interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
+    ssr: true;
+    router: Awaited<ReturnType<typeof getRouter>>;
   }
 }

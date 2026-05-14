@@ -11,12 +11,12 @@ IR passes; codegen consumes the post-pass IR shape.
 
 ## Directory Shape
 
-| Directory | Responsibility |
-| --- | --- |
-| `src/backend/js` | Backend entrypoint, context, language helpers, ESTree types. |
-| `src/backend/js/functions` | Function-level emission. |
-| `src/backend/js/modules` | Static import/export record emission. |
-| `src/backend/js/ops` | Operation emitters grouped by the same semantic domains as `src/ir/ops`. |
+| Directory                  | Responsibility                                                           |
+| -------------------------- | ------------------------------------------------------------------------ |
+| `src/backend/js`           | Backend entrypoint, context, language helpers, ESTree types.             |
+| `src/backend/js/functions` | Function-level emission.                                                 |
+| `src/backend/js/modules`   | Static import/export record emission.                                    |
+| `src/backend/js/ops`       | Operation emitters grouped by the same semantic domains as `src/ir/ops`. |
 
 Keeping backend op emitters grouped by semantic domain makes it obvious where a
 new IR op's JavaScript emission belongs.
@@ -47,12 +47,12 @@ only the state needed to emit JavaScript from already-built IR.
 
 Structured terminators emit source-level JavaScript constructs:
 
-| IR | JavaScript |
-| --- | --- |
-| `IfTerminatorOp` | `if (...) { ... } else { ... }` |
-| loop terminators | `while`, `do while`, `for`, `for-in`, `for-of` |
-| `SwitchTerminatorOp` | `switch` |
-| `TryTerminatorOp` | `try/catch/finally` |
+| IR                   | JavaScript                                     |
+| -------------------- | ---------------------------------------------- |
+| `IfTerminatorOp`     | `if (...) { ... } else { ... }`                |
+| loop terminators     | `while`, `do while`, `for`, `for-in`, `for-of` |
+| `SwitchTerminatorOp` | `switch`                                       |
+| `TryTerminatorOp`    | `try/catch/finally`                            |
 
 Structured emitters must not accidentally emit the parent continuation inside a
 nested construct. Use fallthrough handling: while emitting a structured region,
@@ -76,7 +76,7 @@ materialization a pass responsibility rather than hidden codegen behavior.
 Call emission must preserve receiver semantics.
 
 ```js
-obj.method()
+obj.method();
 ```
 
 If lowering has separated the callee value from the receiver, the emitter must

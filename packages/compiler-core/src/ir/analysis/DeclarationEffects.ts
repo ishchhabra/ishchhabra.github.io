@@ -95,10 +95,7 @@ export function declarationEffects(op: Operation): DeclarationEffects {
   if (op instanceof DeleteOp && op.target.kind === "binding") {
     return {
       defs: [],
-      uses: uniqueUses([
-        { kind: "delete", declarationId: op.target.declarationId },
-        ...valueUses,
-      ]),
+      uses: uniqueUses([{ kind: "delete", declarationId: op.target.declarationId }, ...valueUses]),
     };
   }
 

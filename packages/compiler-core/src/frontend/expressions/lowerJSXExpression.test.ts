@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { IRIdAllocator } from "../../ir/core/IRIdAllocator";
 import { JSXElementOp } from "../../ir/ops/jsx/JSXElementOp";
 import { JSXFragmentOp } from "../../ir/ops/jsx/JSXFragmentOp";

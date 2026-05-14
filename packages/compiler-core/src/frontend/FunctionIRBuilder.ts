@@ -8,21 +8,22 @@ import type {
   SwitchStatement,
   PrivateIdentifier,
 } from "oxc-parser";
+
 import { BasicBlock } from "../ir/core/Block";
 import { FunctionIR, type FunctionParam } from "../ir/core/FunctionIR";
-import { ModuleIR } from "../ir/core/ModuleIR";
-import { IRBuildContext } from "./ModuleIRBuilder";
-import { lowerStatement } from "./statements/lowerStatement";
-import { Operation, OperationId } from "../ir/core/Operation";
-import { DeclarationId, Value } from "../ir/core/Value";
-import { Declaration } from "./scope/Declaration";
-import { BindingIdentifierNode, ScopeOwnerNode, ScopeReferenceNode } from "./ast/types";
-import { Scope } from "./scope/Scope";
-import { ScopeDeclarationInstantiation } from "./scope/DeclarationInstantiationPlan";
-import { lowerDeclarationInstantiation } from "./declarations/lowerDeclarationInstantiation";
-import { TerminatorOp } from "../ir/core/TerminatorOp";
-import type { PrivateName } from "../ir/core/PrivateName";
 import type { ModuleExport } from "../ir/core/ModuleExport";
+import { ModuleIR } from "../ir/core/ModuleIR";
+import { Operation, OperationId } from "../ir/core/Operation";
+import type { PrivateName } from "../ir/core/PrivateName";
+import { TerminatorOp } from "../ir/core/TerminatorOp";
+import { DeclarationId, Value } from "../ir/core/Value";
+import { BindingIdentifierNode, ScopeOwnerNode, ScopeReferenceNode } from "./ast/types";
+import { lowerDeclarationInstantiation } from "./declarations/lowerDeclarationInstantiation";
+import { IRBuildContext } from "./ModuleIRBuilder";
+import { Declaration } from "./scope/Declaration";
+import { ScopeDeclarationInstantiation } from "./scope/DeclarationInstantiationPlan";
+import { Scope } from "./scope/Scope";
+import { lowerStatement } from "./statements/lowerStatement";
 
 export interface CreateFunctionIROptions {
   readonly kind?: FunctionIR["kind"];

@@ -1,16 +1,17 @@
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { ForStatement } from "oxc-parser";
-import { lowerVariableDeclaration } from "./lowerVariableDeclaration";
-import { lowerExpression } from "../expressions/lowerExpression";
-import { ForTerminatorOp } from "../../ir/ops/control/ForTerminatorOp";
-import { ConstantOp } from "../../ir/ops/constants/ConstantOp";
+
 import { blockTarget } from "../../ir/core/TerminatorOp";
-import { BranchTerminatorOp } from "../../ir/ops/control/BranchTerminatorOp";
-import { lowerStatement } from "./lowerStatement";
-import { JumpTerminatorOp } from "../../ir/ops/control/JumpTerminatorOp";
 import { Value } from "../../ir/core/Value";
+import { ConstantOp } from "../../ir/ops/constants/ConstantOp";
+import { BranchTerminatorOp } from "../../ir/ops/control/BranchTerminatorOp";
+import { ForTerminatorOp } from "../../ir/ops/control/ForTerminatorOp";
+import { JumpTerminatorOp } from "../../ir/ops/control/JumpTerminatorOp";
+import { lowerExpression } from "../expressions/lowerExpression";
+import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { lowerExpressionStatement } from "./lowerExpressionStatement";
 import { StatementLoweringOptions } from "./loweringOptions";
+import { lowerStatement } from "./lowerStatement";
+import { lowerVariableDeclaration } from "./lowerVariableDeclaration";
 
 /**
  * Lowers a for loop to explicit control flow with a structured loop owner.
@@ -45,9 +46,7 @@ export function lowerForStatement(
     continueTarget: updateBlock,
   };
 
-  builder.terminate(
-    new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock)),
-  );
+  builder.terminate(new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock)));
 
   builder.setCurrentBlock(loopBlock);
   builder.terminate(
@@ -85,9 +84,7 @@ export function lowerForStatement(
   }
 
   if (!builder.currentBlock.isTerminated) {
-    builder.terminate(
-      new JumpTerminatorOp(builder.operationId(), blockTarget(updateBlock)),
-    );
+    builder.terminate(new JumpTerminatorOp(builder.operationId(), blockTarget(updateBlock)));
   }
 
   builder.setCurrentBlock(updateBlock);
@@ -95,18 +92,13 @@ export function lowerForStatement(
     lowerExpressionStatement(builder, statement.update);
   }
   if (!builder.currentBlock.isTerminated) {
-    builder.terminate(
-      new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock)),
-    );
+    builder.terminate(new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock)));
   }
 
   builder.setCurrentBlock(completionBlock);
 }
 
-function emitBooleanConstant(
-  builder: FunctionIRBuilder,
-  value: boolean,
-): Value {
+function emitBooleanConstant(builder: FunctionIRBuilder, value: boolean): Value {
   const result = builder.createValue();
   builder.emit(new ConstantOp(builder.operationId(), value, result));
   return result;

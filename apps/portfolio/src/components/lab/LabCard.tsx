@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+
 import { type LabProject, getProjectHref } from "../../lib/projects";
 
 const tagStyles: Record<string, string> = {

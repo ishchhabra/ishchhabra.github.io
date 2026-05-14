@@ -53,24 +53,15 @@ export class InitializeBindingOp extends Operation {
     };
   }
 
-  public override withOperands(
-    operands: readonly Value[],
-  ): InitializeBindingOp {
+  public override withOperands(operands: readonly Value[]): InitializeBindingOp {
     if (operands.length !== 1) {
-      throw new Error(
-        `InitializeBindingOp#${this.id} expected 1 operand, got ${operands.length}`,
-      );
+      throw new Error(`InitializeBindingOp#${this.id} expected 1 operand, got ${operands.length}`);
     }
 
     const [value] = operands;
     if (value === this.value) return this;
 
-    return new InitializeBindingOp(
-      this.id,
-      this.declarationId,
-      value,
-      this.bindingValue,
-    );
+    return new InitializeBindingOp(this.id, this.declarationId, value, this.bindingValue);
   }
 
   public override clone(context: OperationCloneContext): InitializeBindingOp {

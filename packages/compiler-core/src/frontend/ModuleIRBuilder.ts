@@ -1,14 +1,15 @@
-import { IRIdAllocator } from "../ir/core/IRIdAllocator";
 import { Program } from "oxc-parser";
-import { ModuleIR } from "../ir/core/ModuleIR";
+
 import { BasicBlock } from "../ir/core/Block";
 import { FunctionIR } from "../ir/core/FunctionIR";
-import { FunctionIRBuilder } from "./FunctionIRBuilder";
+import { IRIdAllocator } from "../ir/core/IRIdAllocator";
+import { ModuleIR } from "../ir/core/ModuleIR";
 import { DeclarationTable } from "./declarations/DeclarationTable";
-import { analyzeScopes } from "./scope/analyzeScopes";
-import { ScopeGraph } from "./scope/ScopeGraph";
-import { DeclarationInstantiationPlan } from "./scope/DeclarationInstantiationPlan";
+import { FunctionIRBuilder } from "./FunctionIRBuilder";
 import { collectModuleRecords } from "./modules/collectModuleRecords";
+import { analyzeScopes } from "./scope/analyzeScopes";
+import { DeclarationInstantiationPlan } from "./scope/DeclarationInstantiationPlan";
+import { ScopeGraph } from "./scope/ScopeGraph";
 
 export interface IRBuildContext {
   readonly ids: IRIdAllocator;

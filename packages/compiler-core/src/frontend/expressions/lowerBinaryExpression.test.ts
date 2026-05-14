@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
+
 import { IRIdAllocator } from "../../ir/core/IRIdAllocator";
-import { ConstantOp } from "../../ir/ops/constants/ConstantOp";
 import { CreateClassOp } from "../../ir/ops/classes/CreateClassOp";
+import { ConstantOp } from "../../ir/ops/constants/ConstantOp";
 import { BinaryOp } from "../../ir/ops/operators/BinaryOp";
 import { HasPrivateNameOp } from "../../ir/ops/properties/HasPrivateNameOp";
 import { ModuleIRBuilder } from "../ModuleIRBuilder";

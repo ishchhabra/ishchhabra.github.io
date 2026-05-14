@@ -5,6 +5,7 @@ import type {
   PrivateIdentifier,
   PropertyKey as OxcPropertyKey,
 } from "oxc-parser";
+
 import type { FunctionIR } from "../../ir/core/FunctionIR";
 import type { Value } from "../../ir/core/Value";
 import { ObjectLiteralOp, type ObjectLiteralProperty } from "../../ir/ops/objects/ObjectLiteralOp";

@@ -1,4 +1,5 @@
 import type { ArrowFunctionExpression, Function as OxcFunction } from "oxc-parser";
+
 import type { Value } from "../../ir/core/Value";
 import { CreateFunctionOp } from "../../ir/ops/functions/CreateFunctionOp";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";
@@ -22,9 +23,7 @@ export function lowerFunctionExpression(
   const result = builder.createValue();
 
   lowerFunctionBody(nested.builder, expression);
-  builder.emit(
-    new CreateFunctionOp(builder.operationId(), nested.functionIR, result),
-  );
+  builder.emit(new CreateFunctionOp(builder.operationId(), nested.functionIR, result));
 
   return result;
 }
@@ -46,9 +45,7 @@ export function lowerArrowFunctionExpression(
   const result = builder.createValue();
 
   lowerArrowFunctionBody(nested.builder, expression);
-  builder.emit(
-    new CreateFunctionOp(builder.operationId(), nested.functionIR, result),
-  );
+  builder.emit(new CreateFunctionOp(builder.operationId(), nested.functionIR, result));
 
   return result;
 }

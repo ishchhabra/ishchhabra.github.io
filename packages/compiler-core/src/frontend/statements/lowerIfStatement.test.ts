@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { IRIdAllocator } from "../../ir/core/IRIdAllocator";
 import { StoreBindingOp } from "../../ir/ops/bindings/StoreBindingOp";
 import { IfTerminatorOp } from "../../ir/ops/control/IfTerminatorOp";

@@ -60,8 +60,7 @@ export class SwitchTerminatorOp extends TerminatorOp {
     let operandIndex = 0;
 
     const cases = this.cases.map((switchCase) => {
-      const test =
-        switchCase.test === null ? null : caseOperands[operandIndex++];
+      const test = switchCase.test === null ? null : caseOperands[operandIndex++];
 
       const targetValues = successorValues(switchCase.target);
       const target = replaceSuccessorValues(
@@ -78,9 +77,7 @@ export class SwitchTerminatorOp extends TerminatorOp {
     });
 
     if (operandIndex !== caseOperands.length) {
-      throw new Error(
-        `SwitchTerminatorOp#${this.id} received unused successor operands`,
-      );
+      throw new Error(`SwitchTerminatorOp#${this.id} received unused successor operands`);
     }
 
     if (
@@ -90,13 +87,7 @@ export class SwitchTerminatorOp extends TerminatorOp {
       return this;
     }
 
-    return new SwitchTerminatorOp(
-      this.id,
-      discriminant,
-      cases,
-      this.completionBlock,
-      this.label,
-    );
+    return new SwitchTerminatorOp(this.id, discriminant, cases, this.completionBlock, this.label);
   }
 
   public override clone(context: OperationCloneContext): SwitchTerminatorOp {
@@ -124,10 +115,7 @@ export class SwitchTerminatorOp extends TerminatorOp {
     throw new Error(`SwitchTerminatorOp#${this.id} has no target ${index}`);
   }
 
-  public override withTarget(
-    index: number,
-    target: BlockTarget,
-  ): SwitchTerminatorOp {
+  public override withTarget(index: number, target: BlockTarget): SwitchTerminatorOp {
     if (index >= 0 && index < this.cases.length) {
       return new SwitchTerminatorOp(
         this.id,

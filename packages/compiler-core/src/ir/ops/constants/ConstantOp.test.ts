@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
+
 import { IRIdAllocator } from "../../core/IRIdAllocator";
-import { PureOperationEffects } from "../../effects";
-import { block, value } from "../../core/testing";
 import { makeOperationId } from "../../core/Operation";
+import { block, value } from "../../core/testing";
+import { PureOperationEffects } from "../../effects";
 import { ConstantOp } from "./ConstantOp";
 
 describe("ConstantOp", () => {

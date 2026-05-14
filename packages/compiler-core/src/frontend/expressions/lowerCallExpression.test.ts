@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { IRIdAllocator } from "../../ir/core/IRIdAllocator";
 import { CallOp } from "../../ir/ops/calls/CallOp";
 import { SuperCallOp } from "../../ir/ops/calls/SuperCallOp";

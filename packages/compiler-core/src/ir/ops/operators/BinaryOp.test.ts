@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { block, value } from "../../core/testing";
-import { makeOperationId } from "../../core/Operation";
+
 import { IRIdAllocator } from "../../core/IRIdAllocator";
+import { makeOperationId } from "../../core/Operation";
+import { block, value } from "../../core/testing";
 import { BinaryOp } from "./BinaryOp";
 
 describe("BinaryOp", () => {

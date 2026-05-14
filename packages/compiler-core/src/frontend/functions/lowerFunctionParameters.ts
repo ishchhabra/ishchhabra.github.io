@@ -4,6 +4,7 @@ import type {
   BindingRestElement,
   Function as OxcFunction,
 } from "oxc-parser";
+
 import type { FunctionParam } from "../../ir/core/FunctionIR";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { lowerBindingPatternTarget } from "../patterns/lowerBindingPatternTarget";

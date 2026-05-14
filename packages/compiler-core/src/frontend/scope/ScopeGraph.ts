@@ -1,4 +1,5 @@
 import type { PrivateIdentifier } from "oxc-parser";
+
 import type { PrivateName } from "../../ir/core/PrivateName";
 import { BindingIdentifierNode, ScopeReferenceNode, ScopeOwnerNode } from "../ast/types";
 import { Declaration } from "./Declaration";

@@ -1,5 +1,6 @@
-import type { DeclarationId } from "../../ir/core/Value";
 import type { Function } from "oxc-parser";
+
+import type { DeclarationId } from "../../ir/core/Value";
 
 /**
  * Source-level binding discovered during ECMAScript scope analysis.

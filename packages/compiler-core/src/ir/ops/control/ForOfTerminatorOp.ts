@@ -34,7 +34,6 @@ export class ForOfTerminatorOp extends TerminatorOp {
     return this.bodyTarget.block;
   }
 
-
   public override operands(): readonly Value[] {
     return [
       this.iterable,
@@ -109,10 +108,7 @@ export class ForOfTerminatorOp extends TerminatorOp {
     throw new Error(`ForOfTerminatorOp#${this.id} has no target ${index}`);
   }
 
-  public override withTarget(
-    index: number,
-    target: BlockTarget,
-  ): ForOfTerminatorOp {
+  public override withTarget(index: number, target: BlockTarget): ForOfTerminatorOp {
     if (index === 0) {
       return new ForOfTerminatorOp(
         this.id,

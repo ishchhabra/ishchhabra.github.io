@@ -7,8 +7,8 @@
     "dev": "pnpm --filter @ish/design-overlay build && pnpm --filter @ish/sandbox build && pnpm --filter portfolio dev",
     "dev:watch": "pnpm --filter @ish/design-overlay build && pnpm --filter @ish/sandbox build && concurrently -n overlay,sandbox,portfolio \"pnpm --filter @ish/design-overlay build:watch\" \"pnpm --filter @ish/sandbox build:watch\" \"pnpm --filter portfolio dev\"",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "format": "pnpm -r format && pnpm exec oxfmt github-pages-redirect",
-    "format-check": "pnpm -r --parallel format-check && pnpm exec oxfmt --check github-pages-redirect",
+    "format": "pnpm -r format && pnpm exec oxfmt -c oxfmt.config.mjs github-pages-redirect",
+    "format-check": "pnpm -r --parallel format-check && pnpm exec oxfmt --check -c oxfmt.config.mjs github-pages-redirect",
     "lint": "pnpm -r --parallel lint",
     "type-check": "pnpm -r --parallel type-check"
   },

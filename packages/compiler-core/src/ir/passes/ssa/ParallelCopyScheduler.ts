@@ -43,18 +43,14 @@ export function scheduleParallelCopies(
 
     if (safeCopyIndex !== -1) {
       const [copy] = pending.splice(safeCopyIndex, 1);
-      scheduled.push(
-        new CopyValueOp(options.ids.operationId(), copy.target, copy.source),
-      );
+      scheduled.push(new CopyValueOp(options.ids.operationId(), copy.target, copy.source));
       continue;
     }
 
     const preserved = pending[0].target;
     const temporary = new Value(options.ids.valueId());
 
-    scheduled.push(
-      new CopyValueOp(options.ids.operationId(), temporary, preserved),
-    );
+    scheduled.push(new CopyValueOp(options.ids.operationId(), temporary, preserved));
 
     for (let index = 0; index < pending.length; index++) {
       const copy = pending[index];
@@ -76,9 +72,7 @@ function normalizeCopies(copies: readonly ParallelCopy[]): ParallelCopy[] {
     if (copy.target === copy.source) continue;
 
     if (targets.has(copy.target)) {
-      throw new Error(
-        `Parallel copy writes value#${copy.target.id} more than once`,
-      );
+      throw new Error(`Parallel copy writes value#${copy.target.id} more than once`);
     }
 
     targets.add(copy.target);

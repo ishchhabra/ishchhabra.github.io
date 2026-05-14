@@ -1,9 +1,10 @@
-import { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { LabeledStatement, Statement } from "oxc-parser";
-import { lowerStatement } from "./lowerStatement";
-import { JumpTerminatorOp } from "../../ir/ops/control/JumpTerminatorOp";
+
 import { blockTarget } from "../../ir/core/TerminatorOp";
+import { JumpTerminatorOp } from "../../ir/ops/control/JumpTerminatorOp";
 import { LabeledTerminatorOp } from "../../ir/ops/control/LabeledTerminatorOp";
+import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { lowerStatement } from "./lowerStatement";
 
 /**
  * Lowers labels for `break label` and forwards loop labels to loop lowering.

@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
+
+import { makeBlockId } from "./Block";
 import { FunctionIR, makeFunctionId } from "./FunctionIR";
 import { block, functionIR, testOp, TestOp, value } from "./testing";
-import { makeBlockId } from "./Block";
 import { makeDeclarationId } from "./Value";
 
 describe("FunctionIR", () => {

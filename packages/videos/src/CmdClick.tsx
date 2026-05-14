@@ -1,12 +1,7 @@
 import MonacoEditor from "@monaco-editor/react";
 import type * as monacoNs from "monaco-editor";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  AbsoluteFill,
-  continueRender,
-  delayRender,
-  useCurrentFrame,
-} from "remotion";
+import { AbsoluteFill, continueRender, delayRender, useCurrentFrame } from "remotion";
 
 // ── File contents ────────────────────────────────────────────────────
 
@@ -120,8 +115,7 @@ function CmdClickScene({ variant }: { variant: Variant }) {
   const monacoRef = useRef<typeof monacoNs | null>(null);
   const [ready, setReady] = useState(false);
   const prevContentRef = useRef<string>("");
-  const decorationsRef =
-    useRef<monacoNs.editor.IEditorDecorationsCollection | null>(null);
+  const decorationsRef = useRef<monacoNs.editor.IEditorDecorationsCollection | null>(null);
 
   // "Button" on line 2 is at columns 10-16: import { Button } from ...
   const BUTTON_LINE = 2;
@@ -203,8 +197,7 @@ function CmdClickScene({ variant }: { variant: Variant }) {
       const m = monacoRef.current;
       const uri = m.Uri.parse(fileUri);
       const existing = m.editor.getModel(uri);
-      const model =
-        existing ?? m.editor.createModel(fileContent, undefined, uri);
+      const model = existing ?? m.editor.createModel(fileContent, undefined, uri);
       if (existing) model.setValue(fileContent);
       editorRef.current.setModel(model);
       editorRef.current.setScrollTop(0);
@@ -222,12 +215,7 @@ function CmdClickScene({ variant }: { variant: Variant }) {
       const m = monacoRef.current;
       decorationsRef.current.set([
         {
-          range: new m.Range(
-            BUTTON_LINE,
-            BUTTON_COL_START,
-            BUTTON_LINE,
-            BUTTON_COL_END,
-          ),
+          range: new m.Range(BUTTON_LINE, BUTTON_COL_START, BUTTON_LINE, BUTTON_COL_END),
           options: {
             inlineClassName: "cmd-hover-link",
           },
@@ -323,8 +311,7 @@ function CmdClickScene({ variant }: { variant: Variant }) {
     <AbsoluteFill
       style={{
         backgroundColor: VS.bg,
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       }}
     >
       {/* Inject Cmd+hover CSS */}
@@ -557,9 +544,7 @@ function CmdClickScene({ variant }: { variant: Variant }) {
         >
           <div
             style={{
-              backgroundColor: isCorrect
-                ? "rgba(40, 200, 64, 0.12)"
-                : "rgba(255, 95, 87, 0.12)",
+              backgroundColor: isCorrect ? "rgba(40, 200, 64, 0.12)" : "rgba(255, 95, 87, 0.12)",
               border: `1px solid ${isCorrect ? "#28c840" : "#ff5f57"}`,
               borderRadius: 6,
               padding: "8px 16px",
@@ -613,22 +598,14 @@ function EditorTab({ label, active }: { label: string; active: boolean }) {
         borderTop: active ? "1px solid #007acc" : "1px solid transparent",
       }}
     >
-      <span style={{ color: "#519aba", fontSize: 11, fontWeight: 700 }}>
-        TS
-      </span>
+      <span style={{ color: "#519aba", fontSize: 11, fontWeight: 700 }}>TS</span>
       {label}
       <span style={{ color: "#666", fontSize: 15, marginLeft: 6 }}>×</span>
     </div>
   );
 }
 
-function ActivityIcon({
-  children,
-  active,
-}: {
-  children: React.ReactNode;
-  active?: boolean;
-}) {
+function ActivityIcon({ children, active }: { children: React.ReactNode; active?: boolean }) {
   return (
     <svg
       width="24"

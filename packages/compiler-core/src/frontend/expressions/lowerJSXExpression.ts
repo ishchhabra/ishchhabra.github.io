@@ -9,6 +9,7 @@ import type {
   JSXFragment,
   JSXIdentifier,
 } from "oxc-parser";
+
 import type { Value } from "../../ir/core/Value";
 import {
   JSXElementOp,
@@ -19,8 +20,8 @@ import {
 } from "../../ir/ops/jsx/JSXElementOp";
 import { JSXFragmentOp } from "../../ir/ops/jsx/JSXFragmentOp";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";
-import { lowerIdentifier } from "./lowerIdentifier";
 import { lowerExpression } from "./lowerExpression";
+import { lowerIdentifier } from "./lowerIdentifier";
 
 /**
  * Lowers a JSX element expression while preserving JSX source structure.

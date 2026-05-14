@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { IRIdAllocator } from "../../core/IRIdAllocator";
 import { makeOperationId } from "../../core/Operation";
 import { block, value } from "../../core/testing";

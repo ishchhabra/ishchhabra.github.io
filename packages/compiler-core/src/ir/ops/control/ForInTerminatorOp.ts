@@ -34,7 +34,6 @@ export class ForInTerminatorOp extends TerminatorOp {
     return this.bodyTarget.block;
   }
 
-
   public override operands(): readonly Value[] {
     return [
       this.object,
@@ -67,11 +66,7 @@ export class ForInTerminatorOp extends TerminatorOp {
       this.exitTarget,
       successorOperands.slice(bodyCount),
     );
-    if (
-      object === this.object &&
-      bodyTarget === this.bodyTarget &&
-      exitTarget === this.exitTarget
-    )
+    if (object === this.object && bodyTarget === this.bodyTarget && exitTarget === this.exitTarget)
       return this;
 
     return new ForInTerminatorOp(
@@ -106,10 +101,7 @@ export class ForInTerminatorOp extends TerminatorOp {
     throw new Error(`ForInTerminatorOp#${this.id} has no target ${index}`);
   }
 
-  public override withTarget(
-    index: number,
-    target: BlockTarget,
-  ): ForInTerminatorOp {
+  public override withTarget(index: number, target: BlockTarget): ForInTerminatorOp {
     if (index === 0) {
       return new ForInTerminatorOp(
         this.id,

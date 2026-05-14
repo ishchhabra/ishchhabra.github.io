@@ -11,33 +11,34 @@ import {
   JSXFragment,
   YieldExpression,
 } from "oxc-parser";
+
 import { Value } from "../../ir/core/Value";
+import { lowerClass } from "../classes/lowerClass";
 import { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { lowerArrayExpression } from "./lowerArrayExpression";
 import { lowerAssignmentExpression } from "./lowerAssignmentExpression";
+import { lowerAwaitExpression } from "./lowerAwaitExpression";
 import { lowerBinaryExpression } from "./lowerBinaryExpression";
 import { lowerCallExpression } from "./lowerCallExpression";
+import { lowerConditionalExpression } from "./lowerConditionalExpression";
 import { lowerArrowFunctionExpression, lowerFunctionExpression } from "./lowerFunctionExpression";
 import { lowerIdentifier } from "./lowerIdentifier";
-import { lowerLiteral } from "./lowerLiteral";
-import { lowerUnaryExpression } from "./lowerUnaryExpression";
-import { lowerMemberExpression } from "./lowerMemberExpression";
-import { lowerLogicalExpression } from "./lowerLogicalExpression";
-import { lowerArrayExpression } from "./lowerArrayExpression";
-import { lowerObjectExpression } from "./lowerObjectExpression";
-import { lowerConditionalExpression } from "./lowerConditionalExpression";
-import { lowerSequenceExpression } from "./lowerSequenceExpression";
-import { lowerThisExpression } from "./lowerThisExpression";
-import { lowerUpdateExpression } from "./lowerUpdateExpression";
-import { lowerNewExpression } from "./lowerNewExpression";
-import { lowerMetaProperty } from "./lowerMetaProperty";
-import { lowerRegExpLiteral } from "./lowerRegExpLiteral";
-import { lowerTemplateLiteral } from "./lowerTemplateLiteral";
 import { lowerImportExpression } from "./lowerImportExpression";
-import { lowerAwaitExpression } from "./lowerAwaitExpression";
-import { lowerYieldExpression } from "./lowerYieldExpression";
-import { lowerOptionalChain } from "./lowerOptionalChain";
-import { lowerClass } from "../classes/lowerClass";
 import { lowerJSXElement, lowerJSXFragment } from "./lowerJSXExpression";
+import { lowerLiteral } from "./lowerLiteral";
+import { lowerLogicalExpression } from "./lowerLogicalExpression";
+import { lowerMemberExpression } from "./lowerMemberExpression";
+import { lowerMetaProperty } from "./lowerMetaProperty";
+import { lowerNewExpression } from "./lowerNewExpression";
+import { lowerObjectExpression } from "./lowerObjectExpression";
+import { lowerOptionalChain } from "./lowerOptionalChain";
+import { lowerRegExpLiteral } from "./lowerRegExpLiteral";
+import { lowerSequenceExpression } from "./lowerSequenceExpression";
+import { lowerTemplateLiteral } from "./lowerTemplateLiteral";
+import { lowerThisExpression } from "./lowerThisExpression";
+import { lowerUnaryExpression } from "./lowerUnaryExpression";
+import { lowerUpdateExpression } from "./lowerUpdateExpression";
+import { lowerYieldExpression } from "./lowerYieldExpression";
 
 /**
  * Lowers an expression and returns the SSA value it produces.

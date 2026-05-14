@@ -13,11 +13,12 @@ import type {
   Program,
   VariableDeclaration,
 } from "oxc-parser";
+
+import type { ModuleIR } from "../../ir/core/ModuleIR";
 import type {
   ModuleAttribute,
   ModuleExportName as IRModuleExportName,
 } from "../../ir/core/ModuleName";
-import type { ModuleIR } from "../../ir/core/ModuleIR";
 import type { ScopeGraph } from "../scope/ScopeGraph";
 
 /**
