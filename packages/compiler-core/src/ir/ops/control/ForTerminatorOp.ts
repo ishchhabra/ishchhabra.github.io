@@ -24,7 +24,7 @@ export class ForTerminatorOp extends TerminatorOp {
     public readonly testTarget: BlockTarget,
     public readonly bodyBlock: BasicBlock,
     public readonly updateBlock: BasicBlock,
-    public readonly exitBlock: BasicBlock,
+    public readonly completionBlock: BasicBlock,
     public readonly label: string | null = null,
   ) {
     super(id);
@@ -59,7 +59,7 @@ export class ForTerminatorOp extends TerminatorOp {
       testTarget,
       this.bodyBlock,
       this.updateBlock,
-      this.exitBlock,
+      this.completionBlock,
       this.label,
     );
   }
@@ -70,7 +70,7 @@ export class ForTerminatorOp extends TerminatorOp {
       cloneBlockTarget(context, this.testTarget),
       context.block(this.bodyBlock),
       context.block(this.updateBlock),
-      context.block(this.exitBlock),
+      context.block(this.completionBlock),
       this.label,
     );
   }
@@ -83,7 +83,7 @@ export class ForTerminatorOp extends TerminatorOp {
     if (index === 0) return this.testTarget;
     if (index === 1) return blockTarget(this.bodyBlock);
     if (index === 2) return blockTarget(this.updateBlock);
-    if (index === 3) return blockTarget(this.exitBlock);
+    if (index === 3) return blockTarget(this.completionBlock);
 
     throw new Error(`ForTerminatorOp#${this.id} has no target ${index}`);
   }
@@ -98,7 +98,7 @@ export class ForTerminatorOp extends TerminatorOp {
         target,
         this.bodyBlock,
         this.updateBlock,
-        this.exitBlock,
+        this.completionBlock,
         this.label,
       );
     }
@@ -109,7 +109,7 @@ export class ForTerminatorOp extends TerminatorOp {
         this.testTarget,
         target.block,
         this.updateBlock,
-        this.exitBlock,
+        this.completionBlock,
         this.label,
       );
     }
@@ -120,7 +120,7 @@ export class ForTerminatorOp extends TerminatorOp {
         this.testTarget,
         this.bodyBlock,
         target.block,
-        this.exitBlock,
+        this.completionBlock,
         this.label,
       );
     }

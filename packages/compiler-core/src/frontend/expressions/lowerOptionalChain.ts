@@ -231,6 +231,7 @@ function branchIfNullish(
       value,
       blockTarget(bodyBlock),
       blockTarget(context.joinBlock, [context.undefinedValue]),
+      context.joinBlock,
     ),
   );
 

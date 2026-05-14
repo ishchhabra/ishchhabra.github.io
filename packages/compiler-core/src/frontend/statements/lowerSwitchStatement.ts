@@ -23,7 +23,7 @@ export function lowerSwitchStatement(
   lowerDeclarationInstantiation(builder, statement);
 
   const caseBlocks = statement.cases.map(() => builder.createBlock());
-  const exitBlock = builder.createBlock();
+  const completionBlock = builder.createBlock();
 
   const cases: SwitchCaseTarget[] = statement.cases.map(
     (switchCase, index) => ({
@@ -36,13 +36,13 @@ export function lowerSwitchStatement(
   );
 
   if (!cases.some((switchCase) => switchCase.test === null)) {
-    cases.push({ test: null, target: blockTarget(exitBlock) });
+    cases.push({ test: null, target: blockTarget(completionBlock) });
   }
 
   const control = {
     kind: "label" as const,
     label: options.label ?? null,
-    breakTarget: exitBlock,
+    breakTarget: completionBlock,
   };
 
   builder.terminate(
@@ -50,7 +50,7 @@ export function lowerSwitchStatement(
       builder.operationId(),
       discriminant,
       cases,
-      exitBlock,
+      completionBlock,
       options.label ?? null,
     ),
   );
@@ -66,7 +66,7 @@ export function lowerSwitchStatement(
 
       if (!builder.currentBlock.isTerminated) {
         const nextBlock =
-          i + 1 < caseBlocks.length ? caseBlocks[i + 1] : exitBlock;
+          i + 1 < caseBlocks.length ? caseBlocks[i + 1] : completionBlock;
 
         builder.terminate(
           new JumpTerminatorOp(builder.operationId(), blockTarget(nextBlock)),
@@ -77,5 +77,5 @@ export function lowerSwitchStatement(
     builder.popControl(control);
   }
 
-  builder.setCurrentBlock(exitBlock);
+  builder.setCurrentBlock(completionBlock);
 }

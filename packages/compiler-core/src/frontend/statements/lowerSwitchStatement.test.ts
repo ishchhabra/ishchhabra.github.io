@@ -28,8 +28,8 @@ describe("lowerSwitchStatement", () => {
     const secondJump = op.cases[1].target.block.terminator as JumpTerminatorOp;
     const defaultJump = op.cases[2].target.block.terminator as JumpTerminatorOp;
 
-    expect(firstJump.targetBlock).toBe(op.exitBlock);
+    expect(firstJump.targetBlock).toBe(op.completionBlock);
     expect(secondJump.targetBlock).toBe(op.cases[2].target.block);
-    expect(defaultJump.targetBlock).toBe(op.exitBlock);
+    expect(defaultJump.targetBlock).toBe(op.completionBlock);
   });
 });

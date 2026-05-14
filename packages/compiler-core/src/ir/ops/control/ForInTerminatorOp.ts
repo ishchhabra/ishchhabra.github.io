@@ -24,6 +24,7 @@ export class ForInTerminatorOp extends TerminatorOp {
     public readonly object: Value,
     public readonly bodyTarget: BlockTarget,
     public readonly exitTarget: BlockTarget,
+    public readonly completionBlock: BasicBlock,
     public readonly label: string | null = null,
   ) {
     super(id);
@@ -33,9 +34,6 @@ export class ForInTerminatorOp extends TerminatorOp {
     return this.bodyTarget.block;
   }
 
-  public get exitBlock(): BasicBlock {
-    return this.exitTarget.block;
-  }
 
   public override operands(): readonly Value[] {
     return [
@@ -81,6 +79,7 @@ export class ForInTerminatorOp extends TerminatorOp {
       object,
       bodyTarget,
       exitTarget,
+      this.completionBlock,
       this.label,
     );
   }
@@ -91,6 +90,7 @@ export class ForInTerminatorOp extends TerminatorOp {
       context.value(this.object),
       cloneBlockTarget(context, this.bodyTarget),
       cloneBlockTarget(context, this.exitTarget),
+      context.block(this.completionBlock),
       this.label,
     );
   }
@@ -116,6 +116,7 @@ export class ForInTerminatorOp extends TerminatorOp {
         this.object,
         target,
         this.exitTarget,
+        this.completionBlock,
         this.label,
       );
     }
@@ -126,6 +127,7 @@ export class ForInTerminatorOp extends TerminatorOp {
         this.object,
         this.bodyTarget,
         target,
+        this.completionBlock,
         this.label,
       );
     }

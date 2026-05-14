@@ -32,7 +32,7 @@ describe("lowerLogicalExpression", () => {
     const trueJump = branch.bodyBlock.terminator as JumpTerminatorOp;
 
     expect(trueJump.targetBlock.params).toHaveLength(1);
-    expect(trueJump.targetBlock).toBe(branch.exitBlock);
+    expect(trueJump.targetBlock).toBe(branch.completionBlock);
     expect(trueJump.args).toEqual([branch.bodyBlock.operations[0].result]);
   });
 
@@ -58,7 +58,7 @@ describe("lowerLogicalExpression", () => {
     const falseJump = branch.bodyBlock.terminator as JumpTerminatorOp;
 
     expect(falseJump.targetBlock.params).toHaveLength(1);
-    expect(falseJump.targetBlock).toBe(branch.exitBlock);
+    expect(falseJump.targetBlock).toBe(branch.completionBlock);
     expect(falseJump.args).toEqual([branch.bodyBlock.operations[0].result]);
   });
 
@@ -87,7 +87,7 @@ describe("lowerLogicalExpression", () => {
     const falseJump = branch.bodyBlock.terminator as JumpTerminatorOp;
 
     expect(falseJump.targetBlock.params).toHaveLength(1);
-    expect(falseJump.targetBlock).toBe(branch.exitBlock);
+    expect(falseJump.targetBlock).toBe(branch.completionBlock);
     expect(falseJump.args).toEqual([branch.bodyBlock.operations[0].result]);
   });
 
@@ -99,7 +99,7 @@ describe("lowerLogicalExpression", () => {
     if (fn === null) throw new Error("Expected entry function");
 
     const branch = fn.entryBlock.terminator as ShortCircuitTerminatorOp;
-    const joinBlock = branch.exitBlock;
+    const joinBlock = branch.completionBlock;
 
     expect(joinBlock.params).toHaveLength(1);
     expect(joinBlock.operations.map((op) => op.constructor.name)).toEqual(["InitializeBindingOp"]);

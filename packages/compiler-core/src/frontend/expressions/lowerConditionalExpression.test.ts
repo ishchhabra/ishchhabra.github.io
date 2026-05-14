@@ -17,7 +17,7 @@ describe("lowerConditionalExpression", () => {
     expect(entry.terminator).toBeInstanceOf(ConditionalTerminatorOp);
 
     const branch = entry.terminator as ConditionalTerminatorOp;
-    const join = branch.exitBlock;
+    const join = branch.completionBlock;
 
     expect(branch.consequentBlock.operations.map((op) => op.constructor.name)).toEqual([
       "LoadGlobalOp",

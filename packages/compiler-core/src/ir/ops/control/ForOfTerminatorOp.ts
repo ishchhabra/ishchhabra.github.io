@@ -23,6 +23,7 @@ export class ForOfTerminatorOp extends TerminatorOp {
     public readonly iterable: Value,
     public readonly bodyTarget: BlockTarget,
     public readonly exitTarget: BlockTarget,
+    public readonly completionBlock: BasicBlock,
     public readonly isAwait: boolean = false,
     public readonly label: string | null = null,
   ) {
@@ -33,9 +34,6 @@ export class ForOfTerminatorOp extends TerminatorOp {
     return this.bodyTarget.block;
   }
 
-  public get exitBlock(): BasicBlock {
-    return this.exitTarget.block;
-  }
 
   public override operands(): readonly Value[] {
     return [
@@ -82,6 +80,7 @@ export class ForOfTerminatorOp extends TerminatorOp {
       iterable,
       bodyTarget,
       exitTarget,
+      this.completionBlock,
       this.isAwait,
       this.label,
     );
@@ -93,6 +92,7 @@ export class ForOfTerminatorOp extends TerminatorOp {
       context.value(this.iterable),
       cloneBlockTarget(context, this.bodyTarget),
       cloneBlockTarget(context, this.exitTarget),
+      context.block(this.completionBlock),
       this.isAwait,
       this.label,
     );
@@ -119,6 +119,7 @@ export class ForOfTerminatorOp extends TerminatorOp {
         this.iterable,
         target,
         this.exitTarget,
+        this.completionBlock,
         this.isAwait,
         this.label,
       );
@@ -130,6 +131,7 @@ export class ForOfTerminatorOp extends TerminatorOp {
         this.iterable,
         this.bodyTarget,
         target,
+        this.completionBlock,
         this.isAwait,
         this.label,
       );

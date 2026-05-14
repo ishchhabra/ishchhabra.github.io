@@ -212,7 +212,7 @@ function collectValueRegionParams(
   if (visited.has(terminator)) return;
   visited.add(terminator);
 
-  for (const param of terminator.exitBlock.params) {
+  for (const param of terminator.completionBlock.params) {
     params.add(param);
   }
 
@@ -233,7 +233,7 @@ function collectValueRegionParams(
     }
   }
 
-  const exitTerminator = terminator.exitBlock.terminator;
+  const exitTerminator = terminator.completionBlock.terminator;
   if (isValueRegionTerminator(exitTerminator)) {
     collectValueRegionParams(exitTerminator, params, visited);
   }
@@ -355,7 +355,7 @@ function emitForIn(
   const propertyKey = propertyKeys[0];
   const loopControl = {
     label: loop.label,
-    breakTarget: controlExitTarget(loop.exitBlock),
+    breakTarget: controlExitTarget(loop.completionBlock),
     continueTarget: loopBlock,
   };
   const body = emitBranchArm(context, loop.bodyBlock, loopBlock, emitted, [
@@ -372,7 +372,7 @@ function emitForIn(
         blockStatement(body),
       ),
     ),
-    ...emitContinuation(context, loop.exitBlock, continuation, emitted, controls),
+    ...emitContinuation(context, loop.completionBlock, continuation, emitted, controls),
   ];
 }
 
@@ -385,7 +385,7 @@ function emitSwitch(
 ): ESTreeStatement[] {
   const switchControl = {
     label: op.label,
-    breakTarget: controlExitTarget(op.exitBlock),
+    breakTarget: controlExitTarget(op.completionBlock),
     continueTarget: null,
   };
   const switchControls = [...controls, switchControl];
@@ -397,7 +397,7 @@ function emitSwitch(
         context.expressionForValue(op.discriminant),
         op.cases.map((switchCase, index) => {
           const continuation =
-            index + 1 < op.cases.length ? op.cases[index + 1].target.block : op.exitBlock;
+            index + 1 < op.cases.length ? op.cases[index + 1].target.block : op.completionBlock;
 
           return switchCaseNode(
             switchCase.test === null ? null : context.expressionForValue(switchCase.test),
@@ -408,7 +408,7 @@ function emitSwitch(
         }),
       ),
     ),
-    ...emitContinuation(context, op.exitBlock, continuation, emitted, controls),
+    ...emitContinuation(context, op.completionBlock, continuation, emitted, controls),
   ];
 }
 
@@ -421,13 +421,13 @@ function emitLabeled(
 ): ESTreeStatement[] {
   const labelControl = {
     label: op.label,
-    breakTarget: op.exitBlock,
+    breakTarget: op.completionBlock,
     continueTarget: null,
     requireLabel: true,
   };
 
-  return withFallthrough(context, op.exitBlock, emitted, controls, continuation, () => {
-    const body = emitBranchArm(context, op.bodyBlock, op.exitBlock, emitted, [
+  return withFallthrough(context, op.completionBlock, emitted, controls, continuation, () => {
+    const body = emitBranchArm(context, op.bodyBlock, op.completionBlock, emitted, [
       ...controls,
       labelControl,
     ]);
@@ -443,7 +443,7 @@ function emitTry(
   controls: readonly EmitControlContext[],
   continuation: BasicBlock | null = null,
 ): ESTreeStatement[] {
-  const innerContinuation = op.finallyBlock ?? op.exitBlock;
+  const innerContinuation = op.finallyBlock ?? op.completionBlock;
   const body = emitBranchArm(context, op.tryBlock, innerContinuation, emitted, controls);
 
   const handler =
@@ -457,13 +457,13 @@ function emitTry(
   const finalizer =
     op.finallyBlock === null
       ? null
-      : emitBranchArm(context, op.finallyBlock, op.exitBlock, emitted, controls);
+      : emitBranchArm(context, op.finallyBlock, op.completionBlock, emitted, controls);
 
   return [
     tryStatement(body, handler, finalizer),
     ...(continuation === null
-      ? emitBlock(context, op.exitBlock, emitted, controls)
-      : emitBranchArm(context, op.exitBlock, continuation, emitted, controls)),
+      ? emitBlock(context, op.completionBlock, emitted, controls)
+      : emitBranchArm(context, op.completionBlock, continuation, emitted, controls)),
   ];
 }
 
@@ -501,7 +501,7 @@ function emitForOf(
   const iterationValue = iterationValues[0];
   const loopControl = {
     label: loop.label,
-    breakTarget: controlExitTarget(loop.exitBlock),
+    breakTarget: controlExitTarget(loop.completionBlock),
     continueTarget: loopBlock,
   };
   const body = emitBranchArm(context, loop.bodyBlock, loopBlock, emitted, [
@@ -519,7 +519,7 @@ function emitForOf(
         loop.isAwait,
       ),
     ),
-    ...emitContinuation(context, loop.exitBlock, continuation, emitted, controls),
+    ...emitContinuation(context, loop.completionBlock, continuation, emitted, controls),
   ];
 }
 
@@ -548,7 +548,7 @@ function emitFor(
 
   validateLoopTestEdge(
     testBranch.falseBlock,
-    loop.exitBlock,
+    loop.completionBlock,
     `ForTerminatorOp#${loop.id} false edge`,
   );
 
@@ -557,13 +557,13 @@ function emitFor(
     loop.testBlock,
     testBranch,
     loop.bodyBlock,
-    loop.exitBlock,
+    loop.completionBlock,
     emitted,
   );
 
   const loopControl = {
     label: loop.label,
-    breakTarget: controlExitTarget(loop.exitBlock),
+    breakTarget: controlExitTarget(loop.completionBlock),
     continueTarget: loop.updateBlock,
   };
   const loopControls = [...controls, loopControl];
@@ -572,7 +572,7 @@ function emitFor(
 
   return [
     withOptionalLabel(loop.label, forStatement(testExpression, update, blockStatement(body))),
-    ...emitContinuation(context, loop.exitBlock, continuation, emitted, controls),
+    ...emitContinuation(context, loop.completionBlock, continuation, emitted, controls),
   ];
 }
 
@@ -616,7 +616,7 @@ function emitWhile(
 
   validateLoopTestEdge(
     testBranch.falseBlock,
-    loop.exitBlock,
+    loop.completionBlock,
     `WhileTerminatorOp#${loop.id} false edge`,
   );
 
@@ -629,13 +629,13 @@ function emitWhile(
     loop.testBlock,
     testTerminator,
     loop.bodyBlock,
-    loop.exitBlock,
+    loop.completionBlock,
     emitted,
   );
 
   const loopControl = {
     label: loop.label,
-    breakTarget: controlExitTarget(loop.exitBlock),
+    breakTarget: controlExitTarget(loop.completionBlock),
     continueTarget: loopBlock,
   };
   const body = emitBranchArm(context, loop.bodyBlock, loopBlock, emitted, [
@@ -645,7 +645,7 @@ function emitWhile(
 
   return [
     withOptionalLabel(loop.label, whileStatement(testExpression, blockStatement(body))),
-    ...emitContinuation(context, loop.exitBlock, continuation, emitted, controls),
+    ...emitContinuation(context, loop.completionBlock, continuation, emitted, controls),
   ];
 }
 
@@ -664,7 +664,7 @@ function emitDoWhile(
 
   const loopControl = {
     label: loop.label,
-    breakTarget: controlExitTarget(loop.exitBlock),
+    breakTarget: controlExitTarget(loop.completionBlock),
     continueTarget: loop.testBlock,
   };
   const body = emitBranchArm(context, loop.bodyBlock, loop.testBlock, emitted, [
@@ -676,13 +676,13 @@ function emitDoWhile(
     loop.testBlock,
     testTerminator,
     loopBlock,
-    loop.exitBlock,
+    loop.completionBlock,
     emitted,
   );
 
   return [
     withOptionalLabel(loop.label, doWhileStatement(blockStatement(body), testExpression)),
-    ...emitContinuation(context, loop.exitBlock, continuation, emitted, controls),
+    ...emitContinuation(context, loop.completionBlock, continuation, emitted, controls),
   ];
 }
 
@@ -710,7 +710,7 @@ function loopTestBranchForValueRegion(
   terminator: ValueRegionTerminator,
   loopId?: number,
 ): BranchTerminatorOp {
-  const exitTerminator = terminator.exitBlock.terminator;
+  const exitTerminator = terminator.completionBlock.terminator;
   if (exitTerminator instanceof BranchTerminatorOp) return exitTerminator;
   if (isValueRegionTerminator(exitTerminator)) {
     return loopTestBranchForValueRegion(exitTerminator, loopId);
@@ -812,13 +812,13 @@ function emitValueBlockExpression(
     const consequent = emitValueBlockExpression(
       context,
       terminator.consequentBlock,
-      terminator.exitBlock,
+      terminator.completionBlock,
       emitted,
     );
     const alternate = emitValueBlockExpression(
       context,
       terminator.alternateBlock,
-      terminator.exitBlock,
+      terminator.completionBlock,
       emitted,
     );
     const expression = expressionWithStatements(
@@ -828,16 +828,16 @@ function emitValueBlockExpression(
     const result = valueRegionResultParam(terminator);
     context.values.set(result, expression);
 
-    if (terminator.exitBlock === continuation) return expression;
+    if (terminator.completionBlock === continuation) return expression;
 
-    return emitValueBlockExpression(context, terminator.exitBlock, continuation, emitted);
+    return emitValueBlockExpression(context, terminator.completionBlock, continuation, emitted);
   }
 
   if (terminator instanceof ShortCircuitTerminatorOp) {
     const bodyExpression = emitValueBlockExpression(
       context,
       terminator.bodyBlock,
-      terminator.exitBlock,
+      terminator.completionBlock,
       emitted,
     );
     const expression = expressionWithStatements(
@@ -851,16 +851,16 @@ function emitValueBlockExpression(
     const result = valueRegionResultParam(terminator);
     context.values.set(result, expression);
 
-    if (terminator.exitBlock === continuation) return expression;
+    if (terminator.completionBlock === continuation) return expression;
 
-    return emitValueBlockExpression(context, terminator.exitBlock, continuation, emitted);
+    return emitValueBlockExpression(context, terminator.completionBlock, continuation, emitted);
   }
 
   if (terminator instanceof NullishGuardTerminatorOp) {
     const bodyExpression = emitValueBlockExpression(
       context,
       terminator.bodyBlock,
-      terminator.exitBlock,
+      terminator.completionBlock,
       emitted,
     );
     const expression = expressionWithStatements(
@@ -874,9 +874,9 @@ function emitValueBlockExpression(
     const result = valueRegionResultParam(terminator);
     context.values.set(result, expression);
 
-    if (terminator.exitBlock === continuation) return expression;
+    if (terminator.completionBlock === continuation) return expression;
 
-    return emitValueBlockExpression(context, terminator.exitBlock, continuation, emitted);
+    return emitValueBlockExpression(context, terminator.completionBlock, continuation, emitted);
   }
 
   throw new Error(
@@ -914,13 +914,13 @@ function expressionWithStatements(
 }
 
 function valueRegionResultParam(terminator: ValueRegionTerminator): Value {
-  if (terminator.exitBlock.params.length !== 1) {
+  if (terminator.completionBlock.params.length !== 1) {
     throw new Error(
-      `${terminator.constructor.name}#${terminator.id} exit block expected one result parameter, got ${terminator.exitBlock.params.length}`,
+      `${terminator.constructor.name}#${terminator.id} exit block expected one result parameter, got ${terminator.completionBlock.params.length}`,
     );
   }
 
-  return terminator.exitBlock.params[0];
+  return terminator.completionBlock.params[0];
 }
 
 function valueRegionExitExpression(
@@ -1059,7 +1059,7 @@ function emitIf(
   controls: readonly EmitControlContext[],
   continuation: BasicBlock | null = null,
 ): ESTreeStatement[] {
-  return withFallthrough(context, op.exitBlock, emitted, controls, continuation, () => {
+  return withFallthrough(context, op.completionBlock, emitted, controls, continuation, () => {
     const consequent = emitTargetArm(context, op.thenTarget, emitted, controls);
     const alternate = emitTargetArm(context, op.elseTarget, emitted, controls);
 
@@ -1080,7 +1080,7 @@ function emitConditional(
   controls: readonly EmitControlContext[],
   continuation: BasicBlock | null = null,
 ): ESTreeStatement[] {
-  return withFallthrough(context, op.exitBlock, emitted, controls, continuation, () => {
+  return withFallthrough(context, op.completionBlock, emitted, controls, continuation, () => {
     const consequent = emitTargetArm(context, op.consequentTarget, emitted, controls);
     const alternate = emitTargetArm(context, op.alternateTarget, emitted, controls);
 
@@ -1101,7 +1101,7 @@ function emitShortCircuit(
   controls: readonly EmitControlContext[],
   continuation: BasicBlock | null = null,
 ): ESTreeStatement[] {
-  return withFallthrough(context, op.exitBlock, emitted, controls, continuation, () => {
+  return withFallthrough(context, op.completionBlock, emitted, controls, continuation, () => {
     const body = emitTargetArm(context, op.bodyTarget, emitted, controls);
     const exit = emitTargetArm(context, op.exitTarget, emitted, controls);
 
@@ -1122,7 +1122,7 @@ function emitNullishGuard(
   controls: readonly EmitControlContext[],
   continuation: BasicBlock | null = null,
 ): ESTreeStatement[] {
-  return withFallthrough(context, op.exitBlock, emitted, controls, continuation, () => {
+  return withFallthrough(context, op.completionBlock, emitted, controls, continuation, () => {
     const body = emitTargetArm(context, op.bodyTarget, emitted, controls);
     const exit = emitTargetArm(context, op.exitTarget, emitted, controls);
 
@@ -1564,7 +1564,7 @@ function structuredExit(block: BasicBlock): BasicBlock | null {
     terminator instanceof ForOfTerminatorOp ||
     terminator instanceof ForTerminatorOp
   ) {
-    return terminator.exitBlock;
+    return terminator.completionBlock;
   }
 
   return null;

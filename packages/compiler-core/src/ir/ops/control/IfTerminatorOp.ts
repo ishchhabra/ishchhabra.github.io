@@ -15,7 +15,7 @@ import { OperationEffects, PureOperationEffects } from "../../effects";
  * Structured terminator for `if` statements.
  *
  * `thenTarget` and `elseTarget` are immediate CFG successors selected by
- * the condition. `exitBlock` is the block after the structured `if` region.
+ * the condition. `completionBlock` is the block after the structured `if` region.
  *
  * @example
  * ```js
@@ -33,7 +33,7 @@ export class IfTerminatorOp extends TerminatorOp {
     public readonly condition: Value,
     public readonly thenTarget: BlockTarget,
     public readonly elseTarget: BlockTarget,
-    public readonly exitBlock: BasicBlock,
+    public readonly completionBlock: BasicBlock,
   ) {
     super(id);
   }
@@ -92,7 +92,7 @@ export class IfTerminatorOp extends TerminatorOp {
       condition,
       thenTarget,
       elseTarget,
-      this.exitBlock,
+      this.completionBlock,
     );
   }
 
@@ -102,7 +102,7 @@ export class IfTerminatorOp extends TerminatorOp {
       context.value(this.condition),
       cloneBlockTarget(context, this.thenTarget),
       cloneBlockTarget(context, this.elseTarget),
-      context.block(this.exitBlock),
+      context.block(this.completionBlock),
     );
   }
 
@@ -127,7 +127,7 @@ export class IfTerminatorOp extends TerminatorOp {
         this.condition,
         target,
         this.elseTarget,
-        this.exitBlock,
+        this.completionBlock,
       );
     }
 
@@ -137,7 +137,7 @@ export class IfTerminatorOp extends TerminatorOp {
         this.condition,
         this.thenTarget,
         target,
-        this.exitBlock,
+        this.completionBlock,
       );
     }
 

@@ -14,7 +14,7 @@ import { type OperationEffects, PureOperationEffects } from "../../effects";
 /**
  * Structured terminator for ECMAScript labeled statements.
  *
- * A label creates a named breakable region. `break label` targets `exitBlock`.
+ * A label creates a named breakable region. `break label` targets `completionBlock`.
  * Labeled loops use loop terminator labels because `continue label` needs the
  * loop continuation target.
  */
@@ -23,7 +23,7 @@ export class LabeledTerminatorOp extends TerminatorOp {
     id: OperationId,
     public readonly label: string,
     public readonly bodyTarget: BlockTarget,
-    public readonly exitBlock: BasicBlock,
+    public readonly completionBlock: BasicBlock,
   ) {
     super(id);
   }
@@ -44,7 +44,7 @@ export class LabeledTerminatorOp extends TerminatorOp {
     const target = replaceForwardedOperands(this.bodyTarget, operands);
     if (target === this.bodyTarget) return this;
 
-    return new LabeledTerminatorOp(this.id, this.label, target, this.exitBlock);
+    return new LabeledTerminatorOp(this.id, this.label, target, this.completionBlock);
   }
 
   public override clone(context: OperationCloneContext): LabeledTerminatorOp {
@@ -52,7 +52,7 @@ export class LabeledTerminatorOp extends TerminatorOp {
       context.ids.operationId(),
       this.label,
       cloneBlockTarget(context, this.bodyTarget),
-      context.block(this.exitBlock),
+      context.block(this.completionBlock),
     );
   }
 
@@ -62,14 +62,14 @@ export class LabeledTerminatorOp extends TerminatorOp {
 
   public override target(index: number): BlockTarget {
     if (index === 0) return this.bodyTarget;
-    if (index === 1) return blockTarget(this.exitBlock);
+    if (index === 1) return blockTarget(this.completionBlock);
 
     throw new Error(`LabeledTerminatorOp#${this.id} has no target ${index}`);
   }
 
   public override withTarget(index: number, target: BlockTarget): LabeledTerminatorOp {
     if (index === 0) {
-      return new LabeledTerminatorOp(this.id, this.label, target, this.exitBlock);
+      return new LabeledTerminatorOp(this.id, this.label, target, this.completionBlock);
     }
 
     if (index === 1) {

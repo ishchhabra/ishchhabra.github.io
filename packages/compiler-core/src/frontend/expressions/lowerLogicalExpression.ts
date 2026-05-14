@@ -30,6 +30,7 @@ export function lowerLogicalExpression(
       left,
       blockTarget(rhsBlock),
       blockTarget(joinBlock, [left]),
+      joinBlock,
     ),
   );
 

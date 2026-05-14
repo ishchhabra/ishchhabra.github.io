@@ -26,7 +26,7 @@ export class WhileTerminatorOp extends TerminatorOp {
     id: OperationId,
     public readonly testTarget: BlockTarget,
     public readonly bodyTarget: BlockTarget,
-    public readonly exitBlock: BasicBlock,
+    public readonly completionBlock: BasicBlock,
     public readonly kind: WhileTerminatorKind,
     public readonly label: string | null = null,
   ) {
@@ -80,7 +80,7 @@ export class WhileTerminatorOp extends TerminatorOp {
       this.id,
       testTarget,
       bodyTarget,
-      this.exitBlock,
+      this.completionBlock,
       this.kind,
       this.label,
     );
@@ -91,7 +91,7 @@ export class WhileTerminatorOp extends TerminatorOp {
       context.ids.operationId(),
       cloneBlockTarget(context, this.testTarget),
       cloneBlockTarget(context, this.bodyTarget),
-      context.block(this.exitBlock),
+      context.block(this.completionBlock),
       this.kind,
       this.label,
     );
@@ -106,7 +106,7 @@ export class WhileTerminatorOp extends TerminatorOp {
     if (index === 1) return this.bodyTarget;
     if (index === 2) {
       return {
-        block: this.exitBlock,
+        block: this.completionBlock,
         operands: { produced: [], forwarded: [] },
       };
     }
@@ -123,7 +123,7 @@ export class WhileTerminatorOp extends TerminatorOp {
         this.id,
         target,
         this.bodyTarget,
-        this.exitBlock,
+        this.completionBlock,
         this.kind,
         this.label,
       );
@@ -134,7 +134,7 @@ export class WhileTerminatorOp extends TerminatorOp {
         this.id,
         this.testTarget,
         target,
-        this.exitBlock,
+        this.completionBlock,
         this.kind,
         this.label,
       );

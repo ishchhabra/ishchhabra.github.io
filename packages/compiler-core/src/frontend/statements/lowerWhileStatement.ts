@@ -23,7 +23,7 @@ export function lowerWhileStatement(
   const loopBlock = builder.createBlock();
   const testBlock = builder.createBlock();
   const bodyBlock = builder.createBlock();
-  const exitBlock = builder.createBlock();
+  const completionBlock = builder.createBlock();
 
   builder.terminate(
     new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock)),
@@ -32,7 +32,7 @@ export function lowerWhileStatement(
   const control = {
     kind: "loop" as const,
     label: options.label ?? null,
-    breakTarget: exitBlock,
+    breakTarget: completionBlock,
     continueTarget: loopBlock,
   };
 
@@ -42,7 +42,7 @@ export function lowerWhileStatement(
       builder.operationId(),
       blockTarget(testBlock),
       blockTarget(bodyBlock),
-      exitBlock,
+      completionBlock,
       "while",
       options.label ?? null,
     ),
@@ -55,7 +55,7 @@ export function lowerWhileStatement(
       builder.operationId(),
       condition,
       blockTarget(bodyBlock),
-      blockTarget(exitBlock),
+      blockTarget(completionBlock),
     ),
   );
 
@@ -73,5 +73,5 @@ export function lowerWhileStatement(
     );
   }
 
-  builder.setCurrentBlock(exitBlock);
+  builder.setCurrentBlock(completionBlock);
 }

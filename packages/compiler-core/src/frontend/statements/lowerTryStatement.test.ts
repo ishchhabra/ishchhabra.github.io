@@ -26,7 +26,7 @@ describe("lowerTryStatement", () => {
 
     expect(tryJump.targetBlock).toBe(op.finallyBlock);
     expect(catchJump.targetBlock).toBe(op.finallyBlock);
-    expect(finallyJump.targetBlock).toBe(op.exitBlock);
+    expect(finallyJump.targetBlock).toBe(op.completionBlock);
     expect(op.catchTarget!.operands.produced).toHaveLength(1);
     expect(op.catchTarget!.block.params).toEqual(op.catchTarget!.operands.produced);
   });

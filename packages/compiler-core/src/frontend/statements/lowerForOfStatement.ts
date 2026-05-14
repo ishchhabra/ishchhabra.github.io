@@ -42,12 +42,12 @@ export function lowerForOfStatement(
 
   const loopBlock = builder.createBlock();
   const bodyBlock = builder.createBlock();
-  const exitBlock = builder.createBlock();
+  const completionBlock = builder.createBlock();
 
   const control = {
     kind: "loop" as const,
     label: options.label ?? null,
-    breakTarget: exitBlock,
+    breakTarget: completionBlock,
     continueTarget: loopBlock,
   };
 
@@ -67,7 +67,8 @@ export function lowerForOfStatement(
         block: bodyBlock,
         operands: producedOperands([iterationValue]),
       },
-      blockTarget(exitBlock),
+      blockTarget(completionBlock),
+      completionBlock,
       statement.await,
       options.label ?? null,
     ),
@@ -88,7 +89,7 @@ export function lowerForOfStatement(
     );
   }
 
-  builder.setCurrentBlock(exitBlock);
+  builder.setCurrentBlock(completionBlock);
 }
 
 function lowerForOfLeft(

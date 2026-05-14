@@ -21,7 +21,7 @@ describe("control statements", () => {
 
     expect(loop).toBeInstanceOf(WhileTerminatorOp);
     expect(jump).toBeInstanceOf(JumpTerminatorOp);
-    expect(jump.targetBlock).toBe(loop.exitBlock);
+    expect(jump.targetBlock).toBe(loop.completionBlock);
   });
 
   it("lowers continue to the nearest loop continuation", () => {
@@ -73,6 +73,6 @@ describe("control statements", () => {
     expect(labeled.label).toBe("outer");
     expect(switchOp).toBeInstanceOf(SwitchTerminatorOp);
     expect(switchOp.label).toBeNull();
-    expect(caseJump.targetBlock).toBe(labeled.exitBlock);
+    expect(caseJump.targetBlock).toBe(labeled.completionBlock);
   });
 });

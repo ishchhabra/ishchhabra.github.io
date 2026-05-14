@@ -19,15 +19,15 @@ export function lowerLabeledStatement(
   }
 
   const bodyBlock = builder.createBlock();
-  const exitBlock = builder.createBlock();
+  const completionBlock = builder.createBlock();
   const context = {
     kind: "label" as const,
     label,
-    breakTarget: exitBlock,
+    breakTarget: completionBlock,
   };
 
   builder.terminate(
-    new LabeledTerminatorOp(builder.operationId(), label, blockTarget(bodyBlock), exitBlock),
+    new LabeledTerminatorOp(builder.operationId(), label, blockTarget(bodyBlock), completionBlock),
   );
 
   builder.pushControl(context);
@@ -40,10 +40,10 @@ export function lowerLabeledStatement(
   }
 
   if (!builder.currentBlock.isTerminated) {
-    builder.terminate(new JumpTerminatorOp(builder.operationId(), blockTarget(exitBlock)));
+    builder.terminate(new JumpTerminatorOp(builder.operationId(), blockTarget(completionBlock)));
   }
 
-  builder.setCurrentBlock(exitBlock);
+  builder.setCurrentBlock(completionBlock);
 }
 
 function isLoopStatement(statement: Statement): boolean {

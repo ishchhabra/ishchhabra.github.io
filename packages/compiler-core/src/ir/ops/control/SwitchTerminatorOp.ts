@@ -27,7 +27,7 @@ export class SwitchTerminatorOp extends TerminatorOp {
     id: OperationId,
     public readonly discriminant: Value,
     public readonly cases: readonly SwitchCaseTarget[],
-    public readonly exitBlock: BasicBlock,
+    public readonly completionBlock: BasicBlock,
     public readonly label: string | null = null,
   ) {
     super(id);
@@ -94,7 +94,7 @@ export class SwitchTerminatorOp extends TerminatorOp {
       this.id,
       discriminant,
       cases,
-      this.exitBlock,
+      this.completionBlock,
       this.label,
     );
   }
@@ -107,7 +107,7 @@ export class SwitchTerminatorOp extends TerminatorOp {
         test: switchCase.test === null ? null : context.value(switchCase.test),
         target: cloneBlockTarget(context, switchCase.target),
       })),
-      context.block(this.exitBlock),
+      context.block(this.completionBlock),
       this.label,
     );
   }
@@ -135,7 +135,7 @@ export class SwitchTerminatorOp extends TerminatorOp {
         this.cases.map((switchCase, caseIndex) =>
           caseIndex === index ? { ...switchCase, target } : switchCase,
         ),
-        this.exitBlock,
+        this.completionBlock,
         this.label,
       );
     }

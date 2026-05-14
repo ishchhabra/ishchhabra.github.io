@@ -29,7 +29,7 @@ export class TryTerminatorOp extends TerminatorOp {
     public readonly tryTarget: BlockTarget,
     public readonly catchTarget: BlockTarget | null,
     public readonly finallyTarget: BlockTarget | null,
-    public readonly exitBlock: BasicBlock,
+    public readonly completionBlock: BasicBlock,
   ) {
     super(id);
   }
@@ -60,7 +60,7 @@ export class TryTerminatorOp extends TerminatorOp {
       cloneBlockTarget(context, this.tryTarget),
       this.catchTarget === null ? null : cloneBlockTarget(context, this.catchTarget),
       this.finallyTarget === null ? null : cloneBlockTarget(context, this.finallyTarget),
-      context.block(this.exitBlock),
+      context.block(this.completionBlock),
     );
   }
 
@@ -97,7 +97,7 @@ export class TryTerminatorOp extends TerminatorOp {
       return this;
     }
 
-    return new TryTerminatorOp(this.id, tryTarget, catchTarget, finallyTarget, this.exitBlock);
+    return new TryTerminatorOp(this.id, tryTarget, catchTarget, finallyTarget, this.completionBlock);
   }
 
   public override targetCount(): number {
@@ -117,7 +117,7 @@ export class TryTerminatorOp extends TerminatorOp {
       if (index === nextIndex++) return this.finallyTarget;
     }
 
-    if (index === nextIndex) return blockTarget(this.exitBlock);
+    if (index === nextIndex) return blockTarget(this.completionBlock);
 
     throw new Error(`TryTerminatorOp#${this.id} has no target ${index}`);
   }
@@ -129,7 +129,7 @@ export class TryTerminatorOp extends TerminatorOp {
         target,
         this.catchTarget,
         this.finallyTarget,
-        this.exitBlock,
+        this.completionBlock,
       );
     }
 
@@ -142,7 +142,7 @@ export class TryTerminatorOp extends TerminatorOp {
           this.tryTarget,
           target,
           this.finallyTarget,
-          this.exitBlock,
+          this.completionBlock,
         );
       }
       nextIndex++;
@@ -155,7 +155,7 @@ export class TryTerminatorOp extends TerminatorOp {
           this.tryTarget,
           this.catchTarget,
           target,
-          this.exitBlock,
+          this.completionBlock,
         );
       }
       nextIndex++;

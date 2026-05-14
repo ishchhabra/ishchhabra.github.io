@@ -17,7 +17,7 @@ import { OperationEffects, PureOperationEffects } from "../../effects";
  * The `test` value is evaluated before this terminator. Depending on ECMAScript
  * truthiness, control enters either `consequentTarget` or `alternateTarget`.
  * Each arm evaluates only when selected, then forwards the produced expression
- * result to the shared `exitBlock`.
+ * result to the shared `completionBlock`.
  *
  * @example
  * ```js
@@ -30,7 +30,7 @@ export class ConditionalTerminatorOp extends TerminatorOp {
     public readonly test: Value,
     public readonly consequentTarget: BlockTarget,
     public readonly alternateTarget: BlockTarget,
-    public readonly exitBlock: BasicBlock,
+    public readonly completionBlock: BasicBlock,
   ) {
     super(id);
   }
@@ -89,7 +89,7 @@ export class ConditionalTerminatorOp extends TerminatorOp {
       test,
       consequentTarget,
       alternateTarget,
-      this.exitBlock,
+      this.completionBlock,
     );
   }
 
@@ -99,7 +99,7 @@ export class ConditionalTerminatorOp extends TerminatorOp {
       context.value(this.test),
       cloneBlockTarget(context, this.consequentTarget),
       cloneBlockTarget(context, this.alternateTarget),
-      context.block(this.exitBlock),
+      context.block(this.completionBlock),
     );
   }
 
@@ -112,7 +112,7 @@ export class ConditionalTerminatorOp extends TerminatorOp {
     if (index === 1) return this.alternateTarget;
     if (index === 2) {
       return {
-        block: this.exitBlock,
+        block: this.completionBlock,
         operands: { produced: [], forwarded: [] },
       };
     }
@@ -127,7 +127,7 @@ export class ConditionalTerminatorOp extends TerminatorOp {
         this.test,
         target,
         this.alternateTarget,
-        this.exitBlock,
+        this.completionBlock,
       );
     }
 
@@ -137,7 +137,7 @@ export class ConditionalTerminatorOp extends TerminatorOp {
         this.test,
         this.consequentTarget,
         target,
-        this.exitBlock,
+        this.completionBlock,
       );
     }
 

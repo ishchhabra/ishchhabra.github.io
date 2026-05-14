@@ -19,7 +19,7 @@ describe("lowerOptionalChain", () => {
     const continuation = branch.bodyBlock;
 
     expect(branch).toBeInstanceOf(NullishGuardTerminatorOp);
-    expect(branch.exitTarget.block).toBe(branch.exitBlock);
+    expect(branch.exitTarget.block).toBe(branch.completionBlock);
     expect(branch.exitTarget.operands.forwarded).toEqual([fn.entryBlock.operations[0].result]);
     expect(continuation.operations[0]).toBeInstanceOf(LoadPropertyOp);
   });

@@ -36,12 +36,12 @@ export function lowerForStatement(
   const testBlock = builder.createBlock();
   const bodyBlock = builder.createBlock();
   const updateBlock = builder.createBlock();
-  const exitBlock = builder.createBlock();
+  const completionBlock = builder.createBlock();
 
   const control = {
     kind: "loop" as const,
     label: options.label ?? null,
-    breakTarget: exitBlock,
+    breakTarget: completionBlock,
     continueTarget: updateBlock,
   };
 
@@ -56,7 +56,7 @@ export function lowerForStatement(
       blockTarget(testBlock),
       bodyBlock,
       updateBlock,
-      exitBlock,
+      completionBlock,
       options.label ?? null,
     ),
   );
@@ -72,7 +72,7 @@ export function lowerForStatement(
       builder.operationId(),
       condition,
       blockTarget(bodyBlock),
-      blockTarget(exitBlock),
+      blockTarget(completionBlock),
     ),
   );
 
@@ -100,7 +100,7 @@ export function lowerForStatement(
     );
   }
 
-  builder.setCurrentBlock(exitBlock);
+  builder.setCurrentBlock(completionBlock);
 }
 
 function emitBooleanConstant(

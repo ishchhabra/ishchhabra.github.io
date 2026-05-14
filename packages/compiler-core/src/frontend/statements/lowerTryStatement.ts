@@ -22,7 +22,7 @@ export function lowerTryStatement(builder: FunctionIRBuilder, statement: TryStat
   const tryBlock = builder.createBlock();
   const catchBlock = statement.handler === null ? null : builder.createBlock();
   const finallyBlock = statement.finalizer === null ? null : builder.createBlock();
-  const exitBlock = builder.createBlock();
+  const completionBlock = builder.createBlock();
 
   const exceptionValue = catchBlock === null ? null : builder.createValue();
 
@@ -41,7 +41,7 @@ export function lowerTryStatement(builder: FunctionIRBuilder, statement: TryStat
             operands: producedOperands([exceptionValue!]),
           },
       finallyBlock === null ? null : blockTarget(finallyBlock),
-      exitBlock,
+      completionBlock,
     ),
   );
 
@@ -50,11 +50,11 @@ export function lowerTryStatement(builder: FunctionIRBuilder, statement: TryStat
   for (const child of statement.block.body) {
     lowerStatement(builder, child);
   }
-  jumpIfOpen(builder, finallyBlock ?? exitBlock);
+  jumpIfOpen(builder, finallyBlock ?? completionBlock);
 
   if (statement.handler !== null && catchBlock !== null) {
     lowerCatchClause(builder, statement.handler, catchBlock, exceptionValue!);
-    jumpIfOpen(builder, finallyBlock ?? exitBlock);
+    jumpIfOpen(builder, finallyBlock ?? completionBlock);
   }
 
   if (statement.finalizer !== null && finallyBlock !== null) {
@@ -63,10 +63,10 @@ export function lowerTryStatement(builder: FunctionIRBuilder, statement: TryStat
     for (const child of statement.finalizer.body) {
       lowerStatement(builder, child);
     }
-    jumpIfOpen(builder, exitBlock);
+    jumpIfOpen(builder, completionBlock);
   }
 
-  builder.setCurrentBlock(exitBlock);
+  builder.setCurrentBlock(completionBlock);
 }
 
 function lowerCatchClause(

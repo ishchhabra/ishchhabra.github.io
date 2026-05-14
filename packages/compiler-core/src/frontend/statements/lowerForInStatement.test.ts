@@ -31,7 +31,7 @@ describe("lowerForInStatement", () => {
       "CallOp",
       "JumpTerminatorOp",
     ]);
-    expect(loop.exitBlock.operations.map((op) => op.constructor.name)).toEqual([
+    expect(loop.completionBlock.operations.map((op) => op.constructor.name)).toEqual([
       "LoadGlobalOp",
       "CallOp",
     ]);
