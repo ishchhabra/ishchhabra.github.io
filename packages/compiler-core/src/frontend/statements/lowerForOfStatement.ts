@@ -30,10 +30,6 @@ export function lowerForOfStatement(
   statement: ForOfStatement,
   options: StatementLoweringOptions = {},
 ): void {
-  if (statement.await) {
-    throw new Error("for await...of requires async iterator lowering");
-  }
-
   const iterable = lowerExpression(builder, statement.right);
   lowerDeclarationInstantiation(builder, statement);
 

@@ -37,4 +37,18 @@ describe("lowerForOfStatement", () => {
       "CallOp",
     ]);
   });
+
+  it("preserves for-await-of on the structured iteration terminator", () => {
+    const { moduleIR } = new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
+      parseModule("test.js", "for await (const x of xs) foo(x); bar();"),
+    );
+    const fn = moduleIR.entryFunction;
+    if (fn === null) throw new Error("Expected entry function");
+
+    const entryJump = fn.entryBlock.terminator as JumpTerminatorOp;
+    const loop = entryJump.targetBlock.terminator as ForOfTerminatorOp;
+
+    expect(loop).toBeInstanceOf(ForOfTerminatorOp);
+    expect(loop.isAwait).toBe(true);
+  });
 });

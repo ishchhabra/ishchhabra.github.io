@@ -910,6 +910,16 @@ describe("generateJavaScript", () => {
       "for (let $1 of xs) {\n  const { x: $d0 } = $1;\n\n  foo($d0);\n}",
     );
   });
+
+  it("emits and runs for-await-of loops", async () => {
+    const source =
+      "export async function run() { const out = []; for await (const value of [Promise.resolve(1), Promise.resolve(2)]) { out.push(value); } return out; }";
+    const code = compileTestSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(code).toContain("for await (let");
+    await expect(module.run()).resolves.toEqual([1, 2]);
+  });
 });
 
 function compileTestSource(source: string): string {
