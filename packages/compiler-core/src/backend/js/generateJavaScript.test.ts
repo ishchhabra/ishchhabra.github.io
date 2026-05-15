@@ -743,6 +743,15 @@ describe("generateJavaScript", () => {
     expect(generateJavaScript(input)).toBe("while (a) {\n  break;\n}\n\nfoo();");
   });
 
+  it("emits continue after edge copies", () => {
+    const source =
+      "export function run() { let x = 0; let y = 0; while (x < 4) { x = x + 1; if (x < 3) continue; y = y + x; } return y; }";
+
+    expect(compileTestSource(source)).toBe(
+      "function $d0() {\n  let $23;\n  let $24;\n  let $21;\n  let $22;\n  let $25;\n  let $26;\n  let $d1 = 0;\n\n  $23 = $d1;\n\n  let $d2 = 0;\n\n  $24 = $d2;\n  $21 = $23;\n  $22 = $24;\n\n  while ($d1 < 4) {\n    $d1 = $d1 + 1;\n    $25 = $d1;\n\n    if ($d1 < 3) {\n      $21 = $25;\n\n      continue;\n    }\n\n    $d2 = $d2 + $d1;\n    $26 = $d2;\n    $21 = $25;\n    $22 = $26;\n  }\n\n  return $d2;\n}\n\nexport { $d0 as run };",
+    );
+  });
+
   it("emits labeled loops", () => {
     const input = new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
       parseModule("test.js", "outer: while (a) break outer; foo();"),

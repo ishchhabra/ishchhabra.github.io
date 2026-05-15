@@ -4,7 +4,6 @@ import {
   DominatorTreeAnalysis,
   PreservedAnalyses,
 } from "../../analysis";
-import { PromotableBindingsAnalysis } from "../../analysis/PromotableBinding";
 import { DeclarationId, Value } from "../../core";
 import { BasicBlock } from "../../core/Block";
 import { FunctionIR } from "../../core/FunctionIR";

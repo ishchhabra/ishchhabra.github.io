@@ -1,6 +1,5 @@
 import { ModuleIRBuildResult } from "../frontend/ModuleIRBuilder";
 import { AnalysisManager } from "../ir/analysis";
-import { PromotableBindingsAnalysis } from "../ir/analysis/PromotableBinding";
 import type { FunctionIR } from "../ir/core/FunctionIR";
 import { IRIdAllocator } from "../ir/core/IRIdAllocator";
 import type { ModuleIR } from "../ir/core/ModuleIR";
@@ -32,14 +31,9 @@ export function runCompilerPasses(buildResult: ModuleIRBuildResult, ids: IRIdAll
     createDeadDeclarationEliminationPass(),
   ]);
 
-  runFunctionPipeline(moduleIR, analyses, (fn) => {
-    const promotable = analyses.getFunction(PromotableBindingsAnalysis, fn);
-
+  runFunctionPipeline(moduleIR, analyses, () => {
     return [
-      createSSAEliminationPass({
-        ids,
-        declarations: [...promotable.declarations],
-      }),
+      createSSAEliminationPass({ ids }),
       createValueMaterializationPass({ ids }),
       createCopyPropagationPass(),
       createDeadCodeEliminationPass(),

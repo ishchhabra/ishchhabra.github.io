@@ -1,5 +1,5 @@
 import { AnalysisManager, PreservedAnalyses } from "../../analysis";
-import { DeclarationId, FunctionIR, Value } from "../../core";
+import { FunctionIR, Value } from "../../core";
 import { BasicBlock } from "../../core/Block";
 import { IRIdAllocator } from "../../core/IRIdAllocator";
 import { BlockTarget, TerminatorOp } from "../../core/TerminatorOp";
@@ -16,23 +16,14 @@ export interface SSAEliminationPassOptions {
    * IR graph.
    */
   readonly ids: IRIdAllocator;
-
-  /**
-   * Promoted declarations whose block params should be materialized.
-   *
-   * This should be the same declaration set passed to `BindingPromotionPass`.
-   * Other block parameters, such as produced loop/catch values or expression
-   * join values, are left in block-param form for existing structured codegen.
-   */
-  readonly declarations: readonly DeclarationId[];
 }
 
 /**
- * Creates the pass that converts promoted binding block params into copies.
+ * Creates the pass that converts binding SSA block params into copies.
  *
- * Binding promotion represents merge values with block parameters. JavaScript
- * has no block parameters, so this pass inserts explicit `CopyValueOp`s on
- * predecessor edges and removes the promoted declaration params from successor blocks.
+ * Binding SSA represents merge values with block parameters. JavaScript has no
+ * block parameters, so this pass inserts explicit `CopyValueOp`s on predecessor
+ * edges and removes declaration params from successor blocks.
  *
  * @example
  * ```txt
@@ -78,21 +69,15 @@ interface EdgeRewrite {
  * so copies execute only when that edge is taken.
  */
 class SSAElimination {
-  readonly #eliminatedDeclarations: ReadonlySet<DeclarationId>;
+  readonly #removedParams = new Set<Value>();
   #changed = false;
 
   constructor(
     private readonly fn: FunctionIR,
     private readonly options: SSAEliminationPassOptions,
-  ) {
-    this.#eliminatedDeclarations = new Set(options.declarations);
-  }
+  ) {}
 
   public run(): PassResult {
-    if (this.#eliminatedDeclarations.size === 0) {
-      return { changed: false };
-    }
-
     for (const block of Array.from(this.fn.blocks)) {
       const terminator = block.terminator;
       if (terminator === null) continue;
@@ -163,16 +148,6 @@ class SSAElimination {
       );
     }
 
-    for (let i = 0; i < produced.length; i++) {
-      const param = params[i];
-
-      if (param.declarationId !== null && this.#eliminatedDeclarations.has(param.declarationId)) {
-        throw new Error(
-          `SSAEliminationPass cannot eliminate produced param value#${param.id} on edge to bb${target.block.id}`,
-        );
-      }
-    }
-
     const copies: ParallelCopy[] = [];
     const retainedForwarded: Value[] = [];
 
@@ -180,8 +155,9 @@ class SSAElimination {
       const param = params[produced.length + i];
       const arg = forwarded[i];
 
-      if (param.declarationId !== null && this.#eliminatedDeclarations.has(param.declarationId)) {
+      if (param.declarationId !== null) {
         copies.push({ target: param, source: arg });
+        this.#removedParams.add(param);
         continue;
       }
 
@@ -246,7 +222,7 @@ class SSAElimination {
     for (let index = block.params.length - 1; index >= 0; index--) {
       const param = block.params[index];
 
-      if (param.declarationId !== null && this.#eliminatedDeclarations.has(param.declarationId)) {
+      if (this.#removedParams.has(param)) {
         block.removeParam(index);
         this.#changed = true;
       }

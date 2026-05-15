@@ -27,7 +27,7 @@ describe("SSAEliminationPass", () => {
 
     const fn = functionIR(entry, join);
 
-    createSSAEliminationPass({ ids, declarations: [declaration] }).run(fn, new AnalysisManager());
+    createSSAEliminationPass({ ids }).run(fn, new AnalysisManager());
 
     expect(entry.operations[0]).toBeInstanceOf(CopyValueOp);
     expect((entry.operations[0] as CopyValueOp).target).toBe(param);
@@ -63,7 +63,7 @@ describe("SSAEliminationPass", () => {
 
     const fn = functionIR(entry, thenBlock, elseBlock);
 
-    createSSAEliminationPass({ ids, declarations: [declaration] }).run(fn, new AnalysisManager());
+    createSSAEliminationPass({ ids }).run(fn, new AnalysisManager());
 
     const branch = entry.terminator as BranchTerminatorOp;
     const trueEdge = branch.trueBlock;
@@ -107,10 +107,42 @@ describe("SSAEliminationPass", () => {
 
     const fn = functionIR(entry, join);
 
-    createSSAEliminationPass({ ids, declarations: [declaration] }).run(fn, new AnalysisManager());
+    createSSAEliminationPass({ ids }).run(fn, new AnalysisManager());
 
     const jumpTarget = (entry.terminator as JumpTerminatorOp).jumpTarget;
 
+    expect(jumpTarget.operands.produced).toEqual([producedSource]);
+    expect(jumpTarget.operands.forwarded).toEqual([]);
+    expect(join.params).toEqual([producedParam]);
+  });
+
+  it("preserves produced declaration params", () => {
+    const ids = new IRIdAllocator();
+    const declaration = makeDeclarationId(1);
+    const entry = block(1);
+    const join = block(2);
+    const producedSource = value(ids, declaration);
+    const producedParam = value(ids, declaration);
+
+    join.appendParam(producedParam);
+    entry.setTerminator(
+      new JumpTerminatorOp(ids.operationId(), {
+        block: join,
+        operands: {
+          produced: [producedSource],
+          forwarded: [],
+        },
+      }),
+    );
+    join.setTerminator(new ReturnTerminatorOp(ids.operationId(), producedParam));
+
+    const fn = functionIR(entry, join);
+
+    createSSAEliminationPass({ ids }).run(fn, new AnalysisManager());
+
+    const jumpTarget = (entry.terminator as JumpTerminatorOp).jumpTarget;
+
+    expect(entry.operations).toHaveLength(1);
     expect(jumpTarget.operands.produced).toEqual([producedSource]);
     expect(jumpTarget.operands.forwarded).toEqual([]);
     expect(join.params).toEqual([producedParam]);

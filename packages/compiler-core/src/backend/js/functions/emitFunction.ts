@@ -1389,6 +1389,11 @@ function emitTargetArm(
     return [...entry.prologue, controlBreak];
   }
 
+  const controlJump = emitControlJump(entry.entryBlock, controls);
+  if (controlJump !== null) {
+    return [...entry.prologue, controlJump];
+  }
+
   if (context.isFallthrough(entry.entryBlock)) {
     return entry.prologue;
   }
