@@ -101,22 +101,26 @@ export class DeclarationCollector {
         this.collectExpression(statement.test, scope);
         return;
 
-      case "ForStatement":
+      case "ForStatement": {
+        const loopScope = new Scope("block", scope);
+        this.graph.setScope(statement, loopScope);
+
         if (statement.init !== null) {
           if (statement.init.type === "VariableDeclaration") {
-            this.collectVariableDeclaration(statement.init, scope);
+            this.collectVariableDeclaration(statement.init, loopScope);
           } else {
-            this.collectExpression(statement.init, scope);
+            this.collectExpression(statement.init, loopScope);
           }
         }
         if (statement.test !== null) {
-          this.collectExpression(statement.test, scope);
+          this.collectExpression(statement.test, loopScope);
         }
         if (statement.update !== null) {
-          this.collectExpression(statement.update, scope);
+          this.collectExpression(statement.update, loopScope);
         }
-        this.collectStatement(statement.body, scope);
+        this.collectStatement(statement.body, loopScope);
         return;
+      }
 
       case "SwitchStatement": {
         this.collectExpression(statement.discriminant, scope);

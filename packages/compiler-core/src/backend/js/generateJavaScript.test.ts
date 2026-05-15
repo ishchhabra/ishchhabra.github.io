@@ -16,7 +16,7 @@ describe("generateJavaScript", () => {
       parseModule("test.js", "let x = 1 + 2; x;"),
     );
 
-    expect(generateJavaScript(input)).toBe("let x = 1 + 2;");
+    expect(generateJavaScript(input)).toBe("let $d0 = 1 + 2;");
   });
 
   it("emits an unused call as an expression statement", () => {
@@ -64,7 +64,7 @@ describe("generateJavaScript", () => {
       parseModule("test.js", "const f = function g() { return 1; };"),
     );
 
-    expect(generateJavaScript(input)).toBe("const f = function g() {\n  return 1;\n};");
+    expect(generateJavaScript(input)).toBe("const $d0 = function g() {\n  return 1;\n};");
   });
 
   it("emits async generator function expressions", () => {
@@ -72,7 +72,7 @@ describe("generateJavaScript", () => {
       parseModule("test.js", "const f = async function* () {};"),
     );
 
-    expect(generateJavaScript(input)).toBe("const f = async function* () {};");
+    expect(generateJavaScript(input)).toBe("const $d0 = async function* () {};");
   });
 
   it("emits arrow function expressions", () => {
@@ -80,7 +80,7 @@ describe("generateJavaScript", () => {
       parseModule("test.js", "const f = async () => 1;"),
     );
 
-    expect(generateJavaScript(input)).toBe("const f = async () => {\n  return 1;\n};");
+    expect(generateJavaScript(input)).toBe("const $d0 = async () => {\n  return 1;\n};");
   });
 
   it("emits default, rest, and destructured function parameters", () => {
@@ -88,7 +88,9 @@ describe("generateJavaScript", () => {
       parseModule("test.js", "function f(x = 1, { y }, ...rest) { return y; }"),
     );
 
-    expect(generateJavaScript(input)).toBe("function f(x = 1, { y }, ...rest) {\n  return y;\n}");
+    expect(generateJavaScript(input)).toBe(
+      "function $d0($d1 = 1, { y: $d2 }, ...$d3) {\n  return $d2;\n}",
+    );
   });
 
   it("emits class declarations", () => {
@@ -97,7 +99,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "class C extends Base {\n  method() {\n    return 1;\n  }\n}",
+      "class $d0 extends Base {\n  method() {\n    return 1;\n  }\n}",
     );
   });
 
@@ -110,7 +112,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "const C = class {\n  constructor() {}\n  static create() {}\n\n  get value() {\n    return 1;\n  }\n\n  set value(next) {}\n};",
+      "const $d0 = class {\n  constructor() {}\n  static create() {}\n\n  get value() {\n    return 1;\n  }\n\n  set value($d1) {}\n};",
     );
   });
 
@@ -123,7 +125,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "class C extends Base {\n  constructor(value) {\n    super(value);\n  }\n\n  get value() {\n    return super.value;\n  }\n\n  method() {\n    return super.m(1);\n  }\n}",
+      "class $d0 extends Base {\n  constructor($d1) {\n    super($d1);\n  }\n\n  get value() {\n    return super.value;\n  }\n\n  method() {\n    return super.m(1);\n  }\n}",
     );
   });
 
@@ -132,7 +134,7 @@ describe("generateJavaScript", () => {
       parseModule("test.js", "class C { x = 1; y; static count = 0; }"),
     );
 
-    expect(generateJavaScript(input)).toBe("class C {\n  x = 1;\n  y;\n  static count = 0;\n}");
+    expect(generateJavaScript(input)).toBe("class $d0 {\n  x = 1;\n  y;\n  static count = 0;\n}");
   });
 
   it("emits super property writes", () => {
@@ -144,7 +146,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "class C extends Base {\n  method() {\n    super.x = 1;\n    super.x = super.x + 2;\n    super.x = super.x + 1;\n  }\n}",
+      "class $d0 extends Base {\n  method() {\n    super.x = 1;\n    super.x = super.x + 2;\n    super.x = super.x + 1;\n  }\n}",
     );
   });
 
@@ -157,7 +159,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "class C {\n  #x = 1;\n\n  #m() {\n    return this.#x;\n  }\n\n  method(other) {\n    this.#x = other.#m();\n\n    return #x in other;\n  }\n}",
+      "class $d0 {\n  #x = 1;\n\n  #m() {\n    return this.#x;\n  }\n\n  method($d1) {\n    this.#x = $d1.#m();\n\n    return #x in $d1;\n  }\n}",
     );
   });
 
@@ -170,7 +172,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      'const el = <><UI.Button id="x" count={n}>{child}</UI.Button><span /></>;',
+      'const $d0 = <><UI.Button id="x" count={n}>{child}</UI.Button><span /></>;',
     );
   });
 
@@ -196,7 +198,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "let $0;\n\nif (obj == null) {\n  $0 = undefined;\n} else {\n  $0 = obj.x;\n}\n\nlet value = $0;",
+      "let $0;\n\nif (obj == null) {\n  $0 = undefined;\n} else {\n  $0 = obj.x;\n}\n\nlet $d0 = $0;",
     );
   });
 
@@ -206,7 +208,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "let $0;\n\nif (fn == null) {\n  $0 = undefined;\n} else {\n  $0 = fn(arg);\n}\n\nlet value = $0;",
+      "let $0;\n\nif (fn == null) {\n  $0 = undefined;\n} else {\n  $0 = fn(arg);\n}\n\nlet $d0 = $0;",
     );
   });
 
@@ -224,7 +226,7 @@ describe("generateJavaScript", () => {
     ]);
 
     expect(generateJavaScript(input)).toBe(
-      "let $7;\nlet $8;\nlet $0;\n\n$7 = obj;\n$8 = $7.method;\n\nif ($8 == null) {\n  $0 = undefined;\n} else {\n  $0 = $8.call($7, arg);\n}\n\nlet value = $0;",
+      "let $7;\nlet $8;\nlet $0;\n\n$7 = obj;\n$8 = $7.method;\n\nif ($8 == null) {\n  $0 = undefined;\n} else {\n  $0 = $8.call($7, arg);\n}\n\nlet $d0 = $0;",
     );
   });
 
@@ -249,7 +251,7 @@ describe("generateJavaScript", () => {
       parseModule("test.js", "const xs = [a, , ...b];"),
     );
 
-    expect(generateJavaScript(input)).toBe("const xs = [a,, ...b];");
+    expect(generateJavaScript(input)).toBe("const $d0 = [a,, ...b];");
   });
 
   it("emits object literals", () => {
@@ -257,7 +259,7 @@ describe("generateJavaScript", () => {
       parseModule("test.js", "const obj = { x, y: z, [k]: v, ...rest };"),
     );
 
-    expect(generateJavaScript(input)).toBe("const obj = { x, y: z, [k]: v, ...rest };");
+    expect(generateJavaScript(input)).toBe("const $d0 = { x, y: z, [k]: v, ...rest };");
   });
 
   it("emits object literal methods and accessors", () => {
@@ -269,7 +271,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "const obj = {\n  method() {},\n  get x() {\n    return 1;\n  },\n  set x(value) {}\n};",
+      "const $d0 = {\n  method() {},\n  get x() {\n    return 1;\n  },\n  set x($d1) {}\n};",
     );
   });
 
@@ -278,7 +280,7 @@ describe("generateJavaScript", () => {
       parseModule("test.js", "const value = (first(), second(), third());"),
     );
 
-    expect(generateJavaScript(input)).toBe("const value = (first(), second(), third());");
+    expect(generateJavaScript(input)).toBe("const $d0 = (first(), second(), third());");
   });
 
   it("emits template literals", () => {
@@ -286,7 +288,7 @@ describe("generateJavaScript", () => {
       parseModule("test.js", "const message = `hello ${name}`;"),
     );
 
-    expect(generateJavaScript(input)).toBe("const message = `hello ${name}`;");
+    expect(generateJavaScript(input)).toBe("const $d0 = `hello ${name}`;");
   });
 
   it("emits this expressions", () => {
@@ -302,7 +304,7 @@ describe("generateJavaScript", () => {
       parseModule("test.js", "let x = 1; x++;"),
     );
 
-    expect(generateJavaScript(input)).toBe("let x = 1;\n\nx = x + 1;");
+    expect(generateJavaScript(input)).toBe("let $d0 = 1;\n\n$d0 = $d0 + 1;");
   });
 
   it("emits delete expressions", () => {
@@ -318,7 +320,7 @@ describe("generateJavaScript", () => {
       parseModule("test.js", "const value = new Constructor(arg);"),
     );
 
-    expect(generateJavaScript(input)).toBe("const value = new Constructor(arg);");
+    expect(generateJavaScript(input)).toBe("const $d0 = new Constructor(arg);");
   });
 
   it("emits spread construct arguments", () => {
@@ -326,7 +328,7 @@ describe("generateJavaScript", () => {
       parseModule("test.js", "const value = new Constructor(arg, ...rest);"),
     );
 
-    expect(generateJavaScript(input)).toBe("const value = new Constructor(arg, ...rest);");
+    expect(generateJavaScript(input)).toBe("const $d0 = new Constructor(arg, ...rest);");
   });
 
   it("emits import.meta", () => {
@@ -334,7 +336,7 @@ describe("generateJavaScript", () => {
       parseModule("test.js", "const url = import.meta.url;"),
     );
 
-    expect(generateJavaScript(input)).toBe("const url = import.meta.url;");
+    expect(generateJavaScript(input)).toBe("const $d0 = import.meta.url;");
   });
 
   it("emits dynamic import expressions", () => {
@@ -342,7 +344,7 @@ describe("generateJavaScript", () => {
       parseModule("test.js", 'const mod = import("./mod.js");'),
     );
 
-    expect(generateJavaScript(input)).toBe('const mod = import("./mod.js");');
+    expect(generateJavaScript(input)).toBe('const $d0 = import("./mod.js");');
   });
 
   it("emits dynamic import options", () => {
@@ -351,7 +353,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      'const mod = import("./data.json", { with: { type: "json" } });',
+      'const $d0 = import("./data.json", { with: { type: "json" } });',
     );
   });
 
@@ -364,7 +366,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      'import "./setup.js";\nimport def from "./m.js";\nimport { a } from "./m.js";\nimport { b as c } from "./m.js";\nimport * as ns from "./n.js";\n\nconst x = 1;\nconst y = 2;\n\nexport { x };\nexport { y as z };\nexport { a as aa } from "./m.js";\n\nexport * from "./all.js";\nexport * as everything from "./all.js";',
+      'import "./setup.js";\nimport def from "./m.js";\nimport { a } from "./m.js";\nimport { b as c } from "./m.js";\nimport * as ns from "./n.js";\n\nconst $d4 = 1;\nconst $d5 = 2;\n\nexport { $d4 as x };\nexport { $d5 as z };\nexport { a as aa } from "./m.js";\n\nexport * from "./all.js";\nexport * as everything from "./all.js";',
     );
   });
 
@@ -377,7 +379,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      'import "./setup.json" with { type: "json" };\nimport { "remote-name" as local } from "./m.js" with { type: "json" };\n\nconst value = 1;\n\nexport { value as "public-name" };\nexport { "remote-name" as re } from "./m.js" with { type: "json" };\n\nexport * from "./all.js" with { type: "json" };',
+      'import "./setup.json" with { type: "json" };\nimport { "remote-name" as local } from "./m.js" with { type: "json" };\n\nconst $d1 = 1;\n\nexport { $d1 as "public-name" };\nexport { "remote-name" as re } from "./m.js" with { type: "json" };\n\nexport * from "./all.js" with { type: "json" };',
     );
   });
 
@@ -387,7 +389,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "function f() {\n  return 1;\n}\n\nexport { f as default };",
+      "function $d0() {\n  return 1;\n}\n\nexport { $d0 as default };",
     );
   });
 
@@ -417,7 +419,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      'async function load() {\n  return await import("./mod.js");\n}',
+      'async function $d0() {\n  return await import("./mod.js");\n}',
     );
   });
 
@@ -426,7 +428,7 @@ describe("generateJavaScript", () => {
       parseModule("test.js", "const pattern = /abc/gi;"),
     );
 
-    expect(generateJavaScript(input)).toBe("const pattern = /abc/gi;");
+    expect(generateJavaScript(input)).toBe("const $d0 = /abc/gi;");
   });
 
   it("emits new.target", () => {
@@ -434,7 +436,7 @@ describe("generateJavaScript", () => {
       parseModule("test.js", "function f() { return new.target; }"),
     );
 
-    expect(generateJavaScript(input)).toBe("function f() {\n  return new.target;\n}");
+    expect(generateJavaScript(input)).toBe("function $d0() {\n  return new.target;\n}");
   });
 
   it("emits yield expressions", () => {
@@ -442,7 +444,7 @@ describe("generateJavaScript", () => {
       parseModule("test.js", "function* g() { return yield value; }"),
     );
 
-    expect(generateJavaScript(input)).toBe("function* g() {\n  return yield value;\n}");
+    expect(generateJavaScript(input)).toBe("function* $d0() {\n  return yield value;\n}");
   });
 
   it("emits lexical destructuring declarations", () => {
@@ -450,7 +452,7 @@ describe("generateJavaScript", () => {
       parseModule("test.js", "const { x, y: z } = obj;"),
     );
 
-    expect(generateJavaScript(input)).toBe("const { x, y: z } = obj;");
+    expect(generateJavaScript(input)).toBe("const { x: $d0, y: $d1 } = obj;");
   });
 
   it("emits var destructuring declarations through hoisted stores", () => {
@@ -458,7 +460,7 @@ describe("generateJavaScript", () => {
       parseModule("test.js", "var { x } = obj;"),
     );
 
-    expect(generateJavaScript(input)).toBe("var x = undefined;\n\n({ x } = obj);");
+    expect(generateJavaScript(input)).toBe("var $d0 = undefined;\n\n({ x: $d0 } = obj);");
   });
 
   it("emits destructuring assignments", () => {
@@ -466,7 +468,7 @@ describe("generateJavaScript", () => {
       parseModule("test.js", "let x; ({ x } = obj);"),
     );
 
-    expect(generateJavaScript(input)).toBe("let x = undefined;\n\n({ x } = obj);");
+    expect(generateJavaScript(input)).toBe("let $d0 = undefined;\n\n({ x: $d0 } = obj);");
   });
 
   it("emits compound property assignment", () => {
@@ -490,7 +492,7 @@ describe("generateJavaScript", () => {
     ]);
 
     expect(generateJavaScript(input)).toBe(
-      "let $7;\nlet $3;\nlet x = undefined;\n\nif (x) {\n  $3 = x;\n} else {\n  $7 = compute();\n  x = $7;\n  $3 = $7;\n}",
+      "let $7;\nlet $3;\nlet $d0 = undefined;\n\nif ($d0) {\n  $3 = $d0;\n} else {\n  $7 = compute();\n  $d0 = $7;\n  $3 = $7;\n}",
     );
   });
 
@@ -499,7 +501,9 @@ describe("generateJavaScript", () => {
       parseModule("test.js", "let x; if (a) x = 1; x = 2;"),
     );
 
-    expect(generateJavaScript(input)).toBe("let x = undefined;\n\nif (a) {\n  x = 1;\n}\n\nx = 2;");
+    expect(generateJavaScript(input)).toBe(
+      "let $d0 = undefined;\n\nif (a) {\n  $d0 = 1;\n}\n\n$d0 = 2;",
+    );
   });
 
   it("emits if else statements", () => {
@@ -508,7 +512,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "let x = undefined;\n\nif (a) {\n  x = 1;\n} else {\n  x = 2;\n}\n\nx = 3;",
+      "let $d0 = undefined;\n\nif (a) {\n  $d0 = 1;\n} else {\n  $d0 = 2;\n}\n\n$d0 = 3;",
     );
   });
 
@@ -531,7 +535,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "try {\n  foo();\n} catch($0) {\n  let e = $0;\n\n  bar(e);\n} finally {\n  baz();\n}\n\nqux();",
+      "try {\n  foo();\n} catch($0) {\n  let $d0 = $0;\n\n  bar($d0);\n} finally {\n  baz();\n}\n\nqux();",
     );
   });
 
@@ -541,7 +545,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "try {\n  if (ok) {\n    foo();\n  } else {\n    bar();\n  }\n} catch($0) {\n  let e = $0;\n\n  handle(e);\n}",
+      "try {\n  if (ok) {\n    foo();\n  } else {\n    bar();\n  }\n} catch($0) {\n  let $d0 = $0;\n\n  handle($d0);\n}",
     );
   });
 
@@ -554,7 +558,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "try {\n  if (error) {\n    setError(error);\n  } else {\n    if (stages) {\n      setStages(stages);\n    }\n  }\n} catch($0) {\n  let e = $0;\n\n  handle(e);\n}",
+      "try {\n  if (error) {\n    setError(error);\n  } else {\n    if (stages) {\n      setStages(stages);\n    }\n  }\n} catch($0) {\n  let $d0 = $0;\n\n  handle($d0);\n}",
     );
   });
 
@@ -564,7 +568,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "if (ready) {\n  for (let $2 of items) {\n    const item = $2;\n\n    visit(item);\n  }\n}\n\ndone();",
+      "if (ready) {\n  for (let $2 of items) {\n    const $d0 = $2;\n\n    visit($d0);\n  }\n}\n\ndone();",
     );
   });
 
@@ -577,7 +581,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "for (let $1 of outers) {\n  const outer = $1;\n\n  for (let $4 of inners) {\n    const inner = $4;\n\n    visit(outer, inner);\n  }\n}",
+      "for (let $1 of outers) {\n  const $d0 = $1;\n\n  for (let $4 of inners) {\n    const $d1 = $4;\n\n    visit($d0, $d1);\n  }\n}",
     );
   });
 
@@ -587,7 +591,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "const f = function () {\n  try {\n    return 1;\n  } finally {\n    cleanup();\n  }\n};",
+      "const $d0 = function () {\n  try {\n    return 1;\n  } finally {\n    cleanup();\n  }\n};",
     );
   });
 
@@ -613,7 +617,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "try {\n  throw error;\n} catch($0) {\n  let e = $0;\n\n  handle(e);\n}",
+      "try {\n  throw error;\n} catch($0) {\n  let $d0 = $0;\n\n  handle($d0);\n}",
     );
   });
 
@@ -633,7 +637,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "let $1;\n\nif (a) {\n  $1 = b;\n} else {\n  $1 = a;\n}\n\nlet x = $1;",
+      "let $1;\n\nif (a) {\n  $1 = b;\n} else {\n  $1 = a;\n}\n\nlet $d0 = $1;",
     );
   });
 
@@ -646,7 +650,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "function g(isLoading, resolvedLocation, location) {\n  let $4;\n  let $6;\n\n  if (isLoading) {\n    if (resolvedLocation == null) {\n      $6 = location;\n    } else {\n      $6 = resolvedLocation;\n    }\n\n    $4 = $6;\n  } else {\n    $4 = location;\n  }\n\n  const currentLocation = $4;\n\n  return { pathname: currentLocation };\n}",
+      "function $d0($d1, $d2, $d3) {\n  let $4;\n  let $6;\n\n  if ($d1) {\n    if ($d2 == null) {\n      $6 = $d3;\n    } else {\n      $6 = $d2;\n    }\n\n    $4 = $6;\n  } else {\n    $4 = $d3;\n  }\n\n  const $d4 = $4;\n\n  return { pathname: $d4 };\n}",
     );
   });
 
@@ -656,7 +660,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "let x = undefined;\n\nwhile (a) {\n  x = 1;\n}\n\nx = 2;",
+      "let $d0 = undefined;\n\nwhile (a) {\n  $d0 = 1;\n}\n\n$d0 = 2;",
     );
   });
 
@@ -697,7 +701,7 @@ describe("generateJavaScript", () => {
       "export function run() { const log = []; let n = 0; while (n++ < 3) { log.push(n); } return log; }";
 
     expect(compileTestSource(source)).toBe(
-      "function run() {\n  let $17;\n  let $16;\n  let $18;\n  let $19;\n  const log = [];\n\n  $17 = log;\n\n  let n = 0;\n\n  $16 = n;\n\n  while (($18 = n, n = $18 + 1, $19 = n, $18 < 3)) {\n    log.push(n);\n    $16 = $19;\n  }\n\n  return log;\n}\n\nexport { run };",
+      "function $d0() {\n  let $17;\n  let $16;\n  let $18;\n  let $19;\n  const $d1 = [];\n\n  $17 = $d1;\n\n  let $d2 = 0;\n\n  $16 = $d2;\n\n  while (($18 = $d2, $d2 = $18 + 1, $19 = $d2, $18 < 3)) {\n    $d1.push($d2);\n    $16 = $19;\n  }\n\n  return $d1;\n}\n\nexport { $d0 as run };",
     );
   });
 
@@ -736,7 +740,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "let i = 0;\nconst log = [];\n\nfor (; i < 3; i = i + 1) {\n  inner: {\n    if (i === 1) {\n      break inner;\n    }\n\n    log.push(i);\n\n    break inner;\n  }\n}",
+      "let $d0 = 0;\nconst $d1 = [];\n\nfor (; $d0 < 3; $d0 = $d0 + 1) {\n  inner: {\n    if ($d0 === 1) {\n      break inner;\n    }\n\n    $d1.push($d0);\n\n    break inner;\n  }\n}",
     );
   });
 
@@ -749,7 +753,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "labelSwitch: {\n  switch (i) {\n    case 1:\n      for (let $3 of xs) {\n        const x = $3;\n\n        if (x === 2) {\n          break labelSwitch;\n        }\n\n        foo(x);\n      }\n      bar();\n      break;\n  }\n\n  break labelSwitch;\n}\n\nbaz();",
+      "labelSwitch: {\n  switch (i) {\n    case 1:\n      for (let $3 of xs) {\n        const $d0 = $3;\n\n        if ($d0 === 2) {\n          break labelSwitch;\n        }\n\n        foo($d0);\n      }\n      bar();\n      break;\n  }\n\n  break labelSwitch;\n}\n\nbaz();",
     );
   });
 
@@ -758,7 +762,7 @@ describe("generateJavaScript", () => {
       "export function run() { const log = []; switch (0) { case 0: for (const i of [0, 1, 2]) { if (i === 1) break; log.push(i); } break; default: log.push('outer-default'); } return log; }";
 
     expect(compileTestSource(forOfSource)).toBe(
-      'function run() {\n  let $26;\n  let $27;\n  let $22;\n  let $24;\n  let $28;\n  let $23;\n  const log = [];\n\n  $26 = log;\n\n  switch (0) {\n    case 0:\n      $27 = [0, 1, 2];\n      $22 = undefined;\n      for (let $8 of $27) {\n        const i = $8;\n\n        $28 = i;\n\n        if (i === 1) {\n          $23 = $28;\n\n          break;\n        }\n\n        log.push(i);\n        $22 = $28;\n      }\n      $24 = $23;\n      break;\n\n    default:\n      log.push("outer-default");\n      $24 = undefined;\n      break;\n  }\n\n  return log;\n}\n\nexport { run };',
+      'function $d0() {\n  let $26;\n  let $27;\n  let $22;\n  let $24;\n  let $28;\n  let $23;\n  const $d1 = [];\n\n  $26 = $d1;\n\n  switch (0) {\n    case 0:\n      $27 = [0, 1, 2];\n      $22 = undefined;\n      for (let $8 of $27) {\n        const $d2 = $8;\n\n        $28 = $d2;\n\n        if ($d2 === 1) {\n          $23 = $28;\n\n          break;\n        }\n\n        $d1.push($d2);\n        $22 = $28;\n      }\n      $24 = $23;\n      break;\n\n    default:\n      $d1.push("outer-default");\n      $24 = undefined;\n      break;\n  }\n\n  return $d1;\n}\n\nexport { $d0 as run };',
     );
   });
 
@@ -767,7 +771,7 @@ describe("generateJavaScript", () => {
       "export function run() { const log = []; switch (0) { case 0: for (const k in { a: 1, b: 2 }) { if (k === 'b') break; log.push(k); } break; default: log.push('outer-default'); } return log; }";
 
     expect(compileTestSource(forInSource)).toBe(
-      'function run() {\n  let $25;\n  let $26;\n  let $21;\n  let $23;\n  let $27;\n  let $22;\n  const log = [];\n\n  $25 = log;\n\n  switch (0) {\n    case 0:\n      $26 = { a: 1, b: 2 };\n      $21 = undefined;\n      for (let $7 in $26) {\n        const k = $7;\n\n        $27 = k;\n\n        if (k === "b") {\n          $22 = $27;\n\n          break;\n        }\n\n        log.push(k);\n        $21 = $27;\n      }\n      $23 = $22;\n      break;\n\n    default:\n      log.push("outer-default");\n      $23 = undefined;\n      break;\n  }\n\n  return log;\n}\n\nexport { run };',
+      'function $d0() {\n  let $25;\n  let $26;\n  let $21;\n  let $23;\n  let $27;\n  let $22;\n  const $d1 = [];\n\n  $25 = $d1;\n\n  switch (0) {\n    case 0:\n      $26 = { a: 1, b: 2 };\n      $21 = undefined;\n      for (let $7 in $26) {\n        const $d2 = $7;\n\n        $27 = $d2;\n\n        if ($d2 === "b") {\n          $22 = $27;\n\n          break;\n        }\n\n        $d1.push($d2);\n        $21 = $27;\n      }\n      $23 = $22;\n      break;\n\n    default:\n      $d1.push("outer-default");\n      $23 = undefined;\n      break;\n  }\n\n  return $d1;\n}\n\nexport { $d0 as run };',
     );
   });
 
@@ -776,7 +780,7 @@ describe("generateJavaScript", () => {
       "export function run() { const log = []; try { switch (1) { case 1: for (let j = 0; j < 2; j++) { if (j === 1) break; log.push('j' + j); } break; default: log.push('d'); } } finally { log.push('f'); } return log; }";
 
     expect(compileTestSource(source)).toBe(
-      'function run() {\n  let $34;\n  let $30;\n  let $31;\n  let $32;\n  const log = [];\n\n  $34 = log;\n\n  try {\n    switch (1) {\n      case 1:\n        let j = 0;\n        $30 = j;\n        for (; j < 2; (j = j + 1, $30 = j)) {\n          if (j === 1) {\n            break;\n          }\n\n          log.push("j" + j);\n        }\n        $31 = $30;\n        break;\n\n      default:\n        log.push("d");\n        $31 = undefined;\n        break;\n    }\n\n    $32 = $31;\n  } finally {\n    $32 = undefined;\n    log.push("f");\n  }\n\n  return log;\n}\n\nexport { run };',
+      'function $d0() {\n  let $34;\n  let $30;\n  let $31;\n  let $32;\n  const $d1 = [];\n\n  $34 = $d1;\n\n  try {\n    switch (1) {\n      case 1:\n        let $d2 = 0;\n        $30 = $d2;\n        for (; $d2 < 2; ($d2 = $d2 + 1, $30 = $d2)) {\n          if ($d2 === 1) {\n            break;\n          }\n\n          $d1.push("j" + $d2);\n        }\n        $31 = $30;\n        break;\n\n      default:\n        $d1.push("d");\n        $31 = undefined;\n        break;\n    }\n\n    $32 = $31;\n  } finally {\n    $32 = undefined;\n    $d1.push("f");\n  }\n\n  return $d1;\n}\n\nexport { $d0 as run };',
     );
   });
 
@@ -785,7 +789,7 @@ describe("generateJavaScript", () => {
       "export function run() { const log = []; function f() { outer: while (true) { try { return 'r'; } finally { break outer; } } return 'after'; } log.push(f()); return log; }";
 
     expect(compileTestSource(source)).toBe(
-      'function run() {\n  let $14;\n  let $15;\n\n  function f() {\n    outer: while (true) {\n      try {\n        return "r";\n      } finally {\n        break;\n      }\n    }\n\n    return "after";\n  }\n\n  $14 = f;\n\n  const log = [];\n\n  $15 = log;\n  log.push(f());\n\n  return log;\n}\n\nexport { run };',
+      'function $d0() {\n  let $14;\n  let $15;\n\n  function $d2() {\n    outer: while (true) {\n      try {\n        return "r";\n      } finally {\n        break;\n      }\n    }\n\n    return "after";\n  }\n\n  $14 = $d2;\n\n  const $d1 = [];\n\n  $15 = $d1;\n  $d1.push($d2());\n\n  return $d1;\n}\n\nexport { $d0 as run };',
     );
   });
 
@@ -795,7 +799,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "let x = undefined;\n\ndo {\n  x = 1;\n} while (a);\n\nx = 2;",
+      "let $d0 = undefined;\n\ndo {\n  $d0 = 1;\n} while (a);\n\n$d0 = 2;",
     );
   });
 
@@ -805,7 +809,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "try {\n  foo();\n} catch($0) {\n  let { message } = $0;\n\n  bar(message);\n}",
+      "try {\n  foo();\n} catch($0) {\n  let { message: $d0 } = $0;\n\n  bar($d0);\n}",
     );
   });
 
@@ -815,7 +819,16 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "let x = undefined;\n\nx = 0;\n\nfor (; x < 3; x = x + 1) {\n  foo();\n}\n\nx = 4;",
+      "let $d0 = undefined;\n\n$d0 = 0;\n\nfor (; $d0 < 3; $d0 = $d0 + 1) {\n  foo();\n}\n\n$d0 = 4;",
+    );
+  });
+
+  it("emits shadowed for lexical declarations with distinct binding names", () => {
+    const source =
+      "export function run() { const log = []; let n = 10; for (let n = 0; n < 2; n++) { log.push(n); } log.push(n); return log; }";
+
+    expect(compileTestSource(source)).toBe(
+      "function $d0() {\n  let $23;\n  let $24;\n  let $22;\n  const $d1 = [];\n\n  $23 = $d1;\n\n  let $d2 = 10;\n\n  $24 = $d2;\n\n  let $d3 = 0;\n\n  $22 = $d3;\n\n  for (; $d3 < 2; ($d3 = $d3 + 1, $22 = $d3)) {\n    $d1.push($d3);\n  }\n\n  $d1.push($d2);\n\n  return $d1;\n}\n\nexport { $d0 as run };",
     );
   });
 
@@ -825,7 +838,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "for (let $1 in obj) {\n  const key = $1;\n\n  foo(key);\n}\n\nbar();",
+      "for (let $1 in obj) {\n  const $d0 = $1;\n\n  foo($d0);\n}\n\nbar();",
     );
   });
 
@@ -835,7 +848,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "for (let $1 in obj) {\n  const { x } = $1;\n\n  foo(x);\n}",
+      "for (let $1 in obj) {\n  const { x: $d0 } = $1;\n\n  foo($d0);\n}",
     );
   });
 
@@ -845,7 +858,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "for (let $1 of xs) {\n  const x = $1;\n\n  foo(x);\n}\n\nbar();",
+      "for (let $1 of xs) {\n  const $d0 = $1;\n\n  foo($d0);\n}\n\nbar();",
     );
   });
 
@@ -855,7 +868,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "for (let $1 of xs) {\n  const { x } = $1;\n\n  foo(x);\n}",
+      "for (let $1 of xs) {\n  const { x: $d0 } = $1;\n\n  foo($d0);\n}",
     );
   });
 });

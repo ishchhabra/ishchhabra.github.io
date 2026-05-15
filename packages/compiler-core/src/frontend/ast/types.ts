@@ -2,6 +2,7 @@ import type {
   Class,
   ClassBody,
   Program,
+  ForStatement,
   ForInStatement,
   ForOfStatement,
   Function,
@@ -28,6 +29,7 @@ export type ScopeOwnerNode =
   | Class
   | ClassBody
   | BlockStatement
+  | ForStatement
   | ForInStatement
   | ForOfStatement
   | SwitchStatement

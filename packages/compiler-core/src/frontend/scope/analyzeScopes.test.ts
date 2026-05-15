@@ -72,6 +72,65 @@ describe("analyzeScopes", () => {
     );
   });
 
+  it("scopes for-statement lexical declarations to the loop", () => {
+    const { graph, program } = analyzeSource(
+      "function run() { let n = 10; for (let n = 0; n < 2; n++) { n; } n; }",
+    );
+    const fn = functionDeclarationAt(program, 0);
+    const functionScope = graph.scopeForOwner(fn);
+    const outerDeclaration = declarationByName(functionScope, "n");
+    const forStatement = fn.body?.body[1];
+
+    if (forStatement?.type !== "ForStatement") {
+      throw new Error("Expected for statement");
+    }
+
+    const loopScope = graph.scopeForOwner(forStatement);
+    const loopDeclaration = declarationByName(loopScope, "n");
+
+    expect(loopDeclaration).not.toBe(outerDeclaration);
+    expect(loopDeclaration).toMatchObject({ kind: "lexical", mode: "let" });
+
+    if (forStatement.test?.type !== "BinaryExpression") {
+      throw new Error("Expected binary loop test");
+    }
+
+    expect(graph.declarationForReference(identifierExpression(forStatement.test.left))).toBe(
+      loopDeclaration,
+    );
+
+    if (
+      forStatement.update?.type !== "UpdateExpression" ||
+      forStatement.update.argument.type !== "Identifier"
+    ) {
+      throw new Error("Expected update expression");
+    }
+
+    expect(graph.declarationForReference(forStatement.update.argument)).toBe(loopDeclaration);
+
+    if (forStatement.body.type !== "BlockStatement") {
+      throw new Error("Expected block loop body");
+    }
+
+    const bodyStatement = forStatement.body.body[0];
+    if (bodyStatement?.type !== "ExpressionStatement") {
+      throw new Error("Expected loop body expression");
+    }
+
+    expect(graph.declarationForReference(identifierExpression(bodyStatement.expression))).toBe(
+      loopDeclaration,
+    );
+
+    const afterLoop = fn.body?.body[2];
+    if (afterLoop?.type !== "ExpressionStatement") {
+      throw new Error("Expected post-loop expression");
+    }
+
+    expect(graph.declarationForReference(identifierExpression(afterLoop.expression))).toBe(
+      outerDeclaration,
+    );
+  });
+
   it("records function declarations and parameter bindings", () => {
     const { graph, program } = analyzeSource("function f(a) { a; }");
     const declaration = declarationByName(graph.programScope, "f");

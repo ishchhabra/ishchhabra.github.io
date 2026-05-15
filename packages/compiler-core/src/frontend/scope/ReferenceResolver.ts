@@ -193,27 +193,30 @@ export class ReferenceResolver {
         this.resolveExpression(statement.test, scope);
         return;
 
-      case "ForStatement":
+      case "ForStatement": {
+        const loopScope = this.graph.scopeForOwner(statement);
+
         if (statement.init !== null) {
           if (statement.init.type === "VariableDeclaration") {
             for (const declarator of statement.init.declarations) {
-              this.resolveBindingPatternInitializers(declarator.id, scope);
+              this.resolveBindingPatternInitializers(declarator.id, loopScope);
               if (declarator.init !== null) {
-                this.resolveExpression(declarator.init, scope);
+                this.resolveExpression(declarator.init, loopScope);
               }
             }
           } else {
-            this.resolveExpression(statement.init, scope);
+            this.resolveExpression(statement.init, loopScope);
           }
         }
         if (statement.test !== null) {
-          this.resolveExpression(statement.test, scope);
+          this.resolveExpression(statement.test, loopScope);
         }
         if (statement.update !== null) {
-          this.resolveExpression(statement.update, scope);
+          this.resolveExpression(statement.update, loopScope);
         }
-        this.resolveStatement(statement.body, scope);
+        this.resolveStatement(statement.body, loopScope);
         return;
+      }
 
       case "SwitchStatement": {
         this.resolveExpression(statement.discriminant, scope);
