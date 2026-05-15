@@ -55,10 +55,11 @@ import {
 } from "../ops/patterns/emitDestructurePattern";
 
 type ValueRegionTerminator =
+  | IfTerminatorOp
   | ConditionalTerminatorOp
   | NullishGuardTerminatorOp
   | ShortCircuitTerminatorOp;
-type LoopTestTerminator = BranchTerminatorOp | ValueRegionTerminator;
+type LoopTestTerminator = BranchTerminatorOp | JumpTerminatorOp | ValueRegionTerminator;
 
 interface EmitControlContext {
   readonly label: string | null;
@@ -226,6 +227,16 @@ function collectValueRegionParams(
     if (isValueRegionTerminator(alternateTerminator)) {
       collectValueRegionParams(alternateTerminator, params, visited);
     }
+  } else if (terminator instanceof IfTerminatorOp) {
+    const thenTerminator = terminator.thenBlock.terminator;
+    if (isValueRegionTerminator(thenTerminator)) {
+      collectValueRegionParams(thenTerminator, params, visited);
+    }
+
+    const elseTerminator = terminator.elseBlock.terminator;
+    if (isValueRegionTerminator(elseTerminator)) {
+      collectValueRegionParams(elseTerminator, params, visited);
+    }
   } else {
     const bodyTerminator = terminator.bodyBlock.terminator;
     if (isValueRegionTerminator(bodyTerminator)) {
@@ -241,6 +252,7 @@ function collectValueRegionParams(
 
 function isValueRegionTerminator(terminator: unknown): terminator is ValueRegionTerminator {
   return (
+    terminator instanceof IfTerminatorOp ||
     terminator instanceof ConditionalTerminatorOp ||
     terminator instanceof NullishGuardTerminatorOp ||
     terminator instanceof ShortCircuitTerminatorOp
@@ -546,27 +558,18 @@ function emitFor(
     throw new Error(`ForTerminatorOp#${loop.id} is detached`);
   }
 
-  const testBranch = loop.testBlock.terminator;
-  if (!(testBranch instanceof BranchTerminatorOp)) {
-    throw new Error(`ForTerminatorOp#${loop.id} test block must end with BranchTerminatorOp`);
-  }
-
-  validateLoopTestEdge(
-    testBranch.trueTarget,
+  const testTerminator = loopTestTerminator(loop.testBlock, `ForTerminatorOp#${loop.id}`);
+  validateLoopTestEdges(
+    testTerminator,
     loop.bodyBlock,
-    `ForTerminatorOp#${loop.id} true edge`,
-  );
-
-  validateLoopTestEdge(
-    testBranch.falseTarget,
     loop.completionBlock,
-    `ForTerminatorOp#${loop.id} false edge`,
+    `ForTerminatorOp#${loop.id}`,
   );
 
   const testExpression = emitLoopTestExpression(
     context,
     loop.testBlock,
-    testBranch,
+    testTerminator,
     loop.bodyBlock,
     loop.completionBlock,
     emitted,
@@ -614,20 +617,13 @@ function emitWhile(
     throw new Error(`WhileTerminatorOp#${loop.id} is detached`);
   }
 
-  const testTerminator = loopTestTerminator(loop);
-  const testBranch = loopTestBranch(loop, testTerminator);
-
   const expectedTrueBlock = loop.kind === "do-while" ? loopBlock : loop.bodyBlock;
-  validateLoopTestEdge(
-    testBranch.trueTarget,
+  const testTerminator = loopTestTerminator(loop.testBlock, `WhileTerminatorOp#${loop.id}`);
+  validateLoopTestEdges(
+    testTerminator,
     expectedTrueBlock,
-    `WhileTerminatorOp#${loop.id} true edge`,
-  );
-
-  validateLoopTestEdge(
-    testBranch.falseTarget,
     loop.completionBlock,
-    `WhileTerminatorOp#${loop.id} false edge`,
+    `WhileTerminatorOp#${loop.id}`,
   );
 
   if (loop.kind === "do-while") {
@@ -695,41 +691,34 @@ function emitDoWhile(
   ];
 }
 
-function loopTestTerminator(loop: WhileTerminatorOp): LoopTestTerminator {
-  const terminator = loop.testBlock.terminator;
+function loopTestTerminator(block: BasicBlock, owner: string): LoopTestTerminator {
+  const terminator = block.terminator;
   if (terminator instanceof BranchTerminatorOp || isValueRegionTerminator(terminator)) {
     return terminator;
   }
 
+  if (terminator instanceof JumpTerminatorOp) return terminator;
+
   throw new Error(
-    `WhileTerminatorOp#${loop.id} test block must end with BranchTerminatorOp or value-region terminator`,
+    `${owner} test block must end with BranchTerminatorOp, JumpTerminatorOp, or value-region terminator`,
   );
 }
 
-function loopTestBranch(
-  loop: WhileTerminatorOp,
-  terminator: LoopTestTerminator,
-): BranchTerminatorOp {
-  if (terminator instanceof BranchTerminatorOp) return terminator;
-
-  return loopTestBranchForValueRegion(terminator, loop.id);
-}
-
-function loopTestBranchForValueRegion(
+function loopTestTerminatorForValueRegion(
   terminator: ValueRegionTerminator,
-  loopId?: number,
-): BranchTerminatorOp {
+  owner?: string,
+): BranchTerminatorOp | JumpTerminatorOp {
   const exitTerminator = terminator.completionBlock.terminator;
   if (exitTerminator instanceof BranchTerminatorOp) return exitTerminator;
+  if (exitTerminator instanceof JumpTerminatorOp) return exitTerminator;
   if (isValueRegionTerminator(exitTerminator)) {
-    return loopTestBranchForValueRegion(exitTerminator, loopId);
+    return loopTestTerminatorForValueRegion(exitTerminator, owner);
   }
 
-  const owner =
-    loopId === undefined
-      ? `${terminator.constructor.name}#${terminator.id}`
-      : `WhileTerminatorOp#${loopId}`;
-  throw new Error(`${owner} value-region exit block must end with BranchTerminatorOp`);
+  const label = owner ?? `${terminator.constructor.name}#${terminator.id}`;
+  throw new Error(
+    `${label} value-region exit block must end with BranchTerminatorOp or JumpTerminatorOp`,
+  );
 }
 
 function emitLoopTestExpression(
@@ -742,6 +731,17 @@ function emitLoopTestExpression(
 ): ESTreeExpression {
   if (isValueRegionTerminator(terminator)) {
     return emitValueRegionLoopTestExpression(
+      context,
+      block,
+      terminator,
+      trueContinuation,
+      falseContinuation,
+      emitted,
+    );
+  }
+
+  if (terminator instanceof JumpTerminatorOp) {
+    return emitConstantLoopTestExpression(
       context,
       block,
       terminator,
@@ -778,21 +778,63 @@ function emitValueRegionLoopTestExpression(
   falseContinuation: BasicBlock,
   emitted: Set<BasicBlock>,
 ): ESTreeExpression {
-  const branch = loopTestBranchForValueRegion(terminator);
-  const branchBlock = branch.ownerBlock;
+  const resolved = loopTestTerminatorForValueRegion(terminator);
+  const branchBlock = resolved.ownerBlock;
   if (branchBlock === null) {
-    throw new Error(`BranchTerminatorOp#${branch.id} is detached`);
+    throw new Error(`${resolved.constructor.name}#${resolved.id} is detached`);
   }
 
   emitValueBlockExpression(context, block, branchBlock, emitted);
   return emitLoopTestExpression(
     context,
     branchBlock,
-    branch,
+    resolved,
     trueContinuation,
     falseContinuation,
     emitted,
   );
+}
+
+function emitConstantLoopTestExpression(
+  context: CodegenContext,
+  block: BasicBlock,
+  terminator: JumpTerminatorOp,
+  trueContinuation: BasicBlock,
+  falseContinuation: BasicBlock,
+  emitted: Set<BasicBlock>,
+): ESTreeExpression {
+  const entry = emitBlockTargetEntry(
+    context,
+    terminator.jumpTarget,
+    emitted,
+    new Set([trueContinuation, falseContinuation]),
+  );
+  const statements = [...emitLoopTest(context, block, emitted), ...entry.prologue];
+
+  if (entry.entryBlock === trueContinuation) {
+    return edgeResultExpression(statements, true);
+  }
+
+  if (entry.entryBlock === falseContinuation) {
+    return edgeResultExpression(statements, false);
+  }
+
+  const targetTerminator = loopTestTerminator(
+    entry.entryBlock,
+    `Loop test jump target bb${entry.entryBlock.id}`,
+  );
+  const expression = emitLoopTestExpression(
+    context,
+    entry.entryBlock,
+    targetTerminator,
+    trueContinuation,
+    falseContinuation,
+    emitted,
+  );
+
+  if (statements.length === 0) return expression;
+
+  return sequenceExpression([...statements.map(expressionFromStatement), expression]);
 }
 
 function emitValueBlockExpression(
@@ -805,11 +847,17 @@ function emitValueBlockExpression(
   const terminator = block.terminator;
 
   if (terminator instanceof JumpTerminatorOp) {
-    if (terminator.targetBlock !== continuation) {
+    const entry = emitBlockTargetEntry(
+      context,
+      terminator.jumpTarget,
+      emitted,
+      new Set([continuation]),
+    );
+    if (entry.entryBlock !== continuation) {
       throw new Error(`Value block bb${block.id} must jump to bb${continuation.id}`);
     }
 
-    const args = successorValues(terminator.jumpTarget);
+    const args = successorValues(entry.entryTarget);
     if (args.length !== 1) {
       throw new Error(`Value block bb${block.id} jump expected one result, got ${args.length}`);
     }
@@ -818,15 +866,15 @@ function emitValueBlockExpression(
   }
 
   if (terminator instanceof ConditionalTerminatorOp) {
-    const consequent = emitValueBlockExpression(
+    const consequent = emitValueTargetExpression(
       context,
-      terminator.consequentBlock,
+      terminator.consequentTarget,
       terminator.completionBlock,
       emitted,
     );
-    const alternate = emitValueBlockExpression(
+    const alternate = emitValueTargetExpression(
       context,
-      terminator.alternateBlock,
+      terminator.alternateTarget,
       terminator.completionBlock,
       emitted,
     );
@@ -842,10 +890,39 @@ function emitValueBlockExpression(
     return emitValueBlockExpression(context, terminator.completionBlock, continuation, emitted);
   }
 
-  if (terminator instanceof ShortCircuitTerminatorOp) {
-    const bodyExpression = emitValueBlockExpression(
+  if (terminator instanceof IfTerminatorOp) {
+    const consequent = emitValueTargetExpression(
       context,
-      terminator.bodyBlock,
+      terminator.thenTarget,
+      terminator.completionBlock,
+      emitted,
+    );
+    const alternate = emitValueTargetExpression(
+      context,
+      terminator.elseTarget,
+      terminator.completionBlock,
+      emitted,
+    );
+    const expression = expressionWithStatements(
+      statements,
+      conditionalExpression(
+        context.expressionForValue(terminator.condition),
+        consequent,
+        alternate,
+      ),
+    );
+    const result = valueRegionResultParam(terminator);
+    context.values.set(result, expression);
+
+    if (terminator.completionBlock === continuation) return expression;
+
+    return emitValueBlockExpression(context, terminator.completionBlock, continuation, emitted);
+  }
+
+  if (terminator instanceof ShortCircuitTerminatorOp) {
+    const bodyExpression = emitValueTargetExpression(
+      context,
+      terminator.bodyTarget,
       terminator.completionBlock,
       emitted,
     );
@@ -866,9 +943,9 @@ function emitValueBlockExpression(
   }
 
   if (terminator instanceof NullishGuardTerminatorOp) {
-    const bodyExpression = emitValueBlockExpression(
+    const bodyExpression = emitValueTargetExpression(
       context,
-      terminator.bodyBlock,
+      terminator.bodyTarget,
       terminator.completionBlock,
       emitted,
     );
@@ -890,6 +967,30 @@ function emitValueBlockExpression(
 
   throw new Error(
     `Value block bb${block.id} must end with JumpTerminatorOp or value-region terminator`,
+  );
+}
+
+function emitValueTargetExpression(
+  context: CodegenContext,
+  target: BlockTarget,
+  continuation: BasicBlock,
+  emitted: Set<BasicBlock>,
+): ESTreeExpression {
+  const entry = emitBlockTargetEntry(context, target, emitted, new Set([continuation]));
+  if (entry.entryBlock === continuation) {
+    const args = successorValues(entry.entryTarget);
+    if (args.length !== 1) {
+      throw new Error(
+        `Value target bb${entry.entryBlock.id} expected one result, got ${args.length}`,
+      );
+    }
+
+    return context.expressionForValue(args[0]);
+  }
+
+  return expressionWithStatements(
+    entry.prologue,
+    emitValueBlockExpression(context, entry.entryBlock, continuation, emitted),
   );
 }
 
@@ -955,10 +1056,69 @@ function edgeResultExpression(
   return sequenceExpression([...statements.map(expressionFromStatement), literal(result)]);
 }
 
-function validateLoopTestEdge(target: BlockTarget, expected: BasicBlock, label: string): void {
-  if (targetEntryBlock(target) === expected) return;
+function validateLoopTestEdges(
+  terminator: LoopTestTerminator,
+  trueExpected: BasicBlock,
+  falseExpected: BasicBlock,
+  label: string,
+): void {
+  const resolved = loopTestDecisionTerminator(terminator, trueExpected, falseExpected, label);
 
-  throw new Error(`${label} must target bb${expected.id}`);
+  if (resolved instanceof JumpTerminatorOp) {
+    if (
+      loopTestEdgeMatches(resolved.jumpTarget, trueExpected) ||
+      loopTestEdgeMatches(resolved.jumpTarget, falseExpected)
+    ) {
+      return;
+    }
+
+    throw new Error(`${label} jump edge must target bb${trueExpected.id} or bb${falseExpected.id}`);
+  }
+
+  if (!loopTestEdgeMatches(resolved.trueTarget, trueExpected)) {
+    throw new Error(`${label} true edge must target bb${trueExpected.id}`);
+  }
+
+  if (!loopTestEdgeMatches(resolved.falseTarget, falseExpected)) {
+    throw new Error(`${label} false edge must target bb${falseExpected.id}`);
+  }
+}
+
+function loopTestDecisionTerminator(
+  terminator: LoopTestTerminator,
+  trueExpected: BasicBlock,
+  falseExpected: BasicBlock,
+  label: string,
+): BranchTerminatorOp | JumpTerminatorOp {
+  if (terminator instanceof BranchTerminatorOp) return terminator;
+
+  if (isValueRegionTerminator(terminator)) {
+    return loopTestDecisionTerminator(
+      loopTestTerminatorForValueRegion(terminator, label),
+      trueExpected,
+      falseExpected,
+      label,
+    );
+  }
+
+  if (
+    loopTestEdgeMatches(terminator.jumpTarget, trueExpected) ||
+    loopTestEdgeMatches(terminator.jumpTarget, falseExpected)
+  ) {
+    return terminator;
+  }
+
+  const entry = targetEntryBlock(terminator.jumpTarget, new Set([trueExpected, falseExpected]));
+  return loopTestDecisionTerminator(
+    loopTestTerminator(entry, `${label} jump target bb${entry.id}`),
+    trueExpected,
+    falseExpected,
+    label,
+  );
+}
+
+function loopTestEdgeMatches(target: BlockTarget, expected: BasicBlock): boolean {
+  return targetEntryBlock(target, new Set([expected])) === expected;
 }
 
 function emitLoopTestEdge(
@@ -967,7 +1127,7 @@ function emitLoopTestEdge(
   continuation: BasicBlock,
   emitted: Set<BasicBlock>,
 ): ESTreeStatement[] {
-  const entry = emitBlockTargetEntry(context, target, emitted);
+  const entry = emitBlockTargetEntry(context, target, emitted, new Set([continuation]));
   if (entry.entryBlock !== continuation) {
     throw new Error(
       `Loop test edge must target bb${continuation.id} directly or through an edge-copy block`,
@@ -979,6 +1139,7 @@ function emitLoopTestEdge(
 
 interface EmittedBlockTargetEntry {
   readonly entryBlock: BasicBlock;
+  readonly entryTarget: BlockTarget;
   readonly prologue: ESTreeStatement[];
 }
 
@@ -986,11 +1147,13 @@ function emitBlockTargetEntry(
   context: CodegenContext,
   target: BlockTarget,
   emitted: Set<BasicBlock>,
+  stopBlocks: ReadonlySet<BasicBlock> = new Set(),
 ): EmittedBlockTargetEntry {
   const prologue = emitBlockTargetCopies(context, target);
+  let entryTarget = target;
   let block = target.block;
 
-  while (isEdgeCopyBlock(block)) {
+  while (!stopBlocks.has(block) && isEdgeCopyBlock(block)) {
     const terminator = block.terminator;
     if (!(terminator instanceof JumpTerminatorOp)) {
       throw new Error(`Edge-copy block bb${block.id} must end with JumpTerminatorOp`);
@@ -1003,16 +1166,20 @@ function emitBlockTargetEntry(
 
     emitted.add(block);
     prologue.push(...emitBlockTargetCopies(context, terminator.jumpTarget));
+    entryTarget = terminator.jumpTarget;
     block = terminator.targetBlock;
   }
 
-  return { entryBlock: block, prologue };
+  return { entryBlock: block, entryTarget, prologue };
 }
 
-function targetEntryBlock(target: BlockTarget): BasicBlock {
+function targetEntryBlock(
+  target: BlockTarget,
+  stopBlocks: ReadonlySet<BasicBlock> = new Set(),
+): BasicBlock {
   let block = target.block;
 
-  while (isEdgeCopyBlock(block)) {
+  while (!stopBlocks.has(block) && isEdgeCopyBlock(block)) {
     const terminator = block.terminator;
     if (!(terminator instanceof JumpTerminatorOp)) {
       throw new Error(`Edge-copy block bb${block.id} must end with JumpTerminatorOp`);
@@ -1207,7 +1374,7 @@ function emitTargetArm(
   emitted: Set<BasicBlock>,
   controls: readonly EmitControlContext[],
 ): ESTreeStatement[] {
-  const entry = emitBlockTargetEntry(context, target, emitted);
+  const entry = emitBlockTargetEntry(context, target, emitted, controlBoundaryBlocks(controls));
   const controlBreak = emitControlBreak(entry.entryBlock, controls);
   if (controlBreak !== null) {
     return [...entry.prologue, controlBreak];
@@ -1228,7 +1395,12 @@ function emitTargetBranchArm(
   controls: readonly EmitControlContext[],
   options: EmitBranchArmOptions = {},
 ): ESTreeStatement[] {
-  const entry = emitBlockTargetEntry(context, target, emitted);
+  const entry = emitBlockTargetEntry(
+    context,
+    target,
+    emitted,
+    controlBoundaryBlocks(controls, continuation),
+  );
 
   return [
     ...entry.prologue,
@@ -1261,38 +1433,45 @@ function emitBranchArm(
   if (terminator === null) return statements;
 
   if (terminator instanceof JumpTerminatorOp) {
-    const controlBreak = emitControlBreak(terminator.targetBlock, controls);
+    const entry = emitBlockTargetEntry(
+      context,
+      terminator.jumpTarget,
+      emitted,
+      controlBoundaryBlocks(controls, implicitJumpTarget),
+    );
+    const targetBlock = entry.entryBlock;
+    const controlBreak = emitControlBreak(targetBlock, controls);
     if (controlBreak !== null) {
+      statements.push(...entry.prologue);
       statements.push(controlBreak);
       return statements;
     }
 
-    if (terminator.targetBlock === implicitJumpTarget) {
-      statements.push(...assignBlockParams(context, terminator));
+    if (targetBlock === implicitJumpTarget) {
+      statements.push(...entry.prologue);
       return statements;
     }
 
-    const controlJump = emitControlJump(terminator.targetBlock, controls);
+    const controlJump = emitControlJump(targetBlock, controls);
     if (controlJump !== null) {
+      statements.push(...entry.prologue);
       statements.push(controlJump);
       return statements;
     }
 
-    if (context.isFallthrough(terminator.targetBlock)) {
-      statements.push(...assignBlockParams(context, terminator));
+    if (context.isFallthrough(targetBlock)) {
+      statements.push(...entry.prologue);
       return statements;
     }
 
-    if (!emitted.has(terminator.targetBlock)) {
-      statements.push(...assignBlockParams(context, terminator));
-      statements.push(
-        ...emitContinuation(context, terminator.targetBlock, continuation, emitted, controls),
-      );
+    if (!emitted.has(targetBlock)) {
+      statements.push(...entry.prologue);
+      statements.push(...emitContinuation(context, targetBlock, continuation, emitted, controls));
       return statements;
     }
 
     throw new Error(
-      `Cannot emit jump from bb${block.id} to bb${terminator.targetBlock.id}; expected structured continuation`,
+      `Cannot emit jump from bb${block.id} to bb${targetBlock.id}; expected structured continuation`,
     );
   }
 
@@ -1366,28 +1545,32 @@ function emitJump(
   emitted: Set<BasicBlock>,
   controls: readonly EmitControlContext[],
 ): ESTreeStatement[] {
-  const controlBreak = emitControlBreak(jump.targetBlock, controls);
+  const entry = emitBlockTargetEntry(
+    context,
+    jump.jumpTarget,
+    emitted,
+    controlBoundaryBlocks(controls),
+  );
+  const targetBlock = entry.entryBlock;
+  const controlBreak = emitControlBreak(targetBlock, controls);
   if (controlBreak !== null) {
-    return [...assignBlockParams(context, jump), controlBreak];
+    return [...entry.prologue, controlBreak];
   }
 
-  const controlJump = emitControlJump(jump.targetBlock, controls);
+  const controlJump = emitControlJump(targetBlock, controls);
   if (controlJump !== null) {
-    return [...assignBlockParams(context, jump), controlJump];
+    return [...entry.prologue, controlJump];
   }
 
-  if (context.isFallthrough(jump.targetBlock)) {
-    return assignBlockParams(context, jump);
+  if (context.isFallthrough(targetBlock)) {
+    return entry.prologue;
   }
 
-  if (emitted.has(jump.targetBlock)) {
+  if (emitted.has(targetBlock)) {
     return [];
   }
 
-  return [
-    ...assignBlockParams(context, jump),
-    ...emitBlock(context, jump.targetBlock, emitted, controls),
-  ];
+  return [...entry.prologue, ...emitBlock(context, targetBlock, emitted, controls)];
 }
 
 function emitContinuation(
@@ -1500,32 +1683,23 @@ function emitControlContinue(
   return null;
 }
 
-function withOptionalLabel(label: string | null, statement: ESTreeStatement): ESTreeStatement {
-  return label === null ? statement : labeledStatement(identifier(label), statement);
-}
+function controlBoundaryBlocks(
+  controls: readonly EmitControlContext[],
+  extra: BasicBlock | null = null,
+): Set<BasicBlock> {
+  const blocks = new Set<BasicBlock>();
+  if (extra !== null) blocks.add(extra);
 
-function assignBlockParams(context: CodegenContext, jump: JumpTerminatorOp): ESTreeStatement[] {
-  return assignTargetParams(context, jump.jumpTarget);
-}
-
-function assignTargetParams(context: CodegenContext, target: BlockTarget): ESTreeStatement[] {
-  const params = target.block.params;
-  const args = successorValues(target);
-
-  if (params.length !== args.length) {
-    throw new Error(
-      `Branch to bb${target.block.id} passes ${args.length} values for ${params.length} block params`,
-    );
+  for (const control of controls) {
+    blocks.add(control.breakTarget);
+    if (control.continueTarget !== null) blocks.add(control.continueTarget);
   }
 
-  return params.map((param, index) =>
-    expressionStatement(
-      assignmentExpression(
-        identifier(context.names.valueName(param)),
-        context.expressionForValue(args[index]),
-      ),
-    ),
-  );
+  return blocks;
+}
+
+function withOptionalLabel(label: string | null, statement: ESTreeStatement): ESTreeStatement {
+  return label === null ? statement : labeledStatement(identifier(label), statement);
 }
 
 function emitBlockTargetCopies(context: CodegenContext, target: BlockTarget): ESTreeStatement[] {

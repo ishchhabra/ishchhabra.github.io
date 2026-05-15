@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { compileSource } from "../../compile/compileSource";
 import { ModuleIRBuilder } from "../../frontend/ModuleIRBuilder";
 import { parseModule } from "../../frontend/parse/parseModule";
 import { AnalysisManager } from "../../ir/analysis";
@@ -740,6 +741,42 @@ describe("generateJavaScript", () => {
 
     expect(generateJavaScript(input)).toBe(
       "labelSwitch: {\n  switch (i) {\n    case 1:\n      for (let $3 of xs) {\n        const x = $3;\n\n        if (x === 2) {\n          break labelSwitch;\n        }\n\n        foo(x);\n      }\n      bar();\n      break;\n  }\n\n  break labelSwitch;\n}\n\nbaz();",
+    );
+  });
+
+  it("preserves switch breaks after nested for-of loops", () => {
+    const forOfSource =
+      "export function run() { const log = []; switch (0) { case 0: for (const i of [0, 1, 2]) { if (i === 1) break; log.push(i); } break; default: log.push('outer-default'); } return log; }";
+
+    expect(compileSource(forOfSource, { sourceName: "test.js" }).code).toBe(
+      'function run() {\n  let $26;\n  let $27;\n  let $22;\n  let $24;\n  let $28;\n  let $23;\n  const log = [];\n\n  $26 = log;\n\n  switch (0) {\n    case 0:\n      $27 = [0, 1, 2];\n      $22 = undefined;\n      for (let $8 of $27) {\n        const i = $8;\n\n        $28 = i;\n\n        if (i === 1) {\n          $23 = $28;\n\n          break;\n        }\n\n        log.push(i);\n        $22 = $28;\n      }\n      $24 = $23;\n      break;\n\n    default:\n      log.push("outer-default");\n      $24 = undefined;\n      break;\n  }\n\n  return log;\n}\n\nexport { run };',
+    );
+  });
+
+  it("preserves switch breaks after nested for-in loops", () => {
+    const forInSource =
+      "export function run() { const log = []; switch (0) { case 0: for (const k in { a: 1, b: 2 }) { if (k === 'b') break; log.push(k); } break; default: log.push('outer-default'); } return log; }";
+
+    expect(compileSource(forInSource, { sourceName: "test.js" }).code).toBe(
+      'function run() {\n  let $25;\n  let $26;\n  let $21;\n  let $23;\n  let $27;\n  let $22;\n  const log = [];\n\n  $25 = log;\n\n  switch (0) {\n    case 0:\n      $26 = { a: 1, b: 2 };\n      $21 = undefined;\n      for (let $7 in $26) {\n        const k = $7;\n\n        $27 = k;\n\n        if (k === "b") {\n          $22 = $27;\n\n          break;\n        }\n\n        log.push(k);\n        $21 = $27;\n      }\n      $23 = $22;\n      break;\n\n    default:\n      log.push("outer-default");\n      $23 = undefined;\n      break;\n  }\n\n  return log;\n}\n\nexport { run };',
+    );
+  });
+
+  it("preserves try finally through switch and nested loop breaks", () => {
+    const source =
+      "export function run() { const log = []; try { switch (1) { case 1: for (let j = 0; j < 2; j++) { if (j === 1) break; log.push('j' + j); } break; default: log.push('d'); } } finally { log.push('f'); } return log; }";
+
+    expect(compileSource(source, { sourceName: "test.js" }).code).toBe(
+      'function run() {\n  let $34;\n  let $30;\n  let $31;\n  let $32;\n  const log = [];\n\n  $34 = log;\n\n  try {\n    switch (1) {\n      case 1:\n        let j = 0;\n        $30 = j;\n        for (; j < 2; (j = j + 1, $30 = j)) {\n          if (j === 1) {\n            break;\n          }\n\n          log.push("j" + j);\n        }\n        $31 = $30;\n        break;\n\n      default:\n        log.push("d");\n        $31 = undefined;\n        break;\n    }\n\n    $32 = $31;\n  } finally {\n    $32 = undefined;\n    log.push("f");\n  }\n\n  return log;\n}\n\nexport { run };',
+    );
+  });
+
+  it("emits optimized constant loop tests", () => {
+    const source =
+      "export function run() { const log = []; function f() { outer: while (true) { try { return 'r'; } finally { break outer; } } return 'after'; } log.push(f()); return log; }";
+
+    expect(compileSource(source, { sourceName: "test.js" }).code).toBe(
+      'function run() {\n  let $14;\n  let $15;\n\n  function f() {\n    outer: while (true) {\n      try {\n        return "r";\n      } finally {\n        break;\n      }\n    }\n\n    return "after";\n  }\n\n  $14 = f;\n\n  const log = [];\n\n  $15 = log;\n  log.push(f());\n\n  return log;\n}\n\nexport { run };',
     );
   });
 
