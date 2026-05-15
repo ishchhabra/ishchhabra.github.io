@@ -87,7 +87,7 @@ export interface FunctionIROptions {
   readonly params: readonly FunctionParam[];
   readonly blocks: readonly BasicBlock[];
   readonly kind?: FunctionIRKind;
-  readonly name?: string | null;
+  readonly selfBindingDeclarationId?: DeclarationId | null;
   readonly isAsync?: boolean;
   readonly isGenerator?: boolean;
   readonly parentFunction?: FunctionIR | null;
@@ -119,7 +119,7 @@ export class FunctionIR {
   public readonly isAsync: boolean;
   public readonly isGenerator: boolean;
   public readonly kind: FunctionIRKind;
-  public readonly name: string | null;
+  public readonly selfBindingDeclarationId: DeclarationId | null;
   public readonly parentFunction: FunctionIR | null;
 
   constructor(
@@ -136,7 +136,7 @@ export class FunctionIR {
     this.isAsync = options.isAsync ?? false;
     this.isGenerator = options.isGenerator ?? false;
     this.kind = options.kind ?? "function";
-    this.name = options.name ?? null;
+    this.selfBindingDeclarationId = options.selfBindingDeclarationId ?? null;
     this.parentFunction = options.parentFunction ?? null;
     this.attachOperandUses();
 

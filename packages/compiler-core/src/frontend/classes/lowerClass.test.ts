@@ -23,7 +23,7 @@ describe("lowerClass", () => {
     const classOp = operations[1] as CreateClassOp;
 
     expect(superClass.name).toBe("Base");
-    expect(classOp.name).toBe("C");
+    expect(classOp.selfBindingDeclarationId).toBeNull();
     expect(classOp.superClass).toBe(superClass.result);
     expect(classOp.elements).toHaveLength(1);
     expect(classOp.elements[0]).toMatchObject({

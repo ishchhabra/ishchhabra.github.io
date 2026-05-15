@@ -34,7 +34,9 @@ export function lowerClass(builder: FunctionIRBuilder, classNode: Class): Value 
   builder.emit(
     new CreateClassOp(
       builder.operationId(),
-      classNode.id?.name ?? null,
+      classNode.type === "ClassExpression" && classNode.id !== null
+        ? builder.declarationForBinding(classNode.id).id
+        : null,
       superClass,
       elements,
       result,
@@ -94,7 +96,6 @@ function lowerClassElementFunction(
   const captures = builder.capturesForOwner(value);
   const nested = builder.createNestedFunctionIR({
     kind: kind === "constructor" ? "class-constructor" : "class-method",
-    name: value.id?.name ?? null,
     isAsync: value.async,
     isGenerator: value.generator,
     captures,

@@ -2,7 +2,7 @@ import type { FunctionIR } from "../../core/FunctionIR";
 import { Operation, type OperationId } from "../../core/Operation";
 import type { OperationCloneContext } from "../../core/OperationCloneContext";
 import type { PrivateName } from "../../core/PrivateName";
-import type { Value } from "../../core/Value";
+import type { DeclarationId, Value } from "../../core/Value";
 import { type OperationEffects, UnknownOperationEffects } from "../../effects";
 import type { PropertyKey } from "../properties/PropertyKey";
 
@@ -75,7 +75,7 @@ export interface ClassFieldElement {
 export class CreateClassOp extends Operation {
   constructor(
     id: OperationId,
-    public readonly name: string | null,
+    public readonly selfBindingDeclarationId: DeclarationId | null,
     public readonly superClass: Value | null,
     public readonly elements: readonly ClassElement[],
     result: Value,
@@ -135,13 +135,19 @@ export class CreateClassOp extends Operation {
       }
     });
 
-    return new CreateClassOp(this.id, this.name, superClass, elements, this.result);
+    return new CreateClassOp(
+      this.id,
+      this.selfBindingDeclarationId,
+      superClass,
+      elements,
+      this.result,
+    );
   }
 
   public override clone(context: OperationCloneContext): CreateClassOp {
     return new CreateClassOp(
       context.ids.operationId(),
-      this.name,
+      this.selfBindingDeclarationId,
       this.superClass === null ? null : context.value(this.superClass),
       this.elements.map((element): ClassElement => {
         switch (element.kind) {

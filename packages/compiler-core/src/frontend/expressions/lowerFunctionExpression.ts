@@ -15,7 +15,8 @@ export function lowerFunctionExpression(
   const captures = builder.capturesForOwner(expression);
   const nested = builder.createNestedFunctionIR({
     kind: "function",
-    name: expression.id?.name ?? null,
+    selfBindingDeclarationId:
+      expression.id === null ? null : builder.declarationForBinding(expression.id).id,
     isAsync: expression.async,
     isGenerator: expression.generator,
     captures,

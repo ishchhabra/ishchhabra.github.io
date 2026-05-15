@@ -22,7 +22,9 @@ import { emitFunctionBody, emitFunctionExpression } from "../../functions/emitFu
 
 export function emitCreateClassOp(context: CodegenContext, op: CreateClassOp): ESTreeStatement[] {
   const expression = classExpression(
-    op.name === null ? null : identifier(op.name),
+    op.selfBindingDeclarationId === null
+      ? null
+      : identifier(context.names.declarationName(op.selfBindingDeclarationId)),
     op.superClass === null ? null : context.expressionForValue(op.superClass),
     op.elements.map((element) => emitClassElement(context, element)),
   );

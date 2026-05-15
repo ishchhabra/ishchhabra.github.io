@@ -79,7 +79,8 @@ function lowerObjectLiteralFunction(builder: FunctionIRBuilder, value: Expressio
   const captures = builder.capturesForOwner(functionNode);
   const nested = builder.createNestedFunctionIR({
     kind: "method",
-    name: functionNode.id?.name ?? null,
+    selfBindingDeclarationId:
+      functionNode.id === null ? null : builder.declarationForBinding(functionNode.id).id,
     isAsync: functionNode.async,
     isGenerator: functionNode.generator,
     captures,

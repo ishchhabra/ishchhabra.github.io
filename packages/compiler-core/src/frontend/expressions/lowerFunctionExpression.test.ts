@@ -19,18 +19,21 @@ describe("lowerFunctionExpression", () => {
 
     const create = operations[0] as CreateFunctionOp;
     expect(create.functionIR.kind).toBe("function");
-    expect(create.functionIR.name).toBeNull();
+    expect(create.functionIR.selfBindingDeclarationId).toBeNull();
     expect(create.functionIR.isAsync).toBe(false);
     expect(create.functionIR.isGenerator).toBe(false);
   });
 
-  it("preserves named function expression metadata", () => {
-    const { moduleIR } = new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
+  it("records named function expression self bindings", () => {
+    const { declarations, moduleIR } = new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
       parseModule("test.js", "const f = function g() {};"),
     );
     const create = moduleIR.entryFunction?.entryBlock.operations[0] as CreateFunctionOp;
 
-    expect(create.functionIR.name).toBe("g");
+    if (create.functionIR.selfBindingDeclarationId === null) {
+      throw new Error("Expected named function expression declaration id");
+    }
+    expect(declarations.get(create.functionIR.selfBindingDeclarationId).name).toBe("g");
   });
 
   it("preserves async and generator flags", () => {

@@ -44,6 +44,7 @@ import {
   type ESTreePattern,
   type ESTreeExpression,
   type ESTreeStatement,
+  type IdentifierNode,
   sequenceExpression,
   unaryExpression,
 } from "../ast";
@@ -124,10 +125,18 @@ export function emitFunctionExpression(context: CodegenContext, fn: FunctionIR):
   const params = emitFunctionParams(context, fn);
 
   return functionExpression(params, body, {
-    id: fn.name === null ? null : identifier(fn.name),
+    id: emitFunctionName(context, fn),
     async: fn.isAsync,
     generator: fn.isGenerator,
   });
+}
+
+export function emitFunctionName(context: CodegenContext, fn: FunctionIR): IdentifierNode | null {
+  if (fn.selfBindingDeclarationId !== null) {
+    return identifier(context.names.declarationName(fn.selfBindingDeclarationId));
+  }
+
+  return null;
 }
 
 function declareCopyTargets(context: CodegenContext, fn: FunctionIR): ESTreeStatement[] {

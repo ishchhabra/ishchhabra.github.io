@@ -27,7 +27,7 @@ import { lowerStatement } from "./statements/lowerStatement";
 
 export interface CreateFunctionIROptions {
   readonly kind?: FunctionIR["kind"];
-  readonly name?: string | null;
+  readonly selfBindingDeclarationId?: DeclarationId | null;
   readonly params?: readonly FunctionParam[];
   readonly captures?: readonly Declaration[];
   readonly isAsync?: boolean;
@@ -204,7 +204,7 @@ export class FunctionIRBuilder {
       ],
       blocks: [entryBlock],
       kind: options.kind,
-      name: options.name,
+      selfBindingDeclarationId: options.selfBindingDeclarationId,
       isAsync: options.isAsync,
       isGenerator: options.isGenerator,
       parentFunction: this.functionIR,

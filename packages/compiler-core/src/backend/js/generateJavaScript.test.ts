@@ -64,7 +64,17 @@ describe("generateJavaScript", () => {
       parseModule("test.js", "const f = function g() { return 1; };"),
     );
 
-    expect(generateJavaScript(input)).toBe("const $d0 = function g() {\n  return 1;\n};");
+    expect(generateJavaScript(input)).toBe("const $d0 = function $d1() {\n  return 1;\n};");
+  });
+
+  it("emits named function expression self-bindings", () => {
+    const input = new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
+      parseModule("test.js", "let f = 1; const g = function f() { return typeof f; };"),
+    );
+
+    expect(generateJavaScript(input)).toBe(
+      "let $d0 = 1;\n\nconst $d1 = function $d2() {\n  return typeof $d2;\n};",
+    );
   });
 
   it("emits async generator function expressions", () => {
@@ -113,6 +123,16 @@ describe("generateJavaScript", () => {
 
     expect(generateJavaScript(input)).toBe(
       "const $d0 = class {\n  constructor() {}\n  static create() {}\n\n  get value() {\n    return 1;\n  }\n\n  set value($d1) {}\n};",
+    );
+  });
+
+  it("emits named class expression self-bindings", () => {
+    const input = new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
+      parseModule("test.js", "let C = 1; const D = class C { static m() { return typeof C; } };"),
+    );
+
+    expect(generateJavaScript(input)).toBe(
+      "let $d0 = 1;\n\nconst $d1 = class $d2 {\n  static m() {\n    return typeof $d2;\n  }\n};",
     );
   });
 
