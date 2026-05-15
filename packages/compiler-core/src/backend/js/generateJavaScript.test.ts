@@ -136,6 +136,16 @@ describe("generateJavaScript", () => {
     );
   });
 
+  it("emits named class expression self-bindings in heritage", () => {
+    const input = new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
+      parseModule("test.js", "let C = class {}; const D = class C extends C {};"),
+    );
+
+    expect(generateJavaScript(input)).toBe(
+      "let $d0 = class {};\nconst $d1 = class $d2 extends $d2 {};",
+    );
+  });
+
   it("emits super constructor calls, property reads, and method calls", () => {
     const input = new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
       parseModule(

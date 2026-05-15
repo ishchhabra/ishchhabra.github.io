@@ -135,7 +135,7 @@ export class ReferenceResolver {
 
         if (statement.declaration.type === "ClassDeclaration") {
           if (statement.declaration.id === null) {
-            this.resolveClassExpression(statement.declaration, scope);
+            this.resolveClassExpression(statement.declaration);
           } else {
             this.resolveStatement(statement.declaration, scope);
           }
@@ -412,7 +412,7 @@ export class ReferenceResolver {
         return;
 
       case "ClassExpression":
-        return this.resolveClassExpression(expression, scope);
+        return this.resolveClassExpression(expression);
 
       case "FunctionExpression":
         return this.resolveFunctionExpression(expression, scope);
@@ -508,9 +508,11 @@ export class ReferenceResolver {
     this.resolveExpression(argument, scope);
   }
 
-  private resolveClassExpression(expression: Class, scope: Scope): void {
+  private resolveClassExpression(expression: Class): void {
+    const classScope = this.graph.scopeForOwner(expression);
+
     if (expression.superClass !== null) {
-      this.resolveExpression(expression.superClass, scope);
+      this.resolveExpression(expression.superClass, classScope);
     }
 
     this.resolveClassBody(expression);

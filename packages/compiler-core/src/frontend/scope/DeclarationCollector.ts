@@ -704,7 +704,7 @@ export class DeclarationCollector {
     }
 
     if (expression.superClass !== null) {
-      this.collectExpression(expression.superClass, scope);
+      this.collectExpression(expression.superClass, classScope);
     }
 
     this.collectClassBody(expression, classScope);

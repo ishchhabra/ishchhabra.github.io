@@ -131,6 +131,31 @@ describe("analyzeScopes", () => {
     );
   });
 
+  it("resolves class expression heritage in the class scope", () => {
+    const { graph, program } = analyzeSource("let C = class {}; const D = class C extends C {};");
+    const outerDeclaration = declarationByName(graph.programScope, "C");
+    const declaration = program.body[1];
+
+    if (
+      declaration?.type !== "VariableDeclaration" ||
+      declaration.declarations[0]?.init?.type !== "ClassExpression"
+    ) {
+      throw new Error("Expected class expression");
+    }
+
+    const classExpression = declaration.declarations[0].init;
+    const classScope = graph.scopeForOwner(classExpression);
+    const selfDeclaration = declarationByName(classScope, "C");
+
+    expect(selfDeclaration).not.toBe(outerDeclaration);
+
+    if (classExpression.superClass?.type !== "Identifier") {
+      throw new Error("Expected class heritage identifier");
+    }
+
+    expect(graph.declarationForReference(classExpression.superClass)).toBe(selfDeclaration);
+  });
+
   it("records function declarations and parameter bindings", () => {
     const { graph, program } = analyzeSource("function f(a) { a; }");
     const declaration = declarationByName(graph.programScope, "f");
