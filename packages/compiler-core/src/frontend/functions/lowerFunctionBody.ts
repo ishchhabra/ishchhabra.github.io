@@ -19,6 +19,8 @@ export function lowerFunctionBody(builder: FunctionIRBuilder, functionNode: OxcF
   lowerDeclarationInstantiation(builder, functionNode);
 
   for (const statement of functionNode.body.body) {
+    if (builder.currentBlock.isTerminated) break;
+
     lowerStatement(builder, statement);
   }
 }
@@ -40,6 +42,8 @@ export function lowerArrowFunctionBody(
   }
 
   for (const statement of functionNode.body.body) {
+    if (builder.currentBlock.isTerminated) break;
+
     lowerStatement(builder, statement);
   }
 }

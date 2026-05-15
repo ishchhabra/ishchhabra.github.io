@@ -11,6 +11,8 @@ export function lowerBlockStatement(builder: FunctionIRBuilder, statement: Block
   lowerDeclarationInstantiation(builder, statement);
 
   for (const child of statement.body) {
+    if (builder.currentBlock.isTerminated) break;
+
     lowerStatement(builder, child);
   }
 }

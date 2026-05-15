@@ -100,6 +100,8 @@ export class FunctionIRBuilder {
     lowerDeclarationInstantiation(this, program);
 
     for (const statement of program.body) {
+      if (this.currentBlock.isTerminated) break;
+
       lowerStatement(this, statement);
     }
   }
