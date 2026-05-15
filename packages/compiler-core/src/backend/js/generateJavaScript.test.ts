@@ -739,7 +739,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "labelSwitch: {\n  switch (i) {\n    case 1:\n      for (let $3 of xs) {\n        const x = $3;\n\n        if (x === 2) {\n          break labelSwitch;\n        }\n\n        foo(x);\n      }\n      bar();\n\n    default:\n      break;\n  }\n}\n\nbaz();",
+      "labelSwitch: {\n  switch (i) {\n    case 1:\n      for (let $3 of xs) {\n        const x = $3;\n\n        if (x === 2) {\n          break labelSwitch;\n        }\n\n        foo(x);\n      }\n      bar();\n      break;\n  }\n\n  break labelSwitch;\n}\n\nbaz();",
     );
   });
 

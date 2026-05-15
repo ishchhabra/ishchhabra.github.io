@@ -355,15 +355,15 @@ function emitForIn(
   const propertyKey = propertyKeys[0];
   const loopControl = {
     label: loop.label,
-    breakTarget: controlExitTarget(loop.completionBlock),
+    breakTarget: loop.completionBlock,
     continueTarget: loopBlock,
   };
-  const body = emitBranchArm(context, loop.bodyBlock, loopBlock, emitted, [
+  const body = emitTargetBranchArm(context, loop.bodyTarget, loopBlock, emitted, [
     ...controls,
     loopControl,
   ]);
 
-  return [
+  return withFallthrough(context, loop.completionBlock, emitted, controls, continuation, () => [
     withOptionalLabel(
       loop.label,
       forInStatement(
@@ -372,8 +372,7 @@ function emitForIn(
         blockStatement(body),
       ),
     ),
-    ...emitContinuation(context, loop.completionBlock, continuation, emitted, controls),
-  ];
+  ]);
 }
 
 function emitSwitch(
@@ -385,31 +384,33 @@ function emitSwitch(
 ): ESTreeStatement[] {
   const switchControl = {
     label: op.label,
-    breakTarget: controlExitTarget(op.completionBlock),
+    breakTarget: op.completionBlock,
     continueTarget: null,
   };
   const switchControls = [...controls, switchControl];
+  const emittedCases = op.cases.filter((switchCase) => !switchCase.synthetic);
 
-  return [
+  return withFallthrough(context, op.completionBlock, emitted, controls, continuation, () => [
     withOptionalLabel(
       op.label,
       switchStatement(
         context.expressionForValue(op.discriminant),
-        op.cases.map((switchCase, index) => {
+        emittedCases.map((switchCase, index) => {
           const continuation =
-            index + 1 < op.cases.length ? op.cases[index + 1].target.block : op.completionBlock;
+            index + 1 < emittedCases.length
+              ? emittedCases[index + 1].target.block
+              : op.completionBlock;
 
           return switchCaseNode(
             switchCase.test === null ? null : context.expressionForValue(switchCase.test),
-            emitBranchArm(context, switchCase.target.block, continuation, emitted, switchControls, {
+            emitTargetBranchArm(context, switchCase.target, continuation, emitted, switchControls, {
               implicitJumpTarget: continuation,
             }),
           );
         }),
       ),
     ),
-    ...emitContinuation(context, op.completionBlock, continuation, emitted, controls),
-  ];
+  ]);
 }
 
 function emitLabeled(
@@ -427,7 +428,7 @@ function emitLabeled(
   };
 
   return withFallthrough(context, op.completionBlock, emitted, controls, continuation, () => {
-    const body = emitBranchArm(context, op.bodyBlock, op.completionBlock, emitted, [
+    const body = emitTargetBranchArm(context, op.bodyTarget, op.completionBlock, emitted, [
       ...controls,
       labelControl,
     ]);
@@ -443,21 +444,32 @@ function emitTry(
   controls: readonly EmitControlContext[],
   continuation: BasicBlock | null = null,
 ): ESTreeStatement[] {
-  const innerContinuation = op.finallyBlock ?? op.completionBlock;
-  const body = emitBranchArm(context, op.tryBlock, innerContinuation, emitted, controls);
+  const tryEntry = emitBlockTargetEntry(context, op.tryTarget, emitted);
+  const catchEntry =
+    op.catchTarget === null ? null : emitBlockTargetEntry(context, op.catchTarget, emitted);
+  const finallyEntry =
+    op.finallyTarget === null ? null : emitBlockTargetEntry(context, op.finallyTarget, emitted);
+  const innerContinuation = finallyEntry?.entryBlock ?? op.completionBlock;
+  const body = [
+    ...tryEntry.prologue,
+    ...emitBranchArm(context, tryEntry.entryBlock, innerContinuation, emitted, controls),
+  ];
 
   const handler =
-    op.catchTarget === null
+    catchEntry === null
       ? null
-      : catchClause(
-          catchParam(context, op),
-          emitBranchArm(context, op.catchTarget.block, innerContinuation, emitted, controls),
-        );
+      : catchClause(catchParam(context, op), [
+          ...catchEntry.prologue,
+          ...emitBranchArm(context, catchEntry.entryBlock, innerContinuation, emitted, controls),
+        ]);
 
   const finalizer =
-    op.finallyBlock === null
+    finallyEntry === null
       ? null
-      : emitBranchArm(context, op.finallyBlock, op.completionBlock, emitted, controls);
+      : [
+          ...finallyEntry.prologue,
+          ...emitBranchArm(context, finallyEntry.entryBlock, op.completionBlock, emitted, controls),
+        ];
 
   return [
     tryStatement(body, handler, finalizer),
@@ -501,15 +513,15 @@ function emitForOf(
   const iterationValue = iterationValues[0];
   const loopControl = {
     label: loop.label,
-    breakTarget: controlExitTarget(loop.completionBlock),
+    breakTarget: loop.completionBlock,
     continueTarget: loopBlock,
   };
-  const body = emitBranchArm(context, loop.bodyBlock, loopBlock, emitted, [
+  const body = emitTargetBranchArm(context, loop.bodyTarget, loopBlock, emitted, [
     ...controls,
     loopControl,
   ]);
 
-  return [
+  return withFallthrough(context, loop.completionBlock, emitted, controls, continuation, () => [
     withOptionalLabel(
       loop.label,
       forOfStatement(
@@ -519,8 +531,7 @@ function emitForOf(
         loop.isAwait,
       ),
     ),
-    ...emitContinuation(context, loop.completionBlock, continuation, emitted, controls),
-  ];
+  ]);
 }
 
 function emitFor(
@@ -541,13 +552,13 @@ function emitFor(
   }
 
   validateLoopTestEdge(
-    testBranch.trueBlock,
+    testBranch.trueTarget,
     loop.bodyBlock,
     `ForTerminatorOp#${loop.id} true edge`,
   );
 
   validateLoopTestEdge(
-    testBranch.falseBlock,
+    testBranch.falseTarget,
     loop.completionBlock,
     `ForTerminatorOp#${loop.id} false edge`,
   );
@@ -563,17 +574,16 @@ function emitFor(
 
   const loopControl = {
     label: loop.label,
-    breakTarget: controlExitTarget(loop.completionBlock),
+    breakTarget: loop.completionBlock,
     continueTarget: loop.updateBlock,
   };
   const loopControls = [...controls, loopControl];
   const update = emitForUpdate(context, loop.updateBlock, loopBlock, emitted, loopControls);
   const body = emitBranchArm(context, loop.bodyBlock, loop.updateBlock, emitted, loopControls);
 
-  return [
+  return withFallthrough(context, loop.completionBlock, emitted, controls, continuation, () => [
     withOptionalLabel(loop.label, forStatement(testExpression, update, blockStatement(body))),
-    ...emitContinuation(context, loop.completionBlock, continuation, emitted, controls),
-  ];
+  ]);
 }
 
 function emitForUpdate(
@@ -609,13 +619,13 @@ function emitWhile(
 
   const expectedTrueBlock = loop.kind === "do-while" ? loopBlock : loop.bodyBlock;
   validateLoopTestEdge(
-    testBranch.trueBlock,
+    testBranch.trueTarget,
     expectedTrueBlock,
     `WhileTerminatorOp#${loop.id} true edge`,
   );
 
   validateLoopTestEdge(
-    testBranch.falseBlock,
+    testBranch.falseTarget,
     loop.completionBlock,
     `WhileTerminatorOp#${loop.id} false edge`,
   );
@@ -635,18 +645,17 @@ function emitWhile(
 
   const loopControl = {
     label: loop.label,
-    breakTarget: controlExitTarget(loop.completionBlock),
+    breakTarget: loop.completionBlock,
     continueTarget: loopBlock,
   };
-  const body = emitBranchArm(context, loop.bodyBlock, loopBlock, emitted, [
+  const body = emitTargetBranchArm(context, loop.bodyTarget, loopBlock, emitted, [
     ...controls,
     loopControl,
   ]);
 
-  return [
+  return withFallthrough(context, loop.completionBlock, emitted, controls, continuation, () => [
     withOptionalLabel(loop.label, whileStatement(testExpression, blockStatement(body))),
-    ...emitContinuation(context, loop.completionBlock, continuation, emitted, controls),
-  ];
+  ]);
 }
 
 function emitDoWhile(
@@ -664,10 +673,10 @@ function emitDoWhile(
 
   const loopControl = {
     label: loop.label,
-    breakTarget: controlExitTarget(loop.completionBlock),
+    breakTarget: loop.completionBlock,
     continueTarget: loop.testBlock,
   };
-  const body = emitBranchArm(context, loop.bodyBlock, loop.testBlock, emitted, [
+  const body = emitTargetBranchArm(context, loop.bodyTarget, loop.testBlock, emitted, [
     ...controls,
     loopControl,
   ]);
@@ -744,8 +753,8 @@ function emitLoopTestExpression(
 
   const branch = terminator;
   const statements = emitLoopTest(context, block, emitted);
-  const trueStatements = emitLoopTestEdge(context, branch.trueBlock, trueContinuation, emitted);
-  const falseStatements = emitLoopTestEdge(context, branch.falseBlock, falseContinuation, emitted);
+  const trueStatements = emitLoopTestEdge(context, branch.trueTarget, trueContinuation, emitted);
+  const falseStatements = emitLoopTestEdge(context, branch.falseTarget, falseContinuation, emitted);
   const condition = context.expressionForValue(branch.condition);
   const test =
     trueStatements.length === 0 && falseStatements.length === 0
@@ -946,47 +955,87 @@ function edgeResultExpression(
   return sequenceExpression([...statements.map(expressionFromStatement), literal(result)]);
 }
 
-function validateLoopTestEdge(block: BasicBlock, expected: BasicBlock, label: string): void {
-  if (block === expected) return;
-
-  const terminator = block.terminator;
-  if (terminator instanceof JumpTerminatorOp && terminator.targetBlock === expected) {
-    return;
-  }
+function validateLoopTestEdge(target: BlockTarget, expected: BasicBlock, label: string): void {
+  if (targetEntryBlock(target) === expected) return;
 
   throw new Error(`${label} must target bb${expected.id}`);
 }
 
 function emitLoopTestEdge(
   context: CodegenContext,
-  block: BasicBlock,
+  target: BlockTarget,
   continuation: BasicBlock,
   emitted: Set<BasicBlock>,
 ): ESTreeStatement[] {
-  if (block === continuation) return [];
-
-  const terminator = block.terminator;
-  if (!(terminator instanceof JumpTerminatorOp) || terminator.targetBlock !== continuation) {
+  const entry = emitBlockTargetEntry(context, target, emitted);
+  if (entry.entryBlock !== continuation) {
     throw new Error(
       `Loop test edge must target bb${continuation.id} directly or through an edge-copy block`,
     );
   }
 
-  const statements: ESTreeStatement[] = [];
-  for (const op of block.operations) {
-    if (op === terminator) continue;
+  return entry.prologue;
+}
 
-    if (!(op instanceof CopyValueOp)) {
-      throw new Error(
-        `Loop test edge-copy block may only contain CopyValueOp, got ${op.constructor.name}`,
-      );
+interface EmittedBlockTargetEntry {
+  readonly entryBlock: BasicBlock;
+  readonly prologue: ESTreeStatement[];
+}
+
+function emitBlockTargetEntry(
+  context: CodegenContext,
+  target: BlockTarget,
+  emitted: Set<BasicBlock>,
+): EmittedBlockTargetEntry {
+  const prologue = emitBlockTargetCopies(context, target);
+  let block = target.block;
+
+  while (isEdgeCopyBlock(block)) {
+    const terminator = block.terminator;
+    if (!(terminator instanceof JumpTerminatorOp)) {
+      throw new Error(`Edge-copy block bb${block.id} must end with JumpTerminatorOp`);
     }
 
-    statements.push(...emitOperation(context, op));
+    for (const op of block.operations) {
+      if (op === terminator) continue;
+      prologue.push(...emitOperation(context, op));
+    }
+
+    emitted.add(block);
+    prologue.push(...emitBlockTargetCopies(context, terminator.jumpTarget));
+    block = terminator.targetBlock;
   }
 
-  emitted.add(block);
-  return statements;
+  return { entryBlock: block, prologue };
+}
+
+function targetEntryBlock(target: BlockTarget): BasicBlock {
+  let block = target.block;
+
+  while (isEdgeCopyBlock(block)) {
+    const terminator = block.terminator;
+    if (!(terminator instanceof JumpTerminatorOp)) {
+      throw new Error(`Edge-copy block bb${block.id} must end with JumpTerminatorOp`);
+    }
+
+    block = terminator.targetBlock;
+  }
+
+  return block;
+}
+
+function isEdgeCopyBlock(block: BasicBlock): boolean {
+  const terminator = block.terminator;
+  if (!(terminator instanceof JumpTerminatorOp)) return false;
+
+  let hasCopy = false;
+  for (const op of block.operations) {
+    if (op === terminator) continue;
+    if (!(op instanceof CopyValueOp)) return false;
+    hasCopy = true;
+  }
+
+  return hasCopy;
 }
 
 function expressionFromStatement(statement: ESTreeStatement): ESTreeExpression {
@@ -1158,17 +1207,33 @@ function emitTargetArm(
   emitted: Set<BasicBlock>,
   controls: readonly EmitControlContext[],
 ): ESTreeStatement[] {
-  const assignments = assignTargetParams(context, target);
-  const controlBreak = emitControlBreak(target.block, controls);
+  const entry = emitBlockTargetEntry(context, target, emitted);
+  const controlBreak = emitControlBreak(entry.entryBlock, controls);
   if (controlBreak !== null) {
-    return [...assignments, controlBreak];
+    return [...entry.prologue, controlBreak];
   }
 
-  if (context.isFallthrough(target.block)) {
-    return assignments;
+  if (context.isFallthrough(entry.entryBlock)) {
+    return entry.prologue;
   }
 
-  return [...assignments, ...emitBlock(context, target.block, emitted, controls)];
+  return [...entry.prologue, ...emitBlock(context, entry.entryBlock, emitted, controls)];
+}
+
+function emitTargetBranchArm(
+  context: CodegenContext,
+  target: BlockTarget,
+  continuation: BasicBlock | null,
+  emitted: Set<BasicBlock>,
+  controls: readonly EmitControlContext[],
+  options: EmitBranchArmOptions = {},
+): ESTreeStatement[] {
+  const entry = emitBlockTargetEntry(context, target, emitted);
+
+  return [
+    ...entry.prologue,
+    ...emitBranchArm(context, entry.entryBlock, continuation, emitted, controls, options),
+  ];
 }
 
 function emitBranchArm(
@@ -1435,18 +1500,6 @@ function emitControlContinue(
   return null;
 }
 
-function controlExitTarget(block: BasicBlock): BasicBlock {
-  const terminator = block.terminator;
-  if (!(terminator instanceof JumpTerminatorOp)) return block;
-
-  for (const op of block.operations) {
-    if (op === terminator) continue;
-    if (!(op instanceof CopyValueOp)) return block;
-  }
-
-  return terminator.targetBlock;
-}
-
 function withOptionalLabel(label: string | null, statement: ESTreeStatement): ESTreeStatement {
   return label === null ? statement : labeledStatement(identifier(label), statement);
 }
@@ -1473,6 +1526,34 @@ function assignTargetParams(context: CodegenContext, target: BlockTarget): ESTre
       ),
     ),
   );
+}
+
+function emitBlockTargetCopies(context: CodegenContext, target: BlockTarget): ESTreeStatement[] {
+  const params = target.block.params;
+  const args = successorValues(target);
+
+  if (params.length !== args.length) {
+    throw new Error(
+      `Branch to bb${target.block.id} passes ${args.length} values for ${params.length} block params`,
+    );
+  }
+
+  const assignments: ESTreeStatement[] = [];
+
+  for (let index = 0; index < params.length; index++) {
+    if (params[index] === args[index]) continue;
+
+    assignments.push(
+      expressionStatement(
+        assignmentExpression(
+          identifier(context.names.valueName(params[index])),
+          context.expressionForValue(args[index]),
+        ),
+      ),
+    );
+  }
+
+  return assignments;
 }
 
 function jumpExit(block: BasicBlock): JumpTerminatorOp | null {
