@@ -14,12 +14,14 @@ import { OperationEffects, PureOperationEffects } from "../../effects";
 export interface SwitchCaseTarget {
   readonly test: Value | null;
   readonly target: BlockTarget;
+  readonly synthetic: boolean;
 }
 
 /**
  * Transfers control to the first matching switch case.
  *
- * Cases are stored in source order. A null test represents `default:`.
+ * Cases are stored in source order.
+ * A null test represents either `default:` or a synthetic no-match case.
  * Fallthrough between case bodies is represented by ordinary jumps.
  */
 export class SwitchTerminatorOp extends TerminatorOp {
@@ -69,11 +71,13 @@ export class SwitchTerminatorOp extends TerminatorOp {
       );
       operandIndex += targetValues.length;
 
-      if (test === switchCase.test && target === switchCase.target) {
-        return switchCase;
-      }
+      if (test === switchCase.test && target === switchCase.target) return switchCase;
 
-      return { test, target };
+      return {
+        test,
+        target,
+        synthetic: switchCase.synthetic,
+      };
     });
 
     if (operandIndex !== caseOperands.length) {
@@ -97,6 +101,7 @@ export class SwitchTerminatorOp extends TerminatorOp {
       this.cases.map((switchCase) => ({
         test: switchCase.test === null ? null : context.value(switchCase.test),
         target: cloneBlockTarget(context, switchCase.target),
+        synthetic: switchCase.synthetic,
       })),
       context.block(this.completionBlock),
       this.label,

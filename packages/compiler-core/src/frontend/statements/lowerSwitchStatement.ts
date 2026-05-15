@@ -26,10 +26,15 @@ export function lowerSwitchStatement(
   const cases: SwitchCaseTarget[] = statement.cases.map((switchCase, index) => ({
     test: switchCase.test === null ? null : lowerExpression(builder, switchCase.test),
     target: blockTarget(caseBlocks[index]),
+    synthetic: false,
   }));
 
   if (!cases.some((switchCase) => switchCase.test === null)) {
-    cases.push({ test: null, target: blockTarget(completionBlock) });
+    cases.push({
+      test: null,
+      target: blockTarget(completionBlock),
+      synthetic: true,
+    });
   }
 
   const control = {
