@@ -477,6 +477,24 @@ describe("generateJavaScript", () => {
     expect(generateJavaScript(input)).toBe("function* $d0() {\n  return yield value;\n}");
   });
 
+  it("emits unused yield expression statements", async () => {
+    const source = "export function* run() { yield 1; yield 2; }";
+    const code = compileTestSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect([...module.run()]).toEqual([1, 2]);
+  });
+
+  it("emits unused async generator yield expression statements", async () => {
+    const source = "export async function* run() { yield 1; yield 2; }";
+    const code = compileTestSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    const out = [];
+    for await (const value of module.run()) out.push(value);
+    expect(out).toEqual([1, 2]);
+  });
+
   it("emits lexical destructuring declarations", () => {
     const input = new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
       parseModule("test.js", "const { x, y: z } = obj;"),
