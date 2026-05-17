@@ -1022,6 +1022,22 @@ describe("generateJavaScript", () => {
     );
   });
 
+  it("emits for-of loops with empty destructuring declarations", async () => {
+    const source = "export function run() { for (const {} of [{}]) { return 1; } return 0; }";
+    const code = compileTestSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toBe(1);
+  });
+
+  it("preserves empty for-of destructuring throws", async () => {
+    const source = "export function run() { for (const {} of [null]) {} return 0; }";
+    const code = compileTestSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(() => module.run()).toThrow(TypeError);
+  });
+
   it("emits and runs for-await-of loops", async () => {
     const source =
       "export async function run() { const out = []; for await (const value of [Promise.resolve(1), Promise.resolve(2)]) { out.push(value); } return out; }";

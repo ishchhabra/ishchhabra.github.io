@@ -23,7 +23,12 @@ export function emitDestructureBindingOp(
     return [expressionStatement(assignmentExpression(target, source))];
   }
 
-  for (const id of bindingPatternDeclarationIds(op.target)) {
+  const declarationIds = bindingPatternDeclarationIds(op.target);
+  if (declarationIds.length === 0) {
+    return [expressionStatement(assignmentExpression(target, source))];
+  }
+
+  for (const id of declarationIds) {
     context.declaredDeclarations.add(id);
   }
 
