@@ -240,7 +240,7 @@ export interface DoWhileStatementNode extends BaseNode {
 
 export interface ForStatementNode extends BaseNode {
   readonly type: "ForStatement";
-  readonly init: null;
+  readonly init: VariableDeclarationNode | ExpressionNode | null;
   readonly test: ExpressionNode | null;
   readonly update: ExpressionNode | null;
   readonly body: StatementNode;
@@ -939,13 +939,14 @@ export function doWhileStatement(body: StatementNode, test: ExpressionNode): DoW
 }
 
 export function forStatement(
+  init: VariableDeclarationNode | ExpressionNode | null,
   test: ExpressionNode | null,
   update: ExpressionNode | null,
   body: StatementNode,
 ): ForStatementNode {
   return {
     type: "ForStatement",
-    init: null,
+    init,
     test,
     update,
     body,

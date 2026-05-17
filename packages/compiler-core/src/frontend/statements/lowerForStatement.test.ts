@@ -16,12 +16,15 @@ describe("lowerForStatement", () => {
     if (fn === null) throw new Error("Expected entry function");
 
     const entryJump = fn.entryBlock.terminator as JumpTerminatorOp;
-    const loop = entryJump.targetBlock.terminator as ForTerminatorOp;
+    const initJump = entryJump.targetBlock.terminator as JumpTerminatorOp;
+    const loop = initJump.targetBlock.terminator as ForTerminatorOp;
     const testBranch = loop.testBlock.terminator as BranchTerminatorOp;
     const bodyJump = loop.bodyBlock.terminator as JumpTerminatorOp;
     const updateJump = loop.updateBlock.terminator as JumpTerminatorOp;
 
     expect(loop).toBeInstanceOf(ForTerminatorOp);
+    expect(loop.initTarget?.block).toBe(entryJump.targetBlock);
+    expect(loop.headerInit.kind).toBe("expression");
     expect(testBranch).toBeInstanceOf(BranchTerminatorOp);
     expect(testBranch.trueBlock).toBe(loop.bodyBlock);
     expect(testBranch.falseBlock).toBe(loop.completionBlock);

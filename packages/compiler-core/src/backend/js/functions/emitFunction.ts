@@ -1,12 +1,16 @@
 import type { BasicBlock } from "../../../ir/core/Block";
+import { bindingPatternOperands } from "../../../ir/core/DestructurePattern";
 import type { FunctionIR } from "../../../ir/core/FunctionIR";
 import { successorValues, type BlockTarget } from "../../../ir/core/TerminatorOp";
 import type { Value } from "../../../ir/core/Value";
+import { InitializeBindingOp } from "../../../ir/ops/bindings/InitializeBindingOp";
+import { StoreBindingOp } from "../../../ir/ops/bindings/StoreBindingOp";
+import { ConstantOp } from "../../../ir/ops/constants/ConstantOp";
 import { BranchTerminatorOp } from "../../../ir/ops/control/BranchTerminatorOp";
 import { ConditionalTerminatorOp } from "../../../ir/ops/control/ConditionalTerminatorOp";
 import { ForInTerminatorOp } from "../../../ir/ops/control/ForInTerminatorOp";
 import { ForOfTerminatorOp } from "../../../ir/ops/control/ForOfTerminatorOp";
-import { ForTerminatorOp } from "../../../ir/ops/control/ForTerminatorOp";
+import { ForTerminatorOp, type ForHeaderInit } from "../../../ir/ops/control/ForTerminatorOp";
 import { IfTerminatorOp } from "../../../ir/ops/control/IfTerminatorOp";
 import { JumpTerminatorOp } from "../../../ir/ops/control/JumpTerminatorOp";
 import { LabeledTerminatorOp } from "../../../ir/ops/control/LabeledTerminatorOp";
@@ -15,6 +19,7 @@ import { ShortCircuitTerminatorOp } from "../../../ir/ops/control/ShortCircuitTe
 import { SwitchTerminatorOp } from "../../../ir/ops/control/SwitchTerminatorOp";
 import { TryTerminatorOp } from "../../../ir/ops/control/TryTerminatorOp";
 import { WhileTerminatorOp } from "../../../ir/ops/control/WhileTerminatorOp";
+import { DestructureBindingOp } from "../../../ir/ops/patterns/DestructureBindingOp";
 import { CopyValueOp } from "../../../ir/ops/values/CopyValueOp";
 import {
   assignmentExpression,
@@ -44,6 +49,7 @@ import {
   type ESTreePattern,
   type ESTreeExpression,
   type ESTreeStatement,
+  type VariableDeclarationNode,
   type IdentifierNode,
   sequenceExpression,
   unaryExpression,
@@ -275,6 +281,12 @@ function emitBlock(
   controls: readonly EmitControlContext[],
 ): ESTreeStatement[] {
   if (emitted.has(block)) return [];
+
+  const initLoop = forLoopFromInitBlock(block);
+  if (initLoop !== null) {
+    return emitFor(context, initLoop, emitted, controls);
+  }
+
   emitted.add(block);
 
   const statements: ESTreeStatement[] = [];
@@ -590,12 +602,214 @@ function emitFor(
     continueTarget: loop.updateBlock,
   };
   const loopControls = [...controls, loopControl];
+  const init = emitForInit(context, loop, emitted);
   const update = emitForUpdate(context, loop.updateBlock, loopBlock, emitted, loopControls);
   const body = emitBranchArm(context, loop.bodyBlock, loop.updateBlock, emitted, loopControls);
 
   return withFallthrough(context, loop.completionBlock, emitted, controls, continuation, () => [
-    withOptionalLabel(loop.label, forStatement(testExpression, update, blockStatement(body))),
+    withOptionalLabel(loop.label, forStatement(init, testExpression, update, blockStatement(body))),
   ]);
+}
+
+function emitForInit(
+  context: CodegenContext,
+  loop: ForTerminatorOp,
+  emitted: Set<BasicBlock>,
+): VariableDeclarationNode | ESTreeExpression | null {
+  switch (loop.headerInit.kind) {
+    case "none": {
+      const statements =
+        loop.initTarget === null
+          ? []
+          : emitForInitBlock(context, loop.initTarget.block, emitted, false);
+      if (statements.length !== 0) {
+        return sequenceExpression(statements.map(expressionFromStatement));
+      }
+      return null;
+    }
+
+    case "expression": {
+      const statements =
+        loop.initTarget === null
+          ? []
+          : emitForInitBlock(context, loop.initTarget.block, emitted, false);
+      if (statements.length !== 0) {
+        return sequenceExpression(statements.map(expressionFromStatement));
+      }
+      return context.expressionForValue(loop.headerInit.value);
+    }
+
+    case "declaration":
+      return emitForHeaderDeclaration(
+        context,
+        loop.headerInit,
+        loop.initTarget?.block ?? null,
+        emitted,
+        loop,
+      );
+  }
+}
+
+function emitForInitBlock(
+  context: CodegenContext,
+  block: BasicBlock,
+  emitted: Set<BasicBlock>,
+  skipHeaderBindings: boolean,
+): ESTreeStatement[] {
+  if (emitted.has(block)) return [];
+  emitted.add(block);
+
+  const statements: ESTreeStatement[] = [];
+  const terminator = block.terminator;
+
+  for (const op of block.operations) {
+    if (op === terminator) continue;
+    if (skipHeaderBindings && isForHeaderBindingOp(op)) continue;
+    statements.push(...emitOperation(context, op));
+  }
+
+  return statements;
+}
+
+function isForHeaderBindingOp(
+  op: unknown,
+): op is InitializeBindingOp | StoreBindingOp | DestructureBindingOp {
+  return (
+    op instanceof InitializeBindingOp ||
+    op instanceof StoreBindingOp ||
+    op instanceof DestructureBindingOp
+  );
+}
+
+function emitForHeaderDeclaration(
+  context: CodegenContext,
+  init: Extract<ForHeaderInit, { readonly kind: "declaration" }>,
+  initBlock: BasicBlock | null,
+  emitted: Set<BasicBlock>,
+  loop: ForTerminatorOp,
+): VariableDeclarationNode {
+  const headerCopies: CopyValueOp[] = [];
+  const statements =
+    initBlock === null
+      ? []
+      : emitForDeclarationInitBlock(context, initBlock, emitted, init, headerCopies);
+  if (statements.length !== 0) {
+    foldForHeaderPatternStatements(context, init, statements, loop);
+  }
+
+  const declarators = init.declarators.map((declarator) => {
+    const id = emitBindingPatternTarget(context, declarator.target);
+
+    for (const declarationId of bindingPatternDeclarationIds(declarator.target)) {
+      context.declaredDeclarations.add(declarationId);
+    }
+
+    if (declarator.bindingValue !== null && patternCanBeExpression(id)) {
+      context.values.set(declarator.bindingValue, id);
+    }
+
+    return {
+      type: "VariableDeclarator" as const,
+      id,
+      init:
+        declarator.initializer === null ? null : context.expressionForValue(declarator.initializer),
+      bindingValue: declarator.bindingValue,
+    };
+  });
+
+  for (const copy of headerCopies) {
+    if (!foldForHeaderCopy(context, copy, declarators)) {
+      throw new Error(`ForTerminatorOp#${loop.id} has unsupported initializer copy`);
+    }
+  }
+
+  return {
+    type: "VariableDeclaration",
+    kind: init.declarationKind,
+    declarations: declarators.map(({ bindingValue: _bindingValue, ...declarator }) => declarator),
+  };
+}
+
+function foldForHeaderPatternStatements(
+  context: CodegenContext,
+  init: Extract<ForHeaderInit, { readonly kind: "declaration" }>,
+  statements: readonly ESTreeStatement[],
+  loop: ForTerminatorOp,
+): void {
+  const operand =
+    init.declarators.flatMap((declarator) => bindingPatternOperands(declarator.target))[0] ??
+    init.declarators.find((declarator) => declarator.initializer !== null)?.initializer;
+
+  if (operand === undefined || operand === null) {
+    throw new Error(`ForTerminatorOp#${loop.id} has non-declaration initializer statements`);
+  }
+
+  context.values.set(
+    operand,
+    expressionWithStatements(statements, context.expressionForValue(operand)),
+  );
+}
+
+function emitForDeclarationInitBlock(
+  context: CodegenContext,
+  block: BasicBlock,
+  emitted: Set<BasicBlock>,
+  init: Extract<ForHeaderInit, { readonly kind: "declaration" }>,
+  headerCopies: CopyValueOp[],
+): ESTreeStatement[] {
+  if (emitted.has(block)) return [];
+  emitted.add(block);
+
+  const statements: ESTreeStatement[] = [];
+  const terminator = block.terminator;
+
+  for (const op of block.operations) {
+    if (op === terminator) continue;
+    if (
+      op instanceof InitializeBindingOp ||
+      op instanceof StoreBindingOp ||
+      op instanceof DestructureBindingOp
+    ) {
+      continue;
+    }
+
+    if (
+      op instanceof CopyValueOp &&
+      init.declarators.some((declarator) => declarator.bindingValue === op.source)
+    ) {
+      headerCopies.push(op);
+      continue;
+    }
+
+    if (op instanceof CopyValueOp && isUndefinedCopy(op)) {
+      continue;
+    }
+
+    statements.push(...emitOperation(context, op));
+  }
+
+  return statements;
+}
+
+function isUndefinedCopy(op: CopyValueOp): boolean {
+  const definer = op.source.definer;
+  return definer instanceof ConstantOp && definer.value === undefined;
+}
+
+function foldForHeaderCopy(
+  context: CodegenContext,
+  op: CopyValueOp,
+  declarators: {
+    init: ESTreeExpression | null;
+    readonly bindingValue: Value | null;
+  }[],
+): boolean {
+  const declarator = declarators.find((candidate) => candidate.bindingValue === op.source);
+  if (declarator === undefined || declarator.init === null) return false;
+
+  const target = identifier(context.names.valueName(op.target));
+  declarator.init = sequenceExpression([assignmentExpression(target, declarator.init), target]);
+  return true;
 }
 
 function emitForUpdate(
@@ -1434,6 +1648,12 @@ function emitBranchArm(
     options.implicitJumpTarget === undefined ? continuation : options.implicitJumpTarget;
 
   if (emitted.has(block)) return [];
+
+  const initLoop = forLoopFromInitBlock(block);
+  if (initLoop !== null) {
+    return emitFor(context, initLoop, emitted, controls, continuation);
+  }
+
   emitted.add(block);
 
   const statements: ESTreeStatement[] = [];
@@ -1580,11 +1800,27 @@ function emitJump(
     return entry.prologue;
   }
 
+  const forLoop = forLoopFromInitBlock(targetBlock);
+  if (forLoop !== null) {
+    return [...entry.prologue, ...emitFor(context, forLoop, emitted, controls)];
+  }
+
   if (emitted.has(targetBlock)) {
     return [];
   }
 
   return [...entry.prologue, ...emitBlock(context, targetBlock, emitted, controls)];
+}
+
+function forLoopFromInitBlock(block: BasicBlock): ForTerminatorOp | null {
+  const terminator = block.terminator;
+  if (!(terminator instanceof JumpTerminatorOp)) return null;
+
+  const loopTerminator = terminator.targetBlock.terminator;
+  if (!(loopTerminator instanceof ForTerminatorOp)) return null;
+  if (loopTerminator.initTarget?.block !== block) return null;
+
+  return loopTerminator;
 }
 
 function emitContinuation(

@@ -837,7 +837,7 @@ describe("generateJavaScript", () => {
       "export function run() { const log = []; try { switch (1) { case 1: for (let j = 0; j < 2; j++) { if (j === 1) break; log.push('j' + j); } break; default: log.push('d'); } } finally { log.push('f'); } return log; }";
 
     expect(compileTestSource(source)).toBe(
-      'function $d0() {\n  let $34;\n  let $30;\n  let $31;\n  let $32;\n  const $d1 = [];\n\n  $34 = $d1;\n\n  try {\n    switch (1) {\n      case 1:\n        let $d2 = 0;\n        $30 = $d2;\n        for (; $d2 < 2; ($d2 = $d2 + 1, $30 = $d2)) {\n          if ($d2 === 1) {\n            break;\n          }\n\n          $d1.push("j" + $d2);\n        }\n        $31 = $30;\n        break;\n\n      default:\n        $d1.push("d");\n        $31 = undefined;\n        break;\n    }\n\n    $32 = $31;\n  } finally {\n    $32 = undefined;\n    $d1.push("f");\n  }\n\n  return $d1;\n}\n\nexport { $d0 as run };',
+      'function $d0() {\n  let $34;\n  let $31;\n  let $32;\n  let $30;\n  const $d1 = [];\n\n  $34 = $d1;\n\n  try {\n    switch (1) {\n      case 1:\n        for (let $d2 = ($30 = 0, $30); $d2 < 2; ($d2 = $d2 + 1, $30 = $d2)) {\n          if ($d2 === 1) {\n            break;\n          }\n\n          $d1.push("j" + $d2);\n        }\n        $31 = $30;\n        break;\n\n      default:\n        $d1.push("d");\n        $31 = undefined;\n        break;\n    }\n\n    $32 = $31;\n  } finally {\n    $32 = undefined;\n    $d1.push("f");\n  }\n\n  return $d1;\n}\n\nexport { $d0 as run };',
     );
   });
 
@@ -876,7 +876,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "let $d0 = undefined;\n\n$d0 = 0;\n\nfor (; $d0 < 3; $d0 = $d0 + 1) {\n  foo();\n}\n\n$d0 = 4;",
+      "let $d0 = undefined;\n\nfor (($d0 = 0); $d0 < 3; $d0 = $d0 + 1) {\n  foo();\n}\n\n$d0 = 4;",
     );
   });
 
@@ -885,8 +885,26 @@ describe("generateJavaScript", () => {
       "export function run() { const log = []; let n = 10; for (let n = 0; n < 2; n++) { log.push(n); } log.push(n); return log; }";
 
     expect(compileTestSource(source)).toBe(
-      "function $d0() {\n  let $23;\n  let $24;\n  let $22;\n  const $d1 = [];\n\n  $23 = $d1;\n\n  let $d2 = 10;\n\n  $24 = $d2;\n\n  let $d3 = 0;\n\n  $22 = $d3;\n\n  for (; $d3 < 2; ($d3 = $d3 + 1, $22 = $d3)) {\n    $d1.push($d3);\n  }\n\n  $d1.push($d2);\n\n  return $d1;\n}\n\nexport { $d0 as run };",
+      "function $d0() {\n  let $23;\n  let $24;\n  let $22;\n  const $d1 = [];\n\n  $23 = $d1;\n\n  let $d2 = 10;\n\n  $24 = $d2;\n\n  for (let $d3 = ($22 = 0, $22); $d3 < 2; ($d3 = $d3 + 1, $22 = $d3)) {\n    $d1.push($d3);\n  }\n\n  $d1.push($d2);\n\n  return $d1;\n}\n\nexport { $d0 as run };",
     );
+  });
+
+  it("preserves per-iteration for-header lexical captures", async () => {
+    const source =
+      "export function run() { const fns = []; for (let i = 0; i < 3; i++) fns.push(() => i); return fns.map((fn) => fn()); }";
+    const code = compileTestSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toEqual([0, 1, 2]);
+  });
+
+  it("preserves destructured for-header lexical captures", async () => {
+    const source =
+      "export function run() { const fns = []; for (let { x = 0 } = {}; x < 2; x++) fns.push(() => x); return fns.map((fn) => fn()); }";
+    const code = compileTestSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toEqual([0, 1]);
   });
 
   it("emits for-in loops", () => {
