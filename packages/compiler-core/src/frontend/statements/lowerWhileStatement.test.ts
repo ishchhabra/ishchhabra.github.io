@@ -23,14 +23,14 @@ describe("lowerWhileStatement", () => {
     expect(loop).toBeInstanceOf(WhileTerminatorOp);
     expect(testBranch).toBeInstanceOf(BranchTerminatorOp);
     expect(testBranch.trueBlock).toBe(loop.bodyBlock);
-    expect(testBranch.falseBlock).toBe(loop.completionBlock);
+    expect(testBranch.falseBlock).toBe(loop.exitBlock);
     expect(loop.bodyBlock.operations.map((op) => op.constructor.name)).toEqual([
       "ConstantOp",
       "StoreBindingOp",
       "JumpTerminatorOp",
     ]);
     expect(bodyJump.targetBlock.terminator).toBe(loop);
-    expect(loop.completionBlock.operations.map((op) => op.constructor.name)).toEqual([
+    expect(loop.exitBlock.operations.map((op) => op.constructor.name)).toEqual([
       "ConstantOp",
       "StoreBindingOp",
     ]);

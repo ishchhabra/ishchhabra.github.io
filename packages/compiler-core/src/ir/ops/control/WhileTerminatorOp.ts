@@ -2,7 +2,6 @@ import { BasicBlock } from "../../core/Block";
 import { OperationId } from "../../core/Operation";
 import { OperationCloneContext } from "../../core/OperationCloneContext";
 import {
-  blockTarget,
   BlockTarget,
   cloneBlockTarget,
   replaceForwardedOperands,
@@ -26,7 +25,7 @@ export class WhileTerminatorOp extends TerminatorOp {
     id: OperationId,
     public readonly testTarget: BlockTarget,
     public readonly bodyTarget: BlockTarget,
-    public readonly completionBlock: BasicBlock,
+    public readonly exitTarget: BlockTarget,
     public readonly kind: WhileTerminatorKind,
     public readonly label: string | null = null,
   ) {
@@ -41,8 +40,16 @@ export class WhileTerminatorOp extends TerminatorOp {
     return this.bodyTarget.block;
   }
 
+  public get exitBlock(): BasicBlock {
+    return this.exitTarget.block;
+  }
+
   public override operands(): readonly Value[] {
-    return [...this.testTarget.operands.forwarded, ...this.bodyTarget.operands.forwarded];
+    return [
+      ...this.testTarget.operands.forwarded,
+      ...this.bodyTarget.operands.forwarded,
+      ...this.exitTarget.operands.forwarded,
+    ];
   }
 
   public override effects(): OperationEffects {
@@ -52,7 +59,8 @@ export class WhileTerminatorOp extends TerminatorOp {
   public override withOperands(operands: readonly Value[]): WhileTerminatorOp {
     const testCount = this.testTarget.operands.forwarded.length;
     const bodyCount = this.bodyTarget.operands.forwarded.length;
-    const expected = testCount + bodyCount;
+    const exitCount = this.exitTarget.operands.forwarded.length;
+    const expected = testCount + bodyCount + exitCount;
 
     if (operands.length !== expected) {
       throw new Error(
@@ -61,9 +69,20 @@ export class WhileTerminatorOp extends TerminatorOp {
     }
 
     const testTarget = replaceForwardedOperands(this.testTarget, operands.slice(0, testCount));
-    const bodyTarget = replaceForwardedOperands(this.bodyTarget, operands.slice(testCount));
+    const bodyTarget = replaceForwardedOperands(
+      this.bodyTarget,
+      operands.slice(testCount, testCount + bodyCount),
+    );
+    const exitTarget = replaceForwardedOperands(
+      this.exitTarget,
+      operands.slice(testCount + bodyCount),
+    );
 
-    if (testTarget === this.testTarget && bodyTarget === this.bodyTarget) {
+    if (
+      testTarget === this.testTarget &&
+      bodyTarget === this.bodyTarget &&
+      exitTarget === this.exitTarget
+    ) {
       return this;
     }
 
@@ -71,7 +90,7 @@ export class WhileTerminatorOp extends TerminatorOp {
       this.id,
       testTarget,
       bodyTarget,
-      this.completionBlock,
+      exitTarget,
       this.kind,
       this.label,
     );
@@ -82,7 +101,7 @@ export class WhileTerminatorOp extends TerminatorOp {
       context.ids.operationId(),
       cloneBlockTarget(context, this.testTarget),
       cloneBlockTarget(context, this.bodyTarget),
-      context.block(this.completionBlock),
+      cloneBlockTarget(context, this.exitTarget),
       this.kind,
       this.label,
     );
@@ -95,12 +114,7 @@ export class WhileTerminatorOp extends TerminatorOp {
   public override target(index: number): BlockTarget {
     if (index === 0) return this.testTarget;
     if (index === 1) return this.bodyTarget;
-    if (index === 2) {
-      return {
-        block: this.completionBlock,
-        operands: { produced: [], forwarded: [] },
-      };
-    }
+    if (index === 2) return this.exitTarget;
 
     throw new Error(`WhileTerminatorOp#${this.id} has no target ${index}`);
   }
@@ -111,7 +125,7 @@ export class WhileTerminatorOp extends TerminatorOp {
         this.id,
         target,
         this.bodyTarget,
-        this.completionBlock,
+        this.exitTarget,
         this.kind,
         this.label,
       );
@@ -122,7 +136,7 @@ export class WhileTerminatorOp extends TerminatorOp {
         this.id,
         this.testTarget,
         target,
-        this.completionBlock,
+        this.exitTarget,
         this.kind,
         this.label,
       );
@@ -133,7 +147,7 @@ export class WhileTerminatorOp extends TerminatorOp {
         this.id,
         this.testTarget,
         this.bodyTarget,
-        target.block,
+        target,
         this.kind,
         this.label,
       );

@@ -35,12 +35,12 @@ export function lowerForInStatement(
 
   const loopBlock = builder.createBlock();
   const bodyBlock = builder.createBlock();
-  const completionBlock = builder.createBlock();
+  const continuationBlock = builder.createBlock();
 
   const control = {
     kind: "loop" as const,
     label: options.label ?? null,
-    breakTarget: completionBlock,
+    breakTarget: continuationBlock,
     continueTarget: loopBlock,
   };
 
@@ -58,8 +58,8 @@ export function lowerForInStatement(
         block: bodyBlock,
         operands: producedOperands([propertyKey]),
       },
-      blockTarget(completionBlock),
-      completionBlock,
+      blockTarget(continuationBlock),
+      continuationBlock,
       options.label ?? null,
     ),
   );
@@ -77,7 +77,7 @@ export function lowerForInStatement(
     builder.terminate(new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock)));
   }
 
-  builder.setCurrentBlock(completionBlock);
+  builder.setCurrentBlock(continuationBlock);
 }
 
 function lowerForInLeft(

@@ -23,12 +23,12 @@ export function lowerDoWhileStatement(
   const loopBlock = builder.createBlock();
   const testBlock = builder.createBlock();
   const bodyBlock = builder.createBlock();
-  const completionBlock = builder.createBlock();
+  const exitBlock = builder.createBlock();
 
   const control = {
     kind: "loop" as const,
     label: options.label ?? null,
-    breakTarget: completionBlock,
+    breakTarget: exitBlock,
     continueTarget: testBlock,
   };
 
@@ -40,7 +40,7 @@ export function lowerDoWhileStatement(
       builder.operationId(),
       blockTarget(testBlock),
       blockTarget(bodyBlock),
-      completionBlock,
+      blockTarget(exitBlock),
       "do-while",
       options.label ?? null,
     ),
@@ -65,9 +65,9 @@ export function lowerDoWhileStatement(
       builder.operationId(),
       condition,
       blockTarget(loopBlock),
-      blockTarget(completionBlock),
+      blockTarget(exitBlock),
     ),
   );
 
-  builder.setCurrentBlock(completionBlock);
+  builder.setCurrentBlock(exitBlock);
 }

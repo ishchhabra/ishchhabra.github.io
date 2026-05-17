@@ -2,7 +2,6 @@ import type { BasicBlock } from "../../core/Block";
 import type { OperationId } from "../../core/Operation";
 import type { OperationCloneContext } from "../../core/OperationCloneContext";
 import {
-  blockTarget,
   type BlockTarget,
   cloneBlockTarget,
   replaceForwardedOperands,
@@ -14,7 +13,7 @@ import { type OperationEffects, PureOperationEffects } from "../../effects";
 /**
  * Structured terminator for ECMAScript labeled statements.
  *
- * A label creates a named breakable region. `break label` targets `completionBlock`.
+ * A label creates a named breakable region. `break label` targets `exitBlock`.
  * Labeled loops use loop terminator labels because `continue label` needs the
  * loop continuation target.
  */
@@ -23,7 +22,7 @@ export class LabeledTerminatorOp extends TerminatorOp {
     id: OperationId,
     public readonly label: string,
     public readonly bodyTarget: BlockTarget,
-    public readonly completionBlock: BasicBlock,
+    public readonly exitTarget: BlockTarget,
   ) {
     super(id);
   }
@@ -32,8 +31,12 @@ export class LabeledTerminatorOp extends TerminatorOp {
     return this.bodyTarget.block;
   }
 
+  public get exitBlock(): BasicBlock {
+    return this.exitTarget.block;
+  }
+
   public override operands(): readonly Value[] {
-    return this.bodyTarget.operands.forwarded;
+    return [...this.bodyTarget.operands.forwarded, ...this.exitTarget.operands.forwarded];
   }
 
   public override effects(): OperationEffects {
@@ -41,10 +44,21 @@ export class LabeledTerminatorOp extends TerminatorOp {
   }
 
   public override withOperands(operands: readonly Value[]): LabeledTerminatorOp {
-    const target = replaceForwardedOperands(this.bodyTarget, operands);
-    if (target === this.bodyTarget) return this;
+    const bodyCount = this.bodyTarget.operands.forwarded.length;
+    const expected = bodyCount + this.exitTarget.operands.forwarded.length;
 
-    return new LabeledTerminatorOp(this.id, this.label, target, this.completionBlock);
+    if (operands.length !== expected) {
+      throw new Error(
+        `LabeledTerminatorOp#${this.id} expected ${expected} operands, got ${operands.length}`,
+      );
+    }
+
+    const bodyTarget = replaceForwardedOperands(this.bodyTarget, operands.slice(0, bodyCount));
+    const exitTarget = replaceForwardedOperands(this.exitTarget, operands.slice(bodyCount));
+
+    if (bodyTarget === this.bodyTarget && exitTarget === this.exitTarget) return this;
+
+    return new LabeledTerminatorOp(this.id, this.label, bodyTarget, exitTarget);
   }
 
   public override clone(context: OperationCloneContext): LabeledTerminatorOp {
@@ -52,7 +66,7 @@ export class LabeledTerminatorOp extends TerminatorOp {
       context.ids.operationId(),
       this.label,
       cloneBlockTarget(context, this.bodyTarget),
-      context.block(this.completionBlock),
+      cloneBlockTarget(context, this.exitTarget),
     );
   }
 
@@ -62,18 +76,18 @@ export class LabeledTerminatorOp extends TerminatorOp {
 
   public override target(index: number): BlockTarget {
     if (index === 0) return this.bodyTarget;
-    if (index === 1) return blockTarget(this.completionBlock);
+    if (index === 1) return this.exitTarget;
 
     throw new Error(`LabeledTerminatorOp#${this.id} has no target ${index}`);
   }
 
   public override withTarget(index: number, target: BlockTarget): LabeledTerminatorOp {
     if (index === 0) {
-      return new LabeledTerminatorOp(this.id, this.label, target, this.completionBlock);
+      return new LabeledTerminatorOp(this.id, this.label, target, this.exitTarget);
     }
 
     if (index === 1) {
-      return new LabeledTerminatorOp(this.id, this.label, this.bodyTarget, target.block);
+      return new LabeledTerminatorOp(this.id, this.label, this.bodyTarget, target);
     }
 
     throw new Error(`LabeledTerminatorOp#${this.id} has no target ${index}`);

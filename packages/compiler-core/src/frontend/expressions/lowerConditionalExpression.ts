@@ -37,7 +37,7 @@ export function lowerConditionalExpression(
       test,
       blockTarget(consequentBlock),
       blockTarget(alternateBlock),
-      joinBlock,
+      blockTarget(joinBlock),
     ),
   );
 

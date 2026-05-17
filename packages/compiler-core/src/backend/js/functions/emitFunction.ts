@@ -388,7 +388,7 @@ function emitForIn(
   const propertyKey = propertyKeys[0];
   const loopControl = {
     label: loop.label,
-    breakTarget: loop.completionBlock,
+    breakTarget: loop.continuationBlock,
     continueTarget: loopBlock,
   };
   const body = emitTargetBranchArm(context, loop.bodyTarget, loopBlock, emitted, [
@@ -396,7 +396,7 @@ function emitForIn(
     loopControl,
   ]);
 
-  return withFallthrough(context, loop.completionBlock, emitted, controls, continuation, () => [
+  return withFallthrough(context, loop.continuationBlock, emitted, controls, continuation, () => [
     withOptionalLabel(
       loop.label,
       forInStatement(
@@ -455,13 +455,13 @@ function emitLabeled(
 ): ESTreeStatement[] {
   const labelControl = {
     label: op.label,
-    breakTarget: op.completionBlock,
+    breakTarget: op.exitBlock,
     continueTarget: null,
     requireLabel: true,
   };
 
-  return withFallthrough(context, op.completionBlock, emitted, controls, continuation, () => {
-    const body = emitTargetBranchArm(context, op.bodyTarget, op.completionBlock, emitted, [
+  return withFallthrough(context, op.exitBlock, emitted, controls, continuation, () => {
+    const body = emitTargetBranchArm(context, op.bodyTarget, op.exitBlock, emitted, [
       ...controls,
       labelControl,
     ]);
@@ -546,7 +546,7 @@ function emitForOf(
   const iterationValue = iterationValues[0];
   const loopControl = {
     label: loop.label,
-    breakTarget: loop.completionBlock,
+    breakTarget: loop.continuationBlock,
     continueTarget: loopBlock,
   };
   const body = emitTargetBranchArm(context, loop.bodyTarget, loopBlock, emitted, [
@@ -554,7 +554,7 @@ function emitForOf(
     loopControl,
   ]);
 
-  return withFallthrough(context, loop.completionBlock, emitted, controls, continuation, () => [
+  return withFallthrough(context, loop.continuationBlock, emitted, controls, continuation, () => [
     withOptionalLabel(
       loop.label,
       forOfStatement(
@@ -583,7 +583,7 @@ function emitFor(
   validateLoopTestEdges(
     testTerminator,
     loop.bodyBlock,
-    loop.completionBlock,
+    loop.exitBlock,
     `ForTerminatorOp#${loop.id}`,
   );
 
@@ -592,13 +592,13 @@ function emitFor(
     loop.testBlock,
     testTerminator,
     loop.bodyBlock,
-    loop.completionBlock,
+    loop.exitBlock,
     emitted,
   );
 
   const loopControl = {
     label: loop.label,
-    breakTarget: loop.completionBlock,
+    breakTarget: loop.exitBlock,
     continueTarget: loop.updateBlock,
   };
   const loopControls = [...controls, loopControl];
@@ -606,7 +606,7 @@ function emitFor(
   const update = emitForUpdate(context, loop.updateBlock, loopBlock, emitted, loopControls);
   const body = emitBranchArm(context, loop.bodyBlock, loop.updateBlock, emitted, loopControls);
 
-  return withFallthrough(context, loop.completionBlock, emitted, controls, continuation, () => [
+  return withFallthrough(context, loop.exitBlock, emitted, controls, continuation, () => [
     withOptionalLabel(loop.label, forStatement(init, testExpression, update, blockStatement(body))),
   ]);
 }
@@ -845,7 +845,7 @@ function emitWhile(
   validateLoopTestEdges(
     testTerminator,
     expectedTrueBlock,
-    loop.completionBlock,
+    loop.exitBlock,
     `WhileTerminatorOp#${loop.id}`,
   );
 
@@ -858,13 +858,13 @@ function emitWhile(
     loop.testBlock,
     testTerminator,
     loop.bodyBlock,
-    loop.completionBlock,
+    loop.exitBlock,
     emitted,
   );
 
   const loopControl = {
     label: loop.label,
-    breakTarget: loop.completionBlock,
+    breakTarget: loop.exitBlock,
     continueTarget: loopBlock,
   };
   const body = emitTargetBranchArm(context, loop.bodyTarget, loopBlock, emitted, [
@@ -872,7 +872,7 @@ function emitWhile(
     loopControl,
   ]);
 
-  return withFallthrough(context, loop.completionBlock, emitted, controls, continuation, () => [
+  return withFallthrough(context, loop.exitBlock, emitted, controls, continuation, () => [
     withOptionalLabel(loop.label, whileStatement(testExpression, blockStatement(body))),
   ]);
 }
@@ -892,7 +892,7 @@ function emitDoWhile(
 
   const loopControl = {
     label: loop.label,
-    breakTarget: loop.completionBlock,
+    breakTarget: loop.exitBlock,
     continueTarget: loop.testBlock,
   };
   const body = emitTargetBranchArm(context, loop.bodyTarget, loop.testBlock, emitted, [
@@ -904,13 +904,13 @@ function emitDoWhile(
     loop.testBlock,
     testTerminator,
     loopBlock,
-    loop.completionBlock,
+    loop.exitBlock,
     emitted,
   );
 
   return [
     withOptionalLabel(loop.label, doWhileStatement(blockStatement(body), testExpression)),
-    ...emitContinuation(context, loop.completionBlock, continuation, emitted, controls),
+    ...emitContinuation(context, loop.exitBlock, continuation, emitted, controls),
   ];
 }
 
@@ -2059,15 +2059,19 @@ function commonContinuation(
 function structuredExit(block: BasicBlock): BasicBlock | null {
   const terminator = block.terminator;
 
+  if (terminator instanceof LabeledTerminatorOp) return terminator.exitBlock;
+  if (terminator instanceof ForInTerminatorOp || terminator instanceof ForOfTerminatorOp) {
+    return terminator.continuationBlock;
+  }
+
+  if (terminator instanceof WhileTerminatorOp || terminator instanceof ForTerminatorOp) {
+    return terminator.exitBlock;
+  }
+
   if (
     terminator instanceof SwitchTerminatorOp ||
-    terminator instanceof LabeledTerminatorOp ||
     terminator instanceof IfTerminatorOp ||
-    terminator instanceof TryTerminatorOp ||
-    terminator instanceof WhileTerminatorOp ||
-    terminator instanceof ForInTerminatorOp ||
-    terminator instanceof ForOfTerminatorOp ||
-    terminator instanceof ForTerminatorOp
+    terminator instanceof TryTerminatorOp
   ) {
     return terminator.completionBlock;
   }

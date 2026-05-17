@@ -2,7 +2,6 @@ import { BasicBlock } from "../../core/Block";
 import { OperationId } from "../../core/Operation";
 import { OperationCloneContext } from "../../core/OperationCloneContext";
 import {
-  blockTarget,
   BlockTarget,
   cloneBlockTarget,
   replaceForwardedOperands,
@@ -29,7 +28,7 @@ export class TryTerminatorOp extends TerminatorOp {
     public readonly tryTarget: BlockTarget,
     public readonly catchTarget: BlockTarget | null,
     public readonly finallyTarget: BlockTarget | null,
-    public readonly completionBlock: BasicBlock,
+    public readonly completionTarget: BlockTarget,
   ) {
     super(id);
   }
@@ -42,11 +41,16 @@ export class TryTerminatorOp extends TerminatorOp {
     return this.finallyTarget?.block ?? null;
   }
 
+  public get completionBlock(): BasicBlock {
+    return this.completionTarget.block;
+  }
+
   public override operands(): readonly Value[] {
     return [
       ...this.tryTarget.operands.forwarded,
       ...(this.catchTarget?.operands.forwarded ?? []),
       ...(this.finallyTarget?.operands.forwarded ?? []),
+      ...this.completionTarget.operands.forwarded,
     ];
   }
 
@@ -60,7 +64,7 @@ export class TryTerminatorOp extends TerminatorOp {
       cloneBlockTarget(context, this.tryTarget),
       this.catchTarget === null ? null : cloneBlockTarget(context, this.catchTarget),
       this.finallyTarget === null ? null : cloneBlockTarget(context, this.finallyTarget),
-      context.block(this.completionBlock),
+      cloneBlockTarget(context, this.completionTarget),
     );
   }
 
@@ -68,7 +72,8 @@ export class TryTerminatorOp extends TerminatorOp {
     const tryCount = this.tryTarget.operands.forwarded.length;
     const catchCount = this.catchTarget?.operands.forwarded.length ?? 0;
     const finallyCount = this.finallyTarget?.operands.forwarded.length ?? 0;
-    const expected = tryCount + catchCount + finallyCount;
+    const completionCount = this.completionTarget.operands.forwarded.length;
+    const expected = tryCount + catchCount + finallyCount + completionCount;
 
     if (operands.length !== expected) {
       throw new Error(
@@ -87,23 +92,25 @@ export class TryTerminatorOp extends TerminatorOp {
     const finallyTarget =
       this.finallyTarget === null
         ? null
-        : replaceForwardedOperands(this.finallyTarget, operands.slice(tryCount + catchCount));
+        : replaceForwardedOperands(
+            this.finallyTarget,
+            operands.slice(tryCount + catchCount, tryCount + catchCount + finallyCount),
+          );
+    const completionTarget = replaceForwardedOperands(
+      this.completionTarget,
+      operands.slice(tryCount + catchCount + finallyCount),
+    );
 
     if (
       tryTarget === this.tryTarget &&
       catchTarget === this.catchTarget &&
-      finallyTarget === this.finallyTarget
+      finallyTarget === this.finallyTarget &&
+      completionTarget === this.completionTarget
     ) {
       return this;
     }
 
-    return new TryTerminatorOp(
-      this.id,
-      tryTarget,
-      catchTarget,
-      finallyTarget,
-      this.completionBlock,
-    );
+    return new TryTerminatorOp(this.id, tryTarget, catchTarget, finallyTarget, completionTarget);
   }
 
   public override targetCount(): number {
@@ -123,7 +130,7 @@ export class TryTerminatorOp extends TerminatorOp {
       if (index === nextIndex++) return this.finallyTarget;
     }
 
-    if (index === nextIndex) return blockTarget(this.completionBlock);
+    if (index === nextIndex) return this.completionTarget;
 
     throw new Error(`TryTerminatorOp#${this.id} has no target ${index}`);
   }
@@ -135,7 +142,7 @@ export class TryTerminatorOp extends TerminatorOp {
         target,
         this.catchTarget,
         this.finallyTarget,
-        this.completionBlock,
+        this.completionTarget,
       );
     }
 
@@ -148,7 +155,7 @@ export class TryTerminatorOp extends TerminatorOp {
           this.tryTarget,
           target,
           this.finallyTarget,
-          this.completionBlock,
+          this.completionTarget,
         );
       }
       nextIndex++;
@@ -161,7 +168,7 @@ export class TryTerminatorOp extends TerminatorOp {
           this.tryTarget,
           this.catchTarget,
           target,
-          this.completionBlock,
+          this.completionTarget,
         );
       }
       nextIndex++;
@@ -173,7 +180,7 @@ export class TryTerminatorOp extends TerminatorOp {
         this.tryTarget,
         this.catchTarget,
         this.finallyTarget,
-        target.block,
+        target,
       );
     }
 

@@ -4,7 +4,7 @@ import type { OperationCloneContext } from "./OperationCloneContext";
 import { Value } from "./Value";
 
 /**
- * Operands passed from a terminator to a successor block.
+ * Values bound when a terminator-owned target enters its block.
  *
  * Produced operands are values supplied by the terminator's own semantics, such
  * as a `for-of` iteration value or a caught exception. Forwarded operands are
@@ -19,7 +19,11 @@ export interface SuccessorOperands {
 }
 
 /**
- * Successor edge from a terminator to a basic block.
+ * Target slot owned by a terminator.
+ *
+ * A target may be an immediate executable CFG successor or a structural target
+ * owned by a structured terminator. Use `TerminatorOp.successorIndices()` to
+ * select only executable CFG successor slots.
  */
 export interface BlockTarget {
   readonly block: BasicBlock;
@@ -47,7 +51,7 @@ export function producedOperands(values: readonly Value[]): SuccessorOperands {
 }
 
 /**
- * Creates a successor target that forwards existing SSA values.
+ * Creates a target that forwards existing SSA values.
  */
 export function blockTarget(block: BasicBlock, values: readonly Value[] = []): BlockTarget {
   return {
@@ -57,7 +61,7 @@ export function blockTarget(block: BasicBlock, values: readonly Value[] = []): B
 }
 
 /**
- * Values bound to the successor block parameters, in positional order.
+ * Values bound to target block parameters, in positional order.
  */
 export function successorValues(target: BlockTarget): readonly Value[] {
   return [...target.operands.produced, ...target.operands.forwarded];
@@ -121,7 +125,7 @@ export function sameValueList(left: readonly Value[], right: readonly Value[]): 
 }
 
 /**
- * Clones a successor edge through an operation clone context.
+ * Clones a target through an operation clone context.
  */
 export function cloneBlockTarget(context: OperationCloneContext, target: BlockTarget): BlockTarget {
   return {
@@ -142,17 +146,17 @@ export function cloneBlockTarget(context: OperationCloneContext, target: BlockTa
  */
 export abstract class TerminatorOp extends Operation {
   /**
-   * Number of successor edge slots owned by this terminator.
+   * Number of target slots owned by this terminator.
    */
   abstract targetCount(): number;
 
   /**
-   * Successor target at a stable edge index.
+   * Target slot at a stable index.
    */
   abstract target(index: number): BlockTarget;
 
   /**
-   * Returns a copy of this terminator with one successor target replaced.
+   * Returns a copy of this terminator with one target slot replaced.
    */
   abstract withTarget(index: number, target: BlockTarget): TerminatorOp;
 
@@ -169,7 +173,7 @@ export abstract class TerminatorOp extends Operation {
   }
 
   /**
-   * Successor edges in stable edge-index order.
+   * Target slots in stable index order.
    */
   targets(): readonly BlockTarget[] {
     return Array.from({ length: this.targetCount() }, (_, index) => this.target(index));

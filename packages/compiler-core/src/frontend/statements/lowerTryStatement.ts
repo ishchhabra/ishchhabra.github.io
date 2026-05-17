@@ -42,7 +42,7 @@ export function lowerTryStatement(builder: FunctionIRBuilder, statement: TryStat
             operands: producedOperands([exceptionValue!]),
           },
       finallyBlock === null ? null : blockTarget(finallyBlock),
-      completionBlock,
+      blockTarget(completionBlock),
     ),
   );
 

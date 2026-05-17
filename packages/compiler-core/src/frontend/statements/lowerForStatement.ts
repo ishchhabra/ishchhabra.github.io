@@ -36,7 +36,7 @@ export function lowerForStatement(
   const testBlock = builder.createBlock();
   const bodyBlock = builder.createBlock();
   const updateBlock = builder.createBlock();
-  const completionBlock = builder.createBlock();
+  const exitBlock = builder.createBlock();
   let headerInit: ForHeaderInit = { kind: "none" };
 
   builder.terminate(
@@ -55,7 +55,7 @@ export function lowerForStatement(
   const control = {
     kind: "loop" as const,
     label: options.label ?? null,
-    breakTarget: completionBlock,
+    breakTarget: exitBlock,
     continueTarget: updateBlock,
   };
 
@@ -66,9 +66,9 @@ export function lowerForStatement(
       initBlock === null ? null : blockTarget(initBlock),
       headerInit,
       blockTarget(testBlock),
-      bodyBlock,
-      updateBlock,
-      completionBlock,
+      blockTarget(bodyBlock),
+      blockTarget(updateBlock),
+      blockTarget(exitBlock),
       options.label ?? null,
     ),
   );
@@ -84,7 +84,7 @@ export function lowerForStatement(
       builder.operationId(),
       condition,
       blockTarget(bodyBlock),
-      blockTarget(completionBlock),
+      blockTarget(exitBlock),
     ),
   );
 
@@ -108,7 +108,7 @@ export function lowerForStatement(
     builder.terminate(new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock)));
   }
 
-  builder.setCurrentBlock(completionBlock);
+  builder.setCurrentBlock(exitBlock);
 }
 
 function emitConstant(builder: FunctionIRBuilder, value: boolean | undefined): Value {

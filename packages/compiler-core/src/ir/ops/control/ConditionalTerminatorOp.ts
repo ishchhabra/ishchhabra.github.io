@@ -4,8 +4,7 @@ import { OperationCloneContext } from "../../core/OperationCloneContext";
 import {
   BlockTarget,
   cloneBlockTarget,
-  replaceSuccessorValues,
-  successorValues,
+  replaceForwardedOperands,
   TerminatorOp,
 } from "../../core/TerminatorOp";
 import { Value } from "../../core/Value";
@@ -30,7 +29,7 @@ export class ConditionalTerminatorOp extends TerminatorOp {
     public readonly test: Value,
     public readonly consequentTarget: BlockTarget,
     public readonly alternateTarget: BlockTarget,
-    public readonly completionBlock: BasicBlock,
+    public readonly completionTarget: BlockTarget,
   ) {
     super(id);
   }
@@ -43,11 +42,16 @@ export class ConditionalTerminatorOp extends TerminatorOp {
     return this.alternateTarget.block;
   }
 
+  public get completionBlock(): BasicBlock {
+    return this.completionTarget.block;
+  }
+
   public override operands(): readonly Value[] {
     return [
       this.test,
-      ...successorValues(this.consequentTarget),
-      ...successorValues(this.alternateTarget),
+      ...this.consequentTarget.operands.forwarded,
+      ...this.alternateTarget.operands.forwarded,
+      ...this.completionTarget.operands.forwarded,
     ];
   }
 
@@ -56,9 +60,10 @@ export class ConditionalTerminatorOp extends TerminatorOp {
   }
 
   public override withOperands(operands: readonly Value[]): ConditionalTerminatorOp {
-    const consequentValues = successorValues(this.consequentTarget);
-    const alternateValues = successorValues(this.alternateTarget);
-    const expected = 1 + consequentValues.length + alternateValues.length;
+    const consequentCount = this.consequentTarget.operands.forwarded.length;
+    const alternateCount = this.alternateTarget.operands.forwarded.length;
+    const completionCount = this.completionTarget.operands.forwarded.length;
+    const expected = 1 + consequentCount + alternateCount + completionCount;
 
     if (operands.length !== expected) {
       throw new Error(
@@ -67,19 +72,24 @@ export class ConditionalTerminatorOp extends TerminatorOp {
     }
 
     const [test, ...successorOperands] = operands;
-    const consequentTarget = replaceSuccessorValues(
+    const consequentTarget = replaceForwardedOperands(
       this.consequentTarget,
-      successorOperands.slice(0, consequentValues.length),
+      successorOperands.slice(0, consequentCount),
     );
-    const alternateTarget = replaceSuccessorValues(
+    const alternateTarget = replaceForwardedOperands(
       this.alternateTarget,
-      successorOperands.slice(consequentValues.length),
+      successorOperands.slice(consequentCount, consequentCount + alternateCount),
+    );
+    const completionTarget = replaceForwardedOperands(
+      this.completionTarget,
+      successorOperands.slice(consequentCount + alternateCount),
     );
 
     if (
       test === this.test &&
       consequentTarget === this.consequentTarget &&
-      alternateTarget === this.alternateTarget
+      alternateTarget === this.alternateTarget &&
+      completionTarget === this.completionTarget
     ) {
       return this;
     }
@@ -89,7 +99,7 @@ export class ConditionalTerminatorOp extends TerminatorOp {
       test,
       consequentTarget,
       alternateTarget,
-      this.completionBlock,
+      completionTarget,
     );
   }
 
@@ -99,7 +109,7 @@ export class ConditionalTerminatorOp extends TerminatorOp {
       context.value(this.test),
       cloneBlockTarget(context, this.consequentTarget),
       cloneBlockTarget(context, this.alternateTarget),
-      context.block(this.completionBlock),
+      cloneBlockTarget(context, this.completionTarget),
     );
   }
 
@@ -110,12 +120,7 @@ export class ConditionalTerminatorOp extends TerminatorOp {
   public override target(index: number): BlockTarget {
     if (index === 0) return this.consequentTarget;
     if (index === 1) return this.alternateTarget;
-    if (index === 2) {
-      return {
-        block: this.completionBlock,
-        operands: { produced: [], forwarded: [] },
-      };
-    }
+    if (index === 2) return this.completionTarget;
 
     throw new Error(`ConditionalTerminatorOp#${this.id} has no target ${index}`);
   }
@@ -127,7 +132,7 @@ export class ConditionalTerminatorOp extends TerminatorOp {
         this.test,
         target,
         this.alternateTarget,
-        this.completionBlock,
+        this.completionTarget,
       );
     }
 
@@ -137,7 +142,7 @@ export class ConditionalTerminatorOp extends TerminatorOp {
         this.test,
         this.consequentTarget,
         target,
-        this.completionBlock,
+        this.completionTarget,
       );
     }
 
@@ -147,7 +152,7 @@ export class ConditionalTerminatorOp extends TerminatorOp {
         this.test,
         this.consequentTarget,
         this.alternateTarget,
-        target.block,
+        target,
       );
     }
 

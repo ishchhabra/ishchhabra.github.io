@@ -43,9 +43,9 @@ export class ForTerminatorOp extends TerminatorOp {
     public readonly initTarget: BlockTarget | null,
     public readonly headerInit: ForHeaderInit,
     public readonly testTarget: BlockTarget,
-    public readonly bodyBlock: BasicBlock,
-    public readonly updateBlock: BasicBlock,
-    public readonly completionBlock: BasicBlock,
+    public readonly bodyTarget: BlockTarget,
+    public readonly updateTarget: BlockTarget,
+    public readonly exitTarget: BlockTarget,
     public readonly label: string | null = null,
   ) {
     super(id);
@@ -55,8 +55,26 @@ export class ForTerminatorOp extends TerminatorOp {
     return this.testTarget.block;
   }
 
+  public get bodyBlock(): BasicBlock {
+    return this.bodyTarget.block;
+  }
+
+  public get updateBlock(): BasicBlock {
+    return this.updateTarget.block;
+  }
+
+  public get exitBlock(): BasicBlock {
+    return this.exitTarget.block;
+  }
+
   public override operands(): readonly Value[] {
-    return this.testTarget.operands.forwarded;
+    return [
+      ...(this.initTarget?.operands.forwarded ?? []),
+      ...this.testTarget.operands.forwarded,
+      ...this.bodyTarget.operands.forwarded,
+      ...this.updateTarget.operands.forwarded,
+      ...this.exitTarget.operands.forwarded,
+    ];
   }
 
   public override effects(): OperationEffects {
@@ -64,7 +82,12 @@ export class ForTerminatorOp extends TerminatorOp {
   }
 
   public override withOperands(operands: readonly Value[]): ForTerminatorOp {
-    const expected = this.testTarget.operands.forwarded.length;
+    const initCount = this.initTarget?.operands.forwarded.length ?? 0;
+    const testCount = this.testTarget.operands.forwarded.length;
+    const bodyCount = this.bodyTarget.operands.forwarded.length;
+    const updateCount = this.updateTarget.operands.forwarded.length;
+    const exitCount = this.exitTarget.operands.forwarded.length;
+    const expected = initCount + testCount + bodyCount + updateCount + exitCount;
 
     if (operands.length !== expected) {
       throw new Error(
@@ -72,17 +95,48 @@ export class ForTerminatorOp extends TerminatorOp {
       );
     }
 
-    const testTarget = replaceForwardedOperands(this.testTarget, operands);
-    if (testTarget === this.testTarget) return this;
+    const initTarget =
+      this.initTarget === null
+        ? null
+        : replaceForwardedOperands(this.initTarget, operands.slice(0, initCount));
+    const testTarget = replaceForwardedOperands(
+      this.testTarget,
+      operands.slice(initCount, initCount + testCount),
+    );
+    const bodyTarget = replaceForwardedOperands(
+      this.bodyTarget,
+      operands.slice(initCount + testCount, initCount + testCount + bodyCount),
+    );
+    const updateTarget = replaceForwardedOperands(
+      this.updateTarget,
+      operands.slice(
+        initCount + testCount + bodyCount,
+        initCount + testCount + bodyCount + updateCount,
+      ),
+    );
+    const exitTarget = replaceForwardedOperands(
+      this.exitTarget,
+      operands.slice(initCount + testCount + bodyCount + updateCount),
+    );
+
+    if (
+      initTarget === this.initTarget &&
+      testTarget === this.testTarget &&
+      bodyTarget === this.bodyTarget &&
+      updateTarget === this.updateTarget &&
+      exitTarget === this.exitTarget
+    ) {
+      return this;
+    }
 
     return new ForTerminatorOp(
       this.id,
-      this.initTarget,
+      initTarget,
       this.headerInit,
       testTarget,
-      this.bodyBlock,
-      this.updateBlock,
-      this.completionBlock,
+      bodyTarget,
+      updateTarget,
+      exitTarget,
       this.label,
     );
   }
@@ -93,9 +147,9 @@ export class ForTerminatorOp extends TerminatorOp {
       this.initTarget === null ? null : cloneBlockTarget(context, this.initTarget),
       cloneForHeaderInit(context, this.headerInit),
       cloneBlockTarget(context, this.testTarget),
-      context.block(this.bodyBlock),
-      context.block(this.updateBlock),
-      context.block(this.completionBlock),
+      cloneBlockTarget(context, this.bodyTarget),
+      cloneBlockTarget(context, this.updateTarget),
+      cloneBlockTarget(context, this.exitTarget),
       this.label,
     );
   }
@@ -106,9 +160,9 @@ export class ForTerminatorOp extends TerminatorOp {
 
   public override target(index: number): BlockTarget {
     if (index === 0) return this.testTarget;
-    if (index === 1) return blockTarget(this.bodyBlock);
-    if (index === 2) return blockTarget(this.updateBlock);
-    if (index === 3) return blockTarget(this.completionBlock);
+    if (index === 1) return this.bodyTarget;
+    if (index === 2) return this.updateTarget;
+    if (index === 3) return this.exitTarget;
     if (index === 4 && this.initTarget !== null) return this.initTarget;
 
     throw new Error(`ForTerminatorOp#${this.id} has no target ${index}`);
@@ -121,9 +175,9 @@ export class ForTerminatorOp extends TerminatorOp {
         this.initTarget,
         this.headerInit,
         target,
-        this.bodyBlock,
-        this.updateBlock,
-        this.completionBlock,
+        this.bodyTarget,
+        this.updateTarget,
+        this.exitTarget,
         this.label,
       );
     }
@@ -134,9 +188,9 @@ export class ForTerminatorOp extends TerminatorOp {
         this.initTarget,
         this.headerInit,
         this.testTarget,
-        target.block,
-        this.updateBlock,
-        this.completionBlock,
+        target,
+        this.updateTarget,
+        this.exitTarget,
         this.label,
       );
     }
@@ -147,9 +201,9 @@ export class ForTerminatorOp extends TerminatorOp {
         this.initTarget,
         this.headerInit,
         this.testTarget,
-        this.bodyBlock,
-        target.block,
-        this.completionBlock,
+        this.bodyTarget,
+        target,
+        this.exitTarget,
         this.label,
       );
     }
@@ -160,9 +214,9 @@ export class ForTerminatorOp extends TerminatorOp {
         this.initTarget,
         this.headerInit,
         this.testTarget,
-        this.bodyBlock,
-        this.updateBlock,
-        target.block,
+        this.bodyTarget,
+        this.updateTarget,
+        target,
         this.label,
       );
     }
@@ -173,9 +227,9 @@ export class ForTerminatorOp extends TerminatorOp {
         target,
         this.headerInit,
         this.testTarget,
-        this.bodyBlock,
-        this.updateBlock,
-        this.completionBlock,
+        this.bodyTarget,
+        this.updateTarget,
+        this.exitTarget,
         this.label,
       );
     }
