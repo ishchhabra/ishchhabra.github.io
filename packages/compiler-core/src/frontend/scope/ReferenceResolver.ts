@@ -8,6 +8,8 @@ import type {
   BindingRestElement,
   Class,
   Expression,
+  ForInStatement,
+  ForOfStatement,
   Function as OxcFunction,
   ParamPattern,
   PrivateIdentifier,
@@ -17,6 +19,7 @@ import type {
   PropertyKey,
   Program,
   Statement,
+  VariableDeclaration,
 } from "oxc-parser";
 
 import type { ScopeReferenceNode } from "../ast/types";
@@ -248,9 +251,12 @@ export class ReferenceResolver {
         return;
 
       case "ForInStatement": {
-        this.resolveExpression(statement.right, scope);
-
         const loopScope = this.graph.scopeForOwner(statement);
+        this.resolveExpression(
+          statement.right,
+          isLexicalDeclaration(statement.left) ? loopScope : scope,
+        );
+
         if (statement.left.type === "VariableDeclaration") {
           for (const declarator of statement.left.declarations) {
             this.resolveBindingPatternInitializers(declarator.id, loopScope);
@@ -267,9 +273,12 @@ export class ReferenceResolver {
       }
 
       case "ForOfStatement": {
-        this.resolveExpression(statement.right, scope);
-
         const loopScope = this.graph.scopeForOwner(statement);
+        this.resolveExpression(
+          statement.right,
+          isLexicalDeclaration(statement.left) ? loopScope : scope,
+        );
+
         if (statement.left.type === "VariableDeclaration") {
           for (const declarator of statement.left.declarations) {
             this.resolveBindingPatternInitializers(declarator.id, loopScope);
@@ -762,4 +771,10 @@ function nearestFunctionScope(scope: Scope | null): Scope | null {
 
 function isIntrinsicJSXName(name: string): boolean {
   return /^[a-z]/.test(name);
+}
+
+function isLexicalDeclaration(
+  left: ForInStatement["left"] | ForOfStatement["left"],
+): left is VariableDeclaration {
+  return left.type === "VariableDeclaration" && left.kind !== "var";
 }

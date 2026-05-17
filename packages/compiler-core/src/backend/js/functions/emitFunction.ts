@@ -2,6 +2,7 @@ import type { BasicBlock } from "../../../ir/core/Block";
 import type { FunctionIR } from "../../../ir/core/FunctionIR";
 import { successorValues, type BlockTarget } from "../../../ir/core/TerminatorOp";
 import type { Value } from "../../../ir/core/Value";
+import { InitializeBindingOp } from "../../../ir/ops/bindings/InitializeBindingOp";
 import { BranchTerminatorOp } from "../../../ir/ops/control/BranchTerminatorOp";
 import { ConditionalTerminatorOp } from "../../../ir/ops/control/ConditionalTerminatorOp";
 import { ForInTerminatorOp } from "../../../ir/ops/control/ForInTerminatorOp";
@@ -46,6 +47,8 @@ import {
   type IdentifierNode,
   sequenceExpression,
   unaryExpression,
+  type VariableDeclarationKind,
+  type VariableDeclarationNode,
 } from "../ast";
 import type { CodegenContext } from "../CodegenContext";
 import { emitOperation } from "../ops/emitOperation";
@@ -291,6 +294,16 @@ function emitBlock(
   const statements: ESTreeStatement[] = [];
   const terminator = block.terminator;
 
+  if (terminator instanceof ForInTerminatorOp) {
+    statements.push(...emitForIn(context, terminator, emitted, controls));
+    return statements;
+  }
+
+  if (terminator instanceof ForOfTerminatorOp) {
+    statements.push(...emitForOf(context, terminator, emitted, controls));
+    return statements;
+  }
+
   for (const op of block.operations) {
     if (op === terminator) continue;
     statements.push(...emitOperation(context, op));
@@ -348,16 +361,6 @@ function emitBlock(
     return statements;
   }
 
-  if (terminator instanceof ForInTerminatorOp) {
-    statements.push(...emitForIn(context, terminator, emitted, controls));
-    return statements;
-  }
-
-  if (terminator instanceof ForOfTerminatorOp) {
-    statements.push(...emitForOf(context, terminator, emitted, controls));
-    return statements;
-  }
-
   if (terminator instanceof ForTerminatorOp) {
     statements.push(...emitFor(context, terminator, null, emitted, controls));
     return statements;
@@ -390,6 +393,8 @@ function emitForIn(
     breakTarget: loop.continuationBlock,
     continueTarget: loopBlock,
   };
+  const headerDeclaration = forInOfLexicalHeader(context, loop.bodyBlock, propertyKey);
+  const object = forInOfHeadExpression(context, loopBlock, loop.object);
   const body = emitTargetBranchArm(context, loop.bodyTarget, loopBlock, emitted, [
     ...controls,
     loopControl,
@@ -399,8 +404,9 @@ function emitForIn(
     withOptionalLabel(
       loop.label,
       forInStatement(
-        variableDeclaration("let", identifier(context.names.valueName(propertyKey)), null),
-        context.expressionForValue(loop.object),
+        headerDeclaration ??
+          variableDeclaration("let", identifier(context.names.valueName(propertyKey)), null),
+        object,
         blockStatement(body),
       ),
     ),
@@ -548,6 +554,8 @@ function emitForOf(
     breakTarget: loop.continuationBlock,
     continueTarget: loopBlock,
   };
+  const headerDeclaration = forInOfLexicalHeader(context, loop.bodyBlock, iterationValue);
+  const iterable = forInOfHeadExpression(context, loopBlock, loop.iterable);
   const body = emitTargetBranchArm(context, loop.bodyTarget, loopBlock, emitted, [
     ...controls,
     loopControl,
@@ -557,13 +565,51 @@ function emitForOf(
     withOptionalLabel(
       loop.label,
       forOfStatement(
-        variableDeclaration("let", identifier(context.names.valueName(iterationValue)), null),
-        context.expressionForValue(loop.iterable),
+        headerDeclaration ??
+          variableDeclaration("let", identifier(context.names.valueName(iterationValue)), null),
+        iterable,
         blockStatement(body),
         loop.isAwait,
       ),
     ),
   ]);
+}
+
+function forInOfLexicalHeader(
+  context: CodegenContext,
+  bodyBlock: BasicBlock,
+  loopValue: Value,
+): VariableDeclarationNode | null {
+  const firstOp = bodyBlock.operations.find((op) => op !== bodyBlock.terminator);
+  if (!(firstOp instanceof InitializeBindingOp) || firstOp.value !== loopValue) return null;
+
+  const declaration = context.declaration(firstOp.declarationId);
+  if (declaration.kind !== "lexical") return null;
+  if (declaration.mode === "class") return null;
+
+  const kind: VariableDeclarationKind = declaration.mode;
+  const id = identifier(context.names.declarationName(firstOp.declarationId));
+
+  context.declaredDeclarations.add(firstOp.declarationId);
+  context.values.set(firstOp.bindingValue, id);
+
+  return variableDeclaration(kind, id, null);
+}
+
+function forInOfHeadExpression(
+  context: CodegenContext,
+  loopBlock: BasicBlock,
+  value: Value,
+): ESTreeExpression {
+  const statements: ESTreeStatement[] = [];
+  const terminator = loopBlock.terminator;
+
+  for (const op of loopBlock.operations) {
+    if (op === terminator) continue;
+    statements.push(...emitOperation(context, op));
+  }
+
+  return expressionWithStatements(statements, context.expressionForValue(value));
 }
 
 function emitWhile(
@@ -1194,6 +1240,7 @@ function emitValueBlockOperations(
 
   const statements: ESTreeStatement[] = [];
   const terminator = block.terminator;
+
   for (const op of block.operations) {
     if (op === terminator) continue;
     statements.push(...emitOperation(context, op));
@@ -1767,10 +1814,7 @@ function emitJump(
 
   const forLoop = forLoopFromInitBlock(targetBlock);
   if (forLoop !== null) {
-    return [
-      ...entry.prologue,
-      ...emitFor(context, forLoop, targetBlock, emitted, controls),
-    ];
+    return [...entry.prologue, ...emitFor(context, forLoop, targetBlock, emitted, controls)];
   }
 
   if (emitted.has(targetBlock)) {

@@ -10,6 +10,8 @@ import type {
   Class,
   Expression,
   Function,
+  ForInStatement,
+  ForOfStatement,
   ImportDeclaration as OxcImportDeclaration,
   ParamPattern,
   Program,
@@ -152,8 +154,6 @@ export class DeclarationCollector {
         return;
 
       case "ForInStatement": {
-        this.collectExpression(statement.right, scope);
-
         const loopScope = new Scope("block", scope);
         this.graph.setScope(statement, loopScope);
 
@@ -161,13 +161,15 @@ export class DeclarationCollector {
           this.collectVariableDeclaration(statement.left, loopScope);
         }
 
+        this.collectExpression(
+          statement.right,
+          isLexicalDeclaration(statement.left) ? loopScope : scope,
+        );
         this.collectStatement(statement.body, loopScope);
         return;
       }
 
       case "ForOfStatement": {
-        this.collectExpression(statement.right, scope);
-
         const loopScope = new Scope("block", scope);
         this.graph.setScope(statement, loopScope);
 
@@ -175,6 +177,10 @@ export class DeclarationCollector {
           this.collectVariableDeclaration(statement.left, loopScope);
         }
 
+        this.collectExpression(
+          statement.right,
+          isLexicalDeclaration(statement.left) ? loopScope : scope,
+        );
         this.collectStatement(statement.body, loopScope);
         return;
       }
@@ -957,6 +963,12 @@ function isVarCompatibleDeclaration(declaration: Declaration, scope: Scope): boo
   if (scope.kind !== "function") return false;
 
   return declaration.kind === "function" || declaration.kind === "parameter";
+}
+
+function isLexicalDeclaration(
+  left: ForInStatement["left"] | ForOfStatement["left"],
+): left is VariableDeclaration {
+  return left.type === "VariableDeclaration" && left.kind !== "var";
 }
 
 function functionKind(

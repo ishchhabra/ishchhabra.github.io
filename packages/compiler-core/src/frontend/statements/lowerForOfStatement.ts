@@ -30,7 +30,6 @@ export function lowerForOfStatement(
   statement: ForOfStatement,
   options: StatementLoweringOptions = {},
 ): void {
-  const iterable = lowerExpression(builder, statement.right);
   lowerDeclarationInstantiation(builder, statement);
 
   const loopBlock = builder.createBlock();
@@ -50,6 +49,7 @@ export function lowerForOfStatement(
   builder.terminate(new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock)));
 
   builder.setCurrentBlock(loopBlock);
+  const iterable = lowerExpression(builder, statement.right);
   builder.terminate(
     new ForOfTerminatorOp(
       builder.operationId(),
