@@ -907,6 +907,75 @@ describe("generateJavaScript", () => {
     expect(module.run()).toEqual([0, 1]);
   });
 
+  it("preserves side effects inside lexical for-header initializers", async () => {
+    const source =
+      "export function run() { let probeDecl; for (let _ = (probeDecl = function () { return 7; }); false; ) {} return probeDecl(); }";
+    const code = compileTestSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toBe(7);
+  });
+
+  it("preserves side effects inside var for-header initializers", async () => {
+    const source =
+      "export function run() { var probeDecl; for (var _ = (probeDecl = function () { return 7; }); false; ) {} return probeDecl(); }";
+    const code = compileTestSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toBe(7);
+  });
+
+  it("preserves multiple for-header declarator evaluation order", async () => {
+    const source =
+      "export function run() { const log = []; for (let a = log.push('a'), b = log.push('b'); false; ) {} return log; }";
+    const code = compileTestSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toEqual(["a", "b"]);
+  });
+
+  it("preserves captures from earlier for-header lexical declarators", async () => {
+    const source =
+      'export function run() { let probe; for (let x = "inside", _ = probe = function () { return x; }; false; ) {} return probe(); }';
+    const code = compileTestSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toBe("inside");
+  });
+
+  it("preserves complex for-update expression side effects", async () => {
+    const source =
+      'export function run() { const out = []; let i = 0; for (; i < 2; (i++, i < 2 && out.push("u"))) out.push(i); return out; }';
+    const code = compileTestSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toEqual([0, "u", 1]);
+  });
+
+  it("emits empty const destructuring for-header initializers", async () => {
+    const source = "export function run() { for (const {} = {}; false; ) {} return 1; }";
+    const code = compileTestSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toBe(1);
+  });
+
+  it("preserves empty destructuring for-header throws", async () => {
+    const source = "export function run() { for (const {} = null; false; ) {} return 1; }";
+    const code = compileTestSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(() => module.run()).toThrow(TypeError);
+  });
+
+  it("emits empty var destructuring for-header initializers", async () => {
+    const source = "export function run() { for (var [] = []; false; ) {} return 1; }";
+    const code = compileTestSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toBe(1);
+  });
+
   it("emits for-in loops", () => {
     const input = new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
       parseModule("test.js", "for (const key in obj) foo(key); bar();"),

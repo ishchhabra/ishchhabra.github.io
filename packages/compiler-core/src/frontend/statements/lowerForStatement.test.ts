@@ -24,7 +24,7 @@ describe("lowerForStatement", () => {
 
     expect(loop).toBeInstanceOf(ForTerminatorOp);
     expect(loop.initTarget?.block).toBe(entryJump.targetBlock);
-    expect(loop.headerInit.kind).toBe("expression");
+    expect(initJump.targetBlock).toBe(loop.ownerBlock);
     expect(testBranch).toBeInstanceOf(BranchTerminatorOp);
     expect(testBranch.trueBlock).toBe(loop.bodyBlock);
     expect(testBranch.falseBlock).toBe(loop.exitBlock);

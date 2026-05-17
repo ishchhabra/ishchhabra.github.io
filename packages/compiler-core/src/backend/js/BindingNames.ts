@@ -5,6 +5,7 @@ export class BindingNames {
   readonly #declarationNames = new Map<DeclarationId, string>();
   readonly #values = new Map<Value, string>();
   readonly #usedNames = new Set<string>();
+  #nextTemporaryId = 0;
 
   constructor(private readonly declarations: DeclarationTable) {}
 
@@ -30,6 +31,11 @@ export class BindingNames {
     }
 
     return name;
+  }
+
+  public temporaryName(prefix: string): string {
+    const id = this.#nextTemporaryId++;
+    return this.reserveName(`${prefix}${id}`, id);
   }
 
   private reserveName(baseName: string, id: number): string {

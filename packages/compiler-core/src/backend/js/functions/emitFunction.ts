@@ -1,16 +1,12 @@
 import type { BasicBlock } from "../../../ir/core/Block";
-import { bindingPatternOperands } from "../../../ir/core/DestructurePattern";
 import type { FunctionIR } from "../../../ir/core/FunctionIR";
 import { successorValues, type BlockTarget } from "../../../ir/core/TerminatorOp";
 import type { Value } from "../../../ir/core/Value";
-import { InitializeBindingOp } from "../../../ir/ops/bindings/InitializeBindingOp";
-import { StoreBindingOp } from "../../../ir/ops/bindings/StoreBindingOp";
-import { ConstantOp } from "../../../ir/ops/constants/ConstantOp";
 import { BranchTerminatorOp } from "../../../ir/ops/control/BranchTerminatorOp";
 import { ConditionalTerminatorOp } from "../../../ir/ops/control/ConditionalTerminatorOp";
 import { ForInTerminatorOp } from "../../../ir/ops/control/ForInTerminatorOp";
 import { ForOfTerminatorOp } from "../../../ir/ops/control/ForOfTerminatorOp";
-import { ForTerminatorOp, type ForHeaderInit } from "../../../ir/ops/control/ForTerminatorOp";
+import { ForTerminatorOp } from "../../../ir/ops/control/ForTerminatorOp";
 import { IfTerminatorOp } from "../../../ir/ops/control/IfTerminatorOp";
 import { JumpTerminatorOp } from "../../../ir/ops/control/JumpTerminatorOp";
 import { LabeledTerminatorOp } from "../../../ir/ops/control/LabeledTerminatorOp";
@@ -19,7 +15,6 @@ import { ShortCircuitTerminatorOp } from "../../../ir/ops/control/ShortCircuitTe
 import { SwitchTerminatorOp } from "../../../ir/ops/control/SwitchTerminatorOp";
 import { TryTerminatorOp } from "../../../ir/ops/control/TryTerminatorOp";
 import { WhileTerminatorOp } from "../../../ir/ops/control/WhileTerminatorOp";
-import { DestructureBindingOp } from "../../../ir/ops/patterns/DestructureBindingOp";
 import { CopyValueOp } from "../../../ir/ops/values/CopyValueOp";
 import {
   assignmentExpression,
@@ -33,7 +28,6 @@ import {
   expressionStatement,
   forInStatement,
   forOfStatement,
-  forStatement,
   identifier,
   functionExpression,
   ifStatement,
@@ -49,7 +43,6 @@ import {
   type ESTreePattern,
   type ESTreeExpression,
   type ESTreeStatement,
-  type VariableDeclarationNode,
   type IdentifierNode,
   sequenceExpression,
   unaryExpression,
@@ -60,15 +53,16 @@ import {
   bindingPatternDeclarationIds,
   emitBindingPatternTarget,
 } from "../ops/patterns/emitDestructurePattern";
+import { emitFor } from "./emitFor";
 
-type ValueRegionTerminator =
+export type ValueRegionTerminator =
   | IfTerminatorOp
   | ConditionalTerminatorOp
   | NullishGuardTerminatorOp
   | ShortCircuitTerminatorOp;
-type LoopTestTerminator = BranchTerminatorOp | JumpTerminatorOp | ValueRegionTerminator;
+export type LoopTestTerminator = BranchTerminatorOp | JumpTerminatorOp | ValueRegionTerminator;
 
-interface EmitControlContext {
+export interface EmitControlContext {
   readonly label: string | null;
   readonly breakTarget: BasicBlock;
   readonly continueTarget: BasicBlock | null;
@@ -77,6 +71,11 @@ interface EmitControlContext {
 
 interface EmitBranchArmOptions {
   readonly implicitJumpTarget?: BasicBlock | null;
+}
+
+interface EffectExpression {
+  readonly expression: ESTreeExpression;
+  readonly hasEffects: boolean;
 }
 
 /**
@@ -265,7 +264,7 @@ function collectValueRegionParams(
   }
 }
 
-function isValueRegionTerminator(terminator: unknown): terminator is ValueRegionTerminator {
+export function isValueRegionTerminator(terminator: unknown): terminator is ValueRegionTerminator {
   return (
     terminator instanceof IfTerminatorOp ||
     terminator instanceof ConditionalTerminatorOp ||
@@ -284,7 +283,7 @@ function emitBlock(
 
   const initLoop = forLoopFromInitBlock(block);
   if (initLoop !== null) {
-    return emitFor(context, initLoop, emitted, controls);
+    return emitFor(context, initLoop, block, emitted, controls);
   }
 
   emitted.add(block);
@@ -360,7 +359,7 @@ function emitBlock(
   }
 
   if (terminator instanceof ForTerminatorOp) {
-    statements.push(...emitFor(context, terminator, emitted, controls));
+    statements.push(...emitFor(context, terminator, null, emitted, controls));
     return statements;
   }
 
@@ -567,267 +566,6 @@ function emitForOf(
   ]);
 }
 
-function emitFor(
-  context: CodegenContext,
-  loop: ForTerminatorOp,
-  emitted: Set<BasicBlock>,
-  controls: readonly EmitControlContext[],
-  continuation: BasicBlock | null = null,
-): ESTreeStatement[] {
-  const loopBlock = loop.ownerBlock;
-  if (loopBlock === null) {
-    throw new Error(`ForTerminatorOp#${loop.id} is detached`);
-  }
-
-  const testTerminator = loopTestTerminator(loop.testBlock, `ForTerminatorOp#${loop.id}`);
-  validateLoopTestEdges(
-    testTerminator,
-    loop.bodyBlock,
-    loop.exitBlock,
-    `ForTerminatorOp#${loop.id}`,
-  );
-
-  const testExpression = emitLoopTestExpression(
-    context,
-    loop.testBlock,
-    testTerminator,
-    loop.bodyBlock,
-    loop.exitBlock,
-    emitted,
-  );
-
-  const loopControl = {
-    label: loop.label,
-    breakTarget: loop.exitBlock,
-    continueTarget: loop.updateBlock,
-  };
-  const loopControls = [...controls, loopControl];
-  const init = emitForInit(context, loop, emitted);
-  const update = emitForUpdate(context, loop.updateBlock, loopBlock, emitted, loopControls);
-  const body = emitBranchArm(context, loop.bodyBlock, loop.updateBlock, emitted, loopControls);
-
-  return withFallthrough(context, loop.exitBlock, emitted, controls, continuation, () => [
-    withOptionalLabel(loop.label, forStatement(init, testExpression, update, blockStatement(body))),
-  ]);
-}
-
-function emitForInit(
-  context: CodegenContext,
-  loop: ForTerminatorOp,
-  emitted: Set<BasicBlock>,
-): VariableDeclarationNode | ESTreeExpression | null {
-  switch (loop.headerInit.kind) {
-    case "none": {
-      const statements =
-        loop.initTarget === null
-          ? []
-          : emitForInitBlock(context, loop.initTarget.block, emitted, false);
-      if (statements.length !== 0) {
-        return sequenceExpression(statements.map(expressionFromStatement));
-      }
-      return null;
-    }
-
-    case "expression": {
-      const statements =
-        loop.initTarget === null
-          ? []
-          : emitForInitBlock(context, loop.initTarget.block, emitted, false);
-      if (statements.length !== 0) {
-        return sequenceExpression(statements.map(expressionFromStatement));
-      }
-      return context.expressionForValue(loop.headerInit.value);
-    }
-
-    case "declaration":
-      return emitForHeaderDeclaration(
-        context,
-        loop.headerInit,
-        loop.initTarget?.block ?? null,
-        emitted,
-        loop,
-      );
-  }
-}
-
-function emitForInitBlock(
-  context: CodegenContext,
-  block: BasicBlock,
-  emitted: Set<BasicBlock>,
-  skipHeaderBindings: boolean,
-): ESTreeStatement[] {
-  if (emitted.has(block)) return [];
-  emitted.add(block);
-
-  const statements: ESTreeStatement[] = [];
-  const terminator = block.terminator;
-
-  for (const op of block.operations) {
-    if (op === terminator) continue;
-    if (skipHeaderBindings && isForHeaderBindingOp(op)) continue;
-    statements.push(...emitOperation(context, op));
-  }
-
-  return statements;
-}
-
-function isForHeaderBindingOp(
-  op: unknown,
-): op is InitializeBindingOp | StoreBindingOp | DestructureBindingOp {
-  return (
-    op instanceof InitializeBindingOp ||
-    op instanceof StoreBindingOp ||
-    op instanceof DestructureBindingOp
-  );
-}
-
-function emitForHeaderDeclaration(
-  context: CodegenContext,
-  init: Extract<ForHeaderInit, { readonly kind: "declaration" }>,
-  initBlock: BasicBlock | null,
-  emitted: Set<BasicBlock>,
-  loop: ForTerminatorOp,
-): VariableDeclarationNode {
-  const headerCopies: CopyValueOp[] = [];
-  const statements =
-    initBlock === null
-      ? []
-      : emitForDeclarationInitBlock(context, initBlock, emitted, init, headerCopies);
-  if (statements.length !== 0) {
-    foldForHeaderPatternStatements(context, init, statements, loop);
-  }
-
-  const declarators = init.declarators.map((declarator) => {
-    const id = emitBindingPatternTarget(context, declarator.target);
-
-    for (const declarationId of bindingPatternDeclarationIds(declarator.target)) {
-      context.declaredDeclarations.add(declarationId);
-    }
-
-    if (declarator.bindingValue !== null && patternCanBeExpression(id)) {
-      context.values.set(declarator.bindingValue, id);
-    }
-
-    return {
-      type: "VariableDeclarator" as const,
-      id,
-      init:
-        declarator.initializer === null ? null : context.expressionForValue(declarator.initializer),
-      bindingValue: declarator.bindingValue,
-    };
-  });
-
-  for (const copy of headerCopies) {
-    if (!foldForHeaderCopy(context, copy, declarators)) {
-      throw new Error(`ForTerminatorOp#${loop.id} has unsupported initializer copy`);
-    }
-  }
-
-  return {
-    type: "VariableDeclaration",
-    kind: init.declarationKind,
-    declarations: declarators.map(({ bindingValue: _bindingValue, ...declarator }) => declarator),
-  };
-}
-
-function foldForHeaderPatternStatements(
-  context: CodegenContext,
-  init: Extract<ForHeaderInit, { readonly kind: "declaration" }>,
-  statements: readonly ESTreeStatement[],
-  loop: ForTerminatorOp,
-): void {
-  const operand =
-    init.declarators.flatMap((declarator) => bindingPatternOperands(declarator.target))[0] ??
-    init.declarators.find((declarator) => declarator.initializer !== null)?.initializer;
-
-  if (operand === undefined || operand === null) {
-    throw new Error(`ForTerminatorOp#${loop.id} has non-declaration initializer statements`);
-  }
-
-  context.values.set(
-    operand,
-    expressionWithStatements(statements, context.expressionForValue(operand)),
-  );
-}
-
-function emitForDeclarationInitBlock(
-  context: CodegenContext,
-  block: BasicBlock,
-  emitted: Set<BasicBlock>,
-  init: Extract<ForHeaderInit, { readonly kind: "declaration" }>,
-  headerCopies: CopyValueOp[],
-): ESTreeStatement[] {
-  if (emitted.has(block)) return [];
-  emitted.add(block);
-
-  const statements: ESTreeStatement[] = [];
-  const terminator = block.terminator;
-
-  for (const op of block.operations) {
-    if (op === terminator) continue;
-    if (
-      op instanceof InitializeBindingOp ||
-      op instanceof StoreBindingOp ||
-      op instanceof DestructureBindingOp
-    ) {
-      continue;
-    }
-
-    if (
-      op instanceof CopyValueOp &&
-      init.declarators.some((declarator) => declarator.bindingValue === op.source)
-    ) {
-      headerCopies.push(op);
-      continue;
-    }
-
-    if (op instanceof CopyValueOp && isUndefinedCopy(op)) {
-      continue;
-    }
-
-    statements.push(...emitOperation(context, op));
-  }
-
-  return statements;
-}
-
-function isUndefinedCopy(op: CopyValueOp): boolean {
-  const definer = op.source.definer;
-  return definer instanceof ConstantOp && definer.value === undefined;
-}
-
-function foldForHeaderCopy(
-  context: CodegenContext,
-  op: CopyValueOp,
-  declarators: {
-    init: ESTreeExpression | null;
-    readonly bindingValue: Value | null;
-  }[],
-): boolean {
-  const declarator = declarators.find((candidate) => candidate.bindingValue === op.source);
-  if (declarator === undefined || declarator.init === null) return false;
-
-  const target = identifier(context.names.valueName(op.target));
-  declarator.init = sequenceExpression([assignmentExpression(target, declarator.init), target]);
-  return true;
-}
-
-function emitForUpdate(
-  context: CodegenContext,
-  block: BasicBlock,
-  continuation: BasicBlock,
-  emitted: Set<BasicBlock>,
-  controls: readonly EmitControlContext[],
-) {
-  const statements = emitBranchArm(context, block, continuation, emitted, controls);
-  if (statements.length === 0) return null;
-
-  const expressions = statements.map(expressionFromStatement);
-  if (expressions.length === 1) return expressions[0];
-
-  return sequenceExpression(expressions);
-}
-
 function emitWhile(
   context: CodegenContext,
   loop: WhileTerminatorOp,
@@ -914,7 +652,7 @@ function emitDoWhile(
   ];
 }
 
-function loopTestTerminator(block: BasicBlock, owner: string): LoopTestTerminator {
+export function loopTestTerminator(block: BasicBlock, owner: string): LoopTestTerminator {
   const terminator = block.terminator;
   if (terminator instanceof BranchTerminatorOp || isValueRegionTerminator(terminator)) {
     return terminator;
@@ -944,7 +682,7 @@ function loopTestTerminatorForValueRegion(
   );
 }
 
-function emitLoopTestExpression(
+export function emitLoopTestExpression(
   context: CodegenContext,
   block: BasicBlock,
   terminator: LoopTestTerminator,
@@ -1217,6 +955,233 @@ function emitValueTargetExpression(
   );
 }
 
+export function emitEffectBlockExpression(
+  context: CodegenContext,
+  block: BasicBlock,
+  continuation: BasicBlock,
+  emitted: Set<BasicBlock>,
+): EffectExpression {
+  const statements = emitValueBlockOperations(context, block, emitted);
+  const terminator = block.terminator;
+
+  if (terminator instanceof JumpTerminatorOp) {
+    const entry = emitBlockTargetEntry(
+      context,
+      terminator.jumpTarget,
+      emitted,
+      new Set([continuation]),
+    );
+    const prefix = effectExpressionFromStatements([...statements, ...entry.prologue]);
+
+    if (entry.entryBlock === continuation) return prefix;
+
+    return sequenceEffectExpression(
+      prefix,
+      emitEffectBlockExpression(context, entry.entryBlock, continuation, emitted),
+    );
+  }
+
+  if (terminator instanceof ConditionalTerminatorOp) {
+    const consequent = emitEffectTargetExpression(
+      context,
+      terminator.consequentTarget,
+      terminator.completionBlock,
+      emitted,
+    );
+    const alternate = emitEffectTargetExpression(
+      context,
+      terminator.alternateTarget,
+      terminator.completionBlock,
+      emitted,
+    );
+    const expression = expressionWithStatements(
+      statements,
+      conditionalExpression(
+        context.expressionForValue(terminator.test),
+        consequent.expression,
+        alternate.expression,
+      ),
+    );
+    const effect = { expression, hasEffects: true };
+
+    if (terminator.completionBlock === continuation) return effect;
+
+    return sequenceEffectExpression(
+      effect,
+      emitEffectBlockExpression(context, terminator.completionBlock, continuation, emitted),
+    );
+  }
+
+  if (terminator instanceof IfTerminatorOp) {
+    const consequent = emitEffectTargetExpression(
+      context,
+      terminator.thenTarget,
+      terminator.completionBlock,
+      emitted,
+    );
+    const alternate = emitEffectTargetExpression(
+      context,
+      terminator.elseTarget,
+      terminator.completionBlock,
+      emitted,
+    );
+    const expression = expressionWithStatements(
+      statements,
+      conditionalExpression(
+        context.expressionForValue(terminator.condition),
+        consequent.expression,
+        alternate.expression,
+      ),
+    );
+    const effect = { expression, hasEffects: true };
+
+    if (terminator.completionBlock === continuation) return effect;
+
+    return sequenceEffectExpression(
+      effect,
+      emitEffectBlockExpression(context, terminator.completionBlock, continuation, emitted),
+    );
+  }
+
+  if (terminator instanceof ShortCircuitTerminatorOp) {
+    const body = emitEffectTargetExpression(
+      context,
+      terminator.bodyTarget,
+      terminator.completionBlock,
+      emitted,
+    );
+    const exit = emitEffectTargetExpression(
+      context,
+      terminator.exitTarget,
+      terminator.completionBlock,
+      emitted,
+    );
+    const test = context.expressionForValue(terminator.test);
+    const shortCircuitExpression = shortCircuitEffectExpression(terminator, test, body, exit);
+    const expression = expressionWithStatements(statements, shortCircuitExpression);
+    const effect = { expression, hasEffects: true };
+
+    if (terminator.completionBlock === continuation) return effect;
+
+    return sequenceEffectExpression(
+      effect,
+      emitEffectBlockExpression(context, terminator.completionBlock, continuation, emitted),
+    );
+  }
+
+  if (terminator instanceof NullishGuardTerminatorOp) {
+    const body = emitEffectTargetExpression(
+      context,
+      terminator.bodyTarget,
+      terminator.completionBlock,
+      emitted,
+    );
+    const exit = emitEffectTargetExpression(
+      context,
+      terminator.exitTarget,
+      terminator.completionBlock,
+      emitted,
+    );
+    const expression = expressionWithStatements(
+      statements,
+      conditionalExpression(
+        binaryExpression("==", context.expressionForValue(terminator.guard), literal(null)),
+        exit.expression,
+        body.expression,
+      ),
+    );
+    const effect = { expression, hasEffects: true };
+
+    if (terminator.completionBlock === continuation) return effect;
+
+    return sequenceEffectExpression(
+      effect,
+      emitEffectBlockExpression(context, terminator.completionBlock, continuation, emitted),
+    );
+  }
+
+  throw new Error(`Effect block bb${block.id} cannot be emitted as an expression`);
+}
+
+function emitEffectTargetExpression(
+  context: CodegenContext,
+  target: BlockTarget,
+  continuation: BasicBlock,
+  emitted: Set<BasicBlock>,
+): EffectExpression {
+  const entry = emitBlockTargetEntry(context, target, emitted, new Set([continuation]));
+  const prefix = effectExpressionFromStatements(entry.prologue);
+
+  if (entry.entryBlock === continuation) return prefix;
+
+  return sequenceEffectExpression(
+    prefix,
+    emitEffectBlockExpression(context, entry.entryBlock, continuation, emitted),
+  );
+}
+
+function shortCircuitEffectExpression(
+  terminator: ShortCircuitTerminatorOp,
+  test: ESTreeExpression,
+  body: EffectExpression,
+  exit: EffectExpression,
+): ESTreeExpression {
+  if (exit.hasEffects) {
+    return conditionalExpression(
+      shortCircuitBodyConditionExpression(terminator.operator, test),
+      body.expression,
+      exit.expression,
+    );
+  }
+
+  switch (terminator.operator) {
+    case "&&":
+      return logicalExpression("&&", test, body.expression);
+    case "||":
+      return logicalExpression("||", test, body.expression);
+    case "??":
+      return logicalExpression("??", test, body.expression);
+  }
+}
+
+function shortCircuitBodyConditionExpression(
+  operator: ShortCircuitTerminatorOp["operator"],
+  test: ESTreeExpression,
+): ESTreeExpression {
+  switch (operator) {
+    case "&&":
+      return test;
+    case "||":
+      return unaryExpression("!", test);
+    case "??":
+      return binaryExpression("==", test, literal(null));
+  }
+}
+
+function effectExpressionFromStatements(statements: readonly ESTreeStatement[]): EffectExpression {
+  if (statements.length === 0) {
+    return { expression: literal(undefined), hasEffects: false };
+  }
+
+  return {
+    expression: sequenceExpression(statements.map(expressionFromStatement)),
+    hasEffects: true,
+  };
+}
+
+function sequenceEffectExpression(
+  left: EffectExpression,
+  right: EffectExpression,
+): EffectExpression {
+  if (!left.hasEffects) return right;
+  if (!right.hasEffects) return left;
+
+  return {
+    expression: sequenceExpression([left.expression, right.expression]),
+    hasEffects: true,
+  };
+}
+
 function emitValueBlockOperations(
   context: CodegenContext,
   block: BasicBlock,
@@ -1237,7 +1202,7 @@ function emitValueBlockOperations(
   return statements;
 }
 
-function expressionWithStatements(
+export function expressionWithStatements(
   statements: readonly ESTreeStatement[],
   expression: ESTreeExpression,
 ): ESTreeExpression {
@@ -1279,7 +1244,7 @@ function edgeResultExpression(
   return sequenceExpression([...statements.map(expressionFromStatement), literal(result)]);
 }
 
-function validateLoopTestEdges(
+export function validateLoopTestEdges(
   terminator: LoopTestTerminator,
   trueExpected: BasicBlock,
   falseExpected: BasicBlock,
@@ -1428,7 +1393,7 @@ function isEdgeCopyBlock(block: BasicBlock): boolean {
   return hasCopy;
 }
 
-function expressionFromStatement(statement: ESTreeStatement): ESTreeExpression {
+export function expressionFromStatement(statement: ESTreeStatement): ESTreeExpression {
   if (statement.type !== "ExpressionStatement") {
     throw new Error(
       `Loop test normalization only supports expression statements, got ${statement.type}`,
@@ -1636,7 +1601,7 @@ function emitTargetBranchArm(
   ];
 }
 
-function emitBranchArm(
+export function emitBranchArm(
   context: CodegenContext,
   block: BasicBlock,
   continuation: BasicBlock | null,
@@ -1651,7 +1616,7 @@ function emitBranchArm(
 
   const initLoop = forLoopFromInitBlock(block);
   if (initLoop !== null) {
-    return emitFor(context, initLoop, emitted, controls, continuation);
+    return emitFor(context, initLoop, block, emitted, controls, continuation);
   }
 
   emitted.add(block);
@@ -1765,7 +1730,7 @@ function emitBranchArm(
   }
 
   if (terminator instanceof ForTerminatorOp) {
-    statements.push(...emitFor(context, terminator, emitted, controls, continuation));
+    statements.push(...emitFor(context, terminator, null, emitted, controls, continuation));
     return statements;
   }
 
@@ -1802,7 +1767,10 @@ function emitJump(
 
   const forLoop = forLoopFromInitBlock(targetBlock);
   if (forLoop !== null) {
-    return [...entry.prologue, ...emitFor(context, forLoop, emitted, controls)];
+    return [
+      ...entry.prologue,
+      ...emitFor(context, forLoop, targetBlock, emitted, controls),
+    ];
   }
 
   if (emitted.has(targetBlock)) {
@@ -1835,7 +1803,7 @@ function emitContinuation(
     : emitBranchArm(context, block, continuation, emitted, controls);
 }
 
-function withFallthrough(
+export function withFallthrough(
   context: CodegenContext,
   fallthroughBlock: BasicBlock,
   emitted: Set<BasicBlock>,
@@ -1948,7 +1916,10 @@ function controlBoundaryBlocks(
   return blocks;
 }
 
-function withOptionalLabel(label: string | null, statement: ESTreeStatement): ESTreeStatement {
+export function withOptionalLabel(
+  label: string | null,
+  statement: ESTreeStatement,
+): ESTreeStatement {
   return label === null ? statement : labeledStatement(identifier(label), statement);
 }
 
