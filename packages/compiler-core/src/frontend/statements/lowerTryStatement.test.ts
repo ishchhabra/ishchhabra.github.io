@@ -45,4 +45,15 @@ describe("lowerTryStatement", () => {
     expect(catchOperations[0]).toBeInstanceOf(DestructureBindingOp);
     expect(op.catchTarget!.operands.produced).toHaveLength(1);
   });
+
+  it("ignores unreachable statements after catch block termination", () => {
+    expect(() =>
+      new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
+        parseModule(
+          "test.js",
+          "for (const x of [1]) { try { throw new Error(); } catch (e) { break; throw new Error('unreachable'); } }",
+        ),
+      ),
+    ).not.toThrow();
+  });
 });

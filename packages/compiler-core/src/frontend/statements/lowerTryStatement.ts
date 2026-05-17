@@ -49,6 +49,8 @@ export function lowerTryStatement(builder: FunctionIRBuilder, statement: TryStat
   builder.setCurrentBlock(tryBlock);
   lowerDeclarationInstantiation(builder, statement.block);
   for (const child of statement.block.body) {
+    if (builder.currentBlock.isTerminated) break;
+
     lowerStatement(builder, child);
   }
   jumpIfOpen(builder, finallyBlock ?? completionBlock);
@@ -62,6 +64,8 @@ export function lowerTryStatement(builder: FunctionIRBuilder, statement: TryStat
     builder.setCurrentBlock(finallyBlock);
     lowerDeclarationInstantiation(builder, statement.finalizer);
     for (const child of statement.finalizer.body) {
+      if (builder.currentBlock.isTerminated) break;
+
       lowerStatement(builder, child);
     }
     jumpIfOpen(builder, completionBlock);
@@ -103,6 +107,8 @@ function lowerCatchClause(
   }
 
   for (const child of clause.body.body) {
+    if (builder.currentBlock.isTerminated) break;
+
     lowerStatement(builder, child);
   }
 }
