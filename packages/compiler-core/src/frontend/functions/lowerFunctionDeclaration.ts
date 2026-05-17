@@ -1,11 +1,11 @@
 import type { FunctionIR } from "../../ir/core/FunctionIR";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";
-import type { FunctionDeclaration } from "../scope/Declaration";
+import type { FunctionDeclarationInstantiation } from "../scope/DeclarationInstantiationPlan";
 import { lowerFunctionBody } from "./lowerFunctionBody";
 
 export function lowerFunctionDeclarationBody(
   builder: FunctionIRBuilder,
-  declaration: FunctionDeclaration,
+  declaration: FunctionDeclarationInstantiation,
 ): FunctionIR {
   const captures = builder.capturesForOwner(declaration.node);
   const nested = builder.createNestedFunctionIR({

@@ -8,11 +8,14 @@ import type {
   SwitchStatement,
 } from "oxc-parser";
 
+import type { Value } from "../../ir/core/Value";
 import { InitializeBindingOp } from "../../ir/ops/bindings/InitializeBindingOp";
+import { StoreBindingOp } from "../../ir/ops/bindings/StoreBindingOp";
 import { ConstantOp } from "../../ir/ops/constants/ConstantOp";
 import { CreateFunctionOp } from "../../ir/ops/functions/CreateFunctionOp";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { lowerFunctionDeclarationBody } from "../functions/lowerFunctionDeclaration";
+import type { Declaration } from "../scope/Declaration";
 
 /**
  * Emits ECMAScript declaration-instantiation work before a scope body runs.
@@ -32,21 +35,13 @@ export function lowerDeclarationInstantiation(
   const declarations = builder.instantiationForScope(scope);
 
   for (const declaration of declarations.functions) {
-    if (declaration.kind !== "function") {
-      throw new Error(`Expected function declaration instantiation for ${declaration.name}`);
-    }
-
     const functionIR = lowerFunctionDeclarationBody(builder, declaration);
     const value = builder.createValue();
+    const bindingValue = builder.createValue(declaration.declaration.id);
 
     builder.emit(new CreateFunctionOp(builder.operationId(), functionIR, value));
     builder.emit(
-      new InitializeBindingOp(
-        builder.operationId(),
-        declaration.id,
-        value,
-        builder.createValue(declaration.id),
-      ),
+      functionBindingInstantiationOp(builder, declaration.declaration, value, bindingValue),
     );
   }
 
@@ -69,4 +64,17 @@ export function lowerDeclarationInstantiation(
 
     throw new Error(`Unsupported lexical declaration instantiation: ${declaration.name}`);
   }
+}
+
+function functionBindingInstantiationOp(
+  builder: FunctionIRBuilder,
+  declaration: Declaration,
+  value: Value,
+  bindingValue: Value,
+): InitializeBindingOp | StoreBindingOp {
+  if (declaration.kind === "parameter") {
+    return new StoreBindingOp(builder.operationId(), declaration.id, value, bindingValue);
+  }
+
+  return new InitializeBindingOp(builder.operationId(), declaration.id, value, bindingValue);
 }

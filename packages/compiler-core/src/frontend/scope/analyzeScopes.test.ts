@@ -39,6 +39,129 @@ describe("analyzeScopes", () => {
     expect(instantiation.declarationsForScope(graph.programScope).vars).toEqual([declaration]);
   });
 
+  it("reuses one binding for duplicate var declarations", () => {
+    const { graph, instantiation, program } = analyzeSource("var x; var x; x;");
+    const declaration = declarationByName(graph.programScope, "x");
+    const first = programStatementAt(program, 0, "VariableDeclaration");
+    const second = programStatementAt(program, 1, "VariableDeclaration");
+    const reference = programStatementAt(program, 2, "ExpressionStatement");
+
+    if (
+      first.declarations[0]?.id.type !== "Identifier" ||
+      second.declarations[0]?.id.type !== "Identifier"
+    ) {
+      throw new Error("Expected identifier var declarations");
+    }
+
+    expect(declarationNames(graph.programScope)).toEqual(["x"]);
+    expect(graph.declarationForBinding(first.declarations[0].id)).toBe(declaration);
+    expect(graph.declarationForBinding(second.declarations[0].id)).toBe(declaration);
+    expect(graph.declarationForReference(identifierExpression(reference.expression))).toBe(
+      declaration,
+    );
+    expect(instantiation.declarationsForScope(graph.programScope).vars).toEqual([declaration]);
+  });
+
+  it("reuses for-body var declarations from the for-header var binding", () => {
+    const { graph, instantiation, program } = analyzeSource(
+      "function run() { for (var x; false;) { var x; } }",
+    );
+    const fn = functionDeclarationAt(program, 0);
+    const functionScope = graph.scopeForOwner(fn);
+    const declaration = declarationByName(functionScope, "x");
+    const statement = fn.body?.body[0];
+
+    if (statement?.type !== "ForStatement" || statement.init?.type !== "VariableDeclaration") {
+      throw new Error("Expected for statement with var declaration");
+    }
+    if (statement.init.declarations[0]?.id.type !== "Identifier") {
+      throw new Error("Expected identifier for-header var declaration");
+    }
+    if (statement.body.type !== "BlockStatement") {
+      throw new Error("Expected block for body");
+    }
+
+    const bodyDeclaration = statement.body.body[0];
+    if (
+      bodyDeclaration?.type !== "VariableDeclaration" ||
+      bodyDeclaration.declarations[0]?.id.type !== "Identifier"
+    ) {
+      throw new Error("Expected identifier body var declaration");
+    }
+
+    expect(graph.declarationForBinding(statement.init.declarations[0].id)).toBe(declaration);
+    expect(graph.declarationForBinding(bodyDeclaration.declarations[0].id)).toBe(declaration);
+    expect(instantiation.declarationsForScope(functionScope).vars).toEqual([declaration]);
+  });
+
+  it("reuses parameter bindings for same-name var declarations", () => {
+    const { graph, instantiation, program } = analyzeSource("function run(x) { var x; x; }");
+    const fn = functionDeclarationAt(program, 0);
+    const functionScope = graph.scopeForOwner(fn);
+    const parameter = declarationByName(functionScope, "x");
+    const declaration = fn.body?.body[0];
+    const reference = fn.body?.body[1];
+
+    if (
+      declaration?.type !== "VariableDeclaration" ||
+      declaration.declarations[0]?.id.type !== "Identifier" ||
+      reference?.type !== "ExpressionStatement"
+    ) {
+      throw new Error("Expected var declaration followed by reference");
+    }
+
+    expect(parameter).toMatchObject({ kind: "parameter" });
+    expect(graph.declarationForBinding(declaration.declarations[0].id)).toBe(parameter);
+    expect(graph.declarationForReference(identifierExpression(reference.expression))).toBe(
+      parameter,
+    );
+    expect(instantiation.declarationsForScope(functionScope).vars).toEqual([]);
+  });
+
+  it("keeps the last same-name function declaration for instantiation", () => {
+    const { graph, instantiation, program } = analyzeSource(
+      "function run() { function f() { return 1; } function g() {} function f() { return 2; } }",
+    );
+    const fn = functionDeclarationAt(program, 0);
+    const functionScope = graph.scopeForOwner(fn);
+    const f = declarationByName(functionScope, "f");
+    const g = declarationByName(functionScope, "g");
+    const declarations = instantiation.declarationsForScope(functionScope);
+
+    expect(declarationNames(functionScope)).toEqual(["f", "g"]);
+    expect(declarations.functions.map((declaration) => declaration.declaration)).toEqual([g, f]);
+    expect(declarations.functions[1]?.node).toBe(fn.body?.body[2]);
+  });
+
+  it("reuses var bindings for same-name function declarations", () => {
+    const { graph, instantiation, program } = analyzeSource(
+      "function run() { var f; function f() {} }",
+    );
+    const fn = functionDeclarationAt(program, 0);
+    const functionScope = graph.scopeForOwner(fn);
+    const declaration = declarationByName(functionScope, "f");
+    const variable = fn.body?.body[0];
+    const functionDeclaration = fn.body?.body[1];
+    const declarations = instantiation.declarationsForScope(functionScope);
+
+    if (
+      variable?.type !== "VariableDeclaration" ||
+      variable.declarations[0]?.id.type !== "Identifier" ||
+      functionDeclaration?.type !== "FunctionDeclaration" ||
+      functionDeclaration.id === null
+    ) {
+      throw new Error("Expected var and function declarations");
+    }
+
+    expect(declaration).toMatchObject({ kind: "var" });
+    expect(graph.declarationForBinding(variable.declarations[0].id)).toBe(declaration);
+    expect(graph.declarationForBinding(functionDeclaration.id)).toBe(declaration);
+    expect(declarations.vars).toEqual([]);
+    expect(
+      declarations.functions.map((functionDeclaration) => functionDeclaration.declaration),
+    ).toEqual([declaration]);
+  });
+
   it("resolves references through parent scopes", () => {
     const { graph, program } = analyzeSource("let x; { x; }");
     const declaration = declarationByName(graph.programScope, "x");

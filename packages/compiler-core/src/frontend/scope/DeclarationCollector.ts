@@ -255,15 +255,7 @@ export class DeclarationCollector {
     for (const declarator of declaration.declarations) {
       for (const binding of bindingIdentifiers(declarator.id)) {
         if (declaration.kind === "var") {
-          const target = nearestVarScope(scope);
-          const sourceDeclaration = this.createDeclaration({
-            kind: "var",
-            name: binding.name,
-          });
-          target.add(sourceDeclaration);
-          this.graph.bindDeclaration(binding, sourceDeclaration);
-          this.context.declarations.add(sourceDeclaration);
-          this.instantiation.addVar(target, sourceDeclaration);
+          this.collectVarBinding(binding, scope);
           continue;
         }
 
@@ -313,9 +305,64 @@ export class DeclarationCollector {
       throw new Error("Function declaration is missing a binding name");
     }
 
+    const kind = functionKind(declaration);
+    const sourceDeclaration = this.collectFunctionBinding(declaration, scope, kind);
+    this.instantiation.addFunction(scope, {
+      declaration: sourceDeclaration,
+      functionKind: kind,
+      node: declaration,
+    });
+
+    this.collectFunctionScope(declaration, scope);
+  }
+
+  private collectVarBinding(binding: BindingIdentifier, scope: Scope): Declaration {
+    const target = nearestVarScope(scope);
+    const existing = target.getLocal(binding.name);
+
+    if (existing !== undefined) {
+      if (isVarCompatibleDeclaration(existing, target)) {
+        this.graph.bindDeclaration(binding, existing);
+        return existing;
+      }
+
+      throw new Error(`Duplicate declaration: ${binding.name}`);
+    }
+
+    const sourceDeclaration = this.createDeclaration({
+      kind: "var",
+      name: binding.name,
+    });
+    target.add(sourceDeclaration);
+    this.graph.bindDeclaration(binding, sourceDeclaration);
+    this.context.declarations.add(sourceDeclaration);
+    this.instantiation.addVar(target, sourceDeclaration);
+
+    return sourceDeclaration;
+  }
+
+  private collectFunctionBinding(
+    declaration: Function,
+    scope: Scope,
+    kind: Extract<Declaration, { kind: "function" }>["functionKind"],
+  ): Declaration {
+    if (declaration.id === null) {
+      throw new Error("Function declaration is missing a binding name");
+    }
+
+    const existing = scope.getLocal(declaration.id.name);
+    if (existing !== undefined) {
+      if (isVarCompatibleDeclaration(existing, scope)) {
+        this.graph.bindDeclaration(declaration.id, existing);
+        return existing;
+      }
+
+      throw new Error(`Duplicate declaration: ${declaration.id.name}`);
+    }
+
     const sourceDeclaration = this.createDeclaration({
       kind: "function",
-      functionKind: functionKind(declaration),
+      functionKind: kind,
       name: declaration.id.name,
       node: declaration,
     });
@@ -323,9 +370,8 @@ export class DeclarationCollector {
     scope.add(sourceDeclaration);
     this.graph.bindDeclaration(declaration.id, sourceDeclaration);
     this.context.declarations.add(sourceDeclaration);
-    this.instantiation.addFunction(scope, sourceDeclaration);
 
-    this.collectFunctionScope(declaration, scope);
+    return sourceDeclaration;
   }
 
   private collectFunctionScope(declaration: Function, scope: Scope): void {
@@ -840,6 +886,13 @@ function nearestVarScope(scope: Scope): Scope {
   }
 
   throw new Error("No var scope found");
+}
+
+function isVarCompatibleDeclaration(declaration: Declaration, scope: Scope): boolean {
+  if (declaration.kind === "var") return true;
+  if (scope.kind !== "function") return false;
+
+  return declaration.kind === "function" || declaration.kind === "parameter";
 }
 
 function functionKind(
