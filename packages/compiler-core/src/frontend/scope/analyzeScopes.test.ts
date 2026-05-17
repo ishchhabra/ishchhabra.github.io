@@ -305,6 +305,48 @@ describe("analyzeScopes", () => {
     expect(graph.declarationForReference(identifierExpression(statement.expression))).toBe(param);
   });
 
+  it("records expression scopes inside binding pattern defaults", () => {
+    const { graph, program } = analyzeSource(
+      "function run() { for (var { fn = function () {} } = {}; false; ) {} }",
+    );
+    const run = functionDeclarationAt(program, 0);
+    const statement = run.body?.body[0];
+    if (
+      statement?.type !== "ForStatement" ||
+      statement.init?.type !== "VariableDeclaration" ||
+      statement.init.declarations[0]?.id.type !== "ObjectPattern"
+    ) {
+      throw new Error("Expected for statement with object binding pattern");
+    }
+
+    const property = statement.init.declarations[0].id.properties[0];
+    if (property?.type !== "Property" || property.value.type !== "AssignmentPattern") {
+      throw new Error("Expected property default");
+    }
+    const defaultValue = property.value.right;
+    if (defaultValue.type !== "FunctionExpression") {
+      throw new Error("Expected function expression default");
+    }
+
+    expect(() => graph.scopeForOwner(defaultValue)).not.toThrow();
+  });
+
+  it("records expression scopes inside parameter defaults", () => {
+    const { graph, program } = analyzeSource("function run(fn = function () {}) { return fn; }");
+    const run = functionDeclarationAt(program, 0);
+    const param = run.params[0];
+    if (param?.type !== "AssignmentPattern") {
+      throw new Error("Expected function expression parameter default");
+    }
+
+    const defaultValue = param.right;
+    if (defaultValue.type !== "FunctionExpression") {
+      throw new Error("Expected function expression parameter default");
+    }
+
+    expect(() => graph.scopeForOwner(defaultValue)).not.toThrow();
+  });
+
   it("records captures for nested function references", () => {
     const { graph, program } = analyzeSource(
       "function outer(x) { return function inner() { return x; }; }",

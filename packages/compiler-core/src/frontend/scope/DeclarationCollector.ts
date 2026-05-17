@@ -274,6 +274,7 @@ export class DeclarationCollector {
         this.instantiation.addLexical(scope, sourceDeclaration);
       }
 
+      this.collectBindingPatternExpressions(declarator.id, scope);
       if (declarator.init !== null) {
         this.collectExpression(declarator.init, scope);
       }
@@ -403,6 +404,10 @@ export class DeclarationCollector {
       }
     }
 
+    for (const param of declaration.params) {
+      this.collectParameterExpressions(param, functionScope);
+    }
+
     if (declaration.body !== null) {
       this.graph.setScope(declaration.body, functionScope);
 
@@ -427,6 +432,10 @@ export class DeclarationCollector {
         this.graph.bindDeclaration(binding, paramDeclaration);
         this.context.declarations.add(paramDeclaration);
       }
+    }
+
+    for (const param of expression.params) {
+      this.collectParameterExpressions(param, functionScope);
     }
 
     if (expression.body.type === "BlockStatement") {
@@ -697,6 +706,61 @@ export class DeclarationCollector {
     }
 
     this.collectAssignmentTarget(target, scope);
+  }
+
+  private collectBindingPatternExpressions(
+    pattern: BindingPattern | BindingRestElement,
+    scope: Scope,
+  ): void {
+    switch (pattern.type) {
+      case "Identifier":
+        return;
+
+      case "ArrayPattern":
+        for (const element of pattern.elements) {
+          if (element !== null) {
+            this.collectBindingPatternExpressions(element, scope);
+          }
+        }
+        return;
+
+      case "ObjectPattern":
+        for (const property of pattern.properties) {
+          if (property.type === "RestElement") {
+            this.collectBindingPatternExpressions(property.argument, scope);
+            continue;
+          }
+
+          if (property.computed) {
+            this.collectPropertyKey(property.key, scope);
+          }
+          this.collectBindingPatternExpressions(property.value, scope);
+        }
+        return;
+
+      case "AssignmentPattern":
+        this.collectBindingPatternExpressions(pattern.left, scope);
+        this.collectExpression(pattern.right, scope);
+        return;
+
+      case "RestElement":
+        this.collectBindingPatternExpressions(pattern.argument, scope);
+        return;
+    }
+  }
+
+  private collectParameterExpressions(param: ParamPattern, scope: Scope): void {
+    if (param.type === "TSParameterProperty") {
+      this.collectParameterExpressions(param.parameter, scope);
+      return;
+    }
+
+    if (param.type === "RestElement") {
+      this.collectBindingPatternExpressions(param.argument, scope);
+      return;
+    }
+
+    this.collectBindingPatternExpressions(param, scope);
   }
 
   private collectClassDeclaration(declaration: Class, scope: Scope): void {
