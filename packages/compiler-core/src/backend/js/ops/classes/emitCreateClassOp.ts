@@ -6,6 +6,7 @@ import type {
 } from "../../../../ir/ops/classes/CreateClassOp";
 import {
   classExpression,
+  expressionStatement,
   identifier,
   literal,
   methodDefinition,
@@ -30,6 +31,11 @@ export function emitCreateClassOp(context: CodegenContext, op: CreateClassOp): E
   );
 
   context.values.set(op.result, expression);
+
+  if (op.result.users.size === 0) {
+    return [expressionStatement(expression)];
+  }
+
   return [];
 }
 

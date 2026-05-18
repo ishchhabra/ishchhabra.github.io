@@ -27,6 +27,9 @@ patchedDependencies:
   '@scelar/nodepod@1.0.2':
     hash: 1ee07bb54ad2cb5fca236e9d607f187d1e47e13870d29c6c525cb5634b4fb625
     path: ../../patches/@scelar__nodepod.patch
+  esrap:
+    hash: 3b6bc45858a4ec35811381c69542906883f2f4ecc4eddff485b96f435116d28c
+    path: ../../patches/esrap.patch
 
 importers:
 
@@ -34,7 +37,7 @@ importers:
     dependencies:
       esrap:
         specifier: ^2.2.5
-        version: 2.2.5
+        version: 2.2.5(patch_hash=3b6bc45858a4ec35811381c69542906883f2f4ecc4eddff485b96f435116d28c)
       oxc-parser:
         specifier: ^0.123.0
         version: 0.123.0(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)
@@ -3021,7 +3024,7 @@ snapshots:
       '@esbuild/win32-ia32': 0.27.7
       '@esbuild/win32-x64': 0.27.7
 
-  esrap@2.2.5:
+  esrap@2.2.5(patch_hash=3b6bc45858a4ec35811381c69542906883f2f4ecc4eddff485b96f435116d28c):
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
 

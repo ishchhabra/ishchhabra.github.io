@@ -1,0 +1,64 @@
+diff --git a/src/languages/ts/index.js b/src/languages/ts/index.js
+index 9d20774c0e7f5c797442b947a6c8a25e532b338e..6ad44d160eead759e3711b5af90a2aee5f09708c 100644
+--- a/src/languages/ts/index.js
++++ b/src/languages/ts/index.js
+@@ -1080,12 +1080,7 @@ export default (options = {}) => {
+ 		},
+ 
+ 		ExpressionStatement(node, context) {
+-			if (
+-				node.expression.type === 'ObjectExpression' ||
+-				(node.expression.type === 'AssignmentExpression' &&
+-					node.expression.left.type === 'ObjectPattern') ||
+-				node.expression.type === 'FunctionExpression'
+-			) {
++			if (expression_statement_needs_wrap(node.expression)) {
+ 				// is an AssignmentExpression to an ObjectPattern
+ 				context.write('(');
+ 				context.visit(node.expression);
+@@ -1338,7 +1333,7 @@ export default (options = {}) => {
+ 			}
+ 
+ 			// shorthand methods
+-			if (node.value.type === 'FunctionExpression') {
++			if ((node.method || node.kind !== 'init') && node.value.type === 'FunctionExpression') {
+ 				if (node.kind !== 'init') context.write(node.kind + ' ');
+ 				if (node.value.async) context.write('async ');
+ 				if (node.value.generator) context.write('*');
+@@ -2104,6 +2099,35 @@ export default (options = {}) => {
+ 
+ /** @satisfies {Visitors} */
+ 
++/**
++ * @param {TSESTree.Expression} expression
++ * @returns {boolean}
++ */
++function expression_statement_needs_wrap(expression) {
++	switch (expression.type) {
++		case 'ObjectExpression':
++		case 'FunctionExpression':
++		case 'ClassExpression':
++			return true;
++		case 'AssignmentExpression':
++			return expression.left.type === 'ObjectPattern';
++		case 'BinaryExpression':
++		case 'LogicalExpression':
++			return expression_statement_needs_wrap(expression.left);
++		case 'ConditionalExpression':
++			return expression_statement_needs_wrap(expression.test);
++		case 'SequenceExpression':
++			return expression.expressions.length > 0
++				? expression_statement_needs_wrap(expression.expressions[0])
++				: false;
++		case 'TSAsExpression':
++		case 'TSSatisfiesExpression':
++		case 'TSNonNullExpression':
++			return expression.expression ? expression_statement_needs_wrap(expression.expression) : false;
++		default:
++			return false;
++	}
++}
++
+ /**
+  *
+  * @param {TSESTree.Expression | TSESTree.PrivateIdentifier} node

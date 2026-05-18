@@ -6,6 +6,7 @@ import type {
 import type { PropertyKey } from "../../../../ir/ops/properties/PropertyKey";
 import {
   identifier,
+  expressionStatement,
   literal,
   objectExpression,
   objectExpressionProperty,
@@ -20,35 +21,37 @@ export function emitObjectLiteralOp(
   context: CodegenContext,
   op: ObjectLiteralOp,
 ): ESTreeStatement[] {
-  context.values.set(
-    op.result,
-    objectExpression(
-      op.properties.map((property) => {
-        switch (property.kind) {
-          case "spread":
-            return spreadElement(context.expressionForValue(property.value));
+  const expression = objectExpression(
+    op.properties.map((property) => {
+      switch (property.kind) {
+        case "spread":
+          return spreadElement(context.expressionForValue(property.value));
 
-          case "property": {
-            const key = emitPropertyKey(context, property.key);
-            const value = context.expressionForValue(property.value);
+        case "property": {
+          const key = emitPropertyKey(context, property.key);
+          const value = context.expressionForValue(property.value);
 
-            return objectExpressionProperty(
-              key.expression,
-              value,
-              key.computed,
-              isShorthandProperty(key.expression, value, key.computed),
-            );
-          }
-
-          case "method":
-            return emitObjectMethod(context, property);
-
-          case "accessor":
-            return emitObjectAccessor(context, property);
+          return objectExpressionProperty(
+            key.expression,
+            value,
+            key.computed,
+            isShorthandProperty(key.expression, value, key.computed),
+          );
         }
-      }),
-    ),
+
+        case "method":
+          return emitObjectMethod(context, property);
+
+        case "accessor":
+          return emitObjectAccessor(context, property);
+      }
+    }),
   );
+  context.values.set(op.result, expression);
+
+  if (op.result.users.size === 0) {
+    return [expressionStatement(expression)];
+  }
 
   return [];
 }

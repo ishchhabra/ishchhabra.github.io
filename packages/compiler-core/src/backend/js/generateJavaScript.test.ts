@@ -345,6 +345,95 @@ describe("generateJavaScript", () => {
     expect(generateJavaScript(input)).toBe("delete obj[key];");
   });
 
+  it("emits unused unary expression statements", () => {
+    const input = new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
+      parseModule("test.js", "typeof x;"),
+    );
+
+    expect(generateJavaScript(input)).toBe("typeof x;");
+  });
+
+  it("emits unused binary expression statements", async () => {
+    const source =
+      "export function run(){ let hit = 0; ({ valueOf(){ hit = 1; return 0; } }) + 1; return hit; }";
+    const { code } = compileSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toBe(1);
+  });
+
+  it("emits unused await expression statements", async () => {
+    const source =
+      "export async function run(){ let hit = 0; await Promise.resolve().then(() => { hit = 1; }); return hit; }";
+    const { code } = compileSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    await expect(module.run()).resolves.toBe(1);
+  });
+
+  it("emits unused dynamic import expression statements", async () => {
+    const source =
+      'export async function run(){ globalThis.__compilerProbe = 0; import("data:text/javascript,globalThis.__compilerProbe=1"); await new Promise((resolve) => setTimeout(resolve, 50)); return globalThis.__compilerProbe; }';
+    const { code } = compileSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    await expect(module.run()).resolves.toBe(1);
+  });
+
+  it("emits unused template literal expression statements", async () => {
+    const source =
+      'export function run(){ let hit = 0; `${{ toString(){ hit = 1; return "x"; } }}`; return hit; }';
+    const { code } = compileSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toBe(1);
+  });
+
+  it("emits unused global read expression statements", async () => {
+    const source =
+      'export function run(){ try { missingGlobal; return "no throw"; } catch (e) { return e instanceof ReferenceError; } }';
+    const { code } = compileSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toBe(true);
+  });
+
+  it("emits unused array literal expression statements", async () => {
+    const source =
+      "export function run(){ let hit = 0; [...{ [Symbol.iterator](){ hit = 1; return [][Symbol.iterator](); } }]; return hit; }";
+    const { code } = compileSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toBe(1);
+  });
+
+  it("emits unused object literal expression statements", async () => {
+    const source =
+      "export function run(){ let hit = 0; ({ ...{ get x(){ hit = 1; return 0; } } }); return hit; }";
+    const { code } = compileSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toBe(1);
+  });
+
+  it("emits unused private-name check expression statements", async () => {
+    const source =
+      'export function run(){ class C { #x; m(){ try { #x in null; return "no throw"; } catch(e) { return e instanceof TypeError; } } } return new C().m(); }';
+    const { code } = compileSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toBe(true);
+  });
+
+  it("emits unused class expression statements", async () => {
+    const source =
+      'export function run(){ try { (class extends 1 {}); return "no throw"; } catch(e) { return e instanceof TypeError; } }';
+    const { code } = compileSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toBe(true);
+  });
+
   it("emits new expressions", () => {
     const input = new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
       parseModule("test.js", "const value = new Constructor(arg);"),

@@ -1,5 +1,5 @@
 import type { AwaitExpressionOp } from "../../../../ir/ops/async/AwaitExpressionOp";
-import { awaitExpression, type ESTreeStatement } from "../../ast";
+import { awaitExpression, expressionStatement, type ESTreeStatement } from "../../ast";
 import type { CodegenContext } from "../../CodegenContext";
 
 /**
@@ -9,7 +9,12 @@ export function emitAwaitExpressionOp(
   context: CodegenContext,
   op: AwaitExpressionOp,
 ): ESTreeStatement[] {
-  context.values.set(op.result, awaitExpression(context.expressionForValue(op.argument)));
+  const expression = awaitExpression(context.expressionForValue(op.argument));
+  context.values.set(op.result, expression);
+
+  if (op.result.users.size === 0) {
+    return [expressionStatement(expression)];
+  }
 
   return [];
 }
