@@ -6,7 +6,6 @@ import type {
 import type { PropertyKey } from "../../../../ir/ops/properties/PropertyKey";
 import {
   identifier,
-  expressionStatement,
   literal,
   objectExpression,
   objectExpressionProperty,
@@ -16,6 +15,7 @@ import {
 } from "../../ast";
 import type { CodegenContext } from "../../CodegenContext";
 import { emitFunctionExpression } from "../../functions/emitFunction";
+import { emitExpressionResult } from "../emitExpressionResult";
 
 export function emitObjectLiteralOp(
   context: CodegenContext,
@@ -47,13 +47,7 @@ export function emitObjectLiteralOp(
       }
     }),
   );
-  context.values.set(op.result, expression);
-
-  if (op.result.users.size === 0) {
-    return [expressionStatement(expression)];
-  }
-
-  return [];
+  return emitExpressionResult(context, op, expression);
 }
 
 function emitObjectMethod(context: CodegenContext, property: ObjectLiteralMethodProperty) {

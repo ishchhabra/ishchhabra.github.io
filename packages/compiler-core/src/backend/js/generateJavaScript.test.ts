@@ -16,7 +16,7 @@ describe("generateJavaScript", () => {
       parseModule("test.js", "let x = 1 + 2; x;"),
     );
 
-    expect(generateJavaScript(input)).toBe("let $d0 = 1 + 2;");
+    expect(generateJavaScript(input)).toBe("let $d0 = 1 + 2;\n\n$d0;");
   });
 
   it("emits an unused call as an expression statement", () => {
@@ -392,6 +392,15 @@ describe("generateJavaScript", () => {
   it("emits unused global read expression statements", async () => {
     const source =
       'export function run(){ try { missingGlobal; return "no throw"; } catch (e) { return e instanceof ReferenceError; } }';
+    const { code } = compileSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toBe(true);
+  });
+
+  it("emits unused binding read expression statements", async () => {
+    const source =
+      'export function run(){ try { { x; let x; } return "no throw"; } catch (e) { return e instanceof ReferenceError; } }';
     const { code } = compileSource(source);
     const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
 

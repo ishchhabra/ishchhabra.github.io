@@ -6,7 +6,6 @@ import type {
 } from "../../../../ir/ops/classes/CreateClassOp";
 import {
   classExpression,
-  expressionStatement,
   identifier,
   literal,
   methodDefinition,
@@ -20,6 +19,7 @@ import {
 } from "../../ast";
 import type { CodegenContext } from "../../CodegenContext";
 import { emitFunctionBody, emitFunctionExpression } from "../../functions/emitFunction";
+import { emitExpressionResult } from "../emitExpressionResult";
 
 export function emitCreateClassOp(context: CodegenContext, op: CreateClassOp): ESTreeStatement[] {
   const expression = classExpression(
@@ -30,13 +30,7 @@ export function emitCreateClassOp(context: CodegenContext, op: CreateClassOp): E
     op.elements.map((element) => emitClassElement(context, element)),
   );
 
-  context.values.set(op.result, expression);
-
-  if (op.result.users.size === 0) {
-    return [expressionStatement(expression)];
-  }
-
-  return [];
+  return emitExpressionResult(context, op, expression);
 }
 
 function emitClassElement(context: CodegenContext, element: ClassElement): ClassElementNode {
