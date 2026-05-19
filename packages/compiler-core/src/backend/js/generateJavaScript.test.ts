@@ -1066,6 +1066,24 @@ describe("generateJavaScript", () => {
     expect(() => module.run()).toThrow(TypeError);
   });
 
+  it("evaluates destructuring defaults only after property reads produce undefined", async () => {
+    const source =
+      'export function run() { let count = 0; const source = Object.defineProperty({}, "poisoned", { get() { throw new Error("poisoned"); } }); try { const { poisoned: x = ++count } = source; return x; } catch (e) { return [e.message, count]; } }';
+    const code = compileTestSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toEqual(["poisoned", 0]);
+  });
+
+  it("evaluates destructuring defaults lazily when values are undefined", async () => {
+    const source =
+      "export function run() { let count = 0; const { missing: x = ++count } = {}; return [x, count]; }";
+    const code = compileTestSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toEqual([1, 1]);
+  });
+
   it("emits empty var destructuring for-header initializers", async () => {
     const source = "export function run() { for (var [] = []; false; ) {} return 1; }";
     const code = compileTestSource(source);

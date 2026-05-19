@@ -3,23 +3,29 @@ import type {
   BindingPatternTarget,
   ObjectAssignmentProperty,
   ObjectBindingProperty,
+  PatternExpression,
+  PatternPropertyKey,
 } from "../../../../ir/core/DestructurePattern";
 import type { DeclarationId } from "../../../../ir/core/Value";
-import type { PropertyKey } from "../../../../ir/ops/properties/PropertyKey";
 import {
   arrayPattern,
   assignmentPattern,
+  arrowFunctionExpression,
+  callExpression,
   identifier,
   literal,
   memberExpression,
   objectPattern,
   objectPatternProperty,
+  returnStatement,
   restElement,
   type ESTreeExpression,
   type ESTreePattern,
+  type ReturnStatementNode,
   type VariableDeclarationKind,
 } from "../../ast";
 import type { CodegenContext } from "../../CodegenContext";
+import { emitFunctionBody, expressionWithStatements } from "../../functions/emitFunction";
 
 export function emitBindingPatternTarget(
   context: CodegenContext,
@@ -47,7 +53,7 @@ export function emitBindingPatternTarget(
     case "default":
       return assignmentPattern(
         emitBindingPatternTarget(context, target.target),
-        context.expressionForValue(target.value),
+        emitPatternExpression(context, target.expression),
       );
   }
 }
@@ -92,7 +98,7 @@ export function emitAssignmentPatternTarget(
     case "default":
       return assignmentPattern(
         emitAssignmentPatternTarget(context, target.target),
-        context.expressionForValue(target.value),
+        emitPatternExpression(context, target.expression),
       );
   }
 }
@@ -172,11 +178,11 @@ function emitObjectAssignmentProperty(context: CodegenContext, property: ObjectA
 
 function emitPropertyKey(
   context: CodegenContext,
-  key: PropertyKey,
+  key: PatternPropertyKey,
 ): { readonly expression: ESTreeExpression; readonly computed: boolean } {
   if (key.kind === "computed") {
     return {
-      expression: context.expressionForValue(key.value),
+      expression: emitPatternExpression(context, key.expression),
       computed: true,
     };
   }
@@ -185,6 +191,34 @@ function emitPropertyKey(
     expression: isIdentifierName(key.name) ? identifier(key.name) : literal(key.name),
     computed: false,
   };
+}
+
+function emitPatternExpression(
+  context: CodegenContext,
+  expression: PatternExpression,
+): ESTreeExpression {
+  if (expression.kind === "value") return context.expressionForValue(expression.value);
+
+  const body = emitFunctionBody(context, expression.functionIR);
+  const last = body.at(-1);
+  if (last?.type !== "ReturnStatement") {
+    throw new Error("Pattern expression must emit a trailing return statement");
+  }
+
+  const argument = (last as ReturnStatementNode).argument;
+  if (argument === null) {
+    throw new Error("Pattern expression returned no value");
+  }
+
+  const statements = body.slice(0, -1);
+  if (statements.every((statement) => statement.type === "ExpressionStatement")) {
+    return expressionWithStatements(statements, argument);
+  }
+
+  return callExpression(
+    arrowFunctionExpression([], [...statements, returnStatement(argument)]),
+    [],
+  );
 }
 
 function declarationVariableKind(

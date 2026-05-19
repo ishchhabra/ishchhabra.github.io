@@ -81,7 +81,8 @@ export type FunctionIRKind =
   | "method"
   | "class-method"
   | "class-constructor"
-  | "class-field-initializer";
+  | "class-field-initializer"
+  | "pattern-expression";
 
 export interface FunctionIROptions {
   readonly params: readonly FunctionParam[];

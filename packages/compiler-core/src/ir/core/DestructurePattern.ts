@@ -1,6 +1,81 @@
-import type { PropertyKey } from "../ops/properties/PropertyKey";
+import type { FunctionIR } from "./FunctionIR";
 import type { OperationCloneContext } from "./OperationCloneContext";
 import type { DeclarationId, Value } from "./Value";
+
+/**
+ * Expression embedded in a destructuring pattern.
+ *
+ * Pattern expressions are separate from ordinary SSA expression values because
+ * destructuring controls when they run.
+ */
+export type PatternExpression =
+  | {
+      /**
+       * Already-lowered expression result.
+       *
+       * This form is used after a rewrite or lowering pass has materialized a
+       * pattern expression into the surrounding IR.
+       *
+       * @example
+       * ```txt
+       * kind: "value"
+       * ```
+       */
+      readonly kind: "value";
+      readonly value: Value;
+    }
+  | {
+      /**
+       * Deferred expression region.
+       *
+       * This form preserves source evaluation timing for expressions that must
+       * run inside destructuring evaluation rather than where the pattern is
+       * lowered.
+       *
+       * @example
+       * ```js
+       * const { x = fallback() } = value;
+       * ```
+       */
+      readonly kind: "deferred";
+      readonly functionIR: FunctionIR;
+    };
+
+/**
+ * Property key used by object binding and assignment patterns.
+ *
+ * Pattern keys are separate from runtime property keys because computed
+ * destructuring keys may need delayed expression evaluation.
+ */
+export type PatternPropertyKey =
+  | {
+      /**
+       * Static object-pattern property key.
+       *
+       * @example
+       * ```js
+       * const { x: y } = value;
+       * const { "x": y } = value;
+       * ```
+       */
+      readonly kind: "static";
+      readonly name: string;
+    }
+  | {
+      /**
+       * Computed object-pattern property key.
+       *
+       * The key expression is stored as a `PatternExpression` because
+       * `{ [expr]: y }` evaluates `expr` as part of object-pattern evaluation.
+       *
+       * @example
+       * ```js
+       * const { [key()]: y } = value;
+       * ```
+       */
+      readonly kind: "computed";
+      readonly expression: PatternExpression;
+    };
 
 /**
  * Runtime write used for a binding pattern target.
@@ -56,7 +131,7 @@ export type BindingPatternTarget =
   | {
       readonly kind: "default";
       readonly target: BindingPatternTarget;
-      readonly value: Value;
+      readonly expression: PatternExpression;
     };
 
 /**
@@ -83,7 +158,7 @@ export type BindingPatternTarget =
 export type ObjectBindingProperty =
   | {
       readonly kind: "property";
-      readonly key: PropertyKey;
+      readonly key: PatternPropertyKey;
       readonly target: BindingPatternTarget;
     }
   | {
@@ -133,7 +208,7 @@ export type AssignmentPatternTarget =
   | {
       readonly kind: "default";
       readonly target: AssignmentPatternTarget;
-      readonly value: Value;
+      readonly expression: PatternExpression;
     };
 
 /**
@@ -161,7 +236,7 @@ export type AssignmentPatternTarget =
 export type ObjectAssignmentProperty =
   | {
       readonly kind: "property";
-      readonly key: PropertyKey;
+      readonly key: PatternPropertyKey;
       readonly target: AssignmentPatternTarget;
     }
   | {
@@ -190,7 +265,10 @@ export function bindingPatternOperands(target: BindingPatternTarget): readonly V
       return bindingPatternOperands(target.target);
 
     case "default":
-      return [target.value, ...bindingPatternOperands(target.target)];
+      return [
+        ...patternExpressionOperands(target.expression),
+        ...bindingPatternOperands(target.target),
+      ];
   }
 }
 
@@ -221,12 +299,19 @@ export function assignmentPatternOperands(target: AssignmentPatternTarget): read
       return assignmentPatternOperands(target.target);
 
     case "default":
-      return [target.value, ...assignmentPatternOperands(target.target)];
+      return [
+        ...patternExpressionOperands(target.expression),
+        ...assignmentPatternOperands(target.target),
+      ];
   }
 }
 
-function propertyKeyOperands(key: PropertyKey): readonly Value[] {
-  return key.kind === "computed" ? [key.value] : [];
+function propertyKeyOperands(key: PatternPropertyKey): readonly Value[] {
+  return key.kind === "computed" ? patternExpressionOperands(key.expression) : [];
+}
+
+function patternExpressionOperands(expression: PatternExpression): readonly Value[] {
+  return expression.kind === "value" ? [expression.value] : [];
 }
 
 export function rewriteBindingPatternOperands(
@@ -312,18 +397,22 @@ function rewriteBindingPatternOperandsAt(
     }
 
     case "default": {
-      const value = operands[index];
+      const [expression, afterExpression] = rewritePatternExpressionOperand(
+        target.expression,
+        operands,
+        index,
+      );
       const [rewritten, nextIndex] = rewriteBindingPatternOperandsAt(
         target.target,
         operands,
-        index + 1,
+        afterExpression,
       );
 
       return [
         {
           kind: "default",
           target: rewritten,
-          value,
+          expression,
         },
         nextIndex,
       ];
@@ -435,18 +524,22 @@ function rewriteAssignmentPatternOperandsAt(
     }
 
     case "default": {
-      const value = operands[index];
+      const [expression, afterExpression] = rewritePatternExpressionOperand(
+        target.expression,
+        operands,
+        index,
+      );
       const [rewritten, nextIndex] = rewriteAssignmentPatternOperandsAt(
         target.target,
         operands,
-        index + 1,
+        afterExpression,
       );
 
       return [
         {
           kind: "default",
           target: rewritten,
-          value,
+          expression,
         },
         nextIndex,
       ];
@@ -455,13 +548,24 @@ function rewriteAssignmentPatternOperandsAt(
 }
 
 function rewritePropertyKeyOperand(
-  key: PropertyKey,
+  key: PatternPropertyKey,
   operands: readonly Value[],
   index: number,
-): readonly [PropertyKey, number] {
+): readonly [PatternPropertyKey, number] {
   if (key.kind !== "computed") return [key, index];
 
-  return [{ kind: "computed", value: operands[index] }, index + 1];
+  const [expression, nextIndex] = rewritePatternExpressionOperand(key.expression, operands, index);
+  return [{ kind: "computed", expression }, nextIndex];
+}
+
+function rewritePatternExpressionOperand(
+  expression: PatternExpression,
+  operands: readonly Value[],
+  index: number,
+): readonly [PatternExpression, number] {
+  if (expression.kind === "deferred") return [expression, index];
+
+  return [{ kind: "value", value: operands[index] }, index + 1];
 }
 
 export function cloneBindingPatternTarget(
@@ -507,7 +611,7 @@ export function cloneBindingPatternTarget(
       return {
         kind: "default",
         target: cloneBindingPatternTarget(context, target.target),
-        value: context.value(target.value),
+        expression: clonePatternExpression(context, target.expression),
       };
   }
 }
@@ -568,11 +672,25 @@ export function cloneAssignmentPatternTarget(
       return {
         kind: "default",
         target: cloneAssignmentPatternTarget(context, target.target),
-        value: context.value(target.value),
+        expression: clonePatternExpression(context, target.expression),
       };
   }
 }
 
-function clonePropertyKey(context: OperationCloneContext, key: PropertyKey): PropertyKey {
-  return key.kind === "computed" ? { kind: "computed", value: context.value(key.value) } : key;
+function clonePropertyKey(
+  context: OperationCloneContext,
+  key: PatternPropertyKey,
+): PatternPropertyKey {
+  return key.kind === "computed"
+    ? { kind: "computed", expression: clonePatternExpression(context, key.expression) }
+    : key;
+}
+
+function clonePatternExpression(
+  context: OperationCloneContext,
+  expression: PatternExpression,
+): PatternExpression {
+  return expression.kind === "value"
+    ? { kind: "value", value: context.value(expression.value) }
+    : expression;
 }

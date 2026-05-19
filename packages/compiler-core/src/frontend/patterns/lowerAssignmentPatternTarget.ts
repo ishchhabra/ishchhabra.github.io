@@ -7,10 +7,14 @@ import type {
   PropertyKey as OxcPropertyKey,
 } from "oxc-parser";
 
-import type { AssignmentPatternTarget } from "../../ir/core/DestructurePattern";
-import type { PropertyKey } from "../../ir/ops/properties/PropertyKey";
+import type {
+  AssignmentPatternTarget,
+  PatternExpression,
+  PatternPropertyKey,
+} from "../../ir/core/DestructurePattern";
 import { lowerExpression } from "../expressions/lowerExpression";
 import { lowerMemberReference } from "../expressions/lowerMemberExpression";
+import { lowerDeferredExpression } from "../functions/lowerDeferredExpression";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";
 
 /**
@@ -74,11 +78,10 @@ export function lowerAssignmentPatternTarget(
       };
 
     case "AssignmentPattern": {
-      const value = lowerExpression(builder, target.right);
       return {
         kind: "default",
         target: lowerAssignmentPatternTarget(builder, target.left),
-        value,
+        expression: lowerPatternExpression(builder, target.right),
       };
     }
 
@@ -100,11 +103,11 @@ function lowerObjectPatternKey(
   builder: FunctionIRBuilder,
   key: OxcPropertyKey,
   computed: boolean,
-): PropertyKey {
+): PatternPropertyKey {
   if (computed) {
     return {
       kind: "computed",
-      value: lowerExpression(builder, expressionPropertyKey(key)),
+      expression: lowerPatternExpression(builder, expressionPropertyKey(key)),
     };
   }
 
@@ -130,6 +133,16 @@ function lowerObjectPatternKey(
     default:
       throw new Error(`Unsupported object assignment pattern key: ${key.type}`);
   }
+}
+
+function lowerPatternExpression(
+  builder: FunctionIRBuilder,
+  expression: Expression,
+): PatternExpression {
+  return {
+    kind: "deferred",
+    functionIR: lowerDeferredExpression(builder, expression, "pattern-expression"),
+  };
 }
 
 function expressionPropertyKey(
