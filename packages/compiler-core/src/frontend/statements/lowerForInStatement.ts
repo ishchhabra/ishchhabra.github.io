@@ -36,22 +36,16 @@ export function lowerForInStatement(
   const bodyBlock = builder.createBlock();
   const continuationBlock = builder.createBlock();
 
+  const loopObject = builder.createValue();
+  loopBlock.appendParam(loopObject);
+
   const propertyKey = builder.createValue();
   bodyBlock.appendParam(propertyKey);
 
-  builder.terminate(new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock)));
-
-  builder.setCurrentBlock(loopBlock);
   const object = lowerExpression(builder, statement.right);
-  const loopHeaderBlock = builder.currentBlock;
-  let loopContinueTarget = blockTarget(loopHeaderBlock);
-  if (loopHeaderBlock.params.length !== 0) {
-    if (loopHeaderBlock.params.length !== 1 || loopHeaderBlock.params[0] !== object) {
-      throw new Error("for-in object header must be parameterized by the object result");
-    }
+  builder.terminate(new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock, [object])));
 
-    loopContinueTarget = blockTarget(loopHeaderBlock, [object]);
-  }
+  const loopContinueTarget = blockTarget(loopBlock, [loopObject]);
 
   const control = {
     kind: "loop" as const,
@@ -60,10 +54,11 @@ export function lowerForInStatement(
     continueTarget: loopContinueTarget,
   };
 
+  builder.setCurrentBlock(loopBlock);
   builder.terminate(
     new ForInTerminatorOp(
       builder.operationId(),
-      object,
+      loopObject,
       {
         block: bodyBlock,
         operands: producedOperands([propertyKey]),

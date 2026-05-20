@@ -36,22 +36,16 @@ export function lowerForOfStatement(
   const bodyBlock = builder.createBlock();
   const continuationBlock = builder.createBlock();
 
+  const loopIterable = builder.createValue();
+  loopBlock.appendParam(loopIterable);
+
   const iterationValue = builder.createValue();
   bodyBlock.appendParam(iterationValue);
 
-  builder.terminate(new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock)));
-
-  builder.setCurrentBlock(loopBlock);
   const iterable = lowerExpression(builder, statement.right);
-  const loopHeaderBlock = builder.currentBlock;
-  let loopContinueTarget = blockTarget(loopHeaderBlock);
-  if (loopHeaderBlock.params.length !== 0) {
-    if (loopHeaderBlock.params.length !== 1 || loopHeaderBlock.params[0] !== iterable) {
-      throw new Error("for-of iterable header must be parameterized by the iterable result");
-    }
+  builder.terminate(new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock, [iterable])));
 
-    loopContinueTarget = blockTarget(loopHeaderBlock, [iterable]);
-  }
+  const loopContinueTarget = blockTarget(loopBlock, [loopIterable]);
 
   const control = {
     kind: "loop" as const,
@@ -60,10 +54,11 @@ export function lowerForOfStatement(
     continueTarget: loopContinueTarget,
   };
 
+  builder.setCurrentBlock(loopBlock);
   builder.terminate(
     new ForOfTerminatorOp(
       builder.operationId(),
-      iterable,
+      loopIterable,
       {
         block: bodyBlock,
         operands: producedOperands([iterationValue]),

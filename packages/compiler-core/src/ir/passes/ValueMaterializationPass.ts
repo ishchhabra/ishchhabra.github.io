@@ -1,5 +1,5 @@
 import { AnalysisManager, PreservedAnalyses } from "../analysis";
-import { FunctionIR, Operation, Value } from "../core";
+import { FunctionIR, Operation, valueUseSites, Value } from "../core";
 import { bindingPatternOperands, rewriteBindingPatternOperands } from "../core/DestructurePattern";
 import { IRIdAllocator } from "../core/IRIdAllocator";
 import { InitializeBindingOp } from "../ops/bindings/InitializeBindingOp";
@@ -90,6 +90,7 @@ class ValueMaterializationPass {
   private canRemainExpression(op: Operation, result: Value): boolean {
     if (isSafelyDuplicable(op)) return true;
     if (result.users.size === 0) return true;
+    if (valueUseSites(result).length !== 1) return false;
 
     const users = [...result.users];
     if (users.length !== 1) return false;

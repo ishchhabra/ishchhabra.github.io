@@ -1,7 +1,9 @@
 import { AnalysisManager, PreservedAnalyses } from "../analysis";
 import { FunctionIR, Operation, Value } from "../core";
 import { BasicBlock } from "../core/Block";
-import { canDropOperationEffects } from "../effects";
+import { ConstantOp } from "../ops/constants/ConstantOp";
+import { LoadThisOp } from "../ops/functions/LoadThisOp";
+import { MetaPropertyOp } from "../ops/functions/MetaPropertyOp";
 import { CopyValueOp } from "../ops/values/CopyValueOp";
 import { FunctionPass, PassResult } from "./Pass";
 
@@ -191,7 +193,11 @@ function canPropagateCopySource(source: Value): boolean {
   const definer = source.definer;
   if (definer === undefined) return true;
 
-  return canDropOperationEffects(definer.effects());
+  return (
+    definer instanceof ConstantOp ||
+    definer instanceof LoadThisOp ||
+    definer instanceof MetaPropertyOp
+  );
 }
 
 function sameAliases(left: AliasMap, right: AliasMap): boolean {

@@ -1388,7 +1388,7 @@ function emitBlockTargetEntry(
   let entryTarget = target;
   let block = target.block;
 
-  while (!stopBlocks.has(block) && isEdgeCopyBlock(block)) {
+  while (!stopBlocks.has(block) && !context.isFallthrough(block) && isEdgeCopyBlock(block)) {
     const terminator = block.terminator;
     if (!(terminator instanceof JumpTerminatorOp)) {
       throw new Error(`Edge-copy block bb${block.id} must end with JumpTerminatorOp`);

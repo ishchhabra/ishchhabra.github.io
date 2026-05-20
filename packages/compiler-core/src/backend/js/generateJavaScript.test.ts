@@ -638,7 +638,7 @@ describe("generateJavaScript", () => {
     ]);
 
     expect(generateJavaScript(input)).toBe(
-      "let $7;\nlet $3;\nlet $d0 = undefined;\n\nif ($d0) {\n  $3 = $d0;\n} else {\n  $7 = compute();\n  $d0 = $7;\n  $3 = $7;\n}",
+      "let $7;\nlet $8;\nlet $3;\nlet $d0 = undefined;\n\n$7 = $d0;\n\nif ($7) {\n  $3 = $7;\n} else {\n  $8 = compute();\n  $d0 = $8;\n  $3 = $8;\n}",
     );
   });
 
@@ -714,7 +714,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "if (ready) {\n  for (const $d0 of items) {\n    visit($d0);\n  }\n}\n\ndone();",
+      "let $1;\n\nif (ready) {\n  $1 = items;\n\n  for (const $d0 of $1) {\n    visit($d0);\n  }\n}\n\ndone();",
     );
   });
 
@@ -727,7 +727,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "for (const $d0 of outers) {\n  for (const $d1 of inners) {\n    visit($d0, $d1);\n  }\n}",
+      "let $0;\nlet $4;\n\n$0 = outers;\n\nfor (const $d0 of $0) {\n  $4 = inners;\n\n  for (const $d1 of $4) {\n    visit($d0, $d1);\n  }\n}",
     );
   });
 
@@ -908,26 +908,28 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "labelSwitch: {\n  switch (i) {\n    case 1:\n      for (const $d0 of xs) {\n        if ($d0 === 2) {\n          break labelSwitch;\n        }\n\n        foo($d0);\n      }\n      bar();\n      break;\n  }\n\n  break labelSwitch;\n}\n\nbaz();",
+      "let $2;\n\nlabelSwitch: {\n  switch (i) {\n    case 1:\n      $2 = xs;\n      for (const $d0 of $2) {\n        if ($d0 === 2) {\n          break labelSwitch;\n        }\n\n        foo($d0);\n      }\n      bar();\n      break;\n  }\n\n  break labelSwitch;\n}\n\nbaz();",
     );
   });
 
-  it("preserves switch breaks after nested for-of loops", () => {
+  it("preserves switch breaks after nested for-of loops", async () => {
     const forOfSource =
       "export function run() { const log = []; switch (0) { case 0: for (const i of [0, 1, 2]) { if (i === 1) break; log.push(i); } break; default: log.push('outer-default'); } return log; }";
 
-    expect(compileTestSource(forOfSource)).toBe(
-      'function $d0() {\n  let $26;\n  let $22;\n  let $24;\n  let $27;\n  let $23;\n  const $d1 = [];\n\n  $26 = $d1;\n\n  switch (0) {\n    case 0:\n      $22 = undefined;\n      for (const $d2 of [0, 1, 2]) {\n        $27 = $d2;\n\n        if ($d2 === 1) {\n          $23 = $27;\n\n          break;\n        }\n\n        $d1.push($d2);\n        $22 = $27;\n      }\n      $24 = $23;\n      break;\n\n    default:\n      $d1.push("outer-default");\n      $24 = undefined;\n      break;\n  }\n\n  return $d1;\n}\n\nexport { $d0 as run };',
-    );
+    const code = compileTestSource(forOfSource);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toEqual([0]);
   });
 
-  it("preserves switch breaks after nested for-in loops", () => {
+  it("preserves switch breaks after nested for-in loops", async () => {
     const forInSource =
       "export function run() { const log = []; switch (0) { case 0: for (const k in { a: 1, b: 2 }) { if (k === 'b') break; log.push(k); } break; default: log.push('outer-default'); } return log; }";
 
-    expect(compileTestSource(forInSource)).toBe(
-      'function $d0() {\n  let $25;\n  let $21;\n  let $23;\n  let $26;\n  let $22;\n  const $d1 = [];\n\n  $25 = $d1;\n\n  switch (0) {\n    case 0:\n      $21 = undefined;\n      for (const $d2 in { a: 1, b: 2 }) {\n        $26 = $d2;\n\n        if ($d2 === "b") {\n          $22 = $26;\n\n          break;\n        }\n\n        $d1.push($d2);\n        $21 = $26;\n      }\n      $23 = $22;\n      break;\n\n    default:\n      $d1.push("outer-default");\n      $23 = undefined;\n      break;\n  }\n\n  return $d1;\n}\n\nexport { $d0 as run };',
-    );
+    const code = compileTestSource(forInSource);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toEqual(["a"]);
   });
 
   it("preserves try finally through switch and nested loop breaks", () => {
@@ -1097,7 +1099,9 @@ describe("generateJavaScript", () => {
       parseModule("test.js", "for (const key in obj) foo(key); bar();"),
     );
 
-    expect(generateJavaScript(input)).toBe("for (const $d0 in obj) {\n  foo($d0);\n}\n\nbar();");
+    expect(generateJavaScript(input)).toBe(
+      "let $0;\n\n$0 = obj;\n\nfor (const $d0 in $0) {\n  foo($d0);\n}\n\nbar();",
+    );
   });
 
   it("emits for-in loops with destructuring declarations", () => {
@@ -1106,7 +1110,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "for (let $0 in obj) {\n  const { x: $d0 } = $0;\n\n  foo($d0);\n}",
+      "let $0;\n\n$0 = obj;\n\nfor (let $1 in $0) {\n  const { x: $d0 } = $1;\n\n  foo($d0);\n}",
     );
   });
 
@@ -1116,7 +1120,6 @@ describe("generateJavaScript", () => {
     const code = compileTestSource(source);
     const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
 
-    expect(code).toContain("for (let $d2 in { x: $d2 })");
     expect(module.run()).toBe(true);
   });
 
@@ -1134,7 +1137,9 @@ describe("generateJavaScript", () => {
       parseModule("test.js", "for (const x of xs) foo(x); bar();"),
     );
 
-    expect(generateJavaScript(input)).toBe("for (const $d0 of xs) {\n  foo($d0);\n}\n\nbar();");
+    expect(generateJavaScript(input)).toBe(
+      "let $0;\n\n$0 = xs;\n\nfor (const $d0 of $0) {\n  foo($d0);\n}\n\nbar();",
+    );
   });
 
   it("emits for-of loops with destructuring declarations", () => {
@@ -1143,13 +1148,31 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "for (let $0 of xs) {\n  const { x: $d0 } = $0;\n\n  foo($d0);\n}",
+      "let $0;\n\n$0 = xs;\n\nfor (let $1 of $0) {\n  const { x: $d0 } = $1;\n\n  foo($d0);\n}",
     );
   });
 
   it("evaluates for-of logical iterables once before iteration", async () => {
     const source =
       "export function run() { let calls = 0; const values = []; function items() { calls++; return [1, 2]; } for (const value of items() || []) { if (value === 1) continue; values.push(value); } return [calls, values]; }";
+    const code = compileTestSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toEqual([1, [2]]);
+  });
+
+  it("evaluates for-in sequence objects once before iteration", async () => {
+    const source =
+      "export function run() { let calls = 0; const keys = []; function object() { calls++; return { a: 1, b: 2 }; } for (const key in (false && {}, object())) { if (key === 'a') continue; keys.push(key); } return [calls, keys]; }";
+    const code = compileTestSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toEqual([1, ["b"]]);
+  });
+
+  it("evaluates for-of sequence iterables once before iteration", async () => {
+    const source =
+      "export function run() { let calls = 0; const values = []; function items() { calls++; return [1, 2]; } for (const value of (false && [], items())) { if (value === 1) continue; values.push(value); } return [calls, values]; }";
     const code = compileTestSource(source);
     const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
 

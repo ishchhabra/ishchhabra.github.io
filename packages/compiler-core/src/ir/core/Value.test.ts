@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { valueUseSites } from "./Value";
 import { testOp, value } from "./testing";
 
 describe("Value", () => {
@@ -11,6 +12,18 @@ describe("Value", () => {
     v._addUser(op);
 
     expect([...v.users]).toEqual([op]);
+  });
+
+  it("reports repeated operand occurrences as distinct use-sites", () => {
+    const v = value(1);
+    const op = testOp(1, [v, v]);
+
+    v._addUser(op);
+
+    expect(valueUseSites(v)).toEqual([
+      { user: op, operandIndex: 0 },
+      { user: op, operandIndex: 1 },
+    ]);
   });
 
   it("removes users", () => {

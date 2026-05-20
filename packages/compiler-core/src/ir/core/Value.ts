@@ -35,6 +35,49 @@ export function makeDeclarationId(id: number): DeclarationId {
 
 export type ValueUser = Operation | FunctionIR;
 
+export interface ValueUseSite {
+  /**
+   * IR object that owns the operand slot.
+   */
+  readonly user: ValueUser;
+
+  /**
+   * Index within `user.operands()`.
+   */
+  readonly operandIndex: number;
+}
+
+/**
+ * Returns every operand occurrence that reads a value.
+ *
+ * `value.users` is intentionally a set of owning IR objects. If one operation
+ * reads the same value twice, it appears once in `users` but twice here.
+ *
+ * @example
+ * ```txt
+ * ShortCircuitTerminatorOp test=$items exitTarget=join($items)
+ *
+ * value.users        => { ShortCircuitTerminatorOp }
+ * valueUseSites(...) => [
+ *   { user: ShortCircuitTerminatorOp, operandIndex: 0 },
+ *   { user: ShortCircuitTerminatorOp, operandIndex: 1 },
+ * ]
+ * ```
+ */
+export function valueUseSites(value: Value): readonly ValueUseSite[] {
+  const sites: ValueUseSite[] = [];
+
+  for (const user of value.users) {
+    user.operands().forEach((operand, operandIndex) => {
+      if (operand === value) {
+        sites.push({ user, operandIndex });
+      }
+    });
+  }
+
+  return sites;
+}
+
 /**
  * SSA value used by operation operands, operation results, and block parameters.
  *
