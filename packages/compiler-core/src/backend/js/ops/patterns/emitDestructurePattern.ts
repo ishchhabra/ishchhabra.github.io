@@ -10,22 +10,18 @@ import type { DeclarationId } from "../../../../ir/core/Value";
 import {
   arrayPattern,
   assignmentPattern,
-  arrowFunctionExpression,
-  callExpression,
   identifier,
   literal,
   memberExpression,
   objectPattern,
   objectPatternProperty,
-  returnStatement,
   restElement,
   type ESTreeExpression,
   type ESTreePattern,
-  type ReturnStatementNode,
   type VariableDeclarationKind,
 } from "../../ast";
 import type { CodegenContext } from "../../CodegenContext";
-import { emitFunctionBody, expressionWithStatements } from "../../functions/emitFunction";
+import { emitDeferredExpression } from "../../functions/emitDeferredExpression";
 
 export function emitBindingPatternTarget(
   context: CodegenContext,
@@ -199,26 +195,7 @@ function emitPatternExpression(
 ): ESTreeExpression {
   if (expression.kind === "value") return context.expressionForValue(expression.value);
 
-  const body = emitFunctionBody(context, expression.functionIR);
-  const last = body.at(-1);
-  if (last?.type !== "ReturnStatement") {
-    throw new Error("Pattern expression must emit a trailing return statement");
-  }
-
-  const argument = (last as ReturnStatementNode).argument;
-  if (argument === null) {
-    throw new Error("Pattern expression returned no value");
-  }
-
-  const statements = body.slice(0, -1);
-  if (statements.every((statement) => statement.type === "ExpressionStatement")) {
-    return expressionWithStatements(statements, argument);
-  }
-
-  return callExpression(
-    arrowFunctionExpression([], [...statements, returnStatement(argument)]),
-    [],
-  );
+  return emitDeferredExpression(context, expression.functionIR, "Pattern expression");
 }
 
 function declarationVariableKind(

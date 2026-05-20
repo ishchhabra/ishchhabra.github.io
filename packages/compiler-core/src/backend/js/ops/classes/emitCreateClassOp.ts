@@ -15,10 +15,10 @@ import {
   type ESTreeExpression,
   type ESTreeStatement,
   type PrivateIdentifierNode,
-  type ReturnStatementNode,
 } from "../../ast";
 import type { CodegenContext } from "../../CodegenContext";
-import { emitFunctionBody, emitFunctionExpression } from "../../functions/emitFunction";
+import { emitDeferredExpression } from "../../functions/emitDeferredExpression";
+import { emitFunctionExpression } from "../../functions/emitFunction";
 import { emitExpressionResult } from "../emitExpressionResult";
 
 export function emitCreateClassOp(context: CodegenContext, op: CreateClassOp): ESTreeStatement[] {
@@ -72,17 +72,7 @@ function emitClassFieldInitializer(
 ): ESTreeExpression | null {
   if (element.initializer === null) return null;
 
-  const body = emitFunctionBody(context, element.initializer);
-  if (body.length !== 1 || body[0].type !== "ReturnStatement") {
-    throw new Error("Class field initializer must emit one return statement");
-  }
-
-  const argument = (body[0] as ReturnStatementNode).argument;
-  if (argument === null) {
-    throw new Error("Class field initializer returned no value");
-  }
-
-  return argument;
+  return emitDeferredExpression(context, element.initializer, "Class field initializer");
 }
 
 function emitPropertyKey(

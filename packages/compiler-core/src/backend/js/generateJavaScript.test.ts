@@ -167,6 +167,16 @@ describe("generateJavaScript", () => {
     expect(generateJavaScript(input)).toBe("class $d0 {\n  x = 1;\n  y;\n  static count = 0;\n}");
   });
 
+  it("emits control-flow class field initializers as arrow IIFEs", () => {
+    const input = new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
+      parseModule("test.js", 'const flag = true; class C { value = flag ? "a" : "b"; }'),
+    );
+
+    expect(generateJavaScript(input)).toBe(
+      'const $d0 = true;\n\nclass $d1 {\n  value = (() => {\n    let $3;\n\n    if ($d0) {\n      $3 = "a";\n    } else {\n      $3 = "b";\n    }\n\n    return $3;\n  })();\n}',
+    );
+  });
+
   it("emits super property writes", () => {
     const input = new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
       parseModule(
