@@ -25,7 +25,7 @@ index 9d20774c0e7f5c797442b947a6c8a25e532b338e..6ad44d160eead759e3711b5af90a2aee
  				if (node.kind !== 'init') context.write(node.kind + ' ');
  				if (node.value.async) context.write('async ');
  				if (node.value.generator) context.write('*');
-@@ -2104,6 +2099,35 @@ export default (options = {}) => {
+@@ -2104,6 +2099,36 @@ export default (options = {}) => {
  
  /** @satisfies {Visitors} */
  
