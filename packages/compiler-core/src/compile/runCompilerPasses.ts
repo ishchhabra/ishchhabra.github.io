@@ -49,6 +49,11 @@ function runFunctionPipeline(
   passesFor: (fn: FunctionIR) => readonly FunctionPass[],
 ): void {
   for (const fn of [...moduleIR.functions]) {
-    new FunctionPassManager(analyses).run(fn, passesFor(fn));
+    try {
+      new FunctionPassManager(analyses).run(fn, passesFor(fn));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Function#${fn.id} (${fn.kind}) failed: ${message}`);
+    }
   }
 }

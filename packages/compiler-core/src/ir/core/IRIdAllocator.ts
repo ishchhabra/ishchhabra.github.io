@@ -1,10 +1,9 @@
 import { BlockId, makeBlockId } from "./Block";
 import { FunctionId, makeFunctionId } from "./FunctionIR";
-import { makeModuleId, ModuleId } from "./ModuleIR";
+import { ModuleId, makeModuleId } from "./ModuleId";
 import { OperationId, makeOperationId } from "./Operation";
 import { makePrivateNameId, type PrivateNameId } from "./PrivateName";
-import { ValueId, makeValueId } from "./Value";
-import { DeclarationId, makeDeclarationId } from "./Value";
+import { DeclarationId, ValueId, makeDeclarationId, makeValueId } from "./Value";
 
 /**
  * Allocates stable, unique identities for IR nodes.

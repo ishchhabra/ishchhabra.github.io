@@ -1,22 +1,7 @@
 import { FunctionIR } from "./FunctionIR";
 import type { ModuleExport } from "./ModuleExport";
+import { ModuleId } from "./ModuleId";
 import type { ModuleImport } from "./ModuleImport";
-
-declare const opaqueModuleId: unique symbol;
-
-/**
- * Stable identity of an IR module.
- *
- * Module ids are for diagnostics, maps, and serialization. They do not imply
- * filesystem identity or module loading order.
- */
-export type ModuleId = number & {
-  readonly [opaqueModuleId]: "ModuleId";
-};
-
-export function makeModuleId(id: number): ModuleId {
-  return id as ModuleId;
-}
 
 /**
  * The compilation unit for a single source file.

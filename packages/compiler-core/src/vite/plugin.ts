@@ -2,7 +2,9 @@ import path from "node:path";
 
 import type { Plugin } from "vite";
 
-import { compileSource } from "../compile/compileSource";
+import type { ModuleEnvironment } from "../compile/ModuleHost";
+import { ProgramSession, type EmissionDecision } from "../compile/ProgramSession";
+import { createViteModuleHost } from "./createViteModuleHost";
 
 /**
  * Options for using the compiler as a Vite transform plugin.
@@ -39,47 +41,80 @@ const COMPILABLE_EXTENSIONS = new Set([".js", ".jsx", ".ts", ".tsx"]);
 export function compilerVitePlugin(options: CompilerVitePluginOptions): Plugin {
   const rootDir = path.resolve(options.rootDir);
   const includeDirs = options.include.map((dir) => path.resolve(rootDir, dir));
+  const session = new ProgramSession();
 
   return {
     name: "i2:compiler",
     enforce: "post",
 
-    transform(source, id) {
-      const filePath = normalizeModuleId(id);
-      if (filePath === null || !shouldCompile(filePath, includeDirs)) return null;
+    async transform(source, id) {
+      const moduleId = moduleIdFromViteId(id);
+      const environment: ModuleEnvironment = {
+        name: this.environment.name,
+        consumer: this.environment.config.consumer,
+      };
 
-      const result = compileSource(source, {
-        sourceName: path.relative(rootDir, filePath),
-        diagnostics: {
-          minimumSeverity: "error",
-        },
+      if (moduleId === null) return null;
+
+      const cached = session.emissionFor({ environment, resolvedId: moduleId });
+      const cachedResult = adaptEmission(cached);
+      if (cachedResult !== undefined) return cachedResult;
+
+      if (!shouldCompileGraphEntrypoint(moduleId, includeDirs)) return null;
+
+      await session.compileGraph({
+        environment,
+        host: createViteModuleHost(this, new Map([[moduleId, source]]), { environment }),
+        entrypoints: [moduleId],
       });
 
-      const error = result.diagnostics.find((diagnostic) => diagnostic.severity === "error");
+      return adaptEmission(session.emissionFor({ environment, resolvedId: moduleId })) ?? null;
+    },
 
-      if (error !== undefined) {
-        this.error({
-          message: error.message,
-          id: filePath,
-        });
-      }
+    buildStart() {
+      session.invalidate();
+    },
 
-      return {
-        code: result.code,
-        map: null,
-      };
+    watchChange() {
+      session.invalidate();
+    },
+
+    handleHotUpdate() {
+      session.invalidate();
+      return;
     },
   };
 }
 
-function normalizeModuleId(id: string): string | null {
+function adaptEmission(
+  emission: EmissionDecision | undefined,
+): { readonly code: string; readonly map: null } | null | undefined {
+  if (emission === undefined) return undefined;
+
+  switch (emission.kind) {
+    case "code":
+      return { code: emission.code, map: null };
+
+    case "empty":
+      return { code: "export {};\n", map: null };
+
+    case "opaque":
+    case "passthrough":
+      return null;
+  }
+}
+
+function shouldCompileGraphEntrypoint(moduleId: string, includeDirs: readonly string[]): boolean {
+  const filePath = filePathFromModuleId(moduleId);
+  if (filePath === null) return false;
+  if (filePath.includes("/node_modules/")) return false;
+  return shouldCompile(filePath, includeDirs);
+}
+
+function moduleIdFromViteId(id: string): string | null {
   if (id.startsWith("\0")) return null;
 
-  const queryIndex = id.indexOf("?");
-  const filePath = queryIndex === -1 ? id : id.slice(0, queryIndex);
-
-  if (!path.isAbsolute(filePath)) return null;
-  return filePath;
+  return filePathFromModuleId(id) === null ? null : id;
 }
 
 function shouldCompile(filePath: string, includeDirs: readonly string[]): boolean {
@@ -87,6 +122,13 @@ function shouldCompile(filePath: string, includeDirs: readonly string[]): boolea
   if (!COMPILABLE_EXTENSIONS.has(path.extname(filePath))) return false;
 
   return includeDirs.some((dir) => isInside(filePath, dir));
+}
+
+function filePathFromModuleId(moduleId: string): string | null {
+  const queryIndex = moduleId.indexOf("?");
+  const filePath = queryIndex === -1 ? moduleId : moduleId.slice(0, queryIndex);
+
+  return path.isAbsolute(filePath) ? filePath : null;
 }
 
 function isInside(filePath: string, dir: string): boolean {
