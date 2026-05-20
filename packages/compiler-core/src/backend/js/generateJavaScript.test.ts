@@ -321,6 +321,35 @@ describe("generateJavaScript", () => {
     expect(generateJavaScript(input)).toBe("const $d0 = `hello ${name}`;");
   });
 
+  it("emits tagged template expressions", () => {
+    const input = new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
+      parseModule("test.js", "export function run(tag, name) { return tag`hello ${name}`; }"),
+    );
+
+    expect(generateJavaScript(input)).toBe(
+      "function $d0($d1, $d2) {\n  return $d1`hello ${$d2}`;\n}\n\nexport { $d0 as run };",
+    );
+  });
+
+  it("preserves tagged template runtime semantics", async () => {
+    const source = "export function run(tag, name) { return tag`hello ${name}`; }";
+    const { code } = compileSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(
+      module.run(
+        (strings: TemplateStringsArray, value: string) => [
+          strings[0],
+          strings.raw[0],
+          value,
+          Object.isFrozen(strings),
+          Object.isFrozen(strings.raw),
+        ],
+        "Ada",
+      ),
+    ).toEqual(["hello ", "hello ", "Ada", true, true]);
+  });
+
   it("emits this expressions", () => {
     const input = new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
       parseModule("test.js", "this.value;"),

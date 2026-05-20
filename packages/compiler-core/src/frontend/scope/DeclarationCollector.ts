@@ -529,6 +529,11 @@ export class DeclarationCollector {
         }
         return;
 
+      case "TaggedTemplateExpression":
+        this.collectExpression(expression.tag, scope);
+        this.collectExpression(expression.quasi, scope);
+        return;
+
       case "ImportExpression":
         this.collectExpression(expression.source, scope);
         if (expression.options !== null) {

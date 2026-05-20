@@ -97,7 +97,7 @@ export class CallOp extends Operation {
   }
 }
 
-function callTargetOperands(target: CallTarget): readonly Value[] {
+export function callTargetOperands(target: CallTarget): readonly Value[] {
   if (target.kind === "value") return [target.callee];
   if (target.kind === "value-with-receiver") {
     return [target.callee, target.receiver];
@@ -110,7 +110,7 @@ function callTargetOperands(target: CallTarget): readonly Value[] {
   return target.key.kind === "computed" ? [target.object, target.key.value] : [target.object];
 }
 
-function callTargetWithOperands(target: CallTarget, operands: readonly Value[]): CallTarget {
+export function callTargetWithOperands(target: CallTarget, operands: readonly Value[]): CallTarget {
   if (target.kind === "value") {
     return { kind: "value", callee: operands[0] };
   }
@@ -148,7 +148,7 @@ function callTargetWithOperands(target: CallTarget, operands: readonly Value[]):
   };
 }
 
-function sameCallTarget(left: CallTarget, right: CallTarget): boolean {
+export function sameCallTarget(left: CallTarget, right: CallTarget): boolean {
   if (left.kind !== right.kind) return false;
 
   if (left.kind === "value" && right.kind === "value") {
@@ -188,7 +188,7 @@ function sameCallTarget(left: CallTarget, right: CallTarget): boolean {
   return false;
 }
 
-function cloneCallTarget(context: OperationCloneContext, target: CallTarget): CallTarget {
+export function cloneCallTarget(context: OperationCloneContext, target: CallTarget): CallTarget {
   if (target.kind === "value") {
     return { kind: "value", callee: context.value(target.callee) };
   }

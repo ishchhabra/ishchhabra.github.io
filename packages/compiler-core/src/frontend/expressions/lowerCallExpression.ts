@@ -1,4 +1,4 @@
-import type { Argument, CallExpression } from "oxc-parser";
+import type { Argument, CallExpression, Expression } from "oxc-parser";
 
 import type { Value } from "../../ir/core/Value";
 import type { ArgumentListElement } from "../../ir/ops/calls/ArgumentListElement";
@@ -69,7 +69,7 @@ export function lowerCallExpression(builder: FunctionIRBuilder, expression: Call
     return result;
   }
 
-  const target = lowerCallTarget(builder, expression);
+  const target = lowerCallTarget(builder, expression.callee);
   const args = expression.arguments.map((argument) => lowerCallArgument(builder, argument));
   const result = builder.createValue();
 
@@ -77,9 +77,28 @@ export function lowerCallExpression(builder: FunctionIRBuilder, expression: Call
   return result;
 }
 
-function lowerCallTarget(builder: FunctionIRBuilder, expression: CallExpression): CallTarget {
-  if (expression.callee.type === "MemberExpression") {
-    const reference = lowerMemberReference(builder, expression.callee);
+export function lowerCallTarget(
+  builder: FunctionIRBuilder,
+  callee: CallExpression["callee"] | Expression,
+): CallTarget {
+  if (callee.type === "MemberExpression" && callee.object.type === "Super") {
+    return {
+      kind: "super-property",
+      key: lowerMemberPropertyKey(builder, callee),
+    };
+  }
+
+  if (callee.type === "MemberExpression" && callee.property.type === "PrivateIdentifier") {
+    const reference = lowerPrivateMemberReference(builder, callee);
+    return {
+      kind: "private-property",
+      object: reference.object,
+      name: reference.name,
+    };
+  }
+
+  if (callee.type === "MemberExpression") {
+    const reference = lowerMemberReference(builder, callee);
     return {
       kind: "property",
       object: reference.object,
@@ -89,7 +108,7 @@ function lowerCallTarget(builder: FunctionIRBuilder, expression: CallExpression)
 
   return {
     kind: "value",
-    callee: lowerExpression(builder, expression.callee),
+    callee: lowerExpression(builder, callee),
   };
 }
 

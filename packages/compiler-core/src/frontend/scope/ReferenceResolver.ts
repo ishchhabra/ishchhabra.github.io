@@ -372,6 +372,11 @@ export class ReferenceResolver {
         }
         return;
 
+      case "TaggedTemplateExpression":
+        this.resolveExpression(expression.tag, scope);
+        this.resolveExpression(expression.quasi, scope);
+        return;
+
       case "ImportExpression":
         this.resolveExpression(expression.source, scope);
         if (expression.options !== null) {

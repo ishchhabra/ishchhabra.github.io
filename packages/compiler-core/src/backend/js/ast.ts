@@ -51,6 +51,7 @@ export type ExpressionNode =
   | ObjectExpressionNode
   | SequenceExpressionNode
   | SuperNode
+  | TaggedTemplateExpressionNode
   | TemplateLiteralNode
   | ThisExpressionNode
   | UnaryExpressionNode
@@ -352,6 +353,12 @@ export interface CallExpressionNode extends BaseNode {
   readonly callee: ExpressionNode;
   readonly arguments: Array<ExpressionNode | SpreadElementNode>;
   readonly optional: false;
+}
+
+export interface TaggedTemplateExpressionNode extends BaseNode {
+  readonly type: "TaggedTemplateExpression";
+  readonly tag: ExpressionNode;
+  readonly quasi: TemplateLiteralNode;
 }
 
 export interface ImportExpressionNode extends BaseNode {
@@ -1201,6 +1208,17 @@ export function callExpression(
     callee,
     arguments: args,
     optional: false,
+  };
+}
+
+export function taggedTemplateExpression(
+  tag: ExpressionNode,
+  quasi: TemplateLiteralNode,
+): TaggedTemplateExpressionNode {
+  return {
+    type: "TaggedTemplateExpression",
+    tag,
+    quasi,
   };
 }
 

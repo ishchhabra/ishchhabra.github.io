@@ -1,5 +1,5 @@
 import type { ArgumentListElement } from "../../../../ir/ops/calls/ArgumentListElement";
-import type { CallOp } from "../../../../ir/ops/calls/CallOp";
+import type { CallOp, CallTarget } from "../../../../ir/ops/calls/CallOp";
 import {
   callExpression,
   expressionStatement,
@@ -41,7 +41,7 @@ export function emitCallOp(context: CodegenContext, op: CallOp): ESTreeStatement
   }
 
   const expression = callExpression(
-    expressionForCallTarget(context, op),
+    expressionForCallTarget(context, op.target),
     op.args.map((arg) => emitCallArgument(context, arg)),
   );
 
@@ -62,42 +62,41 @@ function emitCallArgument(
   return argument.kind === "spread" ? spreadElement(value) : value;
 }
 
-function expressionForCallTarget(context: CodegenContext, op: CallOp): ESTreeExpression {
-  if (op.target.kind === "value") {
-    return context.expressionForValue(op.target.callee);
+export function expressionForCallTarget(
+  context: CodegenContext,
+  target: CallTarget,
+): ESTreeExpression {
+  if (target.kind === "value") {
+    return context.expressionForValue(target.callee);
   }
 
-  if (op.target.kind === "value-with-receiver") {
-    return memberExpression(
-      context.expressionForValue(op.target.callee),
-      identifier("call"),
-      false,
-    );
+  if (target.kind === "value-with-receiver") {
+    return memberExpression(context.expressionForValue(target.callee), identifier("call"), false);
   }
 
-  if (op.target.kind === "super-property") {
+  if (target.kind === "super-property") {
     return memberExpression(
       superExpression(),
-      op.target.key.kind === "static"
-        ? identifier(op.target.key.name)
-        : context.expressionForValue(op.target.key.value),
-      op.target.key.kind === "computed",
+      target.key.kind === "static"
+        ? identifier(target.key.name)
+        : context.expressionForValue(target.key.value),
+      target.key.kind === "computed",
     );
   }
 
-  if (op.target.kind === "private-property") {
+  if (target.kind === "private-property") {
     return memberExpression(
-      context.expressionForValue(op.target.object),
-      privateIdentifier(op.target.name.name),
+      context.expressionForValue(target.object),
+      privateIdentifier(target.name.name),
       false,
     );
   }
 
   return memberExpression(
-    context.expressionForValue(op.target.object),
-    op.target.key.kind === "static"
-      ? identifier(op.target.key.name)
-      : context.expressionForValue(op.target.key.value),
-    op.target.key.kind === "computed",
+    context.expressionForValue(target.object),
+    target.key.kind === "static"
+      ? identifier(target.key.name)
+      : context.expressionForValue(target.key.value),
+    target.key.kind === "computed",
   );
 }

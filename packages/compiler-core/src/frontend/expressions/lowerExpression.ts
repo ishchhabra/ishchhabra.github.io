@@ -5,6 +5,7 @@ import {
   Expression,
   NewExpression,
   SequenceExpression,
+  TaggedTemplateExpression,
   UpdateExpression,
   ImportExpression,
   JSXElement,
@@ -34,6 +35,7 @@ import { lowerObjectExpression } from "./lowerObjectExpression";
 import { lowerOptionalChain } from "./lowerOptionalChain";
 import { lowerRegExpLiteral } from "./lowerRegExpLiteral";
 import { lowerSequenceExpression } from "./lowerSequenceExpression";
+import { lowerTaggedTemplateExpression } from "./lowerTaggedTemplateExpression";
 import { lowerTemplateLiteral } from "./lowerTemplateLiteral";
 import { lowerThisExpression } from "./lowerThisExpression";
 import { lowerUnaryExpression } from "./lowerUnaryExpression";
@@ -117,6 +119,9 @@ export function lowerExpression(builder: FunctionIRBuilder, expression: Expressi
 
     case "TemplateLiteral":
       return lowerTemplateLiteral(builder, expression);
+
+    case "TaggedTemplateExpression":
+      return lowerTaggedTemplateExpression(builder, expression as TaggedTemplateExpression);
 
     case "ImportExpression":
       return lowerImportExpression(builder, expression as ImportExpression);
