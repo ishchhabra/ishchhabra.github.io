@@ -15,7 +15,7 @@ import type { ModuleExport } from "../ir/core/ModuleExport";
 import { ModuleIR } from "../ir/core/ModuleIR";
 import { Operation, OperationId } from "../ir/core/Operation";
 import type { PrivateName } from "../ir/core/PrivateName";
-import { TerminatorOp } from "../ir/core/TerminatorOp";
+import { TerminatorOp, type BlockTarget } from "../ir/core/TerminatorOp";
 import { DeclarationId, Value } from "../ir/core/Value";
 import { BindingIdentifierNode, ScopeOwnerNode, ScopeReferenceNode } from "./ast/types";
 import { lowerDeclarationInstantiation } from "./declarations/lowerDeclarationInstantiation";
@@ -44,7 +44,7 @@ export interface LoopControlContext {
   readonly kind: "loop";
   readonly label: string | null;
   readonly breakTarget: BasicBlock;
-  readonly continueTarget: BasicBlock;
+  readonly continueTarget: BlockTarget;
 }
 
 export interface LabelControlContext {
@@ -163,7 +163,7 @@ export class FunctionIRBuilder {
    * A null label resolves to the nearest enclosing loop. A non-null label must
    * name an enclosing labeled loop.
    */
-  public continueTarget(label: string | null): BasicBlock {
+  public continueTarget(label: string | null): BlockTarget {
     for (let index = this.#controls.length - 1; index >= 0; index--) {
       const context = this.#controls[index];
       if (context.kind !== "loop") continue;

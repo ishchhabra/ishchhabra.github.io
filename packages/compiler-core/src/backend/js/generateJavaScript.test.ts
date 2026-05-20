@@ -1120,6 +1120,15 @@ describe("generateJavaScript", () => {
     expect(module.run()).toBe(true);
   });
 
+  it("evaluates for-in logical objects once before iteration", async () => {
+    const source =
+      "export function run() { let calls = 0; const keys = []; function object() { calls++; return { a: 1, b: 2 }; } for (const key in object() || {}) { if (key === 'a') continue; keys.push(key); } return [calls, keys]; }";
+    const code = compileTestSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toEqual([1, ["b"]]);
+  });
+
   it("emits for-of loops", () => {
     const input = new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
       parseModule("test.js", "for (const x of xs) foo(x); bar();"),
@@ -1136,6 +1145,15 @@ describe("generateJavaScript", () => {
     expect(generateJavaScript(input)).toBe(
       "for (let $0 of xs) {\n  const { x: $d0 } = $0;\n\n  foo($d0);\n}",
     );
+  });
+
+  it("evaluates for-of logical iterables once before iteration", async () => {
+    const source =
+      "export function run() { let calls = 0; const values = []; function items() { calls++; return [1, 2]; } for (const value of items() || []) { if (value === 1) continue; values.push(value); } return [calls, values]; }";
+    const code = compileTestSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toEqual([1, [2]]);
   });
 
   it("emits for-of loops with empty destructuring declarations", async () => {

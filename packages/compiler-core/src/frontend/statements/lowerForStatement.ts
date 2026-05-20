@@ -50,7 +50,7 @@ export function lowerForStatement(
     kind: "loop" as const,
     label: options.label ?? null,
     breakTarget: exitBlock,
-    continueTarget: updateBlock,
+    continueTarget: blockTarget(updateBlock),
   };
 
   builder.setCurrentBlock(loopBlock);

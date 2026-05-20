@@ -29,7 +29,7 @@ export function lowerDoWhileStatement(
     kind: "loop" as const,
     label: options.label ?? null,
     breakTarget: exitBlock,
-    continueTarget: testBlock,
+    continueTarget: blockTarget(testBlock),
   };
 
   builder.terminate(new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock)));

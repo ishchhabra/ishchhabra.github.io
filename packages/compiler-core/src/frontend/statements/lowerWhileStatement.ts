@@ -32,7 +32,7 @@ export function lowerWhileStatement(
     kind: "loop" as const,
     label: options.label ?? null,
     breakTarget: exitBlock,
-    continueTarget: loopBlock,
+    continueTarget: blockTarget(loopBlock),
   };
 
   builder.setCurrentBlock(loopBlock);

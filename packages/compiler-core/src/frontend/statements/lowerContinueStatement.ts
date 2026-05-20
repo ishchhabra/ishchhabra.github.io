@@ -1,6 +1,5 @@
 import type { ContinueStatement } from "oxc-parser";
 
-import { blockTarget } from "../../ir/core/TerminatorOp";
 import { JumpTerminatorOp } from "../../ir/ops/control/JumpTerminatorOp";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";
 
@@ -13,5 +12,5 @@ export function lowerContinueStatement(
 ): void {
   const target = builder.continueTarget(statement.label?.name ?? null);
 
-  builder.terminate(new JumpTerminatorOp(builder.operationId(), blockTarget(target)));
+  builder.terminate(new JumpTerminatorOp(builder.operationId(), target));
 }
