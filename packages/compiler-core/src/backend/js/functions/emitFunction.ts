@@ -450,14 +450,21 @@ function emitSwitch(
         emittedCases.map((switchCase, index) => {
           const continuation =
             index + 1 < emittedCases.length
-              ? emittedCases[index + 1].target.block
+              ? targetEntryBlock(emittedCases[index + 1].target)
               : op.completionBlock;
 
           return switchCaseNode(
             switchCase.test === null ? null : context.expressionForValue(switchCase.test),
-            emitTargetBranchArm(context, switchCase.target, continuation, emitted, switchControls, {
-              implicitJumpTarget: continuation,
-            }),
+            emitTargetBranchArm(
+              context,
+              switchCase.target,
+              continuation,
+              emitted,
+              switchControls,
+              {
+                implicitJumpTarget: continuation,
+              },
+            ),
           );
         }),
       ),
