@@ -10,4 +10,7 @@ export {
 
 export { DominatorTree, DominatorTreeAnalysis } from "./DominatorTree";
 
-export type { PromotableBindings } from "./PromotableBinding";
+export { BindingEscapeAnalysis } from "./BindingEscapeAnalysis";
+export type { BindingEscapeInfo } from "./BindingEscapeAnalysis";
+export { BindingPromotionAnalysis } from "./BindingPromotionAnalysis";
+export type { BindingPromotionInfo } from "./BindingPromotionAnalysis";

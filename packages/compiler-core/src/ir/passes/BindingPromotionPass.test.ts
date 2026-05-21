@@ -1,104 +1,185 @@
 import { describe, expect, it } from "vitest";
 
 import { AnalysisManager } from "../analysis";
-import { BasicBlock, makeBlockId } from "../core/Block";
-import { FunctionIR, makeFunctionId } from "../core/FunctionIR";
+import { BasicBlock } from "../core/Block";
+import { FunctionIR } from "../core/FunctionIR";
 import { IRIdAllocator } from "../core/IRIdAllocator";
+import { ModuleIR } from "../core/ModuleIR";
 import { blockTarget } from "../core/TerminatorOp";
-import { makeDeclarationId, type DeclarationId, Value } from "../core/Value";
+import { type DeclarationId, Value } from "../core/Value";
 import { InitializeBindingOp } from "../ops/bindings/InitializeBindingOp";
 import { LoadBindingOp } from "../ops/bindings/LoadBindingOp";
 import { StoreBindingOp } from "../ops/bindings/StoreBindingOp";
 import { BranchTerminatorOp } from "../ops/control/BranchTerminatorOp";
 import { JumpTerminatorOp } from "../ops/control/JumpTerminatorOp";
 import { ReturnTerminatorOp } from "../ops/control/ReturnTerminatorOp";
+import { ConstantOp } from "../ops/constants/ConstantOp";
 import { createBindingPromotionPass } from "./BindingPromotionPass";
+import { createSSAConstructionPass } from "./ssa/SSAConstructionPass";
 
 describe("BindingPromotionPass", () => {
-  it("removes straight-line binding loads and writes", () => {
+  it("promotes straight-line binding loads and writes", () => {
     const ids = new IRIdAllocator();
-    const declaration = makeDeclarationId(1);
-    const entry = block(1);
-    const initial = value(ids, declaration);
-    const loaded = value(ids);
+    const declaration = ids.declarationId();
+    const entry = block(ids);
+    const initialValue = value(ids);
+    const initialBindingValue = value(ids, declaration);
+    const loadResult = value(ids);
 
+    entry.appendOp(new ConstantOp(ids.operationId(), 1, initialValue));
     entry.appendOp(
-      new InitializeBindingOp(ids.operationId(), declaration, initial, value(ids, declaration)),
+      new InitializeBindingOp(ids.operationId(), declaration, initialValue, initialBindingValue),
     );
-    entry.appendOp(new LoadBindingOp(ids.operationId(), declaration, loaded));
-    entry.setTerminator(new ReturnTerminatorOp(ids.operationId(), loaded));
+    entry.appendOp(new LoadBindingOp(ids.operationId(), declaration, loadResult));
+    entry.setTerminator(new ReturnTerminatorOp(ids.operationId(), loadResult));
 
-    const fn = functionIR(entry);
+    const { fn } = moduleFunction(ids, [entry]);
 
-    createBindingPromotionPass({ ids, declarations: [declaration] }).run(fn, new AnalysisManager());
+    runPromotion(ids, fn);
 
-    expect(entry.operations.map((op) => op.constructor.name)).toEqual(["ReturnTerminatorOp"]);
-    expect((entry.terminator as ReturnTerminatorOp).value).toBe(initial);
+    expect(entry.operations.some(isBindingOperation)).toBe(false);
+    expect((entry.terminator as ReturnTerminatorOp).value).toBe(initialValue);
   });
 
-  it("uses block params for values merged from multiple predecessors", () => {
+  it("promotes binding joins through SSA block parameters", () => {
     const ids = new IRIdAllocator();
-    const declaration = makeDeclarationId(1);
-    const entry = block(1);
-    const thenBlock = block(2);
-    const elseBlock = block(3);
-    const joinBlock = block(4);
+    const declaration = ids.declarationId();
+    const entry = block(ids);
+    const thenBlock = block(ids);
+    const join = block(ids);
     const condition = value(ids);
-    const initial = value(ids, declaration);
-    const thenValue = value(ids, declaration);
-    const elseValue = value(ids, declaration);
-    const loaded = value(ids);
+    const initialValue = value(ids);
+    const initialBindingValue = value(ids, declaration);
+    const updatedValue = value(ids);
+    const updatedBindingValue = value(ids, declaration);
+    const loadResult = value(ids);
 
+    entry.appendOp(new ConstantOp(ids.operationId(), true, condition));
+    entry.appendOp(new ConstantOp(ids.operationId(), 1, initialValue));
     entry.appendOp(
-      new InitializeBindingOp(ids.operationId(), declaration, initial, value(ids, declaration)),
+      new InitializeBindingOp(ids.operationId(), declaration, initialValue, initialBindingValue),
     );
     entry.setTerminator(
       new BranchTerminatorOp(
         ids.operationId(),
         condition,
         blockTarget(thenBlock),
-        blockTarget(elseBlock),
+        blockTarget(join),
       ),
     );
 
+    thenBlock.appendOp(new ConstantOp(ids.operationId(), 2, updatedValue));
     thenBlock.appendOp(
-      new StoreBindingOp(ids.operationId(), declaration, thenValue, value(ids, declaration)),
+      new StoreBindingOp(ids.operationId(), declaration, updatedValue, updatedBindingValue),
     );
-    thenBlock.setTerminator(new JumpTerminatorOp(ids.operationId(), blockTarget(joinBlock)));
+    thenBlock.setTerminator(new JumpTerminatorOp(ids.operationId(), blockTarget(join)));
 
-    elseBlock.appendOp(
-      new StoreBindingOp(ids.operationId(), declaration, elseValue, value(ids, declaration)),
+    join.appendOp(new LoadBindingOp(ids.operationId(), declaration, loadResult));
+    join.setTerminator(new ReturnTerminatorOp(ids.operationId(), loadResult));
+
+    const { fn } = moduleFunction(ids, [entry, thenBlock, join]);
+
+    runPromotion(ids, fn);
+
+    const branch = entry.terminator as BranchTerminatorOp;
+    const jump = thenBlock.terminator as JumpTerminatorOp;
+
+    expect(entry.operations.some(isBindingOperation)).toBe(false);
+    expect(thenBlock.operations.some(isBindingOperation)).toBe(false);
+    expect(join.operations.some(isBindingOperation)).toBe(false);
+    expect(join.params).toHaveLength(1);
+    expect(branch.falseTarget.operands.forwarded).toEqual([initialValue]);
+    expect(jump.jumpTarget.operands.forwarded).toEqual([updatedValue]);
+    expect((join.terminator as ReturnTerminatorOp).value).toBe(join.params[0]);
+  });
+
+  it("keeps exported bindings materialized", () => {
+    const ids = new IRIdAllocator();
+    const declaration = ids.declarationId();
+    const entry = block(ids);
+    const initialValue = value(ids);
+    const initialBindingValue = value(ids, declaration);
+    const loadResult = value(ids);
+
+    entry.appendOp(new ConstantOp(ids.operationId(), 1, initialValue));
+    entry.appendOp(
+      new InitializeBindingOp(ids.operationId(), declaration, initialValue, initialBindingValue),
     );
-    elseBlock.setTerminator(new JumpTerminatorOp(ids.operationId(), blockTarget(joinBlock)));
+    entry.appendOp(new LoadBindingOp(ids.operationId(), declaration, loadResult));
+    entry.setTerminator(new ReturnTerminatorOp(ids.operationId(), loadResult));
 
-    joinBlock.appendOp(new LoadBindingOp(ids.operationId(), declaration, loaded));
-    joinBlock.setTerminator(new ReturnTerminatorOp(ids.operationId(), loaded));
+    const { fn, moduleIR } = moduleFunction(ids, [entry]);
+    moduleIR.addExport({
+      kind: "local",
+      localName: "x",
+      exportedName: { kind: "identifier", name: "x" },
+      declarationId: declaration,
+    });
 
-    const fn = functionIR(entry, thenBlock, elseBlock, joinBlock);
+    runPromotion(ids, fn);
 
-    createBindingPromotionPass({ ids, declarations: [declaration] }).run(fn, new AnalysisManager());
+    expect(entry.operations.some(isBindingOperation)).toBe(true);
+    expect((entry.terminator as ReturnTerminatorOp).value).toBe(loadResult);
+  });
 
-    expect(joinBlock.params).toHaveLength(1);
-    expect(joinBlock.params[0].declarationId).toBe(declaration);
-    expect((thenBlock.terminator as JumpTerminatorOp).jumpTarget.operands.forwarded).toEqual([
-      thenValue,
-    ]);
-    expect((elseBlock.terminator as JumpTerminatorOp).jumpTarget.operands.forwarded).toEqual([
-      elseValue,
-    ]);
-    expect((joinBlock.terminator as ReturnTerminatorOp).value).toBe(joinBlock.params[0]);
+  it("keeps captured bindings materialized", () => {
+    const ids = new IRIdAllocator();
+    const declaration = ids.declarationId();
+    const entry = block(ids);
+    const initialValue = value(ids);
+    const initialBindingValue = value(ids, declaration);
+    const loadResult = value(ids);
+
+    entry.appendOp(new ConstantOp(ids.operationId(), 1, initialValue));
+    entry.appendOp(
+      new InitializeBindingOp(ids.operationId(), declaration, initialValue, initialBindingValue),
+    );
+    entry.appendOp(new LoadBindingOp(ids.operationId(), declaration, loadResult));
+    entry.setTerminator(new ReturnTerminatorOp(ids.operationId(), loadResult));
+
+    const { fn, moduleIR } = moduleFunction(ids, [entry]);
+    moduleIR.addFunction(
+      new FunctionIR(ids.functionId(), {
+        params: [{ kind: "capture", declarationId: declaration }],
+        blocks: [block(ids)],
+      }),
+    );
+
+    runPromotion(ids, fn);
+
+    expect(entry.operations.some(isBindingOperation)).toBe(true);
+    expect((entry.terminator as ReturnTerminatorOp).value).toBe(loadResult);
   });
 });
 
-function block(id: number): BasicBlock {
-  return new BasicBlock(makeBlockId(id));
+function runPromotion(ids: IRIdAllocator, fn: FunctionIR): void {
+  const analyses = new AnalysisManager();
+
+  createSSAConstructionPass({ ids }).run(fn, analyses);
+  createBindingPromotionPass().run(fn, analyses);
 }
 
-function functionIR(entry: BasicBlock, ...blocks: BasicBlock[]): FunctionIR {
-  return new FunctionIR(makeFunctionId(1), {
-    params: [],
-    blocks: [entry, ...blocks],
-  });
+function moduleFunction(
+  ids: IRIdAllocator,
+  blocks: readonly BasicBlock[],
+): { readonly moduleIR: ModuleIR; readonly fn: FunctionIR } {
+  const moduleIR = new ModuleIR(ids.moduleId());
+  const fn = new FunctionIR(ids.functionId(), { params: [], blocks });
+
+  moduleIR.addFunction(fn);
+  moduleIR.setEntryFunction(fn);
+
+  return { moduleIR, fn };
+}
+
+function isBindingOperation(op: unknown): boolean {
+  return (
+    op instanceof InitializeBindingOp || op instanceof LoadBindingOp || op instanceof StoreBindingOp
+  );
+}
+
+function block(ids: IRIdAllocator): BasicBlock {
+  return new BasicBlock(ids.blockId());
 }
 
 function value(ids: IRIdAllocator, declarationId: DeclarationId | null = null): Value {

@@ -3,6 +3,7 @@ import { AnalysisManager } from "../ir/analysis";
 import type { FunctionIR } from "../ir/core/FunctionIR";
 import { IRIdAllocator } from "../ir/core/IRIdAllocator";
 import type { ModuleIR } from "../ir/core/ModuleIR";
+import { createBindingPromotionPass } from "../ir/passes/BindingPromotionPass";
 import { createConstantPropagationPass } from "../ir/passes/ConstantPropagationPass";
 import { createCopyPropagationPass } from "../ir/passes/CopyPropagationPass";
 import { createDeadCodeEliminationPass } from "../ir/passes/DeadCodeEliminationPass";
@@ -23,6 +24,7 @@ export function runCompilerPasses(buildResult: ModuleIRBuildResult, ids: IRIdAll
 
   runFunctionPipeline(moduleIR, analyses, () => [
     createSSAConstructionPass({ ids }),
+    createBindingPromotionPass(),
     createConstantPropagationPass({ ids }),
   ]);
 

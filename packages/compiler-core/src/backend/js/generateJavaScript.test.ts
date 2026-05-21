@@ -886,7 +886,7 @@ describe("generateJavaScript", () => {
       "export function run() { const log = []; let n = 0; while (n++ < 3) { log.push(n); } return log; }";
 
     expect(compileTestSource(source)).toBe(
-      "function $d0() {\n  let $17;\n  let $16;\n  let $18;\n  let $19;\n  const $d1 = [];\n\n  $17 = $d1;\n\n  let $d2 = 0;\n\n  $16 = $d2;\n\n  while (($18 = $d2, $d2 = $18 + 1, $19 = $d2, $18 < 3)) {\n    $d1.push($d2);\n    $16 = $19;\n  }\n\n  return $d1;\n}\n\nexport { $d0 as run };",
+      "function $d0() {\n  let $17;\n  let $16;\n  let $18;\n\n  $17 = [];\n  $16 = 0;\n\n  while (($18 = $16 + 1, $16 < 3)) {\n    $17.push($18);\n    $16 = $18;\n  }\n\n  return $17;\n}\n\nexport { $d0 as run };",
     );
   });
 
@@ -903,7 +903,7 @@ describe("generateJavaScript", () => {
       "export function run() { let x = 0; let y = 0; while (x < 4) { x = x + 1; if (x < 3) continue; y = y + x; } return y; }";
 
     expect(compileTestSource(source)).toBe(
-      "function $d0() {\n  let $23;\n  let $24;\n  let $21;\n  let $22;\n  let $25;\n  let $26;\n  let $d1 = 0;\n\n  $23 = $d1;\n\n  let $d2 = 0;\n\n  $24 = $d2;\n  $21 = $23;\n  $22 = $24;\n\n  while ($d1 < 4) {\n    $d1 = $d1 + 1;\n    $25 = $d1;\n\n    if ($d1 < 3) {\n      $21 = $25;\n\n      continue;\n    }\n\n    $d2 = $d2 + $d1;\n    $26 = $d2;\n    $21 = $25;\n    $22 = $26;\n  }\n\n  return $d2;\n}\n\nexport { $d0 as run };",
+      "function $d0() {\n  let $21;\n  let $22;\n  let $23;\n  let $24;\n\n  $21 = 0;\n  $22 = 0;\n\n  while ($21 < 4) {\n    $23 = $21 + 1;\n\n    if ($23 < 3) {\n      $21 = $23;\n\n      continue;\n    }\n\n    $24 = $22 + $23;\n    $21 = $23;\n    $22 = $24;\n  }\n\n  return $22;\n}\n\nexport { $d0 as run };",
     );
   });
 
@@ -976,7 +976,7 @@ describe("generateJavaScript", () => {
       "export function run() { const log = []; try { switch (1) { case 1: for (let j = 0; j < 2; j++) { if (j === 1) break; log.push('j' + j); } break; default: log.push('d'); } } finally { log.push('f'); } return log; }";
 
     expect(compileTestSource(source)).toBe(
-      'function $d0() {\n  let $34;\n  let $31;\n  let $32;\n  let $30;\n  const $d1 = [];\n\n  $34 = $d1;\n\n  try {\n    switch (1) {\n      case 1:\n        for (let $d2 = ($30 = 0, $30); $d2 < 2; ($d2 = $d2 + 1, $30 = $d2)) {\n          if ($d2 === 1) {\n            break;\n          }\n\n          $d1.push("j" + $d2);\n        }\n        $31 = $30;\n        break;\n\n      default:\n        $d1.push("d");\n        $31 = undefined;\n        break;\n    }\n\n    $32 = $31;\n  } finally {\n    $32 = undefined;\n    $d1.push("f");\n  }\n\n  return $d1;\n}\n\nexport { $d0 as run };',
+      'function $d0() {\n  let $34;\n  let $31;\n  let $32;\n  let $30;\n\n  $34 = [];\n\n  try {\n    switch (1) {\n      case 1:\n        for (($30 = 0); $30 < 2; $30 = $30 + 1) {\n          if ($30 === 1) {\n            break;\n          }\n\n          $34.push("j" + $30);\n        }\n        $31 = $30;\n        break;\n\n      default:\n        $34.push("d");\n        $31 = undefined;\n        break;\n    }\n\n    $32 = $31;\n  } finally {\n    $32 = undefined;\n    $34.push("f");\n  }\n\n  return $34;\n}\n\nexport { $d0 as run };',
     );
   });
 
@@ -985,7 +985,7 @@ describe("generateJavaScript", () => {
       "export function run() { const log = []; function f() { outer: while (true) { try { return 'r'; } finally { break outer; } } return 'after'; } log.push(f()); return log; }";
 
     expect(compileTestSource(source)).toBe(
-      'function $d0() {\n  let $14;\n  let $15;\n\n  function $d2() {\n    outer: while (true) {\n      try {\n        return "r";\n      } finally {\n        break;\n      }\n    }\n\n    return "after";\n  }\n\n  $14 = $d2;\n\n  const $d1 = [];\n\n  $15 = $d1;\n  $d1.push($d2());\n\n  return $d1;\n}\n\nexport { $d0 as run };',
+      'function $d0() {\n  let $14;\n  let $15;\n\n  $14 = function () {\n    outer: while (true) {\n      try {\n        return "r";\n      } finally {\n        break;\n      }\n    }\n\n    return "after";\n  };\n\n  $15 = [];\n  $15.push($14());\n\n  return $15;\n}\n\nexport { $d0 as run };',
     );
   });
 
@@ -1024,7 +1024,7 @@ describe("generateJavaScript", () => {
       "export function run() { const log = []; let n = 10; for (let n = 0; n < 2; n++) { log.push(n); } log.push(n); return log; }";
 
     expect(compileTestSource(source)).toBe(
-      "function $d0() {\n  let $23;\n  let $24;\n  let $22;\n  const $d1 = [];\n\n  $23 = $d1;\n\n  let $d2 = 10;\n\n  $24 = $d2;\n\n  for (let $d3 = ($22 = 0, $22); $d3 < 2; ($d3 = $d3 + 1, $22 = $d3)) {\n    $d1.push($d3);\n  }\n\n  $d1.push($d2);\n\n  return $d1;\n}\n\nexport { $d0 as run };",
+      "function $d0() {\n  let $23;\n  let $22;\n\n  $23 = [];\n\n  for (($22 = 0); $22 < 2; $22 = $22 + 1) {\n    $23.push($22);\n  }\n\n  $23.push(10);\n\n  return $23;\n}\n\nexport { $d0 as run };",
     );
   });
 
@@ -1276,7 +1276,7 @@ describe("generateJavaScript", () => {
     const code = compileTestSource(source);
     const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
 
-    expect(code).toContain("for await (const");
+    expect(code).toContain("for await (let");
     await expect(module.run()).resolves.toEqual([1, 2]);
   });
 });
