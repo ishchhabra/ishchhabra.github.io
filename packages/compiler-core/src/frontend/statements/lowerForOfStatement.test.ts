@@ -15,16 +15,18 @@ describe("lowerForOfStatement", () => {
     if (fn === null) throw new Error("Expected entry function");
 
     const entryJump = fn.entryBlock.terminator as JumpTerminatorOp;
-    const loop = entryJump.targetBlock.terminator as ForOfTerminatorOp;
+    const headJump = entryJump.targetBlock.terminator as JumpTerminatorOp;
+    const loop = headJump.targetBlock.terminator as ForOfTerminatorOp;
     const bodyJump = loop.bodyBlock.terminator as JumpTerminatorOp;
 
     expect(entryJump).toBeInstanceOf(JumpTerminatorOp);
+    expect(headJump).toBeInstanceOf(JumpTerminatorOp);
     expect(loop).toBeInstanceOf(ForOfTerminatorOp);
     expect(loop.bodyBlock.params).toHaveLength(1);
     expect(loop.bodyTarget.operands.produced).toEqual(loop.bodyBlock.params);
     expect(loop.bodyTarget.operands.forwarded).toEqual([]);
     expect(bodyJump).toBeInstanceOf(JumpTerminatorOp);
-    expect(bodyJump.targetBlock).toBe(entryJump.targetBlock);
+    expect(bodyJump.targetBlock).toBe(headJump.targetBlock);
     expect(loop.bodyBlock.operations.map((op) => op.constructor.name)).toEqual([
       "InitializeBindingOp",
       "LoadGlobalOp",
@@ -46,7 +48,8 @@ describe("lowerForOfStatement", () => {
     if (fn === null) throw new Error("Expected entry function");
 
     const entryJump = fn.entryBlock.terminator as JumpTerminatorOp;
-    const loop = entryJump.targetBlock.terminator as ForOfTerminatorOp;
+    const headJump = entryJump.targetBlock.terminator as JumpTerminatorOp;
+    const loop = headJump.targetBlock.terminator as ForOfTerminatorOp;
 
     expect(loop).toBeInstanceOf(ForOfTerminatorOp);
     expect(loop.isAwait).toBe(true);

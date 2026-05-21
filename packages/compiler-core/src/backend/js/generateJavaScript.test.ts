@@ -753,7 +753,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "let $1;\n\nif (ready) {\n  $1 = items;\n\n  for (const $d0 of $1) {\n    visit($d0);\n  }\n}\n\ndone();",
+      "let $1;\n\nif (ready) {\n  for (const $d0 of items) {\n    visit($d0);\n  }\n}\n\ndone();",
     );
   });
 
@@ -766,7 +766,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "let $0;\nlet $4;\n\n$0 = outers;\n\nfor (const $d0 of $0) {\n  $4 = inners;\n\n  for (const $d1 of $4) {\n    visit($d0, $d1);\n  }\n}",
+      "let $0;\nlet $4;\n\nfor (const $d0 of outers) {\n  for (const $d1 of inners) {\n    visit($d0, $d1);\n  }\n}",
     );
   });
 
@@ -947,7 +947,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "let $2;\n\nlabelSwitch: {\n  switch (i) {\n    case 1:\n      $2 = xs;\n      for (const $d0 of $2) {\n        if ($d0 === 2) {\n          break labelSwitch;\n        }\n\n        foo($d0);\n      }\n      bar();\n      break;\n  }\n\n  break labelSwitch;\n}\n\nbaz();",
+      "let $2;\n\nlabelSwitch: {\n  switch (i) {\n    case 1:\n      for (const $d0 of xs) {\n        if ($d0 === 2) {\n          break labelSwitch;\n        }\n\n        foo($d0);\n      }\n      bar();\n      break;\n  }\n\n  break labelSwitch;\n}\n\nbaz();",
     );
   });
 
@@ -1139,7 +1139,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "let $0;\n\n$0 = obj;\n\nfor (const $d0 in $0) {\n  foo($d0);\n}\n\nbar();",
+      "let $0;\n\nfor (const $d0 in obj) {\n  foo($d0);\n}\n\nbar();",
     );
   });
 
@@ -1149,13 +1149,31 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "let $0;\n\n$0 = obj;\n\nfor (let $1 in $0) {\n  const { x: $d0 } = $1;\n\n  foo($d0);\n}",
+      "let $0;\n\nfor (let $1 in obj) {\n  const { x: $d0 } = $1;\n\n  foo($d0);\n}",
     );
   });
 
   it("preserves for-in lexical declaration TDZ while evaluating the object", async () => {
     const source =
       'export function run() { let x = "outside"; try { for (let x in { x }) {} return "no throw"; } catch (e) { return e instanceof ReferenceError; } }';
+    const code = compileTestSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toBe(true);
+  });
+
+  it("preserves for-in lexical declaration TDZ for closures created while evaluating the object", async () => {
+    const source =
+      'export function run() { let x = "outside"; let probe; for (let x in { i: probe = function () { return typeof x; } }) {} try { probe(); return "no throw"; } catch (e) { return e instanceof ReferenceError; } }';
+    const code = compileTestSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toBe(true);
+  });
+
+  it("preserves for-in lexical declaration TDZ through conditional object evaluation", async () => {
+    const source =
+      'export function run() { let x = "outside"; let probe; for (let x in (true ? { i: (probe = function () { return typeof x; }, 1) } : {})) {} try { probe(); return "no throw"; } catch (e) { return e instanceof ReferenceError; } }';
     const code = compileTestSource(source);
     const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
 
@@ -1177,7 +1195,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "let $0;\n\n$0 = xs;\n\nfor (const $d0 of $0) {\n  foo($d0);\n}\n\nbar();",
+      "let $0;\n\nfor (const $d0 of xs) {\n  foo($d0);\n}\n\nbar();",
     );
   });
 
@@ -1187,7 +1205,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "let $0;\n\n$0 = xs;\n\nfor (let $1 of $0) {\n  const { x: $d0 } = $1;\n\n  foo($d0);\n}",
+      "let $0;\n\nfor (let $1 of xs) {\n  const { x: $d0 } = $1;\n\n  foo($d0);\n}",
     );
   });
 
@@ -1198,6 +1216,24 @@ describe("generateJavaScript", () => {
     const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
 
     expect(module.run()).toEqual([1, [2]]);
+  });
+
+  it("preserves for-of lexical declaration TDZ for closures created while evaluating the iterable", async () => {
+    const source =
+      'export function run() { let x = "outside"; let probe; for (let x of (probe = function () { return typeof x; }, [])) {} try { probe(); return "no throw"; } catch (e) { return e instanceof ReferenceError; } }';
+    const code = compileTestSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toBe(true);
+  });
+
+  it("preserves for-of lexical declaration TDZ through logical iterable evaluation", async () => {
+    const source =
+      'export function run() { let x = "outside"; let probe; for (let x of ((probe = function () { return typeof x; }) && [])) {} try { probe(); return "no throw"; } catch (e) { return e instanceof ReferenceError; } }';
+    const code = compileTestSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toBe(true);
   });
 
   it("evaluates for-in sequence objects once before iteration", async () => {

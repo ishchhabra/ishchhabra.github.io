@@ -32,6 +32,7 @@ export function lowerForOfStatement(
 ): void {
   lowerDeclarationInstantiation(builder, statement);
 
+  const headBlock = builder.createBlock();
   const loopBlock = builder.createBlock();
   const bodyBlock = builder.createBlock();
   const continuationBlock = builder.createBlock();
@@ -42,8 +43,13 @@ export function lowerForOfStatement(
   const iterationValue = builder.createValue();
   bodyBlock.appendParam(iterationValue);
 
+  builder.terminate(new JumpTerminatorOp(builder.operationId(), blockTarget(headBlock)));
+  builder.setCurrentBlock(headBlock);
+
   const iterable = lowerExpression(builder, statement.right);
-  builder.terminate(new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock, [iterable])));
+  builder.terminate(
+    new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock, [iterable])),
+  );
 
   const loopContinueTarget = blockTarget(loopBlock, [loopIterable]);
 

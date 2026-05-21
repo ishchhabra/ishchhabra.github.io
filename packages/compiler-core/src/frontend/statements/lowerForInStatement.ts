@@ -32,6 +32,7 @@ export function lowerForInStatement(
 ): void {
   lowerDeclarationInstantiation(builder, statement);
 
+  const headBlock = builder.createBlock();
   const loopBlock = builder.createBlock();
   const bodyBlock = builder.createBlock();
   const continuationBlock = builder.createBlock();
@@ -41,6 +42,9 @@ export function lowerForInStatement(
 
   const propertyKey = builder.createValue();
   bodyBlock.appendParam(propertyKey);
+
+  builder.terminate(new JumpTerminatorOp(builder.operationId(), blockTarget(headBlock)));
+  builder.setCurrentBlock(headBlock);
 
   const object = lowerExpression(builder, statement.right);
   builder.terminate(new JumpTerminatorOp(builder.operationId(), blockTarget(loopBlock, [object])));

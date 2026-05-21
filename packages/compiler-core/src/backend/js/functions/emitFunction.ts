@@ -284,6 +284,13 @@ function emitBlock(
 ): ESTreeStatement[] {
   if (emitted.has(block)) return [];
 
+  const forInOfLoop = forInOfLoopFromHeadBlock(block);
+  if (forInOfLoop !== null) {
+    return forInOfLoop.kind === "for-in"
+      ? emitForIn(context, forInOfLoop.loop, emitted, controls, null, block)
+      : emitForOf(context, forInOfLoop.loop, emitted, controls, null, block);
+  }
+
   const initLoop = forLoopFromInitBlock(block);
   if (initLoop !== null) {
     return emitFor(context, initLoop, block, emitted, controls);
@@ -376,6 +383,7 @@ function emitForIn(
   emitted: Set<BasicBlock>,
   controls: readonly EmitControlContext[],
   continuation: BasicBlock | null = null,
+  headBlock: BasicBlock | null = null,
 ): ESTreeStatement[] {
   const loopBlock = loop.ownerBlock;
   if (loopBlock === null) {
@@ -394,7 +402,13 @@ function emitForIn(
     continueTarget: loopBlock,
   };
   const headerDeclaration = forInOfLexicalHeader(context, loop.bodyBlock, propertyKey);
-  const object = forInOfHeadExpression(context, loopBlock, loop.object);
+  const object = forInOfHeadExpression(
+    context,
+    headBlock ?? loopBlock,
+    loopBlock,
+    loop.object,
+    emitted,
+  );
   const body = emitTargetBranchArm(context, loop.bodyTarget, loopBlock, emitted, [
     ...controls,
     loopControl,
@@ -537,6 +551,7 @@ function emitForOf(
   emitted: Set<BasicBlock>,
   controls: readonly EmitControlContext[],
   continuation: BasicBlock | null = null,
+  headBlock: BasicBlock | null = null,
 ): ESTreeStatement[] {
   const loopBlock = loop.ownerBlock;
   if (loopBlock === null) {
@@ -555,7 +570,13 @@ function emitForOf(
     continueTarget: loopBlock,
   };
   const headerDeclaration = forInOfLexicalHeader(context, loop.bodyBlock, iterationValue);
-  const iterable = forInOfHeadExpression(context, loopBlock, loop.iterable);
+  const iterable = forInOfHeadExpression(
+    context,
+    headBlock ?? loopBlock,
+    loopBlock,
+    loop.iterable,
+    emitted,
+  );
   const body = emitTargetBranchArm(context, loop.bodyTarget, loopBlock, emitted, [
     ...controls,
     loopControl,
@@ -598,9 +619,15 @@ function forInOfLexicalHeader(
 
 function forInOfHeadExpression(
   context: CodegenContext,
+  headBlock: BasicBlock,
   loopBlock: BasicBlock,
   value: Value,
+  emitted: Set<BasicBlock>,
 ): ESTreeExpression {
+  if (headBlock !== loopBlock) {
+    return emitValueBlockExpression(context, headBlock, loopBlock, emitted);
+  }
+
   const statements: ESTreeStatement[] = [];
   const terminator = loopBlock.terminator;
 
@@ -1661,6 +1688,13 @@ export function emitBranchArm(
 
   if (emitted.has(block)) return [];
 
+  const forInOfLoop = forInOfLoopFromHeadBlock(block);
+  if (forInOfLoop !== null) {
+    return forInOfLoop.kind === "for-in"
+      ? emitForIn(context, forInOfLoop.loop, emitted, controls, continuation, block)
+      : emitForOf(context, forInOfLoop.loop, emitted, controls, continuation, block);
+  }
+
   const initLoop = forLoopFromInitBlock(block);
   if (initLoop !== null) {
     return emitFor(context, initLoop, block, emitted, controls, continuation);
@@ -1833,6 +1867,47 @@ function forLoopFromInitBlock(block: BasicBlock): ForTerminatorOp | null {
   if (loopTerminator.initTarget?.block !== block) return null;
 
   return loopTerminator;
+}
+
+type ForInOfLoopFromHeadBlock =
+  | { readonly kind: "for-in"; readonly loop: ForInTerminatorOp }
+  | { readonly kind: "for-of"; readonly loop: ForOfTerminatorOp };
+
+function forInOfLoopFromHeadBlock(block: BasicBlock): ForInOfLoopFromHeadBlock | null {
+  const terminator = block.terminator;
+  if (terminator === null) return null;
+
+  if (terminator instanceof JumpTerminatorOp) {
+    return forInOfLoopFromHeadJump(terminator);
+  }
+
+  if (isValueRegionTerminator(terminator)) {
+    return forInOfLoopFromCompletionBlock(terminator.completionBlock);
+  }
+
+  return null;
+}
+
+function forInOfLoopFromHeadJump(terminator: JumpTerminatorOp): ForInOfLoopFromHeadBlock | null {
+  const result = forInOfLoopFromCompletionBlock(terminator.targetBlock);
+  if (result === null) return null;
+
+  const args = successorValues(terminator.jumpTarget);
+  if (args.length !== 1) return null;
+
+  const loopValue = result.kind === "for-in" ? result.loop.object : result.loop.iterable;
+  if (args[0] === loopValue) return null;
+
+  return result;
+}
+
+function forInOfLoopFromCompletionBlock(block: BasicBlock): ForInOfLoopFromHeadBlock | null {
+  const terminator = block.terminator;
+  if (terminator instanceof ForInTerminatorOp) return { kind: "for-in", loop: terminator };
+  if (terminator instanceof ForOfTerminatorOp) return { kind: "for-of", loop: terminator };
+  if (terminator instanceof JumpTerminatorOp) return forInOfLoopFromHeadJump(terminator);
+
+  return null;
 }
 
 function emitContinuation(
