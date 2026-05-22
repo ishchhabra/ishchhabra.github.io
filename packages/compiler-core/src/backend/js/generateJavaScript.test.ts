@@ -747,6 +747,15 @@ describe("generateJavaScript", () => {
     );
   });
 
+  it("emits promoted catch values across nested try completions", async () => {
+    const source =
+      "export function run() { try { throw 1; } catch (e) { try {} catch (e) {} return e; } }";
+    const code = compileTestSource(source);
+    const module = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(code)}`);
+
+    expect(module.run()).toBe(1);
+  });
+
   it("emits loops inside branch arms", () => {
     const input = new ModuleIRBuilder({ ids: new IRIdAllocator() }).build(
       parseModule("test.js", "if (ready) { for (const item of items) visit(item); } done();"),

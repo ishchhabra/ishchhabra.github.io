@@ -15,6 +15,8 @@ export type BlockId = number & {
   readonly [opaqueBlockId]: "BlockId";
 };
 
+export type BasicBlockKind = "default" | "copy";
+
 export function makeBlockId(id: number): BlockId {
   return id as BlockId;
 }
@@ -41,7 +43,10 @@ export class BasicBlock {
    */
   public ownerFunction: FunctionIR | null = null;
 
-  constructor(public readonly id: BlockId) {}
+  constructor(
+    public readonly id: BlockId,
+    public readonly kind: BasicBlockKind = "default",
+  ) {}
 
   /**
    * Operations in program order.

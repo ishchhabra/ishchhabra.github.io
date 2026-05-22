@@ -193,7 +193,7 @@ class SSAElimination {
    * with the retained edge arguments.
    */
   private createEdgeCopyBlock(rewrite: EdgeRewrite): BasicBlock {
-    const edgeBlock = new BasicBlock(this.options.ids.blockId());
+    const edgeBlock = new BasicBlock(this.options.ids.blockId(), "copy");
     const producedParams = rewrite.target.operands.produced.map(
       () => new Value(this.options.ids.valueId()),
     );

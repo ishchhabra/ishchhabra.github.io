@@ -71,6 +71,8 @@ describe("SSAEliminationPass", () => {
 
     expect(trueEdge).not.toBe(thenBlock);
     expect(falseEdge).not.toBe(elseBlock);
+    expect(trueEdge.kind).toBe("copy");
+    expect(falseEdge.kind).toBe("copy");
     expect(trueEdge.operations[0]).toBeInstanceOf(CopyValueOp);
     expect(falseEdge.operations[0]).toBeInstanceOf(CopyValueOp);
     expect((trueEdge.operations[0] as CopyValueOp).source).toBe(trueSource);

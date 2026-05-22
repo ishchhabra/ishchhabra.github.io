@@ -320,7 +320,7 @@ class FunctionInliningPass {
     };
 
     for (const sourceBlock of plan.callee.blocks) {
-      const clonedBlock = new BasicBlock(ids.blockId());
+      const clonedBlock = new BasicBlock(ids.blockId(), sourceBlock.kind);
       blocks.set(sourceBlock, clonedBlock);
       caller.addBlock(clonedBlock);
 

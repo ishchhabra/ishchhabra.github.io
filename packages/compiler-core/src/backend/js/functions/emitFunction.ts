@@ -455,16 +455,9 @@ function emitSwitch(
 
           return switchCaseNode(
             switchCase.test === null ? null : context.expressionForValue(switchCase.test),
-            emitTargetBranchArm(
-              context,
-              switchCase.target,
-              continuation,
-              emitted,
-              switchControls,
-              {
-                implicitJumpTarget: continuation,
-              },
-            ),
+            emitTargetBranchArm(context, switchCase.target, continuation, emitted, switchControls, {
+              implicitJumpTarget: continuation,
+            }),
           );
         }),
       ),
@@ -1399,7 +1392,7 @@ function emitLoopTestEdge(
   const entry = emitBlockTargetEntry(context, target, emitted, new Set([continuation]));
   if (entry.entryBlock !== continuation) {
     throw new Error(
-      `Loop test edge must target bb${continuation.id} directly or through an edge-copy block`,
+      `Loop test edge must target bb${continuation.id} directly or through a copy block`,
     );
   }
 
@@ -1422,10 +1415,10 @@ function emitBlockTargetEntry(
   let entryTarget = target;
   let block = target.block;
 
-  while (!stopBlocks.has(block) && !context.isFallthrough(block) && isEdgeCopyBlock(block)) {
+  while (!stopBlocks.has(block) && !context.isFallthrough(block) && block.kind === "copy") {
     const terminator = block.terminator;
     if (!(terminator instanceof JumpTerminatorOp)) {
-      throw new Error(`Edge-copy block bb${block.id} must end with JumpTerminatorOp`);
+      throw new Error(`Copy block bb${block.id} must end with JumpTerminatorOp`);
     }
 
     for (const op of block.operations) {
@@ -1448,30 +1441,16 @@ function targetEntryBlock(
 ): BasicBlock {
   let block = target.block;
 
-  while (!stopBlocks.has(block) && isEdgeCopyBlock(block)) {
+  while (!stopBlocks.has(block) && block.kind === "copy") {
     const terminator = block.terminator;
     if (!(terminator instanceof JumpTerminatorOp)) {
-      throw new Error(`Edge-copy block bb${block.id} must end with JumpTerminatorOp`);
+      throw new Error(`Copy block bb${block.id} must end with JumpTerminatorOp`);
     }
 
     block = terminator.targetBlock;
   }
 
   return block;
-}
-
-function isEdgeCopyBlock(block: BasicBlock): boolean {
-  const terminator = block.terminator;
-  if (!(terminator instanceof JumpTerminatorOp)) return false;
-
-  let hasCopy = false;
-  for (const op of block.operations) {
-    if (op === terminator) continue;
-    if (!(op instanceof CopyValueOp)) return false;
-    hasCopy = true;
-  }
-
-  return hasCopy;
 }
 
 export function expressionFromStatement(statement: ESTreeStatement): ESTreeExpression {
