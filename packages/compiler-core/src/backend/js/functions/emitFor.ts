@@ -91,10 +91,7 @@ export function emitFor(
   const body = emitBranchArm(context, loop.bodyBlock, loop.updateBlock, emitted, loopControls);
 
   return withFallthrough(context, loop.exitBlock, emitted, controls, continuation, () => [
-    withOptionalLabel(
-      loop.label,
-      forStatement(init, testExpression, update, blockStatement(body)),
-    ),
+    withOptionalLabel(loop.label, forStatement(init, testExpression, update, blockStatement(body))),
   ]);
 }
 
@@ -207,12 +204,7 @@ function emitForDeclarationInitBlock(
   }
 
   if (pendingOperationCount !== 0) {
-    appendForHeaderSideEffectDeclarator(
-      context,
-      declarators,
-      pendingStatements,
-      declarationKind,
-    );
+    appendForHeaderSideEffectDeclarator(context, declarators, pendingStatements, declarationKind);
   }
 
   if (declarators.length === 0 || declarationKind === null) {

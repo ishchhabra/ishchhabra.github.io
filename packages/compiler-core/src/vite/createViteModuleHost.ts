@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { builtinModules } from "node:module";
 import path from "node:path";
+
 import type {
   LoadedModule,
   ModuleEnvironment,
@@ -17,9 +18,7 @@ interface ViteModuleHostContext {
     specifier: string,
     importer?: string,
     options?: { readonly skipSelf?: boolean },
-  ): Promise<
-    { readonly id: string; readonly external?: boolean | "absolute" } | null
-  >;
+  ): Promise<{ readonly id: string; readonly external?: boolean | "absolute" } | null>;
 
   load(options: { readonly id: string }): Promise<{ readonly code?: string | null } | null>;
 }
@@ -50,15 +49,10 @@ class ViteModuleHost implements ModuleHost {
     private readonly environment: ModuleEnvironment,
   ) {}
 
-  public async resolve(
-    specifier: string,
-    importer: string | null,
-  ): Promise<ResolvedModule> {
-    const resolved = await this.context.resolve(
-      specifier,
-      importer ?? undefined,
-      { skipSelf: true },
-    );
+  public async resolve(specifier: string, importer: string | null): Promise<ResolvedModule> {
+    const resolved = await this.context.resolve(specifier, importer ?? undefined, {
+      skipSelf: true,
+    });
 
     if (resolved === null) {
       return {
@@ -133,8 +127,7 @@ class ViteModuleHost implements ModuleHost {
 
 function filePathFromResolvedId(resolvedId: string): string | null {
   const queryIndex = resolvedId.indexOf("?");
-  const filePath =
-    queryIndex === -1 ? resolvedId : resolvedId.slice(0, queryIndex);
+  const filePath = queryIndex === -1 ? resolvedId : resolvedId.slice(0, queryIndex);
 
   if (!path.isAbsolute(filePath)) return null;
   return filePath;
@@ -184,18 +177,14 @@ function hasOpaqueViteQuery(resolvedId: string): boolean {
 
 function isCompilableJavaScript(resolvedId: string): boolean {
   const queryIndex = resolvedId.indexOf("?");
-  const filePath =
-    queryIndex === -1 ? resolvedId : resolvedId.slice(0, queryIndex);
+  const filePath = queryIndex === -1 ? resolvedId : resolvedId.slice(0, queryIndex);
 
-  return [...COMPILABLE_EXTENSIONS].some((extension) =>
-    filePath.endsWith(extension),
-  );
+  return [...COMPILABLE_EXTENSIONS].some((extension) => filePath.endsWith(extension));
 }
 
 function isAsset(resolvedId: string): boolean {
   const queryIndex = resolvedId.indexOf("?");
-  const filePath =
-    queryIndex === -1 ? resolvedId : resolvedId.slice(0, queryIndex);
+  const filePath = queryIndex === -1 ? resolvedId : resolvedId.slice(0, queryIndex);
 
   return (
     filePath.endsWith(".css") ||
@@ -210,15 +199,9 @@ function isAsset(resolvedId: string): boolean {
   );
 }
 
-const NODE_BUILTINS = new Set([
-  ...builtinModules,
-  ...builtinModules.map((name) => `node:${name}`),
-]);
+const NODE_BUILTINS = new Set([...builtinModules, ...builtinModules.map((name) => `node:${name}`)]);
 
-function sourceHasStaticNodeBuiltinDependency(
-  resolvedId: string,
-  source: string,
-): boolean {
+function sourceHasStaticNodeBuiltinDependency(resolvedId: string, source: string): boolean {
   const program = parseModule(resolvedId, source);
 
   for (const statement of program.body) {
@@ -228,8 +211,7 @@ function sourceHasStaticNodeBuiltinDependency(
     }
 
     if (
-      (statement.type === "ExportNamedDeclaration" ||
-        statement.type === "ExportAllDeclaration") &&
+      (statement.type === "ExportNamedDeclaration" || statement.type === "ExportAllDeclaration") &&
       statement.source !== null &&
       NODE_BUILTINS.has(statement.source.value)
     ) {

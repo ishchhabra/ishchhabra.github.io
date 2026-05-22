@@ -1,22 +1,19 @@
 import { describe, expect, it } from "vitest";
+
 import { IRIdAllocator } from "../ir/core/IRIdAllocator";
-import type { LoadedModule, ModuleHost, ResolvedModule } from "./ModuleHost";
 import { buildProgram } from "./buildProgram";
+import type { LoadedModule, ModuleHost, ResolvedModule } from "./ModuleHost";
 import { runProgramCompilerPasses } from "./runProgramCompilerPasses";
 
 class TestModuleHost implements ModuleHost {
   constructor(private readonly modules: ReadonlyMap<string, string>) {}
 
-  public async resolve(
-    specifier: string,
-    importer: string | null,
-  ): Promise<ResolvedModule> {
+  public async resolve(specifier: string, importer: string | null): Promise<ResolvedModule> {
     if (!specifier.startsWith(".")) {
       return { resolvedId: specifier, external: true };
     }
 
-    const base =
-      importer === null ? "" : importer.slice(0, importer.lastIndexOf("/"));
+    const base = importer === null ? "" : importer.slice(0, importer.lastIndexOf("/"));
 
     return {
       resolvedId: `${base}/${specifier.replace(/^\.\//, "")}`,
@@ -68,9 +65,7 @@ describe("runProgramCompilerPasses", () => {
     const result = await buildProgram({
       ids,
       host: new TestModuleHost(
-        new Map([
-          ["/entry.js", 'import "external-package"; export const x = 1;'],
-        ]),
+        new Map([["/entry.js", 'import "external-package"; export const x = 1;']]),
       ),
       entrypoints: ["./entry.js"],
     });

@@ -1,7 +1,7 @@
 import { BasicBlock, makeBlockId } from "./Block";
 import { FunctionIR, makeFunctionId } from "./FunctionIR";
-import { ModuleIR } from "./ModuleIR";
 import { makeModuleId } from "./ModuleId";
+import { ModuleIR } from "./ModuleIR";
 import { Operation, makeOperationId, type OperationId } from "./Operation";
 import { blockTarget, type BlockTarget, TerminatorOp } from "./TerminatorOp";
 import { makeDeclarationId, makeValueId, Value, type DeclarationId } from "./Value";

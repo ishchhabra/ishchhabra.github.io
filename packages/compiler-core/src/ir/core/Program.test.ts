@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { makeModuleId } from "./ModuleId";
 import { Program } from "./Program";
 import { ProgramModule } from "./ProgramModule";
@@ -27,9 +28,7 @@ describe("Program", () => {
 
     program.addModule(module);
 
-    expect(() => program.addModule(module)).toThrow(
-      "already belongs to this program",
-    );
+    expect(() => program.addModule(module)).toThrow("already belongs to this program");
   });
 
   it("rejects adding a module owned by another program", () => {
@@ -39,9 +38,7 @@ describe("Program", () => {
 
     first.addModule(module);
 
-    expect(() => second.addModule(module)).toThrow(
-      "already belongs to another program",
-    );
+    expect(() => second.addModule(module)).toThrow("already belongs to another program");
   });
 
   it("rejects adding a different module with the same id", () => {
@@ -49,9 +46,7 @@ describe("Program", () => {
 
     program.addModule(programModule(1));
 
-    expect(() => program.addModule(programModule(1))).toThrow(
-      "already exists in Program",
-    );
+    expect(() => program.addModule(programModule(1))).toThrow("already exists in Program");
   });
 
   it("adds entrypoints for owned modules", () => {
@@ -68,9 +63,7 @@ describe("Program", () => {
     const program = new Program();
     const module = programModule(1);
 
-    expect(() => program.addEntrypoint(module)).toThrow(
-      "does not belong to this program",
-    );
+    expect(() => program.addEntrypoint(module)).toThrow("does not belong to this program");
   });
 
   it("rejects duplicate entrypoints", () => {
@@ -80,9 +73,7 @@ describe("Program", () => {
     program.addModule(module);
     program.addEntrypoint(module);
 
-    expect(() => program.addEntrypoint(module)).toThrow(
-      "already an entrypoint",
-    );
+    expect(() => program.addEntrypoint(module)).toThrow("already an entrypoint");
   });
 
   it("looks up modules by id", () => {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { makeModuleId } from "./ModuleId";
 import { ProgramModule } from "./ProgramModule";
 

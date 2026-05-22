@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { valueUseSites } from "./Value";
 import { testOp, value } from "./testing";
+import { valueUseSites } from "./Value";
 
 describe("Value", () => {
   it("records users as a set", () => {

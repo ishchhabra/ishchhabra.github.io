@@ -8,9 +8,7 @@ import type { ProgramBuildResult } from "./buildProgram";
  * Opaque and external modules have no frontend build result, so they are not
  * present in `moduleBuilds` and are skipped by construction.
  */
-export function emitProgramJavaScript(
-  buildResult: ProgramBuildResult,
-): Map<ProgramModule, string> {
+export function emitProgramJavaScript(buildResult: ProgramBuildResult): Map<ProgramModule, string> {
   const output = new Map<ProgramModule, string>();
 
   for (const [module, moduleBuildResult] of buildResult.moduleBuilds) {

@@ -14,8 +14,8 @@ import type {
 } from "../../ir/core/DestructurePattern";
 import { lowerExpression } from "../expressions/lowerExpression";
 import { lowerMemberReference } from "../expressions/lowerMemberExpression";
-import { lowerDeferredExpression } from "../functions/lowerDeferredExpression";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { lowerDeferredExpression } from "../functions/lowerDeferredExpression";
 
 /**
  * Converts an ECMAScript assignment pattern into compiler-owned IR pattern data.

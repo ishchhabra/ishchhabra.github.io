@@ -10,10 +10,10 @@ import { type DeclarationId, Value } from "../core/Value";
 import { InitializeBindingOp } from "../ops/bindings/InitializeBindingOp";
 import { LoadBindingOp } from "../ops/bindings/LoadBindingOp";
 import { StoreBindingOp } from "../ops/bindings/StoreBindingOp";
+import { ConstantOp } from "../ops/constants/ConstantOp";
 import { BranchTerminatorOp } from "../ops/control/BranchTerminatorOp";
 import { JumpTerminatorOp } from "../ops/control/JumpTerminatorOp";
 import { ReturnTerminatorOp } from "../ops/control/ReturnTerminatorOp";
-import { ConstantOp } from "../ops/constants/ConstantOp";
 import { createBindingPromotionPass } from "./BindingPromotionPass";
 import { createSSAConstructionPass } from "./ssa/SSAConstructionPass";
 

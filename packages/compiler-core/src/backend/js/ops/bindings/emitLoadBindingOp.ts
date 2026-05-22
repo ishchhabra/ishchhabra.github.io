@@ -4,5 +4,9 @@ import type { CodegenContext } from "../../CodegenContext";
 import { emitExpressionResult } from "../emitExpressionResult";
 
 export function emitLoadBindingOp(context: CodegenContext, op: LoadBindingOp): ESTreeStatement[] {
-  return emitExpressionResult(context, op, identifier(context.names.declarationName(op.declarationId)));
+  return emitExpressionResult(
+    context,
+    op,
+    identifier(context.names.declarationName(op.declarationId)),
+  );
 }

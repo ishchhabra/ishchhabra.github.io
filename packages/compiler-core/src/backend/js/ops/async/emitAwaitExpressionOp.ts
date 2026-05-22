@@ -10,5 +10,9 @@ export function emitAwaitExpressionOp(
   context: CodegenContext,
   op: AwaitExpressionOp,
 ): ESTreeStatement[] {
-  return emitExpressionResult(context, op, awaitExpression(context.expressionForValue(op.argument)));
+  return emitExpressionResult(
+    context,
+    op,
+    awaitExpression(context.expressionForValue(op.argument)),
+  );
 }

@@ -8,8 +8,8 @@ import type {
 
 import type { BindingPatternTarget } from "../../ir/core/DestructurePattern";
 import type { PatternExpression, PatternPropertyKey } from "../../ir/core/DestructurePattern";
-import { lowerDeferredExpression } from "../functions/lowerDeferredExpression";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";
+import { lowerDeferredExpression } from "../functions/lowerDeferredExpression";
 
 /**
  * Converts an ECMAScript binding pattern into compiler-owned IR pattern data.
