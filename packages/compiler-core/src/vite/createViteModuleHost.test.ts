@@ -9,9 +9,6 @@ describe("createViteModuleHost", () => {
         async resolve(specifier) {
           return { id: specifier };
         },
-        async load() {
-          throw new Error("Worker query modules should not be loaded from disk");
-        },
       },
       new Map(),
       {
@@ -35,9 +32,6 @@ describe("createViteModuleHost", () => {
       {
         async resolve(specifier) {
           return { id: specifier };
-        },
-        async load() {
-          return { code: source };
         },
       },
       new Map([["/entry.js", source]]),
@@ -64,9 +58,6 @@ describe("createViteModuleHost", () => {
       {
         async resolve(specifier) {
           return { id: specifier };
-        },
-        async load() {
-          return { code: source };
         },
       },
       new Map([["/entry.js", source]]),

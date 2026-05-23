@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import type { Plugin } from "vite";
+import { createIdResolver, type Plugin } from "vite";
 
 import type { ModuleEnvironment } from "../compile/ModuleHost";
 import { ProgramSession, type EmissionDecision } from "../compile/ProgramSession";
@@ -36,16 +36,33 @@ export interface CompilerVitePluginOptions {
 const COMPILABLE_EXTENSIONS = new Set([".js", ".jsx", ".ts", ".tsx"]);
 
 /**
- * Compiles selected Vite modules before framework plugins transform them.
+ * Compiles selected Vite modules before Vite and framework transform hooks run.
  */
 export function compilerVitePlugin(options: CompilerVitePluginOptions): Plugin {
   const rootDir = path.resolve(options.rootDir);
   const includeDirs = options.include.map((dir) => path.resolve(rootDir, dir));
   const session = new ProgramSession();
+  let resolveId: ReturnType<typeof createIdResolver> | null = null;
 
   return {
     name: "i2:compiler",
-    enforce: "post",
+    enforce: "pre",
+
+    configResolved(config) {
+      resolveId = createIdResolver(config);
+    },
+
+    load(id) {
+      const moduleId = moduleIdFromViteId(id);
+      if (moduleId === null) return null;
+
+      const environment: ModuleEnvironment = {
+        name: this.environment.name,
+        consumer: this.environment.config.consumer,
+      };
+
+      return adaptEmission(session.emissionFor({ environment, resolvedId: moduleId })) ?? null;
+    },
 
     async transform(source, id) {
       const moduleId = moduleIdFromViteId(id);
@@ -64,7 +81,20 @@ export function compilerVitePlugin(options: CompilerVitePluginOptions): Plugin {
 
       await session.compileGraph({
         environment,
-        host: createViteModuleHost(this, new Map([[moduleId, source]]), { environment }),
+        host: createViteModuleHost(
+          {
+            resolve: async (specifier, importer, resolveOptions) => {
+              if (resolveId !== null) {
+                const resolvedId = await resolveId(this.environment, specifier, importer);
+                return resolvedId === undefined ? null : { id: resolvedId };
+              }
+
+              return this.resolve(specifier, importer, resolveOptions);
+            },
+          },
+          new Map([[moduleId, source]]),
+          { environment },
+        ),
         entrypoints: [moduleId],
       });
 

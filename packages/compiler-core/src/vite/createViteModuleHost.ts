@@ -19,8 +19,6 @@ interface ViteModuleHostContext {
     importer?: string,
     options?: { readonly skipSelf?: boolean },
   ): Promise<{ readonly id: string; readonly external?: boolean | "absolute" } | null>;
-
-  load(options: { readonly id: string }): Promise<{ readonly code?: string | null } | null>;
 }
 
 export interface ViteModuleHostOptions {
@@ -31,8 +29,9 @@ export interface ViteModuleHostOptions {
  * Creates a module host backed by Vite/Rollup plugin resolution and loading.
  *
  * The compiler should not implement package exports, aliases, virtual modules,
- * or node_modules resolution itself. This adapter delegates those decisions to
- * the active Vite plugin pipeline.
+ * or node_modules resolution itself. This adapter delegates resolution to Vite,
+ * then reads source before Vite transform hooks so compiler output can become
+ * the input to the rest of Vite.
  */
 export function createViteModuleHost(
   context: ViteModuleHostContext,
@@ -116,9 +115,6 @@ class ViteModuleHost implements ModuleHost {
   private async loadSource(resolvedId: string): Promise<string | null> {
     const overriddenSource = this.sourceOverrides.get(resolvedId);
     if (overriddenSource !== undefined) return overriddenSource;
-
-    const loaded = await this.context.load({ id: resolvedId });
-    if (loaded?.code != null) return loaded.code;
 
     const filePath = filePathFromResolvedId(resolvedId);
     return filePath === null ? null : readFile(filePath, "utf8");
