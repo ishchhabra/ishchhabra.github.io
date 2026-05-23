@@ -10,7 +10,10 @@ const baseline = readBaseline();
 ensureTest262Checkout(baseline.test262Revision);
 
 if (process.env.TEST262_SKIP_BUILD !== "1") {
-  run("pnpm", ["build"], { cwd: packageRoot });
+  run("pnpm", ["exec", "tsc", "-p", "tsconfig.json", "--emitDeclarationOnly"], {
+    cwd: packageRoot,
+  });
+  run("pnpm", ["exec", "rolldown", "-c"], { cwd: packageRoot });
 }
 
 const vitestArgs = [

@@ -40,7 +40,7 @@ jobs:
           cache-dependency-path: packages/compiler-core/pnpm-lock.yaml
 
       - name: Install dependencies
-        run: pnpm install --filter @i2-labs/compiler --frozen-lockfile
+        run: pnpm install --filter @i2-labs/compiler --frozen-lockfile --ignore-scripts
 
       - name: Cache Test262
         uses: actions/cache@v4
