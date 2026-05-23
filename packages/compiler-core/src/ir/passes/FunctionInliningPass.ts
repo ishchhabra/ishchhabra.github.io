@@ -576,7 +576,7 @@ function resolveInlineTarget(call: CallOp): CreateFunctionOp | null {
  * needs a function-boundary-aware API.
  */
 function replaceUses(from: Value, to: Value): void {
-  for (const user of [...from.users]) {
+  for (const user of Array.from(from.users)) {
     if (user instanceof FunctionIR) {
       throw new Error(`Function-level value replacement is not supported for Value#${from.id}`);
     }
@@ -596,7 +596,7 @@ function replaceUses(from: Value, to: Value): void {
 }
 
 function replaceUsesInBlock(block: BasicBlock, from: Value, to: Value): void {
-  for (const op of [...block.operations]) {
+  for (const op of Array.from(block.operations)) {
     replaceUseInOperation(block, op, from, to);
   }
 

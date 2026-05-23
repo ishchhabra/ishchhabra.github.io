@@ -104,7 +104,7 @@ class ValueMaterializationPass {
   }
 
   private replaceUses(from: Value, to: Value, materializer: CopyValueOp): void {
-    for (const user of [...from.users]) {
+    for (const user of Array.from(from.users)) {
       if (user === materializer) continue;
 
       if (user instanceof Operation) {

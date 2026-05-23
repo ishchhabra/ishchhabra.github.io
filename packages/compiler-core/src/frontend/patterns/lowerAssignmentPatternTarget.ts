@@ -12,7 +12,6 @@ import type {
   PatternExpression,
   PatternPropertyKey,
 } from "../../ir/core/DestructurePattern";
-import { lowerExpression } from "../expressions/lowerExpression";
 import { lowerMemberReference } from "../expressions/lowerMemberExpression";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";
 import { lowerDeferredExpression } from "../functions/lowerDeferredExpression";

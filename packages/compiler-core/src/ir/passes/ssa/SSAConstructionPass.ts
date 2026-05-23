@@ -179,7 +179,7 @@ class SSAConstructionPass {
       pushed.push(param.declarationId);
     }
 
-    for (const op of [...block.operations]) {
+    for (const op of Array.from(block.operations)) {
       if (op.ownerBlock !== block) continue;
 
       if (op instanceof LoadBindingOp) {

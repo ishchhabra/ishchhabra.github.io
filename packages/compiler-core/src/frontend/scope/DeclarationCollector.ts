@@ -11,7 +11,6 @@ import type {
   Expression,
   Function,
   ForInStatement,
-  ForOfStatement,
   ImportDeclaration as OxcImportDeclaration,
   ParamPattern,
   Program,
@@ -970,9 +969,7 @@ function isVarCompatibleDeclaration(declaration: Declaration, scope: Scope): boo
   return declaration.kind === "function" || declaration.kind === "parameter";
 }
 
-function isLexicalDeclaration(
-  left: ForInStatement["left"] | ForOfStatement["left"],
-): left is VariableDeclaration {
+function isLexicalDeclaration(left: ForInStatement["left"]): left is VariableDeclaration {
   return left.type === "VariableDeclaration" && left.kind !== "var";
 }
 

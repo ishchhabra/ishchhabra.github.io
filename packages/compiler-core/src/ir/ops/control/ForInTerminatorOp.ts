@@ -2,7 +2,6 @@ import type { BasicBlock } from "../../core/Block";
 import type { OperationId } from "../../core/Operation";
 import type { OperationCloneContext } from "../../core/OperationCloneContext";
 import {
-  blockTarget,
   type BlockTarget,
   cloneBlockTarget,
   replaceForwardedOperands,

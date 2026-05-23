@@ -107,7 +107,7 @@ class CopyPropagationPass {
     for (const predecessor of rest) {
       const aliases = this.#exitAliases.get(predecessor) ?? new Map();
 
-      for (const [target, source] of [...result]) {
+      for (const [target, source] of Array.from(result)) {
         if (aliases.get(target) !== source) {
           result.delete(target);
         }
@@ -137,7 +137,7 @@ class CopyPropagationPass {
   private rewriteBlock(block: BasicBlock): void {
     const aliases = new Map(this.#entryAliases.get(block) ?? []);
 
-    for (const op of [...block.operations]) {
+    for (const op of Array.from(block.operations)) {
       const current = this.rewriteOperation(block, op, aliases);
 
       if (current instanceof CopyValueOp) {

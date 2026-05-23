@@ -77,10 +77,7 @@ export function lowerCallExpression(builder: FunctionIRBuilder, expression: Call
   return result;
 }
 
-export function lowerCallTarget(
-  builder: FunctionIRBuilder,
-  callee: CallExpression["callee"] | Expression,
-): CallTarget {
+export function lowerCallTarget(builder: FunctionIRBuilder, callee: Expression): CallTarget {
   if (callee.type === "MemberExpression" && callee.object.type === "Super") {
     return {
       kind: "super-property",

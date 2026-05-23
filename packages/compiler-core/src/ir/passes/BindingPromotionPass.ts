@@ -109,7 +109,7 @@ class BindingPromotionPass {
 
   private removePromotedOperations(): void {
     for (const block of this.fn.blocks) {
-      for (const op of [...block.operations]) {
+      for (const op of Array.from(block.operations)) {
         if (this.#operations.has(op)) {
           block.removeOp(op);
         }
@@ -119,7 +119,7 @@ class BindingPromotionPass {
 
   private rewriteRemainingOperations(): void {
     for (const block of this.fn.blocks) {
-      for (const op of [...block.operations]) {
+      for (const op of Array.from(block.operations)) {
         const operands = op.operands();
         const rewritten = operands.map((value) => this.resolveReplacement(value));
 

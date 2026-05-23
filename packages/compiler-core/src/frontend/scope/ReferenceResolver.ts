@@ -9,7 +9,6 @@ import type {
   Class,
   Expression,
   ForInStatement,
-  ForOfStatement,
   Function as OxcFunction,
   ParamPattern,
   PrivateIdentifier,
@@ -778,8 +777,6 @@ function isIntrinsicJSXName(name: string): boolean {
   return /^[a-z]/.test(name);
 }
 
-function isLexicalDeclaration(
-  left: ForInStatement["left"] | ForOfStatement["left"],
-): left is VariableDeclaration {
+function isLexicalDeclaration(left: ForInStatement["left"]): left is VariableDeclaration {
   return left.type === "VariableDeclaration" && left.kind !== "var";
 }
