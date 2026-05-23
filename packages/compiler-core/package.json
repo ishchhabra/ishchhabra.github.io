@@ -29,6 +29,7 @@
     "type-check": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest watch",
+    "test:test262": "node scripts/test262/run.mjs",
     "sync:prepare:portfolio": "pnpm-sync prepare -l ../../apps/portfolio/pnpm-lock.yaml -s ../../apps/portfolio/node_modules/.pnpm"
   },
   "dependencies": {
@@ -44,7 +45,8 @@
     "rolldown": "1.0.0-rc.18",
     "typescript": "catalog:",
     "vite": "^7.3.2",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.5",
+    "yaml": "2.9.0"
   },
   "peerDependencies": {
     "vite": "^7.0.0 || ^8.0.0"

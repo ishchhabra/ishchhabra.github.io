@@ -1,0 +1,67 @@
+name: Compiler Test262
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "packages/compiler-core/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/compiler-test262.yml"
+  push:
+    branches: [main]
+    paths:
+      - "packages/compiler-core/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/compiler-test262.yml"
+  workflow_dispatch: {}
+
+jobs:
+  test262:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.3
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: packages/compiler-core/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --filter @i2-labs/compiler --frozen-lockfile
+
+      - name: Cache Test262
+        uses: actions/cache@v4
+        with:
+          path: .cache/test262
+          key: ${{ runner.os }}-test262-v1
+          restore-keys: |
+            ${{ runner.os }}-test262-
+
+      - name: Run Test262 conformance shard
+        run: pnpm --filter @i2-labs/compiler test:test262
+        env:
+          TEST262_SHARD_INDEX: ${{ matrix.shard }}
+          TEST262_SHARD_TOTAL: 8
+          TEST262_REPORTER: json
+          TEST262_OUTPUT_FILE: test262-shard-${{ matrix.shard }}.json
+
+      - name: Upload Test262 shard report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test262-shard-${{ matrix.shard }}
+          path: packages/compiler-core/test262-shard-${{ matrix.shard }}.json
+          if-no-files-found: ignore

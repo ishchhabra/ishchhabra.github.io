@@ -43,5 +43,6 @@ lerna-debug.log*
 Thumbs.db
 
 .pnpm-store
+.cache/
 .claude/*
 !.claude/skills
