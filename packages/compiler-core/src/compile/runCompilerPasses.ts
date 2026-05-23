@@ -33,7 +33,7 @@ export function runCompilerPasses(
 
   runFunctionPipeline(moduleIR, analyses, options.observer, () => [
     createSSAConstructionPass({ ids }),
-    createBindingPromotionPass(),
+    createBindingPromotionPass({ declarations: buildResult.declarations }),
     createConstantPropagationPass({ ids }),
   ]);
   options.observer?.onStage?.({ stage: "ssa", moduleIR });
@@ -50,7 +50,7 @@ export function runCompilerPasses(
   options.observer?.onStage?.({ stage: "ssa-eliminated", moduleIR });
 
   runFunctionPipeline(moduleIR, analyses, options.observer, () => [
-    createValueMaterializationPass({ ids }),
+    createValueMaterializationPass({ ids, declarations: buildResult.declarations }),
     createCopyPropagationPass(),
     createDeadCodeEliminationPass(),
   ]);

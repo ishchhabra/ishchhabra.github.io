@@ -30,12 +30,12 @@ import { Scope } from "./Scope";
 import { ScopeGraph } from "./ScopeGraph";
 
 type DeclarationInput =
-  | Omit<Extract<Declaration, { kind: "var" }>, "id">
-  | Omit<Extract<Declaration, { kind: "lexical" }>, "id">
-  | Omit<Extract<Declaration, { kind: "function" }>, "id">
-  | Omit<Extract<Declaration, { kind: "parameter" }>, "id">
-  | Omit<Extract<Declaration, { kind: "import" }>, "id">
-  | Omit<Extract<Declaration, { kind: "catch-parameter" }>, "id">;
+  | Omit<Extract<Declaration, { kind: "var" }>, "id" | "scopeKind">
+  | Omit<Extract<Declaration, { kind: "lexical" }>, "id" | "scopeKind">
+  | Omit<Extract<Declaration, { kind: "function" }>, "id" | "scopeKind">
+  | Omit<Extract<Declaration, { kind: "parameter" }>, "id" | "scopeKind">
+  | Omit<Extract<Declaration, { kind: "import" }>, "id" | "scopeKind">
+  | Omit<Extract<Declaration, { kind: "catch-parameter" }>, "id" | "scopeKind">;
 
 /**
  * Creates scopes and registers declarations before reference resolution.
@@ -268,11 +268,14 @@ export class DeclarationCollector {
           throw new Error(`Unsupported lexical declaration kind: ${declaration.kind}`);
         }
 
-        const sourceDeclaration = this.createDeclaration({
-          kind: "lexical",
-          mode: declaration.kind,
-          name: binding.name,
-        });
+        const sourceDeclaration = this.createDeclaration(
+          {
+            kind: "lexical",
+            mode: declaration.kind,
+            name: binding.name,
+          },
+          scope,
+        );
         scope.add(sourceDeclaration);
         this.graph.bindDeclaration(binding, sourceDeclaration);
         this.context.declarations.add(sourceDeclaration);
@@ -292,10 +295,13 @@ export class DeclarationCollector {
 
     if (clause.param !== null) {
       for (const binding of bindingIdentifiers(clause.param)) {
-        const sourceDeclaration = this.createDeclaration({
-          kind: "catch-parameter",
-          name: binding.name,
-        });
+        const sourceDeclaration = this.createDeclaration(
+          {
+            kind: "catch-parameter",
+            name: binding.name,
+          },
+          catchScope,
+        );
 
         catchScope.add(sourceDeclaration);
         this.graph.bindDeclaration(binding, sourceDeclaration);
@@ -335,10 +341,13 @@ export class DeclarationCollector {
       throw new Error(`Duplicate declaration: ${binding.name}`);
     }
 
-    const sourceDeclaration = this.createDeclaration({
-      kind: "var",
-      name: binding.name,
-    });
+    const sourceDeclaration = this.createDeclaration(
+      {
+        kind: "var",
+        name: binding.name,
+      },
+      target,
+    );
     target.add(sourceDeclaration);
     this.graph.bindDeclaration(binding, sourceDeclaration);
     this.context.declarations.add(sourceDeclaration);
@@ -366,12 +375,15 @@ export class DeclarationCollector {
       throw new Error(`Duplicate declaration: ${declaration.id.name}`);
     }
 
-    const sourceDeclaration = this.createDeclaration({
-      kind: "function",
-      functionKind: kind,
-      name: declaration.id.name,
-      node: declaration,
-    });
+    const sourceDeclaration = this.createDeclaration(
+      {
+        kind: "function",
+        functionKind: kind,
+        name: declaration.id.name,
+        node: declaration,
+      },
+      scope,
+    );
 
     scope.add(sourceDeclaration);
     this.graph.bindDeclaration(declaration.id, sourceDeclaration);
@@ -385,11 +397,14 @@ export class DeclarationCollector {
     this.graph.setScope(declaration, functionScope);
 
     if (declaration.type === "FunctionExpression" && declaration.id !== null) {
-      const nameDeclaration = this.createDeclaration({
-        kind: "lexical",
-        mode: "const",
-        name: declaration.id.name,
-      });
+      const nameDeclaration = this.createDeclaration(
+        {
+          kind: "lexical",
+          mode: "const",
+          name: declaration.id.name,
+        },
+        functionScope,
+      );
 
       functionScope.add(nameDeclaration);
       this.graph.bindDeclaration(declaration.id, nameDeclaration);
@@ -398,10 +413,13 @@ export class DeclarationCollector {
 
     for (const param of declaration.params) {
       for (const binding of parameterBindingIdentifiers(param)) {
-        const paramDeclaration = this.createDeclaration({
-          kind: "parameter",
-          name: binding.name,
-        });
+        const paramDeclaration = this.createDeclaration(
+          {
+            kind: "parameter",
+            name: binding.name,
+          },
+          functionScope,
+        );
 
         functionScope.add(paramDeclaration);
         this.graph.bindDeclaration(binding, paramDeclaration);
@@ -428,10 +446,13 @@ export class DeclarationCollector {
 
     for (const param of expression.params) {
       for (const binding of parameterBindingIdentifiers(param)) {
-        const paramDeclaration = this.createDeclaration({
-          kind: "parameter",
-          name: binding.name,
-        });
+        const paramDeclaration = this.createDeclaration(
+          {
+            kind: "parameter",
+            name: binding.name,
+          },
+          functionScope,
+        );
 
         functionScope.add(paramDeclaration);
         this.graph.bindDeclaration(binding, paramDeclaration);
@@ -778,11 +799,14 @@ export class DeclarationCollector {
       throw new Error("Class declaration is missing a binding name");
     }
 
-    const sourceDeclaration = this.createDeclaration({
-      kind: "lexical",
-      mode: "class",
-      name: declaration.id.name,
-    });
+    const sourceDeclaration = this.createDeclaration(
+      {
+        kind: "lexical",
+        mode: "class",
+        name: declaration.id.name,
+      },
+      scope,
+    );
 
     scope.add(sourceDeclaration);
     this.graph.bindDeclaration(declaration.id, sourceDeclaration);
@@ -808,11 +832,14 @@ export class DeclarationCollector {
     this.graph.setScope(expression, classScope);
 
     if (expression.id !== null) {
-      const nameDeclaration = this.createDeclaration({
-        kind: "lexical",
-        mode: "const",
-        name: expression.id.name,
-      });
+      const nameDeclaration = this.createDeclaration(
+        {
+          kind: "lexical",
+          mode: "const",
+          name: expression.id.name,
+        },
+        classScope,
+      );
 
       classScope.add(nameDeclaration);
       this.graph.bindDeclaration(expression.id, nameDeclaration);
@@ -890,15 +917,18 @@ export class DeclarationCollector {
         case "ImportSpecifier": {
           if (specifier.importKind === "type") break;
 
-          const sourceDeclaration = this.createDeclaration({
-            kind: "import",
-            name: specifier.local.name,
-            source: declaration.source.value,
-            importedName:
-              specifier.imported.type === "Identifier"
-                ? specifier.imported.name
-                : specifier.imported.value,
-          });
+          const sourceDeclaration = this.createDeclaration(
+            {
+              kind: "import",
+              name: specifier.local.name,
+              source: declaration.source.value,
+              importedName:
+                specifier.imported.type === "Identifier"
+                  ? specifier.imported.name
+                  : specifier.imported.value,
+            },
+            scope,
+          );
 
           scope.add(sourceDeclaration);
           this.graph.bindDeclaration(specifier.local, sourceDeclaration);
@@ -908,12 +938,15 @@ export class DeclarationCollector {
         }
 
         case "ImportDefaultSpecifier": {
-          const sourceDeclaration = this.createDeclaration({
-            kind: "import",
-            name: specifier.local.name,
-            source: declaration.source.value,
-            importedName: "default",
-          });
+          const sourceDeclaration = this.createDeclaration(
+            {
+              kind: "import",
+              name: specifier.local.name,
+              source: declaration.source.value,
+              importedName: "default",
+            },
+            scope,
+          );
 
           scope.add(sourceDeclaration);
           this.graph.bindDeclaration(specifier.local, sourceDeclaration);
@@ -923,12 +956,15 @@ export class DeclarationCollector {
         }
 
         case "ImportNamespaceSpecifier": {
-          const sourceDeclaration = this.createDeclaration({
-            kind: "import",
-            name: specifier.local.name,
-            source: declaration.source.value,
-            importedName: "namespace",
-          });
+          const sourceDeclaration = this.createDeclaration(
+            {
+              kind: "import",
+              name: specifier.local.name,
+              source: declaration.source.value,
+              importedName: "namespace",
+            },
+            scope,
+          );
 
           scope.add(sourceDeclaration);
           this.graph.bindDeclaration(specifier.local, sourceDeclaration);
@@ -940,10 +976,11 @@ export class DeclarationCollector {
     }
   }
 
-  private createDeclaration(declaration: DeclarationInput): Declaration {
+  private createDeclaration(declaration: DeclarationInput, scope: Scope): Declaration {
     return {
       ...declaration,
       id: this.context.ids.declarationId(),
+      scopeKind: scope.kind,
     };
   }
 }

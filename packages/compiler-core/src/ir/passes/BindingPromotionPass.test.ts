@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { DeclarationTable } from "../../frontend/declarations/DeclarationTable";
 import { AnalysisManager } from "../analysis";
 import { BasicBlock } from "../core/Block";
 import { FunctionIR } from "../core/FunctionIR";
@@ -154,9 +155,50 @@ describe("BindingPromotionPass", () => {
 
 function runPromotion(ids: IRIdAllocator, fn: FunctionIR): void {
   const analyses = new AnalysisManager();
+  const declarations = declarationTableFor(fn);
 
   createSSAConstructionPass({ ids }).run(fn, analyses);
-  createBindingPromotionPass().run(fn, analyses);
+  createBindingPromotionPass({ declarations }).run(fn, analyses);
+}
+
+function declarationTableFor(fn: FunctionIR): DeclarationTable {
+  const declarations = new DeclarationTable();
+  const ids = new Set<DeclarationId>();
+
+  for (const param of fn.params) {
+    if (param.kind === "capture") {
+      ids.add(param.declarationId);
+    }
+  }
+
+  for (const block of fn.blocks) {
+    for (const op of block.operations) {
+      if (
+        op instanceof InitializeBindingOp ||
+        op instanceof LoadBindingOp ||
+        op instanceof StoreBindingOp
+      ) {
+        ids.add(op.declarationId);
+      }
+    }
+  }
+
+  for (const record of fn.ownerModule?.exports ?? []) {
+    if (record.kind === "local" || record.kind === "default-local") {
+      ids.add(record.declarationId);
+    }
+  }
+
+  for (const id of ids) {
+    declarations.add({
+      id,
+      kind: "var",
+      name: `d${id}`,
+      scopeKind: "function",
+    });
+  }
+
+  return declarations;
 }
 
 function moduleFunction(

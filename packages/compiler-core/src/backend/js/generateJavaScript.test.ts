@@ -261,7 +261,7 @@ describe("generateJavaScript", () => {
     if (fn === null) throw new Error("Expected entry function");
 
     new FunctionPassManager(new AnalysisManager()).run(fn, [
-      createValueMaterializationPass({ ids }),
+      createValueMaterializationPass({ ids, declarations: input.declarations }),
       createCopyPropagationPass(),
     ]);
 
@@ -673,7 +673,7 @@ describe("generateJavaScript", () => {
     if (fn === null) throw new Error("Expected entry function");
 
     new FunctionPassManager(new AnalysisManager()).run(fn, [
-      createValueMaterializationPass({ ids }),
+      createValueMaterializationPass({ ids, declarations: input.declarations }),
     ]);
 
     expect(generateJavaScript(input)).toBe(
@@ -994,7 +994,7 @@ describe("generateJavaScript", () => {
       "export function run() { const log = []; function f() { outer: while (true) { try { return 'r'; } finally { break outer; } } return 'after'; } log.push(f()); return log; }";
 
     expect(compileTestSource(source)).toBe(
-      'function $d0() {\n  let $14;\n  let $15;\n\n  $14 = function () {\n    outer: while (true) {\n      try {\n        return "r";\n      } finally {\n        break;\n      }\n    }\n\n    return "after";\n  };\n\n  $15 = [];\n  $15.push($14());\n\n  return $15;\n}\n\nexport { $d0 as run };',
+      'function $d0() {\n  let $14;\n\n  function $d2() {\n    outer: while (true) {\n      try {\n        return "r";\n      } finally {\n        break;\n      }\n    }\n\n    return "after";\n  }\n\n  $14 = [];\n  $14.push($d2());\n\n  return $14;\n}\n\nexport { $d0 as run };',
     );
   });
 

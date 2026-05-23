@@ -12,5 +12,5 @@ export { DominatorTree, DominatorTreeAnalysis } from "./DominatorTree";
 
 export { BindingEscapeAnalysis } from "./BindingEscapeAnalysis";
 export type { BindingEscapeInfo } from "./BindingEscapeAnalysis";
-export { BindingPromotionAnalysis } from "./BindingPromotionAnalysis";
+export { createBindingPromotionAnalysis } from "./BindingPromotionAnalysis";
 export type { BindingPromotionInfo } from "./BindingPromotionAnalysis";

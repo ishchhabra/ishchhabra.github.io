@@ -1,3 +1,5 @@
+import type { DeclarationTable } from "../../frontend/declarations/DeclarationTable";
+import { bindingSemantics } from "../../frontend/scope/BindingSemantics";
 import { AnalysisManager, PreservedAnalyses } from "../analysis";
 import { FunctionIR, Operation, valueUseSites, Value } from "../core";
 import { bindingPatternOperands, rewriteBindingPatternOperands } from "../core/DestructurePattern";
@@ -15,6 +17,7 @@ export interface ValueMaterializationPassOptions {
    * Allocator used for generated materialized value slots and copy operations.
    */
   readonly ids: IRIdAllocator;
+  readonly declarations: DeclarationTable;
 }
 
 /**
@@ -88,7 +91,7 @@ class ValueMaterializationPass {
   }
 
   private canRemainExpression(op: Operation, result: Value): boolean {
-    if (isSafelyDuplicable(op)) return true;
+    if (isSafelyDuplicable(op, this.options.declarations)) return true;
     if (result.users.size === 0) return true;
     if (valueUseSites(result).length !== 1) return false;
 
@@ -154,8 +157,22 @@ class ValueMaterializationPass {
   }
 }
 
-function isSafelyDuplicable(op: Operation): boolean {
-  return op instanceof ConstantOp || op instanceof LoadThisOp || op instanceof MetaPropertyOp;
+function isSafelyDuplicable(op: Operation, declarations: DeclarationTable): boolean {
+  return (
+    op instanceof ConstantOp ||
+    op instanceof LoadThisOp ||
+    op instanceof MetaPropertyOp ||
+    isDeclarationAnchorReference(op, declarations)
+  );
+}
+
+function isDeclarationAnchorReference(op: Operation, declarations: DeclarationTable): boolean {
+  if (!(op instanceof InitializeBindingOp)) return false;
+  if (!declarations.has(op.declarationId)) {
+    throw new Error(`Missing declaration metadata for Declaration#${op.declarationId}`);
+  }
+
+  return bindingSemantics(declarations.get(op.declarationId)).preservesDeclarationAnchor;
 }
 
 function inliningWouldReorder(definer: Operation, user: Operation): boolean {

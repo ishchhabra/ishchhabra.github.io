@@ -1,3 +1,6 @@
+import type { DeclarationTable } from "../../frontend/declarations/DeclarationTable";
+import { bindingSemantics, canPromoteBindingStorage } from "../../frontend/scope/BindingSemantics";
+import type { Declaration } from "../../frontend/scope/Declaration";
 import type { BindingPatternTarget } from "../core/DestructurePattern";
 import type { FunctionIR } from "../core/FunctionIR";
 import type { Operation } from "../core/Operation";
@@ -13,6 +16,7 @@ import { BindingEscapeAnalysis } from "./BindingEscapeAnalysis";
 
 export interface BindingPromotionInfo {
   readonly promotableDeclarations: ReadonlySet<DeclarationId>;
+  readonly forwardableDeclarations: ReadonlySet<DeclarationId>;
 }
 
 /**
@@ -21,44 +25,86 @@ export interface BindingPromotionInfo {
  * This analysis combines module-level binding escapes with local binding usage. It is
  * conservative: unsupported binding constructs are rejected rather than rewritten.
  */
-export const BindingPromotionAnalysis: FunctionAnalysis<BindingPromotionInfo> = {
-  name: "binding-promotion",
+export function createBindingPromotionAnalysis(
+  declarations: DeclarationTable,
+): FunctionAnalysis<BindingPromotionInfo> {
+  return {
+    name: "binding-promotion",
 
-  run(fn: FunctionIR, analyses: AnalysisManager): BindingPromotionInfo {
-    const candidates = new Set<DeclarationId>();
-    const rejected = new Set<DeclarationId>();
+    run(fn: FunctionIR, analyses: AnalysisManager): BindingPromotionInfo {
+      const candidates = new Set<DeclarationId>();
+      const forwardableCandidates = new Set<DeclarationId>();
+      const stores = new Set<DeclarationId>();
+      const rejected = new Set<DeclarationId>();
 
-    if (fn.ownerModule === null) {
-      throw new Error(`Cannot analyze Function#${fn.id}: function is not attached to a module`);
-    }
-
-    const escape = analyses.getModule(BindingEscapeAnalysis, fn.ownerModule);
-    for (const declaration of escape.escapingDeclarations) {
-      rejected.add(declaration);
-    }
-
-    rejectFunctionParameterDeclarations(fn, rejected);
-    rejectNestedPatternExpressionDeclarations(fn, rejected);
-
-    for (const block of fn.blocks) {
-      for (const op of block.operations) {
-        collectCandidate(op, candidates);
-        rejectOperation(op, rejected);
+      if (fn.ownerModule === null) {
+        throw new Error(`Cannot analyze Function#${fn.id}: function is not attached to a module`);
       }
-    }
 
-    for (const declaration of rejected) {
-      candidates.delete(declaration);
-    }
+      const escape = analyses.getModule(BindingEscapeAnalysis, fn.ownerModule);
+      for (const declaration of escape.escapingDeclarations) {
+        rejected.add(declaration);
+      }
 
-    return { promotableDeclarations: candidates };
-  },
-};
+      rejectFunctionParameterDeclarations(fn, rejected);
+      rejectNestedPatternExpressionDeclarations(fn, rejected);
 
-function collectCandidate(op: Operation, candidates: Set<DeclarationId>): void {
-  if (op instanceof InitializeBindingOp || op instanceof StoreBindingOp) {
+      for (const block of fn.blocks) {
+        for (const op of block.operations) {
+          collectCandidate(op, candidates, forwardableCandidates, stores, declarations);
+          rejectOperation(op, rejected);
+        }
+      }
+
+      for (const declaration of rejected) {
+        candidates.delete(declaration);
+        forwardableCandidates.delete(declaration);
+      }
+
+      for (const declaration of stores) {
+        forwardableCandidates.delete(declaration);
+      }
+
+      return {
+        promotableDeclarations: candidates,
+        forwardableDeclarations: new Set([...candidates, ...forwardableCandidates]),
+      };
+    },
+  };
+}
+
+function collectCandidate(
+  op: Operation,
+  candidates: Set<DeclarationId>,
+  forwardableCandidates: Set<DeclarationId>,
+  stores: Set<DeclarationId>,
+  declarations: DeclarationTable,
+): void {
+  if (!(op instanceof InitializeBindingOp || op instanceof StoreBindingOp)) return;
+
+  const declaration = declarationFor(declarations, op.declarationId);
+
+  if (canPromoteBindingStorage(declaration)) {
     candidates.add(op.declarationId);
+    return;
   }
+
+  if (op instanceof StoreBindingOp) {
+    stores.add(op.declarationId);
+    return;
+  }
+
+  if (bindingSemantics(declaration).preservesDeclarationAnchor) {
+    forwardableCandidates.add(op.declarationId);
+  }
+}
+
+function declarationFor(declarations: DeclarationTable, id: DeclarationId): Declaration {
+  if (!declarations.has(id)) {
+    throw new Error(`Missing declaration metadata for Declaration#${id}`);
+  }
+
+  return declarations.get(id);
 }
 
 function rejectFunctionParameterDeclarations(fn: FunctionIR, rejected: Set<DeclarationId>): void {

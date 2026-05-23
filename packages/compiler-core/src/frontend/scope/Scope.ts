@@ -1,5 +1,5 @@
 import type { PrivateName } from "../../ir/core/PrivateName";
-import { Declaration } from "./Declaration";
+import type { Declaration } from "./Declaration";
 
 export type ScopeKind = "module" | "function" | "block" | "catch";
 

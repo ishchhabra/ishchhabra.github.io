@@ -32,4 +32,15 @@ describe("compileSource", () => {
     expect(snapshots.every((snapshot) => snapshot.includes("module #"))).toBe(true);
     expect(observedOutput).toBe(result.code);
   });
+
+  it("preserves function declaration anchors through binding promotion", () => {
+    const result = compileSource(
+      'function Component() { return <div />; }\nexport const Route = createFileRoute("/x")({ component: Component });',
+      { sourceName: "test.jsx" },
+    );
+
+    expect(result.code).toBe(
+      'function $d0() {\n  return <div />;\n}\n\nconst $d1 = createFileRoute("/x")({ component: $d0 });\n\nexport { $d1 as Route };',
+    );
+  });
 });

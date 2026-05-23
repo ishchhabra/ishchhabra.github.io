@@ -1,4 +1,5 @@
-import { AnalysisManager, BindingPromotionAnalysis, PreservedAnalyses } from "../analysis";
+import type { DeclarationTable } from "../../frontend/declarations/DeclarationTable";
+import { AnalysisManager, createBindingPromotionAnalysis, PreservedAnalyses } from "../analysis";
 import { Operation } from "../core";
 import { bindingPatternOperands, rewriteBindingPatternOperands } from "../core/DestructurePattern";
 import { FunctionIR, FunctionParam } from "../core/FunctionIR";
@@ -17,14 +18,27 @@ import { FunctionPass, PassResult } from "./Pass";
  * - `LoadBindingOp(x)` becomes direct use of the resolved reaching value.
  * - `InitializeBindingOp(x, value)` becomes direct use of `value`.
  * - `StoreBindingOp(x, value)` becomes direct use of `value`.
+ *
+ * Declaration anchors such as function declarations may keep their initializer
+ * operation while still forwarding resolved loads to the declaration value.
  */
-export function createBindingPromotionPass(): FunctionPass {
+export interface BindingPromotionPassOptions {
+  readonly declarations: DeclarationTable;
+}
+
+export function createBindingPromotionPass(options: BindingPromotionPassOptions): FunctionPass {
+  const analysis = createBindingPromotionAnalysis(options.declarations);
+
   return {
     name: "binding-promotion",
 
     run(fn: FunctionIR, analyses: AnalysisManager): PassResult {
-      const promotion = analyses.getFunction(BindingPromotionAnalysis, fn);
-      return new BindingPromotionPass(fn, promotion.promotableDeclarations).run();
+      const promotion = analyses.getFunction(analysis, fn);
+      return new BindingPromotionPass(
+        fn,
+        promotion.promotableDeclarations,
+        promotion.forwardableDeclarations,
+      ).run();
     },
   };
 }
@@ -36,6 +50,7 @@ class BindingPromotionPass {
   constructor(
     private readonly fn: FunctionIR,
     private readonly promotableDeclarations: ReadonlySet<DeclarationId>,
+    private readonly forwardableDeclarations: ReadonlySet<DeclarationId>,
   ) {}
 
   public run(): PassResult {
@@ -63,7 +78,7 @@ class BindingPromotionPass {
   private plan(): void {
     for (const block of this.fn.blocks) {
       for (const op of block.operations) {
-        if (op instanceof LoadBindingOp && this.promotableDeclarations.has(op.declarationId)) {
+        if (op instanceof LoadBindingOp && this.forwardableDeclarations.has(op.declarationId)) {
           this.planLoad(op);
           continue;
         }

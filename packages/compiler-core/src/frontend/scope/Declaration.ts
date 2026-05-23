@@ -1,6 +1,7 @@
 import type { Function } from "oxc-parser";
 
 import type { DeclarationId } from "../../ir/core/Value";
+import type { ScopeKind } from "./Scope";
 
 /**
  * Source-level binding discovered during ECMAScript scope analysis.
@@ -20,6 +21,7 @@ export type Declaration =
 export interface BaseDeclaration {
   readonly id: DeclarationId;
   readonly name: string;
+  readonly scopeKind: ScopeKind;
 }
 
 /**
@@ -36,7 +38,8 @@ export interface VarDeclaration extends BaseDeclaration {
  * Lexical binding created by `let`, `const`, or class declarations.
  *
  * These bindings are created before evaluation and initialized later, which is
- * the source of TDZ behavior.
+ * the source of TDZ behavior. Class declarations are mutable lexical bindings,
+ * not `const` bindings.
  */
 export interface LexicalDeclaration extends BaseDeclaration {
   readonly kind: "lexical";
