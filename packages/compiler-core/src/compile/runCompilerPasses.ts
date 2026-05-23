@@ -14,33 +14,47 @@ import { FunctionPassManager, ModulePassManager } from "../ir/passes/PassManager
 import { createSSAConstructionPass } from "../ir/passes/ssa/SSAConstructionPass";
 import { createSSAEliminationPass } from "../ir/passes/ssa/SSAEliminationPass";
 import { createValueMaterializationPass } from "../ir/passes/ValueMaterializationPass";
+import type { CompilerObserver } from "./CompilerObserver";
+
+export interface RunCompilerPassesOptions {
+  readonly observer?: CompilerObserver;
+}
 
 /**
  * Runs IR-to-IR compiler passes after frontend lowering.
  */
-export function runCompilerPasses(buildResult: ModuleIRBuildResult, ids: IRIdAllocator) {
+export function runCompilerPasses(
+  buildResult: ModuleIRBuildResult,
+  ids: IRIdAllocator,
+  options: RunCompilerPassesOptions = {},
+) {
   const analyses = new AnalysisManager();
   const moduleIR = buildResult.moduleIR;
 
-  runFunctionPipeline(moduleIR, analyses, () => [
+  runFunctionPipeline(moduleIR, analyses, options.observer, () => [
     createSSAConstructionPass({ ids }),
     createBindingPromotionPass(),
     createConstantPropagationPass({ ids }),
   ]);
+  options.observer?.onStage?.({ stage: "ssa", moduleIR });
 
-  new ModulePassManager(analyses).run(moduleIR, [
+  new ModulePassManager(analyses, options.observer).run(moduleIR, [
     createFunctionInliningPass({ ids }),
     createDeadDeclarationEliminationPass(),
   ]);
+  options.observer?.onStage?.({ stage: "optimized", moduleIR });
 
-  runFunctionPipeline(moduleIR, analyses, () => {
-    return [
-      createSSAEliminationPass({ ids }),
-      createValueMaterializationPass({ ids }),
-      createCopyPropagationPass(),
-      createDeadCodeEliminationPass(),
-    ];
-  });
+  runFunctionPipeline(moduleIR, analyses, options.observer, () => [
+    createSSAEliminationPass({ ids }),
+  ]);
+  options.observer?.onStage?.({ stage: "ssa-eliminated", moduleIR });
+
+  runFunctionPipeline(moduleIR, analyses, options.observer, () => [
+    createValueMaterializationPass({ ids }),
+    createCopyPropagationPass(),
+    createDeadCodeEliminationPass(),
+  ]);
+  options.observer?.onStage?.({ stage: "late-optimized", moduleIR });
 
   return buildResult;
 }
@@ -48,11 +62,12 @@ export function runCompilerPasses(buildResult: ModuleIRBuildResult, ids: IRIdAll
 function runFunctionPipeline(
   moduleIR: ModuleIR,
   analyses: AnalysisManager,
+  observer: CompilerObserver | undefined,
   passesFor: (fn: FunctionIR) => readonly FunctionPass[],
 ): void {
-  for (const fn of [...moduleIR.functions]) {
+  for (const fn of Array.from(moduleIR.functions)) {
     try {
-      new FunctionPassManager(analyses).run(fn, passesFor(fn));
+      new FunctionPassManager(analyses, observer).run(fn, passesFor(fn));
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       throw new Error(`Function#${fn.id} (${fn.kind}) failed: ${message}`);

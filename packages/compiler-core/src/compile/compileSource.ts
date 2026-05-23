@@ -2,6 +2,7 @@ import { generateJavaScript } from "../backend/js/generateJavaScript";
 import { ModuleIRBuilder } from "../frontend/ModuleIRBuilder";
 import { parseModule } from "../frontend/parse/parseModule";
 import { IRIdAllocator } from "../ir/core/IRIdAllocator";
+import type { CompilerObserver } from "./CompilerObserver";
 import { filterDiagnostics, type CompilerDiagnostic, type DiagnosticOptions } from "./diagnostics";
 import { runCompilerPasses } from "./runCompilerPasses";
 
@@ -18,6 +19,11 @@ export interface CompileSourceOptions {
    * Controls diagnostic filtering and optional debug artifacts.
    */
   readonly diagnostics?: DiagnosticOptions;
+
+  /**
+   * Receives compiler stage, pass, and output events for tooling/debug UIs.
+   */
+  readonly observer?: CompilerObserver;
 }
 
 /**
@@ -41,8 +47,11 @@ export function compileSource(
   const program = parseModule(sourceName, source);
   const ids = new IRIdAllocator();
   const buildResult = new ModuleIRBuilder({ ids }).build(program);
-  const optimizedResult = runCompilerPasses(buildResult, ids);
+  options.observer?.onStage?.({ stage: "hir", moduleIR: buildResult.moduleIR });
+
+  const optimizedResult = runCompilerPasses(buildResult, ids, { observer: options.observer });
   const code = generateJavaScript(optimizedResult);
+  options.observer?.onOutput?.({ code });
 
   return {
     code,
