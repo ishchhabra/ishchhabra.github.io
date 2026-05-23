@@ -11,7 +11,7 @@ import { AnalysisManager, PreservedAnalyses } from "../analysis";
 import { FunctionIR, Operation, Value } from "../core";
 import { BasicBlock } from "../core/Block";
 import { IRIdAllocator } from "../core/IRIdAllocator";
-import { BlockTarget, successorValues, TerminatorOp } from "../core/TerminatorOp";
+import { BlockTarget, TerminatorOp } from "../core/TerminatorOp";
 import { canDropOperationEffects, OperationEffects, PureOperationEffects } from "../effects";
 import { CallOp, CallTarget } from "../ops/calls/CallOp";
 import { ConstantOp, ConstantValue } from "../ops/constants/ConstantOp";
@@ -82,10 +82,14 @@ interface AnalysisState {
   readonly values: Map<Value, LatticeValue>;
   readonly semanticValues: Map<Value, ValueFact>;
   readonly executableBlocks: Set<BasicBlock>;
-  readonly incomingExecutableEdges: Map<BasicBlock, Map<string, BlockTarget>>;
+  readonly incomingExecutableEdges: Map<BasicBlock, Map<string, IncomingExecutableEdge>>;
   readonly blockWorklist: BasicBlock[];
   readonly queuedBlocks: Set<BasicBlock>;
   readonly replacementEffects: Map<Operation, OperationEffects>;
+}
+
+interface IncomingExecutableEdge {
+  readonly target: BlockTarget;
 }
 
 interface RewriteState {
@@ -352,9 +356,7 @@ class ConstantPropagationPass {
       state.incomingExecutableEdges.set(target.block, incoming);
     }
 
-    if (!incoming.has(key)) {
-      incoming.set(key, target);
-    }
+    if (!incoming.has(key)) incoming.set(key, { target });
 
     this.propagateBlockParams(state, target.block);
     this.markBlockExecutable(state, target.block);
@@ -367,20 +369,28 @@ class ConstantPropagationPass {
     const values = params.map(() => Bottom);
     const semanticValues = params.map((): ValueFact => PendingFact);
 
-    for (const target of state.incomingExecutableEdges.get(block)?.values() ?? []) {
-      const incomingValues = successorValues(target);
+    for (const edge of state.incomingExecutableEdges.get(block)?.values() ?? []) {
+      const incomingCount =
+        edge.target.operands.produced.length + edge.target.operands.forwarded.length;
 
-      if (params.length !== incomingValues.length) {
+      if (params.length !== incomingCount) {
         throw new Error(
-          `Target bb${block.id} expects ${params.length} values, got ${incomingValues.length}`,
+          `Target bb${block.id} expects ${params.length} values, got ${incomingCount}`,
         );
       }
 
-      for (let i = 0; i < params.length; i++) {
-        values[i] = mergeLatticeValues(values[i], valueOf(state, incomingValues[i]));
-        semanticValues[i] = mergeSemanticFacts(
-          semanticValues[i],
-          semanticValueOf(state, incomingValues[i]),
+      for (let i = 0; i < edge.target.operands.produced.length; i++) {
+        values[i] = mergeLatticeValues(values[i], Top);
+        semanticValues[i] = mergeSemanticFacts(semanticValues[i], UnknownFact);
+      }
+
+      for (let i = 0; i < edge.target.operands.forwarded.length; i++) {
+        const paramIndex = edge.target.operands.produced.length + i;
+        const value = edge.target.operands.forwarded[i];
+        values[paramIndex] = mergeLatticeValues(values[paramIndex], valueOf(state, value));
+        semanticValues[paramIndex] = mergeSemanticFacts(
+          semanticValues[paramIndex],
+          semanticValueOf(state, value),
         );
       }
     }
