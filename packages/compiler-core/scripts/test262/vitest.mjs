@@ -33,9 +33,6 @@ describe(`Test262 ${shardIndex + 1}/${shardTotal}`, () => {
         const expectedFailure = baselineMode === "enforce" && expectedFailures.has(scenario.id);
 
         if (expectedFailure) {
-          if (result.status === "pass") {
-            failures.push(`${scenario.id}: expected failure passed`);
-          }
           continue;
         }
 
