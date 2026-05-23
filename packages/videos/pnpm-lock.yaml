@@ -25,7 +25,7 @@ patchedDependencies:
     hash: 1ee07bb54ad2cb5fca236e9d607f187d1e47e13870d29c6c525cb5634b4fb625
     path: ../../patches/@scelar__nodepod.patch
   esrap:
-    hash: 3b6bc45858a4ec35811381c69542906883f2f4ecc4eddff485b96f435116d28c
+    hash: 7e2248a0682f7cc1c169ed20a62dddf3c4057cd84613f517caee51fd90e52cf1
     path: ../../patches/esrap.patch
 
 importers:
