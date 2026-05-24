@@ -1524,8 +1524,8 @@ function emitIf(
   continuation: BasicBlock | null = null,
 ): ESTreeStatement[] {
   return withFallthrough(context, op.completionBlock, emitted, controls, continuation, () => {
-    const consequent = emitTargetArm(context, op.thenTarget, emitted, controls);
-    const alternate = emitTargetArm(context, op.elseTarget, emitted, controls);
+    const consequent = emitValueRegionArm(context, op, op.thenTarget, emitted, controls);
+    const alternate = emitValueRegionArm(context, op, op.elseTarget, emitted, controls);
 
     return [
       ifStatement(
@@ -1545,8 +1545,8 @@ function emitConditional(
   continuation: BasicBlock | null = null,
 ): ESTreeStatement[] {
   return withFallthrough(context, op.completionBlock, emitted, controls, continuation, () => {
-    const consequent = emitTargetArm(context, op.consequentTarget, emitted, controls);
-    const alternate = emitTargetArm(context, op.alternateTarget, emitted, controls);
+    const consequent = emitValueRegionArm(context, op, op.consequentTarget, emitted, controls);
+    const alternate = emitValueRegionArm(context, op, op.alternateTarget, emitted, controls);
 
     return [
       ifStatement(
@@ -1566,8 +1566,8 @@ function emitShortCircuit(
   continuation: BasicBlock | null = null,
 ): ESTreeStatement[] {
   return withFallthrough(context, op.completionBlock, emitted, controls, continuation, () => {
-    const body = emitTargetArm(context, op.bodyTarget, emitted, controls);
-    const exit = emitTargetArm(context, op.exitTarget, emitted, controls);
+    const body = emitValueRegionArm(context, op, op.bodyTarget, emitted, controls);
+    const exit = emitValueRegionArm(context, op, op.exitTarget, emitted, controls);
 
     return [
       ifStatement(
@@ -1587,8 +1587,8 @@ function emitNullishGuard(
   continuation: BasicBlock | null = null,
 ): ESTreeStatement[] {
   return withFallthrough(context, op.completionBlock, emitted, controls, continuation, () => {
-    const body = emitTargetArm(context, op.bodyTarget, emitted, controls);
-    const exit = emitTargetArm(context, op.exitTarget, emitted, controls);
+    const body = emitValueRegionArm(context, op, op.bodyTarget, emitted, controls);
+    const exit = emitValueRegionArm(context, op, op.exitTarget, emitted, controls);
 
     return [
       ifStatement(
@@ -1598,6 +1598,16 @@ function emitNullishGuard(
       ),
     ];
   });
+}
+
+function emitValueRegionArm(
+  context: CodegenContext,
+  op: ValueRegionTerminator,
+  target: BlockTarget,
+  emitted: Set<BasicBlock>,
+  controls: readonly EmitControlContext[],
+): ESTreeStatement[] {
+  return emitTargetBranchArm(context, target, op.completionBlock, emitted, controls);
 }
 
 function shortCircuitBodyCondition(
@@ -1671,6 +1681,8 @@ export function emitBranchArm(
 ): ESTreeStatement[] {
   const implicitJumpTarget =
     options.implicitJumpTarget === undefined ? continuation : options.implicitJumpTarget;
+
+  if (block === continuation) return [];
 
   if (emitted.has(block)) return [];
 
@@ -1925,7 +1937,7 @@ export function withFallthrough(
     context.popFallthrough(fallthroughBlock);
   }
 
-  if (!emitted.has(fallthroughBlock)) {
+  if (fallthroughBlock !== continuation && !emitted.has(fallthroughBlock)) {
     statements.push(
       ...emitContinuation(context, fallthroughBlock, continuation, emitted, controls),
     );

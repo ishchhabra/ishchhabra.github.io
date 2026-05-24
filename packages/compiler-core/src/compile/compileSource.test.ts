@@ -55,4 +55,26 @@ describe("compileSource", () => {
 
     expect(module.value).toBe(1);
   });
+
+  it("continues after a nullish optional chain result", async () => {
+    const result = compileSource(
+      `function make(options) {
+  const useNumberId = options.advanced?.database?.generateId === "serial";
+
+  if (useNumberId) {
+    throw new Error("bad");
+  }
+
+  return { transaction: false };
+}
+
+export const value = JSON.stringify(make({}));`,
+      { sourceName: "test.js" },
+    );
+    const module = await import(
+      `data:text/javascript;charset=utf-8,${encodeURIComponent(result.code)}`
+    );
+
+    expect(module.value).toBe('{"transaction":false}');
+  });
 });
