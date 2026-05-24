@@ -118,6 +118,7 @@ export type BindingPatternTarget =
   | {
       readonly kind: "binding";
       readonly declarationId: DeclarationId;
+      readonly bindingValue: Value;
     }
   | {
       readonly kind: "array";
@@ -166,6 +167,11 @@ export type ObjectBindingProperty =
       readonly target: BindingPatternTarget;
     };
 
+export interface BindingPatternBinding {
+  readonly declarationId: DeclarationId;
+  readonly bindingValue: Value;
+}
+
 /**
  * Compiler-owned target tree for ECMAScript assignment patterns.
  *
@@ -185,7 +191,11 @@ export type ObjectBindingProperty =
  * Assigns to property `obj.y`.
  */
 export type AssignmentPatternTarget =
-  | { readonly kind: "binding"; readonly declarationId: DeclarationId }
+  | {
+      readonly kind: "binding";
+      readonly declarationId: DeclarationId;
+      readonly bindingValue: Value;
+    }
   | {
       readonly kind: "static-property";
       readonly object: Value;
@@ -244,6 +254,11 @@ export type ObjectAssignmentProperty =
       readonly target: AssignmentPatternTarget;
     };
 
+export interface AssignmentPatternBinding {
+  readonly declarationId: DeclarationId;
+  readonly bindingValue: Value;
+}
+
 export function bindingPatternOperands(target: BindingPatternTarget): readonly Value[] {
   switch (target.kind) {
     case "binding":
@@ -269,6 +284,29 @@ export function bindingPatternOperands(target: BindingPatternTarget): readonly V
         ...patternExpressionOperands(target.expression),
         ...bindingPatternOperands(target.target),
       ];
+  }
+}
+
+export function bindingPatternBindings(
+  target: BindingPatternTarget,
+): readonly BindingPatternBinding[] {
+  switch (target.kind) {
+    case "binding":
+      return [{ declarationId: target.declarationId, bindingValue: target.bindingValue }];
+
+    case "array":
+      return target.elements.flatMap((element) =>
+        element === null ? [] : bindingPatternBindings(element),
+      );
+
+    case "object":
+      return target.properties.flatMap((property) => bindingPatternBindings(property.target));
+
+    case "rest":
+      return bindingPatternBindings(target.target);
+
+    case "default":
+      return bindingPatternBindings(target.target);
   }
 }
 
@@ -303,6 +341,33 @@ export function assignmentPatternOperands(target: AssignmentPatternTarget): read
         ...patternExpressionOperands(target.expression),
         ...assignmentPatternOperands(target.target),
       ];
+  }
+}
+
+export function assignmentPatternBindings(
+  target: AssignmentPatternTarget,
+): readonly AssignmentPatternBinding[] {
+  switch (target.kind) {
+    case "binding":
+      return [{ declarationId: target.declarationId, bindingValue: target.bindingValue }];
+
+    case "static-property":
+    case "dynamic-property":
+      return [];
+
+    case "array":
+      return target.elements.flatMap((element) =>
+        element === null ? [] : assignmentPatternBindings(element),
+      );
+
+    case "object":
+      return target.properties.flatMap((property) => assignmentPatternBindings(property.target));
+
+    case "rest":
+      return assignmentPatternBindings(target.target);
+
+    case "default":
+      return assignmentPatternBindings(target.target);
   }
 }
 
@@ -574,7 +639,10 @@ export function cloneBindingPatternTarget(
 ): BindingPatternTarget {
   switch (target.kind) {
     case "binding":
-      return target;
+      return {
+        ...target,
+        bindingValue: context.result(target.bindingValue),
+      };
 
     case "array":
       return {
@@ -622,7 +690,10 @@ export function cloneAssignmentPatternTarget(
 ): AssignmentPatternTarget {
   switch (target.kind) {
     case "binding":
-      return target;
+      return {
+        ...target,
+        bindingValue: context.result(target.bindingValue),
+      };
 
     case "static-property":
       return {

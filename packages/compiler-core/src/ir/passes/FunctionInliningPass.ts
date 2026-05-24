@@ -200,6 +200,7 @@ class FunctionInliningPass {
       }
 
       values.set(param.value, plan.args[i]);
+      values.set(param.target.bindingValue, plan.args[i]);
     }
 
     const context: OperationCloneContext = {
@@ -277,6 +278,7 @@ class FunctionInliningPass {
       }
 
       values.set(param.value, plan.args[i]);
+      values.set(param.target.bindingValue, plan.args[i]);
     }
 
     const continuationValue = needsContinuationValue
@@ -470,7 +472,7 @@ function hasCloneableBodyOps(
   bindingSubstitutions: ReadonlyMap<DeclarationId, Value>,
 ): boolean {
   return bodyOps.every((op) => {
-    if (op instanceof LoadBindingOp && op.bindingValue === null) {
+    if (op instanceof LoadBindingOp) {
       return bindingSubstitutions.has(op.declarationId);
     }
 
@@ -525,7 +527,6 @@ function resolveInlineBindingLoad(
   bindingSubstitutions: ReadonlyMap<DeclarationId, Value>,
 ): Value | null {
   if (!(op instanceof LoadBindingOp)) return null;
-  if (op.bindingValue !== null) return null;
 
   return bindingSubstitutions.get(op.declarationId) ?? null;
 }

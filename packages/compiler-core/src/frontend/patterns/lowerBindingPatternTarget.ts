@@ -24,6 +24,7 @@ export function lowerBindingPatternTarget(
       return {
         kind: "binding",
         declarationId: declaration.id,
+        bindingValue: builder.createValue(declaration.id),
       };
     }
 

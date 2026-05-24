@@ -1,4 +1,5 @@
 import {
+  bindingPatternBindings,
   bindingPatternOperands,
   BindingPatternTarget,
   BindingWriteMode,
@@ -35,7 +36,10 @@ export class DestructureBindingOp extends Operation {
     public readonly source: Value,
     public readonly mode: BindingWriteMode,
   ) {
-    super(id);
+    super(
+      id,
+      bindingPatternBindings(target).map((binding) => binding.bindingValue),
+    );
   }
 
   public override operands(): readonly Value[] {

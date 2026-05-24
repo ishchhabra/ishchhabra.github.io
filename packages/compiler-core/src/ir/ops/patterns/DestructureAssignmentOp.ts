@@ -1,4 +1,5 @@
 import {
+  assignmentPatternBindings,
   assignmentPatternOperands,
   cloneAssignmentPatternTarget,
   rewriteAssignmentPatternOperands,
@@ -31,9 +32,16 @@ export class DestructureAssignmentOp extends Operation {
     id: OperationId,
     public readonly target: AssignmentPatternTarget,
     public readonly source: Value,
-    result: Value,
+    completionValue: Value,
   ) {
-    super(id, [result]);
+    super(id, [
+      completionValue,
+      ...assignmentPatternBindings(target).map((binding) => binding.bindingValue),
+    ]);
+  }
+
+  public get completionValue(): Value {
+    return this.results[0];
   }
 
   public override operands(): readonly Value[] {
@@ -58,7 +66,7 @@ export class DestructureAssignmentOp extends Operation {
       this.id,
       rewriteAssignmentPatternOperands(this.target, targetOperands),
       source,
-      this.result,
+      this.completionValue,
     );
   }
 
@@ -67,7 +75,7 @@ export class DestructureAssignmentOp extends Operation {
       context.ids.operationId(),
       cloneAssignmentPatternTarget(context, this.target),
       context.value(this.source),
-      context.result(this.result),
+      context.result(this.completionValue),
     );
   }
 }

@@ -77,4 +77,39 @@ export const value = JSON.stringify(make({}));`,
 
     expect(module.value).toBe('{"transaction":false}');
   });
+
+  it("preserves object rest destructuring assignment writes", async () => {
+    const source = `export function repro(value) {
+  let encryptedKey;
+  let parameters;
+
+  ({ encryptedKey, ...parameters } = value);
+
+  return [encryptedKey, parameters];
+}`;
+    const result = compileSource(source, { sourceName: "test.js" });
+    const direct = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(source)}`);
+    const compiled = await import(
+      `data:text/javascript;charset=utf-8,${encodeURIComponent(result.code)}`
+    );
+    const input = { encryptedKey: "key", alg: "A256GCM", iv: "abc" };
+
+    expect(compiled.repro(input)).toEqual(direct.repro(input));
+  });
+
+  it("preserves object rest destructuring binding values", async () => {
+    const source = `export function repro(value) {
+  const { encryptedKey, ...parameters } = value;
+
+  return [encryptedKey, parameters];
+}`;
+    const result = compileSource(source, { sourceName: "test.js" });
+    const direct = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(source)}`);
+    const compiled = await import(
+      `data:text/javascript;charset=utf-8,${encodeURIComponent(result.code)}`
+    );
+    const input = { encryptedKey: "key", alg: "A256GCM", iv: "abc" };
+
+    expect(compiled.repro(input)).toEqual(direct.repro(input));
+  });
 });

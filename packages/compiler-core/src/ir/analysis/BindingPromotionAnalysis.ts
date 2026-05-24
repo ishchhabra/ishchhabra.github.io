@@ -1,7 +1,7 @@
 import type { DeclarationTable } from "../../frontend/declarations/DeclarationTable";
 import { bindingSemantics, canPromoteBindingStorage } from "../../frontend/scope/BindingSemantics";
 import type { Declaration } from "../../frontend/scope/Declaration";
-import type { BindingPatternTarget } from "../core/DestructurePattern";
+import { assignmentPatternBindings, type BindingPatternTarget } from "../core/DestructurePattern";
 import type { FunctionIR } from "../core/FunctionIR";
 import type { Operation } from "../core/Operation";
 import type { DeclarationId, Value } from "../core/Value";
@@ -10,6 +10,7 @@ import { LoadBindingOp } from "../ops/bindings/LoadBindingOp";
 import { StoreBindingOp } from "../ops/bindings/StoreBindingOp";
 import { ConstantOp } from "../ops/constants/ConstantOp";
 import { JSXElementOp, type JSXName } from "../ops/jsx/JSXElementOp";
+import { DestructureAssignmentOp } from "../ops/patterns/DestructureAssignmentOp";
 import { DestructureBindingOp } from "../ops/patterns/DestructureBindingOp";
 import type { AnalysisManager, FunctionAnalysis } from "./AnalysisManager";
 import { BindingEscapeAnalysis } from "./BindingEscapeAnalysis";
@@ -168,6 +169,12 @@ function rejectOperation(op: Operation, rejected: Set<DeclarationId>): void {
       if (operand.declarationId !== null) {
         rejected.add(operand.declarationId);
       }
+    }
+  }
+
+  if (op instanceof DestructureAssignmentOp) {
+    for (const binding of assignmentPatternBindings(op.target)) {
+      rejected.add(binding.declarationId);
     }
   }
 

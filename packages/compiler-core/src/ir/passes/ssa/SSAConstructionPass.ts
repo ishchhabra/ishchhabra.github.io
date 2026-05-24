@@ -6,6 +6,7 @@ import {
 } from "../../analysis";
 import { DeclarationId, Value } from "../../core";
 import { BasicBlock } from "../../core/Block";
+import { assignmentPatternBindings, bindingPatternBindings } from "../../core/DestructurePattern";
 import { FunctionIR } from "../../core/FunctionIR";
 import { IRIdAllocator } from "../../core/IRIdAllocator";
 import { BlockTarget, sameValueList, TerminatorOp } from "../../core/TerminatorOp";
@@ -13,6 +14,8 @@ import { InitializeBindingOp } from "../../ops/bindings/InitializeBindingOp";
 import { LoadBindingOp } from "../../ops/bindings/LoadBindingOp";
 import { StoreBindingOp } from "../../ops/bindings/StoreBindingOp";
 import { ConstantOp } from "../../ops/constants/ConstantOp";
+import { DestructureAssignmentOp } from "../../ops/patterns/DestructureAssignmentOp";
+import { DestructureBindingOp } from "../../ops/patterns/DestructureBindingOp";
 import { FunctionPass, PassResult } from "../Pass";
 
 export interface SSAConstructionPassOptions {
@@ -80,6 +83,10 @@ class SSAConstructionPass {
       if (param.value.declarationId !== null) {
         this.addDefinition(param.value.declarationId, this.fn.entryBlock);
       }
+
+      for (const binding of bindingPatternBindings(param.target)) {
+        this.addDefinition(binding.declarationId, this.fn.entryBlock);
+      }
     }
 
     for (const block of this.fn.blocks) {
@@ -92,6 +99,18 @@ class SSAConstructionPass {
       for (const op of block.operations) {
         if (op instanceof InitializeBindingOp || op instanceof StoreBindingOp) {
           this.addDefinition(op.declarationId, block);
+        }
+
+        if (op instanceof DestructureAssignmentOp) {
+          for (const binding of assignmentPatternBindings(op.target)) {
+            this.addDefinition(binding.declarationId, block);
+          }
+        }
+
+        if (op instanceof DestructureBindingOp) {
+          for (const binding of bindingPatternBindings(op.target)) {
+            this.addDefinition(binding.declarationId, block);
+          }
         }
       }
     }
@@ -171,6 +190,14 @@ class SSAConstructionPass {
         this.push(stacks, param.value.declarationId, param.value);
         pushed.push(param.value.declarationId);
       }
+
+      for (const param of this.fn.params) {
+        if (param.kind === "capture") continue;
+        for (const binding of bindingPatternBindings(param.target)) {
+          this.push(stacks, binding.declarationId, binding.bindingValue);
+          pushed.push(binding.declarationId);
+        }
+      }
     }
 
     for (const param of block.params) {
@@ -190,6 +217,20 @@ class SSAConstructionPass {
       if (op instanceof InitializeBindingOp || op instanceof StoreBindingOp) {
         this.push(stacks, op.declarationId, op.bindingValue);
         pushed.push(op.declarationId);
+      }
+
+      if (op instanceof DestructureAssignmentOp) {
+        for (const binding of assignmentPatternBindings(op.target)) {
+          this.push(stacks, binding.declarationId, binding.bindingValue);
+          pushed.push(binding.declarationId);
+        }
+      }
+
+      if (op instanceof DestructureBindingOp) {
+        for (const binding of bindingPatternBindings(op.target)) {
+          this.push(stacks, binding.declarationId, binding.bindingValue);
+          pushed.push(binding.declarationId);
+        }
       }
     }
 

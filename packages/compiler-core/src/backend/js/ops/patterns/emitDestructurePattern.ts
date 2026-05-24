@@ -28,8 +28,11 @@ export function emitBindingPatternTarget(
   target: BindingPatternTarget,
 ): ESTreePattern {
   switch (target.kind) {
-    case "binding":
-      return identifier(context.names.declarationName(target.declarationId));
+    case "binding": {
+      const id = identifier(context.names.declarationName(target.declarationId));
+      context.values.set(target.bindingValue, id);
+      return id;
+    }
 
     case "array":
       return arrayPattern(

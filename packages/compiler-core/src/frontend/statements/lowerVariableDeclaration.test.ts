@@ -85,6 +85,7 @@ describe("lowerVariableDeclaration", () => {
 
     const destructure = operations[1] as DestructureBindingOp;
     expect(destructure.mode).toBe("initialize");
+    expect(destructure.results).toHaveLength(1);
   });
 
   it("lowers var destructuring declarations as runtime stores", () => {
@@ -102,5 +103,6 @@ describe("lowerVariableDeclaration", () => {
 
     const destructure = operations[3] as DestructureBindingOp;
     expect(destructure.mode).toBe("store");
+    expect(destructure.results).toHaveLength(1);
   });
 });

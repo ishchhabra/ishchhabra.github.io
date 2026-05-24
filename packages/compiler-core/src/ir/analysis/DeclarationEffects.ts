@@ -1,4 +1,4 @@
-import type { BindingPatternTarget } from "../core/DestructurePattern";
+import { assignmentPatternBindings, type BindingPatternTarget } from "../core/DestructurePattern";
 import type { Operation } from "../core/Operation";
 import type { DeclarationId, Value } from "../core/Value";
 import { InitializeBindingOp } from "../ops/bindings/InitializeBindingOp";
@@ -6,6 +6,7 @@ import { LoadBindingOp } from "../ops/bindings/LoadBindingOp";
 import { StoreBindingOp } from "../ops/bindings/StoreBindingOp";
 import { CreateFunctionOp } from "../ops/functions/CreateFunctionOp";
 import { DeleteOp } from "../ops/operators/DeleteOp";
+import { DestructureAssignmentOp } from "../ops/patterns/DestructureAssignmentOp";
 import { DestructureBindingOp } from "../ops/patterns/DestructureBindingOp";
 
 export type DeclarationDefKind = "initialize";
@@ -117,6 +118,19 @@ export function declarationEffects(op: Operation): DeclarationEffects {
               declarationId,
             }))
           : []),
+        ...valueUses,
+      ]),
+    };
+  }
+
+  if (op instanceof DestructureAssignmentOp) {
+    return {
+      defs: [],
+      uses: uniqueUses([
+        ...assignmentPatternBindings(op.target).map((binding) => ({
+          kind: "write" as const,
+          declarationId: binding.declarationId,
+        })),
         ...valueUses,
       ]),
     };

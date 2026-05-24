@@ -140,6 +140,7 @@ describe("lowerAssignmentExpression", () => {
     ]);
 
     expect(operations[3]).toBeInstanceOf(DestructureAssignmentOp);
+    expect(operations[3].results).toHaveLength(2);
   });
 
   it("lowers identifier logical assignment as short-circuiting control flow", () => {

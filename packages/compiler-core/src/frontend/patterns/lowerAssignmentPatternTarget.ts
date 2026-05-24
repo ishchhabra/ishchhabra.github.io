@@ -29,6 +29,7 @@ export function lowerAssignmentPatternTarget(
       return {
         kind: "binding",
         declarationId: declaration.id,
+        bindingValue: builder.createValue(declaration.id),
       };
     }
 

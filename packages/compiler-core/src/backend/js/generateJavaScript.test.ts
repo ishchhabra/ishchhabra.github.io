@@ -844,7 +844,7 @@ describe("generateJavaScript", () => {
     );
 
     expect(generateJavaScript(input)).toBe(
-      "function $d0($d1, $d2, $d3) {\n  let $4;\n  let $6;\n\n  if ($d1) {\n    if ($d2 == null) {\n      $6 = $d3;\n    } else {\n      $6 = $d2;\n    }\n\n    $4 = $6;\n  } else {\n    $4 = $d3;\n  }\n\n  const $d4 = $4;\n\n  return { pathname: $d4 };\n}",
+      "function $d0($d1, $d2, $d3) {\n  let $7;\n  let $9;\n\n  if ($d1) {\n    if ($d2 == null) {\n      $9 = $d3;\n    } else {\n      $9 = $d2;\n    }\n\n    $7 = $9;\n  } else {\n    $7 = $d3;\n  }\n\n  const $d4 = $7;\n\n  return { pathname: $d4 };\n}",
     );
   });
 
