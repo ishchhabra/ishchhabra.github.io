@@ -876,7 +876,9 @@ export class DeclarationCollector {
             this.collectPropertyKey(element.key, scope);
           }
           if (element.value !== null) {
-            this.collectExpression(element.value, scope);
+            const initializerScope = new Scope("function", scope);
+            this.graph.setScope(element, initializerScope);
+            this.collectExpression(element.value, initializerScope);
           }
           break;
 

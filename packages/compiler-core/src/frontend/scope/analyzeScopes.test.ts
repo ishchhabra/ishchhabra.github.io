@@ -400,6 +400,19 @@ describe("analyzeScopes", () => {
     expect(graph.capturesForOwner(inner)).toEqual([x]);
   });
 
+  it("records captures for class field initializers", () => {
+    const { graph, program } = analyzeSource("const xs = [1]; class C { value = xs[0]; }");
+    const xs = declarationByName(graph.programScope, "xs");
+    const declaration = programStatementAt(program, 1, "ClassDeclaration");
+    const element = declaration.body.body[0];
+
+    if (element?.type !== "PropertyDefinition") {
+      throw new Error("Expected class field");
+    }
+
+    expect(graph.capturesForOwner(element)).toEqual([xs]);
+  });
+
   it("records import bindings and resolves references to them", () => {
     const { graph, program } = analyzeSource('import { x as y } from "m"; y;');
     const declaration = declarationByName(graph.programScope, "y");

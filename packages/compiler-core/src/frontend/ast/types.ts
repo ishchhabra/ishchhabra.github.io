@@ -9,6 +9,7 @@ import type {
   ArrowFunctionExpression,
   BlockStatement,
   CatchClause,
+  PropertyDefinition,
   StaticBlock,
   RegExpLiteral,
   BigIntLiteral,
@@ -35,6 +36,7 @@ export type ScopeOwnerNode =
   | SwitchStatement
   | TryStatement
   | CatchClause
+  | PropertyDefinition
   | StaticBlock;
 
 /**

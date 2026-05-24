@@ -83,7 +83,7 @@ function lowerClassField(builder: FunctionIRBuilder, element: PropertyDefinition
     initializer:
       element.value === null
         ? null
-        : lowerDeferredExpression(builder, element.value, "class-field-initializer"),
+        : lowerDeferredExpression(builder, element.value, "class-field-initializer", element),
     captures: [],
   };
 }

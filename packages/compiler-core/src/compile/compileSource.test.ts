@@ -43,4 +43,16 @@ describe("compileSource", () => {
       'function $d0() {\n  return <div />;\n}\n\nconst $d1 = createFileRoute("/x")({ component: $d0 });\n\nexport { $d1 as Route };',
     );
   });
+
+  it("preserves bindings captured by class field initializers", async () => {
+    const result = compileSource(
+      "const xs = [1]; class C { value = xs[0]; } export const value = new C().value;",
+      { sourceName: "test.js" },
+    );
+    const module = await import(
+      `data:text/javascript;charset=utf-8,${encodeURIComponent(result.code)}`
+    );
+
+    expect(module.value).toBe(1);
+  });
 });

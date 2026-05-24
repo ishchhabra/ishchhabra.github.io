@@ -559,7 +559,7 @@ export class ReferenceResolver {
             this.resolvePropertyKey(element.key, classScope);
           }
           if (element.value !== null) {
-            this.resolveExpression(element.value, classScope);
+            this.resolveExpression(element.value, this.graph.scopeForOwner(element));
           }
           break;
 

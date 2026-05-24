@@ -2,6 +2,7 @@ import type { Expression } from "oxc-parser";
 
 import type { FunctionIR } from "../../ir/core/FunctionIR";
 import { ReturnTerminatorOp } from "../../ir/ops/control/ReturnTerminatorOp";
+import type { ScopeOwnerNode } from "../ast/types";
 import { lowerExpression } from "../expressions/lowerExpression";
 import type { FunctionIRBuilder } from "../FunctionIRBuilder";
 
@@ -12,8 +13,10 @@ export function lowerDeferredExpression(
   builder: FunctionIRBuilder,
   expression: Expression,
   kind: FunctionIR["kind"],
+  captureOwner?: ScopeOwnerNode,
 ): FunctionIR {
-  const nested = builder.createNestedFunctionIR({ kind });
+  const captures = captureOwner === undefined ? [] : builder.capturesForOwner(captureOwner);
+  const nested = builder.createNestedFunctionIR({ kind, captures });
   const value = lowerExpression(nested.builder, expression);
 
   nested.builder.terminate(new ReturnTerminatorOp(nested.builder.operationId(), value));
