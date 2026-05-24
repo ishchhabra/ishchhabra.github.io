@@ -42,11 +42,12 @@ export function compilerVitePlugin(options: CompilerVitePluginOptions): Plugin {
   const rootDir = path.resolve(options.rootDir);
   const includeDirs = options.include.map((dir) => path.resolve(rootDir, dir));
   const session = new ProgramSession();
+  const compiling = new Set<string>();
   let resolveId: ReturnType<typeof createIdResolver> | null = null;
 
   return {
     name: "i2:compiler",
-    enforce: "pre",
+    enforce: "post",
 
     configResolved(config) {
       resolveId = createIdResolver(config);
@@ -77,26 +78,48 @@ export function compilerVitePlugin(options: CompilerVitePluginOptions): Plugin {
       const cachedResult = adaptEmission(cached);
       if (cachedResult !== undefined) return cachedResult;
 
+      const compileKey = environmentKey(environment, moduleId);
+      if (compiling.has(compileKey)) return null;
       if (!shouldCompileGraphEntrypoint(moduleId, includeDirs)) return null;
 
-      await session.compileGraph({
-        environment,
-        host: createViteModuleHost(
-          {
-            resolve: async (specifier, importer, resolveOptions) => {
-              if (resolveId !== null) {
-                const resolvedId = await resolveId(this.environment, specifier, importer);
-                return resolvedId === undefined ? null : { id: resolvedId };
-              }
+      compiling.add(compileKey);
+      try {
+        await session.compileGraph({
+          environment,
+          host: createViteModuleHost(
+            {
+              resolve: async (specifier, importer, resolveOptions) => {
+                if (resolveId !== null) {
+                  const resolvedId = await resolveId(this.environment, specifier, importer);
+                  return resolvedId === undefined ? null : { id: resolvedId };
+                }
 
-              return this.resolve(specifier, importer, resolveOptions);
+                return this.resolve(specifier, importer, resolveOptions);
+              },
+              loadModuleSource: async (resolvedId) => {
+                const filePath = filePathFromModuleId(resolvedId);
+                if (
+                  filePath !== null &&
+                  filePath.includes("/node_modules/") &&
+                  !resolvedId.includes("?")
+                ) {
+                  return undefined;
+                }
+
+                const loaded = await loadModuleThroughVite(this, resolvedId);
+                if (loaded !== null) return loaded;
+
+                return undefined;
+              },
             },
-          },
-          new Map([[moduleId, source]]),
-          { environment },
-        ),
-        entrypoints: [moduleId],
-      });
+            new Map([[moduleId, source]]),
+            { environment },
+          ),
+          entrypoints: [moduleId],
+        });
+      } finally {
+        compiling.delete(compileKey);
+      }
 
       return adaptEmission(session.emissionFor({ environment, resolvedId: moduleId })) ?? null;
     },
@@ -114,6 +137,32 @@ export function compilerVitePlugin(options: CompilerVitePluginOptions): Plugin {
       return;
     },
   };
+}
+
+async function loadModuleThroughVite(
+  context: ThisParameterType<TransformHook>,
+  resolvedId: string,
+): Promise<string | null> {
+  const load = (context as { load?: (options: { id: string }) => Promise<unknown> }).load;
+  if (load === undefined) return null;
+
+  const loaded = await load.call(context, { id: resolvedId });
+  if (
+    loaded !== null &&
+    typeof loaded === "object" &&
+    "code" in loaded &&
+    typeof loaded.code === "string"
+  ) {
+    return loaded.code;
+  }
+
+  return null;
+}
+
+type TransformHook = Extract<NonNullable<Plugin["transform"]>, Function>;
+
+function environmentKey(environment: ModuleEnvironment, resolvedId: string): string {
+  return `${environment.name}:${environment.consumer}:${resolvedId}`;
 }
 
 function adaptEmission(
@@ -143,6 +192,7 @@ function shouldCompileGraphEntrypoint(moduleId: string, includeDirs: readonly st
 
 function moduleIdFromViteId(id: string): string | null {
   if (id.startsWith("\0")) return null;
+  if (isFrameworkGeneratedQuery(id)) return null;
 
   return filePathFromModuleId(id) === null ? null : id;
 }
@@ -159,6 +209,10 @@ function filePathFromModuleId(moduleId: string): string | null {
   const filePath = queryIndex === -1 ? moduleId : moduleId.slice(0, queryIndex);
 
   return path.isAbsolute(filePath) ? filePath : null;
+}
+
+function isFrameworkGeneratedQuery(id: string): boolean {
+  return id.includes("?tsr-shared=");
 }
 
 function isInside(filePath: string, dir: string): boolean {

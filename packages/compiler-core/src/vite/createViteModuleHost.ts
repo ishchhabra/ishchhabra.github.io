@@ -1,5 +1,5 @@
-import { readFile } from "node:fs/promises";
 import { builtinModules } from "node:module";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import type {
@@ -19,6 +19,7 @@ interface ViteModuleHostContext {
     importer?: string,
     options?: { readonly skipSelf?: boolean },
   ): Promise<{ readonly id: string; readonly external?: boolean | "absolute" } | null>;
+  loadModuleSource?(id: string): Promise<string | null | undefined>;
 }
 
 export interface ViteModuleHostOptions {
@@ -70,15 +71,19 @@ class ViteModuleHost implements ModuleHost {
     if (resolved.external) {
       return {
         resolvedId: resolved.resolvedId,
+        sourceName: resolved.resolvedId,
         source: null,
         kind: "external",
       };
     }
 
     const kind = kindFromResolvedId(resolved.resolvedId);
+    const sourceName = sourceNameFromResolvedId(resolved.resolvedId);
+
     if (kind !== "esm") {
       return {
         resolvedId: resolved.resolvedId,
+        sourceName,
         source: null,
         kind,
       };
@@ -89,6 +94,7 @@ class ViteModuleHost implements ModuleHost {
     if (source === null) {
       return {
         resolvedId: resolved.resolvedId,
+        sourceName,
         source: null,
         kind: "opaque",
       };
@@ -96,10 +102,11 @@ class ViteModuleHost implements ModuleHost {
 
     if (
       this.environment.consumer === "client" &&
-      sourceHasStaticNodeBuiltinDependency(resolved.resolvedId, source)
+      sourceHasStaticNodeBuiltinDependency(sourceName, source)
     ) {
       return {
         resolvedId: resolved.resolvedId,
+        sourceName,
         source: null,
         kind: "opaque",
       };
@@ -107,6 +114,7 @@ class ViteModuleHost implements ModuleHost {
 
     return {
       resolvedId: resolved.resolvedId,
+      sourceName,
       source,
       kind,
     };
@@ -116,8 +124,13 @@ class ViteModuleHost implements ModuleHost {
     const overriddenSource = this.sourceOverrides.get(resolvedId);
     if (overriddenSource !== undefined) return overriddenSource;
 
+    const transformedSource = await this.context.loadModuleSource?.(resolvedId);
+    if (transformedSource !== undefined) return transformedSource;
+
     const filePath = filePathFromResolvedId(resolvedId);
-    return filePath === null ? null : readFile(filePath, "utf8");
+    if (filePath === null) return null;
+
+    return readFile(filePath, "utf8");
   }
 }
 
@@ -127,6 +140,10 @@ function filePathFromResolvedId(resolvedId: string): string | null {
 
   if (!path.isAbsolute(filePath)) return null;
   return filePath;
+}
+
+function sourceNameFromResolvedId(resolvedId: string): string {
+  return filePathFromResolvedId(resolvedId) ?? resolvedId;
 }
 
 function kindFromResolvedId(resolvedId: string): ProgramModuleKind {
@@ -167,7 +184,8 @@ function hasOpaqueViteQuery(resolvedId: string): boolean {
     params.has("sharedworker") ||
     params.has("raw") ||
     params.has("url") ||
-    params.has("inline")
+    params.has("inline") ||
+    params.has("tsr-shared")
   );
 }
 

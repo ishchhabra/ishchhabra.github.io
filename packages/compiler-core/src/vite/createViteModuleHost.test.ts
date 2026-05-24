@@ -21,6 +21,7 @@ describe("createViteModuleHost", () => {
 
     expect(loaded).toEqual({
       resolvedId: "/src/render.worker.ts?worker",
+      sourceName: "/src/render.worker.ts",
       source: null,
       kind: "opaque",
     });
@@ -47,6 +48,7 @@ describe("createViteModuleHost", () => {
 
     expect(loaded).toEqual({
       resolvedId: "/entry.js",
+      sourceName: "/entry.js",
       source: null,
       kind: "opaque",
     });
@@ -73,6 +75,34 @@ describe("createViteModuleHost", () => {
 
     expect(loaded).toEqual({
       resolvedId: "/entry.js",
+      sourceName: "/entry.js",
+      source,
+      kind: "esm",
+    });
+  });
+
+  it("uses the filesystem path as parser source name for Vite query modules", async () => {
+    const source = "const x = y!;";
+    const host = createViteModuleHost(
+      {
+        async resolve(specifier) {
+          return { id: specifier };
+        },
+      },
+      new Map([["/entry.tsx?tsr-split=component", source]]),
+      {
+        environment: { name: "client", consumer: "client" },
+      },
+    );
+
+    const loaded = await host.load({
+      resolvedId: "/entry.tsx?tsr-split=component",
+      external: false,
+    });
+
+    expect(loaded).toMatchObject({
+      resolvedId: "/entry.tsx?tsr-split=component",
+      sourceName: "/entry.tsx",
       source,
       kind: "esm",
     });
