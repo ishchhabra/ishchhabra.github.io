@@ -27,6 +27,7 @@ class TestModuleHost implements ModuleHost {
     if (source === undefined) {
       return {
         resolvedId: resolved.resolvedId,
+        sourceName: resolved.resolvedId,
         source: null,
         kind: "opaque",
       };
@@ -34,6 +35,7 @@ class TestModuleHost implements ModuleHost {
 
     return {
       resolvedId: resolved.resolvedId,
+      sourceName: resolved.resolvedId,
       source,
       kind: "esm",
     };

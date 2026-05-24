@@ -60,6 +60,14 @@ export interface LoadedModule {
   readonly resolvedId: string;
 
   /**
+   * Parser-facing source name for syntax-mode detection and diagnostics.
+   *
+   * Bundler ids may include query strings while the parser still needs the
+   * underlying filename extension.
+   */
+  readonly sourceName: string;
+
+  /**
    * Source text for modules the compiler can inspect.
    *
    * Null means the module is opaque or external.

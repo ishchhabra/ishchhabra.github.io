@@ -127,7 +127,7 @@ function buildLoadedModule(
   ids: IRIdAllocator,
 ): ModuleIRBuildResult {
   try {
-    return new ModuleIRBuilder({ ids }).build(parseModule(loaded.resolvedId, source));
+    return new ModuleIRBuilder({ ids }).build(parseModule(loaded.sourceName, source));
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to build ${loaded.resolvedId}: ${message}`);
@@ -137,6 +137,7 @@ function buildLoadedModule(
 function externalLoadedModule(resolved: ResolvedModule): LoadedModule {
   return {
     resolvedId: resolved.resolvedId,
+    sourceName: resolved.resolvedId,
     source: null,
     kind: "external",
   };
