@@ -129,8 +129,8 @@ function patternCanBeExpression(
  * Emits a nested function as a JavaScript function expression.
  */
 export function emitFunctionExpression(context: CodegenContext, fn: FunctionIR): ESTreeExpression {
-  const body = emitFunctionBody(context, fn);
   const params = emitFunctionParams(context, fn);
+  const body = emitFunctionBody(context, fn);
 
   return functionExpression(params, body, {
     id: emitFunctionName(context, fn),

@@ -112,4 +112,18 @@ export const value = JSON.stringify(make({}));`,
 
     expect(compiled.repro(input)).toEqual(direct.repro(input));
   });
+
+  it("materializes parameter binding values before for-of headers", async () => {
+    const source = `(function (a, b) {
+  for (var value of [1]) {
+    a = b;
+  }
+})(1, 2);
+
+export const result = 0;`;
+    const result = compileSource(source, { sourceName: "test.js" });
+
+    await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(source)}`);
+    await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(result.code)}`);
+  });
 });

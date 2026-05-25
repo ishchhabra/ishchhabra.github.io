@@ -11,8 +11,8 @@ export function emitCreateFunctionOp(
   context: CodegenContext,
   op: CreateFunctionOp,
 ): ESTreeStatement[] {
-  const body = emitFunctionBody(context, op.functionIR);
   const params = emitFunctionParams(context, op.functionIR);
+  const body = emitFunctionBody(context, op.functionIR);
 
   context.values.set(
     op.result,
