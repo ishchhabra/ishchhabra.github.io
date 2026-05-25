@@ -33,9 +33,9 @@ jobs:
         with:
           version: 10.30.3
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version-file: package.json
           cache: pnpm
           cache-dependency-path: packages/compiler-core/pnpm-lock.yaml
 

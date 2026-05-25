@@ -1,5 +1,5 @@
-import { builtinModules } from "node:module";
 import { readFile } from "node:fs/promises";
+import { builtinModules } from "node:module";
 import path from "node:path";
 
 import type {

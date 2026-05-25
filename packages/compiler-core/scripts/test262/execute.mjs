@@ -197,7 +197,9 @@ function runOptions(filename) {
     filename,
     timeout: 10_000,
     importModuleDynamically() {
-      const rejection = Promise.reject(new Error("Dynamic import is not supported by this runner"));
+      const rejection = Promise.reject(
+        new TypeError("Dynamic import is not supported by this runner"),
+      );
       rejection.catch(() => {});
       return rejection;
     },
