@@ -1626,30 +1626,6 @@ function shortCircuitBodyCondition(
   }
 }
 
-function emitTargetArm(
-  context: CodegenContext,
-  target: BlockTarget,
-  emitted: Set<BasicBlock>,
-  controls: readonly EmitControlContext[],
-): ESTreeStatement[] {
-  const entry = emitBlockTargetEntry(context, target, emitted, controlBoundaryBlocks(controls));
-  const controlBreak = emitControlBreak(entry.entryBlock, controls);
-  if (controlBreak !== null) {
-    return [...entry.prologue, controlBreak];
-  }
-
-  const controlJump = emitControlJump(entry.entryBlock, controls);
-  if (controlJump !== null) {
-    return [...entry.prologue, controlJump];
-  }
-
-  if (context.isFallthrough(entry.entryBlock)) {
-    return entry.prologue;
-  }
-
-  return [...entry.prologue, ...emitBlock(context, entry.entryBlock, emitted, controls)];
-}
-
 function emitTargetBranchArm(
   context: CodegenContext,
   target: BlockTarget,
