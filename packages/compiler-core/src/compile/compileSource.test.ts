@@ -126,4 +126,30 @@ export const result = 0;`;
     await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(source)}`);
     await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(result.code)}`);
   });
+
+  it("materializes loop body destructuring values before for updates", async () => {
+    const source = `export function repro(values) {
+  const high = [];
+  const low = [];
+
+  for (let i = 0; i < values.length; i = i + 1) {
+    const { h, l } = split(values[i]);
+    [high[i], low[i]] = [h, l];
+  }
+
+  return [high, low];
+}
+
+function split(value) {
+  return { h: value + 1, l: value - 1 };
+}`;
+    const result = compileSource(source, { sourceName: "test.js" });
+    const direct = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(source)}`);
+    const compiled = await import(
+      `data:text/javascript;charset=utf-8,${encodeURIComponent(result.code)}`
+    );
+
+    expect(compiled.repro([1])).toEqual(direct.repro([1]));
+    expect(compiled.repro([1, 2])).toEqual(direct.repro([1, 2]));
+  });
 });

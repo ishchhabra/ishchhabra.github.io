@@ -69,18 +69,20 @@ class ValueMaterializationPass {
       for (let i = 0; i < block.operations.length; i++) {
         const op = block.operations[i];
         if (op instanceof CopyValueOp) continue;
-        if (op.results.length !== 1) continue;
 
-        const result = op.result;
-        if (this.canRemainExpression(op, result)) continue;
+        let insertIndex = i + 1;
+        for (const result of op.results) {
+          if (this.canRemainExpression(op, result)) continue;
 
-        const local = new Value(this.options.ids.valueId());
-        const copy = new CopyValueOp(this.options.ids.operationId(), local, result);
+          const local = new Value(this.options.ids.valueId());
+          const copy = new CopyValueOp(this.options.ids.operationId(), local, result);
 
-        block.insertOp(i + 1, copy);
-        this.replaceUses(result, local, copy);
-        this.#changed = true;
-        i++;
+          block.insertOp(insertIndex, copy);
+          insertIndex++;
+          this.replaceUses(result, local, copy);
+          this.#changed = true;
+          i++;
+        }
       }
     }
 
