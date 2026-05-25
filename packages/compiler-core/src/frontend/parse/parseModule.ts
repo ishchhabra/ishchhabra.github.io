@@ -13,7 +13,7 @@ export function parseModule(sourceName: string, source: string): Program {
   });
 
   if (result.errors.length > 0) {
-    throw new Error(result.errors.map((error) => error.message).join("\n"));
+    throw new SyntaxError(result.errors.map((error) => error.message).join("\n"));
   }
 
   return result.program;
