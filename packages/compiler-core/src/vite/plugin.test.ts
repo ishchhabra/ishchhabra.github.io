@@ -62,12 +62,12 @@ describe("compilerVitePlugin", () => {
         name: "tiny-math",
         version: "1.0.0",
         type: "module",
-        module: "index.js",
+        module: "index.mjs",
         sideEffects: false,
       }),
     );
     await writeFile(
-      path.join(rootDir, "node_modules/tiny-math/index.js"),
+      path.join(rootDir, "node_modules/tiny-math/index.mjs"),
       "export const answer = 10 + 32;\nexport const unused = 4 + 5;\n",
     );
 
@@ -79,10 +79,11 @@ describe("compilerVitePlugin", () => {
         plugins: [
           compilerVitePlugin({
             rootDir,
-            include: ["src"],
+            include: ["src", "node_modules"],
           }),
           {
             name: "capture-after-compiler",
+            enforce: "post",
             transform(code, id) {
               if (id.includes("/node_modules/tiny-math/")) {
                 transformedModules.set(id, code);
@@ -147,7 +148,7 @@ describe("compilerVitePlugin", () => {
     const transform = transformHook(
       compilerVitePlugin({
         rootDir,
-        include: ["src"],
+        include: ["src", "node_modules"],
       }),
     );
 
@@ -195,7 +196,7 @@ describe("compilerVitePlugin", () => {
     const transform = transformHook(
       compilerVitePlugin({
         rootDir,
-        include: ["src"],
+        include: ["src", "node_modules"],
       }),
     );
 

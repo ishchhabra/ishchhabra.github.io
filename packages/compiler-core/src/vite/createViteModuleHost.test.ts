@@ -10,7 +10,6 @@ describe("createViteModuleHost", () => {
           return { id: specifier };
         },
       },
-      new Map(),
       {
         environment: { name: "client", consumer: "client" },
       },
@@ -35,8 +34,8 @@ describe("createViteModuleHost", () => {
           return { id: specifier };
         },
       },
-      new Map([["/entry.js", source]]),
       {
+        entrypoint: { resolvedId: "/entry.js", source },
         environment: { name: "client", consumer: "client" },
       },
     );
@@ -62,8 +61,8 @@ describe("createViteModuleHost", () => {
           return { id: specifier };
         },
       },
-      new Map([["/entry.js", source]]),
       {
+        entrypoint: { resolvedId: "/entry.js", source },
         environment: { name: "ssr", consumer: "server" },
       },
     );
@@ -89,8 +88,8 @@ describe("createViteModuleHost", () => {
           return { id: specifier };
         },
       },
-      new Map([["/entry.tsx?tsr-split=component", source]]),
       {
+        entrypoint: { resolvedId: "/entry.tsx?tsr-split=component", source },
         environment: { name: "client", consumer: "client" },
       },
     );
@@ -105,6 +104,30 @@ describe("createViteModuleHost", () => {
       sourceName: "/entry.tsx",
       source,
       kind: "esm",
+    });
+  });
+
+  it("treats missing transformed source as opaque without reading from disk", async () => {
+    const host = createViteModuleHost(
+      {
+        async resolve(specifier) {
+          return { id: specifier };
+        },
+      },
+      {
+        environment: { name: "client", consumer: "client" },
+      },
+    );
+
+    const loaded = await host.load({
+      resolvedId: "/not-yet-transformed.jsx",
+      external: false,
+    });
+
+    expect(loaded).toMatchObject({
+      resolvedId: "/not-yet-transformed.jsx",
+      source: null,
+      kind: "opaque",
     });
   });
 });

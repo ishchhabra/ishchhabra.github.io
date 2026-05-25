@@ -39,14 +39,6 @@ export default defineConfig(async (): Promise<UserConfig> => {
     },
     plugins: [
       tsConfigPaths(),
-      ...(compilerAot
-        ? [
-            compilerVitePlugin({
-              rootDir: __dirname,
-              include: ["src"],
-            }),
-          ]
-        : []),
       tanstackStart({
         srcDirectory: "src",
         prerender: { enabled: process.env["NITRO_PRESET"] !== "vercel" },
@@ -101,6 +93,14 @@ export default defineConfig(async (): Promise<UserConfig> => {
         },
       }),
       tailwindcss(),
+      ...(compilerAot
+        ? [
+            compilerVitePlugin({
+              rootDir: __dirname,
+              include: ["src", "node_modules"],
+            }),
+          ]
+        : []),
     ],
     optimizeDeps: {
       // Injected workspace packages are still in node_modules (copy), so Vite

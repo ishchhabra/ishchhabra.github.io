@@ -1,4 +1,3 @@
-import { readFile } from "node:fs/promises";
 import { builtinModules } from "node:module";
 import path from "node:path";
 
@@ -23,7 +22,13 @@ interface ViteModuleHostContext {
 }
 
 export interface ViteModuleHostOptions {
+  readonly entrypoint?: ViteModuleHostEntrypoint;
   readonly environment: ModuleEnvironment;
+}
+
+export interface ViteModuleHostEntrypoint {
+  readonly resolvedId: string;
+  readonly source: string;
 }
 
 /**
@@ -31,25 +36,30 @@ export interface ViteModuleHostOptions {
  *
  * The compiler should not implement package exports, aliases, virtual modules,
  * or node_modules resolution itself. This adapter delegates resolution to Vite,
- * then reads source before Vite transform hooks so compiler output can become
- * the input to the rest of Vite.
+ * then loads source using adapter-provided transformed module text when
+ * available.
  */
 export function createViteModuleHost(
   context: ViteModuleHostContext,
-  sourceOverrides: ReadonlyMap<string, string> = new Map(),
   options: ViteModuleHostOptions,
 ): ModuleHost {
-  return new ViteModuleHost(context, sourceOverrides, options.environment);
+  return new ViteModuleHost(context, options);
 }
 
 class ViteModuleHost implements ModuleHost {
   constructor(
     private readonly context: ViteModuleHostContext,
-    private readonly sourceOverrides: ReadonlyMap<string, string>,
-    private readonly environment: ModuleEnvironment,
+    private readonly options: ViteModuleHostOptions,
   ) {}
 
   public async resolve(specifier: string, importer: string | null): Promise<ResolvedModule> {
+    if (importer === null && this.options.entrypoint?.resolvedId === specifier) {
+      return {
+        resolvedId: specifier,
+        external: false,
+      };
+    }
+
     const resolved = await this.context.resolve(specifier, importer ?? undefined, {
       skipSelf: true,
     });
@@ -101,7 +111,7 @@ class ViteModuleHost implements ModuleHost {
     }
 
     if (
-      this.environment.consumer === "client" &&
+      this.options.environment.consumer === "client" &&
       sourceHasStaticNodeBuiltinDependency(sourceName, source)
     ) {
       return {
@@ -121,16 +131,14 @@ class ViteModuleHost implements ModuleHost {
   }
 
   private async loadSource(resolvedId: string): Promise<string | null> {
-    const overriddenSource = this.sourceOverrides.get(resolvedId);
-    if (overriddenSource !== undefined) return overriddenSource;
+    if (this.options.entrypoint?.resolvedId === resolvedId) {
+      return this.options.entrypoint.source;
+    }
 
     const transformedSource = await this.context.loadModuleSource?.(resolvedId);
     if (transformedSource !== undefined) return transformedSource;
 
-    const filePath = filePathFromResolvedId(resolvedId);
-    if (filePath === null) return null;
-
-    return readFile(filePath, "utf8");
+    return null;
   }
 }
 
